@@ -12,7 +12,7 @@ This document tracks every PerfMetrics-based performance test run against irDash
 
 **For Claude Code instances:**
 
-- The most recent entry in §3 reflects current performance state. Use it as the baseline when reasoning about whether a proposed change has performance implications.
+- Select a reference from the current baseline register below. The newest entry is not automatically comparable with another target, widget layout, simulator source or visibility policy.
 - §4 ("Current Status of Architecture Findings") is the authoritative live record of which findings are confirmed, disconfirmed, or open. Update it when a new test resolves a finding.
 - When implementing a remediation phase, refer to §5 ("Targets and Goals") for the metrics that define success.
 - After completing a remediation phase, add a new entry to §3 with the post-change measurements and update §4 accordingly.
@@ -22,6 +22,35 @@ This document tracks every PerfMetrics-based performance test run against irDash
 - Add new test entries to §3 (newest at the top). Use the template in §6.
 - Update the status table in §4 when a finding moves between confirmed / open / disconfirmed.
 - Update §5 when targets are met or revised.
+
+---
+
+## Current baseline register
+
+Updated **1 November 2026**. A reference records an observed workload; it does
+not imply that performance gates passed. Keep the `<5 MiB/min` private-memory
+target unchanged when updating a reference.
+
+| Scope                                                            | Reference                                                                                                                                                                                                   | Status                                                                                                                                                                                                                                                                                                                                                    |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pinned local-main full saved-profile development baseline        | `a520-full-r1` and `a520-full-r2`; unmodified runtime at `a5200766`, actual 59-car/two-class replay, 20 saved enabled instances, three display overlays plus Gantry, 420 seconds / 60-second warmup         | Fuel/Radar visibly verified. CPU 4.483–4.604%; simulator FPS 72.760–72.872; private growth 20.320–43.683 MiB/min, above target. Missing event inputs; formal gates inconclusive. Predates Input #857; remote `ddf3f69e` unmeasured. [Report](./performance/2026-11-01-main-full-profile.md), [evidence](./performance/2026-11-01-main-full-profile.json). |
+| Latest located packaged full-dashboard reference                 | `f189c2ee`, `post-phase4-1-f189c2ee-full-r2-long`; 40-car `.irdt`, 17 widget types, three display renderers, 60-second analysis warmup                                                                      | Archived August capture, newly attached below. Qualified reference: missing event-driven inputs; private-memory target unmet. [Evidence](./performance/2026-08-09-packaged-reference.json).                                                                                                                                                               |
+| Scoped six-instance development replay / shared-window reference | `live-visible-display-a1` and `live-visible-display-a2`; base `a5200766` plus uncommitted experiment, actual 59-car replay, six widget instances, two shared display renderers, replay visibility overrides | Scoped November reference; both repeat runs retained. Blind-spot input idle; private-memory target unmet. [Report](./performance/2026-11-01-window-mode.md), [evidence](./performance/2026-11-01-window-mode.json).                                                                                                                                       |
+| Individual-window experiment                                     | `live-visible-widget-b1` and `live-visible-widget-b2`, same source and workload as the November shared reference, six renderers                                                                             | Comparison candidate only; not the default or a replacement release baseline.                                                                                                                                                                                                                                                                             |
+| Current-main release drift since August                          | No matched packaged capture of current `main`                                                                                                                                                               | **Unmeasured.** November development/subset/actual-replay numbers cannot establish release drift against August packaged/full-dashboard/tape numbers.                                                                                                                                                                                                     |
+
+**Tracking drift:** Compare the same target, simulator/tape and start segment,
+widget instances/configuration, visible content, display geometry, capture
+duration and warmup. Record the build and dirty-source fingerprint. Keep the
+prior reference and evidence rather than replacing a failing result with a
+newer, lighter workload. The [harness protocol](./PERFORMANCE_BENCHMARKS.md)
+defines capture and analysis commands.
+
+The July HTML investigation and May summary remain historical evidence;
+their headline values are not current baselines. The latest located matched
+packaged pair showed little CPU change (3.709% → 3.679%) and lower observed
+private-memory growth (16.574 → 9.273 MiB/min), still above target. That pair
+predates current `main` and does not prove the absence of subsequent drift.
 
 ---
 
@@ -76,7 +105,139 @@ When new scenarios are added (e.g. to test specific findings), document them her
 
 ## 3. Test Entries
 
+### 1 November 2026 — Pinned local-main full saved profile, actual replay
+
+**Scope:** Development target, runtime source unchanged from local main
+`a5200766d2d47b5088e6c73436baa4e62cc79faf`. The independent root feature and
+newer remote main `ddf3f69e` were not benchmarked. In particular, this source
+predates upstream Input optimization #857. No performance fix or Input/GPU
+investigation was made in this series.
+
+The saved Default profile has 20 enabled instances, with one Fuel panel; the
+saved second Fuel remains disabled. Three 2560×1440 display overlays plus the
+existing Gantry renderer run against the actual Gesamtstrecke VLN replay,
+59 non-pace cars/two classes, session 2, start frame 129269, cockpit group 9 /
+camera 1 / focus car 37. Benchmark-only overrides in isolated profile copies
+make Fuel/Radar visible without changing saved settings or manufacturing data.
+Lap Trace retains its saved Race-session hide policy, and conditional panels
+retain real event requirements. Gantry renders standings behind foreground
+iRacing but has no recorded event log for this replay.
+
+| Run            | App CPU | Simulator FPS | Peak private memory |   Private slope |
+| -------------- | ------: | ------------: | ------------------: | --------------: |
+| `a520-full-r1` |  4.483% |        72.872 |         3974.08 MiB | +43.683 MiB/min |
+| `a520-full-r2` |  4.604% |        72.760 |         3594.32 MiB | +20.320 MiB/min |
+
+Each capture lasts 420 seconds; analysis includes seconds 60–420, with 72
+app/private-memory samples over approximately 355 seconds. Both also have 72
+native replay observations verifying normal-speed playback, session/camera
+and frame progression. The 1,599-file source manifest is unchanged. Both
+fresh profile copies produce the same resulting config hash. Fuel and Radar
+were visually checked in corrected preflight and each repeat's warmup.
+
+The mean CPU/FPS is 4.544% / 72.816. Both private-memory slopes exceed the
+unchanged **<5 MiB/min** target; their wide range must be retained. These
+six-minute slopes do not establish a long-running leak rate. Renderer p99
+means are 16.804/16.808 ms for the three display renderers, with no sampled
+frames over 50 ms. These are neither Gantry nor PresentMon/game frame timings.
+
+**Formal acceptance remains inconclusive:** missing changing inputs include
+blind-spot, lap-history, lap-times, radio, reference-laps, sector-timing and
+replay-context channels. Fuel's replay values remain zero/unavailable, with
+no live stint or populated fuel-history graph. No coverage waiver or release
+gate pass is claimed. Historical release drift and performance of newer
+remote main remain **unmeasured**; this development/profile workload must not
+be compared numerically with the old packaged/tape or six-instance experiment.
+
+The excluded preflights are documented, not promoted to measurements. The
+original config is restored/unchanged; iRacing is foreground at original frame
+3331/session 0/cockpit camera, paused. Raw logs stay local under ignored
+`perf-results/`. The [full report](./performance/2026-11-01-main-full-profile.md)
+and [sanitized evidence](./performance/2026-11-01-main-full-profile.json)
+preserve fingerprints, per-run coverage, memory series and replay integrity.
+
 > Newest at the top. Each entry follows the template in §6.
+
+---
+
+### 2026-11-01 · Individual-window experiment · Actual simulator replay · Gesamtstrecke VLN
+
+**Build:** `feat/per-widget-overlay-windows`, base `a5200766` plus uncommitted
+feature changes. This is a development capture, not a release-build baseline.
+
+**Scenario:** Actual 59-car, two-class simulator replay; fixed cockpit camera
+and start frame 129269. Six instances (Input, Fuel twice, Radar, Flags, Blind
+Spot Monitor) across two occupied displays on a three-display 2560×1440 desktop.
+Four 420-second captures in shared → individual → individual → shared order;
+the first 60 seconds are excluded, leaving 72 main samples per run. Source
+hashes, camera and normal-speed playback were verified unchanged.
+
+**Visibility correction:** The initial `live-windows-*` captures are excluded:
+Fuel and Radar were hidden by the replay's false `IsOnTrack` flag. Corrected
+`live-visible-*` captures use the same benchmark-only visibility overrides in
+both modes. Both Fuel panels and Radar content were visually verified. Saved
+profile settings remain unchanged.
+
+| Metric                              | Shared, mean of two runs | Individual, mean of two runs |
+| ----------------------------------- | -----------------------: | ---------------------------: |
+| Renderer count                      |                        2 |                            6 |
+| Actual simulator average FPS        |                   73.701 |                       73.238 |
+| App CPU                             |                   2.010% |                       4.699% |
+| GPU-process CPU                     |                   0.828% |                       3.109% |
+| Mean of per-run peak private memory |              1147.36 MiB |                  1476.21 MiB |
+| Private-memory slope                |           +9.853 MiB/min |              +20.221 MiB/min |
+| Renderer frame-time p99 mean        |                16.801 ms |                    16.896 ms |
+
+**Findings:** Observed average FPS changes by −0.63%; app CPU rises about 134%
+and mean peak private memory about 29%. Most extra CPU is recorded in the GPU
+process, which is CPU consumption by that process, not GPU engine utilization.
+In individual mode, the two Fuel renderers together average about 0.413% CPU
+and 252.37 MiB private memory, with flat-to-declining memory. Input has the
+largest renderer growth (about +9.75 MiB/min); Radar has the largest renderer
+private footprint (about 537.54 MiB). Fuel-projection processing averages
+0.0178 ms per operation. These results do not stress live fuel burn/history.
+
+**Evidence status:** All four captures lack a changing blind-spot input and
+are therefore inconclusive for full declared-workload acceptance. Both modes
+exceed the private-memory target. These six-minute observations are not proof
+of a long-running leak, nor a release-performance or current-main drift test.
+Keep individual windows experimental; retain shared windows as default.
+
+**Attached artifacts:** [Full report](./performance/2026-11-01-window-mode.md)
+and [sanitized machine-readable evidence](./performance/2026-11-01-window-mode.json).
+Raw logs, replay probes and source hashes remain local under `perf-results/`.
+
+---
+
+### 2026-08-09 · Post-Phase-4.1 packaged reference · Archived comparison attached 2026-11-01
+
+**Builds:** `28cbf61e` → `f189c2ee` (track-map smoothing, PR #688).
+**Workload:** Same recorded 40-car `.irdt` fixture, 17 active widget types,
+three 2560×1440 overlay renderers, packaged target, 420-second capture and
+60-second analysis warmup. The archived logs record matching widget types,
+desktop geometry and delivery policy. This entry attaches existing evidence;
+it is not a new run or a comparison against current `main`.
+
+| Metric                      |      `28cbf61e` |     `f189c2ee` |
+| --------------------------- | --------------: | -------------: |
+| App CPU                     |          3.709% |         3.679% |
+| Peak private memory         |     1058.52 MiB |    1061.82 MiB |
+| Private-memory slope        | +16.574 MiB/min | +9.273 MiB/min |
+| Main private-memory slope   |  +5.595 MiB/min | +0.815 MiB/min |
+| `processTelemetry` p99 mean |        1.943 ms |       1.952 ms |
+| Minimum telemetry cadence   |       21.339 Hz |      21.361 Hz |
+| Renderer frames over 50 ms  |              0% |             0% |
+
+**Drift finding:** Little CPU/latency movement was observed in this single
+archived pair; memory-growth slopes were lower but still above the app target.
+Missing event-driven lap-times/radio input coverage makes formal A/B gates
+inconclusive. Tape FPS is historical and cannot establish actual game impact.
+Treat `f189c2ee` as the latest located qualified packaged reference, not as a
+passing baseline or evidence that October/November `main` has not drifted.
+
+**Artifacts:** [Attached evidence](./performance/2026-08-09-packaged-reference.json).
+Local raw comparison: `post-phase4-1-f189c2ee-full-r2-long.summary.json` and
+the corresponding baseline/candidate logs under `perf-results/`.
 
 ---
 
@@ -1167,6 +1328,13 @@ There are two possible interpretations for why Standings still leaks while other
 
 Live record of which architecture review findings have empirical support. Update as new tests resolve open questions.
 
+**Current performance watch items (1 November 2026):** The scoped window-mode
+experiment reproduces private-memory growth, especially in Input and the GPU
+process, plus higher GPU-process CPU with individual windows. These are
+observations for follow-up, not confirmed causal diagnoses or new remediation
+tasks. Fuel memory is stable in that replay. Current-main packaged drift is
+unmeasured; historical validations below retain their original workload scope.
+
 ### Confirmed implicated, fix validated
 
 | ID                     | Description                                                             | Validation                                                                                                                                                    |
@@ -1245,6 +1413,12 @@ Live record of which architecture review findings have empirical support. Update
 ## 5. Targets and Goals
 
 Empirical baselines and post-remediation targets. Updated as targets are met.
+
+**Current gate qualification (1 November 2026):** The `<5 MiB/min`
+private-memory target remains unmet in the latest located packaged reference
+and in both November window modes. Full workload coverage is also incomplete.
+Use the baseline register for current references; the remediation table below
+records historical May scenarios and does not certify the current build.
 
 | Metric                                   |       Pre-remediation |      Post-0.5 |           Post-1 |           Post-2a Tier 1 (PCC) | Combined Phase 2a (ghost race) |           **Combined Phase 2a (SFL practice)** |                Target |
 | ---------------------------------------- | --------------------: | ------------: | ---------------: | -----------------------------: | -----------------------------: | ---------------------------------------------: | --------------------: |

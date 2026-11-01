@@ -44,6 +44,20 @@ For an isolated `.irdt` tape, the iRacing FPS/CPU/GPU variables are historical
 values recorded in the tape. They do not measure the host while the benchmark
 is running and must not be used for A/B conclusions.
 
+For a replay running inside the actual simulator, keep the normal live SDK
+connection and pass `--simulator-mode replay` to label the metadata. This flag
+does not start a tape publisher; `--replay-input` selects the isolated publisher.
+Pin and verify replay frame/session/camera and normal-speed playback separately.
+
+`--user-data-dir <directory>` forwards an isolated profile directory to
+Electron, including through Forge for the development target. Use a path
+without spaces or shell metacharacters. Seed it from the saved profile,
+document any benchmark-only visibility overrides, and start each repeat from
+the same seed. Verify visible content after startup settles, especially when
+`IsOnTrack` is false in replay. Counts of windows or enabled widgets do not
+prove content visibility or input coverage. The [full saved-profile capture
+report](./performance/2026-11-01-main-full-profile.md) records a worked example.
+
 ## Controlled replay benchmark
 
 Use a replay with a representative field size and the same fixed cockpit camera
