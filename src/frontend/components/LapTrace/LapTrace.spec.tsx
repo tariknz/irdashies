@@ -1,4 +1,5 @@
-import { render, screen, cleanup } from '@testing-library/react';
+import { Profiler } from 'react';
+import { act, render, screen, cleanup } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type {
   ChannelBridge,
@@ -217,6 +218,59 @@ describe('LapTrace', () => {
 
     expect(screen.getByText('No lap imported')).toBeTruthy();
     expect(screen.queryByText(/Out-lap/i)).toBeNull();
+  });
+
+  describe('as the lap in progress advances', () => {
+    /** More frames of the lap seedLap started, from `fromPct` on. */
+    const drive = (fromPct: number, frames: number) => {
+      for (let i = 1; i <= frames; i++) {
+        const lapDistPct = fromPct + i * 0.002;
+        useLapTraceStore.getState().collectPlayerFrame(undefined, {
+          sessionTime: lapDistPct * 100,
+          lapDistPct,
+          throttle: 1,
+          brake: 0,
+          speed: 50,
+          gear: 3,
+          brakeAbsActive: false,
+          onPitRoad: false,
+          isOnTrack: true,
+          sessionNum: 0,
+          lastLapTime: 0,
+          lapCompleted: 0,
+          incidentCount: 0,
+          simLapInvalidated: false,
+          version: 1000 + i,
+        });
+      }
+    };
+
+    it('does not re-render the widget once a reference is loaded', async () => {
+      await seedLap([{ lapDistPct: 0, sessionTime: 0 }]);
+      seedReference();
+      const onRender = vi.fn();
+      render(
+        <Profiler id="laptrace" onRender={onRender}>
+          <LapTrace {...baseProps} />
+        </Profiler>
+      );
+      onRender.mockClear();
+
+      // 100 m of lap, published to the store every 5 m.
+      act(() => drive(0, 10));
+
+      expect(onRender).not.toHaveBeenCalled();
+    });
+
+    it('still counts the recording up before there is one', async () => {
+      await seedLap([{ lapDistPct: 0, sessionTime: 0 }]);
+      render(<LapTrace {...baseProps} />);
+      expect(screen.getByText('Recording 0%')).toBeTruthy();
+
+      act(() => drive(0, 10));
+
+      expect(screen.getByText('Recording 2%')).toBeTruthy();
+    });
   });
 
   it('says nothing about the lap in progress once a reference is loaded', async () => {

@@ -1201,13 +1201,19 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
   },
 }));
 
-/** Progress through the lap currently being recorded, 0..1. */
-export const useLapTraceRecordingProgress = (): number =>
+/**
+ * Progress through the lap currently being recorded, in whole percent: what
+ * the widget shows, so it re-renders once per percent rather than on every
+ * notification of the lap in progress.
+ */
+export const useLapTraceRecordingPercent = (): number =>
   useLapTraceStore((s) =>
     s.activeLap && s.trackLengthM > 0
-      ? Math.min(
-          1,
-          Math.max(0, s.activeLap.samples.lastDistanceM()) / s.trackLengthM
+      ? Math.round(
+          Math.min(
+            1,
+            Math.max(0, s.activeLap.samples.lastDistanceM()) / s.trackLengthM
+          ) * 100
         )
       : 0
   );
@@ -1219,7 +1225,7 @@ export const useLapTraceRecordingProgress = (): number =>
  * Returns a primitive on purpose. `activeLap` is mutated in place and
  * republished under the same object identity, so a selector returning the lap
  * itself would never re-render — the same reason
- * `useLapTraceRecordingProgress` returns a number.
+ * `useLapTraceRecordingPercent` returns a number.
  */
 export const useLapTraceInvalidReason = (): LapInvalidReason | null =>
   useLapTraceStore((s) => s.activeLap?.invalidReason ?? null);
