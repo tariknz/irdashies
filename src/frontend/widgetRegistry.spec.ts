@@ -47,6 +47,23 @@ describe('widget registry', () => {
     expect(sorted(ids)).toEqual(manifestIds);
   });
 
+  it('keeps eager registration files free of static implementation imports', () => {
+    for (const [path, source] of Object.entries(widgetSources)) {
+      expect(
+        source.match(/import\s+(?!type\b)[^;]*?\sfrom\s*['"]\./g) ?? [],
+        path
+      ).toEqual([]);
+      const components = [...source.matchAll(/component:\s*([\w$]+)/g)].map(
+        (match) => match[1]
+      );
+      expect(components.length, path).toBeGreaterThan(0);
+      expect(
+        components.every((name) => name === 'lazyWidget'),
+        path
+      ).toBe(true);
+    }
+  });
+
   it('keeps widget.ts files from importing other widget folders (N3)', () => {
     for (const [path, source] of Object.entries(widgetSources)) {
       const folder = path.split('/')[2];

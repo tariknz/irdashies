@@ -5,12 +5,14 @@ import {
   type ActiveSimulator,
   type ContainerBoundsInfo,
   type DashboardWidget,
+  type GeneralSettingsType,
   type SimWidgetSupportConfig,
 } from '@irdashies/types';
 
 const dashboard = vi.hoisted(() => ({
   widgets: [] as DashboardWidget[],
   containerBoundsInfo: null as ContainerBoundsInfo | null,
+  generalSettings: undefined as GeneralSettingsType | undefined,
 }));
 
 const main = vi.hoisted(() => ({
@@ -29,7 +31,10 @@ const bridge = vi.hoisted(() => ({
 
 vi.mock('../DashboardContext/DashboardContext', () => ({
   useDashboard: () => ({
-    currentDashboard: { widgets: dashboard.widgets },
+    currentDashboard: {
+      widgets: dashboard.widgets,
+      generalSettings: dashboard.generalSettings,
+    },
     containerBoundsInfo: dashboard.containerBoundsInfo,
   }),
   useDashboardBridge: () => bridge,
@@ -51,6 +56,7 @@ const ids = (widgets: DashboardWidget[]) => widgets.map((w) => w.id);
 describe('useWidgetsForThisDisplay', () => {
   beforeEach(() => {
     dashboard.widgets = [widget('input', 0), widget('standings', 200)];
+    dashboard.generalSettings = undefined;
     dashboard.containerBoundsInfo = null;
     main.simulator = null;
     main.support = {
@@ -136,6 +142,34 @@ describe('useWidgetsForThisDisplay', () => {
 
     // 'standings' is incompatible, 'relative' lives on the other display.
     await waitFor(() => expect(ids(result.current)).toEqual(['input']));
+  });
+
+  it('waits for an individual assignment and mounts only the matching instance', () => {
+    dashboard.generalSettings = { overlayWindowMode: 'widget' };
+    dashboard.widgets = [
+      { ...widget('input-a', 0), type: 'input' },
+      { ...widget('input-b', 900), type: 'input' },
+    ];
+    const { result, rerender } = renderHook(() => useWidgetsForThisDisplay());
+    expect(result.current).toEqual([]);
+    const effective = { x: 10, y: 20, width: 100, height: 100 };
+    dashboard.containerBoundsInfo = {
+      widgetId: 'input-b',
+      widgetLayout: effective,
+      expected: effective,
+      actual: effective,
+      offset: { x: 0, y: 0 },
+    };
+    rerender();
+    expect(ids(result.current)).toEqual(['input-b']);
+    expect(result.current[0].layout).toEqual(effective);
+    expect(dashboard.widgets[1].layout.x).toBe(900);
+  });
+
+  it('leaves browser sources independent of the desktop window mode', () => {
+    dashboard.generalSettings = { overlayWindowMode: 'widget' };
+    const { result } = renderHook(() => useWidgetsForThisDisplay(true));
+    expect(ids(result.current)).toEqual(['input', 'standings']);
   });
 
   it.each([false, true])(

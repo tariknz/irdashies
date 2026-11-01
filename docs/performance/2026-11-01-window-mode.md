@@ -5,6 +5,12 @@
 with uncommitted feature changes. This is a development workload reference,
 not a replacement for the packaged release reference.
 
+**Publication note:** The feature was subsequently rebased onto `ddf3f69e`,
+which includes the upstream Input optimization in PR #857. The measurements
+below predate that fix and have not been repeated on the rebased feature.
+Input's measured growth is a finding for the captured build, not proof that it
+persists after #857.
+
 The attached [machine-readable evidence](./2026-11-01-window-mode.json) preserves
 the per-run figures, qualifications, source-manifest fingerprint and raw-log
 hashes even when the local `perf-results/` directory is unavailable. See the
@@ -58,19 +64,18 @@ The benchmark processes have exited. The simulator was returned to the original 
 
 ## Reproduction and artifacts
 
-These experimental options are **not implemented by this baseline checkout**;
-its runner ignores unknown flags, so running these commands here cannot
-reproduce the window-mode experiment. The published successor implementation
-is [commit 3172180e](https://github.com/tariknz/irdashies/commit/3172180e1bd55d066798daf0788d07c41c4aac69)
-on the separate widget-window feature branch. It contains `--window-mode` and
-`--replay-visible-widgets`, but it is rebased and is not byte-identical to the
-uncommitted source fingerprint of the archived captures.
+The runner now combines the feature's `--window-mode` and
+`--replay-visible-widgets` options with the full-profile baseline's
+`--simulator-mode replay` metadata support and `--user-data-dir` forwarding.
+The baseline-only checkout did not implement the window-mode options. The
+published successor implementation in
+[commit 3172180e](https://github.com/tariknz/irdashies/commit/3172180e1bd55d066798daf0788d07c41c4aac69)
+and this updated branch are not byte-identical to the uncommitted source
+fingerprint of the archived captures.
 
-For a new capture on that experimental checkout, also apply this baseline's
-`--simulator-mode replay` metadata support and `--user-data-dir` forwarding
-in `tools/perf/run.ts`, preserving the experimental options. The following commands describe that combined
-setup, not the options supported by this checkout. Record the new source
-fingerprint rather than assigning the archived source identity to a recapture.
+The following commands use the combined runner for a new capture. Record the
+new source fingerprint rather than assigning the archived source identity to
+a recapture.
 The original experiment's runner labeled the SDK connection `live`; that
 metadata did not distinguish actual replay playback. The added flag below
 corrects future labels and does not rewrite the historical captures.

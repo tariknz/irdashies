@@ -9,6 +9,10 @@ const mocks = vi.hoisted(() => ({
   readFile: vi.fn(),
   writeData: vi.fn(),
   refresh: vi.fn(),
+  publish: vi.fn(),
+  closeOrCreate: vi.fn(),
+  sendState: vi.fn(),
+  dashboards: {} as Record<string, DashboardLayout>,
 }));
 
 vi.mock('electron', () => ({
@@ -33,7 +37,12 @@ vi.mock('node:fs/promises', async (importOriginal) => ({
 }));
 
 vi.mock('../../storage/storage', () => ({
-  readData: (key: string) => (key === 'currentProfile' ? 'race' : undefined),
+  readData: (key: string) =>
+    key === 'currentProfile'
+      ? 'race'
+      : key === 'dashboards'
+        ? mocks.dashboards
+        : undefined,
   writeData: mocks.writeData,
 }));
 vi.mock('../../storage/driverTagSettings', () => ({
@@ -45,6 +54,7 @@ vi.mock('../../logger', () => ({
 }));
 
 import { publishDashboardUpdates } from './dashboardBridge';
+import { emitDashboardUpdated } from '../../storage/dashboardEvents';
 
 const exportedDashboard: DashboardLayout = {
   widgets: [
@@ -60,19 +70,61 @@ const exportedDashboard: DashboardLayout = {
 beforeEach(() => {
   mocks.writeData.mockClear();
   mocks.refresh.mockClear();
+  mocks.publish.mockClear();
+  mocks.closeOrCreate.mockReset();
+  mocks.sendState.mockClear();
+  mocks.dashboards = { race: { widgets: [] } };
   mocks.readFile.mockResolvedValue(JSON.stringify(exportedDashboard));
 });
 
 beforeAll(async () => {
   await publishDashboardUpdates(
     {
-      closeOrCreateWindows: vi.fn(),
-      publishMessage: vi.fn(),
+      closeOrCreateWindows: mocks.closeOrCreate,
+      publishMessage: mocks.publish,
+      sendOverlayState: mocks.sendState,
       forceRefreshOverlays: mocks.refresh,
       setSettingsTitleBarTheme: vi.fn(),
     } as unknown as OverlayManager,
     {} as Analytics
   );
+});
+
+describe('dashboard renderer initialization', () => {
+  it('replies once per requesting renderer without broadcasting', () => {
+    const senders = Array.from({ length: 6 }, () => ({
+      isDestroyed: vi.fn(() => false),
+      send: vi.fn(),
+    }));
+    for (const sender of senders) {
+      mocks.listeners.get('reloadDashboard')?.({ sender });
+    }
+    for (const sender of senders) {
+      expect(sender.send).toHaveBeenCalledOnce();
+      expect(sender.send).toHaveBeenCalledWith(
+        'dashboardUpdated',
+        expect.objectContaining({ widgets: expect.any(Array) })
+      );
+      expect(mocks.sendState).toHaveBeenCalledWith(sender);
+    }
+    expect(mocks.publish).not.toHaveBeenCalled();
+  });
+
+  it('does not reply to a renderer destroyed while its windows are reconciled', () => {
+    const sender = { isDestroyed: vi.fn(() => false), send: vi.fn() };
+    mocks.closeOrCreate.mockImplementationOnce(() => {
+      sender.isDestroyed.mockReturnValue(true);
+    });
+    mocks.listeners.get('reloadDashboard')?.({ sender });
+    expect(sender.send).not.toHaveBeenCalled();
+    expect(mocks.sendState).not.toHaveBeenCalled();
+  });
+
+  it('still broadcasts real dashboard changes', () => {
+    const dashboard: DashboardLayout = { widgets: [] };
+    emitDashboardUpdated(dashboard);
+    expect(mocks.publish).toHaveBeenCalledWith('dashboardUpdated', dashboard);
+  });
 });
 
 describe('dashboard import scaling', () => {

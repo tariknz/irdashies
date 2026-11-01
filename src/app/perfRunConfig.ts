@@ -43,6 +43,10 @@ export interface PerfRunConfig {
   telemetryPayload: 'allowlisted' | 'raw';
   channelDelivery: 'on' | 'off';
   visibilityPhases: PerfVisibilityPhase[];
+  /** Benchmark-only override; never written to the saved dashboard. */
+  windowMode?: 'display' | 'widget';
+  /** Benchmark-only visibility override for actual simulator replay captures. */
+  replayVisibleWidgets?: boolean;
 }
 
 const PERF_OVERLAY_MODES = new Set<PerfOverlayMode>([
@@ -104,6 +108,11 @@ export function getPerfRunConfig(
       env.PERF_TELEMETRY_PAYLOAD === 'raw' ? 'raw' : 'allowlisted',
     channelDelivery: env.PERF_CHANNEL_DELIVERY === 'off' ? 'off' : 'on',
     visibilityPhases,
+    windowMode:
+      env.PERF_WINDOW_MODE === 'widget' || env.PERF_WINDOW_MODE === 'display'
+        ? env.PERF_WINDOW_MODE
+        : undefined,
+    replayVisibleWidgets: env.PERF_REPLAY_VISIBLE_WIDGETS === '1',
   };
 }
 
@@ -117,10 +126,52 @@ export function activePerfWidgetTypes(dashboard: DashboardLayout): string[] {
   ].sort();
 }
 
+/** Refresh the effective workload when startup or profile changes apply it. */
+export function updatePerfDashboardMetadata(
+  dashboard: DashboardLayout,
+  env: NodeJS.ProcessEnv = process.env
+): void {
+  env.PERF_ACTIVE_WIDGET_TYPES = JSON.stringify(
+    activePerfWidgetTypes(dashboard)
+  );
+  env.PERF_ACTIVE_WINDOW_MODE =
+    dashboard.generalSettings?.overlayWindowMode === 'widget'
+      ? 'widget'
+      : 'display';
+}
+
 export function createPerfDashboard(
   dashboard: DashboardLayout,
   config: PerfRunConfig
 ): DashboardLayout {
+  if (config.enabled && config.replayVisibleWidgets) {
+    dashboard = {
+      ...dashboard,
+      widgets: dashboard.widgets.map((widget) => {
+        const type = widget.type ?? widget.id;
+        return {
+          ...widget,
+          config: {
+            ...widget.config,
+            showOnlyWhenOnTrack: false,
+            ...(type === 'radar'
+              ? { autoHide: false, hideInPit: false, hideInPitBox: false }
+              : {}),
+            ...(type === 'flag' ? { showNoFlagState: true } : {}),
+          },
+        };
+      }),
+    };
+  }
+  if (config.enabled && config.windowMode) {
+    dashboard = {
+      ...dashboard,
+      generalSettings: {
+        ...dashboard.generalSettings,
+        overlayWindowMode: config.windowMode,
+      },
+    };
+  }
   if (!config.enabled || config.overlayMode === 'full') {
     if (config.widgetTypes.length === 0) return dashboard;
 
