@@ -1,10 +1,11 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { TrackCanvas, TrackDriver } from './TrackCanvas';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { availableTrackIds } from '@irdashies/domain/track';
 import { BROKEN_TRACKS } from '@irdashies/domain/track/tracks/brokenTracks';
-import { useTelemetryStore } from '@irdashies/context';
-import type { Telemetry } from '@irdashies/types';
+import { useSessionStore, useTelemetryStore } from '@irdashies/context';
+import type { Session, Telemetry } from '@irdashies/types';
+import { useTrackId } from './hooks/useTrackId';
 import {
   ChannelSnapshotDecorator,
   trackStateStorySnapshot,
@@ -843,6 +844,89 @@ export const WithPlayerIcon: Story = {
   args: {
     trackId: 1,
     playerCircleSize: 60,
+  },
+};
+
+// This canvas only reads the session's track identity; the channel decorator
+// supplies positional data. Update the same store used by SessionProvider.
+const mapStorySession = (trackId: number, sessionId: number) =>
+  ({
+    WeekendInfo: { TrackID: trackId, SubSessionID: sessionId },
+  }) as Session;
+
+export const SessionChanges: Story = {
+  args: { trackId: 1, drivers: sampleData },
+  render: (args) => {
+    const trackId = useTrackId();
+    const sessionId = useSessionStore(
+      (state) => state.session?.WeekendInfo?.SubSessionID
+    );
+    const lastTrack = useRef(1);
+    const nextSessionId = useRef(1);
+
+    useEffect(() => {
+      const previous = useSessionStore.getState().session;
+      useSessionStore.getState().setSession(mapStorySession(1, 1));
+      return () => useSessionStore.setState({ session: previous });
+    }, []);
+
+    const changeSession = (id: number) => {
+      lastTrack.current = id;
+      nextSessionId.current += 1;
+      useSessionStore
+        .getState()
+        .setSession(mapStorySession(id, nextSessionId.current));
+    };
+
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap gap-2">
+          {[1, 337, 5].map((id) => (
+            <button
+              key={id}
+              className="rounded-sm bg-slate-700 px-3 py-2 text-white"
+              onClick={() => changeSession(id)}
+            >
+              Track {id}
+            </button>
+          ))}
+          <button
+            className="rounded-sm bg-slate-700 px-3 py-2 text-white"
+            onClick={() => changeSession(lastTrack.current)}
+          >
+            New session on same track
+          </button>
+          <button
+            className="rounded-sm bg-slate-700 px-3 py-2 text-white"
+            onClick={() => useSessionStore.getState().resetSession()}
+          >
+            Disconnect
+          </button>
+          <button
+            className="rounded-sm bg-slate-700 px-3 py-2 text-white"
+            onClick={() => changeSession(lastTrack.current)}
+          >
+            Reconnect
+          </button>
+          <button
+            className="rounded-sm bg-slate-700 px-3 py-2 text-white"
+            onClick={() => changeSession(999999)}
+          >
+            Unsupported track
+          </button>
+        </div>
+        <p role="status" className="text-white">
+          {trackId === undefined
+            ? 'Disconnected'
+            : `Track ${trackId}, session ${sessionId}`}
+        </p>
+        <div className="h-[500px]" data-testid="session-map">
+          {trackId === undefined ? null : (
+            <TrackCanvas {...args} trackId={trackId} />
+          )}
+        </div>
+      </div>
+    );
   },
 };
 
