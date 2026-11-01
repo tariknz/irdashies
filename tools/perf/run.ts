@@ -88,6 +88,9 @@ function parseArgs(args: string[]): RunOptions {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const replayInput = argumentValue(args, '--replay-input') ?? '';
   const windowMode = argumentValue(args, '--window-mode');
+  if (args.includes('--window-mode') && windowMode === undefined) {
+    throw new Error('--window-mode must be display or widget');
+  }
   if (
     windowMode !== undefined &&
     windowMode !== 'display' &&

@@ -309,6 +309,75 @@ describe('individual overlay windows', () => {
     screenState.displays = [PRIMARY_DISPLAY, SECOND_DISPLAY];
   });
 
+  it('seeds each ready widget once without resending data to its siblings', () => {
+    const manager = new OverlayManager();
+    manager.createOverlays(dashboard(), { createSettingsWindow: false });
+    createdWindows.forEach(ready);
+    manager.setRendererDataSubscriptions({
+      has: () => true,
+      hasAny: () => true,
+    });
+    createdWindows.forEach((win) => win.webContents.send.mockClear());
+    const session = { WeekendInfo: { TrackName: 'Test Track' } };
+
+    manager.publishMessageToOverlay('widget:flag-left', 'sessionData', session);
+    expect(createdWindows[0].webContents.send).toHaveBeenCalledExactlyOnceWith(
+      'sessionData',
+      session
+    );
+    expect(createdWindows[1].webContents.send).not.toHaveBeenCalled();
+
+    manager.publishMessageToOverlay('widget:flag-right', 'runningState', true);
+    expect(createdWindows[0].webContents.send).toHaveBeenCalledOnce();
+    expect(createdWindows[1].webContents.send).toHaveBeenCalledExactlyOnceWith(
+      'runningState',
+      true
+    );
+    expect(manager.getRunningState()).toBe(true);
+    manager.publishMessageToOverlay('widget:closed', 'runningState', false);
+    expect(createdWindows[1].webContents.send).toHaveBeenCalledOnce();
+  });
+
+  it('keeps targeted session delivery subject to visibility and subscriptions', () => {
+    const manager = new OverlayManager();
+    manager.createOverlays(dashboard(), { createSettingsWindow: false });
+    createdWindows.forEach(ready);
+    const [target] = createdWindows;
+    createdWindows.forEach((win) => win.webContents.send.mockClear());
+    manager.setRendererDataSubscriptions({
+      has: () => true,
+      hasAny: () => true,
+    });
+    target.shown = false;
+    manager.publishMessageToOverlay('widget:flag-left', 'sessionData', {});
+    expect(target.webContents.send).not.toHaveBeenCalled();
+    target.shown = true;
+    manager.setRendererDataSubscriptions({
+      has: () => false,
+      hasAny: () => false,
+    });
+    manager.publishMessageToOverlay('widget:flag-left', 'sessionData', {});
+    expect(target.webContents.send).not.toHaveBeenCalled();
+    expect(createdWindows[1].webContents.send).not.toHaveBeenCalled();
+  });
+
+  it('resolves display readiness IDs without broadcasting', () => {
+    const manager = new OverlayManager();
+    manager.createOverlays(
+      { ...dashboard(), generalSettings: { overlayWindowMode: 'display' } },
+      { createSettingsWindow: false }
+    );
+    createdWindows.forEach((win) => win.webContents.send.mockClear());
+    manager.publishMessageToOverlay('display-1', 'runningState', true);
+    expect(createdWindows[0].webContents.send).toHaveBeenCalledExactlyOnceWith(
+      'runningState',
+      true
+    );
+    for (const win of createdWindows.slice(1)) {
+      expect(win.webContents.send).not.toHaveBeenCalled();
+    }
+  });
+
   it('creates one window per enabled instance and preserves a cross-display span', () => {
     const manager = new OverlayManager();
     const layout = dashboard();

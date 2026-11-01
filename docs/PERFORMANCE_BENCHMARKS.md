@@ -135,7 +135,9 @@ per enabled widget while locked. The default remains one shared window per
 display. Edit Layout temporarily restores shared display windows for dragging
 and resizing; locking restores individual windows. Completely off-screen
 widgets temporarily recover onto the primary display without changing their
-saved positions. Individual windows can span connected displays.
+saved positions. Individual windows can span connected displays. Profile-name
+banners are shown in shared mode only; individual windows still hide and reveal
+together during a profile switch.
 
 Individual windows use a dedicated locked-widget renderer, without the layout
 editor or Settings/Gantry startup imports. Widget registration stays automatic;

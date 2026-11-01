@@ -126,6 +126,20 @@ export function activePerfWidgetTypes(dashboard: DashboardLayout): string[] {
   ].sort();
 }
 
+/** Refresh the effective workload when startup or profile changes apply it. */
+export function updatePerfDashboardMetadata(
+  dashboard: DashboardLayout,
+  env: NodeJS.ProcessEnv = process.env
+): void {
+  env.PERF_ACTIVE_WIDGET_TYPES = JSON.stringify(
+    activePerfWidgetTypes(dashboard)
+  );
+  env.PERF_ACTIVE_WINDOW_MODE =
+    dashboard.generalSettings?.overlayWindowMode === 'widget'
+      ? 'widget'
+      : 'display';
+}
+
 export function createPerfDashboard(
   dashboard: DashboardLayout,
   config: PerfRunConfig

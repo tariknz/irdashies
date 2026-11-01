@@ -6,6 +6,7 @@ import {
   getPerfRunConfig,
   parsePerfVisibilityPhases,
   perfRunSimulator,
+  updatePerfDashboardMetadata,
 } from './perfRunConfig';
 
 const dashboard: DashboardLayout = {
@@ -25,6 +26,31 @@ const dashboard: DashboardLayout = {
 };
 
 describe('performance run configuration', () => {
+  it('refreshes mode and widget metadata when a different profile is applied', () => {
+    const env: NodeJS.ProcessEnv = {};
+    updatePerfDashboardMetadata(dashboard, env);
+    expect(env.PERF_ACTIVE_WINDOW_MODE).toBe('display');
+    expect(JSON.parse(env.PERF_ACTIVE_WIDGET_TYPES ?? '')).toEqual([
+      'relative',
+      'standings',
+    ]);
+
+    updatePerfDashboardMetadata(
+      {
+        ...dashboard,
+        widgets: [dashboard.widgets[1]],
+        generalSettings: { overlayWindowMode: 'widget' },
+      },
+      env
+    );
+    expect(env.PERF_ACTIVE_WINDOW_MODE).toBe('widget');
+    expect(JSON.parse(env.PERF_ACTIVE_WIDGET_TYPES ?? '')).toEqual([
+      'relative',
+    ]);
+
+    updatePerfDashboardMetadata(dashboard, env);
+    expect(env.PERF_ACTIVE_WINDOW_MODE).toBe('display');
+  });
   it('makes replay widgets visible only in benchmark memory', () => {
     const source: DashboardLayout = {
       widgets: ['fuel', 'radar', 'flag'].map((id) => ({

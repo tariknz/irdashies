@@ -96,7 +96,7 @@ const IndividualWidgetContent = () => {
         </Suspense>
       )}
       <HideUIWrapper>
-        <ProfileSwitchOverlay>
+        <ProfileSwitchOverlay showBanner={false}>
           <ThemeManager>
             {widget && (
               <IndividualWidgetView widget={widget} running={running} />

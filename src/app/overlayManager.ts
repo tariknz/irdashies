@@ -860,61 +860,47 @@ export class OverlayManager {
     'telemetryInspector:telemetry',
   ]);
 
+  private sendToOverlayWindow(
+    win: BrowserWindow,
+    key: string,
+    value: unknown,
+    feedHiddenSession = false
+  ): void {
+    if (win.isDestroyed()) return;
+    const stream =
+      key === 'telemetryInspector:telemetry'
+        ? 'telemetryInspector'
+        : key === 'sessionData'
+          ? 'sessionData'
+          : undefined;
+    if (
+      stream &&
+      (((stream !== 'sessionData' || !feedHiddenSession) && !win.isVisible()) ||
+        !this.rendererDataSubscriptions?.has(win.webContents.id, stream))
+    ) {
+      return;
+    }
+    try {
+      win.webContents.send(key, value);
+    } catch (error) {
+      logger.error(`Failed to send message ${key} to overlay window`, error);
+    }
+  }
+
   public publishMessage(key: string, value: unknown): void {
     if (key === 'sessionData') this.latestSessionData = value;
     if (key === 'runningState') this.latestRunningState = Boolean(value);
 
     // Send to all display overlay windows
     for (const win of this.displayWindows.values()) {
-      if (win.isDestroyed()) continue;
-      if (
-        (key === 'telemetryInspector:telemetry' || key === 'sessionData') &&
-        !win.isVisible()
-      ) {
-        continue;
-      }
-      if (
-        (key === 'telemetryInspector:telemetry' || key === 'sessionData') &&
-        !this.rendererDataSubscriptions?.has(
-          win.webContents.id,
-          key === 'telemetryInspector:telemetry'
-            ? 'telemetryInspector'
-            : 'sessionData'
-        )
-      ) {
-        continue;
-      }
-      try {
-        win.webContents.send(key, value);
-      } catch (e) {
-        logger.error(`Failed to send message ${key} to overlay window`, e);
-      }
+      this.sendToOverlayWindow(win, key, value);
     }
 
     // The Gantry consumes telemetry and session data, so it is forwarded
     // everything — before the settings-window guard below. Session data goes to
     // it even while hidden: it has to hold the whole session off screen.
     if (this.gantryWindow && !this.gantryWindow.isDestroyed()) {
-      const bulkStream =
-        key === 'telemetryInspector:telemetry'
-          ? 'telemetryInspector'
-          : key === 'sessionData'
-            ? 'sessionData'
-            : undefined;
-      const shouldSend =
-        !bulkStream ||
-        ((bulkStream === 'sessionData' || this.gantryWindow.isVisible()) &&
-          this.rendererDataSubscriptions?.has(
-            this.gantryWindow.webContents.id,
-            bulkStream
-          ));
-      if (shouldSend) {
-        try {
-          this.gantryWindow.webContents.send(key, value);
-        } catch (e) {
-          logger.error(`Failed to send message ${key} to gantry window`, e);
-        }
-      }
+      this.sendToOverlayWindow(this.gantryWindow, key, value, true);
     }
 
     // Skip high-frequency telemetry messages for the settings window
@@ -993,16 +979,19 @@ export class OverlayManager {
     );
   }
 
-  /**
-   * Send a message to a specific overlay (for backwards compatibility)
-   * In container mode, this just sends to the container
-   */
+  /** Seed only the ready window, retaining the normal subscription policy. */
   public publishMessageToOverlay(
-    _id: string,
+    id: string,
     key: string,
     value: unknown
   ): void {
-    this.publishMessage(key, value);
+    const windowId = id.startsWith('display-') ? Number(id.slice(8)) : id;
+    const win =
+      id === 'gantry' ? this.gantryWindow : this.displayWindows.get(windowId);
+    if (!win || win.isDestroyed()) return;
+    if (key === 'sessionData') this.latestSessionData = value;
+    if (key === 'runningState') this.latestRunningState = Boolean(value);
+    this.sendToOverlayWindow(win, key, value, id === 'gantry');
   }
 
   public onOverlayReady(callback: (id: string) => void) {
