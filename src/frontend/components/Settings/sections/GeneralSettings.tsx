@@ -620,14 +620,17 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     id="individual-overlay-windows-label"
                     className="text-lg font-medium text-slate-200"
                   >
-                    Individual Overlay Windows (Experimental)
+                    Individual Overlay Windows
                   </h3>
                   <p className="text-sm text-slate-400">
                     Give each widget its own window, allowing it to span
                     monitors. Applies immediately. Edit Layout temporarily uses
                     shared screen windows and restarts local chart history and
-                    any in-progress Lap Trace recording. Performance varies by
-                    layout.
+                    any in-progress Lap Trace recording.
+                  </p>
+                  <p className="text-sm text-amber-300">
+                    Warning: increases CPU usage compared with shared display
+                    windows.
                   </p>
                 </div>
                 <ToggleSwitch

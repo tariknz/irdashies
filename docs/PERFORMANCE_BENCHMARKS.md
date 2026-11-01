@@ -128,11 +128,12 @@ npm run perf:run -- --mode full --scenario replay-full --duration-seconds 420 --
 cost of sending every SDK variable. Normal launches and the default benchmark
 path retain the renderer allowlist.
 
-### Individual overlay windows (experimental)
+### Individual overlay windows
 
 General Settings → Individual Overlay Windows enables one transparent window
-per enabled widget while locked. The default remains one shared window per
-display. Edit Layout temporarily restores shared display windows for dragging
+per enabled widget while locked. This mode increases CPU usage compared with
+shared display windows. The default remains one shared window per display.
+Edit Layout temporarily restores shared display windows for dragging
 and resizing; locking restores individual windows. Completely off-screen
 widgets temporarily recover onto the primary display without changing their
 saved positions. Individual windows can span connected displays. Profile-name

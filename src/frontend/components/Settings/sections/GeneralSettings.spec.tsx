@@ -35,7 +35,7 @@ describe('individual window setting', () => {
   it('keeps older profiles opted out and saves both choices without changing the layout', () => {
     render(<GeneralSettings />);
     const toggle = screen.getByRole('switch', {
-      name: 'Individual Overlay Windows (Experimental)',
+      name: 'Individual Overlay Windows',
     });
     expect(toggle).toHaveAttribute('aria-checked', 'false');
     expect(mocks.update).not.toHaveBeenCalled();
@@ -64,7 +64,7 @@ describe('individual window setting', () => {
     render(<GeneralSettings />);
     expect(
       screen.getByRole('switch', {
-        name: 'Individual Overlay Windows (Experimental)',
+        name: 'Individual Overlay Windows',
       })
     ).toHaveAttribute('aria-checked', 'true');
   });
