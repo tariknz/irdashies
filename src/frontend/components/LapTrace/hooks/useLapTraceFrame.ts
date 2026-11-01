@@ -1,6 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import type { LapTraceSamples } from '@irdashies/types';
 import { getChannelSnapshotStore, useLapTraceStore } from '@irdashies/context';
+import { perfMetrics } from '@irdashies/utils/perfMetrics';
 import {
   MAX_SAMPLE_GAP_M,
   indexAtOrBefore,
@@ -550,8 +551,6 @@ export const useLapTraceFrame = (
     };
 
     const draw = () => {
-      raf = requestAnimationFrame(draw);
-
       // Read fresh every frame: the active lap's buffer is reset in place at
       // each lap boundary, so holding a reference across frames risks drawing
       // from a buffer that has since been rewound.
@@ -842,7 +841,12 @@ export const useLapTraceFrame = (
       }
     };
 
-    raf = requestAnimationFrame(draw);
+    const frame = () => {
+      raf = requestAnimationFrame(frame);
+      perfMetrics.measure('lapTraceFrame', draw);
+    };
+
+    raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
   }, [
     refs,

@@ -10,6 +10,7 @@ import {
   primeBrakeCueAudio,
   setBrakeCueOutputDevice,
 } from '@irdashies/utils/brakeCueAudio';
+import { perfMetrics } from '@irdashies/utils/perfMetrics';
 import type { LapTraceSamples } from '@irdashies/types';
 import {
   normalisePct,
@@ -165,8 +166,6 @@ export const useBrakeCue = (
     let lastDistanceText = '';
 
     const draw = () => {
-      raf = requestAnimationFrame(draw);
-
       // Read fresh every frame: the active lap's buffers are reset in place at
       // each lap boundary, so a captured reference can go stale.
       const { trackLengthM, referenceLap } = useLapTraceStore.getState();
@@ -264,7 +263,12 @@ export const useBrakeCue = (
       }
     };
 
-    raf = requestAnimationFrame(draw);
+    const frame = () => {
+      raf = requestAnimationFrame(frame);
+      perfMetrics.measure('lapTraceBrakeCue', draw);
+    };
+
+    raf = requestAnimationFrame(frame);
 
     return () => {
       cancelAnimationFrame(raf);
