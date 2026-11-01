@@ -11,6 +11,15 @@ export interface Driver {
   CarNumber: string;
   CarNumberRaw: number;
   CarPath: string;
+  /**
+   * The car's model name, e.g. "Ferrari 296 LMGT3".
+   *
+   * Set only by LMU, where CarPath is the livery's .VEH file and so differs
+   * between two entries of the same car. This is what identifies the car
+   * itself there, for anything kept per car. iRacing leaves it unset: its
+   * CarPath already names the car.
+   */
+  CarModel?: string;
   CarClassID: number;
   CarID: number;
   CarIsPaceCar: number;

@@ -38,6 +38,9 @@ const trackLengthFrom = (session: Session): number => {
   return unit === 'km' ? parsed * 1000 : parsed;
 };
 
+/** Where a lap is far enough from the line that LMU's void flag is its own. */
+const INVALIDATION_START_PCT = 0.05;
+
 const bucketIndex = (trackPct: number, pointsCount: number): number =>
   Math.min(Math.max(Math.floor(trackPct * pointsCount), 0), pointsCount - 1);
 
@@ -176,6 +179,9 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
     const sessionTime = numericValue(frame, 'SessionTime');
     // Raw m/s, player-only — converted to km/h when written below.
     const playerSpeedMs = numericValue(frame, 'Speed');
+    // LMU only, and only for the player: the sim voids a lap for a track cut
+    // without a pit visit. iRacing publishes no such var.
+    const playerLapInvalidated = frame.LmuLapInvalidated?.value?.[0] === true;
     if (
       !Array.isArray(distances) ||
       distances.length === 0 ||
@@ -195,7 +201,14 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
       ) {
         continue;
       }
-      const clean = !pitRoad?.[carIdx];
+      // The void flag is ignored just after the line, where it may still be
+      // the previous lap's: it stays set for the rest of a voided lap, so a
+      // cut early in the lap is caught once past it.
+      const invalidated =
+        carIdx === this.playerCarIdx &&
+        playerLapInvalidated &&
+        trackPct >= INVALIDATION_START_PCT;
+      const clean = !pitRoad?.[carIdx] && !invalidated;
       const active = this.activeLaps.get(carIdx);
       if (!active) {
         this.activeLaps.set(

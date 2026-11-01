@@ -54,6 +54,8 @@ export class LapLogProcessor implements TelemetryProcessor<LapLogSnapshot> {
         frame,
         'LapDeltaToSessionBestLap_OK'
       ),
+      // LMU only; iRacing publishes no such var, read here as false.
+      lapInvalidated: booleanValue(frame, 'LmuLapInvalidated'),
       version: this.latest.version + 1,
     });
   }
@@ -86,6 +88,7 @@ export class LapLogProcessor implements TelemetryProcessor<LapLogSnapshot> {
       deltaToSessionLastLapOk: false,
       deltaToSessionBestLap: 0,
       deltaToSessionBestLapOk: false,
+      lapInvalidated: false,
       version: 0,
     };
   }
