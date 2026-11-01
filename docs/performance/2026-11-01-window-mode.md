@@ -67,8 +67,8 @@ on the separate widget-window feature branch. It contains `--window-mode` and
 uncommitted source fingerprint of the archived captures.
 
 For a new capture on that experimental checkout, also apply this baseline's
-`--simulator-mode replay` metadata support in `tools/perf/run.ts`, preserving
-the experimental options. The following commands describe that combined
+`--simulator-mode replay` metadata support and `--user-data-dir` forwarding
+in `tools/perf/run.ts`, preserving the experimental options. The following commands describe that combined
 setup, not the options supported by this checkout. Record the new source
 fingerprint rather than assigning the archived source identity to a recapture.
 The original experiment's runner labeled the SDK connection `live`; that
@@ -77,10 +77,32 @@ corrects future labels and does not rewrite the historical captures.
 
 Load the same actual iRacing replay, set the same start frame/camera, and use the native controls to reset before each capture. The harness does not reset an actual simulator replay automatically. The task-local controller and per-run provenance record the resets used here.
 
+Prepare the profile with the application closed. Copy the saved profile's
+top-level JSON files, plus `lap-history/` and `incidents/` where present, from
+the app's user-data directory (normally `%APPDATA%/irdashies`) into the private
+ignored directory `perf-results/window-seed/`. Retain its configuration and
+history hashes. Check `config.json`'s `currentProfile` and corresponding
+`dashboards` entry: it must contain the experiment's six instance layouts and
+configurations, including both Fuel instances. An arbitrary current profile
+is not a replacement for that saved workload.
+
+For each repeat, make a fresh complete copy of the seed. The example below
+uses `perf-results/window-display-r1/` and `perf-results/window-widget-r1/`;
+both destination directories must be absent before copying. Use a checkout
+and resolved profile paths without spaces or shell metacharacters. The type
+filter and visibility flags apply the same temporary overrides in both modes;
+never save those overrides back to the user's normal profile.
+
 ```powershell
-npm run perf:run -- --target dev --mode full --window-mode display --replay-visible-widgets --widgets input,fuel,radar,flag,blindspotmonitor --duration-seconds 420 --scenario live-visible-display --simulator-mode replay
-npm run perf:run -- --target dev --mode full --window-mode widget --replay-visible-widgets --widgets input,fuel,radar,flag,blindspotmonitor --duration-seconds 420 --scenario live-visible-widget --simulator-mode replay
+Copy-Item -LiteralPath perf-results/window-seed -Destination perf-results/window-display-r1 -Recurse
+Copy-Item -LiteralPath perf-results/window-seed -Destination perf-results/window-widget-r1 -Recurse
+npm run perf:run -- --target dev --mode full --user-data-dir perf-results/window-display-r1 --window-mode display --replay-visible-widgets --widgets input,fuel,radar,flag,blindspotmonitor --duration-seconds 420 --scenario live-visible-display --simulator-mode replay
+npm run perf:run -- --target dev --mode full --user-data-dir perf-results/window-widget-r1 --window-mode widget --replay-visible-widgets --widgets input,fuel,radar,flag,blindspotmonitor --duration-seconds 420 --scenario live-visible-widget --simulator-mode replay
 ```
+
+The archived experiment used the normal saved profile. These isolated-profile
+commands are for new recaptures; record their profile/cache state and new source
+fingerprint rather than claiming byte-identical reproduction of the archive.
 
 Corrected log IDs are `live-visible-display-a1`, `live-visible-widget-b1`, `live-visible-widget-b2`, and `live-visible-display-a2`. Each has `.log`, `.provenance.json`, `.replay.jsonl`, and generated `.summary.json`/`.summary.md` files. `live-visible-results.json` contains the combined measurements; `live-visible-source.json` records source hashes. The benchmark-only visibility override has a passing immutability/activation test, TypeScript check, and targeted ESLint check.
 

@@ -215,7 +215,7 @@ node tools/perf/live-full-profile.cjs status
 
 `save-original` creates `perf-results/full-original.json`, retaining the
 original pause/play speed for the final `restore`. `save-start` creates
-`perf-results/full-start.json` and requires paused playback. Both refuse to
+`perf-results/full-start.json` and requires playback to be paused. Both refuse to
 overwrite an existing snapshot: use a fresh task directory or retain/archive
 prior artifacts explicitly before starting another capture series. Do not
 redirect `status` output to JSON: the native addon may also write diagnostics.
