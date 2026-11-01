@@ -1,7 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { TrackCanvas, TrackDriver } from './TrackCanvas';
 import { useEffect, useMemo, useState } from 'react';
-import tracks from '@irdashies/domain/track/tracks/tracks.json';
+import { availableTrackIds } from '@irdashies/domain/track';
 import { BROKEN_TRACKS } from '@irdashies/domain/track/tracks/brokenTracks';
 import { useTelemetryStore } from '@irdashies/context';
 import type { Telemetry } from '@irdashies/types';
@@ -640,14 +640,7 @@ export const CirclingAroundSingleDriver: Story = {
   },
 };
 
-// All available track IDs from tracks.json
-const allTrackIds = Object.keys(tracks)
-  .map(Number)
-  .filter(
-    (trackId) =>
-      !isNaN(trackId) && tracks[trackId.toString() as keyof typeof tracks]
-  )
-  .sort((a, b) => a - b);
+const allTrackIds = availableTrackIds;
 
 export const AllTracksGrid: Story = {
   render: (args) => {

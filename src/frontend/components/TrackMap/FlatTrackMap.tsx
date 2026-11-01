@@ -3,8 +3,7 @@ import { useFlatTrackMapSettings } from './hooks/useFlatTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
 import { useTrackId } from './hooks/useTrackId';
 import { FlatTrackMapCanvas } from './FlatTrackMapCanvas';
-import tracks from '@irdashies/domain/track/tracks/tracks.json';
-import { TrackDrawing } from './TrackCanvas';
+import { useTrackDrawing } from '@irdashies/domain/track';
 import {
   useSessionVisibility,
   useTrackStateSnapshot,
@@ -26,16 +25,19 @@ export const FlatTrackMap = ({ embedded = false }: { embedded?: boolean }) => {
     enabled: (settings?.displayMode ?? 'carNumber') === 'livePosition',
   });
 
-  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
+  const sessionVisible = useSessionVisibility(settings?.sessionVisibility);
+  const trackDrawing = useTrackDrawing(
+    sessionVisible && (!settings?.showOnlyWhenOnTrack || isOnTrack)
+      ? trackId
+      : undefined
+  );
+
+  if (!sessionVisible) return <></>;
 
   // Hide if showOnlyWhenOnTrack is enabled and player is not on track
   if (settings?.showOnlyWhenOnTrack && !isOnTrack) {
     return <></>;
   }
-
-  const trackDrawing = trackId
-    ? (tracks as unknown as TrackDrawing[])[trackId]
-    : null;
 
   if (!trackId || !trackDrawing) {
     return debug ? (

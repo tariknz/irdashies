@@ -1,8 +1,20 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
-import { FlatTrackMapCanvas } from './FlatTrackMapCanvas';
-import { TrackDriver, TrackDrawing } from './TrackCanvas';
+import {
+  FlatTrackMapCanvas as LoadedFlatTrackMapCanvas,
+  type FlatTrackMapCanvasProps,
+} from './FlatTrackMapCanvas';
+import type { TrackDriver } from './TrackCanvas';
 import { useEffect, useState } from 'react';
-import tracks from '@irdashies/domain/track/tracks/tracks.json';
+import { useTrackDrawing } from '@irdashies/domain/track';
+
+const FlatTrackMapCanvas = (
+  props: Omit<FlatTrackMapCanvasProps, 'trackDrawing'>
+) => {
+  const drawing = useTrackDrawing(1);
+  return drawing ? (
+    <LoadedFlatTrackMapCanvas {...props} trackDrawing={drawing} />
+  ) : null;
+};
 
 export default {
   component: FlatTrackMapCanvas,
@@ -324,11 +336,8 @@ const sampleData = [
   },
 ] as TrackDriver[];
 
-const trackDrawing = tracks['1' as keyof typeof tracks] as TrackDrawing;
-
 export const Primary: Story = {
   args: {
-    trackDrawing,
     drivers: sampleData,
     showCarNumbers: true,
     driverCircleSize: 40,
@@ -344,7 +353,6 @@ export const Primary: Story = {
 
 export const InvertedTrackColors: Story = {
   args: {
-    trackDrawing,
     drivers: sampleData,
     showCarNumbers: true,
     driverCircleSize: 40,
@@ -360,7 +368,6 @@ export const InvertedTrackColors: Story = {
 
 export const SingleClass: Story = {
   args: {
-    trackDrawing,
     drivers: sampleData.filter(({ driver }) => driver.CarClassID === 2),
     showCarNumbers: true,
     driverCircleSize: 40,
@@ -410,7 +417,6 @@ export const SingleDriver: Story = {
 
     return (
       <FlatTrackMapCanvas
-        trackDrawing={trackDrawing}
         drivers={drivers}
         showCarNumbers={args.showCarNumbers ?? true}
         driverCircleSize={args.driverCircleSize ?? 40}
@@ -450,7 +456,6 @@ export const CirclingAround: Story = {
 
     return (
       <FlatTrackMapCanvas
-        trackDrawing={trackDrawing}
         drivers={drivers}
         showCarNumbers={args.showCarNumbers ?? true}
         driverCircleSize={args.driverCircleSize ?? 40}

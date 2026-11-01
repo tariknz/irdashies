@@ -8,7 +8,8 @@ import {
   preCalculatePoints,
   extractStartFinishData,
 } from './svg-utils';
-import { TrackDrawing } from '../src/frontend/components/TrackMap/TrackCanvas';
+import type { TrackDrawing } from '../src/frontend/domain/track/trackDrawing';
+import { writeTrackDrawings } from './track-drawings';
 
 interface TrackInfo {
   track_id: number;
@@ -164,7 +165,7 @@ export const generateTrackJsonForTrack = (
   return json;
 };
 
-export const generateTrackJson = () => {
+export const generateTrackJson = async () => {
   const tracks = fs.readdirSync(`./asset-data`);
 
   const json: Record<number, TrackDrawing | undefined> = {};
@@ -175,11 +176,7 @@ export const generateTrackJson = () => {
     json[parseInt(trackId)] = generateTrackJsonForTrack(trackId);
   }
 
-  fs.writeFileSync(
-    `./src/frontend/domain/track/tracks/tracks.json`,
-    JSON.stringify(json, undefined, 2),
-    'utf8'
-  );
+  await writeTrackDrawings(json);
 };
 
 const sharedWindow = new JSDOM('').window;

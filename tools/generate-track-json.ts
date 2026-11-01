@@ -2,8 +2,8 @@ import { analyzeTracks } from './analyze-tracks';
 import { generateTrackJson } from './generate-paths-json';
 
 const main = async () => {
-  generateTrackJson();
-  analyzeTracks();
+  await generateTrackJson();
+  await analyzeTracks();
 };
 
 main();
