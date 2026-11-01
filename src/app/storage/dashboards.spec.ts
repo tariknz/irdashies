@@ -898,14 +898,14 @@ describe('dashboards', () => {
       });
     });
     it('removes legacy settingsTheme and persists palette normalization idempotently', () => {
-      const dashboard: DashboardLayout = {
+      const dashboard = {
         ...defaultDashboard,
         generalSettings: {
           ...defaultDashboard.generalSettings,
           settingsTheme: 'legacy',
           colorPalette: 'legacy-palette',
         },
-      };
+      } as unknown as DashboardLayout;
       mockReadData.mockImplementation((key: string) => {
         if (key === 'currentProfile') return 'default';
         if (key === 'profiles')

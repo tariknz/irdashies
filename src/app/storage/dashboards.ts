@@ -217,7 +217,9 @@ export const withDashboardDefaults = (
 
   const savedColorPalette: unknown =
     dashboard.generalSettings?.colorPalette;
-  const generalSettings = {
+  const generalSettings: DashboardLayout['generalSettings'] & {
+    settingsTheme?: unknown;
+  } = {
     ...defaultDashboard.generalSettings,
     ...dashboard.generalSettings,
   };
@@ -355,16 +357,19 @@ export const saveDashboard = (
   const existingDashboard = dashboards[id];
 
   // Merge the existing dashboard with the new value to preserve structure
+  const mergedGeneralSettings: DashboardLayout['generalSettings'] & {
+    settingsTheme?: unknown;
+  } = {
+    ...existingDashboard?.generalSettings,
+    ...value.generalSettings,
+  };
+  delete mergedGeneralSettings.settingsTheme;
   const mergedDashboard: DashboardLayout = {
     ...existingDashboard,
     ...value,
     widgets: value.widgets || existingDashboard?.widgets || [],
-    generalSettings: {
-      ...existingDashboard?.generalSettings,
-      ...value.generalSettings,
-    },
+    generalSettings: mergedGeneralSettings,
   };
-  delete mergedDashboard.generalSettings?.settingsTheme;
   // Only save and emit if there are actual changes
   if (isDashboardChanged(existingDashboard, mergedDashboard)) {
     dashboards[id] = mergedDashboard;
