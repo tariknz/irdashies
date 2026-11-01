@@ -15,7 +15,7 @@ const build = (...args: Parameters<typeof buildTrackGeometry>) => {
   return geometry;
 };
 
-/** A circle traced on the pixel grid, the way tracks.json stores paths. */
+/** A circle traced on the pixel grid, the way the source drawings store paths. */
 const circlePath = (
   direction: TrackPathData['direction'],
   roundToPixels = false

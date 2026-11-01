@@ -1,7 +1,7 @@
 /**
  * Track centreline geometry indexed by lap progress.
  *
- * The track drawings in `tracks.json` are hand-traced SVG paths sampled on an
+ * The drawings in `tracks/by-id/` are hand-traced SVG paths sampled on an
  * integer pixel grid. That is fine for a whole-track map, but a close-range
  * view zooms in far enough for the pixel steps to show as jitter. This module
  * resamples the path at even lap-progress intervals and smooths it, so a

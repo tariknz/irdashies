@@ -1,7 +1,7 @@
-The tracks.json file in this directory is NOT covered by the MIT License that
+The track JSON files in the by-id directory are NOT covered by the MIT License that
 applies to the rest of this project.
 
-This file contains track SVG data derived from iRacing. The original SVG assets
+These files contain track SVG data derived from iRacing. The original SVG assets
 are the property of iRacing.com Motorsport Simulations, LLC.
 
 This data may not be copied, modified, distributed, or used separately from

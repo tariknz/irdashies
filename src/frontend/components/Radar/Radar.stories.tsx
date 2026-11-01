@@ -1,6 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useMemo, useState } from 'react';
-import { buildTrackGeometry, getTrackPathData } from '@irdashies/domain/track';
+import {
+  buildTrackGeometry,
+  getTrackPathData,
+  useTrackDrawing,
+} from '@irdashies/domain/track';
 import {
   RadarDisplay,
   type RadarCarAppearance,
@@ -66,10 +70,11 @@ const OnTrack = ({
   style,
 }: StoryProps) => {
   const seconds = useTicker();
+  const trackDrawing = useTrackDrawing(trackId);
   const geometry = useMemo(() => {
-    const path = getTrackPathData(trackId);
+    const path = getTrackPathData(trackId, trackDrawing);
     return path ? buildTrackGeometry(path, trackLength) : null;
-  }, [trackId, trackLength]);
+  }, [trackId, trackLength, trackDrawing]);
 
   const demo = demoRadarFrame(seconds);
   const frame: RadarFrame = {

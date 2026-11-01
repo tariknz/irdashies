@@ -9,7 +9,11 @@ import {
   useSessionVisibility,
   useTrackLength,
 } from '@irdashies/context';
-import { buildTrackGeometry, getTrackPathData } from '@irdashies/domain/track';
+import {
+  buildTrackGeometry,
+  getTrackPathData,
+  useTrackDrawing,
+} from '@irdashies/domain/track';
 import type { RadarSnapshot } from '@irdashies/types';
 import { colorNumToHex } from '@irdashies/utils/colors';
 import {
@@ -86,12 +90,13 @@ export const Radar = () => {
   const displayUnits = useSessionBarSelector(sessionBarSelectors.displayUnits);
   const metric = isDemoMode || displayUnits !== 0;
 
+  const trackDrawing = useTrackDrawing(sessionVisible ? trackId : undefined);
   const geometry = useMemo(() => {
-    const path = getTrackPathData(trackId);
+    const path = getTrackPathData(trackId, trackDrawing);
     return path && trackLength > 0
       ? buildTrackGeometry(path, trackLength)
       : null;
-  }, [trackId, trackLength]);
+  }, [trackId, trackLength, trackDrawing]);
 
   const playerFill = colorNumToHex(settings.playerColor) ?? '#ffffff';
   const customFill =

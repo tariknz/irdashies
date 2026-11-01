@@ -17,9 +17,9 @@ const main = async () => {
   await getTracks();
   await getTracksInfo();
   await downloadTrackSvgs();
-  generateTrackJson();
+  await generateTrackJson();
   generateSeriesMapping();
-  analyzeTracks();
+  await analyzeTracks();
 };
 
 main();
