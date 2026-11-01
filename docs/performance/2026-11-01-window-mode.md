@@ -52,7 +52,7 @@ The blind-spot input never published a changing snapshot in this replay. The exi
 
 Observed app private-memory growth averages 9.85 MiB/min shared and 20.22 MiB/min individual; both exceed the project's 5 MiB/min target. The captures establish observed growth over six measured minutes, not the presence or absence of a long-running leak. Keep individual windows experimental; investigate the GPU-process CPU increase and the Input/GPU memory-growth pattern before considering a default change.
 
-These are development-build results. Earlier packaged launches were blocked by Windows Application Control. Do not compare these values numerically with the earlier isolated tape runs or infer release performance. Racelab was not runtime-benchmarked.
+These are development-build results. Earlier packaged launches were blocked by Windows Application Control. Do not compare these values numerically with the earlier isolated tape runs or infer release performance.
 
 The benchmark processes have exited. The simulator was returned to the original frame 3331 in session 0 and left paused, with the original camera. Saved mode remains `display`, original Fuel retains `showOnlyWhenOnTrack: true`, and the second Fuel instance remains disabled in the saved profile.
 
