@@ -512,17 +512,25 @@ export function mapLmuTelemetry(
   t.CarIdxSessionFlags = numArr(carSessionFlags(raw));
   t.CarDistAhead = numArr(undefined);
   t.CarDistBehind = numArr(undefined);
+  // Radar treats these offsets as relative to CamCarIdx. They are measured
+  // from the player, so withhold them when the camera is on another car and
+  // let RadarProcessor fall back to lap-distance. Blind-spot still uses the
+  // player-relative buffer above.
+  const relativeForRadar =
+    relativePositions && focusCarIdx(restCells, playerIdx) === playerIdx
+      ? relativePositions
+      : null;
   t.LmuCarIdxRelativeAvailable = {
     // Copied, like the three numeric channels below. `available` is the
     // reusable buffer that deriveLmuRelativePositions overwrites in place
     // every frame, so publishing the reference handed consumers an array that
     // changed under them -- anything holding a previous frame to compare
     // against, and anything serialising one later, saw this frame's values.
-    value: relativePositions ? [...relativePositions.available] : [],
+    value: relativeForRadar ? [...relativeForRadar.available] : [],
   };
-  t.LmuCarIdxRelativeLateral = numArr(relativePositions?.lateral);
-  t.LmuCarIdxRelativeLongitudinal = numArr(relativePositions?.longitudinal);
-  t.LmuCarIdxRelativeHeading = numArr(relativePositions?.heading);
+  t.LmuCarIdxRelativeLateral = numArr(relativeForRadar?.lateral);
+  t.LmuCarIdxRelativeLongitudinal = numArr(relativeForRadar?.longitudinal);
+  t.LmuCarIdxRelativeHeading = numArr(relativeForRadar?.heading);
   // Fore(+)/aft(-) metres of the nearest car each side, straight from the
   // 100 Hz world positions. A display of the car's position alongside reads
   // this instead of subtracting lap-distance percentages, which the 5 Hz

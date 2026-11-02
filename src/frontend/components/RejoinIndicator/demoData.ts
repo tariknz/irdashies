@@ -46,7 +46,7 @@ export const getDemoRejoinData = (
     gap >= careGap ? 'Clear' : gap >= stopGap ? 'Caution' : 'Do Not Rejoin';
 
   return {
-    gap: gap.toFixed(1),
+    gap: `${gap.toFixed(1)}s`,
     status,
   };
 };

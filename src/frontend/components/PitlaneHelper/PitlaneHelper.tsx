@@ -244,7 +244,7 @@ export const PitlaneHelperBody = ({
                     : '',
               ].join(' ')}
             >
-              {config.showSpeedDelta && speed.hasLimit && (
+              {config.showSpeedDelta && (
                 <>
                   <div
                     className={[

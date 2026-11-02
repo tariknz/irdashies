@@ -1,6 +1,6 @@
 /** Raw shapes returned by the LMU shared-memory addon (see lmu_node.cc). */
 
-export type LmuVec = number[];
+export type LmuVec = Float64Array;
 
 export interface LmuRawVehicle {
   id: number;

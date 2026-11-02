@@ -299,21 +299,30 @@ export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSna
           value === this.latest.inclusive.sessionBestSectorTimes[index]
       );
     if (unchanged) return;
+    const invalidated = frame.LmuLapInvalidated?.value?.[0] === true;
+    const previousBests = nextBest.map((best, index) => {
+      const prior = this.latest.inclusive.sessionBestSectorTimes[index] ?? null;
+      return best !== prior
+        ? prior
+        : (this.latest.inclusive.previousSessionBestSectorTimes[index] ?? null);
+    });
     const result: SectorTimingResultSnapshot = {
       currentLapSectorTimes: nextCurrent,
       previousLapSectorTimes: nextPrevious,
-      currentLapSectorUnclean: Array<boolean>(count).fill(false),
+      currentLapSectorUnclean: Array<boolean>(count).fill(invalidated),
       previousLapSectorUnclean: Array<boolean>(count).fill(false),
       sessionBestSectorTimes: nextBest,
-      previousSessionBestSectorTimes:
-        this.latest.inclusive.sessionBestSectorTimes,
+      previousSessionBestSectorTimes: previousBests,
     };
+    // Invalidated LMU laps keep times in the inclusive view only; clean must
+    // not inherit them or a cut lap looks valid in clean-timing consumers.
+    const clean = invalidated ? this.latest.clean : cloneResult(result);
     this.latest = {
       ...this.latest,
       currentSectorIdx,
       sectorEntryValid: true,
       inclusive: result,
-      clean: cloneResult(result),
+      clean,
       sessionNum,
       version: this.latest.version + 1,
     };

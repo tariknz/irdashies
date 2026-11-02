@@ -334,11 +334,11 @@ export interface DriverControlsSnapshot {
   steeringWheelAngleMax?: number;
   lateralAccel?: number;
   longitudinalAccel?: number;
-  tyreTemperature?: readonly number[];
-  tyrePressure?: readonly number[];
-  tyreWear?: readonly number[];
-  brakeLinePressure?: readonly number[];
-  suspensionDeflection?: readonly number[];
+  tyreTemperature?: readonly (number | null)[];
+  tyrePressure?: readonly (number | null)[];
+  tyreWear?: readonly (number | null)[];
+  brakeLinePressure?: readonly (number | null)[];
+  suspensionDeflection?: readonly (number | null)[];
   version: number;
 }
 
