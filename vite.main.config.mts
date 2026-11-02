@@ -65,10 +65,6 @@ function irsdkNativeModule(nodeFiles: string[], outDir: string) {
     transform(code: string, id: string) {
       const file = nodeFileMap.get(path.basename(id));
       if (file) {
-        const exportName =
-          path.basename(file) === 'lmu_node.node'
-            ? 'LmuSdkNode'
-            : 'iRacingSdkNode';
         return {
           code: `
             import { createRequire } from 'module';

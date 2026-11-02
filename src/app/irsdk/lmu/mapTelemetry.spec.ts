@@ -295,11 +295,12 @@ describe('mapLmuTelemetry', () => {
 
     expect(snapshot.carLeftRight).toBe(CarLeftRight.CarLeft);
     expect(snapshot.isOnTrack).toBe(true);
+    // This mapper path does not publish LmuBlindSpot* metres, so the
+    // processor falls back to copying lap-fraction positions.
     expect(snapshot.carIdxLapDistPct[0]).toBeCloseTo(0.5);
     expect(snapshot.carIdxLapDistPct[1]).toBeCloseTo(0.5004);
-    expect(snapshot.relativeAvailable?.[1]).toBe(true);
-    expect(snapshot.relativeLateral?.[1]).toBeCloseTo(-3);
-    expect(snapshot.relativeLongitudinal?.[1]).toBeCloseTo(2);
+    expect(snapshot.leftLongitudinalM).toBeNull();
+    expect(snapshot.rightLongitudinalM).toBeNull();
   });
 
   it('turns the blind-spot signal off when native position data is missing', () => {

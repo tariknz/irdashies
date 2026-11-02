@@ -14,7 +14,12 @@ const ipc = vi.hoisted(() => {
     },
   };
 });
-vi.mock('electron', () => ({ ipcMain: ipc.ipcMain }));
+vi.mock('electron', () => ({
+  ipcMain: ipc.ipcMain,
+  app: {
+    getPath: vi.fn(() => '/mock/user/data'),
+  },
+}));
 
 vi.mock('../../logger', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
@@ -22,12 +27,16 @@ vi.mock('../../logger', () => ({
 
 vi.mock('../../overlayManager', () => ({ OverlayManager: vi.fn() }));
 
-const preference = vi.hoisted(() => ({
-  current: 'iracing' as 'auto' | 'iracing' | 'lmu',
+const dashboard = vi.hoisted(() => ({
+  profileId: 'default',
+  simulator: 'iracing' as 'auto' | 'iracing' | 'lmu' | undefined,
 }));
 
-vi.mock('../../storage/settingsPreferences', () => ({
-  getSimulatorPreference: () => preference.current,
+vi.mock('../../storage/dashboards', () => ({
+  getCurrentProfileId: () => dashboard.profileId,
+  getDashboard: () => ({
+    generalSettings: { simulator: dashboard.simulator },
+  }),
 }));
 
 const registry = vi.hoisted(() => ({
@@ -70,7 +79,8 @@ describe('simulator selection across profiles', () => {
     ipc.handlers.clear();
     registry.built = [];
     registry.stopped = [];
-    preference.current = 'iracing';
+    dashboard.profileId = 'default';
+    dashboard.simulator = 'iracing';
   });
 
   afterEach(() => {
@@ -95,6 +105,7 @@ describe('simulator selection across profiles', () => {
     await iRacingSDKSetup(overlayManager);
     expect(registry.built).toEqual(['iracing']);
 
+    // Same profile id: an ordinary settings save must not tear the bridge down.
     emitDashboardUpdated({} as never);
     await Promise.resolve();
 
@@ -105,7 +116,7 @@ describe('simulator selection across profiles', () => {
   it('moves telemetry when the app preference changes', async () => {
     const { iRacingSDKSetup } = await import('./setup');
     await iRacingSDKSetup(overlayManager);
-    preference.current = 'lmu';
+    dashboard.simulator = 'lmu';
 
     await ipc.handlers.get('simulatorPreferenceChanged')?.();
 

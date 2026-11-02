@@ -47,25 +47,21 @@ describe('BlindSpotProcessor', () => {
     });
   });
 
-  it('publishes LMU radar positions on the shared proximity channel', () => {
+  it('publishes LMU metre offsets on the blind-spot channel', () => {
     const processor = new BlindSpotProcessor();
     processor.onFrame({
       ...frame(1, [0.5, 0.51]),
-      CarIdxOnPitRoad: { value: [false, false] },
-      CarIdxClass: { value: [1, 1] },
-      LmuCarIdxRelativeAvailable: { value: [false, true] },
-      LmuCarIdxRelativeLateral: { value: [0, -3] },
-      LmuCarIdxRelativeLongitudinal: { value: [0, -8] },
-      LmuCarIdxRelativeHeading: { value: [0, 0.2] },
+      LmuBlindSpotLeftLongitudinal: { value: [-8] },
+      LmuBlindSpotRightLongitudinal: { value: [null] },
     } as unknown as Telemetry);
 
     expect(processor.snapshot()).toMatchObject({
-      carIdxOnPitRoad: [false, false],
-      carIdxClass: [1, 1],
-      relativeAvailable: [false, true],
-      relativeLateral: [0, -3],
-      relativeLongitudinal: [0, -8],
-      relativeHeading: [0, 0.2],
+      carLeftRight: 1,
+      // Metre offsets replace the lap-fraction search, so positions stay empty.
+      carIdxLapDistPct: [],
+      leftLongitudinalM: -8,
+      rightLongitudinalM: null,
+      isOnTrack: true,
     });
   });
 

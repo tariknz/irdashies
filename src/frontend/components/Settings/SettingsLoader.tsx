@@ -110,7 +110,6 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
   // 2. Find specific widget instance (may be undefined if widgetId is a type name)
   const widget = currentDashboard?.widgets.find((w) => w.id === widgetId);
   const type = widget ? widget.type || widget.id : widgetId;
-  const resolvedWidgetId = widget?.id ?? type;
 
   const Settings = Object.hasOwn(WIDGET_SETTINGS, type ?? '')
     ? WIDGET_SETTINGS[type as keyof typeof WIDGET_SETTINGS]
