@@ -1,7 +1,11 @@
-import { BroadcastPodium } from './BroadcastPodium';
+import { lazyWidget } from '@irdashies/domain/lazyWidget';
 import type { WidgetModule } from '@irdashies/domain';
 
 export default {
   id: 'broadcastpodium',
-  component: BroadcastPodium,
+  component: lazyWidget(() =>
+    import('./BroadcastPodium').then((module) => ({
+      default: module.BroadcastPodium,
+    }))
+  ),
 } satisfies WidgetModule;

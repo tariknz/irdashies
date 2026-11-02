@@ -1,4 +1,6 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readTrackDrawings } from './track-drawings';
+import type { TrackDrawing } from '../src/frontend/domain/track/trackDrawing';
 
 /**
  * Builds src/types/radarPoleSides.json: for every track drawing, which side
@@ -20,7 +22,6 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
  * Regenerate with: npm run generate-radar-pole-sides [-- <track-info.json>]
  */
 
-const TRACKS_FILE = './src/frontend/domain/track/tracks/tracks.json';
 const OUTPUT_FILE = './src/types/radarPoleSides.json';
 
 const SAMPLES = 1500;
@@ -32,17 +33,6 @@ const WINDOW = 0.03;
 const CORNER_DEG = 35;
 /** Only the first part of the lap is searched. */
 const SEARCH = 0.5;
-
-interface Drawing {
-  active: {
-    trackPathPoints: { x: number; y: number }[];
-    totalLength: number;
-  };
-  startFinish?: {
-    direction?: 'clockwise' | 'anticlockwise' | null;
-    point?: { length?: number };
-  };
-}
 
 interface Entry {
   poleLeft: boolean;
@@ -83,10 +73,17 @@ const readCatalogue = (file: string | undefined) => {
 };
 
 /** Points along the lap from the start/finish line, in the direction of travel. */
-const lapPoints = (drawing: Drawing) => {
+const lapPoints = (drawing: TrackDrawing) => {
   const { trackPathPoints: points, totalLength } = drawing.active;
   const sf = drawing.startFinish?.point?.length;
-  if (sf === undefined || points.length < 2 || !(totalLength > 0)) return null;
+  if (
+    sf === undefined ||
+    !points ||
+    points.length < 2 ||
+    totalLength === undefined ||
+    !(totalLength > 0)
+  )
+    return null;
   const forward = drawing.startFinish?.direction === 'anticlockwise';
   return Array.from({ length: SAMPLES }, (_, k) => {
     const along = (k / SAMPLES) * totalLength;
@@ -105,7 +102,7 @@ const lapPoints = (drawing: Drawing) => {
 };
 
 /** True when the first corner turns left. Drawings are y-down, so a positive heading change is a right turn. */
-const firstCornerIsLeft = (drawing: Drawing): boolean | null => {
+const firstCornerIsLeft = (drawing: TrackDrawing): boolean | null => {
   const pts = lapPoints(drawing);
   if (!pts) return null;
   const chord = Math.max(1, Math.round(SAMPLES * CHORD));
@@ -129,12 +126,9 @@ const firstCornerIsLeft = (drawing: Drawing): boolean | null => {
   return null;
 };
 
-const main = () => {
+const main = async () => {
   const catalogue = readCatalogue(process.argv[2]);
-  const drawings = JSON.parse(readFileSync(TRACKS_FILE, 'utf8')) as Record<
-    string,
-    Drawing
-  >;
+  const drawings = await readTrackDrawings();
   const previous = existsSync(OUTPUT_FILE)
     ? JSON.parse(readFileSync(OUTPUT_FILE, 'utf8'))
     : { tracks: {}, trackNames: {} };

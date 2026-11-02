@@ -1,3 +1,4 @@
+import { StorageStatusNotice } from './StorageStatus/StorageStatusNotice';
 import { useEffect, useState } from 'react';
 import {
   GearIcon,
@@ -126,6 +127,7 @@ export const SettingsLayout = () => {
             </button>
           </div>
         </div>
+        <StorageStatusNotice />
         <div className="flex flex-row gap-4 flex-1 min-h-0 text-sm">
           {/* Left Column - Widget Menu */}
           <SettingsMenu />

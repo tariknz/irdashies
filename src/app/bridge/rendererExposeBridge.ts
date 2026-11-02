@@ -371,8 +371,10 @@ export function exposeBridge() {
     },
   } as FuelCalculatorBridge);
 
-  contextBridge.exposeInMainWorld('keybindingsBridge', {
+  defineBridge<KeybindingsBridge>('keybindingsBridge', {
     getKeybindings: () => ipcRenderer.invoke('keybindings:get'),
+    getRegistrationErrors: () =>
+      ipcRenderer.invoke('keybindings:registrationErrors'),
     updateKeybinding: (
       actionId: KeybindingActionId,
       accelerator: string,
@@ -390,7 +392,7 @@ export function exposeBridge() {
       return () =>
         ipcRenderer.removeListener('keybindings:gamepadCaptured', handler);
     },
-  } as KeybindingsBridge);
+  });
 
   // Used only by the hidden WebHID host renderer (src/hidHost.ts) to forward
   // controller button presses to the main process.

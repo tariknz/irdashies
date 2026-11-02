@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ActiveSimulator, IrSdkSourceBridge } from '@irdashies/types';
 import type { OverlayManager } from '../../overlayManager';
+import logger from '../../logger';
 
 const ipcMain = vi.hoisted(() => ({ on: vi.fn(), handle: vi.fn() }));
 vi.mock('electron', () => ({ ipcMain }));
@@ -31,6 +32,7 @@ vi.mock('../../storage/dashboards', () => ({
 const registry = vi.hoisted(() => ({
   built: [] as ActiveSimulator[],
   stopped: [] as ActiveSimulator[],
+  failure: undefined as Error | undefined,
 }));
 
 const definitionFor = (id: ActiveSimulator) => ({
@@ -38,15 +40,17 @@ const definitionFor = (id: ActiveSimulator) => ({
   priority: 0,
   createProbe: vi.fn(),
   loadBridge: () =>
-    Promise.resolve(async () => {
-      registry.built.push(id);
-      return {
-        onTelemetry: () => () => undefined,
-        onSessionData: () => () => undefined,
-        onRunningState: () => () => undefined,
-        stop: () => registry.stopped.push(id),
-      } as unknown as IrSdkSourceBridge;
-    }),
+    registry.failure
+      ? Promise.reject(registry.failure)
+      : Promise.resolve(async () => {
+          registry.built.push(id);
+          return {
+            onTelemetry: () => () => undefined,
+            onSessionData: () => () => undefined,
+            onRunningState: () => () => undefined,
+            stop: () => registry.stopped.push(id),
+          } as unknown as IrSdkSourceBridge;
+        }),
 });
 
 vi.mock('./sims/registry', () => ({
@@ -69,6 +73,7 @@ describe('simulator selection across profiles', () => {
     vi.resetModules();
     registry.built = [];
     registry.stopped = [];
+    registry.failure = undefined;
     storage.profileId = 'a';
     storage.reads = 0;
     storage.simulatorFor = { a: 'iracing', b: 'lmu' };
@@ -77,6 +82,19 @@ describe('simulator selection across profiles', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     Object.defineProperty(process, 'platform', { value: realPlatform });
+  });
+
+  it('logs the underlying bridge loader exception before rethrowing it', async () => {
+    const failure = Object.assign(
+      new Error('Native module dependency not found'),
+      {
+        code: 'ERR_DLOPEN_FAILED',
+      }
+    );
+    registry.failure = failure;
+    const { iRacingSDKSetup } = await import('./setup');
+    await expect(iRacingSDKSetup(overlayManager)).rejects.toBe(failure);
+    expect(logger.error).toHaveBeenCalledWith('Failed to load bridge', failure);
   });
 
   it('selects the LMU tape on macOS despite an iRacing profile preference', async () => {

@@ -14,9 +14,13 @@ const PREVIEW_ICON_MAP = path.resolve(
   import.meta.dirname,
   'src/shims/phosphorIconMap.ts'
 );
-const APP_TRACK_DATA = path.resolve(
+const APP_TRACK_DIRECTORY = path.resolve(
   import.meta.dirname,
-  '../src/frontend/domain/track/tracks/tracks.json'
+  '../src/frontend/domain/track/tracks/by-id'
+);
+const APP_TRACK_LOADER = path.resolve(
+  import.meta.dirname,
+  '../src/frontend/domain/track/trackDrawingLoader.ts'
 );
 const MOCK_SESSION = path.resolve(
   import.meta.dirname,
@@ -33,24 +37,26 @@ function previewModules(): Plugin {
     name: 'preview-modules',
     enforce: 'pre',
     async load(id) {
-      if (path.resolve(id.split('?')[0]) !== APP_TRACK_DATA) return null;
-      // The demo drives one circuit. Keep its map while leaving the app's
-      // complete track library out of the browser download.
-      this.addWatchFile(APP_TRACK_DATA);
+      if (path.resolve(id.split('?')[0]) !== APP_TRACK_LOADER) return null;
+      // The demo drives one circuit. Replace the loader with that drawing so
+      // site builds only package that drawing from the checked-in library.
       this.addWatchFile(MOCK_SESSION);
-      const [trackFile, sessionFile] = await Promise.all([
-        readFile(APP_TRACK_DATA, 'utf8'),
-        readFile(MOCK_SESSION, 'utf8'),
-      ]);
-      const tracks = JSON.parse(trackFile) as Record<string, unknown>;
-      const session = JSON.parse(sessionFile) as {
+      const session = JSON.parse(await readFile(MOCK_SESSION, 'utf8')) as {
         WeekendInfo: { TrackID: number };
       };
       const trackId = session.WeekendInfo.TrackID;
-      if (!Object.hasOwn(tracks, trackId)) {
-        throw new Error(`No track map for preview track ${trackId}`);
+      if (!Number.isSafeInteger(trackId) || trackId < 0) {
+        throw new Error('Invalid track ID for preview');
       }
-      return JSON.stringify({ [trackId]: tracks[trackId] });
+      const drawingFile = path.join(APP_TRACK_DIRECTORY, `${trackId}.json`);
+      this.addWatchFile(drawingFile);
+      const drawing: unknown = JSON.parse(await readFile(drawingFile, 'utf8'));
+      return `
+        const drawing = ${JSON.stringify(drawing)};
+        export const availableTrackIds = [${trackId}];
+        export const loadTrackDrawing = async (id) =>
+          id === ${trackId} ? drawing : null;
+      `;
     },
     async resolveId(source, importer, options) {
       if (!importer || source === LOGGER_STUB) return null;

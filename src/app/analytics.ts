@@ -1,6 +1,6 @@
 import { PostHog } from 'posthog-node';
 import type { EventMessage, IdentifyMessage } from 'posthog-node';
-import { screen } from 'electron';
+import { app, screen } from 'electron';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import type { DashboardLayout } from '@irdashies/types';
@@ -10,6 +10,8 @@ import {
   writeRadarPoleSideReportHash,
 } from './storage/radarPoleSideReportHash';
 import { getAnalyticsOptOut } from './storage/analytics';
+import { serializeLogArgs, MAX_LOG_JSON_LENGTH } from '@irdashies/types';
+import { createLogPathScrubber } from './analytics/logMessage';
 import logger from './logger';
 import type ElectronLog from 'electron-log';
 import type { LogMessage } from 'electron-log';
@@ -96,6 +98,8 @@ export class PostHogProvider implements AnalyticsProvider {
 
 export class Analytics {
   private provider: AnalyticsProvider | null = null;
+  private userId: string | undefined;
+  private pendingUserId: string | undefined;
   private pitLaneCalibrationAttempted = false;
   private pitLaneCalibrationTask: Promise<void> | undefined;
   private radarPoleSideTask: Promise<void> | undefined;
@@ -155,44 +159,77 @@ export class Analytics {
   }
 
   private getOrCreateUserId(): string {
-    let userId = readData<string>('userId');
-    if (!userId) {
-      userId = crypto.randomUUID();
+    if (this.userId) return this.userId;
+    let userId = this.pendingUserId ?? readData<string>('userId');
+    if (this.pendingUserId || !userId) {
+      userId ||= crypto.randomUUID();
+      // writeData updates its memory cache before writing to disk. Retain a
+      // failed candidate only for a persistence retry, never for identify/logs.
+      this.pendingUserId = userId;
       writeData('userId', userId);
+      this.pendingUserId = undefined;
     }
+    this.userId = userId;
     return userId;
   }
 
-  setupLogTransport(): void {
-    if (!this.provider) return;
+  setupLogTransport(version: string): void {
+    if (!this.provider || getAnalyticsOptOut()) return;
+
+    // Resolve identity before installing the transport: storage diagnostics
+    // must not recursively request identity. Reuse it later in init/identify.
+    let userId: string;
+    let scrub: (text: string) => string;
+    try {
+      userId = this.getOrCreateUserId();
+      scrub = createLogPathScrubber(app.getPath('userData'), os.homedir());
+    } catch {
+      // Optional analytics must not break startup or log through itself.
+      return;
+    }
 
     const lastSent = new Map<string, number>();
+    let forwarding = false;
 
     const transport = ((message: LogMessage) => {
-      const text = message.data
-        .map((d: unknown) => (typeof d === 'string' ? d : JSON.stringify(d)))
-        .join(' ');
+      if (forwarding) return;
+      forwarding = true;
+      try {
+        if (getAnalyticsOptOut()) return;
+        const data = serializeLogArgs(message.data, scrub);
+        const text = data
+          .map((d) => (typeof d === 'string' ? d : JSON.stringify(d)))
+          .join(' ')
+          .slice(0, MAX_LOG_JSON_LENGTH);
 
-      const key = `${message.level}:${text.slice(0, DEDUP_KEY_LENGTH)}`;
-      const now = Date.now();
-      const last = lastSent.get(key);
-      if (last !== undefined && now - last < DEDUP_WINDOW_MS) return;
-      lastSent.set(key, now);
+        const key = `${message.level}:${text.slice(0, DEDUP_KEY_LENGTH)}`;
+        const now = Date.now();
+        const last = lastSent.get(key);
+        if (last !== undefined && now - last < DEDUP_WINDOW_MS) return;
+        lastSent.set(key, now);
 
-      if (lastSent.size > DEDUP_MAX_ENTRIES) {
-        for (const [k, t] of lastSent) {
-          if (now - t >= DEDUP_WINDOW_MS) lastSent.delete(k);
+        if (lastSent.size > DEDUP_MAX_ENTRIES) {
+          for (const [k, t] of lastSent) {
+            if (now - t >= DEDUP_WINDOW_MS) lastSent.delete(k);
+          }
         }
-      }
 
-      // Not the nicest way to do this, but avoids having to implement OTEL to get logging in posthog
-      this.capture({
-        event: 'log_message',
-        properties: {
-          level: message.level,
-          message: text,
-        },
-      });
+        // Not the nicest way to do this, but avoids having to implement OTEL to get logging in posthog
+        this.capture({
+          distinctId: userId,
+          event: 'log_message',
+          properties: {
+            version,
+            level: message.level,
+            message: text,
+            data,
+          },
+        });
+      } catch {
+        // Serialization/provider failures must not affect local logging.
+      } finally {
+        forwarding = false;
+      }
     }) as ElectronLog.Transport;
     transport.level = 'warn';
     transport.transforms = [];

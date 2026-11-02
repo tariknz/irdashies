@@ -25,6 +25,10 @@ export interface ContainerBoundsInfo {
   actual: { x: number; y: number; width: number; height: number };
   /** Offset to compensate for OS constraints (actual - expected) */
   offset: { x: number; y: number };
+  /** The single widget assigned to an individual overlay window. */
+  widgetId?: string;
+  /** Effective layout after recovering a disconnected monitor, without saving it. */
+  widgetLayout?: DashboardLayout['widgets'][number]['layout'];
   /** Which display this window belongs to */
   displayId?: number;
   /** True for the primary display window */

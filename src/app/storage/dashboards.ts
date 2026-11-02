@@ -11,8 +11,9 @@ import {
   WIDGET_SCALE,
 } from '@irdashies/types';
 import { readData, writeData } from './storage';
-import { writeFile, mkdir, readFile, readdir, unlink } from 'node:fs/promises';
+import { writeFile, mkdir, readFile, unlink, rename } from 'node:fs/promises';
 import { resolve, basename, sep } from 'node:path';
+import { homedir } from 'node:os';
 import { app } from 'electron';
 import { randomUUID, createHash } from 'node:crypto';
 import logger from '../logger';
@@ -551,6 +552,41 @@ export const getGarageCoverImageAsDataUrl = async (
   }
 };
 
+const playerIconErrorDetails = (error: unknown) => ({
+  code: (error as NodeJS.ErrnoException | null)?.code,
+  message: (error instanceof Error ? error.message : String(error))
+    .replaceAll(app.getPath('userData'), '<userData>')
+    .replaceAll(homedir(), '<home>'),
+});
+
+/**
+ * Icon saves in flight, by destination path.
+ *
+ * Identical uploads share one content-named destination. Two renames replacing
+ * the same file at once can fail on Windows with EPERM, so a save whose path is
+ * already being published waits for that one instead of racing it: the name is
+ * the content hash, so it publishes the same bytes.
+ */
+const playerIconWrites = new Map<string, Promise<void>>();
+
+const publishPlayerIcon = async (
+  assetsPath: string,
+  imagePath: string,
+  buffer: Uint8Array
+): Promise<void> => {
+  // A failed replacement (even re-uploading identical contents) must not
+  // truncate an existing image. Publish the completed file atomically.
+  const temporaryPath = resolve(assetsPath, `.player-icon-${randomUUID()}.tmp`);
+  try {
+    await writeFile(temporaryPath, buffer);
+    await rename(temporaryPath, imagePath);
+  } finally {
+    await unlink(temporaryPath).catch(() => undefined);
+  }
+};
+
+// Profiles and in-flight settings updates can share an uploaded image. Keep
+// image files when replacing/removing icons; unused uploads remain on disk.
 export const savePlayerIconImage = async (
   buffer: Uint8Array
 ): Promise<string> => {
@@ -601,49 +637,35 @@ export const savePlayerIconImage = async (
       }
     }
 
-    // Hash the contents so each unique upload gets a unique filename. This
-    // makes replacements visible to the live map (the hook keys off the
-    // filename) and avoids orphaning a different-extension file with the same
-    // base name.
+    // Content-based names make replacements visible to the live map and reuse
+    // the same path for identical uploads.
     const hash = createHash('sha1').update(buffer).digest('hex').slice(0, 10);
     const imagePath = resolve(assetsPath, `player-icon-${hash}.${extension}`);
 
-    // Remove any previous player-icon-*.* files so we don't accumulate stale
-    // assets when the user replaces the icon.
-    try {
-      const existing = await readdir(assetsPath);
-      await Promise.all(
-        existing
-          .filter(
-            (name) =>
-              name.startsWith('player-icon-') &&
-              name !== `player-icon-${hash}.${extension}`
-          )
-          .map((name) =>
-            unlink(resolve(assetsPath, name)).catch((err) => {
-              logger.warn('[PlayerIcon] Failed to remove old icon:', name, err);
-            })
-          )
+    let write = playerIconWrites.get(imagePath);
+    if (!write) {
+      write = publishPlayerIcon(assetsPath, imagePath, buffer).finally(() =>
+        playerIconWrites.delete(imagePath)
       );
-    } catch (cleanupErr) {
-      logger.warn('[PlayerIcon] Failed to clean up old icons:', cleanupErr);
+      playerIconWrites.set(imagePath, write);
     }
-
-    logger.info(
-      '[PlayerIcon] Writing to:',
-      imagePath,
-      'Extension detected:',
-      extension
-    );
-    await writeFile(imagePath, buffer);
+    await write;
     logger.info('[PlayerIcon] File written successfully');
 
     return imagePath;
   } catch (err) {
-    logger.error('[PlayerIcon] Error saving image:', err);
+    logger.error(
+      '[PlayerIcon] Error saving image:',
+      playerIconErrorDetails(err)
+    );
     throw err;
   }
 };
+
+// Bound missing-file diagnostics to 100 unique names per process. Successful
+// reads reset that name so a later deletion can be diagnosed again.
+const missingPlayerIcons = new Set<string>();
+const MAX_MISSING_ICON_WARNINGS = 100;
 
 export const getPlayerIconImageAsDataUrl = async (
   imageFilenameOrPath: string
@@ -655,7 +677,7 @@ export const getPlayerIconImageAsDataUrl = async (
     if (!imagePath.startsWith(allowedBase + sep)) {
       logger.warn(
         'Blocked path traversal attempt in getPlayerIconImageAsDataUrl:',
-        imageFilenameOrPath
+        basename(imageFilenameOrPath)
       );
       return null;
     }
@@ -672,10 +694,27 @@ export const getPlayerIconImageAsDataUrl = async (
     };
     const mimeType = mimeTypeMap[extension] || 'image/png';
     const base64 = Buffer.from(buffer).toString('base64');
+    missingPlayerIcons.delete(basename(imagePath));
 
     return `data:${mimeType};base64,${base64}`;
   } catch (err) {
-    logger.error('Error reading player icon image:', err);
+    const name = basename(imageFilenameOrPath);
+    const details = playerIconErrorDetails(err);
+    if (details.code === 'ENOENT') {
+      if (
+        !missingPlayerIcons.has(name) &&
+        missingPlayerIcons.size < MAX_MISSING_ICON_WARNINGS
+      ) {
+        missingPlayerIcons.add(name);
+        logger.warn(
+          '[PlayerIcon] Custom image missing; using default marker:',
+          name,
+          details
+        );
+      }
+    } else {
+      logger.warn('Error reading player icon image:', name, details);
+    }
     return null;
   }
 };

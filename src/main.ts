@@ -1,3 +1,4 @@
+import { setupStorageStatusBridge } from './app/bridge/storageStatusBridge';
 import { app, autoUpdater, BrowserWindow, ipcMain } from 'electron';
 import { setupReleaseNotesBridge } from './app/bridge/releaseNotesBridge';
 import log from './app/logger';
@@ -93,9 +94,9 @@ import { loadSimWidgetSupport } from './app/storage/simWidgetSupport';
 import type { DashboardLayout, Session } from '@irdashies/types';
 import { getActivePerfMetrics } from './app/perfMetrics';
 import {
-  activePerfWidgetTypes,
   createPerfDashboard,
   getPerfRunConfig,
+  updatePerfDashboardMetadata,
   PERF_CAPTURE_ORIGIN_LOG_PREFIX,
   PERF_VISIBILITY_LOG_PREFIX,
 } from './app/perfRunConfig';
@@ -143,7 +144,7 @@ if (app.getName() === 'irdashies') {
 const overlayManager = new OverlayManager();
 const analytics = new Analytics();
 const perfRun = getPerfRunConfig();
-analytics.setupLogTransport();
+analytics.setupLogTransport(overlayManager.getVersion());
 
 overlayManager.setupChromiumFlags();
 overlayManager.setupHardwareAcceleration();
@@ -421,9 +422,7 @@ void app.whenReady().then(async () => {
   const dashboard = getOrCreateDefaultDashboard();
   const runDashboard = createPerfDashboard(dashboard, perfRun);
   if (perfRun.enabled) {
-    process.env.PERF_ACTIVE_WIDGET_TYPES = JSON.stringify(
-      activePerfWidgetTypes(runDashboard)
-    );
+    updatePerfDashboardMetadata(runDashboard);
   }
 
   // Read off the window-build path before anything can ask for it: the
@@ -458,7 +457,8 @@ void app.whenReady().then(async () => {
 
   // Setup IPC bridges
   setupLogBridge();
-  setupFuelCalculatorBridge();
+  setupStorageStatusBridge();
+  fuelDatabase = setupFuelCalculatorBridge();
   const pitLaneBridge = setupPitLaneBridge(overlayManager, channelBus);
   setupPersonalBestLapTimesBridge();
   setupLapTraceBridge(overlayManager);
@@ -520,8 +520,11 @@ void app.whenReady().then(async () => {
     // transparent-window/global-provider cost from widget rendering.
     const windowDashboard =
       perfRun.enabled && perfRun.overlayMode === 'empty'
-        ? dashboard
+        ? { ...dashboard, generalSettings: runDashboard.generalSettings }
         : runDashboard;
+    if (perfRun.enabled && perfRun.overlayMode === 'empty') {
+      overlayManager.setWindowLayoutOverride(windowDashboard);
+    }
     overlayManager.createOverlays(windowDashboard, {
       createSettingsWindow: !perfRun.enabled,
     });
@@ -615,7 +618,14 @@ void app.whenReady().then(async () => {
     overlayManager,
     analytics,
     perfRun.enabled
-      ? (updatedDashboard) => createPerfDashboard(updatedDashboard, perfRun)
+      ? (updatedDashboard) => {
+          const appliedDashboard = createPerfDashboard(
+            updatedDashboard,
+            perfRun
+          );
+          updatePerfDashboardMetadata(appliedDashboard);
+          return appliedDashboard;
+        }
       : undefined
   );
   // Deliberately after publishDashboardUpdates: switching a profile emits
@@ -654,6 +664,8 @@ app.on('quit', () => {
   analytics.shutdown();
 });
 
+let fuelDatabase: ReturnType<typeof setupFuelCalculatorBridge> | undefined;
+
 const SHUTDOWN_FLUSH_TIMEOUT_MS = 5_000;
 
 const handleBeforeQuit = createBeforeQuitHandler({
@@ -675,6 +687,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
       flushLapTracesOnShutdown(),
       flushPitLaneDataOnShutdown(),
       flushReferenceLapsOnShutdown(),
+      fuelDatabase?.flush(),
       flushIncidentsOnShutdown(),
       flushLapHistoryOnShutdown(),
       knownLocalUserIds.flush(),

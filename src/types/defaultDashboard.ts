@@ -30,6 +30,7 @@ export const defaultDashboard: {
     closeToTray: true,
     compactMode: 'off' as const,
     overlayAlwaysOnTop: true,
+    overlayWindowMode: 'display',
     enableNetworkAccess: false,
     enableWebServer: true,
     editMode: {

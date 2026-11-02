@@ -28,6 +28,37 @@ describe('useCustomShiftPoints', () => {
     expect(result.current.currentShiftPoint).toBe(6000);
   });
 
+  it('keys an LMU car by its model, not by a same-named iRacing car', () => {
+    // "Ferrari 499P" normalises to iRacing's ferrari499p.
+    const lmuAndIracing: ShiftPointSettings = {
+      ...settings,
+      carConfigs: {
+        ferrari499p: {
+          ...settings.carConfigs.ferrari296gt3,
+          carId: 'ferrari499p',
+          gearShiftPoints: { '1': { shiftRpm: 5000 } },
+        },
+        'Ferrari 499P': {
+          ...settings.carConfigs.ferrari296gt3,
+          carId: 'Ferrari 499P',
+          gearShiftPoints: { '1': { shiftRpm: 7000 } },
+        },
+      },
+    };
+    const { result } = renderHook(() =>
+      useCustomShiftPoints(
+        lmuAndIracing,
+        '8_25_FERR1234ABCD.VEH',
+        1,
+        6500,
+        null,
+        'Ferrari 499P'
+      )
+    );
+    expect(result.current.currentShiftPoint).toBe(7000);
+    expect(result.current.shouldShowShiftIndicator).toBe(false);
+  });
+
   it.each([0, -1, 2])(
     'does not trigger for gear %i without a forward shift point',
     (gear) => {
