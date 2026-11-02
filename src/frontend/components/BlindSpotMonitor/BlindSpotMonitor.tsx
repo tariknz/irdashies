@@ -4,6 +4,8 @@ import { BlindSpotMonitorIndicator } from './components/BlindSpotMonitorIndicato
 import { BlindSpotMonitorSimpleIndicator } from './components/BlindSpotMonitorSimpleIndicator';
 import { useDashboard, useSessionVisibility } from '@irdashies/context';
 import { CarLeftRight } from '@irdashies/types';
+import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
+import { getDemoBlindSpotState } from './demoData';
 
 export interface BlindSpotMonitorDisplayProps {
   show: boolean;
@@ -119,22 +121,14 @@ export const BlindSpotMonitorDisplay = ({
   );
 };
 
-const DEMO_STATE_SIMPLE = {
-  show: true,
-  leftState: CarLeftRight.CarLeft,
-  rightState: CarLeftRight.Cars2Right,
-  leftPercent: 0,
-  rightPercent: 0,
-  disableTransition: true,
-};
-
 export const BlindSpotMonitor = () => {
   const state = useBlindSpotMonitor();
   const settings = useBlindSpotMonitorSettings();
   const { isDemoMode } = useDashboard();
+  const demoState = useDemoFrame(isDemoMode, getDemoBlindSpotState);
 
   const sessionVisible = useSessionVisibility(settings?.sessionVisibility);
-  const activeState = isDemoMode ? DEMO_STATE_SIMPLE : state;
+  const activeState = isDemoMode && demoState ? demoState : state;
 
   if (!isDemoMode && !sessionVisible) return <></>;
   if (!isDemoMode && settings?.showOnlyWhenOnTrack && !state.isOnTrack)

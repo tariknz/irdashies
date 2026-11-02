@@ -6,6 +6,7 @@ import { useHighlightColor } from './hooks/useHighlightColor';
 import { useGhostSectorColors } from './hooks/useGhostSectorColors';
 import { usePlayerIconImage } from './hooks/usePlayerIconImage';
 import { TrackCanvas } from './TrackCanvas';
+import { CIRCLE_TRACK_MAP } from './circleTrackMap';
 import { useDriverLivePositions } from '@irdashies/domain';
 import {
   useSessionVisibility,
@@ -56,6 +57,12 @@ export const TrackMap = ({ embedded = false }: { embedded?: boolean }) => {
   const driverLivePositions = useDriverLivePositions({
     enabled: settings?.displayMode === 'livePosition',
   });
+  const lmuTrackMap = useSessionStore((state) => state.session?.LmuTrackMap);
+  const isLmu =
+    useSessionStore((state) => state.session?.WeekendInfo?.SimMode) ===
+    'Le Mans Ultimate';
+  const trackDrawing =
+    lmuTrackMap ?? (!trackId && isLmu ? CIRCLE_TRACK_MAP : undefined);
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
@@ -64,12 +71,13 @@ export const TrackMap = ({ embedded = false }: { embedded?: boolean }) => {
     return <></>;
   }
 
-  if (!trackId) return <></>;
+  if (!trackId && !trackDrawing) return <></>;
 
   return (
     <div className="w-full h-full">
       <TrackCanvas
-        trackId={trackId}
+        trackId={trackId ?? 0}
+        trackDrawing={trackDrawing}
         drivers={driversTrackData}
         driverIdentities={identities}
         turnLabels={turnLabels}

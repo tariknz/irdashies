@@ -57,6 +57,20 @@ describe('DriverRatingBadge', () => {
     expect(container.textContent).toBe('AI');
   });
 
+  it('shows no badge for a rated-less driver the sim reports as human', () => {
+    const { container } = render(
+      <DriverRatingBadge license="LMU" rating={0} isAi={false} />
+    );
+    expect(container.textContent).toBe('');
+  });
+
+  it('shows the AI badge for a driver the sim reports as AI', () => {
+    const { container } = render(
+      <DriverRatingBadge license="A 4.99" rating={4999} isAi />
+    );
+    expect(container.textContent).toBe('AI');
+  });
+
   it('rounds rating to 1 decimal place', () => {
     const { container } = render(
       <DriverRatingBadge license="C 3.141592654" rating={5000.123} />

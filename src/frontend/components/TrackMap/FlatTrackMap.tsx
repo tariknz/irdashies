@@ -6,6 +6,7 @@ import { FlatTrackMapCanvas } from './FlatTrackMapCanvas';
 import { useTrackDrawing } from '@irdashies/domain/track';
 import {
   useSessionVisibility,
+  useSessionStore,
   useTrackStateSnapshot,
 } from '@irdashies/context';
 import { useDriverLivePositions } from '@irdashies/domain';
@@ -24,13 +25,17 @@ export const FlatTrackMap = ({ embedded = false }: { embedded?: boolean }) => {
   const driverLivePositions = useDriverLivePositions({
     enabled: (settings?.displayMode ?? 'carNumber') === 'livePosition',
   });
+  const lmuTrackMap = useSessionStore((state) => state.session?.LmuTrackMap);
 
   const sessionVisible = useSessionVisibility(settings?.sessionVisibility);
-  const trackDrawing = useTrackDrawing(
-    sessionVisible && (!settings?.showOnlyWhenOnTrack || isOnTrack)
+  const loadedDrawing = useTrackDrawing(
+    !lmuTrackMap &&
+      sessionVisible &&
+      (!settings?.showOnlyWhenOnTrack || isOnTrack)
       ? trackId
       : undefined
   );
+  const trackDrawing = lmuTrackMap ?? loadedDrawing;
 
   if (!sessionVisible) return <></>;
 
