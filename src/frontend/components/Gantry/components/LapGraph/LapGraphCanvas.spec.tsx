@@ -167,6 +167,34 @@ const renderChart = (
   );
 
 describe('LapGraphCanvas', () => {
+  it('strokes an off-scale series along the plot edge and reports it', async () => {
+    const slow: LapGraphSeries = {
+      ...field[0],
+      carIdx: 99,
+      isPlayer: false,
+      points: field[0].points.map((point) => ({ ...point, value: 5000 })),
+    };
+    const near: LapGraphSeries = { ...field[3], points: field[3].points };
+    renderChart({
+      series: [near, slow],
+      pinnedCarIdxs: [near.carIdx],
+      axisFit: 'shown',
+    });
+    await waitFor(() => expect(contextFor('lap-graph-base').strokes).toBe(2));
+
+    const canvas = screen.getByTestId('lap-graph-base') as HTMLCanvasElement;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Missing base context');
+    const ys = [
+      ...vi.mocked(context.moveTo).mock.calls,
+      ...vi.mocked(context.lineTo).mock.calls,
+    ].map(([, y]) => y);
+    expect(Math.min(...ys)).toBeGreaterThanOrEqual(0);
+    expect(Math.max(...ys)).toBeLessThanOrEqual(PLOT_HEIGHT);
+    expect(ys).toContain(0);
+    expect(screen.getByText('1 off scale')).toBeTruthy();
+  });
+
   it('keeps canvas backing buffers sharp at the widget scale', async () => {
     renderChart(undefined, 200);
     await waitFor(() => expect(contextFor('lap-graph-base').strokes).toBe(60));

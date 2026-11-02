@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { COLUMN_LABELS } from '../frontend/components/Standings/Standings';
 import {
+  hiddenRatingColumns,
   RATING_COLUMN_IDS,
   SIMULATOR_IDS,
   simulatorHasDriverRatings,
@@ -36,6 +37,49 @@ describe('RATING_COLUMN_IDS', () => {
     const known = new Set(Object.keys(COLUMN_LABELS));
     for (const id of RATING_COLUMN_IDS) {
       expect(known).toContain(id);
+    }
+  });
+});
+
+/**
+ * Which rating columns each simulator may show.
+ *
+ * This was one boolean per simulator, and LMU's was false because LMU had no
+ * ratings. Once it did, the flag still hid the column that holds them -- so
+ * the ranks were fetched, matched, published and then filtered out of the row
+ * before any ordering ran. Nothing logged it, every setting looked right, and
+ * the flags beside them rendered from the same object.
+ */
+describe('hiddenRatingColumns', () => {
+  it('shows the rating column on LMU and hides iRacing-only ones', () => {
+    const hidden = hiddenRatingColumns('lmu');
+
+    // `badge` holds the LMU rank pair; hiding it is what broke the feature.
+    expect(hidden.has('badge')).toBe(false);
+    expect(hidden.has('lmuBadge')).toBe(false);
+    // LMU reports no iRating, so its change column stays hidden.
+    expect(hidden.has('iratingChange')).toBe(true);
+  });
+
+  it('hides the LMU-only column on iRacing', () => {
+    const hidden = hiddenRatingColumns('iracing');
+
+    expect(hidden.has('lmuBadge')).toBe(true);
+    expect(hidden.has('badge')).toBe(false);
+    expect(hidden.has('iratingChange')).toBe(false);
+  });
+
+  it('hides nothing before a simulator is detected', () => {
+    // With no sim to be incompatible with, hiding would be guessing.
+    expect(hiddenRatingColumns(undefined).size).toBe(0);
+    expect(hiddenRatingColumns(null).size).toBe(0);
+  });
+
+  it('only ever hides ids that are rating columns', () => {
+    for (const sim of ['iracing', 'lmu'] as const) {
+      for (const id of hiddenRatingColumns(sim)) {
+        expect(RATING_COLUMN_IDS).toContain(id);
+      }
     }
   });
 });

@@ -5,8 +5,13 @@ export const BadgeFormatPreview = ({
   onClick,
 }: {
   format: string;
-  selected: boolean;
-  onClick: () => void;
+  /**
+   * Omitted when this is only drawing the format, which is how FormatSelect
+   * uses it: the button and the selected state belong to the dropdown, so the
+   * preview renders bare rather than as a button inside a button.
+   */
+  selected?: boolean;
+  onClick?: () => void;
 }) => {
   const renderPreview = () => {
     switch (format) {
@@ -121,6 +126,8 @@ export const BadgeFormatPreview = ({
         return null;
     }
   };
+
+  if (!onClick) return <>{renderPreview()}</>;
 
   return (
     <button

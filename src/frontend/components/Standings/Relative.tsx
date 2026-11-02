@@ -15,7 +15,10 @@ import {
   usePitLaneStore,
   useActiveSimulator,
 } from '@irdashies/context';
-import { RATING_COLUMN_IDS, simulatorHasDriverRatings } from '@irdashies/types';
+import {
+  hiddenRatingColumns,
+  simulatorHasDriverRatings,
+} from '@irdashies/types';
 import {
   useRelativeSettings,
   useDriverRelatives,
@@ -25,13 +28,11 @@ import {
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
+import { useTrackLimitsMax } from './hooks/useTrackLimitsMax';
 import { calculateLapDeltas } from './hooks';
 import { FlagContour } from '@irdashies/utils/FlagContour';
 import { getFlag } from '@irdashies/utils/getFlag';
 import { getFlagColor } from '@irdashies/utils/getFlagColor';
-
-/** Stable identity, so the iRacing path never invalidates dependent memos. */
-const EMPTY_HIDDEN_COLUMNS: ReadonlySet<string> = new Set<string>();
 
 export const Relative = () => {
   const settings = useRelativeSettings();
@@ -39,11 +40,17 @@ export const Relative = () => {
   // Resolved here and passed down, so the rows stay driven by props rather
   // than reaching into context themselves.
   const simulator = useActiveSimulator();
+  // Resolved once per widget and passed down, so the rows stay driven by
+  // props. Decides whether a driver with no rating gets the iRacing badge's
+  // "AI" placeholder -- which is right for iRacing and wrong for LMU, where
+  // nobody has a licence or an iRating and a human's rank arrives late.
+  const hasDriverRatings = simulatorHasDriverRatings(simulator);
   const hiddenColumns = useMemo<ReadonlySet<string>>(
     () =>
-      simulatorHasDriverRatings(simulator)
-        ? EMPTY_HIDDEN_COLUMNS
-        : new Set<string>(RATING_COLUMN_IDS),
+      // Per column: both sims fill `badge` -- an iRacing licence or an LMU
+      // rank pair -- while iratingChange is iRacing's alone and lmuBadge is
+      // LMU's. One flag per simulator could not say that, and hid LMU's ranks.
+      hiddenRatingColumns(simulator),
     [simulator]
   );
   const buffer = settings?.buffer ?? 3;
@@ -52,8 +59,16 @@ export const Relative = () => {
     buffer,
     hideDriversInPitStall: settings?.hideDriversInPitStall ?? false,
   });
+  // LMU reports no iRacing flair id, so a grid of LMU drivers is all zeroes
+  // here and the column would stay hidden however many flags are available.
+  // Its country arrives on lmuRating instead.
   const hasAnyCountryFlag = useMemo(
-    () => standings.some((result) => (result.driver?.flairId ?? 0) > 0),
+    () =>
+      standings.some(
+        (result) =>
+          (result.driver?.flairId ?? 0) > 0 ||
+          !!result.driver?.lmuRating?.countryCode
+      ),
     [standings]
   );
   const highlightColor = useHighlightColor();
@@ -96,6 +111,7 @@ export const Relative = () => {
 
   // Check if this is a team racing session
   const isTeamRacing = useWeekendInfoTeamRacing();
+  const trackLimitsMax = useTrackLimitsMax();
 
   // Determine table border spacing based on compact mode
   const isCompact =
@@ -133,6 +149,8 @@ export const Relative = () => {
           isMultiClass={false}
           displayOrder={settings?.displayOrder}
           hiddenColumns={hiddenColumns}
+          hasDriverRatings={hasDriverRatings}
+          isAI={false}
           config={settings}
           carNumber={(settings?.carNumber?.enabled ?? true) ? '' : undefined}
           flairId={(settings?.countryFlags?.enabled ?? true) ? 0 : undefined}
@@ -190,6 +208,8 @@ export const Relative = () => {
             isMultiClass={false}
             displayOrder={settings?.displayOrder}
             hiddenColumns={hiddenColumns}
+            hasDriverRatings={hasDriverRatings}
+            isAI={false}
             config={settings}
             carNumber={(settings?.carNumber?.enabled ?? true) ? '' : undefined}
             flairId={(settings?.countryFlags?.enabled ?? true) ? 0 : undefined}
@@ -257,6 +277,7 @@ export const Relative = () => {
               ? result.driver?.flairId
               : undefined
           }
+          lmuRating={result.driver?.lmuRating}
           lastTime={settings?.lastTime?.enabled ? result.lastTime : undefined}
           fastestTime={
             settings?.fastestTime?.enabled ? result.fastestTime : undefined
@@ -267,6 +288,14 @@ export const Relative = () => {
           tireCompound={
             settings?.compound?.enabled ? result.tireCompound : undefined
           }
+          wheelCompounds={
+            settings?.compound?.enabled ? result.wheelCompounds : undefined
+          }
+          penaltyKind={result.penaltyKind}
+          penaltySeconds={result.penaltySeconds}
+          trackLimitsPoints={result.trackLimitsPoints}
+          trackLimitsMax={trackLimitsMax}
+          lmuVirtualEnergy={result.energyRemaining}
           carId={result.carId}
           lastPitLap={result.lastPitLap}
           lastLap={result.lastLap}
@@ -287,6 +316,8 @@ export const Relative = () => {
           numLapDeltasToShow={lapTimeDeltasEnabled ? numLapDeltas : undefined}
           displayOrder={settings?.displayOrder}
           hiddenColumns={hiddenColumns}
+          hasDriverRatings={hasDriverRatings}
+          isAI={result.driver?.isAI}
           config={settings}
           highlightColor={highlightColor}
           dnf={result.dnf}
@@ -308,11 +339,13 @@ export const Relative = () => {
     totalRows,
     settings,
     hiddenColumns,
+    hasDriverRatings,
     isMultiClass,
     highlightColor,
     hideCarManufacturer,
     p2pDisplayStates,
     isTeamRacing,
+    trackLimitsMax,
     tagMap,
     hasAnyTag,
     hasAnyCountryFlag,

@@ -21,6 +21,7 @@ export const SESSION_BAR_ITEM_KEYS = [
   'manufacturerPosition',
   'classRank',
   'topSpeed',
+  'trackLimits',
 ] as const;
 
 export type SessionBarItemKey = (typeof SESSION_BAR_ITEM_KEYS)[number];

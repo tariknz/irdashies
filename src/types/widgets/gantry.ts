@@ -29,6 +29,8 @@ export default defineWidgetManifest({
       yAxisMode: 'trace',
       lapWindow: 75,
       autoPin: true,
+      axisFit: 'shown',
+      gapMaxSeconds: 0,
     },
     window: {
       alwaysOnTop: false,
@@ -37,6 +39,9 @@ export default defineWidgetManifest({
       enabled: false,
       arrangement: 'row',
       panels: [],
+    },
+    standings: {
+      source: 'builtin',
     },
   },
   properties: {

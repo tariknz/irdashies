@@ -135,6 +135,14 @@ function sendHTML(res: http.ServerResponse, html: string) {
   res.end(html);
 }
 
+/** Widget ids renamed in a release, mapped to their current id. */
+const RENAMED_WIDGET_IDS: Readonly<Record<string, string>> = {
+  twitchchat: 'streamchat',
+};
+
+const currentWidgetId = (id: string): string =>
+  Object.hasOwn(RENAMED_WIDGET_IDS, id) ? RENAMED_WIDGET_IDS[id] : id;
+
 /**
  * Every widget the active dashboard knows about, and whether it is enabled for
  * the desktop overlays.
@@ -375,7 +383,27 @@ export async function startComponentServer(
     const componentMatch = pathname.match(/^\/component\/([a-zA-Z0-9_-]+)$/);
     if (componentMatch && req.method === 'GET') {
       res.statusCode = 302;
-      res.setHeader('Location', `/widget/${componentMatch[1]}${url.search}`);
+      res.setHeader(
+        'Location',
+        `/widget/${currentWidgetId(componentMatch[1])}${url.search}`
+      );
+      res.end();
+      return;
+    }
+
+    // A widget renamed in a release keeps its saved browser-source links: the
+    // stored instance was migrated to the new id, so send the old URL there.
+    const legacyWidgetMatch = pathname.match(/^\/widget\/([a-zA-Z0-9_-]+)$/);
+    if (
+      legacyWidgetMatch &&
+      req.method === 'GET' &&
+      currentWidgetId(legacyWidgetMatch[1]) !== legacyWidgetMatch[1]
+    ) {
+      res.statusCode = 302;
+      res.setHeader(
+        'Location',
+        `/widget/${currentWidgetId(legacyWidgetMatch[1])}${url.search}`
+      );
       res.end();
       return;
     }

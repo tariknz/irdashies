@@ -70,7 +70,7 @@ export interface DiveInput {
   carIdx: number;
   dist: number;
   /** Rate of change of `dist`; for a car behind, positive closes in. */
-  closingSpeed: number;
+  relativeSpeed: number;
   lane: number;
   length: number;
 }
@@ -152,9 +152,9 @@ export class DiveTracker {
         this.held.set(car.carIdx, { hint: fresh, until: ctx.time + HOLD_S });
         this.hints.set(car.carIdx, fresh);
       } else if (held) {
-        held.hint.closingKmh = Math.max(car.closingSpeed, 0) * 3.6;
+        held.hint.closingKmh = Math.max(car.relativeSpeed, 0) * 3.6;
         held.hint.secondsToSide =
-          car.closingSpeed > 0 ? gap / car.closingSpeed : Infinity;
+          car.relativeSpeed > 0 ? gap / car.relativeSpeed : Infinity;
         this.hints.set(car.carIdx, held.hint);
       } else {
         this.held.delete(car.carIdx);
@@ -178,8 +178,8 @@ export class DiveTracker {
     braking: boolean,
     ctx: DiveContext
   ): DiveHint | null {
-    if (car.closingSpeed < minClosing) return null;
-    const secondsToSide = gap / car.closingSpeed;
+    if (car.relativeSpeed < minClosing) return null;
+    const secondsToSide = gap / car.relativeSpeed;
     if (secondsToSide > ctx.warnSeconds * FAST_LOOKAHEAD) return null;
     const laneSide = Math.abs(car.lane) >= SIDE_LANE ? Math.sign(car.lane) : 0;
     const side = laneSide || (braking ? ctx.cornerInside : 0);
@@ -187,7 +187,7 @@ export class DiveTracker {
       secondsToSide <= ctx.warnSeconds && (braking || laneSide !== 0);
     return {
       level: diving ? 'dive' : 'fast',
-      closingKmh: car.closingSpeed * 3.6,
+      closingKmh: car.relativeSpeed * 3.6,
       secondsToSide,
       side,
     };

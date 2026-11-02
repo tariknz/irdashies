@@ -133,8 +133,8 @@ describe('class standings over a real multiclass field', () => {
       () =>
         useDriverStandings(
           config({
-            gap: { enabled: true },
-            interval: { enabled: true },
+            gap: { enabled: false },
+            interval: { enabled: true, displayMode: 'laps' },
           }),
           { showAll: true }
         ),
@@ -146,16 +146,60 @@ describe('class standings over a real multiclass field', () => {
       .filter((i): i is number => typeof i === 'number');
 
     expect(intervals.length).toBeGreaterThan(10);
+    const lapIntervals = flatten(result.current)
+      .map((d) => d.interval)
+      .filter((i) => typeof i === 'object');
+    expect(lapIntervals.length).toBeGreaterThan(0);
+    for (const interval of lapIntervals) {
+      expect(interval?.laps).toBeLessThanOrEqual(-1);
+      expect(Number.isInteger(interval?.laps)).toBe(true);
+    }
     // An interval is a gap between neighbours, so it is never larger than the
     // gap to the class leader for the same car.
     for (const [, drivers] of result.current) {
       for (const driver of drivers.slice(1)) {
-        if (driver.interval === undefined || driver.gap?.value === undefined) {
+        if (
+          typeof driver.interval !== 'number' ||
+          driver.gap?.value === undefined
+        ) {
           continue;
         }
         expect(driver.interval).toBeLessThanOrEqual(driver.gap.value + 0.001);
       }
     }
+  });
+
+  it('switches interval display modes without changing the gap', () => {
+    const initialProps: { displayMode?: 'time' | 'laps' } = {};
+    const { result, rerender } = renderHook(
+      ({ displayMode }: { displayMode?: 'time' | 'laps' }) =>
+        useDriverStandings(
+          config({
+            gap: { enabled: true },
+            interval: { enabled: true, displayMode },
+          }),
+          { showAll: true }
+        ),
+      { wrapper: harness.wrapper, initialProps }
+    );
+    const legacy = flatten(result.current);
+    expect(legacy.every((driver) => typeof driver.interval !== 'object')).toBe(
+      true
+    );
+
+    rerender({ displayMode: 'laps' });
+    const lapped = flatten(result.current);
+    expect(lapped.some((driver) => typeof driver.interval === 'object')).toBe(
+      true
+    );
+    expect(lapped.map((driver) => driver.gap)).toEqual(
+      legacy.map((driver) => driver.gap)
+    );
+
+    rerender({ displayMode: 'time' });
+    expect(flatten(result.current).map((driver) => driver.interval)).toEqual(
+      legacy.map((driver) => driver.interval)
+    );
   });
 
   it('changes only displayed gaps when switching to player reference', () => {

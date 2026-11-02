@@ -37,6 +37,7 @@ vi.mock('../storage/keybindings', () => ({
   updateKeybinding: mockUpdateKeybinding,
   resetKeybinding: mockResetKeybinding,
   resetAllKeybindings: mockResetAllKeybindings,
+  persistKeybindingMigrations: vi.fn(async () => undefined),
 }));
 
 const mockIsValidAccelerator = vi.hoisted(() => vi.fn());
@@ -83,6 +84,12 @@ const sampleBindings = (): KeybindingsMap => ({
   },
   'next-profile': {
     accelerator: 'Alt+PageDown',
+    label: '',
+    description: '',
+    isDefault: true,
+  },
+  'radar-flip-pole-side': {
+    accelerator: '',
     label: '',
     description: '',
     isDefault: true,

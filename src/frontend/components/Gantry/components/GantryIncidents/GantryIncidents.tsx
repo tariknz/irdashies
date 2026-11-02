@@ -7,7 +7,6 @@ import {
 import {
   useRaceControlStore,
   useFilteredIncidents,
-  useSessionList,
   useTrackStateSelector,
 } from '@irdashies/context';
 import {
@@ -20,6 +19,7 @@ import type { TrackStateSnapshot } from '@irdashies/types';
 import { IncidentRow } from './IncidentRow';
 import { SessionSeparatorRow } from './SessionSeparatorRow';
 import { Tooltip } from '../Tooltip/Tooltip';
+import { useGantrySessionData } from '../../hooks/useGantrySessionData';
 
 const SETTINGS_HINT =
   'Thresholds live in Settings > Gantry > Incident Detection.';
@@ -93,7 +93,7 @@ export const GantryIncidents = memo(() => {
   const allIncidents = useRaceControlStore((s) => s.incidents);
   const isReplayPlaying = Boolean(useTrackStateSelector(selectIsReplayPlaying));
   const currentSessionNum = useTrackStateSelector(selectSessionNum) ?? null;
-  const sessions = useSessionList() ?? NO_SESSIONS;
+  const sessions = useGantrySessionData().sessions ?? NO_SESSIONS;
   const incidents = useFilteredIncidents(currentSessionNum);
 
   const selectedSessionNum = resolveSessionFilter(

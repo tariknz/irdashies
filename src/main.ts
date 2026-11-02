@@ -1,5 +1,5 @@
+import { app, autoUpdater, BrowserWindow, ipcMain } from 'electron';
 import { setupReleaseNotesBridge } from './app/bridge/releaseNotesBridge';
-import { app, BrowserWindow, ipcMain } from 'electron';
 import log from './app/logger';
 import {
   iRacingSDKSetup,
@@ -13,6 +13,7 @@ import {
   getOrCreateDefaultDashboard,
   getCurrentProfileId,
   getProfile,
+  listDashboards,
   setCurrentProfile,
 } from './app/storage/dashboards';
 import { getSessionProfileMap } from './app/storage/appSettings';
@@ -51,6 +52,7 @@ import {
   flushGarage61SearchSessionOnShutdown,
   saveGarage61SearchSession,
 } from './app/storage/garage61SearchSession';
+import { flushStorageWritesOnShutdown } from './app/storage/storage';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { getHiddenWidgets } from './app/widgetVisibility';
 import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
@@ -82,9 +84,11 @@ import { ReplayContextRuntime } from './app/processors/replayContextRuntime';
 import { setupTapeReplayBridge } from './app/bridge/tapeReplayBridge';
 import { createTapeReplayWindow } from './app/tapeReplayWindow';
 import type { ArchiveIndex } from './app/processors/ReplayContextProcessor';
+import { flushRadarPoleSideOverrides } from './app/storage/radarPoleSideOverrides';
 import { createKnownLocalUserIdStore } from './app/storage/knownLocalUserIds';
 import { setupLapHistoryBridge } from './app/bridge/lapHistoryBridge';
 import { onDashboardUpdated } from './app/storage/dashboardEvents';
+import { setupStreamChat } from './app/streamChat/setupStreamChat';
 import { loadSimWidgetSupport } from './app/storage/simWidgetSupport';
 import type { DashboardLayout, Session } from '@irdashies/types';
 import { getActivePerfMetrics } from './app/perfMetrics';
@@ -158,6 +162,7 @@ let disconnectLifecycleChannel: (() => void) | undefined;
 let sessionProfileSwitcher: SessionProfileSwitcher | undefined;
 let incidentRuntime: IncidentRuntime | undefined;
 let disposeLapHistoryRuntime: (() => void) | undefined;
+let disposeStreamChat: (() => void) | undefined;
 let disposeReplayContextRuntime: (() => void) | undefined;
 const knownLocalUserIds = createKnownLocalUserIdStore();
 let disposeGarage61SearchSession: (() => void) | undefined;
@@ -426,7 +431,9 @@ void app.whenReady().then(async () => {
   // for every overlay window.
   await loadSimWidgetSupport();
 
-  setupChannelBridge(channelBus);
+  setupChannelBridge(channelBus, {
+    isAlwaysFed: (sender) => overlayManager.isGantryWebContents(sender),
+  });
   const rendererDataSubscriptions = setupRendererDataSubscriptions({
     onSubscribe: (sender, stream) => {
       if (stream === 'sessionData') overlayManager.seedSessionData(sender);
@@ -473,6 +480,7 @@ void app.whenReady().then(async () => {
   );
   setupRaceControlBridge(incidents, dashboard, replayContextRuntime);
   setupLapHistoryRuntime(dashboard, replayContextRuntime);
+  disposeStreamChat = setupStreamChat(channelBus, listDashboards);
   // Returns false when the Gantry widget is disabled, so Settings can explain
   // why the button did nothing instead of appearing to be broken.
   ipcMain.handle('raceControl:showGantryWindow', () =>
@@ -657,6 +665,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
     disposeRendererDataSubscriptions?.();
     incidentRuntime?.dispose();
     disposeLapHistoryRuntime?.();
+    disposeStreamChat?.();
     disposeReplayContextRuntime?.();
     disposeGarage61SearchSession?.();
     channelBus.dispose();
@@ -669,8 +678,10 @@ const handleBeforeQuit = createBeforeQuitHandler({
       flushIncidentsOnShutdown(),
       flushLapHistoryOnShutdown(),
       knownLocalUserIds.flush(),
+      flushRadarPoleSideOverrides(),
       releaseNotes?.flush(),
       flushGarage61SearchSessionOnShutdown(),
+      flushStorageWritesOnShutdown(),
     ]);
   },
   quit: () => app.quit(),
@@ -679,6 +690,9 @@ const handleBeforeQuit = createBeforeQuitHandler({
 });
 
 app.on('before-quit', handleBeforeQuit);
+// An update restart closes windows before `before-quit`, so the Gantry has to
+// know it is quitting earlier or it hides instead of closing.
+autoUpdater.on('before-quit-for-update', () => overlayManager.markQuitting());
 
 // Terminal shutdown must use the same cleanup and storage flush as tray quit.
 process.on('SIGINT', () => app.quit());

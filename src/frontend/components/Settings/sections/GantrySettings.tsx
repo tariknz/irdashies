@@ -4,13 +4,16 @@ import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   GantryWidgetSettings,
   GantryConfig,
+  LapGraphAxisFit,
   LapGraphYAxisMode,
   SessionRetention,
   SettingsTabType,
   INCIDENT_THRESHOLD_BOUNDS,
+  LAP_GRAPH_GAP_MAX_BOUNDS,
   LAP_GRAPH_LAP_WINDOW_BOUNDS,
   DEFAULT_INCIDENT_CAMERA_GROUP,
   getWidgetDefaultConfig,
+  resolveGantryStandings,
 } from '@irdashies/types';
 import {
   useDashboard,
@@ -28,6 +31,7 @@ import { SettingSelectRow } from '../components/SettingSelectRow';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { DriverNamePreview } from '../components/DriverNamePreview';
 import { GantryDockSettings } from './GantryDockSettings';
+import { GantryStandingsSettings } from './GantryStandingsSettings';
 import {
   kphFromSpeed,
   resolveSpeedUnit,
@@ -209,6 +213,11 @@ const yAxisModeButtons = Y_AXIS_MODES.map(({ value, label }) => ({
   label,
 }));
 
+const axisFitButtons: { value: LapGraphAxisFit; label: string }[] = [
+  { value: 'shown', label: 'Shown drivers' },
+  { value: 'all', label: 'All drivers' },
+];
+
 const thresholdKeys = thresholdFields.map((f) => f.key);
 
 export const GantrySettings = memo(() => {
@@ -310,6 +319,13 @@ export const GantrySettings = memo(() => {
                 Options
               </TabButton>
               <TabButton
+                id="standings"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Standings
+              </TabButton>
+              <TabButton
                 id="incidents"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
@@ -367,28 +383,34 @@ export const GantrySettings = memo(() => {
 
                     <SettingDivider />
 
-                    <div className="py-2">
-                      <div className="text-sm text-slate-300">Driver Name</div>
-                      <div className="text-xs text-slate-400 mt-1">
-                        How names are written in the Gantry standings list.
-                        Surname only keeps the column narrow, which is what the
-                        panel is sized for.
+                    {resolveGantryStandings(currentDashboard).status !==
+                      'ready' && (
+                      <div className="py-2">
+                        <div className="text-sm text-slate-300">
+                          Driver Name
+                        </div>
+                        <div className="text-xs text-slate-400 mt-1">
+                          How names are written in the built-in Gantry standings
+                          list. Surname only keeps the column narrow, which is
+                          what the panel is sized for.
+                        </div>
+                        <div className="flex flex-wrap gap-3 justify-end mt-3">
+                          {NAME_FORMATS.map((format) => (
+                            <DriverNamePreview
+                              key={format}
+                              format={format}
+                              selected={
+                                (config.driverNameFormat ?? 'surname') ===
+                                format
+                              }
+                              onClick={() =>
+                                handleConfigChange({ driverNameFormat: format })
+                              }
+                            />
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-3 justify-end mt-3">
-                        {NAME_FORMATS.map((format) => (
-                          <DriverNamePreview
-                            key={format}
-                            format={format}
-                            selected={
-                              (config.driverNameFormat ?? 'surname') === format
-                            }
-                            onClick={() =>
-                              handleConfigChange({ driverNameFormat: format })
-                            }
-                          />
-                        ))}
-                      </div>
-                    </div>
+                    )}
 
                     <SettingSelectRow
                       title="Incident Camera"
@@ -452,6 +474,36 @@ export const GantrySettings = memo(() => {
                       );
                     })}
                   </dl>
+
+                  <SettingDivider />
+
+                  <SettingButtonGroupRow<LapGraphAxisFit>
+                    title="Y-axis range"
+                    description="What the Race Trace and Gap axes are sized to. Shown drivers fits your car and the pinned cars, so a car far behind rides along the edge instead of flattening the battle you are watching. All drivers fits every car in the class."
+                    value={lapGraph.axisFit === 'all' ? 'all' : 'shown'}
+                    options={axisFitButtons}
+                    onChange={(v) =>
+                      handleConfigChange({
+                        lapGraph: { ...lapGraph, axisFit: v },
+                      })
+                    }
+                  />
+
+                  <SettingDivider />
+
+                  <SettingNumberRow
+                    title="Max gap shown (s)"
+                    description={`Caps the top of the Gap axis at this many seconds. Cars further back ride along the top edge and the readout still shows their true gap. 0 turns the cap off. ${LAP_GRAPH_GAP_MAX_BOUNDS.min} to ${LAP_GRAPH_GAP_MAX_BOUNDS.max} seconds.`}
+                    value={lapGraph.gapMaxSeconds ?? 0}
+                    min={LAP_GRAPH_GAP_MAX_BOUNDS.min}
+                    max={LAP_GRAPH_GAP_MAX_BOUNDS.max}
+                    step={5}
+                    onChange={(v) =>
+                      handleConfigChange({
+                        lapGraph: { ...lapGraph, gapMaxSeconds: v },
+                      })
+                    }
+                  />
 
                   <SettingDivider />
 
@@ -533,6 +585,8 @@ export const GantrySettings = memo(() => {
                   })}
                 </SettingsSection>
               )}
+
+              {activeTab === 'standings' && <GantryStandingsSettings />}
 
               {activeTab === 'dock' && <GantryDockSettings />}
             </div>

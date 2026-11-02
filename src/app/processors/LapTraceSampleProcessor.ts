@@ -38,6 +38,7 @@ const defaults = (): LapTraceSampleSnapshot => ({
   lastLapTime: 0,
   lapCompleted: 0,
   incidentCount: 0,
+  simLapInvalidated: false,
   version: 0,
 });
 
@@ -103,6 +104,11 @@ export class LapTraceSampleProcessor implements TelemetryProcessor<LapTraceSampl
         'incidentCount',
         numberValue(frame, 'PlayerCarMyIncidentCount', 0)
       ) || changed;
+    // LMU only. iRacing publishes no such var, and booleanValue reads an
+    // absent key as false, so no iRacing-side mapping is needed.
+    changed =
+      this.set('simLapInvalidated', booleanValue(frame, 'LmuLapInvalidated')) ||
+      changed;
     if (changed) this.latest.version += 1;
   }
 

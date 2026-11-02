@@ -37,7 +37,11 @@ export const BattleCard = ({
       <span>{standing.driver.carNum}</span>
       <span className="flex-1 truncate">{driverName(standing, 'surname')}</span>
       {showGap && standing.interval !== undefined && (
-        <span className="tabular-nums">-{standing.interval.toFixed(3)}</span>
+        <span className="tabular-nums">
+          {typeof standing.interval === 'number'
+            ? `-${standing.interval.toFixed(3)}`
+            : `${standing.interval.laps}L`}
+        </span>
       )}
     </div>
   </div>

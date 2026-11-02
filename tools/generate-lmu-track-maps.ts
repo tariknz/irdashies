@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseTinyPedalTrackMap } from '../src/app/lmu/trackMap';
 import trackDataBundle from '../src/frontend/assets/data/tracks-bundle.json';
-import { LMU_TRACK_DATA_IDS } from '../src/types/lmuTrackAliases';
+import { LMU_TRACK_DATA_IDS } from '../src/types/lmu/trackAliases';
 
 interface LovelyTurn {
   name?: string;

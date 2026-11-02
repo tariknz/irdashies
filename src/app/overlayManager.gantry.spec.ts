@@ -221,7 +221,7 @@ describe('OverlayManager Gantry window', () => {
     );
   });
 
-  it('forwards bulk data only while visible and subscribed', () => {
+  it('forwards session data while hidden, but only once subscribed', () => {
     const manager = new OverlayManager();
     const subscriptions = {
       has: vi.fn(() => false),
@@ -234,16 +234,105 @@ describe('OverlayManager Gantry window', () => {
     manager.publishMessage('sessionData', { revision: 1 });
     expect(window.webContents.send).not.toHaveBeenCalled();
 
-    window.shown = true;
-    manager.publishMessage('sessionData', { revision: 2 });
-    expect(window.webContents.send).not.toHaveBeenCalled();
-
+    // Still hidden: the Gantry has to keep the session while off screen.
     subscriptions.has.mockReturnValue(true);
-    manager.publishMessage('sessionData', { revision: 3 });
+    manager.publishMessage('sessionData', { revision: 2 });
     expect(window.webContents.send).toHaveBeenCalledWith('sessionData', {
-      revision: 3,
+      revision: 2,
     });
     expect(subscriptions.has).toHaveBeenCalledWith(42, 'sessionData');
+  });
+
+  it('forwards inspector telemetry only while visible', () => {
+    const manager = new OverlayManager();
+    manager.setRendererDataSubscriptions({
+      has: vi.fn(() => true),
+      hasAny: vi.fn(() => true),
+    });
+    manager.createGantryWindow(dashboard(true));
+    const [window] = gantryWindows();
+
+    manager.publishMessage('telemetryInspector:telemetry', { tick: 1 });
+    expect(window.webContents.send).not.toHaveBeenCalled();
+
+    window.shown = true;
+    manager.publishMessage('telemetryInspector:telemetry', { tick: 2 });
+    expect(window.webContents.send).toHaveBeenCalledWith(
+      'telemetryInspector:telemetry',
+      { tick: 2 }
+    );
+  });
+
+  it('identifies only its own renderer as the Gantry', () => {
+    const manager = new OverlayManager();
+    manager.createGantryWindow(dashboard(true));
+    const [window] = gantryWindows();
+    const other = new FakeWebContents();
+    other.id = 7;
+
+    expect(
+      manager.isGantryWebContents(
+        window.webContents as unknown as Electron.WebContents
+      )
+    ).toBe(true);
+    expect(
+      manager.isGantryWebContents(other as unknown as Electron.WebContents)
+    ).toBe(false);
+
+    window.destroyed = true;
+    expect(
+      manager.isGantryWebContents(
+        window.webContents as unknown as Electron.WebContents
+      )
+    ).toBe(false);
+  });
+
+  it('hides instead of closing while the widget is enabled', () => {
+    const manager = new OverlayManager();
+    manager.createGantryWindow(dashboard(true));
+    const [window] = gantryWindows();
+    const closeHandler = window.on.mock.calls.find(
+      ([event]) => event === 'close'
+    )?.[1] as (event: { preventDefault: () => void }) => void;
+    const event = { preventDefault: vi.fn() };
+
+    closeHandler(event);
+
+    expect(event.preventDefault).toHaveBeenCalledOnce();
+    expect(window.hide).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    [
+      'quitting',
+      (manager: InstanceType<typeof OverlayManager>) => manager.markQuitting(),
+    ],
+    [
+      'the Windows session ends',
+      (
+        _manager: InstanceType<typeof OverlayManager>,
+        window: FakeBrowserWindow
+      ) =>
+        (
+          window.on.mock.calls.find(
+            ([event]) => event === 'session-end'
+          )?.[1] as () => void
+        )(),
+    ],
+  ])('lets the window close when %s', (_label, prepare) => {
+    const manager = new OverlayManager();
+    manager.createGantryWindow(dashboard(true));
+    const [window] = gantryWindows();
+    const closeHandler = window.on.mock.calls.find(
+      ([event]) => event === 'close'
+    )?.[1] as (event: { preventDefault: () => void }) => void;
+    const event = { preventDefault: vi.fn() };
+
+    prepare(manager, window);
+    closeHandler(event);
+
+    expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(window.hide).not.toHaveBeenCalled();
   });
 
   it.each(['show', 'restore'])(
@@ -298,7 +387,31 @@ describe('OverlayManager Gantry window', () => {
     expect(onReady).not.toHaveBeenCalled();
   });
 
-  it('seeds the cached session only to a visible subscribed window', () => {
+  it('seeds the cached session to a visible subscribed window', () => {
+    const manager = new OverlayManager();
+    const subscriptions = {
+      has: vi.fn(() => true),
+      hasAny: vi.fn(() => false),
+    };
+    manager.setRendererDataSubscriptions(subscriptions);
+    manager.publishMessage('sessionData', { revision: 1 });
+    const overlay = new FakeBrowserWindow({ title: 'overlay' });
+    overlay.webContents.id = 7;
+    const overlaySender =
+      overlay.webContents as unknown as Electron.WebContents;
+
+    // Hidden: nothing is sent.
+    expect(manager.seedSessionData(overlaySender)).toBe(false);
+    expect(overlay.webContents.send).not.toHaveBeenCalled();
+
+    overlay.shown = true;
+    expect(manager.seedSessionData(overlaySender)).toBe(true);
+    expect(overlay.webContents.send).toHaveBeenCalledWith('sessionData', {
+      revision: 1,
+    });
+  });
+
+  it('seeds the cached session to the Gantry while it is hidden', () => {
     const manager = new OverlayManager();
     const subscriptions = {
       has: vi.fn(() => true),
@@ -310,11 +423,6 @@ describe('OverlayManager Gantry window', () => {
     const [window] = gantryWindows();
     const sender = window.webContents as unknown as Electron.WebContents;
 
-    // Hidden: nothing is sent.
-    expect(manager.seedSessionData(sender)).toBe(false);
-    expect(window.webContents.send).not.toHaveBeenCalled();
-
-    window.shown = true;
     expect(manager.seedSessionData(sender)).toBe(true);
     expect(window.webContents.send).toHaveBeenCalledWith('sessionData', {
       revision: 1,

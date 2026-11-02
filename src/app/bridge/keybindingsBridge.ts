@@ -11,6 +11,7 @@ import {
   updateKeybinding,
   resetKeybinding,
   resetAllKeybindings,
+  persistKeybindingMigrations,
 } from '../storage/keybindings';
 import { KeybindingManager } from '../keybindingManager';
 import { rebuildTaskbarMenu } from '../setupTaskbar';
@@ -43,6 +44,10 @@ function assertValidAccelerator(accelerator: string): void {
 export function setupKeybindingsBridge(
   keybindingManager: KeybindingManager
 ): void {
+  persistKeybindingMigrations().catch((error) =>
+    logger.warn('[Keybindings] Could not persist migrated bindings:', error)
+  );
+
   ipcMain.handle('keybindings:get', () => {
     return getKeybindings();
   });

@@ -73,6 +73,19 @@ describe('findBattle', () => {
       undefined
     );
   });
+
+  it('does not select lap-separated cars as a close battle', () => {
+    const lapped = {
+      ...withInterval(2),
+      interval: { value: undefined, laps: -1 },
+    };
+    expect(findBattle([withInterval(1), lapped], 5, 1)).toBeUndefined();
+    expect(
+      findBattle([withInterval(1), lapped, withInterval(3, 0.3)], 5, 1)?.map(
+        (driver) => driver.carIdx
+      )
+    ).toEqual([2, 3]);
+  });
 });
 
 describe('isSessionFinished', () => {

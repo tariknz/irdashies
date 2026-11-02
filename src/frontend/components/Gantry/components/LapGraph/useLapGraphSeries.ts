@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { LapGraphAxisFit } from '@irdashies/types';
 import {
   buildGapAxis,
   buildLinearAxis,
@@ -65,6 +66,8 @@ export interface LapGraphGeometry {
   drawnPointCount: number;
   /** Cars drawn at context strength, i.e. the faint background field. */
   contextCount: number;
+  /** Drawn cars with a point beyond the axis, pinned to its edge. */
+  offScaleCount: number;
 }
 
 const EMPTY_BOUNDS: LapBounds = { minLap: 1, maxLap: 1 };
@@ -195,12 +198,30 @@ const gapAxisAsLinear = (extent: ValueExtent): LinearAxis => {
   return { min: 0, max: gap.max, step: gap.step, values: gap.values };
 };
 
+/** Pulls the top of the axis down to `cap`, dropping gridlines above it. */
+const capAxisMax = (axis: LinearAxis, cap: number): LinearAxis =>
+  axis.max <= cap
+    ? axis
+    : { ...axis, max: cap, values: axis.values.filter((v) => v <= cap) };
+
+/** Anything but a positive finite number means no cap. */
+export const sanitizeGapMax = (value: number | undefined): number =>
+  typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 0;
+
 export const buildModeAxis = (
   mode: LapGraphMode,
-  extent: ValueExtent
+  extent: ValueExtent,
+  gapMaxSeconds = 0
 ): LinearAxis => {
   if (mode === 'position') return buildPositionAxis(extent.max);
-  if (mode === 'gap') return gapAxisAsLinear(extent);
+  if (mode === 'gap') {
+    const cap = sanitizeGapMax(gapMaxSeconds);
+    if (cap === 0) return gapAxisAsLinear(extent);
+    return capAxisMax(
+      gapAxisAsLinear({ min: extent.min, max: Math.min(extent.max, cap) }),
+      cap
+    );
+  }
   return buildLinearAxis(extent.min, extent.max);
 };
 
@@ -213,7 +234,7 @@ export const valueToY = (
 ): number => {
   const span = axis.max - axis.min;
   if (span <= 0) return plotHeight / 2;
-  const ratio = (value - axis.min) / span;
+  const ratio = Math.min(1, Math.max(0, (value - axis.min) / span));
   return inverted ? ratio * plotHeight : (1 - ratio) * plotHeight;
 };
 
@@ -287,7 +308,20 @@ export interface LapGraphInput {
   plotWidth: number;
   pinnedCarIdxs: readonly number[];
   focusedCarIdx: number | null;
+  /** Trace and gap only. Defaults to 'all', sizing the axis to every car. */
+  axisFit?: LapGraphAxisFit;
+  /** Gap only. Caps the top of the axis in seconds; 0 or unset is no cap. */
+  gapMaxSeconds?: number;
 }
+
+const hasValueOutside = (
+  points: readonly LapPoint[],
+  axis: LinearAxis
+): boolean =>
+  points.some(
+    ({ value }) =>
+      Number.isFinite(value) && (value < axis.min || value > axis.max)
+  );
 
 /**
  * Everything the canvas needs for one draw, derived once. Pure, so it can be
@@ -300,6 +334,8 @@ export const prepareLapGraph = ({
   plotWidth,
   pinnedCarIdxs,
   focusedCarIdx,
+  axisFit = 'all',
+  gapMaxSeconds = 0,
 }: LapGraphInput): LapGraphGeometry => {
   const bounds = lapBoundsOf(series);
   const clamped = clampWindow(window, bounds);
@@ -308,6 +344,7 @@ export const prepareLapGraph = ({
 
   const prepared: PreparedSeries[] = [];
   const windowed: (readonly LapPoint[])[] = [];
+  const shownWindowed: (readonly LapPoint[])[] = [];
   const byCarIdx = new Map<number, LapGraphSeries>();
   let drawnPointCount = 0;
   let contextCount = 0;
@@ -317,6 +354,7 @@ export const prepareLapGraph = ({
     const sliced = windowSlice(entry.points, clamped);
     if (sliced.length === 0) continue;
     windowed.push(sliced);
+    if (entry.isPlayer || pinned.has(entry.carIdx)) shownWindowed.push(sliced);
 
     const tier = tierFor(entry, pinned, focusedCarIdx);
     if (tier === 'context') contextCount++;
@@ -332,16 +370,23 @@ export const prepareLapGraph = ({
 
   prepared.sort((a, b) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier]);
 
-  const extent = valueExtentOf(windowed);
+  const fitToShown =
+    mode !== 'position' && axisFit === 'shown' && shownWindowed.length > 0;
+  const extent = valueExtentOf(fitToShown ? shownWindowed : windowed);
+  const axis = buildModeAxis(mode, extent, gapMaxSeconds);
+  const offScaleCount = prepared.filter((entry) =>
+    hasValueOutside(entry.points, axis)
+  ).length;
   return {
     bounds,
     window: clamped,
-    axis: buildModeAxis(mode, extent),
+    axis,
     inverted: mode === 'position',
     ordered: prepared,
     byCarIdx,
     drawnPointCount,
     contextCount,
+    offScaleCount,
   };
 };
 
@@ -356,8 +401,16 @@ export const valueAtLap = (
 };
 
 export const useLapGraphSeries = (input: LapGraphInput): LapGraphGeometry => {
-  const { series, mode, window, plotWidth, pinnedCarIdxs, focusedCarIdx } =
-    input;
+  const {
+    series,
+    mode,
+    window,
+    plotWidth,
+    pinnedCarIdxs,
+    focusedCarIdx,
+    axisFit,
+    gapMaxSeconds,
+  } = input;
   return useMemo(
     () =>
       prepareLapGraph({
@@ -367,7 +420,18 @@ export const useLapGraphSeries = (input: LapGraphInput): LapGraphGeometry => {
         plotWidth,
         pinnedCarIdxs,
         focusedCarIdx,
+        axisFit,
+        gapMaxSeconds,
       }),
-    [series, mode, window, plotWidth, pinnedCarIdxs, focusedCarIdx]
+    [
+      series,
+      mode,
+      window,
+      plotWidth,
+      pinnedCarIdxs,
+      focusedCarIdx,
+      axisFit,
+      gapMaxSeconds,
+    ]
   );
 };

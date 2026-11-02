@@ -1,0 +1,208 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { EventMessage, IdentifyMessage } from 'posthog-node';
+import type { DashboardLayout } from '@irdashies/types';
+import os from 'node:os';
+import path from 'node:path';
+import { mkdtempSync } from 'node:fs';
+
+const { userDataPath, store } = vi.hoisted(() => ({
+  userDataPath: { value: '' },
+  store: { data: new Map<string, unknown>() },
+}));
+
+vi.mock('electron', () => ({
+  app: { getPath: vi.fn(() => userDataPath.value) },
+  screen: {
+    getAllDisplays: vi.fn().mockReturnValue([]),
+    getPrimaryDisplay: vi
+      .fn()
+      .mockReturnValue({ size: { width: 0, height: 0 } }),
+  },
+}));
+
+vi.mock('electron-log/main', () => ({
+  default: {
+    transports: { file: {}, console: {} },
+    initialize: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
+vi.mock('./storage/storage', () => ({
+  readData: vi.fn((key: string) => store.data.get(key)),
+  writeData: vi.fn((key: string, value: unknown) => store.data.set(key, value)),
+}));
+
+vi.mock('./storage/radarPoleSideReportHash', () => ({
+  readRadarPoleSideReportHash: async () =>
+    store.data.get('radarPoleSideReportHash'),
+  writeRadarPoleSideReportHash: async (hash: string) => {
+    store.data.set('radarPoleSideReportHash', hash);
+  },
+}));
+
+vi.mock('./storage/analytics', () => ({
+  getAnalyticsOptOut: vi.fn().mockReturnValue(false),
+}));
+
+const { corrections, flipped } = vi.hoisted(() => ({
+  corrections: { value: {} as Record<string, unknown> },
+  flipped: { listeners: new Set<() => void>() },
+}));
+vi.mock('./storage/radarPoleSideOverrides', () => ({
+  loadRadarPoleSideOverrides: async () => true,
+  radarPoleSideOverrides: {
+    snapshot: () => corrections.value,
+    onChange: (listener: () => void) => {
+      flipped.listeners.add(listener);
+      return () => flipped.listeners.delete(listener);
+    },
+  },
+}));
+
+import { Analytics } from './analytics';
+import { getAnalyticsOptOut } from './storage/analytics';
+
+const HASH_KEY = 'radarPoleSideReportHash';
+
+const makeProvider = () => ({
+  capture: vi.fn<(event: EventMessage) => void>(),
+  captureConfirmed: vi
+    .fn<(event: EventMessage) => Promise<void>>()
+    .mockResolvedValue(undefined),
+  identify: vi.fn<(message: IdentifyMessage) => void>(),
+  shutdown: vi.fn<(shutdownTimeoutMs?: number) => void>(),
+});
+
+describe('Analytics radar pole side report', () => {
+  let provider: ReturnType<typeof makeProvider>;
+
+  const start = async (version = '2.0.0') => {
+    const analytics = new Analytics(provider);
+    await analytics.init(version, {} as DashboardLayout);
+    await analytics.waitForRadarPoleSideUpload();
+  };
+  const reports = () =>
+    provider.captureConfirmed.mock.calls
+      .map(([event]) => event)
+      .filter((event) => event.event === 'radar_pole_side');
+
+  beforeEach(() => {
+    userDataPath.value = mkdtempSync(path.join(os.tmpdir(), 'irdashies-'));
+    store.data.clear();
+    corrections.value = {};
+    flipped.listeners.clear();
+    provider = makeProvider();
+    vi.mocked(getAnalyticsOptOut).mockReturnValue(false);
+  });
+
+  it('sends nothing for an installation that never corrected a side', async () => {
+    await start();
+    expect(reports()).toEqual([]);
+  });
+
+  it('reports the corrections once, then remembers what was acknowledged', async () => {
+    corrections.value = { '95': { start: false, table: true } };
+    await start();
+
+    expect(reports()).toHaveLength(1);
+    expect(reports()[0]).toMatchObject({
+      event: 'radar_pole_side',
+      properties: {
+        version: '2.0.0',
+        track_count: 1,
+        tracks: { '95': { start_left: false, table_left: true } },
+      },
+    });
+    expect(store.data.get(HASH_KEY)).toBe(reports()[0].properties?.data_hash);
+
+    await start('3.0.0');
+    expect(reports()).toHaveLength(1);
+  });
+
+  it('reports a change, and a revert to nothing', async () => {
+    corrections.value = { '95': { start: false, table: true } };
+    await start();
+    corrections.value = {
+      '95': { start: false, restart: false, table: true },
+    };
+    await start();
+    corrections.value = {};
+    await start();
+
+    expect(reports()).toHaveLength(3);
+    expect(reports()[2].properties?.track_count).toBe(0);
+  });
+
+  it('does not record a hash when delivery fails, so it is retried', async () => {
+    corrections.value = { '95': { start: false, table: true } };
+    provider.captureConfirmed.mockRejectedValueOnce(new Error('down'));
+    await expect(start()).resolves.toBeUndefined();
+    expect(store.data.get(HASH_KEY)).toBeUndefined();
+
+    await start();
+    expect(store.data.get(HASH_KEY)).toBeDefined();
+  });
+
+  it('respects the analytics opt-out', async () => {
+    corrections.value = { '95': { start: false, table: true } };
+    vi.mocked(getAnalyticsOptOut).mockReturnValue(true);
+    await start();
+    expect(reports()).toEqual([]);
+  });
+
+  it('ignores a stored value that is not a hash', async () => {
+    store.data.set(HASH_KEY, 'not-a-hash');
+    await start();
+    expect(reports()).toEqual([]);
+  });
+
+  describe('after a flip', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const flip = () => flipped.listeners.forEach((listener) => listener());
+
+    it('reports a minute after the last flip, not at once and not once per press', async () => {
+      await start();
+      expect(reports()).toEqual([]);
+
+      corrections.value = { '95': { start: false, table: true } };
+      flip();
+      await vi.advanceTimersByTimeAsync(30_000);
+      flip();
+      await vi.advanceTimersByTimeAsync(59_000);
+      expect(reports()).toEqual([]);
+
+      await vi.advanceTimersByTimeAsync(2_000);
+      expect(reports()).toHaveLength(1);
+      expect(reports()[0].properties?.track_count).toBe(1);
+      expect(store.data.get(HASH_KEY)).toBeDefined();
+    });
+
+    it('sends nothing when the flips cancelled out and nothing was ever sent', async () => {
+      await start();
+      flip();
+      await vi.advanceTimersByTimeAsync(61_000);
+      expect(reports()).toEqual([]);
+    });
+
+    it('stops its timer when the app shuts down', async () => {
+      const analytics = new Analytics(provider);
+      await analytics.init('2.0.0', {} as DashboardLayout);
+      await analytics.waitForRadarPoleSideUpload();
+      corrections.value = { '95': { start: false, table: true } };
+      flip();
+      analytics.shutdown();
+      await vi.advanceTimersByTimeAsync(120_000);
+      expect(reports()).toEqual([]);
+    });
+  });
+});

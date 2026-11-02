@@ -180,7 +180,7 @@ export const WidgetContainer = memo(
     return (
       <div style={containerStyle} data-widget-id={id}>
         {/* Widget content */}
-        <div className="w-full h-full pointer-events-none">
+        <div className="w-full h-full pointer-events-none [contain:layout_style_paint]">
           <WidgetScale scale={widget.scale}>{children}</WidgetScale>
         </div>
 

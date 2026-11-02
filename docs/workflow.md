@@ -41,11 +41,11 @@ graph TD
 ## GitHub notifications in Discord
 
 `.github/workflows/discord-pr-notifications.yml` posts to `#github-logs` when a
-pull request is opened or merged. Each card links to the PR and includes its
-number, title, author, repository, and target branch. Merged cards also show who
-merged it. Opened cards are green; merged cards are purple. Draft PRs and bot
-authors are included. Edits, commits, reopens, and unmerged closures are ignored.
-Notifications do not ping Discord users or roles.
+pull request is merged. Each purple card links to the PR and includes its
+number, title, author, repository, target branch, and who merged it (or `Unknown`
+if the merge author is unavailable). Bot authors are included. Opens, edits,
+commits, reopens, and unmerged closures are ignored. Notifications do not ping
+Discord users or roles.
 
 Configure the repository Actions secret `DISCORD_GITHUB_LOGS_WEBHOOK_URL` with
 the Discord webhook URL for `#github-logs` (Channel Settings → Integrations →

@@ -5,7 +5,10 @@ import {
   resolveLmuCarId,
   resolveLmuTrackId,
 } from './mapSession';
+import { lmuTeamName } from './entryName';
 import { fixture } from './rawSessionFixture';
+import { lmuSessionUniqueId } from './sessionIdentity';
+import { LMU_MANUFACTURERS } from '@irdashies/types';
 import { LMU_CLASS_COLOURS } from '@irdashies/types';
 
 describe('mapLmuSession', () => {
@@ -15,7 +18,10 @@ describe('mapLmuSession', () => {
     expect(s.WeekendInfo.TrackID).toBe(resolveLmuTrackId('Spa Francorchamps'));
     expect(s.WeekendInfo.TrackDisplayName).toBe('Spa Francorchamps');
     expect(s.WeekendInfo.TrackLength).toBe('7004 m');
-    expect(s.WeekendInfo.SubSessionID).toBe(2);
+    // Not the session type, which this used to assert: the type is not an
+    // identifier, and publishing it here made every practice session alike.
+    expect(s.WeekendInfo.SessionID).toBe(2);
+    expect(s.WeekendInfo.SubSessionID).toBe(lmuSessionUniqueId(fixture()));
     expect(s.WeekendInfo.NumCarClasses).toBe(2);
     expect(s.WeekendInfo.NumCarTypes).toBe(3);
   });
@@ -61,9 +67,22 @@ describe('mapLmuSession', () => {
   });
 
   it('leaves AI state unknown when the addon does not report control', () => {
-    const drivers = mapLmuSession(fixture()).DriverInfo.Drivers;
+    const raw = fixture();
+    const drivers = mapLmuSession(raw).DriverInfo.Drivers;
+    const ownName = raw.drivers.find((d) => d.isPlayer)?.name;
 
-    expect(drivers.every((d) => d.CarIsAIControlled === undefined)).toBe(true);
+    // Unknown for everyone the sim said nothing about...
+    expect(
+      drivers
+        .filter((d) => d.UserName !== ownName)
+        .every((d) => d.CarIsAIControlled === undefined)
+    ).toBe(true);
+    // ...but not for the player, who is known not to be an AI whatever
+    // control says. That is the point of isLmuAiEntry: in the garage LMU
+    // reports your own car as AI-controlled.
+    expect(drivers.find((d) => d.UserName === ownName)?.CarIsAIControlled).toBe(
+      false
+    );
     expect(drivers.every((d) => d.CarIsAI === 0)).toBe(true);
   });
 
@@ -89,16 +108,30 @@ describe('mapLmuSession', () => {
   });
 
   it.each([
-    'Alpine A424',
-    'Peugeot 9X8',
-    'Lexus RC F GT3',
-    'Genesis GMR-001',
-    'Duqueine M30-D08',
-    'Ginetta G61-LT-P3',
-    'ADESS AD03 Evo',
-    'Unknown Prototype',
-  ])('leaves the unsupported LMU model %s without a logo id', (model) => {
-    expect(resolveLmuCarId(model)).toBe(0);
+    ['Alpine A424', 'alpine'],
+    ['Peugeot 9X8', 'peugeot'],
+    ['Lexus RC F GT3', 'lexus'],
+    ['Genesis GMR-001', 'genesis'],
+    ['Duqueine M30-D08', 'duqueine'],
+    ['Ginetta G61-LT-P3', 'ginetta'],
+    ['ADESS AD03 Evo', 'adess'],
+    ['Isotta Fraschini Tipo6', 'isottafraschini'],
+    ['Glickenhaus 007 LMH', 'glickenhaus'],
+    ['Vanwall Vandervell 680', 'vanwall'],
+    ['Oreca 07 Gibson', 'oreca'],
+  ])('resolves the LMU-only model %s to %s', (model, manufacturer) => {
+    // These had no logo id at all until LMU got a manufacturer sheet of its
+    // own: iRacing has none of these marques, so there was no cell to point
+    // at and the badge column stayed empty for most of an LMU grid.
+    const id = resolveLmuCarId(model);
+    expect(id).not.toBe(0);
+    expect(
+      LMU_MANUFACTURERS.find((entry) => entry.id === id)?.manufacturer
+    ).toBe(manufacturer);
+  });
+
+  it('still leaves a model it cannot place without a logo id', () => {
+    expect(resolveLmuCarId('Unknown Prototype')).toBe(0);
   });
 
   it.each(['Ligier JS P320', 'Ligier JS P320 Nissan', 'Ligier JSP320'])(
@@ -411,6 +444,309 @@ describe('mapLmuSession REST session values', () => {
   });
 });
 
+describe('mapLmuSession driver nationality', () => {
+  const nameOf = (raw: ReturnType<typeof fixture>) => raw.drivers[0].name;
+
+  it('leaves LmuRating unset when nothing was polled', () => {
+    const s = mapLmuSession(fixture());
+    expect(s.DriverInfo.Drivers.every((d) => d.LmuRating === undefined)).toBe(
+      true
+    );
+  });
+
+  it('attaches the country to the matching driver', () => {
+    const raw = fixture();
+    const s = mapLmuSession(raw, null, {
+      nationalities: { [nameOf(raw)]: 'FR' },
+    });
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === nameOf(raw));
+    expect(driver?.LmuRating?.countryCode).toBe('FR');
+  });
+
+  it('leaves drivers the teams payload does not name alone', () => {
+    const raw = fixture();
+    const s = mapLmuSession(raw, null, {
+      nationalities: { 'Somebody Else': 'IT' },
+    });
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === nameOf(raw));
+    expect(driver?.LmuRating).toBeUndefined();
+  });
+
+  it('takes the team from the entry name, not the driver', () => {
+    // It was the driver's own name. Invisible, because LMU reports no team
+    // racing and the column is gated on WeekendInfo.TeamRacing -- but wrong.
+    const raw = fixture();
+    const s = mapLmuSession(raw);
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === nameOf(raw));
+    expect(driver?.TeamName).toBe('Team WRT 2026');
+    expect(driver?.TeamName).not.toBe(nameOf(raw));
+  });
+
+  it('leaves the team empty for an entry named after its car', () => {
+    const raw = fixture();
+    const carNamed = raw.drivers.find((d) => !d.vehicleName.includes('#'));
+    if (!carNamed) throw new Error('fixture needs an entry with no number');
+    const s = mapLmuSession(raw);
+
+    const driver = s.DriverInfo.Drivers.find(
+      (d) => d.UserName === carNamed.name
+    );
+    expect(driver?.TeamName).toBe('');
+  });
+
+  it('takes the car number from the entry name, not the slot', () => {
+    // The fixture's first entry is "Team WRT 2026 #32:WEC" at slot id 0, so
+    // the old slot-index default produced "1" for car 32. Join order decided
+    // every number on the grid.
+    const raw = fixture();
+    const s = mapLmuSession(raw);
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === nameOf(raw));
+    expect(driver?.CarNumber).toBe('32');
+    expect(driver?.CarNumberRaw).toBe(32);
+  });
+
+  it('falls back to the slot for an entry with no number in its name', () => {
+    // Real recordings carry these: an AI entry named after its car alone.
+    const raw = fixture();
+    const slotless = raw.drivers.find((d) => !d.vehicleName.includes('#'));
+    if (!slotless) throw new Error('fixture needs an entry with no number');
+    const s = mapLmuSession(raw);
+
+    const driver = s.DriverInfo.Drivers.find(
+      (d) => d.UserName === slotless.name
+    );
+    expect(driver?.CarNumber).toBe(String(slotless.id + 1));
+  });
+
+  it('attaches a looked-up rating to the matching driver', () => {
+    // The ranks path through the mapper, which nothing covered: every other
+    // test here passes nationalities only, so a break between ratingFor and
+    // LmuRating would have shown as standings with flags and no badges.
+    const raw = fixture();
+    const s = mapLmuSession(raw, null, undefined, (name) =>
+      name === nameOf(raw)
+        ? {
+            driverRank: 'Bronze',
+            driverTier: 3,
+            safetyRank: 'Silver',
+            safetyTier: 2,
+            badge: 'sr-saint',
+          }
+        : undefined
+    );
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === nameOf(raw));
+    expect(driver?.LmuRating?.driverRank).toBe('Bronze');
+    expect(driver?.LmuRating?.driverTier).toBe(3);
+    expect(driver?.LmuRating?.safetyRank).toBe('Silver');
+    expect(driver?.LmuRating?.safetyTier).toBe(2);
+    expect(driver?.LmuRating?.badge).toBe('sr-saint');
+  });
+
+  it('prefers the team name the standings endpoint states', () => {
+    // The entry name carries the season, so parsing its prefix names the
+    // team "Proton Competition 2026". fullTeamName is the team.
+    const raw = fixture();
+    const entry = {
+      ...raw.drivers[0],
+      vehicleName: 'Proton Competition 2026 #77:LM',
+    };
+    const withEntry = { ...raw, drivers: [entry, ...raw.drivers.slice(1)] };
+
+    const s = mapLmuSession(withEntry, null, {
+      teamNames: { [entry.id]: 'Proton Competition' },
+    });
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === entry.name);
+    expect(driver?.TeamName).toBe('Proton Competition');
+  });
+
+  it('parses the entry name when the standings have not answered', () => {
+    // Single player, a tape replay, or the first seconds of a session. The
+    // season suffix comes with it, which is the known cost of the fallback.
+    const raw = fixture();
+    const entry = {
+      ...raw.drivers[0],
+      vehicleName: 'Proton Competition 2026 #77:LM',
+    };
+    const withEntry = { ...raw, drivers: [entry, ...raw.drivers.slice(1)] };
+
+    const s = mapLmuSession(withEntry, null, undefined);
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === entry.name);
+    expect(driver?.TeamName).toBe('Proton Competition 2026');
+  });
+
+  it('falls back per car, not for the whole grid', () => {
+    // A mid-session joiner is in scoring before the standings mention them.
+    const raw = fixture();
+    const known = raw.drivers[0];
+    const joiner = raw.drivers[1];
+
+    const s = mapLmuSession(raw, null, {
+      teamNames: { [known.id]: 'Proton Competition' },
+    });
+
+    const drivers = s.DriverInfo.Drivers;
+    expect(drivers.find((d) => d.UserName === known.name)?.TeamName).toBe(
+      'Proton Competition'
+    );
+    expect(drivers.find((d) => d.UserName === joiner.name)?.TeamName).toBe(
+      lmuTeamName(joiner.vehicleName) ?? ''
+    );
+  });
+
+  it('keeps the rank of a player sitting in the garage', () => {
+    // LMU holds your car under AI control until you take it, so your own
+    // entry reads control 1 in the garage. That withheld your own rank while
+    // ranking everyone else, until you jumped in.
+    const raw = fixture();
+    const own = { ...raw.drivers[0], control: 1, isPlayer: true };
+    const inGarage = { ...raw, drivers: [own, ...raw.drivers.slice(1)] };
+
+    const s = mapLmuSession(inGarage, null, undefined, () => ({
+      driverRank: 'Gold',
+      badge: 'sr-saint',
+    }));
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === own.name);
+    expect(driver?.LmuRating?.driverRank).toBe('Gold');
+    expect(driver?.CarIsAIControlled).toBe(false);
+    expect(driver?.CarIsAI).toBe(0);
+  });
+
+  it('knows its own entry from the telemetry block alone', () => {
+    // The second signal. If the entry's own flag were not set in the garage,
+    // the slot the telemetry block names still identifies the car.
+    const raw = fixture();
+    const own = { ...raw.drivers[0], control: 1, isPlayer: false };
+    const inGarage = {
+      ...raw,
+      drivers: [own, ...raw.drivers.slice(1)],
+      playerHasVehicle: true,
+      playerVehicleIdx: own.id,
+    };
+
+    const s = mapLmuSession(inGarage, null, undefined, () => ({
+      driverRank: 'Gold',
+    }));
+
+    expect(
+      s.DriverInfo.Drivers.find((d) => d.UserName === own.name)?.LmuRating
+        ?.driverRank
+    ).toBe('Gold');
+  });
+
+  it('withholds a rating from an AI entry', () => {
+    // The service is asked by name, the sim names its AI after real drivers,
+    // and nothing in that chain can tell the two apart. The bridge already
+    // keeps AI names out of the lookup; this covers the other way in -- an
+    // answer already cached for a human of the same name, which reaches the
+    // mapper without any lookup at all.
+    const raw = fixture();
+    const ai = { ...raw.drivers[0], control: 1 };
+    const withAi = { ...raw, drivers: [ai, ...raw.drivers.slice(1)] };
+
+    const s = mapLmuSession(withAi, null, undefined, () => ({
+      driverRank: 'Platinum',
+      badge: 'sr-saint',
+    }));
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === ai.name);
+    expect(driver?.LmuRating?.driverRank).toBeUndefined();
+    expect(driver?.LmuRating?.badge).toBeUndefined();
+  });
+
+  it('still gives an AI entry the country the sim itself reports', () => {
+    // The country is first-party -- the sim's own statement about the entry --
+    // while the rank comes from a service that cannot tell an AI from the
+    // person it is named after. Only the second is withheld.
+    const raw = fixture();
+    const ai = { ...raw.drivers[0], control: 1 };
+    const withAi = { ...raw, drivers: [ai, ...raw.drivers.slice(1)] };
+
+    const s = mapLmuSession(
+      withAi,
+      null,
+      { nationalities: { [ai.name]: 'FR' } },
+      () => ({ driverRank: 'Platinum' })
+    );
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === ai.name);
+    expect(driver?.LmuRating?.countryCode).toBe('FR');
+    expect(driver?.LmuRating?.driverRank).toBeUndefined();
+  });
+
+  it('keeps the rating of an entry whose control the sim did not report', () => {
+    // `control === 1` only. The fixture reports no control for these, and a
+    // human must not lose their rank to a missing field.
+    const raw = fixture();
+    expect(raw.drivers[0].control).toBeUndefined();
+
+    const s = mapLmuSession(raw, null, undefined, () => ({
+      driverRank: 'Gold',
+    }));
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === nameOf(raw));
+    expect(driver?.LmuRating?.driverRank).toBe('Gold');
+  });
+
+  it('keeps the rating of a remote human', () => {
+    const raw = fixture();
+    const human = { ...raw.drivers[0], control: 2 };
+    const withHuman = { ...raw, drivers: [human, ...raw.drivers.slice(1)] };
+
+    const s = mapLmuSession(withHuman, null, undefined, () => ({
+      driverRank: 'Gold',
+    }));
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === human.name);
+    expect(driver?.LmuRating?.driverRank).toBe('Gold');
+  });
+
+  it('asks for the rating by the name the sim reports', () => {
+    // Including any '#1234' discriminator: that is what the service keys by.
+    const raw = fixture();
+    const asked: string[] = [];
+    mapLmuSession(raw, null, undefined, (name) => {
+      asked.push(name);
+      return undefined;
+    });
+
+    expect(asked).toContain(nameOf(raw));
+  });
+
+  it('carries a rank and a country from their separate sources', () => {
+    // Two different lookups, joined on the same name: the sim's own teams
+    // endpoint for the country, the rating service for the ranks.
+    const raw = fixture();
+    const s = mapLmuSession(
+      raw,
+      null,
+      { nationalities: { [nameOf(raw)]: 'FR' } },
+      () => ({ driverRank: 'Gold', driverTier: 1 })
+    );
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === nameOf(raw));
+    expect(driver?.LmuRating?.driverRank).toBe('Gold');
+    expect(driver?.LmuRating?.countryCode).toBe('FR');
+  });
+
+  it('leaves the iRacing flair id at zero', () => {
+    // The flag comes from LmuRating.countryCode. A non-zero FlairID here
+    // would point the iRacing lookup table at an unrelated country.
+    const raw = fixture();
+    const s = mapLmuSession(raw, null, {
+      nationalities: { [nameOf(raw)]: 'FR' },
+    });
+    expect(s.DriverInfo.Drivers[0].FlairID).toBe(0);
+  });
+});
+
 describe('mapLmuSession fuel capacity', () => {
   const asClass = (className: string) => {
     const raw = { ...fixture(), fuelCapacity: 100 };
@@ -594,5 +930,139 @@ describe('mapLmuSession results positions', () => {
 
     const row = resultsOf(raw).find((r) => r.CarIdx === raw.drivers[0].id);
     expect(row?.FastestTime).toBeCloseTo(95.5, 3);
+  });
+});
+
+describe('mapLmuSession tyre compounds', () => {
+  it('names every compound the grid is on, not just the player’s', () => {
+    // This held one entry at index 0 carrying the player's compound name, and
+    // the per-car indices were empty -- so every row looked up index 0 and
+    // rendered the player's tyre, whatever it was actually on.
+    const tires = mapLmuSession(fixture()).DriverInfo.DriverTires;
+    expect(tires).toEqual([
+      { TireIndex: 0, TireCompoundType: 'Hard' },
+      { TireIndex: 1, TireCompoundType: 'Medium' },
+      { TireIndex: 3, TireCompoundType: 'Wet' },
+    ]);
+  });
+
+  it('takes the full catalogue from REST when it has been polled', () => {
+    const tires = mapLmuSession(fixture(), null, {
+      tireCompounds: ['Hard', 'Medium', 'Soft', 'Wet'],
+    }).DriverInfo.DriverTires;
+    // Index 2 is in the catalogue and on no car, which is the point of it.
+    expect(tires).toEqual([
+      { TireIndex: 0, TireCompoundType: 'Hard' },
+      { TireIndex: 1, TireCompoundType: 'Medium' },
+      { TireIndex: 2, TireCompoundType: 'Soft' },
+      { TireIndex: 3, TireCompoundType: 'Wet' },
+    ]);
+  });
+
+  it('has nothing to say when the sim reports no compounds', () => {
+    const raw = fixture();
+    const stripped = {
+      ...raw,
+      drivers: raw.drivers.map((driver) => ({
+        ...driver,
+        frontTireCompoundIndex: undefined,
+        frontTireCompoundName: undefined,
+        rearTireCompoundIndex: undefined,
+        rearTireCompoundName: undefined,
+      })),
+    };
+    expect(mapLmuSession(stripped).DriverInfo.DriverTires).toEqual([]);
+  });
+});
+
+describe('mapLmuSession team names', () => {
+  const withNames = (...names: string[]) => {
+    const raw = fixture();
+    return {
+      ...raw,
+      drivers: raw.drivers.map((driver, index) => ({
+        ...driver,
+        vehicleName: names[index] ?? driver.vehicleName,
+      })),
+    };
+  };
+
+  it('takes the team from the entry name', () => {
+    const drivers = mapLmuSession(
+      withNames(
+        'DKR Engineering #3:ELMS26',
+        'Proton Competition #88:ELMS26',
+        'Team WRT 2026 #32:WEC'
+      )
+    ).DriverInfo.Drivers;
+
+    expect(drivers.map((d) => d.TeamName)).toEqual([
+      'DKR Engineering',
+      'Proton Competition',
+      'Team WRT 2026',
+    ]);
+  });
+
+  it('declares team racing so the widgets stop hiding the column', () => {
+    // Both widgets gate the Team Name column and the driver-name subtext on
+    // this. Fixed at 0, the names above were correct and unreachable.
+    expect(
+      mapLmuSession(withNames('DKR Engineering #3:ELMS26')).WeekendInfo
+        .TeamRacing
+    ).toBe(1);
+  });
+
+  it('does not declare it for a grid with no teams', () => {
+    // An AI entry reads "Ferrari 296 GT3" -- a car, not a team. Offering the
+    // column there would offer an empty one.
+    const noTeams = mapLmuSession(
+      withNames('Ferrari 296 GT3', 'BMW M4 GT3', 'Porsche 911 RSR')
+    );
+    expect(noTeams.WeekendInfo.TeamRacing).toBe(0);
+    expect(noTeams.DriverInfo.Drivers.map((d) => d.TeamName)).toEqual([
+      '',
+      '',
+      '',
+    ]);
+  });
+
+  it('declares it when any single entry carries a team', () => {
+    // A mixed grid -- one real entry among AI -- still has a column worth
+    // showing, and the AI rows simply stay blank.
+    expect(
+      mapLmuSession(
+        withNames('Ferrari 296 GT3', 'Proton Competition #88:ELMS26')
+      ).WeekendInfo.TeamRacing
+    ).toBe(1);
+  });
+});
+
+describe('mapLmuSession session identity', () => {
+  it('gives two tracks two session ids', () => {
+    // LMU numbers sessions by type, so both of these are session 1. Publishing
+    // that as SubSessionID meant race control, lap history, the reference lap
+    // and the replay context all compared 1 against 1 on a track change and
+    // kept their state -- which is the standings showing the previous grid.
+    const raw = fixture();
+    const first = mapLmuSession(raw).WeekendInfo.SubSessionID;
+    const second = mapLmuSession({
+      ...raw,
+      trackName: 'Circuit of the Americas',
+    }).WeekendInfo.SubSessionID;
+
+    expect(first).not.toBe(second);
+  });
+
+  it('agrees with the telemetry frame, which consumers compare against', () => {
+    const raw = fixture();
+    expect(mapLmuSession(raw).WeekendInfo.SubSessionID).toBe(
+      lmuSessionUniqueId(raw)
+    );
+  });
+
+  it('keeps the session type on SessionID, where it belongs', () => {
+    expect(mapLmuSession(fixture()).WeekendInfo.SessionID).toBe(
+      fixture().session
+    );
   });
 });

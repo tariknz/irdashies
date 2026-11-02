@@ -19,6 +19,7 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { ARC_STYLES } from './RadarSettings/ArcControls';
 import { RadarPreview } from './RadarSettings/RadarPreview';
+import { RadarPoleSideKey } from './RadarSettings/RadarPoleSideKey';
 import {
   RADAR_PRESETS,
   RADAR_SECTIONS,
@@ -365,6 +366,9 @@ export const RadarSettings = () => {
 
         return (
           <div className="space-y-4">
+            <div className="px-4">
+              <RadarPoleSideKey />
+            </div>
             <div className="px-4 space-y-3 pb-4 border-b border-slate-700/50">
               <div className="flex flex-wrap gap-x-6 gap-y-3 items-start">
                 <div className="space-y-1">

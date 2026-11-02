@@ -66,9 +66,9 @@ export const DriverRatingBadge = ({
     return (
       <div className="flex gap-1 items-center justify-center mx-2">
         <div
-          className={`text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[1.8em] ${(isMinimal ? minimalColorMap : colorMap)["A"]}`}
+          className={`text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[1.8em] ${(isMinimal ? minimalColorMap : colorMap)['A']}`}
         >
-          {"AI"}
+          {'AI'}
         </div>
       </div>
     );

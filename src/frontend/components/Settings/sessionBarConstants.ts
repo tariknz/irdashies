@@ -20,6 +20,7 @@ export const VALID_SESSION_BAR_ITEM_KEYS = [
   'topSpeed',
   'manufacturerPosition',
   'classRank',
+  'trackLimits',
 ] as const;
 
 // Labels for session bar items
@@ -32,6 +33,7 @@ export const SESSION_BAR_ITEM_LABELS: Record<string, string> = {
   localTime: 'Local Time',
   sessionClockTime: 'Session Clock Time',
   trackWetness: 'Track Wetness',
+  trackLimits: 'Track Limits',
   precipitation: 'Precipitation',
   humidity: 'Humidity',
   airTemperature: 'Air Temperature',

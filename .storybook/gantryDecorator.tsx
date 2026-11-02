@@ -8,12 +8,15 @@ import {
 } from '@irdashies/context';
 import {
   getWidgetDefaultConfig,
+  LAP_GRAPH_GAP_MAX_BOUNDS,
   LAP_GRAPH_LAP_WINDOW_BOUNDS,
   type ChannelBridge,
   type ChannelName,
   type ChannelPayloads,
   type GantryConfig,
   type IrSdkBridge,
+  type GantryStandingsSource,
+  type LapGraphAxisFit,
   type LapGraphYAxisMode,
   type NameFormat,
   type Session,
@@ -175,6 +178,10 @@ export interface GantryStoryArgs {
   yAxisMode: LapGraphYAxisMode;
   lapWindow: number;
   autoPin: boolean;
+  axisFit: LapGraphAxisFit;
+  gapMaxSeconds: number;
+  /** Which standings the left pane shows. */
+  standingsSource: GantryStandingsSource;
   /** Not config: drives `track-state.snapshot`, which gates the replay buttons. */
   isReplayPlaying: boolean;
 }
@@ -186,6 +193,9 @@ export const gantryStoryArgs: GantryStoryArgs = {
   yAxisMode: gantryDefaults.lapGraph.yAxisMode,
   lapWindow: gantryDefaults.lapGraph.lapWindow,
   autoPin: gantryDefaults.lapGraph.autoPin,
+  axisFit: gantryDefaults.lapGraph.axisFit,
+  gapMaxSeconds: gantryDefaults.lapGraph.gapMaxSeconds,
+  standingsSource: gantryDefaults.standings.source,
   isReplayPlaying: false,
 };
 
@@ -239,6 +249,30 @@ export const gantryArgTypes = {
       'Auto-pin the player, the class leader, and the cars around the player.',
     table: { category: 'Lap graph config' },
   },
+  axisFit: {
+    control: 'inline-radio',
+    options: ['shown', 'all'],
+    description:
+      'Whether the trace and gap y axis fits the pinned cars or every car.',
+    table: { category: 'Lap graph config' },
+  },
+  gapMaxSeconds: {
+    control: {
+      type: 'range',
+      min: LAP_GRAPH_GAP_MAX_BOUNDS.min,
+      max: LAP_GRAPH_GAP_MAX_BOUNDS.max,
+      step: 5,
+    },
+    description: 'Caps the gap axis at this many seconds. 0 is no cap.',
+    table: { category: 'Lap graph config' },
+  },
+  standingsSource: {
+    control: 'inline-radio',
+    options: ['builtin', 'overlay'],
+    description:
+      'The built-in Gantry table, or the overlay Standings widget drawn in the Gantry.',
+    table: { category: 'Gantry config' },
+  },
   isReplayPlaying: {
     control: 'boolean',
     description:
@@ -258,6 +292,11 @@ export const gantryConfigFromArgs = (
     yAxisMode: args.yAxisMode ?? gantryDefaults.lapGraph.yAxisMode,
     lapWindow: args.lapWindow ?? gantryDefaults.lapGraph.lapWindow,
     autoPin: args.autoPin ?? gantryDefaults.lapGraph.autoPin,
+    axisFit: args.axisFit ?? gantryDefaults.lapGraph.axisFit,
+    gapMaxSeconds: args.gapMaxSeconds ?? gantryDefaults.lapGraph.gapMaxSeconds,
+  },
+  standings: {
+    source: args.standingsSource ?? gantryDefaults.standings.source,
   },
 });
 

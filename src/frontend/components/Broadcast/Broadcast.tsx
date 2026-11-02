@@ -170,6 +170,10 @@ export const TowerView = ({
       : 'imsa';
   const look = THEMES[theme];
 
+  const rowsByKey = rows
+    .map((row, index) => [row, index] as const)
+    .sort(([a], [b]) => (a.key < b.key ? -1 : 1));
+
   if (rows.length === 0) return null;
 
   return (
@@ -194,7 +198,10 @@ export const TowerView = ({
           className="relative"
           style={{ height: rows.length * ROW_HEIGHT + 4 }}
         >
-          {rows.map((row, index) => {
+          {/* Rendered in key order, not rank order: React moves a reordered
+              element in the DOM, which cancels its slide and makes it jump
+              on top of the row that is still sliding. */}
+          {rowsByKey.map(([row, index]) => {
             const change =
               row.kind === 'driver'
                 ? changes.get(row.standing.carIdx)
@@ -209,7 +216,7 @@ export const TowerView = ({
                 }}
               >
                 <div
-                  key={tick}
+                  key={`page-${tick}`}
                   className="relative h-full"
                   style={rowAnimation(effect, index)}
                 >
@@ -226,7 +233,7 @@ export const TowerView = ({
                   )}
                 </div>
                 {change && (
-                  <PositionArrow key={change.seq} delta={change.delta} />
+                  <PositionArrow key={`arrow-${change.seq}`} delta={change.delta} />
                 )}
               </div>
             );

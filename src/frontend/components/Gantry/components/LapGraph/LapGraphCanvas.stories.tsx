@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useMemo, useState } from 'react';
+import type { LapGraphAxisFit } from '@irdashies/types';
 import { LapGraphCanvas } from './LapGraphCanvas';
 import type { LapGraphMode, LapGraphSeries, LapPoint } from './LapGraphCanvas';
 import { identityForGridSlot } from './lapGraphPalette';
@@ -91,6 +92,8 @@ interface CanvasArgs {
   pinnedCarIdxs: number[];
   defaultLapWindow?: number;
   axisCaption?: string;
+  axisFit: LapGraphAxisFit;
+  gapMaxSeconds: number;
 }
 
 /** Pinning is a callback on the real component, so the story holds the state. */
@@ -103,6 +106,8 @@ const Harness = ({
   pinnedCarIdxs,
   defaultLapWindow,
   axisCaption,
+  axisFit,
+  gapMaxSeconds,
 }: CanvasArgs) => {
   const series = useMemo(
     () => buildField({ cars, laps, mode, withRepair }),
@@ -119,6 +124,8 @@ const Harness = ({
         pinnedCarIdxs={pinned}
         focusedCarIdx={focusedCarIdx}
         defaultLapWindow={defaultLapWindow}
+        axisFit={axisFit}
+        gapMaxSeconds={gapMaxSeconds}
         onTogglePin={(carIdx) =>
           setPinned((current) =>
             current.includes(carIdx)
@@ -144,6 +151,8 @@ const meta: Meta = {
     pinnedCarIdxs: [0, 1, 17],
     defaultLapWindow: undefined,
     axisCaption: undefined,
+    axisFit: 'all',
+    gapMaxSeconds: 0,
   },
   argTypes: {
     mode: {
@@ -170,6 +179,18 @@ const meta: Meta = {
     axisCaption: {
       control: 'text',
       description: 'Caption under the y axis. Defaults to one per mode.',
+      table: { category: 'Props' },
+    },
+    axisFit: {
+      control: 'inline-radio',
+      options: ['shown', 'all'],
+      description:
+        'Sizes the trace and gap y axis to pinned cars or every car.',
+      table: { category: 'Props' },
+    },
+    gapMaxSeconds: {
+      control: { type: 'range', min: 0, max: 600, step: 5 },
+      description: 'Caps the gap axis in seconds. 0 is no cap.',
       table: { category: 'Props' },
     },
     cars: {
@@ -205,6 +226,11 @@ export const Position: Story = {
 
 export const Gap: Story = {
   args: { mode: 'gap' },
+};
+
+/** Car 17 is ten minutes down. Shown drivers keeps the axis on the pinned cars. */
+export const GapWithOutlier: Story = {
+  args: { mode: 'gap', axisFit: 'shown', laps: 60 },
 };
 
 export const Sprint: Story = {

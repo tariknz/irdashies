@@ -49,6 +49,7 @@ const MenuLink = ({
     >
       <Link
         to={item.to}
+        draggable={false}
         className="flex items-center gap-2 flex-1 min-w-0 px-2 py-1 cursor-pointer"
       >
         {showIcon && item.icon && (

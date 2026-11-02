@@ -7,9 +7,13 @@ import {
 
 export type RadarProfileId = 'road' | 'oval';
 
-/** WeekendInfo.TrackType: "road course", "oval", "dirt oval", "dirt road". */
+/**
+ * WeekendInfo.TrackType: "road course", "short track", "super speedway",
+ * "dirt oval", "dirt road" and so on. Anything that is not road racing is an
+ * oval; an unknown type (empty, as LMU gives) counts as a road course.
+ */
 export const isOvalTrack = (trackType: string | undefined): boolean =>
-  /oval/i.test(trackType ?? '');
+  !!trackType && !/road|rally/i.test(trackType);
 
 const PROFILE_KEY_SET: ReadonlySet<string> = new Set(RADAR_PROFILE_KEYS);
 

@@ -48,8 +48,24 @@ describe('LapTraceSampleProcessor', () => {
       lastLapTime: 95.123,
       lapCompleted: 3,
       incidentCount: 2,
+      // Absent from an iRacing frame, which has no such var.
+      simLapInvalidated: false,
       version: 1,
     });
+  });
+
+  it("carries LMU's lap-void flag, which iRacing never publishes", () => {
+    const processor = new LapTraceSampleProcessor();
+    processor.onFrame(driving({ LmuLapInvalidated: true }));
+    expect(processor.snapshot().simLapInvalidated).toBe(true);
+  });
+
+  it('bumps the version when the lap is voided', () => {
+    const processor = new LapTraceSampleProcessor();
+    processor.onFrame(driving());
+    const before = processor.snapshot().version;
+    processor.onFrame(driving({ LmuLapInvalidated: true }));
+    expect(processor.snapshot().version).toBe(before + 1);
   });
 
   it('does not bump the version when only SessionTime advances', () => {

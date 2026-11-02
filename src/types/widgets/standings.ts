@@ -30,9 +30,13 @@ export default defineWidgetManifest({
     positionChange: {
       enabled: false,
     },
+    lmuBadge: {
+      enabled: true,
+    },
     badge: {
       enabled: true,
       badgeFormat: 'license-color-rating-bw',
+      lmuFormat: 'plates',
     },
     delta: {
       enabled: true,
@@ -45,6 +49,7 @@ export default defineWidgetManifest({
     interval: {
       enabled: false,
       decimalPlaces: 1,
+      displayMode: 'time',
     },
     lastTime: {
       enabled: true,
@@ -58,6 +63,9 @@ export default defineWidgetManifest({
       opacity: 80,
     },
     foreground: {
+      opacity: 70,
+    },
+    driverRow: {
       opacity: 70,
     },
     countryFlags: {
@@ -119,6 +127,7 @@ export default defineWidgetManifest({
       minPlayerClassDrivers: 10,
       numTopDrivers: 3,
       topDriverDivider: 'theme',
+      showAll: false,
     },
     titleBar: {
       enabled: false,
@@ -212,6 +221,7 @@ export default defineWidgetManifest({
         'topSpeed',
         'manufacturerPosition',
         'classRank',
+        'trackLimits',
       ],
     },
     footerBar: {
@@ -300,10 +310,17 @@ export default defineWidgetManifest({
         'topSpeed',
         'manufacturerPosition',
         'classRank',
+        'trackLimits',
       ],
     },
     showOnlyWhenOnTrack: false,
     pushToPass: { enabled: false },
+    // Off by default: only LMU reports these, so on iRacing the column
+    // would be permanently blank.
+    trackLimits: { enabled: false },
+    // Off by default: no iRacing car has virtual energy, and iRacing
+    // reports no per-car fuel either, so the column would be blank.
+    lmuVirtualEnergy: { enabled: false },
     displayOrder: [
       'position',
       'carNumber',
@@ -313,6 +330,7 @@ export default defineWidgetManifest({
       'teamName',
       'pitStatus',
       'carManufacturer',
+      'lmuBadge',
       'badge',
       'iratingChange',
       'positionChange',
@@ -324,6 +342,8 @@ export default defineWidgetManifest({
       'lapTimeDeltas',
       'avgLapTime',
       'lapCount',
+      'trackLimits',
+      'lmuVirtualEnergy',
       'pushToPass',
     ],
     driverTag: { enabled: false },
@@ -376,6 +396,12 @@ export default defineWidgetManifest({
         { value: 'highlight', label: 'Highlight Color' },
       ],
     },
+    'driverStandings.showAll': {
+      type: 'boolean',
+      label: 'Show every driver',
+      description:
+        'Lists the whole field instead of the drivers around you. Meant for the tall Gantry panel.',
+    },
     useLivePosition: {
       type: 'boolean',
       label: 'Use Live Position Standings',
@@ -408,6 +434,15 @@ export default defineWidgetManifest({
     'foreground.opacity': {
       type: 'number',
       label: 'Session Bar Opacity',
+      min: 0,
+      max: 100,
+      step: 1,
+      units: '%',
+    },
+    'driverRow.opacity': {
+      type: 'number',
+      label: 'Driver Row Opacity',
+      description: 'Adjust driver row backgrounds and the player highlight',
       min: 0,
       max: 100,
       step: 1,
@@ -485,6 +520,17 @@ export default defineWidgetManifest({
       type: 'enum',
       label: 'Decimal Places',
       options: numberOptions(1, 3),
+    },
+    'interval.displayMode': {
+      type: 'enum',
+      control: 'select',
+      label: 'Interval Display',
+      description:
+        'Choose how intervals are displayed when cars are a lap or more apart.',
+      options: [
+        { value: 'time', label: 'Time' },
+        { value: 'laps', label: 'Laps When Lapped' },
+      ],
     },
     'interval.decimalPlaces': {
       type: 'enum',

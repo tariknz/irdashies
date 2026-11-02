@@ -9,8 +9,15 @@ import { createProcessorDefinitions } from './processorRegistry';
  * would run a second processor and publish a competing snapshot.
  * ReplayContextRuntime is read by the incident and lap-history runtimes, so it
  * must run whether or not a window subscribes.
+ * StreamChatService holds the Twitch and YouTube connections and reads no
+ * telemetry, so it has nothing to do with the frame loop.
  */
-const RUNTIME_OWNED_CHANNELS = ['lap-history.snapshot', 'replay.context'];
+const RUNTIME_OWNED_CHANNELS = [
+  'lap-history.snapshot',
+  'replay.context',
+  'streamchat.messages',
+  'streamchat.emotes',
+];
 
 describe('processor registry', () => {
   it('registers every host-owned snapshot channel exactly once', () => {

@@ -749,7 +749,8 @@ export class OverlayManager {
     }
 
     // The Gantry consumes telemetry and session data, so it is forwarded
-    // everything — before the settings-window guard below.
+    // everything — before the settings-window guard below. Session data goes to
+    // it even while hidden: it has to hold the whole session off screen.
     if (this.gantryWindow && !this.gantryWindow.isDestroyed()) {
       const bulkStream =
         key === 'telemetryInspector:telemetry'
@@ -759,7 +760,7 @@ export class OverlayManager {
             : undefined;
       const shouldSend =
         !bulkStream ||
-        (this.gantryWindow.isVisible() &&
+        ((bulkStream === 'sessionData' || this.gantryWindow.isVisible()) &&
           this.rendererDataSubscriptions?.has(
             this.gantryWindow.webContents.id,
             bulkStream
@@ -819,15 +820,28 @@ export class OverlayManager {
     return this.latestRunningState;
   }
 
-  /** Sends the cached session to a visible, subscribed sender window. */
+  /**
+   * Sends the cached session to a subscribed sender window. Visible windows
+   * only, except the Gantry, which is fed while hidden.
+   */
   public seedSessionData(sender: Electron.WebContents): boolean {
     const win = BrowserWindow.fromWebContents(sender);
     if (!win) return false;
     return refreshSessionDataForVisibleWindow(
       win,
       this.rendererDataSubscriptions,
-      this.latestSessionData
+      this.latestSessionData,
+      this.isGantryWebContents(sender)
     );
+  }
+
+  /**
+   * Whether this renderer is the Gantry's. It is fed every channel while
+   * minimised or hidden, so it holds the whole session whenever it is shown.
+   */
+  public isGantryWebContents(webContents: Electron.WebContents): boolean {
+    const win = this.gantryWindow;
+    return !!win && !win.isDestroyed() && win.webContents.id === webContents.id;
   }
 
   public hasTelemetryInspectorSubscribers(): boolean {
@@ -1191,6 +1205,16 @@ export class OverlayManager {
         { hash: '/gantry' }
       );
     }
+
+    // Closing an enabled Gantry only hides it, so it keeps collecting the
+    // session. Disabling the widget and quitting destroy it, which skips this.
+    browserWindow.on('close', (event) => {
+      if (this.isQuitting) return;
+      event.preventDefault();
+      browserWindow.hide();
+    });
+    // Windows log-off and shutdown close windows without a before-quit.
+    browserWindow.on('session-end', () => this.markQuitting());
 
     browserWindow.on('closed', () => {
       this.gantryWindow = undefined;

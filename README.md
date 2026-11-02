@@ -609,22 +609,30 @@ Side-by-side setup analysis to compare car setup changes between sessions.
 
 <img src="./docs/assets/setup-comparison.png" alt="Setup Comparison with changes highlighted between snapshots" width="900">
 
-### Twitch Chat Overlay
+### Stream Chat Overlay
 
-Displays live Twitch chat directly in your overlay, useful for streamers who want chat visible while racing.
+Displays live Twitch and YouTube chat in one overlay, useful for streamers who want chat visible while racing. Works the same in the overlay and in an OBS browser source.
 
 **Features:**
 
-- Live chat display with configurable channel name (no OAuth required)
-- Emoji support
+- Live Twitch chat by channel name and YouTube live chat by `@handle` (no OAuth or API keys required); leave a channel empty to turn that platform off
+- Messages from both platforms are mixed in the order they arrive
+- Optional platform logo in front of every message
+- Twitch emotes (including BTTV and 7TV) and YouTube emoji, plus YouTube owner, moderator, verified and member badges
 - Colored nicknames using each chatter's Twitch username color
 - Optional auto-disappearing messages with a configurable interval (10-90s)
 - Configurable font size and background opacity
+- YouTube chat connects automatically once the channel goes live
+- Chat connections run in the app itself, so an OBS browser source needs no internet access of its own
 - Visible even when iRacing is not running
+
+Settings are split into **Display**, **Twitch** and **YouTube** tabs. Chat from the older Twitch Chat widget is carried over automatically.
 
 <img src="./docs/assets/twitchchat.png" alt="Twitch Chat with sample messages" width="374">
 
+
 ### Heart Rate
+
 
 Displays your live heart rate from [HypeRate](https://www.hyperate.io/) by embedding its overlay — no API key or account required, just your session id.
 

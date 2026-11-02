@@ -2,6 +2,10 @@ import type { FuelLapData } from '../fuelCalculatorBridge';
 import type { Incident } from '../raceControl';
 import type { ReferenceLap } from '../referenceLaps';
 import type { Sector } from '../session';
+import type {
+  StreamChatEmotesSnapshot,
+  StreamChatMessagesSnapshot,
+} from '../streamChat';
 import type { ReplayContextSnapshot } from './replayContext';
 import type { PitLaneCalibration } from '../pitLane';
 
@@ -38,6 +42,8 @@ export interface ChannelPayloads {
    */
   'raceControl.sessionId': string;
   'replay.context': ReplayContextSnapshot;
+  'streamchat.messages': StreamChatMessagesSnapshot;
+  'streamchat.emotes': StreamChatEmotesSnapshot;
 }
 
 export interface TrackStateSnapshot {
@@ -48,6 +54,11 @@ export interface TrackStateSnapshot {
   carIdxClassPosition: readonly number[];
   carLeftRight: number;
   isOnTrack: boolean;
+  /**
+   * True when the frame is the last one the sim wrote rather than a current
+   * reading. Nothing about where the player is can be trusted while it is set.
+   */
+  dataStale: boolean;
   playerCarInPitStall: boolean;
   playerTrackSurface: number;
   onPitRoad: boolean;
@@ -117,6 +128,15 @@ export interface LapTraceSampleSnapshot {
    * lap never gets promoted to "my best lap".
    */
   incidentCount: number;
+  /**
+   * The sim's own "this lap is void" flag, from LMU's mLapInvalidated.
+   *
+   * Always false under iRacing, which has no equivalent channel and reports
+   * the same thing through `incidentCount` instead. LMU is the other way
+   * round — it publishes no incident count at all — so between the two every
+   * supported sim has one working signal.
+   */
+  simLapInvalidated: boolean;
   version: number;
 }
 
@@ -149,7 +169,7 @@ export interface RadarCar {
   /** Metres along the track from the focus car; positive is ahead. */
   dist: number;
   /** Rate of change of `dist` in m/s; positive means pulling away ahead. */
-  closingSpeed: number;
+  relativeSpeed: number;
   /**
    * Lateral lane relative to the focus car, in lanes; 0 is our lane,
    * negative is left. iRacing publishes no lateral position, so this is an
@@ -213,6 +233,17 @@ export interface RadarSnapshot {
   focusBrake: number | null;
   /** A yellow or caution is out, so position fights are off. */
   caution: boolean;
+  /**
+   * Set for a few seconds after the player flipped the pole side, naming the
+   * side now in use, so the radar can confirm the key press.
+   */
+  poleSideNotice: 'left' | 'right' | null;
+  /**
+   * Where the middle of the road lies from the focus car, in lanes, positive
+   * to the right: in a two-wide formation we sit in one column, so the road
+   * is half a lane over. 0 outside formations.
+   */
+  roadLane: number;
   /** Only cars within the processor's range, nearest first. */
   cars: readonly RadarCar[];
   /**
@@ -301,6 +332,13 @@ export interface SessionBarSnapshot {
   incidentWarningInitialLimit?: number;
   incidentWarningSubsequentLimit?: number;
   trackWetness: number;
+  /**
+   * LMU's track-limits penalty points for the player, and the points a
+   * drive-through is served at. Both undefined on a sim without them, and
+   * the points are undefined rather than 0 when there is no reading.
+   */
+  trackLimitsPoints?: number;
+  trackLimitsPointsMax?: number;
   precipitation?: number;
   relativeHumidity?: number;
   airTemp?: number;
@@ -435,6 +473,56 @@ export interface StandingsSnapshot {
   carIdxTrackSurface: number[];
   carIdxTireCompound: number[];
   carIdxSessionFlags: number[];
+  /**
+   * LMU's per-wheel compound indices, flat: four entries per car at
+   * `carIdx * 4 + wheel`, in FL, FR, RL, RR order. -1 is unknown.
+   *
+   * Empty under iRacing, which has one compound per car -- so a consumer
+   * reads this first and falls back to carIdxTireCompound.
+   */
+  carIdxWheelCompounds: number[];
+  /**
+   * LMU's track-limits penalty points per car. -1 where a car has no reading
+   * or the session has not stated the scale; 0 is a clean car.
+   *
+   * Empty under iRacing, whose incident points are a different system on a
+   * different scale.
+   */
+  carIdxTrackLimitsPoints: number[];
+  /**
+   * What each car has left to run on, 0..1, or -1 where neither budget reads.
+   * Virtual energy for a car that runs on it, fuel otherwise.
+   *
+   * Empty under iRacing, which has no virtual energy and reports no per-car
+   * fuel at all.
+   */
+  carIdxEnergyRemaining: number[];
+  /** Outstanding penalties per car. A count, not a kind. */
+  carIdxPenalties: number[];
+  /**
+   * Which penalty each car is serving, as an LMU_PENALTY_CODE.
+   *
+   * Empty under iRacing, and empty under LMU whenever the sim's UI websocket
+   * is not answering -- it is the only source that names a kind per car.
+   * `lmuPenaltyKindFromCode` turns an entry into something to draw.
+   */
+  carIdxPenaltyKind: number[];
+  /**
+   * Seconds a time penalty will add, per car. 0 for a clean car and for the
+   * two kinds served on track. Empty wherever `carIdxPenaltyKind` is.
+   *
+   * Not to be confused with `penaltySeconds` below, which is the player's own
+   * pit-stop estimate and a different fact from a different source.
+   */
+  carIdxPenaltySeconds: number[];
+  /**
+   * Seconds the player's next stop spends serving penalties. Undefined until
+   * the pit-stop estimate has been polled. Names the player's penalty when
+   * combined with their count -- see types/lmu/penalty.ts.
+   */
+  penaltySeconds?: number;
+  /** Points at which a drive-through is served. 0 when unknown. */
+  trackLimitsPointsMax: number;
   carIdxP2PStatus: boolean[];
   carIdxP2PCount: number[];
   sessionUniqueId: number;
@@ -663,6 +751,20 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 1,
     maxRateHz: 1,
+  },
+  // Publishes when a chat message arrives or a source changes state; the cap
+  // only bounds bursts, and the snapshot carries the whole buffer so a dropped
+  // intermediate publish loses nothing.
+  'streamchat.messages': {
+    kind: 'snapshot',
+    defaultRateHz: 5,
+    maxRateHz: 10,
+  },
+  // Publishes when the Twitch channel's BTTV/7TV emote sets finish loading.
+  'streamchat.emotes': {
+    kind: 'snapshot',
+    defaultRateHz: 1,
+    maxRateHz: 2,
   },
 } as const satisfies ChannelRegistry;
 

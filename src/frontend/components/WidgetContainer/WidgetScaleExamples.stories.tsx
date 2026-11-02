@@ -13,20 +13,36 @@ import { Input } from '../Input/Input';
 import { LapTimeLog } from '../LapTimeLog/LapTimeLog';
 import { FlatTrackMapCanvas } from '../TrackMap/FlatTrackMapCanvas';
 import { LapGraphCanvas } from '../Gantry/components/LapGraph/LapGraphCanvas';
+import { WidgetContainer } from './WidgetContainer';
 
 const Frame = ({
   title,
   scale,
   children,
+  editMode = false,
 }: {
   title: string;
   scale?: number;
   children: ReactNode;
+  editMode?: boolean;
 }) => (
   <section className="space-y-2">
     <h3 className="text-sm text-slate-300">{title}</h3>
-    <div className="h-80 w-[560px] border border-sky-500">
-      <WidgetScale scale={scale}>{children}</WidgetScale>
+    <div className="relative h-80 w-[560px] ring-1 ring-sky-500">
+      <WidgetContainer
+        widget={{
+          id: 'standings',
+          enabled: true,
+          scale,
+          layout: { x: 0, y: 0, width: 560, height: 320 },
+        }}
+        editMode={editMode}
+        zIndex={1}
+        onLayoutChange={() => undefined}
+        onOpenSettings={() => undefined}
+      >
+        {children}
+      </WidgetContainer>
     </div>
   </section>
 );
@@ -107,3 +123,27 @@ type Story = StoryObj<typeof meta>;
 export const Normal: Story = {};
 export const Small: Story = { args: { scale: 50 } };
 export const Large: Story = { args: { scale: 200 } };
+
+export const EditControlsAndOverflow: Story = {
+  render: ({ scale }) => (
+    <div className="bg-slate-950 p-8">
+      <Frame
+        title="Clipped content and outward edit controls"
+        scale={scale}
+        editMode
+      >
+        <div className="relative h-full w-full bg-slate-800 text-white">
+          <p className="p-4">Content stays inside the widget frame.</p>
+          <div className="absolute -left-8 top-20 h-12 w-[800px] bg-amber-500 shadow-xl">
+            <p className="px-12 py-3">
+              Oversized content is clipped at each edge.
+            </p>
+          </div>
+          <div className="absolute right-4 bottom-4 rounded bg-slate-700 p-2">
+            Edit arrows and resize handles remain outside the content frame.
+          </div>
+        </div>
+      </Frame>
+    </div>
+  ),
+};

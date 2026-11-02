@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { Play } from '@phosphor-icons/react';
 import { useElementSize } from '@irdashies/context';
+import type { LapGraphAxisFit } from '@irdashies/types';
 import { useWidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import {
   formatAxisValue,
@@ -66,6 +67,10 @@ export interface LapGraphCanvasProps {
   onTogglePin: (carIdx: number) => void;
   /** Laps visible before the user zooms. Falls back to the module default. */
   defaultLapWindow?: number;
+  /** Trace and gap only. Defaults to sizing the y axis to every car. */
+  axisFit?: LapGraphAxisFit;
+  /** Gap only. Caps the top of the y axis in seconds; 0 or unset is no cap. */
+  gapMaxSeconds?: number;
 }
 
 /** Vertical pixels within which the pointer counts as being on a line. */
@@ -258,6 +263,8 @@ export const LapGraphCanvas = memo(
     focusedCarIdx,
     onTogglePin,
     defaultLapWindow,
+    axisFit,
+    gapMaxSeconds,
   }: LapGraphCanvasProps) => {
     const widgetScale = useWidgetScale();
     const plotRef = useRef<HTMLDivElement>(null);
@@ -289,8 +296,19 @@ export const LapGraphCanvas = memo(
           plotWidth: plotSize.width,
           pinnedCarIdxs,
           focusedCarIdx,
+          axisFit,
+          gapMaxSeconds,
         }),
-      [series, mode, activeWindow, plotSize.width, pinnedCarIdxs, focusedCarIdx]
+      [
+        series,
+        mode,
+        activeWindow,
+        plotSize.width,
+        pinnedCarIdxs,
+        focusedCarIdx,
+        axisFit,
+        gapMaxSeconds,
+      ]
     );
 
     const brushGeometry = useMemo(
@@ -302,8 +320,19 @@ export const LapGraphCanvas = memo(
           plotWidth: brushSize.width,
           pinnedCarIdxs,
           focusedCarIdx,
+          axisFit,
+          gapMaxSeconds,
         }),
-      [series, mode, bounds, brushSize.width, pinnedCarIdxs, focusedCarIdx]
+      [
+        series,
+        mode,
+        bounds,
+        brushSize.width,
+        pinnedCarIdxs,
+        focusedCarIdx,
+        axisFit,
+        gapMaxSeconds,
+      ]
     );
 
     // Event handlers read the latest draw inputs through refs, so their own
@@ -663,6 +692,11 @@ export const LapGraphCanvas = memo(
         <div className="flex items-center justify-between gap-2 pb-1 shrink-0">
           <span className="text-slate-400 truncate">{axisCaption}</span>
           <div className="flex items-center gap-2 shrink-0">
+            {geometry.offScaleCount > 0 && (
+              <span className="text-slate-500 tabular-nums">
+                {`${geometry.offScaleCount} off scale`}
+              </span>
+            )}
             <span className="text-slate-500 tabular-nums">
               {`Laps ${Math.ceil(geometry.window.start)}-${Math.floor(geometry.window.end)}`}
             </span>

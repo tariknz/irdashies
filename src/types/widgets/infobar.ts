@@ -31,6 +31,7 @@ export default defineWidgetManifest({
     trackTemperature: { enabled: true, unit: 'Metric' },
     wind: { enabled: false, speedPosition: 'right' },
     trackName: { enabled: false },
+    trackLimits: { enabled: false },
     fuelLevel: { enabled: false },
     lastLap: { enabled: false },
     bestLap: { enabled: false },
@@ -68,6 +69,7 @@ export default defineWidgetManifest({
       'topSpeed',
       'manufacturerPosition',
       'classRank',
+      'trackLimits',
     ],
   },
   properties: {

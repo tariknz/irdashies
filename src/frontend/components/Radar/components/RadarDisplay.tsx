@@ -15,7 +15,7 @@ import type { RadarHazard } from '@irdashies/types';
 export interface RadarFrameCar {
   carIdx: number;
   dist: number;
-  closingSpeed: number;
+  relativeSpeed: number;
   lane: number;
   offTrack: boolean;
   onPitRoad?: boolean;
@@ -35,6 +35,10 @@ export interface RadarFrame {
   quiet?: boolean;
   /** Cars in trouble ahead, nearest first, possibly far past the range. */
   hazards?: readonly RadarHazard[];
+  /** The pole side the player just flipped to, shown for a few seconds. */
+  poleSideNotice?: 'left' | 'right' | null;
+  /** Middle of the road from our car, in lanes, positive to the right. */
+  roadLane?: number;
 }
 
 export interface RadarDiveOptions {
@@ -82,6 +86,8 @@ export interface RadarDisplayProps {
 
 /** Longest pause between paints still counted as driving, for the dashes. */
 const MAX_PAINT_GAP_S = 0.1;
+/** How fast the road follows its lane, per second. */
+const ROAD_EASE_PER_S = 8;
 
 const FALLBACK_APPEARANCE: RadarCarAppearance = {
   fill: '#94a3b8',
@@ -159,6 +165,8 @@ export const RadarDisplay = memo(
       let handle = 0;
       // Our own odometer: lap distance jumps at the line, this never does.
       let travelled = 0;
+      // The road eases to its lane instead of jumping when a formation ends.
+      let roadLane = latest.current.frame.roadLane ?? 0;
       let lastPaint = performance.now();
       let frameMs: number | undefined;
       const paint = () => {
@@ -175,6 +183,9 @@ export const RadarDisplay = memo(
         );
         lastPaint = started;
         travelled += snap.playerSpeed * sincePaint;
+        roadLane +=
+          ((snap.roadLane ?? 0) - roadLane) *
+          Math.min(sincePaint * ROAD_EASE_PER_S, 1);
         const laneWidth = look.carWidth + current.laneGapM;
         cars.length = snap.cars.length;
         for (let index = 0; index < snap.cars.length; index += 1) {
@@ -183,8 +194,8 @@ export const RadarDisplay = memo(
             current.appearance.get(car.carIdx) ?? FALLBACK_APPEARANCE;
           const target = cars[index] ?? ({} as RadarDrawCar);
           target.carIdx = car.carIdx;
-          target.dist = car.dist + car.closingSpeed * elapsed;
-          target.closingSpeed = car.closingSpeed;
+          target.dist = car.dist + car.relativeSpeed * elapsed;
+          target.relativeSpeed = car.relativeSpeed;
           target.lateral = -car.lane * laneWidth;
           target.lane = car.lane;
           target.offTrack = car.offTrack;
@@ -269,6 +280,8 @@ export const RadarDisplay = memo(
           dives: diveHints,
           laneWidth,
           hazards,
+          poleSideNotice: snap.poleSideNotice,
+          roadLane,
         });
         frameMs = performance.now() - started;
         if (active) handle = requestAnimationFrame(paint);

@@ -8,4 +8,5 @@ export * from './useInformationBarSettings';
 export * from './useRadioActiveCarIdxs';
 export * from './useQualifyingGrid';
 export * from './useRelativeSettings';
+export * from './standingsInteraction';
 export * from './useStandingsSettings';

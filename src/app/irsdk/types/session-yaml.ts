@@ -89,6 +89,45 @@ export interface LmuRestSession {
     qualify?: LmuWeatherNode[];
     race?: LmuWeatherNode[];
   };
+  /**
+   * Driver nationality as ISO 3166-1 alpha-2, keyed by the driver name the
+   * sim reports, from `/rest/multiplayer/teams`.
+   *
+   * Keyed by name rather than by index or id because that endpoint carries
+   * neither -- it is a bare map of names. Names are unique within a session,
+   * so this is sound, but it means an entry only matches while the scoring
+   * name and the teams name agree.
+   *
+   * Absent outside multiplayer: a single-player grid has no teams payload,
+   * and the AI have no nationality to report.
+   */
+  nationalities?: Record<string, string>;
+  /**
+   * The entrant each car is run by, keyed by CarIdx, from `fullTeamName` on
+   * `/rest/watch/standings`.
+   *
+   * The authoritative answer, and the reason this endpoint is polled at all.
+   * Shared memory has no team field; the fallback parses the prefix of the
+   * entry name, which carries the season with it -- "Proton Competition 2026
+   * #77:LM" yields "Proton Competition 2026" where this endpoint states
+   * "Proton Competition".
+   *
+   * Keyed by the payload's `slotID`, which is the scoring slot id and so this
+   * app's CarIdx. By slot rather than by driver name, unlike `nationalities`:
+   * a team runs a car, and the driver in it changes at every stop of an
+   * endurance race.
+   */
+  teamNames?: Record<number, string>;
+  /**
+   * The session's compounds in index order, from
+   * `/rest/garage/UIScreen/TireManagement`.
+   *
+   * Position is the compound index per-wheel telemetry reports, so a hole is
+   * kept as an empty string rather than removed -- filtering one out would
+   * renumber every compound after it. Merged into DriverInfo.DriverTires with
+   * what the grid itself states, which wins where the two disagree.
+   */
+  tireCompounds?: string[];
 }
 
 /**
