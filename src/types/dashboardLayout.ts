@@ -25,6 +25,8 @@ export interface DashboardWidget {
   alwaysEnabled?: boolean;
   /** The layout of the window for the widget on the dashboard. */
   layout: WidgetLayout;
+  /** Content scale in percent, independent of the layout. Unset means 100%. */
+  scale?: number;
   /** Configuration for the widget. */
   config?: Record<string, unknown>;
   /**
@@ -101,6 +103,37 @@ export type FontSize =
   | '8xl'
   | '9xl';
 
+export const SETTINGS_THEMES = ['classic', 'carbon', 'red'] as const;
+export type SettingsTheme = (typeof SETTINGS_THEMES)[number];
+/** Classic is the original look of the settings window. */
+export const DEFAULT_SETTINGS_THEME: SettingsTheme = 'classic';
+
+/** Persisted config is untrusted: unknown values get the default theme. */
+export const resolveSettingsTheme = (value: unknown): SettingsTheme =>
+  SETTINGS_THEMES.includes(value as SettingsTheme)
+    ? (value as SettingsTheme)
+    : DEFAULT_SETTINGS_THEME;
+
+/** Native window-control colours per settings theme: slate-700 / slate-300
+ *  of each .settings-theme-* in theme.css (kept in sync by a spec). */
+export const SETTINGS_TITLE_BAR: Record<
+  SettingsTheme,
+  { color: string; symbolColor: string }
+> = {
+  classic: { color: '#314158', symbolColor: '#cad5e2' },
+  carbon: { color: '#17181b', symbolColor: '#a7aab0' },
+  red: { color: '#1b1e23', symbolColor: '#9aa1ab' },
+};
+
+/** How the settings menu groups widgets: user groups, moves and collapsed sections. */
+export interface MenuLayout {
+  groups?: { id: string; label: string }[];
+  /** Widget type -> group id (built-in category or custom group) overriding its default. */
+  assign?: Record<string, string>;
+  /** Ids of collapsed groups. */
+  collapsed?: string[];
+}
+
 export interface GeneralSettingsType {
   fontType?: FontType;
   fontSize?: FontSize;
@@ -128,6 +161,9 @@ export interface GeneralSettingsType {
     | 'rose'
     | 'zinc'
     | 'stone';
+  /** Look of the settings window only; overlays use colorPalette. */
+  settingsTheme?: SettingsTheme;
+  menuLayout?: MenuLayout;
   showOnlyWhenOnTrack?: boolean;
   highlightColor?: number;
   skipTaskbar?: boolean;
@@ -142,6 +178,8 @@ export interface GeneralSettingsType {
   simulator?: SimulatorPreference;
   compactMode?: 'off' | 'compact' | 'ultra';
   overlayAlwaysOnTop?: boolean;
+  /** Experimental individual windows while locked; unset retains display windows. */
+  overlayWindowMode?: 'display' | 'widget';
   enableNetworkAccess?: boolean;
   /**
    * Controls the built-in component/OBS web server (see app/webserver).

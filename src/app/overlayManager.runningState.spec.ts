@@ -127,6 +127,28 @@ describe('OverlayManager running state', () => {
     expect(runningStateSends(window)).toEqual([['runningState', true]]);
   });
 
+  it('seeds the cached session to the settings window before it is shown', () => {
+    // It subscribes before ready-to-show reveals it, and LMU republishes the
+    // session only when its signature changes, so the seed is its one copy.
+    const manager = new OverlayManager();
+    manager.setRendererDataSubscriptions({
+      has: vi.fn(() => true),
+      hasAny: vi.fn(() => false),
+    });
+    manager.publishMessage('sessionData', { revision: 1 });
+    manager.createSettingsWindow();
+    const window = settingsWindow();
+    if (!window) throw new Error('no settings window was created');
+    window.shown = false;
+    window.webContents.send.mockClear();
+
+    const sender = window.webContents as unknown as Electron.WebContents;
+    expect(manager.seedSessionData(sender)).toBe(true);
+    expect(window.webContents.send).toHaveBeenCalledWith('sessionData', {
+      revision: 1,
+    });
+  });
+
   it('still withholds the telemetry inspector stream', () => {
     const manager = new OverlayManager();
     manager.createSettingsWindow();

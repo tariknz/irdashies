@@ -8,7 +8,8 @@ export interface ElementSize {
 const EMPTY: ElementSize = { width: 0, height: 0 };
 
 /**
- * Tracks an element's rendered size with a ResizeObserver.
+ * Tracks an element's layout size with a ResizeObserver. CSS transforms are
+ * excluded so canvases draw in logical pixels before widget scaling applies.
  *
  * Observes the element and its parent, because a flex child can keep its own
  * box while the parent resizes around it. Updates are debounced so a drag
@@ -27,11 +28,11 @@ export const useElementSize = (
     let timer: ReturnType<typeof setTimeout> | null = null;
 
     const measure = () => {
-      const rect = element.getBoundingClientRect();
+      const { clientWidth: width, clientHeight: height } = element;
       setSize((previous) =>
-        previous.width === rect.width && previous.height === rect.height
+        previous.width === width && previous.height === height
           ? previous
-          : { width: rect.width, height: rect.height }
+          : { width, height }
       );
     };
 

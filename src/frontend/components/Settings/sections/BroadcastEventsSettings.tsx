@@ -1,5 +1,6 @@
 import { Fragment, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { changeMarker } from '../components/ChangedMark';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
@@ -66,6 +67,7 @@ export const BroadcastEventsSettings = () => {
         return (
           <div className="space-y-4">
             <SettingsSection title="Options">
+              <WidgetScaleSettings widgetId={SETTING_ID} />
               {mark(
                 ['background'],
                 <SettingSliderRow

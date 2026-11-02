@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   DeltaSpeedWidgetSettings,
   SettingsTabType,
@@ -99,27 +100,30 @@ export const DeltaSpeedSettings = () => {
 
             <div>
               {activeTab === 'options' && (
-                <SettingsSection title="Display">
-                  <SettingProp path="background.opacity" />
-                  <SettingSelectRow
-                    title="Units"
-                    description="Unit for the numeric readout. Auto follows iRacing's own display units setting."
-                    value={settings.config.unit ?? 'km/h'}
-                    options={[
-                      { label: 'km/h', value: 'km/h' },
-                      { label: 'mph', value: 'mph' },
-                      { label: 'Auto', value: 'auto' },
-                    ]}
-                    onChange={(v) => handleConfigChange({ unit: v })}
-                  />
-                  <SettingProp path="scaleKph" />
-                  <SettingProp path="scaleMph" />
-                  <SettingProp path="capKph" />
-                  <SettingProp path="capMph" />
-                  <SettingProp path="updateThresholdKph" />
-                  <SettingProp path="updateThresholdMph" />
-                  <SettingProp path="showNumber" />
-                </SettingsSection>
+                <>
+                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
+                  <SettingsSection title="Display">
+                    <SettingProp path="background.opacity" />
+                    <SettingSelectRow
+                      title="Units"
+                      description="Unit for the numeric readout. Auto follows iRacing's own display units setting."
+                      value={settings.config.unit ?? 'km/h'}
+                      options={[
+                        { label: 'km/h', value: 'km/h' },
+                        { label: 'mph', value: 'mph' },
+                        { label: 'Auto', value: 'auto' },
+                      ]}
+                      onChange={(v) => handleConfigChange({ unit: v })}
+                    />
+                    <SettingProp path="scaleKph" />
+                    <SettingProp path="scaleMph" />
+                    <SettingProp path="capKph" />
+                    <SettingProp path="capMph" />
+                    <SettingProp path="updateThresholdKph" />
+                    <SettingProp path="updateThresholdMph" />
+                    <SettingProp path="showNumber" />
+                  </SettingsSection>
+                </>
               )}
 
               {activeTab === 'visibility' && (

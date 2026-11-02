@@ -13,7 +13,7 @@ import {
 } from '@irdashies/domain';
 import { useCurrentSessionType } from '@irdashies/context';
 import { getTailwindStyle } from '@irdashies/utils/colors';
-import type { NameFormat } from '@irdashies/types';
+import type { LapGraphAxisFit, NameFormat } from '@irdashies/types';
 import {
   DriverName as formatDriverName,
   extractDriverName,
@@ -50,6 +50,8 @@ interface Props {
   onClassChange: (classId: string) => void;
   chosenMode: LapGraphMode | null;
   onModeChange: (mode: LapGraphMode) => void;
+  chosenAxisFit: LapGraphAxisFit | null;
+  onAxisFitChange: (axisFit: LapGraphAxisFit) => void;
   chosenPins: readonly number[] | null;
   onPinsChange: (pins: readonly number[]) => void;
 }
@@ -79,6 +81,25 @@ const MODE_OPTIONS: {
     label: 'Gap',
     tooltip:
       'Seconds behind the class leader at the same lap count. Below zero means ahead of them.',
+  },
+];
+
+const AXIS_FIT_OPTIONS: {
+  axisFit: LapGraphAxisFit;
+  label: string;
+  tooltip: string;
+}[] = [
+  {
+    axisFit: 'shown',
+    label: 'Shown',
+    tooltip:
+      'Sizes the axis to your car and the pinned cars only. A car far off the pace rides along the edge instead of squashing the battle you are watching.',
+  },
+  {
+    axisFit: 'all',
+    label: 'All',
+    tooltip:
+      'Sizes the axis to every car in the class, including the faint ones in the background.',
   },
 ];
 
@@ -142,6 +163,8 @@ export const LapGraphView = memo(
     onClassChange,
     chosenMode,
     onModeChange,
+    chosenAxisFit,
+    onAxisFitChange,
     chosenPins,
     onPinsChange,
   }: Props) => {
@@ -161,6 +184,9 @@ export const LapGraphView = memo(
     // Settings supply the opening state. Once the user picks a mode or a pin in
     // this session their choice wins, so a saved default never fights them.
     const mode = chosenMode ?? lapGraphSettings?.yAxisMode ?? 'trace';
+    const savedAxisFit = lapGraphSettings?.axisFit;
+    const axisFit: LapGraphAxisFit =
+      chosenAxisFit ?? (savedAxisFit === 'all' ? 'all' : 'shown');
 
     const classes = useMemo(
       () =>
@@ -502,6 +528,44 @@ export const LapGraphView = memo(
               })}
             </div>
           </div>
+
+          {mode !== 'position' && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                Range
+              </span>
+              <div
+                className="flex items-center gap-1"
+                role="group"
+                aria-label="Lap graph y axis range"
+              >
+                {AXIS_FIT_OPTIONS.map((option) => {
+                  const isActive = option.axisFit === axisFit;
+                  return (
+                    <Tooltip
+                      key={option.axisFit}
+                      placement="bottom"
+                      content={option.tooltip}
+                    >
+                      <button
+                        type="button"
+                        aria-pressed={isActive}
+                        onClick={() => onAxisFitChange(option.axisFit)}
+                        className={[
+                          'px-3 py-1 rounded text-xs font-bold uppercase tracking-wider transition-colors',
+                          isActive
+                            ? 'bg-amber-500 text-slate-900'
+                            : 'bg-slate-800 text-slate-400 hover:text-slate-200',
+                        ].join(' ')}
+                      >
+                        {option.label}
+                      </button>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex-1 min-h-0 flex gap-2 p-3 text-xs">
@@ -519,6 +583,8 @@ export const LapGraphView = memo(
                 focusedCarIdx={focusedCarIdx}
                 onTogglePin={togglePin}
                 defaultLapWindow={lapGraphSettings?.lapWindow}
+                axisFit={axisFit}
+                gapMaxSeconds={lapGraphSettings?.gapMaxSeconds}
               />
             )}
           </div>

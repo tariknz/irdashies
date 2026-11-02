@@ -8,6 +8,7 @@ interface DeltaCellProps {
   showForUndefined?: string;
   decimalPlaces?: number;
   compactMode?: string;
+  showSign?: boolean;
 }
 
 export const DeltaCell = memo(
@@ -16,6 +17,7 @@ export const DeltaCell = memo(
     showForUndefined,
     decimalPlaces = 2,
     compactMode,
+    showSign = false,
   }: DeltaCellProps) => {
     const pxClass =
       compactMode === 'ultra'
@@ -39,10 +41,10 @@ export const DeltaCell = memo(
         // It's a Gap object
         if (delta.laps !== 0) {
           // Show lap difference
-          displayValue = `${delta.laps}L`;
+          displayValue = `${showSign && delta.laps > 0 ? '+' : ''}${delta.laps}L`;
         } else if (delta.value !== undefined) {
           // Show time difference from Gap.value
-          displayValue = formatGap(delta.value, decimalPlaces);
+          displayValue = `${showSign && delta.value > 0 ? '+' : ''}${formatGap(delta.value, decimalPlaces)}`;
         }
       } else {
         // It's a plain number - show time difference

@@ -28,6 +28,15 @@ export interface InputTraceProps {
   };
 }
 
+interface InputTraceHistory {
+  brake: number[];
+  brakeAbs: boolean[];
+  throttle: number[];
+  steer: number[];
+  clutch: number[];
+  writeIndex: number;
+}
+
 // Pre-allocated indices array (reused across renders)
 let cachedIndices: number[] = [];
 function getIndices(bufferSize: number): number[] {
@@ -61,25 +70,7 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
   const steerPathRef = useRef<SVGPathElement>(null);
   const rafRef = useRef<number | null>(null);
 
-  // Circular buffers - pre-allocated arrays that are reused
-  const brakeArray = useRef<number[]>(
-    Array.from({ length: bufferSize }, () => 0)
-  );
-  const brakeABSArray = useRef<boolean[]>(
-    Array.from({ length: bufferSize }, () => false)
-  );
-  const throttleArray = useRef<number[]>(
-    Array.from({ length: bufferSize }, () => 0)
-  );
-  const steerArray = useRef<number[]>(
-    Array.from({ length: bufferSize }, () => 0.5)
-  );
-  const clutchArray = useRef<number[]>(
-    Array.from({ length: bufferSize }, () => 0)
-  );
-
-  // Write index for circular buffer (oldest data point position)
-  const writeIndex = useRef<number>(0);
+  const historyRef = useRef<InputTraceHistory | null>(null);
 
   // Pre-compute scales (only change if dimensions change)
   const { xScale, yScale } = useMemo(() => {
@@ -108,20 +99,36 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
     }
 
     rafRef.current = requestAnimationFrame(() => {
-      const idx = writeIndex.current;
+      // Allocate only on the first sample or a capacity change. Reset every
+      // trace together when resizing so no old samples use the new time axis.
+      if (
+        !historyRef.current ||
+        historyRef.current.brake.length !== bufferSize
+      ) {
+        historyRef.current = {
+          brake: Array.from({ length: bufferSize }, () => 0),
+          brakeAbs: Array.from({ length: bufferSize }, () => false),
+          throttle: Array.from({ length: bufferSize }, () => 0),
+          steer: Array.from({ length: bufferSize }, () => 0.5),
+          clutch: Array.from({ length: bufferSize }, () => 0),
+          writeIndex: 0,
+        };
+      }
+      const history = historyRef.current;
+      const idx = history.writeIndex;
 
       // Update arrays in-place at current write position
       if (includeThrottle) {
-        throttleArray.current[idx] = input.throttle ?? 0;
+        history.throttle[idx] = input.throttle ?? 0;
       }
       if (includeBrake) {
-        brakeArray.current[idx] = input.brake ?? 0;
+        history.brake[idx] = input.brake ?? 0;
         if (includeAbs) {
-          brakeABSArray.current[idx] = input.brakeAbsActive ?? false;
+          history.brakeAbs[idx] = input.brakeAbsActive ?? false;
         }
       }
       if (includeClutch) {
-        clutchArray.current[idx] = input.clutch ?? 0;
+        history.clutch[idx] = input.clutch ?? 0;
       }
       if (includeSteer) {
         const angleRad = input.steer ?? 0;
@@ -129,12 +136,12 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
           0,
           Math.min(1, angleRad / (2 * Math.PI) + 0.5)
         );
-        steerArray.current[idx] = normalizedValue;
+        history.steer[idx] = normalizedValue;
       }
 
       // Move write index forward (circular)
-      writeIndex.current = (idx + 1) % bufferSize;
-      const wi = writeIndex.current;
+      history.writeIndex = (idx + 1) % bufferSize;
+      const wi = history.writeIndex;
       const indices = getIndices(bufferSize);
 
       // Helper to generate path d string for a standard line
@@ -165,24 +172,24 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
         return line(indices) ?? '';
       };
 
-      // Helper to generate the ABS-active line path (same curve, gated by brakeABSArray)
+      // Helper to generate the ABS-active line path (same curve, gated by ABS history)
       const generateAbsLineD = () => {
         const line = d3
           .line<number>()
           .x((i) => xScale(i))
           .y((i) => {
             const pi = (wi + i) % bufferSize;
-            return yScale(Math.max(0, Math.min(1, brakeArray.current[pi])));
+            return yScale(Math.max(0, Math.min(1, history.brake[pi])));
           })
           .defined((i) => {
             const pi = (wi + i) % bufferSize;
-            return brakeABSArray.current[pi];
+            return history.brakeAbs[pi];
           })
           .curve(d3.curveBasis);
         return line(indices) ?? '';
       };
 
-      // Helper to generate the ABS area fill (brake curve → y=0, gated by brakeABSArray)
+      // Helper to generate the ABS area fill (brake curve → y=0, gated by ABS history)
       const generateAbsAreaD = () => {
         const area = d3
           .area<number>()
@@ -190,11 +197,11 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
           .y0(yScale(0))
           .y1((i) => {
             const pi = (wi + i) % bufferSize;
-            return yScale(Math.max(0, Math.min(1, brakeArray.current[pi])));
+            return yScale(Math.max(0, Math.min(1, history.brake[pi])));
           })
           .defined((i) => {
             const pi = (wi + i) % bufferSize;
-            return brakeABSArray.current[pi];
+            return history.brakeAbs[pi];
           })
           .curve(d3.curveBasis);
         return area(indices) ?? '';
@@ -204,27 +211,21 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
       if (includeSteer && steerPathRef.current) {
         steerPathRef.current.setAttribute(
           'd',
-          generateCenteredPathD(steerArray.current)
+          generateCenteredPathD(history.steer)
         );
       }
       if (includeClutch && clutchPathRef.current) {
-        clutchPathRef.current.setAttribute(
-          'd',
-          generatePathD(clutchArray.current)
-        );
+        clutchPathRef.current.setAttribute('d', generatePathD(history.clutch));
       }
       if (includeThrottle && throttlePathRef.current) {
         throttlePathRef.current.setAttribute(
           'd',
-          generatePathD(throttleArray.current)
+          generatePathD(history.throttle)
         );
       }
       if (includeBrake) {
         if (brakePathRef.current) {
-          brakePathRef.current.setAttribute(
-            'd',
-            generatePathD(brakeArray.current)
-          );
+          brakePathRef.current.setAttribute('d', generatePathD(history.brake));
         }
         if (includeAbs) {
           if (absStyle === 'bar' && brakeAbsAreaRef.current) {

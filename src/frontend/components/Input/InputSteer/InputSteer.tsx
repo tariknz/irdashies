@@ -16,12 +16,7 @@ import { SteerDial } from './SteerDial';
 import type { SteerDialProps } from './SteerDial';
 
 export type WheelStyle =
-  | 'formula'
-  | 'lmp'
-  | 'nascar'
-  | 'ushape'
-  | 'default'
-  | 'ring';
+  'formula' | 'lmp' | 'nascar' | 'ushape' | 'default' | 'ring';
 
 const wheelComponentMap = {
   default: {
@@ -55,6 +50,7 @@ export interface InputSteerProps {
   speedMs?: number;
   unit?: number;
   gearSettings?: SteerDialProps['gearSettings'];
+  flashColor?: SteerDialProps['flashColor'];
 }
 
 export function InputSteer({
@@ -65,6 +61,7 @@ export function InputSteer({
   speedMs,
   unit,
   gearSettings,
+  flashColor,
 }: InputSteerProps) {
   const wheelRef = useRef<HTMLDivElement>(null);
 
@@ -94,6 +91,7 @@ export function InputSteer({
         unit={unit}
         wheelColor={wheelColor}
         gearSettings={gearSettings}
+        flashColor={flashColor}
       />
     );
   }

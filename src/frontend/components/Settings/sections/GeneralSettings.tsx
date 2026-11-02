@@ -1,9 +1,15 @@
 import { useState } from 'react';
+import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useAvailableSimulators, useDashboard } from '@irdashies/context';
 import { SIMULATOR_IDS, SIMULATOR_LABELS } from '@irdashies/types';
-import type { GeneralSettingsType } from '@irdashies/types';
+import {
+  DEFAULT_SETTINGS_THEME,
+  type GeneralSettingsType,
+  type SettingsTheme,
+} from '@irdashies/types';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useSimulatorPreference } from '../useSimulatorPreference';
+import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 
 const FONT_PRESETS = {
   lato: 'Lato',
@@ -92,6 +98,9 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
     fontSize: currentDashboard?.generalSettings?.fontSize ?? 'sm',
     fontWeight: currentDashboard?.generalSettings?.fontWeight ?? 'normal',
     colorPalette: currentDashboard?.generalSettings?.colorPalette ?? 'default',
+    settingsTheme:
+      currentDashboard?.generalSettings?.settingsTheme ??
+      DEFAULT_SETTINGS_THEME,
     highlightColor: currentDashboard?.generalSettings?.highlightColor ?? 960745,
     skipTaskbar: currentDashboard?.generalSettings?.skipTaskbar ?? true,
     disableHardwareAcceleration:
@@ -104,6 +113,10 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
     compactMode: currentDashboard?.generalSettings?.compactMode ?? 'off',
     overlayAlwaysOnTop:
       currentDashboard?.generalSettings?.overlayAlwaysOnTop ?? true,
+    overlayWindowMode:
+      currentDashboard?.generalSettings?.overlayWindowMode === 'widget'
+        ? 'widget'
+        : 'display',
     enableNetworkAccess:
       currentDashboard?.generalSettings?.enableNetworkAccess ?? false,
     enableWebServer: currentDashboard?.generalSettings?.enableWebServer ?? true,
@@ -234,6 +247,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
     updateDashboard(newSettings);
   };
 
+  const handleSettingsThemeChange = (newTheme: SettingsTheme) => {
+    const newSettings = { ...settings, settingsTheme: newTheme };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
   const handleHighlightColorChange = (newColor: number) => {
     const newSettings = { ...settings, highlightColor: newColor };
     setSettings(newSettings);
@@ -281,6 +300,15 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
 
   const handleOverlayAlwaysOnTopChange = (enabled: boolean) => {
     const newSettings = { ...settings, overlayAlwaysOnTop: enabled };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
+  const handleIndividualWindowsChange = (enabled: boolean) => {
+    const newSettings: GeneralSettingsType = {
+      ...settings,
+      overlayWindowMode: enabled ? 'widget' : 'display',
+    };
     setSettings(newSettings);
     updateDashboard(newSettings);
   };
@@ -345,7 +373,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                   e.target.value as NonNullable<GeneralSettingsType['fontType']>
                 )
               }
-              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500"
             >
               {Object.entries(FONT_PRESETS).map(([key, value]) => (
                 <option key={key} value={key}>
@@ -372,7 +400,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                   >
                 )
               }
-              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500"
             >
               {Object.entries(filteredWeights).map(([key, value]) => (
                 <option key={key} value={key}>
@@ -403,7 +431,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
               step="1"
               value={getSliderValue(settings.fontSize)}
               onChange={handleSliderChange}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider accent-blue-500"
+              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider accent-accent-500"
             />
           </div>
         </div>
@@ -423,7 +451,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                   >
                 )
               }
-              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500"
             >
               <option value="off">Off</option>
               <option value="compact">Compact</option>
@@ -450,18 +478,13 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                 viewport.
               </p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.editMode?.pixelDistances ?? false}
-                onChange={(e) =>
-                  handleShowEditModePixelDistancesChange(e.target.checked)
-                }
-                aria-labelledby="show-edit-mode-pixel-distances-label"
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
+            <ToggleSwitch
+              enabled={settings.editMode?.pixelDistances ?? false}
+              onToggle={(checked) =>
+                handleShowEditModePixelDistancesChange(checked)
+              }
+              ariaLabelledBy="show-edit-mode-pixel-distances-label"
+            />
           </div>
 
           <div className="flex items-center justify-between gap-4">
@@ -478,20 +501,27 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                 disable snapping.
               </p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.editMode?.snapToGrid ?? false}
-                onChange={(e) =>
-                  handleSnapEditModeWidgetsToGridChange(e.target.checked)
-                }
-                aria-labelledby="snap-edit-mode-widgets-to-grid-label"
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
+            <ToggleSwitch
+              enabled={settings.editMode?.snapToGrid ?? false}
+              onToggle={(checked) =>
+                handleSnapEditModeWidgetsToGridChange(checked)
+              }
+              ariaLabelledBy="snap-edit-mode-widgets-to-grid-label"
+            />
           </div>
         </BaseSettingsSection>
+
+        <SettingButtonGroupRow<SettingsTheme>
+          title="Settings Window Style"
+          description="Look of this settings window. Overlays are not affected."
+          value={settings.settingsTheme ?? DEFAULT_SETTINGS_THEME}
+          options={[
+            { label: 'Classic', value: 'classic' },
+            { label: 'Carbon', value: 'carbon' },
+            { label: 'Red', value: 'red' },
+          ]}
+          onChange={handleSettingsThemeChange}
+        />
 
         {/* Color Theme Settings */}
         <div className="space-y-4">
@@ -521,7 +551,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                   e.target.value as GeneralSettingsType['colorPalette']
                 )
               }
-              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500"
             >
               {Object.entries(COLOR_THEME_PRESETS).map(([key, value]) => (
                 <option key={key} value={key}>
@@ -556,7 +586,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
               onChange={(e) =>
                 handleHighlightColorChange(parseInt(e.target.value))
               }
-              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500"
             >
               {Array.from(HIGHLIGHT_COLOR_PRESETS.entries()).map(
                 ([key, value]) => (
@@ -578,11 +608,42 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
 
         {!previewMode && (
           <>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h3
+                    id="individual-overlay-windows-label"
+                    className="text-lg font-medium text-slate-200"
+                  >
+                    Individual Overlay Windows
+                  </h3>
+                  <p className="text-sm text-slate-400">
+                    Give each widget its own window, allowing it to span
+                    monitors. Applies immediately. Edit Layout temporarily uses
+                    shared screen windows and restarts local chart history and
+                    any in-progress Lap Trace recording.
+                  </p>
+                  <p className="text-sm text-amber-300">
+                    Warning: increases CPU usage compared with shared display
+                    windows.
+                  </p>
+                </div>
+                <ToggleSwitch
+                  enabled={settings.overlayWindowMode === 'widget'}
+                  onToggle={handleIndividualWindowsChange}
+                  ariaLabelledBy="individual-overlay-windows-label"
+                />
+              </div>
+            </div>
+
             {/* Hide from Taskbar Setting */}
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-medium text-slate-200">
+                  <h3
+                    id="skip-taskbar-label"
+                    className="text-lg font-medium text-slate-200"
+                  >
                     Hide Overlays from Taskbar
                   </h3>
                   <p className="text-sm text-slate-400">
@@ -591,15 +652,11 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     (requires restart)
                   </p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.skipTaskbar ?? true}
-                    onChange={(e) => handleSkipTaskbarChange(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
+                <ToggleSwitch
+                  enabled={settings.skipTaskbar ?? true}
+                  onToggle={(checked) => handleSkipTaskbarChange(checked)}
+                  ariaLabelledBy="skip-taskbar-label"
+                />
               </div>
             </div>
 
@@ -607,7 +664,10 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-medium text-slate-200">
+                  <h3
+                    id="overlay-always-on-top-label"
+                    className="text-lg font-medium text-slate-200"
+                  >
                     Keep Overlays Always On Top
                   </h3>
                   <p className="text-sm text-slate-400">
@@ -615,17 +675,13 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     other applications. (requires restart)
                   </p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.overlayAlwaysOnTop ?? true}
-                    onChange={(e) =>
-                      handleOverlayAlwaysOnTopChange(e.target.checked)
-                    }
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
+                <ToggleSwitch
+                  enabled={settings.overlayAlwaysOnTop ?? true}
+                  onToggle={(checked) =>
+                    handleOverlayAlwaysOnTopChange(checked)
+                  }
+                  ariaLabelledBy="overlay-always-on-top-label"
+                />
               </div>
             </div>
 
@@ -633,7 +689,10 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-medium text-slate-200">
+                  <h3
+                    id="enable-web-server-label"
+                    className="text-lg font-medium text-slate-200"
+                  >
                     Enable Web Server
                   </h3>
                   <p className="text-sm text-slate-400">
@@ -644,15 +703,11 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     stream or record. (requires restart)
                   </p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.enableWebServer ?? true}
-                    onChange={(e) => handleWebServerChange(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
+                <ToggleSwitch
+                  enabled={settings.enableWebServer ?? true}
+                  onToggle={(checked) => handleWebServerChange(checked)}
+                  ariaLabelledBy="enable-web-server-label"
+                />
               </div>
             </div>
 
@@ -660,7 +715,10 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-medium text-slate-200">
+                  <h3
+                    id="enable-network-access-label"
+                    className="text-lg font-medium text-slate-200"
+                  >
                     Enable Network Access
                   </h3>
                   <p className="text-sm text-slate-400">
@@ -670,17 +728,11 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     connections are allowed. (requires restart)
                   </p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.enableNetworkAccess ?? false}
-                    onChange={(e) =>
-                      handleNetworkAccessChange(e.target.checked)
-                    }
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
+                <ToggleSwitch
+                  enabled={settings.enableNetworkAccess ?? false}
+                  onToggle={(checked) => handleNetworkAccessChange(checked)}
+                  ariaLabelledBy="enable-network-access-label"
+                />
               </div>
             </div>
 
@@ -688,7 +740,10 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-medium text-slate-200">
+                  <h3
+                    id="hardware-acceleration-label"
+                    className="text-lg font-medium text-slate-200"
+                  >
                     Hardware Acceleration
                   </h3>
                   <p className="text-sm text-slate-400">
@@ -697,17 +752,13 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     will significantly impact performance. (requires restart)
                   </p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={!(settings.disableHardwareAcceleration ?? false)}
-                    onChange={(e) =>
-                      handleDisableHardwareAccelerationChange(!e.target.checked)
-                    }
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
+                <ToggleSwitch
+                  enabled={!(settings.disableHardwareAcceleration ?? false)}
+                  onToggle={(checked) =>
+                    handleDisableHardwareAccelerationChange(!checked)
+                  }
+                  ariaLabelledBy="hardware-acceleration-label"
+                />
               </div>
             </div>
 
@@ -715,7 +766,10 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-medium text-slate-200">
+                  <h3
+                    id="auto-start-label"
+                    className="text-lg font-medium text-slate-200"
+                  >
                     Start on system startup
                   </h3>
                   <p className="text-sm text-slate-400">
@@ -723,15 +777,11 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     start up.
                   </p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.enableAutoStart ?? true}
-                    onChange={(e) => handleAutoStartChange(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
+                <ToggleSwitch
+                  enabled={settings.enableAutoStart ?? true}
+                  onToggle={(checked) => handleAutoStartChange(checked)}
+                  ariaLabelledBy="auto-start-label"
+                />
               </div>
             </div>
 
@@ -739,7 +789,10 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-medium text-slate-200">
+                  <h3
+                    id="start-minimized-label"
+                    className="text-lg font-medium text-slate-200"
+                  >
                     Start minimized
                   </h3>
                   <p className="text-sm text-slate-400">
@@ -747,17 +800,11 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     the system tray.
                   </p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.startMinimized ?? false}
-                    onChange={(e) =>
-                      handleStartMinimizedChange(e.target.checked)
-                    }
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
+                <ToggleSwitch
+                  enabled={settings.startMinimized ?? false}
+                  onToggle={(checked) => handleStartMinimizedChange(checked)}
+                  ariaLabelledBy="start-minimized-label"
+                />
               </div>
             </div>
 
@@ -765,7 +812,10 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-medium text-slate-200">
+                  <h3
+                    id="close-to-tray-label"
+                    className="text-lg font-medium text-slate-200"
+                  >
                     Close to tray
                   </h3>
                   <p className="text-sm text-slate-400">
@@ -773,15 +823,11 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     rather than quitting.
                   </p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.closeToTray ?? true}
-                    onChange={(e) => handleCloseToTrayChange(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
+                <ToggleSwitch
+                  enabled={settings.closeToTray ?? true}
+                  onToggle={(checked) => handleCloseToTrayChange(checked)}
+                  ariaLabelledBy="close-to-tray-label"
+                />
               </div>
             </div>
 
@@ -806,7 +852,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                       >
                     )
                   }
-                  className="shrink-0 px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="shrink-0 px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500"
                 >
                   <option value="auto">Auto</option>
                   {SIMULATOR_IDS.map((id) => {

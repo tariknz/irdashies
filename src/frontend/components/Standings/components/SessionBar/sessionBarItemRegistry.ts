@@ -8,7 +8,9 @@ import { BrakeBiasItem } from './components/BrakeBiasItem/BrakeBiasItem';
 import { LocalTimeItem } from './components/LocalTimeItem/LocalTimeItem';
 import { SessionClockTimeItem } from './components/SessionClockTimeItem/SessionClockTimeItem';
 import { TrackWetnessItem } from './components/TrackWetnessItem/TrackWetnessItem';
+import { TrackLimitsItem } from './components/TrackLimitsItem/TrackLimitsItem';
 import { PrecipitationItem } from './components/PrecipitationItem/PrecipitationItem';
+import { HumidityItem } from './components/HumidityItem/HumidityItem';
 import { AirTemperatureItem } from './components/AirTemperatureItem/AirTemperatureItem';
 import { TrackTemperatureItem } from './components/TrackTemperatureItem/TrackTemperatureItem';
 import { TrackNameItem } from './components/TrackNameItem/TrackNameItem';
@@ -38,6 +40,7 @@ export const SESSION_BAR_ITEM_COMPONENTS: Record<
   sessionClockTime: SessionClockTimeItem,
   trackWetness: TrackWetnessItem,
   precipitation: PrecipitationItem,
+  humidity: HumidityItem,
   airTemperature: AirTemperatureItem,
   trackTemperature: TrackTemperatureItem,
   trackName: TrackNameItem,
@@ -48,6 +51,7 @@ export const SESSION_BAR_ITEM_COMPONENTS: Record<
   manufacturerPosition: ManufacturerPositionItem,
   classRank: ClassRankItem,
   topSpeed: TopSpeedItem,
+  trackLimits: TrackLimitsItem,
 };
 
 // Position-dependent default-enabled rules, transcribed 1:1 from the original
@@ -65,6 +69,7 @@ const DEFAULT_ENABLED: Record<
   sessionClockTime: () => false,
   trackWetness: (position) => position !== 'header',
   precipitation: () => false,
+  humidity: () => false,
   airTemperature: (position) => position !== 'header',
   trackTemperature: (position) => position !== 'header',
   trackName: () => false,
@@ -75,6 +80,10 @@ const DEFAULT_ENABLED: Record<
   manufacturerPosition: () => false,
   classRank: () => false,
   topSpeed: () => false,
+  // Only LMU reports these, and the item renders nothing without them --
+  // so defaulting on would cost an iRacing user nothing but is still a
+  // claim about their sim this cannot make. Off, like the other opt-ins.
+  trackLimits: () => false,
 };
 
 export const isSessionBarItemEnabled = (

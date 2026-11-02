@@ -176,7 +176,7 @@ const PanelRowControls = ({
           <button
             type="button"
             onClick={() => onEdit(`/settings/${panel.type}`)}
-            className="text-sky-400 hover:text-sky-300 underline"
+            className="text-accent-400 hover:text-accent-300 underline"
           >
             Edit {GANTRY_DOCK_PANEL_LABELS[panel.type]} settings
           </button>

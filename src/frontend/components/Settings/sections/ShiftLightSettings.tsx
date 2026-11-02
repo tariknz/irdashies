@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   ShiftLightWidgetSettings,
   getWidgetDefaultConfig,
   SettingsTabType,
 } from '@irdashies/types';
-import { useActiveSimulator, useDashboard } from '@irdashies/context';
+import {
+  useActiveSimulator,
+  useDashboard,
+  useSessionStore,
+} from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { getAvailableCars } from '../../../utils/carData';
@@ -31,6 +36,46 @@ interface CarListItem {
   ledRpm: object[];
 }
 
+interface CurrentModelCar {
+  carId: string;
+  redlineRpm: number;
+  gearCount: number;
+  shiftRpm: number;
+}
+
+/**
+ * The car being driven, when the sim names it by model.
+ *
+ * The car list comes from the bundled iRacing car data, so an LMU car can
+ * never be picked from it. LMU sets CarModel, which is also the key the widget
+ * looks custom shift points up by there (see useTachometerData), and the
+ * session already holds what a new entry needs: the rev limit, the gear count
+ * and the shift point the bridge settled on for that car.
+ */
+const useCurrentModelCar = (): CurrentModelCar | undefined => {
+  const carId = useSessionStore((state) => {
+    const info = state.session?.DriverInfo;
+    return info?.Drivers?.find((d) => d.CarIdx === info.DriverCarIdx)?.CarModel;
+  });
+  const redlineRpm = useSessionStore(
+    (state) => state.session?.DriverInfo?.DriverCarRedLine
+  );
+  const gearCount = useSessionStore(
+    (state) => state.session?.DriverInfo?.DriverCarGearNumForward
+  );
+  const shiftRpm = useSessionStore(
+    (state) => state.session?.DriverInfo?.DriverCarSLShiftRPM
+  );
+  if (!carId) return undefined;
+  const redline = redlineRpm || 8000;
+  return {
+    carId,
+    redlineRpm: redline,
+    gearCount: gearCount || 6,
+    shiftRpm: shiftRpm || Math.round(redline * DEFAULT_SHIFT_RPM_RATIO),
+  };
+};
+
 /**
  * Custom shift points configuration section
  */
@@ -54,6 +99,7 @@ const CustomShiftPointsSection = ({
   const simulator = useActiveSimulator();
 
   const customShiftPoints = config.shiftPointSettings;
+  const currentModelCar = useCurrentModelCar();
 
   const updateCustomShiftPoints = (
     updates: Partial<typeof customShiftPoints>
@@ -96,7 +142,32 @@ const CustomShiftPointsSection = ({
     loadAvailableCars();
   }, [customShiftPoints.enabled, simulator]);
 
+  const addCurrentModelCar = (car: CurrentModelCar) => {
+    const gearShiftPoints: Record<string, { shiftRpm: number }> = {};
+    for (let i = 1; i <= car.gearCount; i++) {
+      gearShiftPoints[i.toString()] = { shiftRpm: car.shiftRpm };
+    }
+    updateCustomShiftPoints({
+      carConfigs: {
+        ...customShiftPoints.carConfigs,
+        [car.carId]: {
+          enabled: true,
+          carId: car.carId,
+          carName: car.carId,
+          gearCount: car.gearCount,
+          redlineRpm: car.redlineRpm,
+          gearShiftPoints,
+        },
+      },
+    });
+    setSelectedCarId('');
+  };
+
   const addCar = () => {
+    if (currentModelCar && selectedCarId === currentModelCar.carId) {
+      addCurrentModelCar(currentModelCar);
+      return;
+    }
     const selectedCar = availableCars.find((c) => c.carId === selectedCarId);
     if (!selectedCar) return;
 
@@ -193,6 +264,8 @@ const CustomShiftPointsSection = ({
   const availableToAdd = availableCars.filter(
     (c) => !customShiftPoints.carConfigs[c.carId]
   );
+  const canAddCurrentModelCar =
+    !!currentModelCar && !customShiftPoints.carConfigs[currentModelCar.carId];
 
   return (
     <div className="space-y-3">
@@ -212,11 +285,11 @@ const CustomShiftPointsSection = ({
       {customShiftPoints.enabled && (
         <div className="space-y-4 border-slate-700 pl-4">
           {/* Demo Mode Info */}
-          <div className="bg-blue-900/30 border border-blue-700/50 rounded p-3 text-xs">
+          <div className="bg-accent-900/30 border border-accent-700/50 rounded p-3 text-xs">
             <div className="flex items-start gap-2">
               <div className="flex-1">
-                <p className="text-blue-200 mb-1">Demo Mode Car</p>
-                <p className="text-blue-300">
+                <p className="text-accent-200 mb-1">Demo Mode Car</p>
+                <p className="text-accent-300">
                   Demo mode uses the <strong>BMW M4 GT4</strong> (bmwm4gt4).
                   Configure custom shift points for this car to test in demo
                   mode.
@@ -266,6 +339,11 @@ const CustomShiftPointsSection = ({
                 disabled={loading}
               >
                 <option value="">Select a car...</option>
+                {canAddCurrentModelCar && (
+                  <option value={currentModelCar.carId}>
+                    {currentModelCar.carId} (current car)
+                  </option>
+                )}
                 {availableToAdd.map((car) => (
                   <option key={car.carId} value={car.carId}>
                     {car.carName}
@@ -275,7 +353,7 @@ const CustomShiftPointsSection = ({
               <button
                 onClick={addCar}
                 disabled={!selectedCarId || loading}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded text-sm transition-colors"
+                className="px-4 py-2 bg-accent-600 hover:bg-accent-700 disabled:bg-slate-600 disabled:text-slate-400 disabled:cursor-not-allowed text-on-accent rounded text-sm transition-colors"
               >
                 Add
               </button>
@@ -462,11 +540,14 @@ export const ShiftLightSettings = () => {
 
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
-                <SettingsSection title="Display">
-                  <SettingProp path="background.opacity" />
+                <>
+                  <WidgetScaleSettings widgetId="shiftlight" className="px-4" />
+                  <SettingsSection title="Display">
+                    <SettingProp path="background.opacity" />
 
-                  <SettingProp path="showRpmText" />
-                </SettingsSection>
+                    <SettingProp path="showRpmText" />
+                  </SettingsSection>
+                </>
               )}
 
               {/* OPTIONS TAB */}

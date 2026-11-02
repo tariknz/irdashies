@@ -6,6 +6,7 @@ import type {
 } from '@irdashies/types';
 import { SessionState, TrackLocation } from '../irsdk/types/enums';
 import type { TelemetryProcessor } from './TelemetryProcessor';
+import { RaceFinishTracker } from './RaceFinishTracker';
 
 const numberValue = (frame: Telemetry, key: keyof Telemetry): number | null => {
   const value = frame[key]?.value?.[0];
@@ -59,7 +60,14 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
   private readonly activeClassIds: number[] = [];
   private readonly resultClassPosition: number[] = [];
   private readonly resultLapsComplete: number[] = [];
-  private resultsSessionNum: number | null = null;
+  /**
+   * Which session the results snapshot below was taken from.
+   *
+   * The unique id as well as the session number, because a sim can reuse the
+   * number: LMU numbers by session *type*, so a track change kept the same
+   * number and this held the previous event's finishing order.
+   */
+  private resultsSessionKey: string | null = null;
   private readonly effectiveProgress: number[] = [];
   private readonly lastProgress: number[] = [];
   private readonly livePreviousSurface: (number | undefined)[] = [];
@@ -69,11 +77,12 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
   private p1LapAtCheckered: number | null = null;
   private sortLaps: unknown[] = [];
   private sortSessionState = 0;
+  private readonly raceFinish = new RaceFinishTracker();
   private latest: StandingsSnapshot = this.emptySnapshot();
 
   init(session: Session): void {
     this.session = session;
-    this.resultsSessionNum = null;
+    this.resultsSessionKey = null;
     const driverCarIdx = session.DriverInfo?.DriverCarIdx;
     this.driverCarIdx =
       typeof driverCarIdx === 'number' && driverCarIdx >= 0
@@ -91,11 +100,26 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
         ? cameraCarIdx
         : this.driverCarIdx;
     const sessionNum = numberValue(frame, 'SessionNum');
+    const sessionState = numberValue(frame, 'SessionState') ?? 0;
+    const sessionUniqueId = numberValue(frame, 'SessionUniqueID') ?? 0;
     const lifecycleChanged =
       this.latest.sessionNum !== null && sessionNum !== this.latest.sessionNum;
     const timeWentBackwards =
       this.lastUpdateTime !== null && sessionTime < this.lastUpdateTime;
-    if (lifecycleChanged || timeWentBackwards) this.reset(sessionNum);
+    const raceRestarted =
+      this.latest.sessionState >= SessionState.Checkered &&
+      sessionState < SessionState.Checkered;
+    const identityChanged =
+      this.latest.sessionUniqueId !== 0 &&
+      sessionUniqueId !== 0 &&
+      sessionUniqueId !== this.latest.sessionUniqueId;
+    if (
+      lifecycleChanged ||
+      timeWentBackwards ||
+      raceRestarted ||
+      identityChanged
+    )
+      this.reset(sessionNum);
     this.lastUpdateTime = sessionTime;
 
     copyBooleanArray(frame, 'CarIdxOnPitRoad', this.latest.carIdxOnPitRoad);
@@ -126,12 +150,58 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       'CarIdxSessionFlags',
       this.latest.carIdxSessionFlags
     );
+    // LMU only, and flat: four entries per car. Absent under iRacing, which
+    // reports one compound per car, so the copy leaves it empty there and the
+    // renderer falls back to the single value.
+    copyNumberArray(
+      frame,
+      'LmuCarIdxWheelCompounds',
+      this.latest.carIdxWheelCompounds
+    );
+    // LMU only. Already in points rather than the sim's infringement steps,
+    // and -1 where a car has no reading -- 0 is a clean car.
+    copyNumberArray(
+      frame,
+      'LmuCarIdxTrackLimitsPoints',
+      this.latest.carIdxTrackLimitsPoints
+    );
+    this.latest.trackLimitsPointsMax =
+      numberValue(frame, 'LmuTrackLimitsPointsMax') ?? 0;
+    // LMU only. Already one figure per car -- virtual energy or fuel,
+    // whichever limits that car -- with -1 for no reading.
+    copyNumberArray(
+      frame,
+      'LmuCarIdxEnergyRemaining',
+      this.latest.carIdxEnergyRemaining
+    );
+    copyNumberArray(frame, 'LmuCarIdxPenalties', this.latest.carIdxPenalties);
+    // LMU only, and only while its UI websocket is answering. The kind, as a
+    // code; the count above says nothing about which penalty it is.
+    copyNumberArray(
+      frame,
+      'LmuCarIdxPenaltyKind',
+      this.latest.carIdxPenaltyKind
+    );
+    copyNumberArray(
+      frame,
+      'LmuCarIdxPenaltySeconds',
+      this.latest.carIdxPenaltySeconds
+    );
+    this.latest.penaltySeconds =
+      numberValue(frame, 'LmuPenaltySeconds') ?? undefined;
     copyBooleanArray(frame, 'CarIdxP2P_Status', this.latest.carIdxP2PStatus);
     copyNumberArray(frame, 'CarIdxP2P_Count', this.latest.carIdxP2PCount);
-    const sessionState = numberValue(frame, 'SessionState') ?? 0;
-    this.latest.sessionUniqueId = numberValue(frame, 'SessionUniqueID') ?? 0;
+    this.latest.sessionUniqueId = sessionUniqueId;
     this.latest.sessionTime = sessionTime;
     this.latest.sessionState = sessionState;
+    this.latest.sessionNum = sessionNum;
+    this.raceFinish.update(
+      this.latest,
+      frame.CarIdxLapCompleted?.value,
+      this.session
+    );
+    if (this.raceFinish.timings.length > 0)
+      this.latest.finalRaceTiming = this.raceFinish.timings;
     this.updateLiveClassPositions(frame, sessionNum, sessionState);
     const carIdxOnPitRoad = this.latest.carIdxOnPitRoad;
     const carIdxLap = this.latest.carIdxLap;
@@ -179,6 +249,8 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
   }
 
   private reset(sessionNum: number | null): void {
+    this.raceFinish.reset();
+    delete this.latest.finalRaceTiming;
     const version = this.latest.version + 1;
     this.lastUpdateTime = null;
     this.actualTrackSurface.length = 0;
@@ -193,7 +265,7 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     this.checkeredSnapshotActive = false;
     this.p1CarIdx = null;
     this.p1LapAtCheckered = null;
-    this.resultsSessionNum = null;
+    this.resultsSessionKey = null;
     this.resultClassPosition.length = 0;
     this.resultLapsComplete.length = 0;
     this.latest.focusCarIdx = null;
@@ -210,6 +282,14 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     this.latest.carIdxTrackSurface.length = 0;
     this.latest.carIdxTireCompound.length = 0;
     this.latest.carIdxSessionFlags.length = 0;
+    this.latest.carIdxWheelCompounds.length = 0;
+    this.latest.carIdxTrackLimitsPoints.length = 0;
+    this.latest.carIdxEnergyRemaining.length = 0;
+    this.latest.carIdxPenalties.length = 0;
+    this.latest.carIdxPenaltyKind.length = 0;
+    this.latest.carIdxPenaltySeconds.length = 0;
+    this.latest.penaltySeconds = undefined;
+    this.latest.trackLimitsPointsMax = 0;
     this.latest.carIdxP2PStatus.length = 0;
     this.latest.carIdxP2PCount.length = 0;
     this.latest.sessionUniqueId = 0;
@@ -237,6 +317,14 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       carIdxTrackSurface: [],
       carIdxTireCompound: [],
       carIdxSessionFlags: [],
+      carIdxWheelCompounds: [],
+      carIdxTrackLimitsPoints: [],
+      carIdxEnergyRemaining: [],
+      carIdxPenalties: [],
+      carIdxPenaltyKind: [],
+      carIdxPenaltySeconds: [],
+      penaltySeconds: undefined,
+      trackLimitsPointsMax: 0,
       carIdxP2PStatus: [],
       carIdxP2PCount: [],
       sessionUniqueId: 0,
@@ -266,8 +354,9 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     ) {
       return;
     }
-    if (this.resultsSessionNum !== sessionNum) {
-      this.resultsSessionNum = sessionNum;
+    const resultsKey = `${this.latest.sessionUniqueId}:${sessionNum}`;
+    if (this.resultsSessionKey !== resultsKey) {
+      this.resultsSessionKey = resultsKey;
       this.resultClassPosition.length = 0;
       this.resultLapsComplete.length = 0;
       this.p1CarIdx = null;

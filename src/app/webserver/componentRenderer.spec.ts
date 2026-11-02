@@ -329,3 +329,96 @@ describe('WebSocketBridge image responses', () => {
     }
   );
 });
+
+describe('WebSocketBridge pit lane calibration', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  const connected = async () => {
+    vi.stubGlobal('WebSocket', FakeWebSocket);
+    const bridge = new WebSocketBridge();
+    const connecting = bridge.connect('http://localhost:3000');
+    const socket = FakeWebSocket.latest as FakeWebSocket;
+    socket.onopen?.();
+    await connecting;
+    return { bridge, socket };
+  };
+
+  it('carries source identity and revision through typed read/save/reset requests', async () => {
+    const { bridge, socket } = await connected();
+    const calibration = {
+      trackId: '47',
+      sourceId: 'source-one',
+      revision: 2,
+      data: null,
+    };
+    const read = bridge.getPitLaneData('47');
+    socket.reply('pitLane:getData', calibration);
+    expect(await read).toEqual(calibration);
+    const saving = bridge.updatePitLaneData(
+      '47',
+      { pitEntryPct: 0.92 },
+      2,
+      'source-one'
+    );
+    expect(JSON.parse(socket.sent.at(-1) ?? '{}').data).toEqual({
+      trackId: '47',
+      update: { pitEntryPct: 0.92 },
+      revision: 2,
+      sourceId: 'source-one',
+    });
+    socket.reply('pitLane:updateData', true);
+    expect(await saving).toBe(true);
+    const resetting = bridge.resetPitLaneData('47');
+    socket.reply('pitLane:resetData', null);
+    await resetting;
+    bridge.stop();
+  });
+
+  it('rejects failed reset responses instead of reporting success', async () => {
+    const { bridge, socket } = await connected();
+    const resetting = bridge.resetPitLaneData('47');
+    const expected = expect(resetting).rejects.toThrow('disk full');
+    const request = JSON.parse(socket.sent.at(-1) ?? '{}');
+    socket.deliver({
+      type: 'pitLane:resetData',
+      requestId: request.requestId,
+      error: 'disk full',
+    });
+    await expected;
+    bridge.stop();
+  });
+
+  it('reloads calibration after reconnect so an offline browser sees a missed reset', async () => {
+    vi.useFakeTimers();
+    const { bridge, socket } = await connected();
+    const callback = vi.fn();
+    bridge.subscribe('pit-lane.reset', callback);
+    socket.onclose?.();
+    await vi.advanceTimersByTimeAsync(1000);
+    const reconnected = FakeWebSocket.latest as FakeWebSocket;
+    reconnected.onopen?.();
+    reconnected.reply('pitLane:getCurrentTrack', {
+      trackId: '47',
+      trackName: 'Laguna Seca',
+      hasCalibration: false,
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    reconnected.reply('pitLane:getData', {
+      trackId: '47',
+      sourceId: 'new-main-instance',
+      revision: 0,
+      data: null,
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(callback).toHaveBeenCalledWith({
+      trackId: '47',
+      sourceId: 'new-main-instance',
+      revision: 0,
+      data: null,
+    });
+    bridge.stop();
+  });
+});

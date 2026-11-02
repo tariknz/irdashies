@@ -12,7 +12,18 @@ iRacing overlay never hold focus — sim hold it. Input source must deliver pres
 - Renderer **W3C Gamepad API** (`navigator.getGamepads()`): delivers input only while window focused → useless for overlay.
 - **WebHID** (`navigator.hid`): keeps delivering input reports while unfocused. Built into Chromium (no extra dependency / native build). Hotplug via `connect` / `disconnect` events.
 
-So one hidden, always-alive window host the HID reader and forward presses to the main process, which fire the bound action through the same `triggerAction` path as keyboard shortcuts.
+So one hidden window host the HID reader and forward presses to the main process, which fire the bound action through the same `triggerAction` path as keyboard shortcuts.
+
+## Why the host is not always on, and skips keyboards
+
+On Windows, a long-lived handle on a keyboard interface breaks the local keyboard when the session moves between Remote Desktop and the console (no keys until the receiver is replugged). So:
+
+- `GamepadManager` run the host only while at least one gamepad binding exists or a binding is being recorded. No pad bindings → no window, no device opened.
+  - So recording the first binding open devices at record time. Controls already held then (shifter in gear, status bits) show up in each device's first report as presses. The host mark the first edge per control as `initial`, and recording ignore those — else the binding become an unintended combo. Cost: a device that only report on change may lose the first press after clicking record.
+- `hidHost.ts` never open a keyboard / keypad / mouse / pointer interface (`isKeyboardOrMouse` in `hidReport.ts`), unless the same device also declare a Joystick, Gamepad or Simulation Controls collection — combined button boxes (Arduino Joystick + Keyboard) still work. Multi-axis does not count: 2.4 GHz keyboard receivers often carry one next to the keyboard.
+- Devices with no bindable button or hat are not opened either.
+
+Cost: extra keys on a keyboard (media keys, knobs, macro keys) can't be bound as pad controls.
 
 ## Why single-bit-only, no usage-page filter
 

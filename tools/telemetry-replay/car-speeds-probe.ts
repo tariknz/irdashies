@@ -2,6 +2,7 @@ import * as yaml from 'js-yaml';
 import type { Session, Telemetry } from '@irdashies/types';
 import { CarSpeedsProcessor } from '../../src/app/processors/CarSpeedsProcessor';
 import type { ReplayProbe, TelemetryFrame } from './validator';
+import { rateLimited } from './rateLimited';
 
 const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
   Object.fromEntries(
@@ -14,14 +15,14 @@ const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
 export const createCarSpeedsProbe = (): ReplayProbe<
   ReturnType<CarSpeedsProcessor['snapshot']>
 > => {
-  const processor = new CarSpeedsProcessor();
+  const processor = rateLimited(new CarSpeedsProcessor());
   let checkpoint: string | undefined;
   let observedMovement = false;
 
   return {
     name: 'car-speeds-state',
     schemaVersion: 1,
-    variables: ['CarIdxLapDistPct', 'SessionNum', 'SessionTime'],
+    variables: ['SessionTick', 'CarIdxLapDistPct', 'SessionNum', 'SessionTime'],
     onSessionInfo(sessionYaml) {
       processor.init(yaml.load(sessionYaml, { json: true }) as Session);
     },

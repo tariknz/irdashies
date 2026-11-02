@@ -24,6 +24,7 @@ import { useDragWidget, useResizeWidget } from '../WidgetContainer';
 import { ResizeHandles } from '../WidgetContainer/ResizeHandle';
 import logger from '@irdashies/utils/logger';
 import { WidgetRuntimeProvider } from '../../widgetRuntime';
+import { WidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 
 const singleWidgetId = new URLSearchParams(window.location.search).get(
   'widget'
@@ -178,7 +179,9 @@ const DashboardWidgetItem = memo(
             `}</style>
             <div className="widget-content w-full h-full">
               <WidgetRuntimeProvider widgetType={widget.type || widget.id}>
-                <WidgetComponent {...widget.config} />
+                <WidgetScale scale={widget.scale}>
+                  <WidgetComponent {...widget.config} />
+                </WidgetScale>
               </WidgetRuntimeProvider>
             </div>
           </div>
@@ -240,7 +243,9 @@ const SoloWidgetView = ({ widgetId, widgets }: SoloWidgetViewProps) => {
         {/* Hidden by its hotkey; the page stays up so the source keeps its slot. */}
         {!hiddenWidgetIds.has(widget.id) && (
           <WidgetRuntimeProvider widgetType={widget.type || widget.id}>
-            <WidgetComponent {...widget.config} />
+            <WidgetScale scale={widget.scale}>
+              <WidgetComponent {...widget.config} />
+            </WidgetScale>
           </WidgetRuntimeProvider>
         )}
       </div>

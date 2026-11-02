@@ -1,6 +1,7 @@
 import type { Telemetry, TrackStateSnapshot } from '@irdashies/types';
 import { TrackStateProcessor } from '../../src/app/processors/TrackStateProcessor';
 import type { ReplayProbe, TelemetryFrame } from './validator';
+import { rateLimited } from './rateLimited';
 
 const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
   Object.fromEntries(
@@ -19,11 +20,14 @@ const copySnapshot = (snapshot: TrackStateSnapshot): TrackStateSnapshot => ({
 });
 
 export const createTrackStateProbe = (): ReplayProbe<TrackStateSnapshot> => {
-  const processor = new TrackStateProcessor();
+  const processor = rateLimited(new TrackStateProcessor());
   return {
     name: 'track-state',
-    schemaVersion: 2,
+    schemaVersion: 3,
     variables: [
+      'SessionTick',
+      'LapLastLapTime',
+      'LapCompleted',
       'CamCarIdx',
       'CarIdxLapDistPct',
       'CarIdxOnPitRoad',

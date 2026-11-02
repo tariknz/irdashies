@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { useDashboard } from '@irdashies/context';
 import {
   GarageCoverWidgetSettings,
@@ -175,7 +176,7 @@ export const GarageCoverSettings = () => {
         return (
           <div className="space-y-4">
             {/* Info Banner */}
-            <div className="bg-blue-900/30 border border-blue-700/50 rounded-md p-4 space-y-2">
+            <div className="bg-accent-900/30 border border-accent-700/50 rounded-md p-4 space-y-2">
               <p className="text-sm text-slate-300">
                 <strong>Note:</strong> The garage cover is intended for use
                 whilst streaming. It only appears when you have the garage
@@ -240,6 +241,7 @@ export const GarageCoverSettings = () => {
                 </button>
               )}
             </div>
+            <WidgetScaleSettings widgetId={SETTING_ID} />
           </div>
         );
       }}

@@ -5,6 +5,8 @@ export interface InputGearProps {
   gear?: number;
   speedMs?: number;
   unit?: number;
+  /** Overrides the gear number colour (shift flash). */
+  flashColor?: string;
   settings: {
     size: number;
     unit: 'mph' | 'km/h' | 'auto' | 'none';
@@ -16,7 +18,7 @@ export interface InputGearProps {
 }
 
 export const InputGear = memo(
-  ({ gear, speedMs, unit, settings }: InputGearProps) => {
+  ({ gear, speedMs, unit, flashColor, settings }: InputGearProps) => {
     // 'none' is vestigial — the settings UI only offers auto/mph/km/h — but the
     // type still permits it, and it previously fell through to mph. Kept that
     // way rather than quietly changing behaviour for a hand-edited config.
@@ -55,6 +57,7 @@ export const InputGear = memo(
             className="font-bold leading-none"
             style={{
               fontSize: `min(${displaySize * displayMultiplier}cqh, ${displaySize * 100}cqw)`,
+              color: flashColor,
             }}
           >
             {gearText}

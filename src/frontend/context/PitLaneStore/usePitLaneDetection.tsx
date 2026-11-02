@@ -4,7 +4,12 @@ import { shallow } from 'zustand/shallow';
 import { usePitLaneStore, detectPitTransitions } from './PitLaneStore';
 import { useTrackStateSelector } from '../ChannelStore';
 import { useSessionStore } from '../SessionStore/SessionStore';
-import type { PitLaneBridge } from '@irdashies/types';
+import type {
+  PitLaneBridge,
+  PitLaneCalibration,
+  PitLaneTrackData,
+} from '@irdashies/types';
+import logger from '@irdashies/utils/logger';
 
 const EMPTY_PIT_LANE_TELEMETRY: readonly [
   readonly boolean[],
@@ -42,114 +47,148 @@ export const usePitLaneDetection = (
       equality: pitLaneTelemetryEqual,
     }) ?? EMPTY_PIT_LANE_TELEMETRY;
 
-  const { currentTrackId, pitEntryPct, pitExitPct, setCurrentTrack, reset } =
+  const { currentTrackId, calibrationRevision, calibrationSourceId } =
     usePitLaneStore();
+  const prevTelemetryRef = useRef<ReturnType<
+    typeof selectPitLaneTelemetry
+  > | null>(null);
 
-  // Use refs to track previous values and only call detectPitTransitions when data actually changes
-  // This prevents running expensive operations at 60 FPS when nothing has changed
-  const prevTelemetryRef = useRef<{
-    carIdxOnPitRoad?: readonly boolean[];
-    carIdxTrackSurface?: readonly number[];
-    carIdxLapDistPct?: readonly number[];
-  }>({});
-
-  const persistenceRef = useRef<{
-    trackId: string;
-    entry: number | null;
-    exit: number | null;
-  }>({
-    trackId: '',
-    entry: null,
-    exit: null,
-  });
-
-  // Load pit lane data when track changes
   useEffect(() => {
+    let cancelled = false;
+    let unsubscribeStore: (() => void) | undefined;
+    let unsubscribeReset: (() => void) | undefined;
+    let knownRevision = -1;
+    let knownSourceId: string | null = null;
+    let applying = false;
+    prevTelemetryRef.current = null;
+
     if (!trackId) {
-      reset();
-      prevTelemetryRef.current = {};
+      usePitLaneStore.getState().reset();
       return;
     }
+    usePitLaneStore.getState().setCurrentTrack(trackId, null, -1);
 
-    // Track changed
-    if (trackId !== currentTrackId) {
-      const loadData = async () => {
-        const resolvedBridge =
-          bridge instanceof Promise ? await bridge : bridge;
-        const data = await resolvedBridge.getPitLaneData(trackId);
-        setCurrentTrack(trackId, data);
-        prevTelemetryRef.current = {};
-        persistenceRef.current = {
-          trackId,
-          entry: data?.pitEntryPct ?? null,
-          exit: data?.pitExitPct ?? null,
-        };
+    const connect = async () => {
+      const resolved = await bridge;
+      if (cancelled) return;
+      const apply = (calibration: PitLaneCalibration) => {
+        if (
+          cancelled ||
+          calibration.trackId !== trackId ||
+          (calibration.sourceId === knownSourceId &&
+            calibration.revision <= knownRevision)
+        )
+          return;
+        knownRevision = calibration.revision;
+        knownSourceId = calibration.sourceId;
+        applying = true;
+        prevTelemetryRef.current = null;
+        usePitLaneStore
+          .getState()
+          .setCurrentTrack(
+            trackId,
+            calibration.data,
+            knownRevision,
+            knownSourceId
+          );
+        applying = false;
       };
-      loadData();
-    }
-  }, [trackId, currentTrackId, setCurrentTrack, reset, bridge]);
+      // Subscribe before loading: a reset that overtakes the load wins by revision.
+      unsubscribeReset = window.channelBridge?.subscribe(
+        'pit-lane.reset',
+        apply
+      );
+      unsubscribeStore = usePitLaneStore.subscribe((state, previous) => {
+        if (
+          applying ||
+          knownRevision < 0 ||
+          state.currentTrackId !== trackId ||
+          state.calibrationRevision !== knownRevision ||
+          state.calibrationSourceId !== knownSourceId
+        )
+          return;
+        const updates: Partial<PitLaneTrackData> = {};
+        if (
+          state.pitEntryPct !== null &&
+          state.pitEntryPct !== previous.pitEntryPct
+        )
+          updates.pitEntryPct = state.pitEntryPct;
+        if (
+          state.pitExitPct !== null &&
+          state.pitExitPct !== previous.pitExitPct
+        )
+          updates.pitExitPct = state.pitExitPct;
+        if (Object.keys(updates).length === 0 || knownSourceId === null) return;
+        void resolved
+          .updatePitLaneData(trackId, updates, knownRevision, knownSourceId)
+          .then(async (accepted) => {
+            if (!accepted && !cancelled) {
+              const sourceBeforeRead = knownSourceId;
+              const calibration = await resolved.getPitLaneData(trackId);
+              if (
+                sourceBeforeRead === knownSourceId ||
+                calibration.sourceId === knownSourceId
+              )
+                apply(calibration);
+            }
+          })
+          .catch((error) =>
+            logger.error('Failed to save pit lane calibration', error)
+          );
+      });
+      const sourceBeforeRead = knownSourceId;
+      const calibration = await resolved.getPitLaneData(trackId);
+      if (
+        sourceBeforeRead === knownSourceId ||
+        calibration.sourceId === knownSourceId
+      )
+        apply(calibration);
+    };
+    void connect().catch((error) =>
+      logger.error('Failed to load pit lane calibration', error)
+    );
+    return () => {
+      cancelled = true;
+      unsubscribeStore?.();
+      unsubscribeReset?.();
+    };
+  }, [trackId, bridge]);
 
-  // Detect pit entry/exit transitions
   useEffect(() => {
     if (
+      !trackId ||
+      currentTrackId !== trackId ||
+      calibrationRevision < 0 ||
       carIdxOnPitRoad.length === 0 ||
       carIdxTrackSurface.length === 0 ||
-      carIdxLapDistPct.length === 0 ||
-      !trackId
-    ) {
+      carIdxLapDistPct.length === 0
+    )
       return;
-    }
-
-    // Only run detection if the telemetry arrays have actually changed (by reference)
-    // This prevents running expensive operations at 60 FPS when nothing has changed
-    const prev = prevTelemetryRef.current;
+    const previous = prevTelemetryRef.current;
     if (
-      prev.carIdxOnPitRoad !== carIdxOnPitRoad ||
-      prev.carIdxTrackSurface !== carIdxTrackSurface ||
-      prev.carIdxLapDistPct !== carIdxLapDistPct
+      !previous ||
+      previous[0] !== carIdxOnPitRoad ||
+      previous[1] !== carIdxTrackSurface ||
+      previous[2] !== carIdxLapDistPct
     ) {
       detectPitTransitions(
         carIdxOnPitRoad,
         carIdxTrackSurface,
         carIdxLapDistPct
       );
-      prevTelemetryRef.current = {
+      prevTelemetryRef.current = [
         carIdxOnPitRoad,
         carIdxTrackSurface,
         carIdxLapDistPct,
-      };
+      ];
     }
-  }, [carIdxOnPitRoad, carIdxTrackSurface, carIdxLapDistPct, trackId]);
-
-  // Persist to disk when values change
-  useEffect(() => {
-    if (!trackId) return;
-
-    const prev = persistenceRef.current;
-
-    // Check if entry or exit changed
-    const entryChanged = pitEntryPct !== null && pitEntryPct !== prev.entry;
-    const exitChanged = pitExitPct !== null && pitExitPct !== prev.exit;
-
-    if (entryChanged || exitChanged) {
-      const updates: { pitEntryPct?: number; pitExitPct?: number } = {};
-      if (entryChanged && pitEntryPct !== null)
-        updates.pitEntryPct = pitEntryPct;
-      if (exitChanged && pitExitPct !== null) updates.pitExitPct = pitExitPct;
-
-      const updateData = async () => {
-        const resolvedBridge =
-          bridge instanceof Promise ? await bridge : bridge;
-        await resolvedBridge.updatePitLaneData(trackId, updates);
-      };
-      updateData();
-
-      // Update ref
-      persistenceRef.current = {
-        trackId,
-        entry: pitEntryPct,
-        exit: pitExitPct,
-      };
-    }
-  }, [trackId, pitEntryPct, pitExitPct, bridge]);
+  }, [
+    carIdxOnPitRoad,
+    carIdxTrackSurface,
+    carIdxLapDistPct,
+    trackId,
+    currentTrackId,
+    calibrationRevision,
+    calibrationSourceId,
+  ]);
 };

@@ -129,3 +129,40 @@ export const AllCompound: Story = {
     </div>
   ),
 };
+
+const LMU_TIRES = [
+  { TireIndex: 0, TireCompoundType: 'Hard' },
+  { TireIndex: 1, TireCompoundType: 'Medium' },
+  { TireIndex: 2, TireCompoundType: 'Soft' },
+  { TireIndex: 3, TireCompoundType: 'Wet' },
+];
+
+const Row = ({ label, wheels }: { label: string; wheels: number[] }) => (
+  <div className="flex items-center gap-4">
+    <span className="text-white w-56">{label}</span>
+    <Compound
+      tireCompound={wheels[0]}
+      wheelCompounds={wheels}
+      mockTires={LMU_TIRES}
+    />
+  </div>
+);
+
+/**
+ * LMU reports a compound per wheel, so a car can be on more than one.
+ *
+ * A uniform set keeps the single glyph; a mixed one splits into four dots laid
+ * out as the car. Both occupy the same space, so a row holding one of each
+ * does not change height.
+ */
+export const PerWheel: Story = {
+  render: () => (
+    <div className="flex flex-col gap-4 p-4 bg-slate-800 rounded-lg">
+      <Row label="Uniform (glyph):" wheels={[1, 1, 1, 1]} />
+      <Row label="Wet front, dry rear:" wheels={[3, 3, 0, 0]} />
+      <Row label="Staggered softs:" wheels={[2, 2, 1, 1]} />
+      <Row label="One corner unknown:" wheels={[0, 0, 0, -1]} />
+      <Row label="All four different:" wheels={[0, 1, 2, 3]} />
+    </div>
+  ),
+};

@@ -1,3 +1,5 @@
+import { useId } from 'react';
+
 interface SettingSliderRowProps {
   title: string;
   description?: string;
@@ -23,15 +25,19 @@ export function SettingSliderRow({
   showValue = true,
   disabled = false,
 }: SettingSliderRowProps) {
+  const id = useId();
   return (
-    <div className={`space-y-2 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      <label className="text-md text-slate-300">
+    <div
+      className={`space-y-2 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
+    >
+      <label htmlFor={id} className="text-md text-slate-300">
         {title}
         <span className="text-md text-slate-400">
           {showValue && `: ${value}${units ? ` ${units}` : ''}`}
         </span>
       </label>
       <input
+        id={id}
         type="range"
         min={min}
         max={max}

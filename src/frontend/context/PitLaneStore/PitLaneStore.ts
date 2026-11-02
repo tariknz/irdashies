@@ -4,11 +4,18 @@ import type { PitLaneTrackData } from '@irdashies/types';
 interface PitLaneState {
   // Current track's pit lane data
   currentTrackId: string | null;
+  calibrationRevision: number;
+  calibrationSourceId: string | null;
   pitEntryPct: number | null;
   pitExitPct: number | null;
 
   // Actions
-  setCurrentTrack: (trackId: string, data: PitLaneTrackData | null) => void;
+  setCurrentTrack: (
+    trackId: string,
+    data: PitLaneTrackData | null,
+    revision?: number,
+    sourceId?: string | null
+  ) => void;
   updatePitEntry: (pct: number) => void;
   updatePitExit: (pct: number) => void;
   clearPitData: () => void;
@@ -27,6 +34,8 @@ const SURFACE_IN_PIT_STALL = 1;
 
 const initialState = {
   currentTrackId: null,
+  calibrationRevision: -1,
+  calibrationSourceId: null,
   pitEntryPct: null,
   pitExitPct: null,
 };
@@ -34,7 +43,7 @@ const initialState = {
 export const usePitLaneStore = create<PitLaneState>((set, get) => ({
   ...initialState,
 
-  setCurrentTrack: (trackId, data) => {
+  setCurrentTrack: (trackId, data, revision = 0, sourceId = null) => {
     // Reset module-level previous frame data
     previousCarIdxOnPitRoad = [];
     previousCarIdxTrackSurface = [];
@@ -42,6 +51,8 @@ export const usePitLaneStore = create<PitLaneState>((set, get) => ({
 
     set({
       currentTrackId: trackId,
+      calibrationRevision: revision,
+      calibrationSourceId: sourceId,
       pitEntryPct: data?.pitEntryPct ?? null,
       pitExitPct: data?.pitExitPct ?? null,
     });

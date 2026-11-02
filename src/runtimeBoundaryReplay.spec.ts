@@ -18,15 +18,23 @@ import {
 
 /** Event channels publish one occurrence at a time, so they have no snapshot. */
 type EventChannelName =
-  'session.lifecycle' | 'raceControl.incidents' | 'raceControl.sessionId';
+  | 'session.lifecycle'
+  | 'raceControl.incidents'
+  | 'raceControl.sessionId'
+  | 'pit-lane.reset';
 /**
  * Channels owned by a standalone runtime rather than the ProcessorHost, so
  * this harness never sees them. `lap-history.snapshot` is recorded by
  * LapHistoryRuntime, which deliberately runs outside demand gating so an
  * enabled Gantry keeps recording with its window closed. `replay.context` is
  * owned by ReplayContextRuntime, which the other runtimes read to pause.
+ * `streamchat.*` are published by StreamChatService, which reads no telemetry.
  */
-type RuntimeOwnedChannelName = 'lap-history.snapshot' | 'replay.context';
+type RuntimeOwnedChannelName =
+  | 'lap-history.snapshot'
+  | 'replay.context'
+  | 'streamchat.messages'
+  | 'streamchat.emotes';
 type SnapshotChannelName = Exclude<
   ChannelName,
   EventChannelName | RuntimeOwnedChannelName

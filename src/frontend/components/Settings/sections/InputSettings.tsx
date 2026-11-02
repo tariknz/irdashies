@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlusIcon } from '@phosphor-icons/react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
 import {
@@ -38,6 +39,14 @@ const DEFAULT_SHIFT_FLASH: NonNullable<
   enabled: false,
   source: 'redline',
   color: '#9333ea',
+};
+
+const DEFAULT_GEAR_FLASH: NonNullable<
+  InputWidgetSettings['config']['gearFlash']
+> = {
+  enabled: false,
+  upColor: '#22c55e',
+  downColor: '#ef4444',
 };
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -143,6 +152,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
         const config = settings.config;
         const shiftFlash = { ...DEFAULT_SHIFT_FLASH, ...config.shiftFlash };
+        const gearFlash = { ...DEFAULT_GEAR_FLASH, ...config.gearFlash };
 
         return (
           <SettingProps
@@ -250,6 +260,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                 {/* OPTIONS TAB */}
                 {activeTab === 'options' && (
                   <>
+                    <WidgetScaleSettings widgetId={widgetId} className="px-4" />
                     <SettingsSection title="Options">
                       <SettingProp path="useRawValues" />
                       <SettingProp path="background.opacity" />
@@ -303,6 +314,53 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                               className="h-8 w-12 rounded bg-slate-700 cursor-pointer"
                             />
                           </div>
+                        </SettingsSection>
+                      )}
+                    </SettingsSection>
+
+                    {/* Gear Flash Settings */}
+                    <SettingsSection title="Gear Flash">
+                      <SettingToggleRow
+                        title="Flash Gear on Shift"
+                        description="Briefly color the gear number on an upshift or downshift"
+                        enabled={gearFlash.enabled}
+                        onToggle={(enabled) =>
+                          handleConfigChange({
+                            gearFlash: { ...gearFlash, enabled },
+                          })
+                        }
+                      />
+
+                      {gearFlash.enabled && (
+                        <SettingsSection>
+                          {(
+                            [
+                              ['upColor', 'Upshift Color'],
+                              ['downColor', 'Downshift Color'],
+                            ] as const
+                          ).map(([key, label]) => (
+                            <label
+                              key={key}
+                              className="flex items-center justify-between"
+                            >
+                              <span className="text-md text-slate-300">
+                                {label}
+                              </span>
+                              <input
+                                type="color"
+                                value={gearFlash[key]}
+                                onChange={(e) =>
+                                  handleConfigChange({
+                                    gearFlash: {
+                                      ...gearFlash,
+                                      [key]: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="h-8 w-12 rounded bg-slate-700 cursor-pointer"
+                              />
+                            </label>
+                          ))}
                         </SettingsSection>
                       )}
                     </SettingsSection>

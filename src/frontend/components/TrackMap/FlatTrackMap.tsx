@@ -3,8 +3,7 @@ import { useFlatTrackMapSettings } from './hooks/useFlatTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
 import { useTrackId } from './hooks/useTrackId';
 import { FlatTrackMapCanvas } from './FlatTrackMapCanvas';
-import tracks from '@irdashies/domain/track/tracks/tracks.json';
-import { TrackDrawing } from './TrackCanvas';
+import { useTrackDrawing } from '@irdashies/domain/track';
 import {
   useSessionVisibility,
   useSessionStore,
@@ -28,18 +27,24 @@ export const FlatTrackMap = ({ embedded = false }: { embedded?: boolean }) => {
   });
   const lmuTrackMap = useSessionStore((state) => state.session?.LmuTrackMap);
 
-  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
+  const sessionVisible = useSessionVisibility(settings?.sessionVisibility);
+  const loadedDrawing = useTrackDrawing(
+    !lmuTrackMap &&
+      sessionVisible &&
+      (!settings?.showOnlyWhenOnTrack || isOnTrack)
+      ? trackId
+      : undefined
+  );
+  const trackDrawing = lmuTrackMap ?? loadedDrawing;
+
+  if (!sessionVisible) return <></>;
 
   // Hide if showOnlyWhenOnTrack is enabled and player is not on track
   if (settings?.showOnlyWhenOnTrack && !isOnTrack) {
     return <></>;
   }
 
-  const trackDrawing =
-    lmuTrackMap ??
-    (trackId ? (tracks as unknown as TrackDrawing[])[trackId] : null);
-
-  if (!trackDrawing) {
+  if (!trackId || !trackDrawing) {
     return debug ? (
       <div className="w-full h-full flex items-center justify-center text-white">
         <p>No track data available</p>

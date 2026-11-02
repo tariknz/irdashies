@@ -7,13 +7,12 @@
     - irdashies-<version>-full.nupkg  (auto-update payload)
     - RELEASES                        (manifest holding the SHA1 of the .nupkg)
 
-  We only sign the Setup.exe. Authenticode on the Setup.exe wraps the entire
-  installer (including its embedded .nupkg payload), which is what SmartScreen
-  checks on download/install.
+  This configuration signs the final Setup.exe, including its embedded payload.
 
-  We deliberately do NOT sign inside the .nupkg: re-signing its contents would
-  change the nupkg bytes and invalidate the SHA1 recorded in RELEASES, breaking
-  update-electron-app / Squirrel auto-updates.
+  The separate squirrel-package configuration signs the app and launcher
+  inside the full .nupkg first. CI regenerates RELEASES and rebuilds Setup.exe
+  from that signed package before submitting the installer here. No nested
+  payloads may change after this final signing step.
 
   The CI workflow uploads ONLY the Setup.exe as the GitHub artifact. GitHub
   always wraps uploaded artifacts in a zip, hence the <zip-file> root.

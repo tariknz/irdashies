@@ -728,7 +728,7 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
     items: [
       tuningNumber(
         'speedSmoothing',
-        'Weight of the newest sample in the per-car speed average, 0-1. Lower is smoother but lags.',
+        'Weight of the newest sample in the per-car speed average at 25 updates a second, 0-1. Lower is smoother but lags.',
         0.05,
         1,
         0.05

@@ -12,6 +12,8 @@ import {
 } from 'react';
 import { Play } from '@phosphor-icons/react';
 import { useElementSize } from '@irdashies/context';
+import type { LapGraphAxisFit } from '@irdashies/types';
+import { useWidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import {
   formatAxisValue,
   lapAxisLabels,
@@ -65,6 +67,10 @@ export interface LapGraphCanvasProps {
   onTogglePin: (carIdx: number) => void;
   /** Laps visible before the user zooms. Falls back to the module default. */
   defaultLapWindow?: number;
+  /** Trace and gap only. Defaults to sizing the y axis to every car. */
+  axisFit?: LapGraphAxisFit;
+  /** Gap only. Caps the top of the y axis in seconds; 0 or unset is no cap. */
+  gapMaxSeconds?: number;
 }
 
 /** Vertical pixels within which the pointer counts as being on a line. */
@@ -95,10 +101,11 @@ interface CanvasTarget {
 const prepareCanvas = (
   canvas: HTMLCanvasElement | null,
   width: number,
-  height: number
+  height: number,
+  scale: number
 ): CanvasTarget | null => {
   if (!canvas || width <= 0 || height <= 0) return null;
-  const dpr = globalThis.devicePixelRatio || 1;
+  const dpr = (globalThis.devicePixelRatio || 1) * scale;
   const deviceWidth = Math.max(1, Math.round(width * dpr));
   const deviceHeight = Math.max(1, Math.round(height * dpr));
   if (canvas.width !== deviceWidth) canvas.width = deviceWidth;
@@ -256,7 +263,10 @@ export const LapGraphCanvas = memo(
     focusedCarIdx,
     onTogglePin,
     defaultLapWindow,
+    axisFit,
+    gapMaxSeconds,
   }: LapGraphCanvasProps) => {
+    const widgetScale = useWidgetScale();
     const plotRef = useRef<HTMLDivElement>(null);
     const brushRef = useRef<HTMLDivElement>(null);
     const baseCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -286,8 +296,19 @@ export const LapGraphCanvas = memo(
           plotWidth: plotSize.width,
           pinnedCarIdxs,
           focusedCarIdx,
+          axisFit,
+          gapMaxSeconds,
         }),
-      [series, mode, activeWindow, plotSize.width, pinnedCarIdxs, focusedCarIdx]
+      [
+        series,
+        mode,
+        activeWindow,
+        plotSize.width,
+        pinnedCarIdxs,
+        focusedCarIdx,
+        axisFit,
+        gapMaxSeconds,
+      ]
     );
 
     const brushGeometry = useMemo(
@@ -299,8 +320,19 @@ export const LapGraphCanvas = memo(
           plotWidth: brushSize.width,
           pinnedCarIdxs,
           focusedCarIdx,
+          axisFit,
+          gapMaxSeconds,
         }),
-      [series, mode, bounds, brushSize.width, pinnedCarIdxs, focusedCarIdx]
+      [
+        series,
+        mode,
+        bounds,
+        brushSize.width,
+        pinnedCarIdxs,
+        focusedCarIdx,
+        axisFit,
+        gapMaxSeconds,
+      ]
     );
 
     // Event handlers read the latest draw inputs through refs, so their own
@@ -322,23 +354,29 @@ export const LapGraphCanvas = memo(
 
     const clearOverlay = useCallback(() => {
       const size = plotSizeRef.current;
-      prepareCanvas(overlayCanvasRef.current, size.width, size.height);
+      prepareCanvas(
+        overlayCanvasRef.current,
+        size.width,
+        size.height,
+        widgetScale
+      );
       readoutRef.current?.show(null);
-    }, []);
+    }, [widgetScale]);
 
     /** Base canvas: every series, redrawn only when the drawing inputs move. */
     useEffect(() => {
       const target = prepareCanvas(
         baseCanvasRef.current,
         plotSize.width,
-        plotSize.height
+        plotSize.height,
+        widgetScale
       );
       if (plotRef.current) {
         accentRef.current = getComputedStyle(plotRef.current).color;
       }
       if (!target) return;
       drawAllSeries(target, geometry);
-    }, [geometry, plotSize.width, plotSize.height]);
+    }, [geometry, plotSize.width, plotSize.height, widgetScale]);
 
     /** A geometry change invalidates whatever the overlay was showing. */
     useEffect(() => {
@@ -350,7 +388,8 @@ export const LapGraphCanvas = memo(
       const target = prepareCanvas(
         brushCanvasRef.current,
         brushSize.width,
-        brushSize.height
+        brushSize.height,
+        widgetScale
       );
       if (!target) return;
       drawAllSeries(target, brushGeometry, {
@@ -361,7 +400,7 @@ export const LapGraphCanvas = memo(
         // dozens of overlapping laps is noise, not identity.
         dash: [],
       });
-    }, [brushGeometry, brushSize.width, brushSize.height]);
+    }, [brushGeometry, brushSize.width, brushSize.height, widgetScale]);
 
     const hoveredCarIdxRef = useRef<number | null>(null);
     const dragRef = useRef<{
@@ -375,103 +414,108 @@ export const LapGraphCanvas = memo(
      * Draws only the overlay: crosshair, the hovered line at focus strength
      * and its point marker. Never touches the base canvas.
      */
-    const drawHover = useCallback((clientX: number, clientY: number) => {
-      const element = plotRef.current;
-      const size = plotSizeRef.current;
-      const geo = geometryRef.current;
-      if (!element || size.width <= 0 || size.height <= 0) return;
+    const drawHover = useCallback(
+      (clientX: number, clientY: number) => {
+        const element = plotRef.current;
+        const size = plotSizeRef.current;
+        const geo = geometryRef.current;
+        if (!element || size.width <= 0 || size.height <= 0) return;
 
-      const rect = element.getBoundingClientRect();
-      const x = clientX - rect.left;
-      const y = clientY - rect.top;
-      const lap = nearestLapAtX(x, geo.window, size.width, geo.bounds);
+        const rect = element.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return;
+        const x = ((clientX - rect.left) * size.width) / rect.width;
+        const y = ((clientY - rect.top) * size.height) / rect.height;
+        const lap = nearestLapAtX(x, geo.window, size.width, geo.bounds);
 
-      let hovered: PreparedSeries | null = null;
-      let hoveredValue = 0;
-      let bestDistance = HIT_RADIUS_PX;
-      const candidates: {
-        prepared: PreparedSeries;
-        value: number;
-        y: number;
-      }[] = [];
+        let hovered: PreparedSeries | null = null;
+        let hoveredValue = 0;
+        let bestDistance = HIT_RADIUS_PX;
+        const candidates: {
+          prepared: PreparedSeries;
+          value: number;
+          y: number;
+        }[] = [];
 
-      for (const prepared of geo.ordered) {
-        const value = valueAtLap(prepared.source.points, lap);
-        if (value === null) continue;
-        const py = valueToY(value, geo.axis, size.height, geo.inverted);
-        candidates.push({ prepared, value, y: py });
-        const distance = Math.abs(py - y);
-        if (distance < bestDistance) {
-          bestDistance = distance;
-          hovered = prepared;
-          hoveredValue = value;
+        for (const prepared of geo.ordered) {
+          const value = valueAtLap(prepared.source.points, lap);
+          if (value === null) continue;
+          const py = valueToY(value, geo.axis, size.height, geo.inverted);
+          candidates.push({ prepared, value, y: py });
+          const distance = Math.abs(py - y);
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            hovered = prepared;
+            hoveredValue = value;
+          }
         }
-      }
 
-      hoveredCarIdxRef.current = hovered?.source.carIdx ?? null;
+        hoveredCarIdxRef.current = hovered?.source.carIdx ?? null;
 
-      const target = prepareCanvas(
-        overlayCanvasRef.current,
-        size.width,
-        size.height
-      );
-      if (!target) return;
-      const { ctx } = target;
-      const crosshairX = lapToX(lap, geo.window, size.width);
+        const target = prepareCanvas(
+          overlayCanvasRef.current,
+          size.width,
+          size.height,
+          widgetScale
+        );
+        if (!target) return;
+        const { ctx } = target;
+        const crosshairX = lapToX(lap, geo.window, size.width);
 
-      ctx.save();
-      ctx.globalAlpha = 0.5;
-      ctx.strokeStyle = accentRef.current;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.moveTo(crosshairX, 0);
-      ctx.lineTo(crosshairX, size.height);
-      ctx.stroke();
-      ctx.restore();
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.strokeStyle = accentRef.current;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(crosshairX, 0);
+        ctx.lineTo(crosshairX, size.height);
+        ctx.stroke();
+        ctx.restore();
 
-      if (!hovered) {
-        readoutRef.current?.show(null);
-        return;
-      }
+        if (!hovered) {
+          readoutRef.current?.show(null);
+          return;
+        }
 
-      strokeSeries(target, hovered, geo, {
-        color: brightenColor(hovered.source.color),
-        width: 3,
-        alpha: 1,
-        // Focus keeps the driver's own pattern — only colour and width change.
-        dash: hovered.source.dash,
-      });
+        strokeSeries(target, hovered, geo, {
+          color: brightenColor(hovered.source.color),
+          width: 3,
+          alpha: 1,
+          // Focus keeps the driver's own pattern — only colour and width change.
+          dash: hovered.source.dash,
+        });
 
-      const markerY = valueToY(
-        hoveredValue,
-        geo.axis,
-        size.height,
-        geo.inverted
-      );
-      ctx.fillStyle = brightenColor(hovered.source.color);
-      ctx.beginPath();
-      ctx.arc(crosshairX, markerY, 3.5, 0, Math.PI * 2);
-      ctx.fill();
+        const markerY = valueToY(
+          hoveredValue,
+          geo.axis,
+          size.height,
+          geo.inverted
+        );
+        ctx.fillStyle = brightenColor(hovered.source.color);
+        ctx.beginPath();
+        ctx.arc(crosshairX, markerY, 3.5, 0, Math.PI * 2);
+        ctx.fill();
 
-      candidates.sort((a, b) => a.y - b.y);
-      const hoveredIndex = candidates.findIndex(
-        (entry) => entry.prepared === hovered
-      );
-      const from = Math.max(0, hoveredIndex - READOUT_NEIGHBOURS);
-      const rows = candidates
-        .slice(from, hoveredIndex + READOUT_NEIGHBOURS + 1)
-        .map((entry) => ({
-          carIdx: entry.prepared.source.carIdx,
-          carNumber: entry.prepared.source.carNumber,
-          displayName: entry.prepared.source.displayName,
-          color: entry.prepared.source.color,
-          value: entry.value,
-          isHovered: entry.prepared === hovered,
-        }));
+        candidates.sort((a, b) => a.y - b.y);
+        const hoveredIndex = candidates.findIndex(
+          (entry) => entry.prepared === hovered
+        );
+        const from = Math.max(0, hoveredIndex - READOUT_NEIGHBOURS);
+        const rows = candidates
+          .slice(from, hoveredIndex + READOUT_NEIGHBOURS + 1)
+          .map((entry) => ({
+            carIdx: entry.prepared.source.carIdx,
+            carNumber: entry.prepared.source.carNumber,
+            displayName: entry.prepared.source.displayName,
+            color: entry.prepared.source.color,
+            value: entry.value,
+            isHovered: entry.prepared === hovered,
+          }));
 
-      readoutRef.current?.show({ x, y: markerY, lap, rows });
-    }, []);
+        readoutRef.current?.show({ x, y: markerY, lap, rows });
+      },
+      [widgetScale]
+    );
 
     const handlePointerDown = useCallback(
       (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -498,10 +542,10 @@ export const LapGraphCanvas = memo(
         if (!drag.moved && Math.abs(travel) < DRAG_THRESHOLD_PX) return;
         drag.moved = true;
 
-        const size = plotSizeRef.current;
+        const width = plotRef.current?.getBoundingClientRect().width ?? 0;
         const geo = geometryRef.current;
         const span = geo.window.end - geo.window.start;
-        const lapsPerPixel = size.width > 0 ? span / size.width : 0;
+        const lapsPerPixel = width > 0 ? span / width : 0;
         applyWindow(
           panWindow(drag.startWindow, geo.bounds, -travel * lapsPerPixel)
         );
@@ -535,8 +579,9 @@ export const LapGraphCanvas = memo(
         const geo = geometryRef.current;
         if (!element || size.width <= 0) return;
         const rect = element.getBoundingClientRect();
+        if (rect.width <= 0) return;
         const anchorLap = xToLap(
-          event.clientX - rect.left,
+          ((event.clientX - rect.left) * size.width) / rect.width,
           geo.window,
           size.width
         );
@@ -647,6 +692,11 @@ export const LapGraphCanvas = memo(
         <div className="flex items-center justify-between gap-2 pb-1 shrink-0">
           <span className="text-slate-400 truncate">{axisCaption}</span>
           <div className="flex items-center gap-2 shrink-0">
+            {geometry.offScaleCount > 0 && (
+              <span className="text-slate-500 tabular-nums">
+                {`${geometry.offScaleCount} off scale`}
+              </span>
+            )}
             <span className="text-slate-500 tabular-nums">
               {`Laps ${Math.ceil(geometry.window.start)}-${Math.floor(geometry.window.end)}`}
             </span>

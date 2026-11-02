@@ -397,8 +397,11 @@ struct irsdk_diskSubHeader
 bool irsdk_startup();
 void irsdk_shutdown();
 
-bool irsdk_getNewData(char *data);
-bool irsdk_waitForDataReady(int timeOut, char *data);
+// nullptr polls/consumes a tick without copying. Otherwise the capture owns and
+// resizes its destination at the copy boundary; an unsized char* is unsafe.
+struct irsdk_capture;
+bool irsdk_getNewData(irsdk_capture *capture);
+bool irsdk_waitForDataReady(int timeOut, irsdk_capture *capture);
 bool irsdk_isConnected();
 
 const irsdk_header *irsdk_getHeader();

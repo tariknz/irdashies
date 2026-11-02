@@ -6,6 +6,7 @@ import {
   TelemetryDecoratorWithConfig,
   ChannelSnapshotDecorator,
   standingsStorySnapshot,
+  finishedStandingsStorySnapshot,
   sessionBarStorySnapshot,
   trackStateStorySnapshot,
   mockDashboardBridge,
@@ -1286,6 +1287,34 @@ export const PositionDividerNone: Story = {
           numTopDrivers: 3,
           topDriverDivider: 'none',
         },
+      },
+    }),
+  ],
+};
+
+export const PlayerRelativeGaps: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+      standings: {
+        gap: { enabled: true, reference: 'player' },
+        interval: { enabled: true },
+      },
+    }),
+  ],
+};
+
+export const FinishedRaceGaps: Story = {
+  name: 'Finished Race — Cars Off Track',
+  decorators: [
+    ChannelSnapshotDecorator({
+      'standings.snapshot': finishedStandingsStorySnapshot,
+      'track-state.snapshot': trackStateStorySnapshot,
+      'session-bar.snapshot': sessionBarStorySnapshot,
+    }),
+    TelemetryDecoratorWithConfig(undefined, {
+      standings: {
+        gap: { enabled: true },
+        interval: { enabled: true },
       },
     }),
   ],

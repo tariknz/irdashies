@@ -9,19 +9,19 @@ import {
 } from 'react';
 import { ResizeIcon, GearIcon, XIcon } from '@phosphor-icons/react';
 import { useDashboard, useGeneralSettings } from '@irdashies/context';
-import { WidgetRuntimeProvider } from '../../../src/frontend/widgetRuntime';
-import { Gantry } from '../../../src/frontend/components/Gantry/Gantry';
+import { WidgetRuntimeProvider } from '@irdashies/frontend/widgetRuntime';
+import { Gantry } from '@irdashies/frontend/components/Gantry/Gantry';
 import {
   GantryDockHost,
   useGantryDock,
-} from '../../../src/frontend/components/GantryDock/GantryDockHost';
-import { GantrySessionHoldProvider } from '../../../src/frontend/components/Gantry/hooks/useGantrySessionHold';
+} from '@irdashies/frontend/components/GantryDock/GantryDockHost';
+import { GantrySessionHoldProvider } from '@irdashies/frontend/components/Gantry/hooks/useGantrySessionHold';
 import { WidgetErrorBoundary } from '../components/WidgetErrorBoundary';
 import {
   useDragWidget,
   useResizeWidget,
   ResizeHandles,
-} from '../../../src/frontend/components/WidgetContainer';
+} from '@irdashies/frontend/components/WidgetContainer';
 
 export interface WidgetPosition {
   x: number;

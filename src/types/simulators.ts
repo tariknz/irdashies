@@ -26,12 +26,18 @@ export const SIMULATOR_LABELS: Record<ActiveSimulator, string> = {
 export const SIMULATOR_IDS: ActiveSimulator[] = ['iracing', 'lmu'];
 
 /**
- * Whether a simulator has a driver-rating system at all.
+ * Whether a simulator reports an iRacing-style numeric rating.
  *
  * A constant property of the simulator, not of each driver, so it is declared
  * once here rather than carried per driver on every frame. iRacing has iRating
  * and a licence; LMU has neither, and its drivers would otherwise be rendered
  * with an empty rating badge.
+ *
+ * Narrower than "has driver ratings": LMU does have ranks, from its own
+ * ecosystem's rating service, and they are drawn by LmuRatingBadge rather than
+ * by DriverRatingBadge. Which *columns* a simulator can fill is
+ * SIMULATOR_RATING_COLUMNS below; this flag is only for the places that render
+ * a licence and an iRating directly.
  */
 export const SIMULATOR_HAS_DRIVER_RATINGS: Record<ActiveSimulator, boolean> = {
   iracing: true,
@@ -39,13 +45,48 @@ export const SIMULATOR_HAS_DRIVER_RATINGS: Record<ActiveSimulator, boolean> = {
 };
 
 /**
- * The columns that exist only because a simulator has driver ratings.
+ * Every column that exists only because some simulator has driver ratings.
  *
  * Shared by the header builder and the row builder, which compute their
  * columns independently: if they disagreed about which ids these are, the
  * header would stop lining up with the cells.
  */
-export const RATING_COLUMN_IDS = ['badge', 'iratingChange'] as const;
+export const RATING_COLUMN_IDS = [
+  'badge',
+  'iratingChange',
+  'lmuBadge',
+] as const;
+
+/**
+ * Which of those columns each simulator can actually fill.
+ *
+ * Per column rather than one flag per simulator, which is what this was. Both
+ * sims have a rating column -- `badge` holds an iRacing licence or an LMU rank
+ * pair depending on which is running -- while `iratingChange` is iRacing's
+ * alone and `lmuBadge` is LMU's. A single boolean could not say that, and
+ * hid LMU's ranks for as long as LMU had none to show.
+ */
+export const SIMULATOR_RATING_COLUMNS: Record<
+  ActiveSimulator,
+  readonly string[]
+> = {
+  iracing: ['badge', 'iratingChange'],
+  lmu: ['badge', 'lmuBadge'],
+};
+
+/**
+ * The rating columns to hide for the running simulator.
+ *
+ * Empty when nothing has been detected yet, matching simulatorHasDriverRatings
+ * below: with no sim to be incompatible with, hiding would be guessing.
+ */
+export const hiddenRatingColumns = (
+  simulator: ActiveSimulator | null | undefined
+): ReadonlySet<string> => {
+  if (!simulator) return new Set<string>();
+  const supported = new Set(SIMULATOR_RATING_COLUMNS[simulator]);
+  return new Set(RATING_COLUMN_IDS.filter((id) => !supported.has(id)));
+};
 
 /**
  * Whether to show rating-derived UI for the running simulator.

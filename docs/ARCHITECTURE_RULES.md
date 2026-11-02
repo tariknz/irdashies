@@ -112,6 +112,7 @@ Imports flow **downward** in this list. A layer may import from any layer below 
   - A renderer hook `use<Name>Snapshot()` in `src/frontend/context/`.
 - **R4.5** A channel snapshot MUST be the minimum payload the consumers need. Do not re-broadcast the full telemetry shape inside a "convenience" channel.
 - **R4.6** Channel subscriptions are per-window. Closed or hidden windows do not receive broadcasts. Implement using `webContents.isVisible()` plus the per-window subscription map.
+  - **Exception: the enabled Gantry.** It has to hold the whole session (standings, lap history, fuel, incidents, session names) whether it is on screen, minimised or closed, so it receives every channel and `sessionData` regardless of visibility (`setupChannelBridge`'s `isAlwaysFed`, `OverlayManager.isGantryWebContents`). Closing it while the widget is enabled hides the window rather than destroying it. Do not extend this exception to other windows.
 
 ---
 
@@ -315,8 +316,20 @@ class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectionSnapsh
 
 // REQUIRED — widget registration: manifest + widget.ts (see AGENTS.md)
 // src/types/widgets/mywidget.ts
-export default defineWidgetManifest({ id: 'mywidget', name: 'My Widget', enabled: false, layout, config });
+export default defineWidgetManifest({
+  id: 'mywidget',
+  name: 'My Widget',
+  enabled: false,
+  layout,
+  config,
+});
 // src/frontend/components/MyWidget/widget.ts
+import { lazyWidget } from '@irdashies/domain/lazyWidget';
 import type { WidgetModule } from '@irdashies/domain';
-export default { id: 'mywidget', component: MyWidget } satisfies WidgetModule;
+export default {
+  id: 'mywidget',
+  component: lazyWidget(() =>
+    import('./MyWidget').then((module) => ({ default: module.MyWidget }))
+  ),
+} satisfies WidgetModule;
 ```

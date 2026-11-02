@@ -1,28 +1,39 @@
 import type { RadarHazard, RadarHazardKind } from '@irdashies/types';
 import { TrackLocation } from '@irdashies/types';
+import { wrapDelta } from './radarMath';
 
 /** Metres ahead hazards are reported to the renderer, past any setting. */
 export const RADAR_HAZARD_MAX_M = 1000;
 
-/** Length of one stretch of the speed profile, in metres. */
-const PROFILE_BIN_M = 25;
-/** Samples a stretch needs before its speed is trusted. */
-const PROFILE_MIN_SAMPLES = 50;
-/**
- * The profile follows the fast cars: it rises quickly and sinks slowly, so a
- * stopped car or a slow out-lap barely moves it.
- */
-const PROFILE_RISE = 0.2;
-const PROFILE_SINK = 0.005;
-
 /** Below this, in m/s, a car counts as stopped wherever it is. */
 const STOPPED_MS = 5;
-/** Without a profile, a car this fast in m/s counts as at racing speed. */
-const FAST_FALLBACK_MS = 15;
-/** Slower than this share of the field's speed at the spot is slow. */
+/** Slower than this share of the focus car's speed is slow for it. */
 const SLOW_SHARE = 0.6;
-/** Back above this share, the car is racing again. */
-const FAST_SHARE = 0.75;
+/** A car must be closing at least this fast, in m/s, to concern the focus car. */
+const CLOSING_MIN_MS = 8;
+/** ...and be reached within this many seconds at that closing speed. */
+const REACH_MAX_S = 8;
+/** A car racing this fast, in m/s, can have crashed by slowing. */
+const RACING_MS = 15;
+/** Dropping below this share of its own recent top speed is sudden. */
+const SUDDEN_SHARE = 0.4;
+/**
+ * ...and below this speed in m/s, so braking for a hairpin is not a crash; a
+ * car that is really crashed or spun is down to a crawl within moments.
+ */
+const SUDDEN_MAX_MS = 8;
+/** Below this, in m/s, a car crawls: slow on any part of the track. */
+const CRAWL_MS = 12;
+/**
+ * Above CRAWL_MS a slow car only counts while it is still shedding speed, below
+ * this share of its own top speed of the last moments: a car steady at corner
+ * pace is cornering, not in trouble.
+ */
+const SHEDDING_SHARE = 0.85;
+/** Back above this share of the speed before a drop, the car is racing again. */
+const RECOVER_SHARE = 0.75;
+/** Seconds a car must keep moving above CRAWL_MS before a drop is forgotten. */
+const DROP_FORGET_S = 5;
 /** Seconds a car must stay slow before it is reported. */
 const SLOW_HOLD_S = 1;
 /** Seconds after a sudden drop before it is reported, to skip a single bad frame. */
@@ -40,24 +51,45 @@ const REJOIN_S = 5;
 const QUIET_GRACE_S = 5;
 
 interface CarHazardState {
-  /** Session time the car was last at racing speed, or -1. */
-  lastFast: number;
-  /** Session time the current slow spell began, or -1. */
+  /** The car's own top speed over the last two to four seconds. */
+  peak: number;
+  /** Top speed in the current and in the previous bucket of SUDDEN_WINDOW_S. */
+  peakNow: number;
+  peakBefore: number;
+  bucketAt: number;
+  /** Speed the car had before a sudden drop, or -1 while it has not dropped. */
+  droppedFrom: number;
+  droppedAt: number;
+  /** Session time the car last got above CRAWL_MS since the drop, or -1. */
+  movingSince: number;
+  /** Session time the car was last below STOPPED_MS, or -1 while it moves. */
+  stoppedSince: number;
+  /** Session time the car was last slow for the focus car, or -1. */
   slowSince: number;
-  /** The slow spell began straight from racing speed. */
-  sudden: boolean;
   /** Session time the current excursion began, or -1. */
   offSince: number;
+  /** The car's speed when the current excursion began. */
+  offFrom: number;
   /** Session time the car last came back from a counted excursion, or -1. */
   rejoinedAt: number;
+  /** The car's speed before that excursion. */
+  rejoinFrom: number;
 }
 
 const freshState = (): CarHazardState => ({
-  lastFast: -1,
+  peak: 0,
+  peakNow: 0,
+  peakBefore: 0,
+  bucketAt: -1,
+  droppedFrom: -1,
+  droppedAt: -1,
+  movingSince: -1,
+  stoppedSince: -1,
   slowSince: -1,
-  sudden: false,
   offSince: -1,
+  offFrom: 0,
   rejoinedAt: -1,
+  rejoinFrom: 0,
 });
 
 export interface HazardFrame {
@@ -75,56 +107,45 @@ export interface HazardFrame {
   quiet: boolean;
 }
 
-/** Shortest signed lap fraction from `from` to `to`, in -0.5..0.5. */
-const wrapDelta = (to: number, from: number): number => {
-  let delta = to - from;
-  if (delta > 0.5) delta -= 1;
-  else if (delta < -0.5) delta += 1;
-  return delta;
-};
-
 /**
  * Finds cars ahead that are crashed, crawling, off the track or rejoining.
  *
- * "Slow" depends on where a car is: 80 km/h is fine in a hairpin and a wreck
- * on a straight. The tracker learns how fast the field goes along each
- * stretch of the lap and judges every car against that. Until a stretch has
- * been driven enough, only a near-stopped car counts.
+ * Nothing here depends on the track or on car classes. A stopped car, an
+ * excursion and a rejoin are facts about the car. A sudden drop from the
+ * car's own recent speed is a crash or a spin, and a car far slower than the
+ * focus car is slow, if it crawls or is still shedding speed; both only count while the focus car is closing in on
+ * them fast enough to reach them soon, so a hairpin, a braking zone or a
+ * slower class pulling away from nobody raises no alarm.
  */
 export class RadarHazardTracker {
   private trackLength = 0;
-  private profile = new Float64Array(0);
-  private samples = new Uint32Array(0);
   private readonly states = new Map<number, CarHazardState>();
   /** Session time the radar was last quiet. */
   private lastQuiet = -Infinity;
+  /** Session time of the previous update, to notice a replay scrub back. */
+  private lastTime = -Infinity;
 
   setTrackLength(metres: number): void {
     if (metres === this.trackLength) return;
     this.trackLength = metres;
-    const bins = metres > 0 ? Math.ceil(metres / PROFILE_BIN_M) : 0;
-    this.profile = new Float64Array(bins);
-    this.samples = new Uint32Array(bins);
     this.states.clear();
   }
 
-  /** Forget every car; the speed profile is the track's and stays. */
+  /** Forget every car. */
   reset(): void {
     this.states.clear();
     this.lastQuiet = -Infinity;
-  }
-
-  /** Field speed at lap progress `pct` in m/s, or null while unknown. */
-  expectedSpeed(pct: number): number | null {
-    const bin = this.binOf(pct);
-    if (bin < 0 || this.samples[bin] < PROFILE_MIN_SAMPLES) return null;
-    return this.profile[bin];
+    this.lastTime = -Infinity;
   }
 
   update(frame: HazardFrame): RadarHazard[] {
     const hazards: RadarHazard[] = [];
-    if (this.trackLength <= 0 || frame.settling) return hazards;
     const { time, pcts } = frame;
+    // Time running backwards is a replay scrub: the stamps kept per car would
+    // be from the future, so start over.
+    if (time < this.lastTime) this.reset();
+    this.lastTime = time;
+    if (this.trackLength <= 0 || frame.settling) return hazards;
     // Nothing done under a caution or on the grid says anything afterwards.
     if (frame.quiet) {
       this.states.clear();
@@ -134,6 +155,7 @@ export class RadarHazardTracker {
     const sinceQuiet = time - this.lastQuiet;
     if (sinceQuiet >= 0 && sinceQuiet < QUIET_GRACE_S) return hazards;
 
+    const focusSpeed = frame.speeds[frame.focus] ?? 0;
     for (let carIdx = 0; carIdx < pcts.length; carIdx += 1) {
       const pct = pcts[carIdx];
       const surface = frame.surfaces[carIdx];
@@ -150,9 +172,19 @@ export class RadarHazardTracker {
         continue;
       }
       const speed = frame.speeds[carIdx] ?? 0;
-      const kind = this.judge(carIdx, pct, speed, surface, time);
-      if (!kind || carIdx === frame.focus) continue;
       const dist = wrapDelta(pct, frame.playerPct) * this.trackLength;
+      const closing = focusSpeed - speed;
+      const reachable =
+        dist > 0 && closing >= CLOSING_MIN_MS && dist / closing <= REACH_MAX_S;
+      const kind = this.judge(
+        carIdx,
+        speed,
+        surface,
+        time,
+        focusSpeed,
+        reachable
+      );
+      if (!kind || carIdx === frame.focus) continue;
       // Only what is still ahead: once passed, it no longer concerns us.
       if (dist < 0 || dist > RADAR_HAZARD_MAX_M) continue;
       hazards.push({ carIdx, dist, kind, speed });
@@ -163,10 +195,11 @@ export class RadarHazardTracker {
 
   private judge(
     carIdx: number,
-    pct: number,
     speed: number,
     surface: unknown,
-    time: number
+    time: number,
+    focusSpeed: number,
+    reachable: boolean
   ): RadarHazardKind | null {
     let state = this.states.get(carIdx);
     if (!state) {
@@ -174,69 +207,93 @@ export class RadarHazardTracker {
       this.states.set(carIdx, state);
     }
 
-    const expected = this.expectedSpeed(pct);
-    const fast =
-      expected !== null
-        ? speed >= expected * FAST_SHARE
-        : speed >= FAST_FALLBACK_MS;
-    const slow =
-      speed < STOPPED_MS ||
-      (expected !== null && speed < expected * SLOW_SHARE);
-    const off = surface === TrackLocation.OffTrack;
+    // The car's own pace over the last moments, to tell a drop from a corner.
+    // Kept over two buckets of SUDDEN_WINDOW_S, so it looks back two to four
+    // seconds and never falls to the current speed all at once: a steady
+    // slowing stays below its own recent pace instead of resetting to it.
+    if (state.bucketAt < 0 || time - state.bucketAt >= SUDDEN_WINDOW_S) {
+      state.peakBefore = state.peakNow;
+      state.peakNow = speed;
+      state.bucketAt = time;
+    } else {
+      state.peakNow = Math.max(state.peakNow, speed);
+    }
+    state.peak = Math.max(state.peakNow, state.peakBefore);
+    if (
+      state.droppedFrom < 0 &&
+      state.peak >= RACING_MS &&
+      speed < Math.min(state.peak * SUDDEN_SHARE, SUDDEN_MAX_MS)
+    ) {
+      state.droppedFrom = state.peak;
+      state.droppedAt = time;
+      state.movingSince = -1;
+    } else if (state.droppedFrom >= 0) {
+      // Still driving, though not back up to speed: the drop is over after a
+      // while and the ordinary slow rule judges the car.
+      if (speed < CRAWL_MS) state.movingSince = -1;
+      else if (state.movingSince < 0) state.movingSince = time;
+      if (
+        speed >= state.droppedFrom * RECOVER_SHARE ||
+        (state.movingSince >= 0 && time - state.movingSince >= DROP_FORGET_S)
+      ) {
+        state.droppedFrom = -1;
+      }
+    }
 
+    const off = surface === TrackLocation.OffTrack;
     if (off) {
-      if (state.offSince < 0) state.offSince = time;
+      if (state.offSince < 0) {
+        state.offSince = time;
+        state.offFrom = state.peak;
+      }
     } else if (state.offSince >= 0) {
-      if (time - state.offSince >= OFF_HOLD_S) state.rejoinedAt = time;
+      if (time - state.offSince >= OFF_HOLD_S) {
+        state.rejoinedAt = time;
+        state.rejoinFrom = state.offFrom;
+      }
       state.offSince = -1;
     }
-
-    if (fast) {
-      state.lastFast = time;
-      state.slowSince = -1;
-      state.sudden = false;
+    // Back at the speed it had before the excursion: racing again.
+    if (state.rejoinedAt >= 0 && speed >= state.rejoinFrom * RECOVER_SHARE) {
       state.rejoinedAt = -1;
-    } else if (slow && state.slowSince < 0) {
-      state.slowSince = time;
-      state.sudden =
-        state.lastFast >= 0 && time - state.lastFast <= SUDDEN_WINDOW_S;
-    }
-
-    // Only cars running normally on the track teach the profile.
-    if (!off && state.slowSince < 0 && state.rejoinedAt < 0) {
-      this.learn(pct, speed);
     }
 
     if (off) {
+      state.slowSince = -1;
       return time - state.offSince >= OFF_HOLD_S ? 'off' : null;
     }
     if (state.rejoinedAt >= 0) {
-      if (time - state.rejoinedAt <= REJOIN_S) return 'rejoin';
+      if (time - state.rejoinedAt <= REJOIN_S) {
+        state.slowSince = -1;
+        return 'rejoin';
+      }
       state.rejoinedAt = -1;
     }
-    if (state.slowSince < 0) return null;
-    const held = time - state.slowSince;
-    if (held < (state.sudden ? SUDDEN_HOLD_S : SLOW_HOLD_S)) return null;
-    return state.sudden || speed < STOPPED_MS ? 'crash' : 'slow';
-  }
 
-  private learn(pct: number, speed: number): void {
-    const bin = this.binOf(pct);
-    if (bin < 0 || speed <= 0) return;
-    const count = this.samples[bin];
-    const current = this.profile[bin];
-    if (count === 0) {
-      this.profile[bin] = speed;
+    if (speed < STOPPED_MS) {
+      if (state.stoppedSince < 0) state.stoppedSince = time;
     } else {
-      const weight = speed > current ? PROFILE_RISE : PROFILE_SINK;
-      this.profile[bin] = current + weight * (speed - current);
+      state.stoppedSince = -1;
     }
-    if (count < PROFILE_MIN_SAMPLES) this.samples[bin] = count + 1;
-  }
+    if (
+      (state.stoppedSince >= 0 && time - state.stoppedSince >= SLOW_HOLD_S) ||
+      (state.droppedFrom >= 0 &&
+        reachable &&
+        time - state.droppedAt >= SUDDEN_HOLD_S)
+    ) {
+      state.slowSince = -1;
+      return 'crash';
+    }
 
-  private binOf(pct: number): number {
-    const bins = this.profile.length;
-    if (bins === 0 || pct < 0) return -1;
-    return Math.min(Math.floor((pct % 1) * bins), bins - 1);
+    const slow =
+      reachable &&
+      speed < focusSpeed * SLOW_SHARE &&
+      (speed < CRAWL_MS || speed < state.peak * SHEDDING_SHARE);
+    if (!slow) {
+      state.slowSince = -1;
+      return null;
+    }
+    if (state.slowSince < 0) state.slowSince = time;
+    return time - state.slowSince >= SLOW_HOLD_S ? 'slow' : null;
   }
 }

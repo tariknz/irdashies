@@ -1,5 +1,8 @@
 #include "./irsdk_node.h"
 #include "./lib/yaml_parser.h"
+#ifdef IRDASHIES_TAPE_CONTROLS
+#include "./replay/irsdk_tape.h"
+#endif
 
 /*
 Nan::SetPrototypeMethod(tmpl, "getSessionData", GetSessionData);
@@ -25,6 +28,12 @@ Napi::Object iRacingSdkNode::Init(Napi::Env env, Napi::Object exports)
     InstanceMethod("stopSDK", &iRacingSdkNode::StopSdk),
     InstanceMethod("waitForData", &iRacingSdkNode::WaitForData),
     InstanceMethod("broadcast", &iRacingSdkNode::BroadcastMessage),
+#ifdef IRDASHIES_TAPE_CONTROLS
+    InstanceMethod("getTapeReplayStatus", &iRacingSdkNode::GetTapeReplayStatus),
+    InstanceMethod("seekTapeReplay", &iRacingSdkNode::SeekTapeReplay),
+    InstanceMethod("setTapeReplaySpeed", &iRacingSdkNode::SetTapeReplaySpeed),
+    InstanceMethod("setTapeReplayPaused", &iRacingSdkNode::SetTapeReplayPaused),
+#endif
     // Getters
     InstanceMethod("isRunning", &iRacingSdkNode::IsRunning),
     InstanceMethod("getSessionVersionNum", &iRacingSdkNode::GetSessionVersionNum),
@@ -46,8 +55,6 @@ Napi::Object iRacingSdkNode::Init(Napi::Env env, Napi::Object exports)
 iRacingSdkNode::iRacingSdkNode(const Napi::CallbackInfo &info)
   : Napi::ObjectWrap<iRacingSdkNode>(info)
   , _loggingEnabled(false)
-  , _data(NULL)
-  , _bufLineLen(0)
   , _sessionStatusID(0)
   , _lastSessionCt(-1)
   , _sessionData(NULL)
@@ -100,6 +107,9 @@ Napi::Value iRacingSdkNode::StartSdk(const Napi::CallbackInfo &info)
 Napi::Value iRacingSdkNode::StopSdk(const Napi::CallbackInfo &info)
 {
   irsdk_shutdown();
+  this->_capture = {};
+  this->_lastSessionCt = -1;
+  this->_sessionData = nullptr;
   return Napi::Boolean::New(info.Env(), true);
 }
 
@@ -114,67 +124,66 @@ Napi::Value iRacingSdkNode::WaitForData(const Napi::CallbackInfo &info)
     timeout = info[0].As<Napi::Number>();
   }
 
+  const bool hadFrame = this->_capture.valid;
+  const irsdk_header previous = this->_capture.header;
   if (!irsdk_isConnected() && !irsdk_startup()) {
+    this->_capture.valid = false;
+    this->_lastSessionCt = -1;
+    this->_sessionData = nullptr;
     return Napi::Boolean::New(info.Env(), false);
   }
 
-  const irsdk_header* header = irsdk_getHeader();
-
-  // Allocate buffer before waiting (so waitForDataReady can populate it)
-  if (header && !this->_data) {
-    if (this->_loggingEnabled) printf("Initial buffer allocation\n");
-    this->_data = new char[header->bufLen];
-    this->_bufLineLen = header->bufLen;
-  }
-
-  // Wait for start of session or new data (buffer will be populated here)
-  bool dataReady = irsdk_waitForDataReady(timeout, this->_data);
-  if (dataReady && header)
-  {
-    if (this->_loggingEnabled) printf("Got data from iRacing SDK\n");
-
-    // Check if data changed length (need to reallocate)
-    if (this->_bufLineLen != header->bufLen)
-    {
-      if (this->_loggingEnabled) printf("Data changed length, reallocating\n");
-
-      // Reallocate buffer for new size
-      if (this->_data) delete[] this->_data;
-      this->_bufLineLen = header->bufLen;
-      this->_data = new char[this->_bufLineLen];
-
-      // Increment connection counter
+  const bool dataReady = irsdk_waitForDataReady(timeout.Int32Value(), &this->_capture);
+  if (dataReady) {
+    if (!hadFrame || !irdashies::irsdk::sameLayout(previous, this->_capture.header)) {
       this->_sessionStatusID++;
       this->_lastSessionCt = -1;
-
-      // Fetch data into the newly allocated buffer
-      if (irsdk_getNewData(this->_data))
-      {
-        if (this->_loggingEnabled) printf("New data retrieved after reallocation\n");
-        return Napi::Boolean::New(info.Env(), true);
-      }
+      this->_sessionData = nullptr;
     }
-    else if (this->_data)
-    {
-      if (this->_loggingEnabled) printf("Data ready for processing\n");
-      return Napi::Boolean::New(info.Env(), true);
-    }
+    return Napi::Boolean::New(info.Env(), true);
   }
-  else if (!irsdk_isConnected())
-  {
-    if (this->_loggingEnabled) printf("Session ended. Cleaning up.\n");
-
-    // Session ended
-    if (this->_data) delete[] this->_data;
-    this->_data = NULL;
-
-    // Reset session info string status
+  if (!irsdk_isConnected()) {
+    this->_capture.valid = false;
     this->_lastSessionCt = -1;
+    this->_sessionData = nullptr;
   }
-
-  if (this->_loggingEnabled) printf("No data available.\n");
   return Napi::Boolean::New(info.Env(), false);
 }
+
+#ifdef IRDASHIES_TAPE_CONTROLS
+Napi::Value iRacingSdkNode::GetTapeReplayStatus(const Napi::CallbackInfo &info)
+{
+  const auto status = irsdk_tape_getStatus();
+  auto result = Napi::Object::New(info.Env());
+  result.Set("position", status.position);
+  result.Set("duration", status.duration);
+  result.Set("speed", status.speed);
+  result.Set("paused", status.paused);
+  result.Set("ended", status.ended);
+  return result;
+}
+
+Napi::Value iRacingSdkNode::SeekTapeReplay(const Napi::CallbackInfo &info)
+{
+  const bool valid = info.Length() > 0 && info[0].IsNumber();
+  return Napi::Boolean::New(info.Env(), valid &&
+      irsdk_tape_seek(info[0].As<Napi::Number>().DoubleValue()));
+}
+
+Napi::Value iRacingSdkNode::SetTapeReplaySpeed(const Napi::CallbackInfo &info)
+{
+  const bool valid = info.Length() > 0 && info[0].IsNumber();
+  return Napi::Boolean::New(info.Env(), valid &&
+      irsdk_tape_setSpeed(info[0].As<Napi::Number>().DoubleValue()));
+}
+
+Napi::Value iRacingSdkNode::SetTapeReplayPaused(const Napi::CallbackInfo &info)
+{
+  const bool valid = info.Length() > 0 && info[0].IsBoolean();
+  return Napi::Boolean::New(info.Env(), valid &&
+      irsdk_tape_setPaused(info[0].As<Napi::Boolean>().Value()));
+}
+#endif
 
 Napi::Value iRacingSdkNode::BroadcastMessage(const Napi::CallbackInfo &info)
 {
@@ -465,17 +474,8 @@ Napi::Value iRacingSdkNode::GetTelemetryData(const Napi::CallbackInfo &info)
   auto env = info.Env();
   auto telemVars = Napi::Object::New(env);
 
-  // S2 hardening: irsdk_getHeader() returns NULL when the SDK has not yet
-  // mapped the shared-memory header (i.e. iRacing isn't running). Reading
-  // header->numVars unguarded would crash the main process. Return an
-  // empty object instead — the JS caller already handles the empty case
-  // (no telemetry yet).
-  const irsdk_header* header = irsdk_getHeader();
-  if (header == nullptr) {
-    return telemVars;
-  }
-
-  int count = header->numVars;
+  if (!this->_capture.valid) return telemVars;
+  const int count = static_cast<int>(this->_capture.variables.size());
   for (int i = 0; i < count; i++) {
     auto telemVariable = this->GetTelemetryVarByIndex(env, i);
     if (telemVariable.IsObject() && telemVariable.Has("name")) {
@@ -492,11 +492,15 @@ Napi::Value iRacingSdkNode::__GetTelemetryTypes(const Napi::CallbackInfo &info)
   auto env = info.Env();
   auto result = Napi::Object::New(env);
 
-  const int count = irsdk_getHeader()->numVars;
-  const irsdk_varHeader *varHeader;
+  if (!this->_capture.valid) return result;
+  const int count = static_cast<int>(this->_capture.variables.size());
   for (int i = 0; i < count; i++) {
-    varHeader = irsdk_getVarHeaderEntry(i);
-    result.Set(varHeader->name, Napi::Number::New(env, varHeader->type));
+    const auto* var = irdashies::irsdk::capturedVariable(this->_capture, i);
+    if (var) {
+      const auto* end = static_cast<const char*>(std::memchr(var->name, '\0', sizeof(var->name)));
+      const auto length = end ? static_cast<std::size_t>(end - var->name) : sizeof(var->name);
+      result.Set(Napi::String::New(env, var->name, length), Napi::Number::New(env, var->type));
+    }
   }
 
   return result;
@@ -506,66 +510,31 @@ Napi::Value iRacingSdkNode::__GetTelemetryTypes(const Napi::CallbackInfo &info)
 // ---------------------------
 // Helper functions
 // ---------------------------
-bool iRacingSdkNode::GetTelemetryBool(int entry, int index)
-{
-  const irsdk_varHeader *headerVar = irsdk_getVarHeaderEntry(entry);
-  return *(reinterpret_cast<bool const *>(_data + headerVar->offset) + index);
-}
-
-int iRacingSdkNode::GetTelemetryInt(int entry, int index)
-{
-  // Each int is 4 bytes
-  const irsdk_varHeader *headerVar = irsdk_getVarHeaderEntry(entry);
-  return *(reinterpret_cast<int const *>(_data + headerVar->offset) + index * 4);
-}
-
-float iRacingSdkNode::GetTelemetryFloat(int entry, int index)
-{
-  // Each float is 4 bytes
-  const irsdk_varHeader *headerVar = irsdk_getVarHeaderEntry(entry);
-  return *(reinterpret_cast<float const *>(_data + headerVar->offset) + index * 4);
-}
-
-double iRacingSdkNode::GetTelemetryDouble(int entry, int index)
-{
-  // Each double is 8 bytes
-  const irsdk_varHeader *headerVar = irsdk_getVarHeaderEntry(entry);
-  return *(reinterpret_cast<double const *>(_data + headerVar->offset) + index * 8);
-}
-
 Napi::Object iRacingSdkNode::GetTelemetryVarByIndex(const Napi::Env env, int index)
 {
   auto telemVar = Napi::Object::New(env);
 
-  // S2 hardening: irsdk_getVarHeaderEntry() returns NULL for indices
-  // outside [0, numVars) or when the SDK is not yet initialised. _data
-  // is NULL until the first successful telemetry read. Either condition
-  // would crash the process on the field reads or memcpy below — return
-  // an empty object instead. The JS-side TelemetryStore tolerates
-  // missing keys, so callers degrade gracefully.
-  auto headerVar = irsdk_getVarHeaderEntry(index);
-  if (headerVar == nullptr || this->_data == nullptr) {
+  const auto* headerVar = irdashies::irsdk::capturedVariable(this->_capture, index);
+  if (!headerVar) return telemVar;
+  std::size_t dataSize = 0;
+  if (!irdashies::irsdk::variableRange(*headerVar, this->_capture.data.size(), dataSize)) {
     return telemVar;
   }
 
-  // Defensive bound on the type-byte-size lookup: headerVar->type is
-  // attacker-influenced via shared memory in principle. Drop the entry
-  // if the type is outside the known enum range.
-  if (headerVar->type < 0 || headerVar->type >= irsdk_ETCount) {
-    return telemVar;
-  }
-
-  // Create entry object
+  // Fixed-size SDK strings need not contain a terminator in malformed metadata.
+  const auto sdkString = [env](const char* text, std::size_t capacity) {
+    const auto* end = static_cast<const char*>(std::memchr(text, '\0', capacity));
+    return Napi::String::New(env, text, end ? static_cast<std::size_t>(end - text) : capacity);
+  };
   telemVar.Set("countAsTime", headerVar->countAsTime);
   telemVar.Set("length", headerVar->count);
-  telemVar.Set("name", headerVar->name);
-  telemVar.Set("description", headerVar->desc);
-  telemVar.Set("unit", headerVar->unit);
+  telemVar.Set("name", sdkString(headerVar->name, sizeof(headerVar->name)));
+  telemVar.Set("description", sdkString(headerVar->desc, sizeof(headerVar->desc)));
+  telemVar.Set("unit", sdkString(headerVar->unit, sizeof(headerVar->unit)));
   telemVar.Set("varType", headerVar->type);
 
-  int dataSize = headerVar->count * irsdk_VarTypeBytes[headerVar->type];
   auto entryVal = Napi::ArrayBuffer::New(env, dataSize);
-  memcpy(entryVal.Data(), this->_data + headerVar->offset, dataSize);
+  memcpy(entryVal.Data(), this->_capture.data.data() + headerVar->offset, dataSize);
 
   telemVar.Set("value", entryVal);
   return telemVar;
@@ -573,15 +542,14 @@ Napi::Object iRacingSdkNode::GetTelemetryVarByIndex(const Napi::Env env, int ind
 
 Napi::Object iRacingSdkNode::GetTelemetryVar(const Napi::Env env, const char *varName)
 {
-  int varIndex = irsdk_varNameToIndex(varName);
-  // S2 hardening: irsdk_varNameToIndex returns -1 when the name is
-  // unknown or the SDK is not yet initialised. Passing -1 into
-  // GetTelemetryVarByIndex would have crashed before its null-guard
-  // was added; the guard now catches it, but reject early for clarity.
-  if (varIndex < 0) {
-    return Napi::Object::New(env);
+  if (varName && this->_capture.valid) {
+    for (std::size_t i = 0; i < this->_capture.variables.size(); ++i) {
+      if (std::strncmp(varName, this->_capture.variables[i].name, IRSDK_MAX_STRING) == 0) {
+        return this->GetTelemetryVarByIndex(env, static_cast<int>(i));
+      }
+    }
   }
-  return this->GetTelemetryVarByIndex(env, varIndex);
+  return Napi::Object::New(env);
 }
 
 Napi::Object InitAll(Napi::Env env, Napi::Object exports)

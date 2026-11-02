@@ -1,12 +1,21 @@
+import { useEffect } from 'react';
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { DashboardProvider, RunningStateProvider } from '@irdashies/context';
-import type { IrSdkBridge } from '@irdashies/types';
+import type {
+  IrSdkBridge,
+  ReleaseNotesBridge,
+  ReleaseNotesStatus,
+} from '@irdashies/types';
+import { releaseNotesFixture } from '@irdashies/types';
 import { SettingsLayout } from './SettingsLayout';
 import { mockDashboardBridge } from '@irdashies/storybook';
+import { themeClasses } from './settingsThemeClasses';
+import type { SettingsTheme } from '@irdashies/types';
 
 interface StoryProps {
   initialPath: string;
+  theme?: SettingsTheme;
 }
 
 // The header selects the simulator and profile itself. This bridge only
@@ -25,7 +34,8 @@ const meta: Meta<typeof SettingsLayout> = {
   title: 'components/SettingsLayout',
   decorators: [
     (Story, context) => {
-      const { initialPath = 'standings' } = context.args as StoryProps;
+      const { initialPath = 'standings', theme = 'classic' } =
+        context.args as StoryProps;
       return (
         <DashboardProvider bridge={mockDashboardBridge}>
           <RunningStateProvider bridge={runningBridge}>
@@ -34,7 +44,10 @@ const meta: Meta<typeof SettingsLayout> = {
                 <Route
                   path="/settings/*"
                   element={
-                    <div style={{ height: '100vh' }}>
+                    <div
+                      style={{ height: '100vh' }}
+                      className={themeClasses(theme).join(' ')}
+                    >
                       <Story />
                     </div>
                   }
@@ -58,6 +71,31 @@ export const Default: Story = {
   },
 };
 
+export const GeneralSettings: Story = {
+  args: { initialPath: '/settings/general' },
+};
+
+export const ClassicTheme: Story = {
+  args: {
+    initialPath: '/settings/fuel',
+    theme: 'classic',
+  } as StoryProps,
+};
+
+export const CarbonTheme: Story = {
+  args: {
+    initialPath: '/settings/fuel',
+    theme: 'carbon',
+  } as StoryProps,
+};
+
+export const RedTheme: Story = {
+  args: {
+    initialPath: '/settings/fuel',
+    theme: 'red',
+  } as StoryProps,
+};
+
 // Add more stories for different routes
 export const RelativeRoute: Story = {
   args: {
@@ -75,4 +113,67 @@ export const FlatTrackMapRoute: Story = {
   args: {
     initialPath: '/settings/flatmap',
   },
+};
+
+const withReleaseNotesBadge = () => {
+  const previous = window.releaseNotesBridge;
+  let status: ReleaseNotesStatus = {
+    currentVersion: '2.1.0',
+    unreadVersion: '2.1.0',
+    pendingVersion: null,
+    availableVersion: null,
+    autoShow: false,
+    development: true,
+    simulation: true,
+  };
+  const bridge: ReleaseNotesBridge = {
+    getStatus: async () => ({ ...status }),
+    getRelease: async () => ({
+      status: 'ready',
+      release: releaseNotesFixture(),
+      cached: false,
+    }),
+    dismiss: async () => {
+      status = { ...status, unreadVersion: null, pendingVersion: null };
+    },
+    setAutoShow: async (enabled) => {
+      status = { ...status, autoShow: enabled };
+    },
+  };
+  window.releaseNotesBridge = bridge;
+  return () => {
+    window.releaseNotesBridge = previous;
+  };
+};
+
+export const NewReleaseNotesBadge: Story = {
+  args: { initialPath: '/settings/general' },
+  beforeEach: withReleaseNotesBadge,
+};
+export const ReleaseNotesPage: Story = {
+  args: { initialPath: '/settings/release-notes' },
+  beforeEach: withReleaseNotesBadge,
+};
+
+// Controlled disk-full bridge response; no disk space is consumed.
+export const StorageFull: Story = {
+  args: { initialPath: '/settings/fuel' },
+  decorators: [
+    (Story) => {
+      const previous = window.storageStatusBridge;
+      window.storageStatusBridge = {
+        onStatus: (callback) => {
+          callback({ diskFull: true });
+          return () => undefined;
+        },
+      };
+      useEffect(
+        () => () => {
+          window.storageStatusBridge = previous;
+        },
+        [previous]
+      );
+      return <Story />;
+    },
+  ],
 };

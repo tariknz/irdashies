@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import logger from '../../logger';
 import type { OverlayManager } from '../../overlayManager';
 import type { SessionLifecycle } from '../../sessionLifecycle';
 
@@ -12,9 +13,49 @@ import type { SessionLifecycle } from '../../sessionLifecycle';
 
 const sdkState = vi.hoisted(() => ({
   running: true,
+  /** The sim's EndSession counter, so a spec can end a session. */
+  sessionEndEvents: 0,
   /** Makes every shared-memory read throw, as a vanished mapping would. */
   readThrows: false,
+  /** The grid a session poll reports, so a spec can choose its names. */
+  drivers: [] as {
+    id: number;
+    name: string;
+    control?: number;
+    isPlayer?: boolean;
+  }[],
 }));
+
+/**
+ * Stands in for the whole rating feature: the client, its transport, its
+ * ticket fetcher and its on-disk cache.
+ *
+ * All of those have their own specs. What is unverifiable anywhere but here is
+ * the bridge's half of the contract -- which ids it hands over, that it reads
+ * answers synchronously while building a snapshot, and that a rating arriving
+ * after the fact still reaches the renderer.
+ */
+const ratingState = vi.hoisted(() => ({
+  /** Captured so a spec can resolve a rating at a moment of its choosing. */
+  onResolved: undefined as (() => void) | undefined,
+  /** Every batch of ids the bridge asked about, in order. */
+  requested: [] as string[][],
+  get: vi.fn<(steamId: string) => undefined>(() => undefined),
+  reset: vi.fn(),
+  cache: {
+    load: vi.fn(async () => undefined),
+    flush: vi.fn(async () => undefined),
+  },
+  /** Set when the bridge chose the tape-backed client over the live one. */
+  tapeClientBuilt: false,
+}));
+
+/** Shared so a spec can read the arguments the session mapper was given. */
+const mapSessionSpy = vi.hoisted(() =>
+  vi.fn<(...args: unknown[]) => { drivers: []; DriverInfo: { Drivers: [] } }>(
+    () => ({ drivers: [], DriverInfo: { Drivers: [] } })
+  )
+);
 
 /**
  * The REST state the bridge would create for itself, held here so a spec can
@@ -43,6 +84,8 @@ const rawFrame = () => {
     numVehicles: 2,
     activeVehicles: 2,
     playerVehicleIdx: 0,
+    playerHasVehicle: true,
+    sessionEndEvents: sdkState.sessionEndEvents,
     lapDist: 5000,
     speed: 0,
     speedLimiter: 0,
@@ -63,7 +106,11 @@ vi.mock('../../lmu/native', () => ({
     stop = vi.fn(() => true);
     isRunning = vi.fn(() => sdkState.running);
     read = vi.fn(rawFrame);
-    readSession = vi.fn(() => ({ ...rawFrame(), classes: [], drivers: [] }));
+    readSession = vi.fn(() => ({
+      ...rawFrame(),
+      classes: [],
+      drivers: sdkState.drivers,
+    }));
   },
 }));
 
@@ -125,11 +172,54 @@ vi.mock('../../lmu/lapDistance', () => ({
 }));
 
 vi.mock('../../lmu/mapSession', () => ({
-  mapLmuSession: () => ({ drivers: [] }),
+  mapLmuSession: mapSessionSpy,
+}));
+
+// The rating client and its IO have their own specs; here only the bridge's
+// use of them matters.
+vi.mock('../../lmu/raceos/client', () => ({
+  createRaceosClient: (options: { onResolved?: () => void }) => {
+    ratingState.onResolved = options.onResolved;
+    return {
+      get: ratingState.get,
+      request: (steamIds: readonly string[]) => {
+        ratingState.requested.push([...steamIds]);
+      },
+      reset: ratingState.reset,
+    };
+  },
+}));
+
+vi.mock('../../lmu/raceos/httpsJson', () => ({
+  createRaceosTransport: () => vi.fn(),
+}));
+
+vi.mock('../../lmu/raceos/ticket', () => ({
+  createTicketFetcher: () => vi.fn(),
+}));
+
+// Keeps the rating cache off the filesystem.
+vi.mock('../../storage/driverRatings', () => ({
+  createDriverRatingCache: () => ratingState.cache,
+}));
+
+vi.mock('../../lmu/raceos/tapeRatings', () => ({
+  createLmuTapeRatingClient: () => {
+    ratingState.tapeClientBuilt = true;
+    return {
+      get: ratingState.get,
+      request: () => undefined,
+      reset: ratingState.reset,
+    };
+  },
 }));
 
 vi.mock('../../lmu/sessionSignature', () => ({
   lmuSessionSignature: () => 'signature',
+  // Constant too, so the roster gate sees a grid that never changes and never
+  // holds a rebuild back. The gate has its own specs; here it must only not
+  // be the thing that interferes.
+  lmuRosterSignature: () => 'roster',
 }));
 
 // The poller has its own specs; here only the bridge's use of it matters --
@@ -364,6 +454,25 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
     bridge.stop();
   });
 
+  it('republishes the session when the session identity moves', async () => {
+    // An online practice ending bumps the EndSession counter and nothing the
+    // signature hashes. The frame takes the new id at once, so the snapshot
+    // must be rebuilt or its SubSessionID keeps naming the old session.
+    sdkState.sessionEndEvents = 0;
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(sessionPublishCount(overlayManager)).toBe(1));
+
+    sdkState.sessionEndEvents = 1;
+
+    await vi.waitFor(() =>
+      expect(sessionPublishCount(overlayManager)).toBeGreaterThan(1)
+    );
+    bridge.stop();
+  });
+
   it('starts the poller when LMU comes up and stops it on teardown', async () => {
     const overlayManager = createOverlayManager();
     const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
@@ -393,6 +502,362 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
     await vi.waitFor(() =>
       expect(restState.poller.setActive).toHaveBeenCalledWith(false)
     );
+    bridge.stop();
+  });
+});
+
+/**
+ * The bridge's half of the driver-rating feature.
+ *
+ * Everything below the bridge -- the token exchange, the batching, the backoff
+ * and the cache -- is covered by raceos/ and storage/driverRatings specs. What
+ * only exists here is the join: which Steam ids leave the grid, that ranks are
+ * read synchronously while a snapshot is built, and that an answer arriving
+ * after that snapshot was published still reaches the renderer.
+ */
+describe('publishLmuSDKEvents and driver ratings', () => {
+  const driver = (name: string) => ({ name, id: 1 });
+
+  const namesRequested = () => ratingState.requested.flat();
+
+  const sessionPublishCount = (overlayManager: OverlayManager) =>
+    vi
+      .mocked(overlayManager.publishMessage)
+      .mock.calls.filter(([channel]) => channel === 'sessionData').length;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sdkState.running = true;
+    sdkState.readThrows = false;
+    sdkState.drivers = [];
+    ratingState.requested = [];
+    ratingState.onResolved = undefined;
+    ratingState.tapeClientBuilt = false;
+  });
+
+  it('asks about the driver names on the grid', async () => {
+    sdkState.drivers = [driver('Herve Attard'), driver('Leonel Gomez')];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(namesRequested().length).toBeGreaterThan(0));
+    expect(new Set(namesRequested())).toEqual(
+      new Set(['Herve Attard', 'Leonel Gomez'])
+    );
+
+    bridge.stop();
+  });
+
+  it('sends the name as the standings spell it', async () => {
+    // Verbatim: same capitalisation, UTF-8 intact, and the '#1234'
+    // discriminator kept -- it is part of the username, and the service
+    // answers with it. Only surrounding padding is removed.
+    sdkState.drivers = [driver('  Sébastien Rival#77 ')];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(namesRequested().length).toBeGreaterThan(0));
+    expect(namesRequested()).toContain('Sébastien Rival#77');
+
+    bridge.stop();
+  });
+
+  it('leaves unnamed entries out of the lookup', async () => {
+    // An empty slot is not a person. Asking about "" would fill a batch with
+    // a name that cannot match and have the miss remembered against it.
+    sdkState.drivers = [driver(''), driver('Herve Attard'), driver('   ')];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(namesRequested().length).toBeGreaterThan(0));
+    expect(namesRequested()).toEqual(['Herve Attard']);
+
+    bridge.stop();
+  });
+
+  it('asks about the player even while their car is AI-controlled', async () => {
+    // LMU holds your car under AI control until you take it, so in the garage
+    // your own entry reads control 1. Skipping it meant your rank was the one
+    // rank missing from the grid until you jumped in.
+    sdkState.drivers = [
+      { id: 0, name: 'Herve Attard', control: 1, isPlayer: true },
+      { id: 1, name: 'Leonel Gomez', control: 2 },
+    ];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(namesRequested().length).toBeGreaterThan(0));
+    expect(new Set(namesRequested())).toEqual(
+      new Set(['Herve Attard', 'Leonel Gomez'])
+    );
+
+    bridge.stop();
+  });
+
+  it('asks about the player found by slot rather than by flag', async () => {
+    // The second signal: playerVehicleIdx is 0 in this snapshot.
+    sdkState.drivers = [{ id: 0, name: 'Herve Attard', control: 1 }];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(namesRequested().length).toBeGreaterThan(0));
+    expect(namesRequested()).toEqual(['Herve Attard']);
+
+    bridge.stop();
+  });
+
+  it('leaves AI entries out of the lookup', async () => {
+    // RaceOS is asked by name, the sim names its AI after real people, and
+    // the service cannot tell the difference -- so an AI called "Herve
+    // Attard" would be handed that person's rank and badge.
+    sdkState.drivers = [
+      { id: 3, name: 'Herve Attard', control: 2 },
+      { id: 4, name: 'Leonel Gomez', control: 1 },
+    ];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(namesRequested().length).toBeGreaterThan(0));
+    expect(namesRequested()).toEqual(['Herve Attard']);
+
+    bridge.stop();
+  });
+
+  it('keeps an entry whose control the sim did not report', async () => {
+    // `control === 1` only. A missing field must not quietly cost a human
+    // their rank, which is the failure nobody would notice.
+    sdkState.drivers = [{ id: 3, name: 'Herve Attard' }];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(namesRequested().length).toBeGreaterThan(0));
+    expect(namesRequested()).toEqual(['Herve Attard']);
+
+    bridge.stop();
+  });
+
+  it('reports a slow session update without PERF_METRICS', async () => {
+    // perfMetrics is opt-in: every mark returns early unless PERF_METRICS=1,
+    // so on an ordinary run its spans measure nothing. Rebuilding and
+    // broadcasting the snapshot is the one thing here that stalls the sim, and
+    // finding that out should not need the app relaunched with a flag set.
+    const slow = 25;
+    mapSessionSpy.mockImplementation(() => {
+      // Burns real time, since the warning is timed with performance.now().
+      const until = performance.now() + slow;
+      while (performance.now() < until) {
+        /* spin */
+      }
+      return { drivers: [], DriverInfo: { Drivers: [] } };
+    });
+
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() =>
+      expect(
+        vi
+          .mocked(logger.warn)
+          .mock.calls.map(([m]) => String(m))
+          .some((m) => m.includes('Slow session update'))
+      ).toBe(true)
+    );
+
+    bridge.stop();
+    mapSessionSpy.mockReset();
+    mapSessionSpy.mockReturnValue({
+      drivers: [],
+      DriverInfo: { Drivers: [] },
+    } as unknown as { drivers: []; DriverInfo: { Drivers: [] } });
+  });
+
+  it('says nothing when a session update is quick', async () => {
+    // Which is every normal update. A line per rebuild at 2Hz would bury the
+    // log it is meant to help read.
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(mapSessionSpy).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
+    expect(
+      vi
+        .mocked(logger.warn)
+        .mock.calls.map(([m]) => String(m))
+        .filter((m) => m.includes('Slow session update'))
+    ).toEqual([]);
+
+    bridge.stop();
+  });
+
+  it('reports what the published snapshot actually carries', async () => {
+    // "Matched n/n" says the service answered and the answers were filed under
+    // names the grid presents; it does not say they reached a driver. The
+    // country arrives by a different route, so flags-and-no-ranks looks the
+    // same from the renderer and from the lookup's own log. This line is what
+    // distinguishes them, so it reads the snapshot about to be published.
+    sdkState.drivers = [driver('Herve Attard'), driver('Leonel Gomez')];
+    mapSessionSpy.mockReturnValueOnce({
+      DriverInfo: {
+        Drivers: [
+          {
+            LmuRating: {
+              driverRank: 'Bronze',
+              badge: 'sr-saint',
+              countryCode: 'US',
+            },
+          },
+          { LmuRating: { countryCode: 'AR' } },
+        ],
+      },
+    } as unknown as { drivers: []; DriverInfo: { Drivers: [] } });
+
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() =>
+      expect(
+        vi
+          .mocked(logger.info)
+          .mock.calls.map(([m]) => String(m))
+          .some((m) => m.includes('Published ratings'))
+      ).toBe(true)
+    );
+    const line = vi
+      .mocked(logger.info)
+      .mock.calls.map(([m]) => String(m))
+      .find((m) => m.includes('Published ratings'));
+
+    expect(line).toContain('1 ranked, 1 badged, 2 flagged of 2');
+
+    bridge.stop();
+  });
+
+  it('hands the session mapper a synchronous rating lookup', async () => {
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(mapSessionSpy).toHaveBeenCalled());
+    const ratingFor = mapSessionSpy.mock.calls[0][3] as (
+      steamId: string
+    ) => unknown;
+    expect(typeof ratingFor).toBe('function');
+
+    // It must read through the client rather than hold a snapshot of its own,
+    // or a rank resolved later would never be picked up.
+    ratingFor('Herve Attard');
+    expect(ratingState.get).toHaveBeenCalledWith('Herve Attard');
+
+    bridge.stop();
+  });
+
+  it('republishes the session when a rating resolves', async () => {
+    // A rating lands long after the snapshot that asked for it. The signature
+    // is pinned to a constant in this file's mocks, so a second sessionData
+    // publish here can only come from the client's onResolved dropping it --
+    // exactly the silent failure this guards: a rank sitting in the cache,
+    // never reaching the renderer.
+    sdkState.drivers = [driver('Herve Attard')];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(sessionPublishCount(overlayManager)).toBe(1));
+
+    ratingState.onResolved?.();
+
+    await vi.waitFor(() =>
+      expect(sessionPublishCount(overlayManager)).toBeGreaterThan(1)
+    );
+    bridge.stop();
+  });
+
+  it('drops the token and queue when the sim is confirmed gone', async () => {
+    // The token was bought with a ticket that sim run minted, and nothing
+    // queued can be asked about once the sim is not there to mint another.
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() =>
+      expect(restState.poller.setActive).toHaveBeenCalledWith(true)
+    );
+    sdkState.readThrows = true;
+
+    await vi.waitFor(() => expect(ratingState.reset).toHaveBeenCalled());
+    bridge.stop();
+  });
+
+  it('flushes the rating cache on teardown', async () => {
+    // Cache writes are debounced behind an unref'd timer, so without this a
+    // rating resolved in the last second before a quit is simply lost.
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(ratingState.cache.load).toHaveBeenCalled());
+    bridge.stop();
+
+    expect(ratingState.cache.flush).toHaveBeenCalled();
+  });
+});
+
+/**
+ * Which rating source a replay gets.
+ *
+ * A replay cannot resolve ratings the live way: the ticket that authorises the
+ * lookup is deliberately never recorded, so the live client would build a
+ * cache, open an HTTPS agent, and ask the tape for a credential that is not
+ * in it. The tape-backed client is the whole of what a replay needs, and
+ * taking the other branch is what keeps a replay off the disk and off the
+ * network entirely.
+ */
+describe('publishLmuSDKEvents rating source on a tape replay', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sdkState.running = true;
+    sdkState.readThrows = false;
+    sdkState.drivers = [];
+    ratingState.requested = [];
+    ratingState.tapeClientBuilt = false;
+  });
+
+  it('reads ratings from the tape instead of the service', async () => {
+    vi.stubEnv('IRDASHIES_LMU_REPLAY', 'session.lmudt');
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(mapSessionSpy).toHaveBeenCalled());
+    expect(ratingState.tapeClientBuilt).toBe(true);
+    // No cache either: there is nothing worth persisting from a replay, and
+    // loading one would let a live session's ratings into a tape's standings.
+    expect(ratingState.cache.load).not.toHaveBeenCalled();
+
+    bridge.stop();
+    expect(ratingState.cache.flush).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
+  });
+
+  it('uses the live client when not replaying', async () => {
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(ratingState.cache.load).toHaveBeenCalled());
+    expect(ratingState.tapeClientBuilt).toBe(false);
+
     bridge.stop();
   });
 });

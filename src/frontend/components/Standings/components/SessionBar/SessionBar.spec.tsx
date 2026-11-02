@@ -171,3 +171,34 @@ describe('SessionBar untrusted configuration', () => {
     }
   );
 });
+
+describe('SessionBar humidity', () => {
+  it.each(['header', 'footer'] as const)(
+    'renders optional humidity in the %s',
+    (position) => {
+      vi.mocked(useSessionBarSnapshot).mockReturnValue({
+        relativeHumidity: 0.45,
+      } as never);
+      const { container } = render(
+        <SessionBar
+          settings={{
+            ...baseSettings,
+            humidity: { enabled: true },
+            displayOrder: ['humidity'],
+          }}
+          position={position}
+        />
+      );
+      expect(container.textContent).toBe('45%');
+    }
+  );
+
+  it('keeps humidity disabled for existing configurations', () => {
+    expect(isSessionBarItemEnabled('humidity', baseSettings, 'header')).toBe(
+      false
+    );
+    expect(isSessionBarItemEnabled('humidity', baseSettings, 'footer')).toBe(
+      false
+    );
+  });
+});

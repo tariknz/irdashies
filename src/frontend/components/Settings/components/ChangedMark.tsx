@@ -44,7 +44,7 @@ export const changeMarker =
             type="button"
             title="Changed: click to reset"
             aria-label={`Reset ${keys.join(', ')}`}
-            className="absolute -left-3 top-2 h-2 w-2 rounded-full bg-blue-400 hover:bg-blue-300"
+            className="absolute -left-3 top-2 h-2 w-2 rounded-full bg-accent-400 hover:bg-accent-300"
             onClick={() =>
               set(
                 Object.fromEntries(

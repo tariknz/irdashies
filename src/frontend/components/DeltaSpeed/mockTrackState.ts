@@ -20,6 +20,7 @@ export const mockTrackState = (
   carIdxClassPosition: [],
   carLeftRight: 0,
   isOnTrack: true,
+  dataStale: false,
   playerCarInPitStall: false,
   playerTrackSurface: 3,
   onPitRoad: false,

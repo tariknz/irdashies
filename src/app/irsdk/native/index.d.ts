@@ -13,10 +13,15 @@ import {
   TelemetryVariable,
   TelemetryVarList,
 } from '../types';
+import type { TapeReplayStatus } from '@irdashies/types';
 
 type TelemetryTypesDict = Record<string, number>;
 
 export interface INativeSDK {
+  getTapeReplayStatus?: () => TapeReplayStatus;
+  seekTapeReplay?: (seconds: number) => boolean;
+  setTapeReplaySpeed?: (speed: number) => boolean;
+  setTapeReplayPaused?: (paused: boolean) => boolean;
   readonly currDataVersion: number;
   enableLogging: boolean;
 
@@ -39,8 +44,7 @@ export interface INativeSDK {
   // This is handled in the cpp side so no need to mess with it in js
   broadcast(
     message:
-      | BroadcastMessages.CameraSwitchPos
-      | BroadcastMessages.CameraSwitchNum,
+      BroadcastMessages.CameraSwitchPos | BroadcastMessages.CameraSwitchNum,
     driverOrPos: number,
     group: number,
     camera: number
@@ -100,6 +104,10 @@ export interface INativeSDK {
 }
 
 export class NativeSDK implements INativeSDK {
+  public getTapeReplayStatus?: () => TapeReplayStatus;
+  public seekTapeReplay?: (seconds: number) => boolean;
+  public setTapeReplaySpeed?: (speed: number) => boolean;
+  public setTapeReplayPaused?: (paused: boolean) => boolean;
   public readonly currDataVersion: number;
 
   public enableLogging: boolean;
@@ -132,8 +140,7 @@ export class NativeSDK implements INativeSDK {
   // This is handled in the cpp side so no need to mess with it in js
   public broadcast(
     message:
-      | BroadcastMessages.CameraSwitchPos
-      | BroadcastMessages.CameraSwitchNum,
+      BroadcastMessages.CameraSwitchPos | BroadcastMessages.CameraSwitchNum,
     driverOrPos: number,
     group: number,
     camera: number

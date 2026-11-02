@@ -52,6 +52,27 @@ describe('SettingProp', () => {
 });
 
 describe('SettingProp enum extensions', () => {
+  it('lets standings users choose the interval display while preserving other interval settings', () => {
+    const onChange = vi.fn();
+    render(
+      <SettingProps
+        widget="standings"
+        config={{
+          interval: { enabled: true, displayMode: 'time', decimalPlaces: 2 },
+        }}
+        onChange={onChange}
+      >
+        <StandingsProp path="interval.displayMode" variant="compact" />
+      </SettingProps>
+    );
+    const select = screen.getByRole('combobox');
+    expect(select).toHaveValue('time');
+    fireEvent.change(select, { target: { value: 'laps' } });
+    expect(onChange).toHaveBeenLastCalledWith({
+      interval: { enabled: true, displayMode: 'laps', decimalPlaces: 2 },
+    });
+  });
+
   const renderStandings = (
     config: Record<string, unknown>,
     compact = false

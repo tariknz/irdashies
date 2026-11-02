@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   FlagWidgetSettings,
   SettingsTabType,
@@ -78,23 +79,26 @@ export const FlagSettings = () => {
             <div>
               {/* OPTIONS TAB */}
               {activeTab === 'options' && (
-                <SettingsSection title="Display">
-                  <SettingProp path="background.opacity" />
+                <>
+                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
+                  <SettingsSection title="Display">
+                    <SettingProp path="background.opacity" />
 
-                  <SettingProp path="doubleFlag" />
+                    <SettingProp path="doubleFlag" />
 
-                  <SettingProp path="matrixMode" />
+                    <SettingProp path="matrixMode" />
 
-                  <SettingProp path="animate" />
+                    <SettingProp path="animate" />
 
-                  <SettingProp path="blinkPeriod" />
+                    <SettingProp path="blinkPeriod" />
 
-                  <SettingProp path="showLabel" />
+                    <SettingProp path="showLabel" />
 
-                  <SettingProp path="showNoFlagState" />
+                    <SettingProp path="showNoFlagState" />
 
-                  <SettingProp path="enableGlow" />
-                </SettingsSection>
+                    <SettingProp path="enableGlow" />
+                  </SettingsSection>
+                </>
               )}
 
               {/* VISIBILITY TAB */}

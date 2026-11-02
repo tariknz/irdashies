@@ -1,4 +1,4 @@
-import type { LogLevel } from '@irdashies/types';
+import { serializeLogArgs, type LogLevel } from '@irdashies/types';
 
 /**
  * Frontend logger.
@@ -20,10 +20,18 @@ const consoleMethods = {
 function createMethod(level: LogLevel) {
   return (...args: unknown[]) => {
     // Always log to console for DevTools visibility in dev
-    consoleMethods[level](...args);
+    try {
+      consoleMethods[level](...args);
+    } catch {
+      // A failing console/inspector must not prevent file diagnostics.
+    }
 
     // Forward to main process for file persistence
-    window.logBridge?.log(level, ...args);
+    try {
+      window.logBridge?.log(level, ...serializeLogArgs(args));
+    } catch {
+      // Logging must not turn a failed/closed renderer bridge into a crash.
+    }
   };
 }
 

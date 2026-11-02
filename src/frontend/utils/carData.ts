@@ -92,7 +92,10 @@ function preferLmuAlias(
 }
 
 function initializeNormalizations(gameId: string): void {
-  if (normalizationsByGame[gameId] !== null && normalizationsByGame[gameId] !== undefined) {
+  if (
+    normalizationsByGame[gameId] !== null &&
+    normalizationsByGame[gameId] !== undefined
+  ) {
     return;
   }
 
@@ -113,10 +116,7 @@ function initializeNormalizations(gameId: string): void {
     if (existing === bundleKey) return;
     if (gameId !== 'lmu') return;
     const existingCar = bundle.cars[existing];
-    if (
-      existingCar &&
-      preferLmuAlias(existing, existingCar, bundleKey, car)
-    ) {
+    if (existingCar && preferLmuAlias(existing, existingCar, bundleKey, car)) {
       map[alias] = bundleKey;
     }
   };
@@ -134,21 +134,14 @@ function initializeNormalizations(gameId: string): void {
   normalizationsByGame[gameId] = map;
 }
 
-function resolveCarKey(
-  gameId: string,
-  candidates: string[]
-): string | null {
+function resolveCarKey(gameId: string, candidates: string[]): string | null {
   initializeNormalizations(gameId);
   const map = normalizationsByGame[gameId];
   if (!map) return null;
 
   for (const raw of candidates) {
     if (!raw) continue;
-    const variations = [
-      raw,
-      raw.toLowerCase(),
-      normalizeKey(gameId, raw),
-    ];
+    const variations = [raw, raw.toLowerCase(), normalizeKey(gameId, raw)];
     for (const variation of variations) {
       if (variation in map) return map[variation];
     }
@@ -191,7 +184,7 @@ function resolveGameId(gameId?: GameId | null): string {
 export const loadCarData = (
   carPath: string,
   gameId?: GameId | null,
-  aliases?: readonly string[] | null
+  aliases?: readonly (string | null | undefined)[] | null
 ): CarData | null => {
   try {
     const game = resolveGameId(gameId);

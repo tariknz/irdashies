@@ -186,6 +186,57 @@ describe('ReferenceLapProcessor', () => {
     expect(save).not.toHaveBeenCalled();
   });
 
+  describe('LMU lap void flag', () => {
+    const playerSession = (playerCarIdx: number) =>
+      ({
+        ...session(),
+        DriverInfo: { ...session().DriverInfo, DriverCarIdx: playerCarIdx },
+      }) as Session;
+    const lmuFrame = (
+      lapDistPct: number,
+      sessionTime: number,
+      voided: boolean
+    ) =>
+      ({
+        ...frame(lapDistPct, sessionTime),
+        LmuLapInvalidated: { value: [voided] },
+      }) as unknown as Telemetry;
+
+    it("rejects the player's lap once LMU voids it for a track cut", () => {
+      const save = vi.fn();
+      const processor = new ReferenceLapProcessor({ load: () => null, save });
+      processor.init(playerSession(0));
+      runCleanLap(processor, (pct, time) => lmuFrame(pct, time, pct > 0.5));
+
+      expect(processor.snapshot().bestLaps).toEqual([]);
+      expect(save).not.toHaveBeenCalled();
+    });
+
+    it('ignores a void flag still set from the previous lap just after the line', () => {
+      const processor = new ReferenceLapProcessor({
+        load: () => null,
+        save: vi.fn(),
+      });
+      processor.init(playerSession(0));
+      // Set only over the first 3% of the lap, where it is still the last
+      // lap's: the lap itself was never voided.
+      runCleanLap(processor, (pct, time) => lmuFrame(pct, time, pct < 0.03));
+
+      expect(processor.snapshot().bestLaps).toHaveLength(1);
+    });
+
+    it("leaves another car's lap alone: LMU reports the flag for the player only", () => {
+      const processor = new ReferenceLapProcessor({
+        load: () => null,
+        save: vi.fn(),
+      });
+      processor.init(playerSession(5));
+      runCleanLap(processor, (pct, time) => lmuFrame(pct, time, true));
+
+      expect(processor.snapshot().bestLaps).toHaveLength(1);
+    });
+  });
+
   it('rejects a lap with unsampled tail buckets', () => {
     const save = vi.fn();
     const processor = new ReferenceLapProcessor({ load: () => null, save });

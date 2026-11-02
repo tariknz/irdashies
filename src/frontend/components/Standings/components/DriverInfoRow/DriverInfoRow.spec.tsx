@@ -1,10 +1,14 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
   RATING_COLUMN_IDS,
   deepMergeConfig,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
+import {
+  StandingsInteractionProvider,
+  type StandingsInteraction,
+} from '@irdashies/domain';
 import { DriverInfoRow } from './DriverInfoRow';
 
 vi.mock('@irdashies/context', () => ({
@@ -89,6 +93,31 @@ describe('DriverInfoRow badge contents', () => {
     renderRow({ license: '', rating: 0 });
     expect(screen.getByText('AI')).toBeTruthy();
   });
+
+  it('names an AI entry on a sim without ratings', () => {
+    // The row's half of the contract for the other half of the decision.
+    renderRow({ license: '', rating: 0, hasDriverRatings: false, isAI: true });
+    expect(screen.getByText('AI')).toBeTruthy();
+  });
+
+  it('draws no badge at all for a sim without ratings', () => {
+    // The row's half of the contract, which nothing else covers: BadgeCell
+    // has its own specs for the decision, but only this proves the answer
+    // reaches it. Dropping the prop here is invisible to every other spec --
+    // and an unpassed parameter is exactly how the LMU grid came to be
+    // labelled "AI" in the first place.
+    const { container } = renderRow({
+      license: '',
+      rating: 0,
+      hasDriverRatings: false,
+      isAI: false,
+    });
+
+    expect(screen.queryByText('AI')).toBeNull();
+    const badge = container.querySelector('td[data-column="badge"]');
+    expect(badge).toBeTruthy();
+    expect(badge?.childElementCount).toBe(0);
+  });
 });
 
 describe('DriverInfoRow', () => {
@@ -131,4 +160,53 @@ describe('DriverInfoRow', () => {
       expect(container.querySelector('.text-slate-400')).toBeNull();
     }
   );
+});
+
+describe('DriverInfoRow interaction', () => {
+  const renderWith = (interaction: StandingsInteraction) =>
+    render(
+      <StandingsInteractionProvider value={interaction}>
+        <table>
+          <tbody>
+            <DriverInfoRow {...baseProps} />
+          </tbody>
+        </table>
+      </StandingsInteractionProvider>
+    );
+
+  it('is a plain row when nothing provides an interaction', () => {
+    renderRow();
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('selects its car when clicked or activated from the keyboard', () => {
+    const onSelectCar = vi.fn();
+    renderWith({ onSelectCar });
+
+    const row = screen.getByRole('button');
+    fireEvent.click(row);
+    fireEvent.keyDown(row, { key: 'Enter' });
+
+    expect(onSelectCar).toHaveBeenCalledTimes(2);
+    expect(onSelectCar).toHaveBeenCalledWith(3);
+  });
+
+  it('marks the highlighted car and dims the others', () => {
+    const { container, unmount } = renderWith({ highlightedCarIdx: 3 });
+    const highlighted = container.querySelector('tr');
+    expect(highlighted?.className).toContain('outline');
+    expect(highlighted?.className).not.toContain('opacity-40');
+    unmount();
+
+    const other = renderWith({ highlightedCarIdx: 9 }).container;
+    expect(other.querySelector('tr')?.className).toContain('opacity-40');
+    expect(other.querySelector('tr')?.className).not.toContain('outline');
+  });
+
+  it('scrolls the highlighted row into view', () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    renderWith({ highlightedCarIdx: 3 });
+    expect(scrollIntoView).toHaveBeenCalled();
+  });
 });

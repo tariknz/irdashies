@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useState } from 'react';
+import { menuHasToggle } from '../menuItems';
 import { ToggleSwitch } from './ToggleSwitch';
 import { BaseWidgetSettings } from '@irdashies/types';
 import {
@@ -48,6 +49,16 @@ export const BaseSettingsSection = <T,>({
     widgetId,
     simulator
   );
+  // The settings menu already has this widget's switch; skip the duplicate.
+  // A sim-unsupported widget is not in the menu, so its page keeps its own.
+  const menuToggles =
+    !simDisabledReason &&
+    !!widgetId &&
+    menuHasToggle(widgetId, currentDashboard?.widgets.map((w) => w.id) ?? []);
+  // The Gantry renders its own layouts whatever their enabled flag says.
+  const isGantryOnly =
+    currentDashboard?.widgets.find((w) => w.id === widgetId)?.placement ===
+    'gantry';
   const simIncompatibleLabel = simDisabledReason
     ? widgetIncompatibleLabel(simulator)
     : null;
@@ -171,14 +182,16 @@ export const BaseSettingsSection = <T,>({
           <div className="flex justify-between items-center mb-1">
             <h2 className="text-xl">{title}</h2>
             <div className="flex flex-col items-end gap-0.5">
-              <ToggleSwitch
-                enabled={localSettings.enabled}
-                disabled={!!simDisabledReason}
-                disabledReason={simDisabledReason ?? undefined}
-                onToggle={(enabled) =>
-                  handleSettingsChange({ ...localSettings, enabled })
-                }
-              />
+              {!menuToggles && !isGantryOnly && (
+                <ToggleSwitch
+                  enabled={localSettings.enabled}
+                  disabled={!!simDisabledReason}
+                  disabledReason={simDisabledReason ?? undefined}
+                  onToggle={(enabled) =>
+                    handleSettingsChange({ ...localSettings, enabled })
+                  }
+                />
+              )}
               {simIncompatibleLabel && (
                 <span
                   className="text-xs text-slate-500"
@@ -217,7 +230,7 @@ export const BaseSettingsSection = <T,>({
         )}
 
         {showResetConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="fixed inset-0 z-50 [-webkit-app-region:no-drag] flex items-center justify-center bg-black/60">
             <div className="bg-slate-800 rounded-lg border border-slate-600 p-5 w-80 shadow-xl">
               <h3 className="text-base font-semibold text-white mb-2">
                 Reset Position

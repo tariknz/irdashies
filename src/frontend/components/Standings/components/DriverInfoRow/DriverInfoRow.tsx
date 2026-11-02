@@ -1,19 +1,25 @@
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime, type TimeFormat } from '@irdashies/utils/time';
 import { useDashboard, type P2PDisplayState } from '@irdashies/context';
 import type { ResolvedDriverTag } from '../../hooks';
+import { useStandingsInteraction } from '@irdashies/domain';
 import type { Gap, LastTimeState } from '@irdashies/domain';
 import type {
+  LmuDriverRating,
+  LmuPenaltyKind,
   RelativeWidgetSettings,
   StandingsWidgetSettings,
 } from '@irdashies/types';
 import { AvgLapTimeCell } from './cells/AvgLapTimeCell';
 import { LapCountCell } from './cells/LapCountCell';
 import { BadgeCell } from './cells/BadgeCell';
+import { LmuBadgeCell } from './cells/LmuBadgeCell';
 import { CarManufacturerCell } from './cells/CarManufacturerCell';
 import { CarNumberCell } from './cells/CarNumberCell';
 import { CompoundCell } from './cells/CompoundCell';
+import { TrackLimitsCell } from './cells/TrackLimitsCell';
+import { VirtualEnergyCell } from './cells/VirtualEnergyCell';
 import { CountryFlagsCell } from './cells/CountryFlagsCell';
 import { DeltaCell } from './cells/DeltaCell';
 import { DriverNameCell } from './cells/DriverNameCell';
@@ -38,7 +44,7 @@ interface DriverRowInfoProps {
   hasFastestTime: boolean;
   delta?: number;
   gap?: Gap;
-  interval?: number;
+  interval?: number | Gap;
   position?: number;
   lap?: number;
   license?: string;
@@ -56,7 +62,20 @@ interface DriverRowInfoProps {
   isLappingAhead?: boolean;
   hidden?: boolean;
   flairId?: number;
+  /** LMU rank, badge and country. Absent on every other sim. */
+  lmuRating?: LmuDriverRating;
   tireCompound?: number;
+  /** LMU's four wheels, FL, FR, RL, RR. Undefined where the sim has one. */
+  wheelCompounds?: number[];
+  /** LMU's penalty kind: DT for a drive-through, SG for a stop-go. */
+  penaltyKind?: LmuPenaltyKind;
+  penaltySeconds?: number;
+  /** LMU's track-limits penalty points. Undefined where unknown. */
+  trackLimitsPoints?: number;
+  /** Points at which a drive-through is served. */
+  trackLimitsMax?: number;
+  /** LMU's virtual energy, or fuel for a car without it. 0..1. */
+  lmuVirtualEnergy?: number;
   carId?: number;
   lapTimeDeltas?: number[];
   numLapDeltasToShow?: number;
@@ -71,6 +90,10 @@ interface DriverRowInfoProps {
    * guaranteed to be filtering from the very same set.
    */
   hiddenColumns?: ReadonlySet<string>;
+  /** Whether the running sim has an iRacing-style licence and rating. */
+  hasDriverRatings?: boolean;
+  /** Whether the sim drives this entry rather than a person. */
+  isAI?: boolean;
   config?: RelativeWidgetSettings['config'] | StandingsWidgetSettings['config'];
   lastPitLap?: number;
   lastLap?: number;
@@ -220,7 +243,14 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     isLappingAhead,
     hidden,
     flairId,
+    lmuRating,
     tireCompound,
+    wheelCompounds,
+    penaltyKind,
+    penaltySeconds,
+    trackLimitsPoints,
+    trackLimitsMax,
+    lmuVirtualEnergy,
     carId,
     lapTimeDeltas,
     numLapDeltasToShow,
@@ -228,6 +258,8 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     isMultiClass,
     displayOrder,
     hiddenColumns,
+    hasDriverRatings,
+    isAI,
     config,
     lastPitLap,
     lastLap,
@@ -254,6 +286,18 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
   } = displayProps;
 
   const { currentDashboard } = useDashboard();
+  const { onSelectCar, highlightedCarIdx } = useStandingsInteraction();
+  const isHighlighted =
+    highlightedCarIdx != null && highlightedCarIdx === carIdx;
+  const rowRef = useRef<HTMLTableRowElement>(null);
+  useEffect(() => {
+    if (isHighlighted) {
+      rowRef.current?.scrollIntoView?.({
+        block: 'nearest',
+        behavior: 'smooth',
+      });
+    }
+  }, [isHighlighted]);
   const tagSettings = currentDashboard?.generalSettings?.driverTagSettings;
 
   const lastTimeString = useMemo(() => {
@@ -365,6 +409,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           <CountryFlagsCell
             key="countryFlags"
             flairId={flairId}
+            countryCode={lmuRating?.countryCode}
             compactMode={compactMode}
           />
         ),
@@ -379,6 +424,8 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             key="driverName"
             radioActive={radioActive}
             repair={repair}
+            penaltyKind={penaltyKind}
+            penaltySeconds={penaltySeconds}
             penalty={penalty}
             slowdown={slowdown}
             showStatusBadges={config?.driverName?.showStatusBadges ?? true}
@@ -468,6 +515,19 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
         ),
       },
       {
+        id: 'lmuBadge',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('lmuBadge') : true) &&
+          (config?.lmuBadge?.enabled ?? true),
+        component: (
+          <LmuBadgeCell
+            key="lmuBadge"
+            badge={lmuRating?.badge}
+            compactMode={compactMode}
+          />
+        ),
+      },
+      {
         id: 'badge',
         shouldRender:
           (displayOrder ? displayOrder.includes('badge') : true) &&
@@ -478,7 +538,11 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             license={license}
             rating={rating}
             isAi={isAi}
+            lmuRating={lmuRating}
             badgeFormat={config?.badge?.badgeFormat}
+            lmuFormat={config?.badge?.lmuFormat}
+            hasDriverRatings={hasDriverRatings}
+            isAI={isAI}
             isMinimal={badgeMinimal}
             compactMode={compactMode}
           />
@@ -535,8 +599,15 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           <DeltaCell
             key="gap"
             delta={gap}
+            showSign={
+              config && 'gap' in config && config.gap.reference === 'player'
+            }
             showForUndefined={
-              position === 1 && !hideLeaderGapIntervalLabels ? 'gap' : undefined
+              position === 1 &&
+              !hideLeaderGapIntervalLabels &&
+              !(config && 'gap' in config && config.gap.reference === 'player')
+                ? 'gap'
+                : undefined
             }
             decimalPlaces={
               config && 'gap' in config
@@ -605,6 +676,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           <CompoundCell
             key="compound"
             tireCompound={tireCompound}
+            wheelCompounds={wheelCompounds}
             carId={carId}
             compactMode={compactMode}
           />
@@ -667,6 +739,37 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
         ),
       },
       {
+        id: 'trackLimits',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('trackLimits') : false) &&
+          (config && 'trackLimits' in config
+            ? config.trackLimits.enabled
+            : false),
+        component: (
+          <TrackLimitsCell
+            key="trackLimits"
+            points={trackLimitsPoints}
+            max={trackLimitsMax}
+            compactMode={compactMode}
+          />
+        ),
+      },
+      {
+        id: 'lmuVirtualEnergy',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('lmuVirtualEnergy') : false) &&
+          (config && 'lmuVirtualEnergy' in config
+            ? config.lmuVirtualEnergy.enabled
+            : false),
+        component: (
+          <VirtualEnergyCell
+            key="lmuVirtualEnergy"
+            remaining={lmuVirtualEnergy}
+            compactMode={compactMode}
+          />
+        ),
+      },
+      {
         id: 'pushToPass',
         shouldRender:
           (displayOrder ? displayOrder.includes('pushToPass') : false) &&
@@ -702,6 +805,8 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
   }, [
     displayOrder,
     hiddenColumns,
+    hasDriverRatings,
+    isAI,
     config,
     position,
     lap,
@@ -710,6 +815,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     tailwindStyles,
     carNumber,
     flairId,
+    lmuRating,
     name,
     hideLeaderGapIntervalLabels,
     teamName,
@@ -740,6 +846,12 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     lastTimeString,
     lastTimeState,
     tireCompound,
+    wheelCompounds,
+    penaltyKind,
+    penaltySeconds,
+    trackLimitsPoints,
+    trackLimitsMax,
+    lmuVirtualEnergy,
     lapTimeDeltas,
     emptyLapDeltaPlaceholders,
     avgLapTime,
@@ -761,15 +873,43 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     lapCountUnknown,
   ]);
 
+  const rowOpacity =
+    config && 'driverRow' in config ? (config.driverRow?.opacity ?? 70) : 70;
+
   return (
     <tr
       key={carIdx}
+      ref={rowRef}
+      {...(onSelectCar && {
+        role: 'button',
+        tabIndex: 0,
+        onClick: () => onSelectCar(carIdx),
+        onKeyDown: (e: React.KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSelectCar(carIdx);
+          }
+        },
+      })}
+      style={{
+        ['--row-opacity' as string]: `${rowOpacity}%`,
+        // Keep the player's existing 20% highlight at the default row opacity.
+        ['--player-row-opacity' as string]: `${(rowOpacity * 20) / 70}%`,
+        ...(isHighlighted && {
+          outlineColor: `#${highlightColor.toString(16).padStart(6, '0')}`,
+        }),
+      }}
       className={[
+        onSelectCar
+          ? 'cursor-pointer hover:bg-sky-500/20 focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-400'
+          : '',
+        isHighlighted ? 'outline outline-1 -outline-offset-1 relative' : '',
+        highlightedCarIdx != null && !isHighlighted ? 'opacity-40' : '',
         !onTrack || onPitRoad ? 'text-white/60' : '',
         isPlayer ? 'text-amber-300' : '',
         isPlayer
-          ? 'bg-yellow-500/20'
-          : 'odd:bg-slate-800/70 even:bg-slate-900/70 text-sm',
+          ? 'bg-yellow-500/(--player-row-opacity)'
+          : 'odd:bg-slate-800/(--row-opacity) even:bg-slate-900/(--row-opacity) text-sm',
         !isPlayer && isLapped ? 'text-blue-400' : '',
         !isPlayer && isLappingAhead ? 'text-red-400' : '',
         hidden ? 'invisible' : '',

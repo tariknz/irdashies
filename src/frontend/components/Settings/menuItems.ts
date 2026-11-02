@@ -6,9 +6,20 @@ import {
   KeyboardIcon,
   WrenchIcon,
   InfoIcon,
+  NewspaperIcon,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
-import { WIDGET_MANIFESTS } from '@irdashies/types';
+import { WIDGET_MANIFESTS, type WidgetId } from '@irdashies/types';
+
+/** Menu groups, in display order. */
+export const WIDGET_CATEGORIES = [
+  { id: 'race', label: 'Timing & Race' },
+  { id: 'car', label: 'Car & Driver' },
+  { id: 'awareness', label: 'Awareness' },
+  { id: 'track', label: 'Track & Conditions' },
+  { id: 'extras', label: 'Extras' },
+] as const;
+export type WidgetCategory = (typeof WIDGET_CATEGORIES)[number]['id'];
 
 export interface MenuItem {
   to: string;
@@ -17,6 +28,7 @@ export interface MenuItem {
   widgetType?: string;
   /** Widgets that share this item's page; it shows On while any of them is. */
   groupTypes?: string[];
+  category?: WidgetCategory;
   icon?: Icon;
   /** Reached through a tab on another item's page rather than the menu. */
   hideInMenu?: boolean;
@@ -55,16 +67,95 @@ export const generalItems: MenuItem[] = [
   },
 ];
 
+/** Menu group per widget; the manifests do not carry one. */
+const WIDGET_MENU_META: Partial<
+  Record<WidgetId, { category: WidgetCategory }>
+> = {
+  broadcast: {
+    category: 'extras',
+  },
+  battle: { category: 'race' },
+  blindspotmonitor: {
+    category: 'awareness',
+  },
+  cornername: { category: 'track' },
+  carsystems: {
+    category: 'car',
+  },
+  deltaspeed: { category: 'race' },
+  fastercarsfrombehind: {
+    category: 'awareness',
+  },
+  flag: { category: 'awareness' },
+  flatmap: { category: 'track' },
+  fuel: { category: 'car' },
+  gantry: { category: 'race' },
+  garagecover: {
+    category: 'extras',
+  },
+  heartrate: { category: 'car' },
+  infobar: { category: 'race' },
+  input: { category: 'car' },
+  laptimelog: { category: 'race' },
+  laptrace: {
+    category: 'car',
+  },
+  pitlanehelper: {
+    category: 'awareness',
+  },
+  radar: { category: 'awareness' },
+  rejoin: { category: 'awareness' },
+  relative: { category: 'race' },
+  sectordelta: { category: 'race' },
+  shiftlight: { category: 'car' },
+  slowcarahead: {
+    category: 'awareness',
+  },
+  standings: { category: 'race' },
+  tachometer: { category: 'car' },
+  map: { category: 'track' },
+  streamchat: { category: 'extras' },
+  weather: { category: 'track' },
+  wind: { category: 'track' },
+  accelerationtimer: { category: 'car' },
+  brakepressure: { category: 'car' },
+  cruiseodometer: { category: 'car' },
+  damage: { category: 'car' },
+  frictioncircle: { category: 'car' },
+  steeringmeter: { category: 'car' },
+  stinthistory: { category: 'race' },
+  suspensionposition: { category: 'car' },
+  trackclock: { category: 'track' },
+  tracknotes: { category: 'track' },
+  tyrepanel: { category: 'car' },
+};
+
 export const widgetItems: MenuItem[] = WIDGET_MANIFESTS.map(
   ({ id, name, menuLabel, hideInMenu, groupTypes }) => ({
     to: `/settings/${id}`,
     path: `/${id}`,
     label: menuLabel ?? name,
     widgetType: id,
+    ...WIDGET_MENU_META[id],
     ...(groupTypes && { groupTypes }),
     ...(hideInMenu && { hideInMenu }),
   })
 ).sort((a, b) => a.label.localeCompare(b.label));
+
+/**
+ * Whether the settings menu offers a switch for this widget: it is listed
+ * there on its own and exists in the dashboard. The widget's page leaves its
+ * own switch out then, so there is one place to flip it.
+ */
+export const menuHasToggle = (
+  widgetType: string,
+  dashboardWidgetIds: readonly string[]
+): boolean =>
+  dashboardWidgetIds.includes(widgetType) &&
+  widgetItems.some(
+    (item) =>
+      item.widgetType === widgetType && !item.hideInMenu && !item.groupTypes
+  );
 
 export const bottomItems: MenuItem[] = [
   {
@@ -72,6 +163,12 @@ export const bottomItems: MenuItem[] = [
     path: '/advanced',
     label: 'Advanced',
     icon: WrenchIcon,
+  },
+  {
+    to: '/settings/release-notes',
+    path: '/release-notes',
+    label: 'Release notes',
+    icon: NewspaperIcon,
   },
   { to: '/settings/about', path: '/about', label: 'About', icon: InfoIcon },
 ];

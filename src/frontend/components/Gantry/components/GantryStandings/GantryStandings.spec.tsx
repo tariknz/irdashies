@@ -9,6 +9,7 @@ import type { NameFormat } from '@irdashies/types';
 
 vi.mock('@irdashies/domain', () => ({
   useHighlightColor: () => 0xffffff,
+  useFocusDriver: () => () => undefined,
 }));
 
 vi.mock('@irdashies/domain/standings/useDriverStandings', () => ({
@@ -35,6 +36,7 @@ vi.mock('@irdashies/context', () => ({
     subSessionId: '',
   }),
   useArchivedLapHistory: () => null,
+  useSessionList: () => undefined,
   // iRacing by default, so these specs keep exercising the rating badge.
   useActiveSimulator: () => simulatorMock.current,
 }));

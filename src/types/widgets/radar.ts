@@ -299,7 +299,7 @@ export default defineWidgetManifest({
       type: 'boolean',
       label: 'Slow Cars',
       description:
-        'A car under 60% of the speed the field does at that spot of the lap. The radar learns those speeds as cars go round, so this needs a lap or so. Amber.',
+        'A car under 60% of your speed that you are closing on fast, and that is crawling or still losing speed. A car steady at corner pace does not count. Amber.',
     },
     hazardOff: {
       type: 'boolean',

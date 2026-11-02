@@ -391,8 +391,16 @@ TapeReadResult TapeReader::readNext(
 }
 
 bool TapeReader::rewindRecords(std::string& error) {
+  return seekRecord(recordsOffset_, error);
+}
+
+bool TapeReader::seekRecord(std::streampos position, std::string& error) {
+  if (position < recordsOffset_) {
+    error = "Invalid telemetry tape seek position";
+    return false;
+  }
   stream_.clear();
-  stream_.seekg(recordsOffset_);
+  stream_.seekg(position);
   if (!stream_) {
     error = "Could not rewind telemetry tape";
     return false;

@@ -189,6 +189,60 @@ describe('ShiftLight', () => {
     expect(screen.getByText('SHIFT')).toBeInTheDocument();
   });
 
+  it('gives no cue in the last gear', () => {
+    const { rerender } = render(
+      <ShiftLight rpm={7500} maxRpm={8000} gear={5} gearCount={6} />
+    );
+    expect(screen.getByText('SHIFT')).toBeInTheDocument();
+    rerender(<ShiftLight rpm={7500} maxRpm={8000} gear={6} gearCount={6} />);
+    expect(screen.queryByText('SHIFT')).not.toBeInTheDocument();
+  });
+
+  it('gives no custom cue in the last gear either', () => {
+    render(
+      <ShiftLight
+        rpm={7100}
+        maxRpm={8000}
+        gear={1}
+        gearCount={1}
+        carPath="ferrari296gt3"
+        shiftPointSettings={mockShiftSettings}
+      />
+    );
+    expect(screen.queryByText('SHIFT')).not.toBeInTheDocument();
+  });
+
+  it('cues in any gear when the gear count is unknown', () => {
+    render(<ShiftLight rpm={7500} maxRpm={8000} gear={9} gearCount={0} />);
+    expect(screen.getByText('SHIFT')).toBeInTheDocument();
+  });
+
+  it('gives no cue off the throttle, as on a downshift', () => {
+    render(<ShiftLight rpm={7500} maxRpm={8000} gear={3} throttle={0} />);
+    expect(screen.queryByText('SHIFT')).not.toBeInTheDocument();
+  });
+
+  it('gives no cue for a heel-and-toe blip under braking', () => {
+    render(
+      <ShiftLight rpm={7500} maxRpm={8000} gear={3} throttle={1} brake={0.6} />
+    );
+    expect(screen.queryByText('SHIFT')).not.toBeInTheDocument();
+  });
+
+  it('gives no custom cue off the throttle', () => {
+    render(
+      <ShiftLight
+        rpm={7100}
+        maxRpm={8000}
+        gear={1}
+        throttle={0}
+        carPath="ferrari296gt3"
+        shiftPointSettings={mockShiftSettings}
+      />
+    );
+    expect(screen.queryByText('SHIFT')).not.toBeInTheDocument();
+  });
+
   it.each([0, -1])('does not give an automatic cue in gear %i', (gear) => {
     render(<ShiftLight rpm={7500} maxRpm={8000} gear={gear} shiftRpm={6900} />);
     expect(screen.queryByText('SHIFT')).not.toBeInTheDocument();

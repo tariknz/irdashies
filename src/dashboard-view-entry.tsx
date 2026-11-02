@@ -31,6 +31,7 @@ async function initializeDashboardView() {
   await bridge.connect(wsUrl);
   window.irsdkBridge = bridge;
   window.channelBridge = bridge;
+  window.pitLaneBridge = bridge;
   window.telemetryInspectorBridge = bridge;
   // Only the per-widget toggles reach the browser view; the global hide
   // (Alt+H) is for the overlay on the streamer's own screen.

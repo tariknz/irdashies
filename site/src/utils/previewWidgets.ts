@@ -1,4 +1,4 @@
-import type { WidgetId } from '../../../src/frontend/WidgetIndex';
+import type { WidgetId } from '@irdashies/types';
 
 /**
  * Widgets registered in the app but deliberately kept out of the live
@@ -9,6 +9,6 @@ import type { WidgetId } from '../../../src/frontend/WidgetIndex';
 export const EXCLUDED_WIDGETS = new Set<WidgetId>([
   'garagecover', // only renders while in the garage
   'telemetryinspector', // debug tool, not a showcase overlay
-  'twitchchat', // needs a real Twitch channel to display anything
+  'streamchat', // needs a real Twitch channel to display anything
   'heartrate', // embeds HypeRate, needs a session id
 ]);

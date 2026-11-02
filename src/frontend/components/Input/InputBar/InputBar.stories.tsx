@@ -57,3 +57,44 @@ export const Primary: Story = {
     },
   },
 };
+
+export const Zero: Story = {
+  ...Primary,
+  args: {
+    ...Primary.args,
+    brake: 0,
+    throttle: 0,
+    clutch: 0,
+  },
+};
+
+export const Full: Story = {
+  ...Primary,
+  args: {
+    ...Primary.args,
+    brake: 1,
+    throttle: 1,
+    clutch: 1,
+  },
+};
+
+export const AbsActive: Story = {
+  ...Primary,
+  args: {
+    ...Primary.args,
+    brake: 0.75,
+    throttle: 0.1234567,
+    clutch: 0,
+    brakeAbsActive: true,
+  },
+};
+
+export const OutsideRange: Story = {
+  ...Primary,
+  args: {
+    ...Primary.args,
+    brake: 2,
+    throttle: -1,
+    clutch: 0.5,
+  },
+};

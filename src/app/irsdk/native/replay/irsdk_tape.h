@@ -111,6 +111,8 @@ class TapeReader {
       std::string& error);
 
   bool rewindRecords(std::string& error);
+  std::streampos recordPosition() { return stream_.tellg(); }
+  bool seekRecord(std::streampos position, std::string& error);
 
   const TapeFileHeader& fileHeader() const {
     return fileHeader_;
@@ -133,5 +135,18 @@ class TapeReader {
 };
 
 }  // namespace irdashies::irsdk_replay
+
+// Only linked by the in-process tape addon, never the live SDK.
+struct irsdk_tape_status {
+  double position;
+  double duration;
+  double speed;
+  bool paused;
+  bool ended;
+};
+irsdk_tape_status irsdk_tape_getStatus();
+bool irsdk_tape_seek(double seconds);
+bool irsdk_tape_setSpeed(double speed);
+bool irsdk_tape_setPaused(bool paused);
 
 #endif

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Sign the app and Squirrel-generated launcher together, after make.
+
+  squirrel-package.zip is the full .nupkg with a fixed ZIP filename. GitHub
+  wraps it in another ZIP, so both archive levels are represented here.
+  CI then regenerates RELEASES and Setup.exe from the signed full package.
+
+  Upload this configuration to the SignPath portal as "squirrel-package".
+  Schema: https://docs.signpath.io/artifact-configuration/
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <zip-file path="squirrel-package.zip" min-matches="1" max-matches="1">
+      <pe-file path="lib/net45/irdashies.exe" min-matches="1" max-matches="1">
+        <authenticode-sign />
+      </pe-file>
+      <pe-file path="lib/net45/irdashies_ExecutionStub.exe" min-matches="1" max-matches="1">
+        <authenticode-sign />
+      </pe-file>
+    </zip-file>
+  </zip-file>
+</artifact-configuration>

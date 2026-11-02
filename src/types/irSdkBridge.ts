@@ -1,4 +1,5 @@
 import type { Session, Telemetry } from '@irdashies/types';
+import type { TapeReplayCommand, TapeReplayStatus } from './tapeReplay';
 
 export enum ReplayPositionCommand {
   /** Beginning of the replay */
@@ -36,6 +37,8 @@ export interface IrSdkBridge {
  * `raceControlBridge`.
  */
 export interface IrSdkSourceBridge extends IrSdkBridge {
+  getTapeReplayStatus?: () => TapeReplayStatus | null;
+  controlTapeReplay?: (command: TapeReplayCommand) => TapeReplayStatus;
   onTelemetry: (
     callback: (value: Telemetry) => void
   ) => (() => void) | undefined;

@@ -1,5 +1,6 @@
 import { InputContainer } from './InputContainer/InputContainer';
 import { isInputConfig, useInputSettings } from './hooks/useInputSettings';
+import { useGearFlash } from './hooks/useGearFlash';
 import { useInputs } from './hooks/useInputs';
 import { useDrivingState, useSessionVisibility } from '@irdashies/context';
 import { useBlink, useShiftFlashActive } from '@irdashies/domain/shiftLight';
@@ -19,6 +20,13 @@ export const Input = (props: InputWidgetProps) => {
     shiftFlash?.source ?? 'redline'
   );
   const flashOn = useBlink(flashActive);
+  const gearFlash = settings?.gearFlash;
+  const gearFlashColor = useGearFlash(
+    inputs.gear,
+    !!gearFlash?.enabled,
+    gearFlash?.upColor ?? '#22c55e',
+    gearFlash?.downColor ?? '#ef4444'
+  );
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
@@ -35,6 +43,7 @@ export const Input = (props: InputWidgetProps) => {
         {...inputs}
         settings={settings}
         flashColor={flashOn ? shiftFlash?.color : undefined}
+        gearFlashColor={gearFlashColor}
       />
     </div>
   );

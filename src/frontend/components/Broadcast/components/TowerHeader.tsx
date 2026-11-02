@@ -1,3 +1,4 @@
+import { validateImageDataUrl } from '@irdashies/utils/imageDataUrl';
 import { useEffect, useState } from 'react';
 import { ClockIcon } from '@phosphor-icons/react';
 import {
@@ -31,10 +32,6 @@ export const THEMES: Record<
     position: 'rounded-xs bg-white text-center text-slate-900 not-italic',
   },
 };
-
-/** Only inline images are shown; the config is user-editable JSON. */
-const isImageDataUrl = (src?: string): src is string =>
-  !!src && src.startsWith('data:image/');
 
 /** Minutes since midnight as a wall clock, e.g. 14:32. */
 const formatClock = (minutes: number) => {
@@ -106,22 +103,25 @@ export const TowerHeader = ({
   logo?: string;
   theme: BroadcastTheme;
   clock?: BroadcastHeaderClock;
-}) => (
-  <div
-    className={`rounded-t-sm px-2 py-0.5 text-center font-bold leading-tight tracking-wide uppercase ${THEMES[theme].header}`}
-  >
-    {isImageDataUrl(logo) && (
-      <img src={logo} alt="" className="mx-auto max-h-12 py-1" />
-    )}
-    <div className="truncate text-base">{title}</div>
-    <div className="text-lg tabular-nums">
-      <SessionClock withBoth={clock === 'laps-time'} />
-      {(clock === 'session-track' || clock === 'session-local') && (
-        <span className="ml-2 inline-flex items-center gap-1 text-sm opacity-80">
-          <ClockIcon size={14} weight="bold" />
-          {clock === 'session-track' ? <TrackTime /> : <LocalTime />}
-        </span>
+}) => {
+  const logoSrc = validateImageDataUrl(logo);
+  return (
+    <div
+      className={`rounded-t-sm px-2 py-0.5 text-center font-bold leading-tight tracking-wide uppercase ${THEMES[theme].header}`}
+    >
+      {logoSrc && (
+        <img src={logoSrc} alt="" className="mx-auto max-h-12 py-1" />
       )}
+      <div className="truncate text-base">{title}</div>
+      <div className="text-lg tabular-nums">
+        <SessionClock withBoth={clock === 'laps-time'} />
+        {(clock === 'session-track' || clock === 'session-local') && (
+          <span className="ml-2 inline-flex items-center gap-1 text-sm opacity-80">
+            <ClockIcon size={14} weight="bold" />
+            {clock === 'session-track' ? <TrackTime /> : <LocalTime />}
+          </span>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};

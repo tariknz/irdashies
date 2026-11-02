@@ -35,6 +35,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #	define _WIN32_WINNT		MIN_WIN_VER 
 #endif
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <windows.h>
 #include <stdio.h>
 #include <time.h>
@@ -44,7 +47,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <crtdbg.h>
 #endif
 
-#include "irsdk_defines.h"
+#include "irsdk_capture.h"
 
 // for timeBeginPeriod()
 #pragma comment(lib, "Winmm")
@@ -58,6 +61,7 @@ static HANDLE hMemMapFile = NULL;
 
 static const char *pSharedMem = NULL;
 static const irsdk_header *pHeader = NULL;
+static std::size_t mappedBytes = 0;
 
 static int lastTickCount = INT_MAX;
 static bool isInitialized = false;
@@ -68,6 +72,23 @@ static const double timeout = 2.0; // Keep replay integration tests fast.
 static const double timeout = 30.0; // timeout after 30 seconds with no communication
 #endif
 static time_t lastValidTime = 0;
+
+// Count only committed, readable pages belonging to this view. The mapping is
+// owned until shutdown, so a producer reconnect cannot invalidate our view.
+static std::size_t readableViewSize(const char* base)
+{
+    std::size_t size = 0;
+    while (size < irdashies::irsdk::maxMappingBytes) {
+        MEMORY_BASIC_INFORMATION info{};
+        if (!VirtualQuery(base + size, &info, sizeof(info)) ||
+            info.AllocationBase != base || info.State != MEM_COMMIT ||
+            (info.Protect & (PAGE_NOACCESS | PAGE_GUARD)) != 0 ||
+            info.RegionSize == 0) break;
+        const auto remaining = irdashies::irsdk::maxMappingBytes - size;
+        size += info.RegionSize < remaining ? info.RegionSize : remaining;
+    }
+    return size;
+}
 
 // Function Implementations
 
@@ -84,7 +105,13 @@ bool irsdk_startup()
 		if(!pSharedMem)
 		{
 			pSharedMem = (const char *)MapViewOfFile(hMemMapFile, FILE_MAP_READ, 0, 0, 0);
-			pHeader = (irsdk_header *)pSharedMem;
+			mappedBytes = pSharedMem ? readableViewSize(pSharedMem) : 0;
+            if (pSharedMem && mappedBytes < sizeof(irsdk_header)) {
+                UnmapViewOfFile(pSharedMem);
+                pSharedMem = NULL;
+                mappedBytes = 0;
+            }
+            pHeader = (const irsdk_header *)pSharedMem;
 			lastTickCount = INT_MAX;
 		}
 
@@ -125,108 +152,45 @@ void irsdk_shutdown()
 	hDataValidEvent = NULL;
 	pSharedMem = NULL;
 	pHeader = NULL;
+    mappedBytes = 0;
 	hMemMapFile = NULL;
 
 	isInitialized = false;
 	lastTickCount = INT_MAX;
 }
 
-bool irsdk_getNewData(char *data)
+bool irsdk_getNewData(irsdk_capture *capture)
 {
-	if(isInitialized || irsdk_startup())
-	{
-#ifdef _MSC_VER
-		_ASSERTE(NULL != pHeader);
-#endif
-
-		// if sim is not active, then no new data
-		if(!(pHeader->status & irsdk_stConnected))
-		{
-			lastTickCount = INT_MAX;
-			return false;
-		}
-
-		// A paused replay can keep publishing the same tick indefinitely. The
-		// connected header is still a valid heartbeat even when there is no new
-		// telemetry buffer to copy.
-		lastValidTime = time(NULL);
-
-		int latest = 0;
-		for(int i=1; i<pHeader->numBuf; i++)
-			if(pHeader->varBuf[latest].tickCount < pHeader->varBuf[i].tickCount)
-			   latest = i;	
-
-		// Seed the current buffer on first connection, even when the sim is
-		// paused and will not produce a newer tick until playback resumes.
-		// Subsequent reads still require a genuinely newer tick.
-		if(lastTickCount == INT_MAX || lastTickCount < pHeader->varBuf[latest].tickCount)
-		{
-			// if asked to retrieve the data
-			if(data)
-			{
-				// try twice to get the data out
-				for(int count = 0; count < 2; count++)
-				{
-					int curTickCount =  pHeader->varBuf[latest].tickCount;
-					memcpy(data, pSharedMem + pHeader->varBuf[latest].bufOffset, pHeader->bufLen);
-					if(curTickCount ==  pHeader->varBuf[latest].tickCount)
-					{
-						lastTickCount = curTickCount;
-						lastValidTime = time(NULL);
-						return true;
-					}
-				}
-				// if here, the data changed out from under us.
-				return false;
-			}
-			else
-			{
-				lastTickCount =  pHeader->varBuf[latest].tickCount;
-				lastValidTime = time(NULL);
-				return true;
-			}
-		}
-		// if older than last recieved, than reset, we probably disconnected
-		else if(lastTickCount >  pHeader->varBuf[latest].tickCount)
-		{
-			lastTickCount =  pHeader->varBuf[latest].tickCount;
-			return false;
-		}
-		// else the same, and nothing changed this tick
-	}
-
-	return false;
+    if (!(isInitialized || irsdk_startup())) {
+        if (capture) capture->valid = false;
+        return false;
+    }
+    // A paused replay's connected header remains a heartbeat.
+    if (pHeader && (pHeader->status & irsdk_stConnected))
+        lastValidTime = time(NULL);
+    const auto read = [](std::size_t offset, void* destination, std::size_t size) {
+        if (!pSharedMem || !irdashies::irsdk::byteRange(offset, size, mappedBytes))
+            return false;
+        memcpy(destination, pSharedMem + offset, size);
+        return true;
+    };
+    return irdashies::irsdk::captureFrame(read, mappedBytes, lastTickCount, capture);
 }
 
-
-bool irsdk_waitForDataReady(int timeOut, char *data)
+bool irsdk_waitForDataReady(int timeOut, irsdk_capture *capture)
 {
-#ifdef _MSC_VER
-	_ASSERTE(timeOut >= 0);
-#endif
-
-	if(isInitialized || irsdk_startup())
-	{
-		// just to be sure, check before we sleep
-		if(irsdk_getNewData(data))
-			return true;
-
-		// sleep till signaled
-		WaitForSingleObject(hDataValidEvent, timeOut);
-
-		// we woke up, so check for data
-		if(irsdk_getNewData(data))
-			return true;
-		else
-			return false;
-	}
-
-	// sleep if error
-	if(timeOut > 0)
-		Sleep(timeOut);
-
-	return false;
+    if (timeOut < 0) timeOut = 0;
+    if (isInitialized || irsdk_startup()) {
+        if (irsdk_getNewData(capture)) return true;
+        WaitForSingleObject(hDataValidEvent, timeOut);
+        // Capture revalidates and resizes using a fresh header after the wait.
+        return irsdk_getNewData(capture);
+    }
+    if (capture) capture->valid = false;
+    if (timeOut > 0) Sleep(timeOut);
+    return false;
 }
+
 
 bool irsdk_isConnected()
 {
@@ -254,12 +218,11 @@ const irsdk_header *irsdk_getHeader()
 // Use the cached copy from irsdk_waitForDataReady() or irsdk_getNewData() instead
 const char *irsdk_getData(int index)
 {
-	if(isInitialized)
-	{
-		return pSharedMem + pHeader->varBuf[index].bufOffset;
-	}
-
-	return NULL;
+    if (!isInitialized || !pHeader) return NULL;
+    const irsdk_header header = *pHeader;
+    if (!irdashies::irsdk::validLayout(header, mappedBytes) ||
+        index < 0 || index >= header.numBuf) return NULL;
+    return pSharedMem + header.varBuf[index].bufOffset;
 }
 
 const char *irsdk_getSessionInfoStr()
@@ -282,23 +245,21 @@ int irsdk_getSessionInfoStrUpdate()
 
 const irsdk_varHeader *irsdk_getVarHeaderPtr()
 {
-	if(isInitialized)
-	{
-		return ((irsdk_varHeader*)(pSharedMem + pHeader->varHeaderOffset));
-	}
-	return NULL;
+    if (!isInitialized || !pHeader) return NULL;
+    const irsdk_header header = *pHeader;
+    if (!irdashies::irsdk::validLayout(header, mappedBytes) ||
+        header.varHeaderOffset % alignof(irsdk_varHeader) != 0) return NULL;
+    return reinterpret_cast<const irsdk_varHeader*>(pSharedMem + header.varHeaderOffset);
 }
 
 const irsdk_varHeader *irsdk_getVarHeaderEntry(int index)
 {
-	if(isInitialized)
-	{
-		if(index >= 0 && index < pHeader->numVars)
-		{
-			return &((irsdk_varHeader*)(pSharedMem + pHeader->varHeaderOffset))[index];
-		}
-	}
-	return NULL;
+    if (!isInitialized || !pHeader) return NULL;
+    const irsdk_header header = *pHeader;
+    if (!irdashies::irsdk::validLayout(header, mappedBytes) || index < 0 ||
+        index >= header.numVars ||
+        header.varHeaderOffset % alignof(irsdk_varHeader) != 0) return NULL;
+    return reinterpret_cast<const irsdk_varHeader*>(pSharedMem + header.varHeaderOffset) + index;
 }
 
 // Note: this is a linear search, so cache the results
@@ -306,9 +267,11 @@ int irsdk_varNameToIndex(const char *name)
 {
 	const irsdk_varHeader *pVar;
 
-	if(name)
+	if(name && isInitialized && pHeader)
 	{
-		for(int index=0; index<pHeader->numVars; index++)
+        const int count = pHeader->numVars;
+        if (count < 0 || count > irdashies::irsdk::maxVariables) return -1;
+		for(int index=0; index<count; index++)
 		{
 			pVar = irsdk_getVarHeaderEntry(index);
 			if(pVar && 0 == strncmp(name, pVar->name, IRSDK_MAX_STRING))
@@ -325,9 +288,11 @@ int irsdk_varNameToOffset(const char *name)
 {
 	const irsdk_varHeader *pVar;
 
-	if(name)
+	if(name && isInitialized && pHeader)
 	{
-		for(int index=0; index<pHeader->numVars; index++)
+        const int count = pHeader->numVars;
+        if (count < 0 || count > irdashies::irsdk::maxVariables) return -1;
+		for(int index=0; index<count; index++)
 		{
 			pVar = irsdk_getVarHeaderEntry(index);
 			if(pVar && 0 == strncmp(name, pVar->name, IRSDK_MAX_STRING))

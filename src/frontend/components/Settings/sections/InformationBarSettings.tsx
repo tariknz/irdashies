@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   InformationBarWidgetSettings,
   SettingsTabType,
@@ -89,55 +90,60 @@ export const InformationBarSettings = () => {
 
             <div className="pt-4 space-y-4">
               {activeTab === 'display' && (
-                <SettingsSection title="Display Order">
-                  <p className="text-xs text-slate-400 px-4 mb-4">
-                    Enable and reorder items for the information bar.
-                  </p>
-                  <SessionBarItemsList
-                    items={settings.config.displayOrder}
-                    onReorder={(newOrder) =>
-                      handleConfigChange({ displayOrder: newOrder })
-                    }
-                    getItemConfig={(id) => {
-                      const item =
-                        settings.config[id as keyof typeof settings.config];
-                      if (
-                        typeof item === 'object' &&
-                        item !== null &&
-                        'enabled' in item
-                      ) {
-                        return item as SessionBarItemConfig;
+                <>
+                  <WidgetScaleSettings widgetId="infobar" className="px-4" />
+                  <SettingsSection title="Display Order">
+                    <p className="text-xs text-slate-400 px-4 mb-4">
+                      Enable and reorder items for the information bar.
+                    </p>
+                    <SessionBarItemsList
+                      items={settings.config.displayOrder}
+                      onReorder={(newOrder) =>
+                        handleConfigChange({ displayOrder: newOrder })
                       }
-                      return undefined;
-                    }}
-                    updateItemConfig={(id, config) => {
-                      const item =
-                        settings.config[id as keyof typeof settings.config];
-                      if (
-                        typeof item === 'object' &&
-                        item !== null &&
-                        'enabled' in item
-                      ) {
-                        handleConfigChange({
-                          [id]: {
-                            ...(item as SessionBarItemConfig),
-                            ...config,
-                          },
-                        });
-                      }
-                    }}
-                  />
-                  <div className="mt-4">
-                    <SettingActionButton
-                      label="Reset to Default Order"
-                      onClick={() =>
-                        handleConfigChange({
-                          displayOrder: [...DEFAULT_SESSION_BAR_DISPLAY_ORDER],
-                        })
-                      }
+                      getItemConfig={(id) => {
+                        const item =
+                          settings.config[id as keyof typeof settings.config];
+                        if (
+                          typeof item === 'object' &&
+                          item !== null &&
+                          'enabled' in item
+                        ) {
+                          return item as SessionBarItemConfig;
+                        }
+                        return undefined;
+                      }}
+                      updateItemConfig={(id, config) => {
+                        const item =
+                          settings.config[id as keyof typeof settings.config];
+                        if (
+                          typeof item === 'object' &&
+                          item !== null &&
+                          'enabled' in item
+                        ) {
+                          handleConfigChange({
+                            [id]: {
+                              ...(item as SessionBarItemConfig),
+                              ...config,
+                            },
+                          });
+                        }
+                      }}
                     />
-                  </div>
-                </SettingsSection>
+                    <div className="mt-4">
+                      <SettingActionButton
+                        label="Reset to Default Order"
+                        onClick={() =>
+                          handleConfigChange({
+                            displayOrder: [
+                              ...DEFAULT_SESSION_BAR_DISPLAY_ORDER,
+                            ],
+                          })
+                        }
+                      />
+                    </div>
+                  </SettingsSection>
+                </>
               )}
 
               {activeTab === 'styling' && (

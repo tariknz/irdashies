@@ -2,10 +2,13 @@ import { spawn } from 'node:child_process';
 import { execFileSync } from 'node:child_process';
 import { createWriteStream, promises as fs } from 'node:fs';
 import path from 'node:path';
-import { readWidgetInputRequirements } from './widgetInputMetadata';
-import { parsePerfVisibilityPhases } from '../../src/app/perfRunConfig';
+import { readWidgetInputRequirements } from './widgetInputMetadata.ts';
+import {
+  PERF_REPLAY_READY_LOG_MARKER,
+  parsePerfVisibilityPhases,
+  perfRunSimulator,
+} from '../../src/app/perfRunConfig.ts';
 
-const PERF_REPLAY_READY_LOG_MARKER = '[PerfRun] Ready for replay publisher';
 const REPLAY_STARTUP_TIMEOUT_MS = 30_000;
 
 type OverlayMode = 'full' | 'empty' | 'observer';
@@ -24,6 +27,8 @@ interface RunOptions {
   channelDelivery: 'on' | 'off';
   visibilityPhases: string;
   replayInput: string;
+  windowMode?: 'display' | 'widget';
+  replayVisibleWidgets: boolean;
   metadata: {
     target: RunTarget;
     simulatorMode: 'live' | 'replay';
@@ -52,6 +57,7 @@ function optionalFiniteNumber(
   return Number.isFinite(value) && value >= 0 ? value : undefined;
 }
 
+/** Parse capture options, keeping replay metadata independent of tape input. */
 function parseArgs(args: string[]): RunOptions {
   const requestedMode = argumentValue(args, '--mode');
   const mode: OverlayMode =
@@ -82,6 +88,17 @@ function parseArgs(args: string[]): RunOptions {
         : 0;
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const replayInput = argumentValue(args, '--replay-input') ?? '';
+  const windowMode = argumentValue(args, '--window-mode');
+  if (args.includes('--window-mode') && windowMode === undefined) {
+    throw new Error('--window-mode must be display or widget');
+  }
+  if (
+    windowMode !== undefined &&
+    windowMode !== 'display' &&
+    windowMode !== 'widget'
+  ) {
+    throw new Error('--window-mode must be display or widget');
+  }
 
   return {
     scenario,
@@ -103,9 +120,14 @@ function parseArgs(args: string[]): RunOptions {
       argumentValue(args, '--channel-delivery') === 'off' ? 'off' : 'on',
     visibilityPhases,
     replayInput,
+    windowMode,
+    replayVisibleWidgets: args.includes('--replay-visible-widgets'),
     metadata: {
       target,
-      simulatorMode: replayInput ? 'replay' : 'live',
+      simulatorMode:
+        replayInput || argumentValue(args, '--simulator-mode') === 'replay'
+          ? 'replay'
+          : 'live',
       fieldCount: optionalFiniteNumber(args, '--field-count'),
       classCount: optionalFiniteNumber(args, '--class-count'),
       displayGeometry: argumentValue(args, '--display-geometry'),
@@ -116,6 +138,20 @@ function parseArgs(args: string[]): RunOptions {
 }
 
 const options = parseArgs(process.argv.slice(2));
+// Keep benchmark configuration and generated history away from the user's
+// saved profile. Forward this Electron argument through Forge in development.
+const userDataDirectory = argumentValue(
+  process.argv.slice(2),
+  '--user-data-dir'
+);
+if (
+  userDataDirectory &&
+  /[\s"&|<>^%!\r\n]/.test(path.resolve(userDataDirectory))
+) {
+  throw new Error(
+    '--user-data-dir requires a path without shell metacharacters or spaces.'
+  );
+}
 const widgetInputRequirements = await readWidgetInputRequirements();
 const outputDirectory = path.resolve('perf-results');
 await fs.mkdir(outputDirectory, { recursive: true });
@@ -153,8 +189,23 @@ if (options.target === 'packaged') {
       : 'npm';
   childArguments =
     process.platform === 'win32'
-      ? ['/d', '/s', '/c', 'npm.cmd start']
-      : ['start'];
+      ? [
+          '/d',
+          '/s',
+          '/c',
+          userDataDirectory
+            ? `npm.cmd start -- -- --user-data-dir=${path.resolve(userDataDirectory)}`
+            : 'npm.cmd start',
+        ]
+      : [
+          'start',
+          ...(userDataDirectory
+            ? ['--', '--', `--user-data-dir=${path.resolve(userDataDirectory)}`]
+            : []),
+        ];
+}
+if (options.target === 'packaged' && userDataDirectory) {
+  childArguments.push(`--user-data-dir=${path.resolve(userDataDirectory)}`);
 }
 let build = 'unknown';
 try {
@@ -171,6 +222,8 @@ process.stdout.write(
     `Scenario: ${options.scenario}`,
     `Overlay mode: ${options.mode}`,
     `Target: ${options.target}`,
+    `Window mode: ${options.windowMode ?? 'saved profile setting'}`,
+    `Replay widget visibility override: ${options.replayVisibleWidgets}`,
     `Telemetry delivery: ${options.telemetryDelivery}`,
     `Telemetry payload: ${options.telemetryPayload}`,
     `Channel delivery: ${options.channelDelivery}`,
@@ -190,6 +243,16 @@ process.stdout.write(
     .join('\n') + '\n'
 );
 
+const simulator = perfRunSimulator(
+  process.env.IRDASHIES_SIM,
+  Boolean(replayInputPath)
+);
+if (simulator.overridden) {
+  process.stdout.write(
+    `IRDASHIES_SIM=${simulator.overridden} ignored: replay runs need the iRacing bridge\n`
+  );
+}
+
 const child = spawn(childCommand, childArguments, {
   cwd: process.cwd(),
   env: {
@@ -200,6 +263,8 @@ const child = spawn(childCommand, childArguments, {
     PERF_RUN_ID: options.runId,
     PERF_SCENARIO: options.scenario,
     PERF_OVERLAY_MODE: options.mode,
+    PERF_WINDOW_MODE: options.windowMode ?? '',
+    PERF_REPLAY_VISIBLE_WIDGETS: options.replayVisibleWidgets ? '1' : '0',
     PERF_WIDGET_TYPES: options.widgets,
     PERF_REPORT_INTERVAL_MS: String(options.intervalMs),
     PERF_DURATION_SECONDS: String(options.durationSeconds),
@@ -218,11 +283,13 @@ const child = spawn(childCommand, childArguments, {
       channelDelivery: options.channelDelivery,
       telemetryDelivery: options.telemetryDelivery,
       telemetryPayload: options.telemetryPayload,
+      replayVisibleWidgets: options.replayVisibleWidgets,
       widgetInputRequirements,
     }),
     IRDASHIES_IRSDK_REPLAY: replayInputPath
       ? '1'
       : process.env.IRDASHIES_IRSDK_REPLAY,
+    IRDASHIES_SIM: simulator.simulator,
     ELECTRON_ENABLE_LOGGING: '1',
   },
   stdio: ['inherit', 'pipe', 'pipe'],

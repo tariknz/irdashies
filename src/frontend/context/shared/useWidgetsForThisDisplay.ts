@@ -66,7 +66,27 @@ export const useWidgetsForThisDisplay = (
             simulator
           )
       ) ?? [];
-    if (browser || !containerBoundsInfo?.displayId) return enabled;
+    if (browser) return enabled;
+    // A new individual renderer must not briefly mount every widget (and its
+    // recording/audio effects) before main sends its assignment.
+    if (!containerBoundsInfo) {
+      return currentDashboard?.generalSettings?.overlayWindowMode === 'widget'
+        ? []
+        : enabled;
+    }
+    if (containerBoundsInfo.widgetId !== undefined) {
+      return enabled.flatMap((widget) =>
+        widget.id === containerBoundsInfo.widgetId
+          ? [
+              {
+                ...widget,
+                layout: containerBoundsInfo.widgetLayout ?? widget.layout,
+              },
+            ]
+          : []
+      );
+    }
+    if (containerBoundsInfo.displayId === undefined) return enabled;
 
     const displayBounds =
       containerBoundsInfo.displayBounds ?? containerBoundsInfo.expected;
@@ -85,6 +105,7 @@ export const useWidgetsForThisDisplay = (
     browser,
     containerBoundsInfo,
     currentDashboard?.widgets,
+    currentDashboard?.generalSettings?.overlayWindowMode,
     simWidgetSupport,
     simulator,
   ]);

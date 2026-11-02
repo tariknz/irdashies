@@ -1,4 +1,7 @@
-import type { DashboardLayout } from '@irdashies/types';
+// tools/perf/run.ts loads this file with plain Node (type stripping), so keep
+// it to type-only imports and erasable syntax: no enums, and no value imports
+// without an extension or through @irdashies/* aliases.
+import type { ActiveSimulator, DashboardLayout } from '@irdashies/types';
 
 export const PERF_REPLAY_READY_LOG_MARKER =
   '[PerfRun] Ready for replay publisher';
@@ -6,6 +9,24 @@ export const PERF_VISIBILITY_LOG_PREFIX = '[PerfVisibility:JSON] ';
 export const PERF_CAPTURE_ORIGIN_LOG_PREFIX = '[PerfRunOrigin:JSON] ';
 
 export type PerfOverlayMode = 'full' | 'empty' | 'observer';
+
+/**
+ * Simulator a perf:run child should use. A publisher replay only starts once
+ * the iRacing bridge logs PERF_REPLAY_READY_LOG_MARKER, so replay runs always
+ * use iRacing, and a different choice from the caller is returned as
+ * `overridden` so the tool can say so. An empty value is no choice.
+ */
+export function perfRunSimulator(
+  callerSimulator: string | undefined,
+  replay: boolean
+): { simulator?: string; overridden?: string } {
+  const iracing: ActiveSimulator = 'iracing';
+  const chosen = callerSimulator?.trim() || undefined;
+  if (!replay) return { simulator: chosen };
+  return chosen && chosen !== iracing
+    ? { simulator: iracing, overridden: chosen }
+    : { simulator: iracing };
+}
 
 export interface PerfVisibilityPhase {
   visibility: 'visible' | 'hidden';
@@ -22,6 +43,10 @@ export interface PerfRunConfig {
   telemetryPayload: 'allowlisted' | 'raw';
   channelDelivery: 'on' | 'off';
   visibilityPhases: PerfVisibilityPhase[];
+  /** Benchmark-only override; never written to the saved dashboard. */
+  windowMode?: 'display' | 'widget';
+  /** Benchmark-only visibility override for actual simulator replay captures. */
+  replayVisibleWidgets?: boolean;
 }
 
 const PERF_OVERLAY_MODES = new Set<PerfOverlayMode>([
@@ -83,6 +108,11 @@ export function getPerfRunConfig(
       env.PERF_TELEMETRY_PAYLOAD === 'raw' ? 'raw' : 'allowlisted',
     channelDelivery: env.PERF_CHANNEL_DELIVERY === 'off' ? 'off' : 'on',
     visibilityPhases,
+    windowMode:
+      env.PERF_WINDOW_MODE === 'widget' || env.PERF_WINDOW_MODE === 'display'
+        ? env.PERF_WINDOW_MODE
+        : undefined,
+    replayVisibleWidgets: env.PERF_REPLAY_VISIBLE_WIDGETS === '1',
   };
 }
 
@@ -96,10 +126,52 @@ export function activePerfWidgetTypes(dashboard: DashboardLayout): string[] {
   ].sort();
 }
 
+/** Refresh the effective workload when startup or profile changes apply it. */
+export function updatePerfDashboardMetadata(
+  dashboard: DashboardLayout,
+  env: NodeJS.ProcessEnv = process.env
+): void {
+  env.PERF_ACTIVE_WIDGET_TYPES = JSON.stringify(
+    activePerfWidgetTypes(dashboard)
+  );
+  env.PERF_ACTIVE_WINDOW_MODE =
+    dashboard.generalSettings?.overlayWindowMode === 'widget'
+      ? 'widget'
+      : 'display';
+}
+
 export function createPerfDashboard(
   dashboard: DashboardLayout,
   config: PerfRunConfig
 ): DashboardLayout {
+  if (config.enabled && config.replayVisibleWidgets) {
+    dashboard = {
+      ...dashboard,
+      widgets: dashboard.widgets.map((widget) => {
+        const type = widget.type ?? widget.id;
+        return {
+          ...widget,
+          config: {
+            ...widget.config,
+            showOnlyWhenOnTrack: false,
+            ...(type === 'radar'
+              ? { autoHide: false, hideInPit: false, hideInPitBox: false }
+              : {}),
+            ...(type === 'flag' ? { showNoFlagState: true } : {}),
+          },
+        };
+      }),
+    };
+  }
+  if (config.enabled && config.windowMode) {
+    dashboard = {
+      ...dashboard,
+      generalSettings: {
+        ...dashboard.generalSettings,
+        overlayWindowMode: config.windowMode,
+      },
+    };
+  }
   if (!config.enabled || config.overlayMode === 'full') {
     if (config.widgetTypes.length === 0) return dashboard;
 

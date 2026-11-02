@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import type { StandingsWidgetSettings } from '@irdashies/types';
 import { getWidgetDefaultConfig } from '@irdashies/types';
@@ -133,8 +133,8 @@ describe('class standings over a real multiclass field', () => {
       () =>
         useDriverStandings(
           config({
-            gap: { enabled: true },
-            interval: { enabled: true },
+            gap: { enabled: false },
+            interval: { enabled: true, displayMode: 'laps' },
           }),
           { showAll: true }
         ),
@@ -146,16 +146,132 @@ describe('class standings over a real multiclass field', () => {
       .filter((i): i is number => typeof i === 'number');
 
     expect(intervals.length).toBeGreaterThan(10);
+    const lapIntervals = flatten(result.current)
+      .map((d) => d.interval)
+      .filter((i) => typeof i === 'object');
+    expect(lapIntervals.length).toBeGreaterThan(0);
+    for (const interval of lapIntervals) {
+      expect(interval?.laps).toBeLessThanOrEqual(-1);
+      expect(Number.isInteger(interval?.laps)).toBe(true);
+    }
     // An interval is a gap between neighbours, so it is never larger than the
     // gap to the class leader for the same car.
     for (const [, drivers] of result.current) {
       for (const driver of drivers.slice(1)) {
-        if (driver.interval === undefined || driver.gap?.value === undefined) {
+        if (
+          typeof driver.interval !== 'number' ||
+          driver.gap?.value === undefined
+        ) {
           continue;
         }
         expect(driver.interval).toBeLessThanOrEqual(driver.gap.value + 0.001);
       }
     }
+  });
+
+  it('switches interval display modes without changing the gap', () => {
+    const initialProps: { displayMode?: 'time' | 'laps' } = {};
+    const { result, rerender } = renderHook(
+      ({ displayMode }: { displayMode?: 'time' | 'laps' }) =>
+        useDriverStandings(
+          config({
+            gap: { enabled: true },
+            interval: { enabled: true, displayMode },
+          }),
+          { showAll: true }
+        ),
+      { wrapper: harness.wrapper, initialProps }
+    );
+    const legacy = flatten(result.current);
+    expect(legacy.every((driver) => typeof driver.interval !== 'object')).toBe(
+      true
+    );
+
+    rerender({ displayMode: 'laps' });
+    const lapped = flatten(result.current);
+    expect(lapped.some((driver) => typeof driver.interval === 'object')).toBe(
+      true
+    );
+    expect(lapped.map((driver) => driver.gap)).toEqual(
+      legacy.map((driver) => driver.gap)
+    );
+
+    rerender({ displayMode: 'time' });
+    expect(flatten(result.current).map((driver) => driver.interval)).toEqual(
+      legacy.map((driver) => driver.interval)
+    );
+  });
+
+  it('changes only displayed gaps when switching to player reference', () => {
+    const { result } = renderHook(
+      () => ({
+        leader: useDriverStandings(
+          config({ gap: { enabled: true }, interval: { enabled: true } }),
+          { showAll: true }
+        ),
+        player: useDriverStandings(
+          config({
+            gap: { enabled: true, reference: 'player' },
+            interval: { enabled: true },
+          }),
+          { showAll: true }
+        ),
+      }),
+      { wrapper: harness.wrapper }
+    );
+    const leader = flatten(result.current.leader);
+    const player = flatten(result.current.player);
+    expect(player.map((driver) => ({ ...driver, gap: undefined }))).toEqual(
+      leader.map((driver) => ({ ...driver, gap: undefined }))
+    );
+    expect(player.find((d) => d.isPlayer)?.gap).toEqual({ value: 0, laps: 0 });
+    expect(player.some((d) => (d.gap?.value ?? 0) < 0)).toBe(true);
+    expect(player.some((d) => (d.gap?.value ?? 0) > 0)).toBe(true);
+  });
+
+  it('records player gap work through the existing performance bridge', () => {
+    const previous = window.rendererPerfBridge;
+    const recordMeasure = vi.fn();
+    window.rendererPerfBridge = { recordMeasure };
+    try {
+      renderHook(
+        () =>
+          useDriverStandings(
+            config({ gap: { enabled: true, reference: 'player' } }),
+            { showAll: true }
+          ),
+        { wrapper: harness.wrapper }
+      );
+      expect(recordMeasure).toHaveBeenCalledWith(
+        'standingsPlayerGaps',
+        expect.any(Number)
+      );
+    } finally {
+      window.rendererPerfBridge = previous;
+    }
+  });
+
+  it('uses the spectator camera car as the zero reference', () => {
+    const cameraCarIdx = 5;
+    const spectating = mountFixture({
+      ...fixture,
+      frames: fixture.frames.map((frame) => ({
+        ...frame,
+        CamCarIdx: cameraCarIdx,
+      })),
+    });
+    expect(cameraCarIdx).not.toBe(harness.focusCarIdx);
+    const { result } = renderHook(
+      () =>
+        useDriverStandings(
+          config({ gap: { enabled: true, reference: 'player' } }),
+          { showAll: true }
+        ),
+      { wrapper: spectating.wrapper }
+    );
+    const focused = flatten(result.current).find((driver) => driver.isPlayer);
+    expect(focused?.carIdx).toBe(cameraCarIdx);
+    expect(focused?.gap).toEqual({ value: 0, laps: 0 });
   });
 
   it('works out position change against the qualifying grid', () => {

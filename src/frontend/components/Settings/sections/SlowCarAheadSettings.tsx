@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   SlowCarAheadWidgetSettings,
   SettingsTabType,
@@ -80,12 +81,15 @@ export const SlowCarAheadSettings = () => {
             <div>
               {/* OPTIONS TAB */}
               {activeTab === 'options' && (
-                <SettingsSection title="Display">
-                  <SettingProp path="maxDistance" />
-                  <SettingProp path="slowSpeedThreshold" />
-                  <SettingProp path="stoppedSpeedThreshold" />
-                  <SettingProp path="barThickness" />
-                </SettingsSection>
+                <>
+                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
+                  <SettingsSection title="Display">
+                    <SettingProp path="maxDistance" />
+                    <SettingProp path="slowSpeedThreshold" />
+                    <SettingProp path="stoppedSpeedThreshold" />
+                    <SettingProp path="barThickness" />
+                  </SettingsSection>
+                </>
               )}
 
               {/* VISIBILITY TAB */}

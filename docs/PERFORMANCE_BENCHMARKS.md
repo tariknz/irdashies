@@ -1,5 +1,11 @@
 # irDashies Performance Benchmarks
 
+Current references and their evidence qualifications are listed in the
+[baseline register](./PERFORMANCE_TEST_LOG.md#current-baseline-register).
+Choose a reference with the same target and workload; the most recent capture
+does not automatically replace the release baseline. Attached compact evidence
+under `docs/performance/` survives when local `perf-results/` logs are absent.
+
 This is the repeatable benchmark protocol for diagnosing iRacing FPS loss,
 overlay stutter, and long-session degradation. It complements
 [`PERFORMANCE_TEST_SUMMARY.md`](./PERFORMANCE_TEST_SUMMARY.md), whose earlier
@@ -43,6 +49,20 @@ ETW/PresentMon trace as the second-stage investigation.
 For an isolated `.irdt` tape, the iRacing FPS/CPU/GPU variables are historical
 values recorded in the tape. They do not measure the host while the benchmark
 is running and must not be used for A/B conclusions.
+
+For a replay running inside the actual simulator, keep the normal live SDK
+connection and pass `--simulator-mode replay` to label the metadata. This flag
+does not start a tape publisher; `--replay-input` selects the isolated publisher.
+Pin and verify replay frame/session/camera and normal-speed playback separately.
+
+`--user-data-dir <directory>` forwards an isolated profile directory to
+Electron, including through Forge for the development target. Use a path
+without spaces or shell metacharacters. Seed it from the saved profile,
+document any benchmark-only visibility overrides, and start each repeat from
+the same seed. Verify visible content after startup settles, especially when
+`IsOnTrack` is false in replay. Counts of windows or enabled widgets do not
+prove content visibility or input coverage. The [full saved-profile capture
+report](./performance/2026-11-01-main-full-profile.md) records a worked example.
 
 ## Controlled replay benchmark
 
@@ -121,6 +141,62 @@ npm run perf:run -- --mode full --scenario replay-full --duration-seconds 420 --
 `--telemetry-payload raw` is a benchmark-only counterfactual for measuring the
 cost of sending every SDK variable. Normal launches and the default benchmark
 path retain the renderer allowlist.
+
+### Individual overlay windows
+
+General Settings → Individual Overlay Windows enables one transparent window
+per enabled widget while locked. This mode increases CPU usage compared with
+shared display windows. The default remains one shared window per display.
+Edit Layout temporarily restores shared display windows for dragging
+and resizing; locking restores individual windows. Completely off-screen
+widgets temporarily recover onto the primary display without changing their
+saved positions. Individual windows can span connected displays. Profile-name
+banners are shown in shared mode only; individual windows still hide and reveal
+together during a profile switch.
+
+Individual windows use a dedicated locked-widget renderer, without the layout
+editor or Settings/Gantry startup imports. Widget registration stays automatic;
+each `widget.ts` uses `lazyWidget` from `@irdashies/domain/lazyWidget` to defer
+its implementation until rendered. Shared display windows also benefit from
+deferred widget loading, while retaining their existing layout editor. Supporting
+pit-lap, push-to-pass and timing subscriptions in an individual window are scoped
+to that widget's type and configuration.
+
+Changing the mode or entering/leaving Edit Layout recreates renderers. Local
+chart history and an in-progress Lap Trace recording restart; saved laps and
+main-process telemetry calculations are retained. Set up the layout before
+starting a lap you want to record.
+
+Compare the same packaged build, layout, widget set and replay using the
+benchmark-only `--window-mode` override. It does not save the selected mode to
+the profile. The effective mode is recorded as `overlayWindowMode` in each
+sample's scenario metadata.
+
+```powershell
+npm run perf:run -- --target packaged --mode full --window-mode display --scenario windows-display --duration-seconds 420 --replay-input $replay
+npm run perf:run -- --target packaged --mode full --window-mode widget --scenario windows-widget --duration-seconds 420 --replay-input $replay
+npm run perf:analyze -- perf-results/<widget-run>.log --baseline perf-results/<display-run>.log --warmup-seconds 60
+```
+
+Add the same `--widgets` filter to both commands to compare a subset. A filter
+selects widget types and includes every instance of those types. Include
+total app CPU, aggregate private memory, renderer process count and frame
+timing; do not compare a single renderer's memory against the combined default
+window. Repeat regressions with the run order reversed. A single-monitor or
+remote desktop result does not establish multi-monitor compositor performance.
+Tape FPS values remain historical and cannot measure current game FPS impact.
+
+For an actual iRacing replay, `IsOnTrack` can remain false and suppress expensive
+widgets even when their windows exist. Add `--replay-visible-widgets` to both
+captures to override `showOnlyWhenOnTrack` in memory, keep Radar visible without
+pit/proximity hiding, and show Flags' no-flag state. This does not alter saved
+settings or invent missing simulator data. Verify actual Fuel/Radar content
+before measuring; the blind-spot channel can still remain idle in a replay.
+
+If Windows Application Control blocks an unsigned packaged executable, use
+`--target dev` for both captures instead. Development captures can compare modes
+within that build, but cannot establish a release baseline or be compared with
+earlier packaged measurements.
 
 ### 4. Widget isolation
 

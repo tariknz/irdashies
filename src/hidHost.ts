@@ -18,6 +18,7 @@ import {
   buttonChanges,
   hatChanges,
   describeCollections,
+  isKeyboardOrMouse,
 } from './app/gamepad/hidReport';
 
 interface DeviceState {
@@ -29,9 +30,31 @@ interface DeviceState {
 
 const devices = new Map<HIDDevice, DeviceState>();
 
-/** Open a HID device (if not already), parse its controls, and relay press edges. */
+/**
+ * Open a HID device (if not already), parse its controls, and relay press edges.
+ *
+ * Collections are available before `open()`, so devices are filtered first and
+ * only real controllers are ever opened. Keyboards and mice are skipped (see
+ * `isKeyboardOrMouse`), and so is anything without a bindable control: holding
+ * a handle on a device we can't use only risks breaking it.
+ */
 async function openDevice(device: HIDDevice): Promise<void> {
   if (devices.has(device)) return;
+
+  if (isKeyboardOrMouse(device.collections)) {
+    logger.info(`[Gamepad] skipping keyboard/mouse ${device.productName}`);
+    return;
+  }
+
+  const buttons = parseButtons(device.collections);
+  const hats = parseHats(device.collections);
+  if (buttons.length === 0 && hats.length === 0) {
+    logger.warn(
+      `[Gamepad] skipping ${device.productName}: no controls detected. ` +
+        `Report layout:\n${describeCollections(device.collections)}`
+    );
+    return;
+  }
 
   try {
     if (!device.opened) await device.open();
@@ -40,8 +63,6 @@ async function openDevice(device: HIDDevice): Promise<void> {
     return;
   }
 
-  const buttons = parseButtons(device.collections);
-  const hats = parseHats(device.collections);
   const state: DeviceState = {
     buttons,
     hats,
@@ -50,16 +71,12 @@ async function openDevice(device: HIDDevice): Promise<void> {
   };
   devices.set(device, state);
 
-  if (buttons.length === 0 && hats.length === 0) {
-    logger.warn(
-      `[Gamepad] ${device.productName} opened but no controls detected. ` +
-        `Report layout:\n${describeCollections(device.collections)}`
-    );
-  }
-
   device.addEventListener('inputreport', (event) => {
     // Devices may send their first report only on a real press. Forward all
     // edges; GamepadManager excludes unbound status bits from chord matching.
+    // An edge for a control with no known prior state is marked initial: it
+    // may be a real press, or a control already held when the device was
+    // opened (a shifter in gear, a status bit). Recording ignores those.
     for (const change of buttonChanges(
       event.data,
       state.buttons,
@@ -68,7 +85,8 @@ async function openDevice(device: HIDDevice): Promise<void> {
     )) {
       window.gamepadHost?.sendButton(
         gamepadTokenFromIndex(change.index, device.productName),
-        change.down
+        change.down,
+        change.initial
       );
     }
 
@@ -80,7 +98,8 @@ async function openDevice(device: HIDDevice): Promise<void> {
     )) {
       window.gamepadHost?.sendButton(
         gamepadTokenFromHat(change.index, change.direction, device.productName),
-        change.down
+        change.down,
+        change.initial
       );
     }
   });

@@ -1,4 +1,6 @@
 import { SessionResults, Driver, TrackLocation } from '@irdashies/types';
+import type { LmuDriverRating } from '@irdashies/types';
+import { lmuPenaltyBadge, type LmuPenaltyKind } from '@irdashies/types';
 import {
   calculateIRatingGain,
   RaceResult,
@@ -27,7 +29,7 @@ export interface Standings {
   lappedState?: 'ahead' | 'behind' | 'same';
   delta?: number;
   gap?: Gap;
-  interval?: number;
+  interval?: number | Gap;
   isPlayer: boolean;
   driver: {
     name: string;
@@ -36,7 +38,16 @@ export interface Standings {
     rating: number;
     isAi?: boolean;
     flairId?: number;
+    /** Set only when the running sim is LMU; see Driver.LmuRating. */
+    lmuRating?: LmuDriverRating;
     teamName?: string;
+    /**
+     * Whether the sim drives this entry rather than a person.
+     *
+     * Undefined where the sim does not say, which is not the same as false:
+     * the badge only names an AI when the sim has stated it is one.
+     */
+    isAI?: boolean;
   };
   fastestTime: number;
   hasFastestTime: boolean;
@@ -44,6 +55,31 @@ export interface Standings {
   lastTimeState?: LastTimeState;
   onPitRoad: boolean;
   tireCompound: number;
+  /**
+   * LMU's four wheel compounds, FL, FR, RL, RR, or undefined where the sim
+   * reports only one per car. -1 for a wheel with no reading.
+   */
+  wheelCompounds?: number[];
+  /**
+   * LMU's track-limits penalty points, or undefined where the sim has none.
+   * 0 is a clean car; a car with no reading is undefined, not 0.
+   */
+  trackLimitsPoints?: number;
+  /**
+   * Virtual energy or fuel remaining, 0..1, or undefined where neither reads.
+   * Which of the two it is depends on the car; only one limits it.
+   */
+  energyRemaining?: number;
+  /**
+   * The penalty this driver is serving, where it can be told apart.
+   *
+   * From LMU's UI websocket for any car while it answers. Without it, only the
+   * player's own car gets a kind, derived from its pit-stop estimate; every
+   * other car has a count and no more. See types/lmu/penalty.ts.
+   */
+  penaltyKind?: LmuPenaltyKind;
+  /** Seconds a time penalty will add, for the `TIME` kind. */
+  penaltySeconds?: number;
   onTrack: boolean;
   carClass: {
     id: number;
@@ -68,6 +104,53 @@ export interface Standings {
   relativePct: number;
   positionChange?: number;
 }
+
+/**
+ * One car's four wheel compounds, or undefined when the sim reports one.
+ *
+ * Undefined rather than four copies of the single value, so the renderer can
+ * tell "this sim has per-wheel data" from "all four happen to match" -- the
+ * first picks the single-glyph path, the second is a real reading.
+ */
+const wheelCompoundsFor = (
+  flat: number[] | undefined,
+  carIdx: number
+): number[] | undefined => {
+  if (!flat || flat.length === 0) return undefined;
+  const base = carIdx * 4;
+  if (base + 4 > flat.length) return undefined;
+  return [flat[base], flat[base + 1], flat[base + 2], flat[base + 3]];
+};
+
+/**
+ * One car's track-limits points, or undefined where there is no reading.
+ *
+ * Undefined rather than 0, because 0 is a clean car and a car the sim has not
+ * reported is not clean -- it is unknown, and a cell showing 0.00 for it would
+ * be an assertion nobody made.
+ */
+const trackLimitsFor = (
+  points: number[] | undefined,
+  carIdx: number
+): number | undefined => {
+  const value = points?.[carIdx];
+  return typeof value === 'number' && value >= 0 ? value : undefined;
+};
+
+/**
+ * One car's remaining budget, or undefined where there is no reading.
+ *
+ * Undefined rather than 0, because 0 is an empty tank and a car the sim has
+ * not reported is not empty -- it is unknown, and a cell reading 0% for it
+ * would be an assertion nobody made.
+ */
+const energyFor = (
+  energy: number[] | undefined,
+  carIdx: number
+): number | undefined => {
+  const value = energy?.[carIdx];
+  return typeof value === 'number' && value >= 0 ? value : undefined;
+};
 
 const calculateDelta = (
   carIdx: number,
@@ -116,6 +199,14 @@ const getLastTimeState = (
 export const createDriverStandings = (
   session: {
     playerIdx?: number;
+    /**
+     * The local player's own car, which `penaltySeconds` describes.
+     *
+     * Not `playerIdx`: that is the focused car, and while spectating it is
+     * someone else's, whose penalty the player's pit estimate says nothing
+     * about.
+     */
+    ownCarIdx?: number;
     drivers?: Driver[];
     qualifyingResults?: SessionResults[];
   },
@@ -127,6 +218,23 @@ export const createDriverStandings = (
     carIdxTrackSurfaceValue?: TrackLocation[];
     radioTransmitCarIdx?: number[];
     carIdxTireCompoundValue?: number[];
+    /** Flat, four per car at carIdx * 4 + wheel. Empty under iRacing. */
+    carIdxWheelCompoundsValue?: number[];
+    /** Points per car. -1 is unknown. Empty under iRacing. */
+    carIdxTrackLimitsPointsValue?: number[];
+    /** 0..1 per car, -1 unavailable. Empty under iRacing. */
+    carIdxEnergyRemainingValue?: number[];
+    /** Outstanding penalties per car. A count, not a kind. */
+    carIdxPenaltiesValue?: number[];
+    /**
+     * Which penalty each car is serving, as an LMU_PENALTY_CODE. Empty under
+     * iRacing, and under LMU when the sim's UI websocket is not answering.
+     */
+    carIdxPenaltyKindValue?: number[];
+    /** Seconds a time penalty will add, per car. Same source as the kind. */
+    carIdxPenaltySecondsValue?: number[];
+    /** Seconds the player's next stop spends serving penalties. */
+    penaltySeconds?: number;
     isOnTrack?: boolean;
     carIdxSessionFlags?: number[];
   },
@@ -210,15 +318,13 @@ export const createDriverStandings = (
       const isClassFastest = result.CarIdx === classFastestCarIdx;
 
       // Ensure we always produce numeric fastest/last times (fallback to -1)
-      const bestLapTime = (telemetry?.carIdxBestLapTime?.[result.CarIdx] ?? 0);
-      const computedBestTime = bestLapTime > 1
-          ? bestLapTime
-          : result.FastestTime ?? -1;
+      const bestLapTime = telemetry?.carIdxBestLapTime?.[result.CarIdx] ?? 0;
+      const computedBestTime =
+        bestLapTime > 1 ? bestLapTime : (result.FastestTime ?? -1);
 
-      const lastLapTime = (telemetry?.carIdxLastLapTime?.[result.CarIdx] ?? 0);
-      const computedLastTime = lastLapTime > 1
-          ? lastLapTime
-          : result.LastTime ?? -1;
+      const lastLapTime = telemetry?.carIdxLastLapTime?.[result.CarIdx] ?? 0;
+      const computedLastTime =
+        lastLapTime > 1 ? lastLapTime : (result.LastTime ?? -1);
 
       return {
         carIdx: result.CarIdx,
@@ -241,7 +347,9 @@ export const createDriverStandings = (
           rating: driver.IRating,
           isAi: driver.CarIsAIControlled,
           flairId: driver.FlairID,
+          lmuRating: driver.LmuRating,
           teamName: driver.TeamName,
+          isAI: driver.CarIsAIControlled,
         },
         fastestTime: computedBestTime,
         hasFastestTime: isClassFastest,
@@ -256,6 +364,25 @@ export const createDriverStandings = (
           (telemetry?.carIdxTrackSurfaceValue?.[result.CarIdx] ??
             TrackLocation.NotInWorld) > TrackLocation.NotInWorld,
         tireCompound: telemetry?.carIdxTireCompoundValue?.[result.CarIdx] ?? 0,
+        wheelCompounds: wheelCompoundsFor(
+          telemetry?.carIdxWheelCompoundsValue,
+          result.CarIdx
+        ),
+        trackLimitsPoints: trackLimitsFor(
+          telemetry?.carIdxTrackLimitsPointsValue,
+          result.CarIdx
+        ),
+        energyRemaining: energyFor(
+          telemetry?.carIdxEnergyRemainingValue,
+          result.CarIdx
+        ),
+        penaltyKind: lmuPenaltyBadge(
+          telemetry?.carIdxPenaltyKindValue?.[result.CarIdx],
+          result.CarIdx === session?.ownCarIdx,
+          telemetry?.carIdxPenaltiesValue?.[result.CarIdx],
+          telemetry?.penaltySeconds
+        ),
+        penaltySeconds: telemetry?.carIdxPenaltySecondsValue?.[result.CarIdx],
         carClass: {
           id: driver.CarClassID,
           color: driver.CarClassColor,
@@ -269,12 +396,12 @@ export const createDriverStandings = (
           result.CarIdx === session.playerIdx
             ? undefined // Don't show deltas for player (comparing to themselves)
             : lapDeltasVsPlayer &&
-              lapDeltasVsPlayer[result.CarIdx] &&
-              lapDeltasVsPlayer[result.CarIdx].length > 0
-            ? lapDeltasVsPlayer[result.CarIdx].slice(
-                -(numLapsToShow ?? lapDeltasVsPlayer[result.CarIdx].length)
+                lapDeltasVsPlayer[result.CarIdx] &&
+                lapDeltasVsPlayer[result.CarIdx].length > 0
+              ? lapDeltasVsPlayer[result.CarIdx].slice(
+                  -(numLapsToShow ?? lapDeltasVsPlayer[result.CarIdx].length)
                 ) // Use most recent laps
-            : undefined,
+              : undefined,
         lastPitLap: lastPitLap[result.CarIdx] ?? undefined,
         lastLap: lastLap[result.CarIdx] ?? undefined,
         prevCarTrackSurface: prevCarTrackSurface[result.CarIdx] ?? undefined,
@@ -343,7 +470,9 @@ export const createDriverStandings = (
           rating: driver.IRating,
           isAi: driver.CarIsAIControlled,
           flairId: driver.FlairID,
+          lmuRating: driver.LmuRating,
           teamName: driver.TeamName,
+          isAI: driver.CarIsAIControlled,
         },
         fastestTime: -1,
         hasFastestTime: false,
@@ -354,6 +483,25 @@ export const createDriverStandings = (
           (telemetry?.carIdxTrackSurfaceValue?.[driver.CarIdx] ??
             TrackLocation.NotInWorld) > TrackLocation.NotInWorld,
         tireCompound: telemetry?.carIdxTireCompoundValue?.[driver.CarIdx] ?? 0,
+        wheelCompounds: wheelCompoundsFor(
+          telemetry?.carIdxWheelCompoundsValue,
+          driver.CarIdx
+        ),
+        trackLimitsPoints: trackLimitsFor(
+          telemetry?.carIdxTrackLimitsPointsValue,
+          driver.CarIdx
+        ),
+        energyRemaining: energyFor(
+          telemetry?.carIdxEnergyRemainingValue,
+          driver.CarIdx
+        ),
+        penaltyKind: lmuPenaltyBadge(
+          telemetry?.carIdxPenaltyKindValue?.[driver.CarIdx],
+          driver.CarIdx === session?.ownCarIdx,
+          telemetry?.carIdxPenaltiesValue?.[driver.CarIdx],
+          telemetry?.penaltySeconds
+        ),
+        penaltySeconds: telemetry?.carIdxPenaltySecondsValue?.[driver.CarIdx],
         carClass: {
           id: driver.CarClassID,
           color: driver.CarClassColor,
@@ -409,7 +557,8 @@ export const groupStandingsByClass = (
   }
 
   sorted.sort(
-    ([, a], [, b]) => b[0].carClass.relativeSpeed - a[0].carClass.relativeSpeed);
+    ([, a], [, b]) => b[0].carClass.relativeSpeed - a[0].carClass.relativeSpeed
+  );
 
   return sorted;
 };
@@ -433,7 +582,7 @@ export const groupStandingsBySpeed = (
     const validDrivers = drivers
       .filter(
         (d) =>
-          d.position !== undefined &&  //Check for valid position
+          d.position !== undefined && //Check for valid position
           //Check for valid time to filter qualifying positions with no set time
           ((d.fastestTime !== undefined && d.fastestTime > 0) ||
             (d.lastTime !== undefined && d.lastTime > 0))
@@ -624,8 +773,12 @@ export const augmentStandingsWithGap = (
         }
 
         const classLeaderTrackPctForLaps = carIdxLapDistPct[classLeader.carIdx];
-        const driverLapNumber = !carIdxLap[driverStanding.carIdx] ? 1 : carIdxLap[driverStanding.carIdx];
-        const classLeaderLapNumber = !carIdxLap[classLeader.carIdx] ? 1 : carIdxLap[classLeader.carIdx];
+        const driverLapNumber = !carIdxLap[driverStanding.carIdx]
+          ? 1
+          : carIdxLap[driverStanding.carIdx];
+        const classLeaderLapNumber = !carIdxLap[classLeader.carIdx]
+          ? 1
+          : carIdxLap[classLeader.carIdx];
 
         const gap = {
           value: gapValue ? Math.abs(gapValue) : undefined,
@@ -659,32 +812,156 @@ export const augmentStandingsWithGap = (
 };
 
 /**
- * This method will augment the standings with interval calculations to player
- * Interval shows time gaps between consecutive cars, calculated by subtracting gaps
- * For each driver, interval = gap_of_driver_behind - gap_of_current_driver
- * Player shows as undefined (no interval)
+ * Signed gaps to the focus car, across classes. Race progress determines the
+ * direction and whole-lap difference; unlike Relative, this never wraps to the
+ * nearest car within half a lap. Called after intervals have been calculated.
+ */
+export const augmentStandingsWithPlayerGap = (
+  groupedStandings: [string, Standings[]][],
+  carIdxLap: number[],
+  carIdxLapDistPct: number[],
+  carIdxOnPitRoad: boolean[],
+  carIdxEstTime: number[],
+  sessionType?: string
+): [string, Standings[]][] => {
+  let player: Standings | undefined;
+  for (const [, drivers] of groupedStandings) {
+    player = drivers.find((driver) => driver.isPlayer);
+    if (player) break;
+  }
+  const refLapStore = useReferenceLapStore.getState();
+  const progress = (driver: Standings): number | undefined => {
+    const lap = carIdxLap[driver.carIdx];
+    const pct = carIdxLapDistPct[driver.carIdx];
+    return Number.isFinite(lap) &&
+      lap >= 0 &&
+      Number.isFinite(pct) &&
+      pct >= 0 &&
+      pct <= 1
+      ? lap + pct
+      : undefined;
+  };
+  const playerProgress = player && progress(player);
+
+  return groupedStandings.map(([classId, drivers]) => [
+    classId,
+    drivers.map((driver) => {
+      let gap: Gap = { value: undefined, laps: 0 };
+      if (!player) return { ...driver, gap };
+      if (driver.isPlayer) return { ...driver, gap: { value: 0, laps: 0 } };
+
+      if (sessionType !== 'Race') {
+        if (driver.fastestTime > 0 && player.fastestTime > 0) {
+          gap.value = driver.fastestTime - player.fastestTime;
+        }
+        return { ...driver, gap };
+      }
+
+      const driverProgress = progress(driver);
+      if (
+        !player.onTrack ||
+        !driver.onTrack ||
+        playerProgress === undefined ||
+        driverProgress === undefined
+      )
+        return { ...driver, gap };
+
+      const progressDifference = playerProgress - driverProgress;
+      // Truncation keeps both cars on the same lap until a full lap separates
+      // them, including when just one car has crossed start/finish.
+      gap.laps = Math.trunc(progressDifference) || 0;
+      const ahead = progressDifference < 0 ? driver : player;
+      const behind = progressDifference < 0 ? player : driver;
+      const refLap = refLapStore.getReferenceLap(
+        behind.carIdx,
+        behind.carClass.id,
+        (behind.lap ?? -1) <= 1
+      );
+      let time: number | undefined;
+      if (
+        !carIdxOnPitRoad[ahead.carIdx] &&
+        !carIdxOnPitRoad[behind.carIdx] &&
+        refLap.finishTime >= 0
+      ) {
+        time = calculateReferenceGap(
+          refLap,
+          carIdxLapDistPct[ahead.carIdx],
+          carIdxLapDistPct[behind.carIdx]
+        );
+      } else if (
+        Number.isFinite(carIdxEstTime[ahead.carIdx]) &&
+        carIdxEstTime[ahead.carIdx] >= 0 &&
+        Number.isFinite(carIdxEstTime[behind.carIdx]) &&
+        carIdxEstTime[behind.carIdx] >= 0
+      ) {
+        time = calculateClassEstimatedGap(
+          getStats(carIdxEstTime[ahead.carIdx], ahead),
+          getStats(carIdxEstTime[behind.carIdx], behind)
+        );
+      }
+      gap.value =
+        time === undefined
+          ? undefined
+          : Math.sign(progressDifference) * Math.abs(time);
+      if (!Number.isFinite(gap.value))
+        gap = { value: undefined, laps: gap.laps };
+      return { ...driver, gap };
+    }),
+  ]);
+};
+
+/**
+ * Interval shows the gap to the preceding car in the same class.
+ * When enabled, whole lap differences use the signed class-leader gap convention.
+ * The class leader has no interval.
  */
 export const augmentStandingsWithInterval = (
-  groupedStandings: [string, Standings[]][]
+  groupedStandings: [string, Standings[]][],
+  carIdxLap: number[] = [],
+  carIdxLapDistPct: number[] = [],
+  showLapDifferences = false
 ): [string, Standings[]][] => {
   return groupedStandings.map(([classId, classStandings]) => {
-    // Sort drivers by their gap values (ascending - smallest gaps first = closest to leader)
     const augmentedClassStandings = classStandings.map(
       (driverStanding, index) => {
         // The driver physically in front of this one in the standings
         const driverAhead = classStandings[index - 1];
 
-        let interval: number | undefined = undefined;
+        let interval: number | Gap | undefined = undefined;
+
+        const isRace = driverStanding.currentSessionType === 'Race';
+        const aheadPct = driverAhead
+          ? carIdxLapDistPct[driverAhead.carIdx]
+          : undefined;
+        const driverPct = carIdxLapDistPct[driverStanding.carIdx];
+        const lapsBehind =
+          driverAhead &&
+          isRace &&
+          showLapDifferences &&
+          aheadPct !== undefined &&
+          aheadPct >= 0 &&
+          driverPct >= 0
+            ? Math.floor(
+                (carIdxLap[driverAhead.carIdx] || 1) +
+                  aheadPct -
+                  ((carIdxLap[driverStanding.carIdx] || 1) + driverPct)
+              )
+            : 0;
 
         // If there's no one ahead (P1 in class), the interval is typically undefined or 0
         if (!driverAhead) {
           interval = undefined;
+        } else if (
+          lapsBehind > 0 &&
+          driverStanding.onTrack &&
+          driverAhead.onTrack
+        ) {
+          interval = { value: undefined, laps: -lapsBehind };
         }
         // If the car ahead is the leader (who has no gap value),
         // the interval for P2 is simply their own gap to the leader.
         // For race sessions, onTrack is still required.
         else if (driverAhead.gap?.value === undefined) {
-          const isRace = driverStanding.currentSessionType === 'Race';
           if (!isRace || driverStanding.onTrack) {
             interval = driverStanding.gap?.value;
           }

@@ -3,12 +3,14 @@ import { Compound } from '../../../../shared/Compound/Compound';
 
 interface CompoundCellProps {
   tireCompound?: number;
+  /** LMU's four wheels, FL, FR, RL, RR. Undefined where the sim has one. */
+  wheelCompounds?: number[];
   carId?: number;
   compactMode?: string;
 }
 
 export const CompoundCell = memo(
-  ({ tireCompound, carId, compactMode }: CompoundCellProps) => {
+  ({ tireCompound, wheelCompounds, carId, compactMode }: CompoundCellProps) => {
     const pxClass =
       compactMode === 'ultra'
         ? ''
@@ -22,7 +24,10 @@ export const CompoundCell = memo(
       >
         <div className="flex items-center justify-center">
           {tireCompound !== undefined && carId !== undefined && (
-            <Compound tireCompound={tireCompound} />
+            <Compound
+              tireCompound={tireCompound}
+              wheelCompounds={wheelCompounds}
+            />
           )}
         </div>
       </td>

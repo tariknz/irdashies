@@ -1,3 +1,5 @@
+import type { LmuDriverRating } from '../../../types/lmu';
+
 export interface Driver {
   CarIdx: number;
   UserName: string;
@@ -9,6 +11,15 @@ export interface Driver {
   CarNumber: string;
   CarNumberRaw: number;
   CarPath: string;
+  /**
+   * The car's model name, e.g. "Ferrari 296 LMGT3".
+   *
+   * Set only by LMU, where CarPath is the livery's .VEH file and so differs
+   * between two entries of the same car. This is what identifies the car
+   * itself there, for anything kept per car. iRacing leaves it unset: its
+   * CarPath already names the car.
+   */
+  CarModel?: string;
   CarClassID: number;
   CarID: number;
   CarIsPaceCar: number;
@@ -53,6 +64,15 @@ export interface Driver {
   DivisionID: number;
   CurDriverIncidentCount: number;
   TeamIncidentCount: number;
+  /**
+   * Le Mans Ultimate rank, badge and country.
+   *
+   * Set only by sims that report it -- iRacing leaves it unset, the same way
+   * it leaves CarIsAIControlled unset. LMU keeps no iRating or licence, so
+   * none of this can be folded into IRating/LicString without inventing
+   * numbers; renderers branch on its presence instead.
+   */
+  LmuRating?: LmuDriverRating;
 }
 
 export interface Tire {

@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { TrackDrawing } from '../src/frontend/components/TrackMap/TrackCanvas';
+import { readTrackDrawings } from './track-drawings';
 import { BROKEN_TRACKS } from '../src/frontend/domain/track/tracks/brokenTracks';
 
 interface TrackInfo {
@@ -26,14 +26,8 @@ interface BrokenTracksByIssue {
   'figure 8': number;
 }
 
-export const analyzeTracks = (): void => {
-  // Read the tracks.json file
-  const tracksData: Record<number, TrackDrawing | undefined> = JSON.parse(
-    fs.readFileSync(
-      './src/frontend/domain/track/tracks/tracks.json',
-      'utf8'
-    )
-  );
+export const analyzeTracks = async (): Promise<void> => {
+  const tracksData = await readTrackDrawings();
 
   // Known broken track IDs from brokenTracks.ts (manually extracted)
   const knownBrokenIds = BROKEN_TRACKS.map((track) => track.id);

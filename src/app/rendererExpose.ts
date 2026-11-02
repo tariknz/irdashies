@@ -6,6 +6,7 @@ import type {
   PitLaneTrackData,
   TrackNotesBridge,
 } from '@irdashies/types';
+import { defineBridge } from './bridge/defineBridge';
 
 export function exposeInMainWorld() {
   const logBridge: LogBridge = {
@@ -69,15 +70,32 @@ export function exposeInMainWorld() {
   const pitLaneBridge: PitLaneBridge = {
     getPitLaneData: (trackId: string) =>
       ipcRenderer.invoke('pitLane:getData', trackId),
-    updatePitLaneData: (trackId: string, data: Partial<PitLaneTrackData>) =>
-      ipcRenderer.invoke('pitLane:updateData', trackId, data),
+    updatePitLaneData: (
+      trackId,
+      data: Partial<PitLaneTrackData>,
+      revision,
+      sourceId
+    ) =>
+      ipcRenderer.invoke(
+        'pitLane:updateData',
+        trackId,
+        data,
+        revision,
+        sourceId
+      ),
+    getCurrentTrackPitLaneInfo: () =>
+      ipcRenderer.invoke('pitLane:getCurrentTrack'),
+    resetPitLaneData: (trackId) =>
+      ipcRenderer.invoke('pitLane:resetData', trackId),
+    openPitLaneDataFile: () => ipcRenderer.invoke('pitLane:openFile'),
+    reloadPitLaneDataFile: () => ipcRenderer.invoke('pitLane:reloadFile'),
   };
 
-  contextBridge.exposeInMainWorld('pitLaneBridge', pitLaneBridge);
+  defineBridge<PitLaneBridge>('pitLaneBridge', pitLaneBridge);
 
   const trackNotesBridge: TrackNotesBridge = {
     getNotes: () => ipcRenderer.invoke('trackNotes:get'),
     saveNotes: (notes) => ipcRenderer.invoke('trackNotes:save', notes),
   };
-  contextBridge.exposeInMainWorld('trackNotesBridge', trackNotesBridge);
+  defineBridge<TrackNotesBridge>('trackNotesBridge', trackNotesBridge);
 }

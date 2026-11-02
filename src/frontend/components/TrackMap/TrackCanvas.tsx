@@ -1,6 +1,8 @@
+import { useWidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Driver } from '@irdashies/types';
-import tracks from '@irdashies/domain/track/tracks/tracks.json';
+import { useTrackDrawing, type TrackDrawing } from '@irdashies/domain/track';
+export type { TrackDrawing } from '@irdashies/domain/track';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
 import { validateImageDataUrl } from '@irdashies/utils/imageDataUrl';
 import { shouldShowTrack } from '@irdashies/domain/track/tracks/brokenTracks';
@@ -73,26 +75,6 @@ export interface TrackDriver {
   classPosition?: number;
 }
 
-export interface TrackDrawing {
-  active: {
-    inside: string;
-    outside: string;
-    trackPathPoints?: { x: number; y: number }[];
-    totalLength?: number;
-  };
-  startFinish: {
-    line?: string;
-    arrow?: string;
-    point?: { x?: number; y?: number; length?: number } | null;
-    direction?: 'clockwise' | 'anticlockwise' | null;
-  };
-  turns?: {
-    x?: number;
-    y?: number;
-    content?: string;
-  }[];
-}
-
 export interface TurnLabels {
   enabled: boolean;
   labelType: 'names' | 'numbers' | 'both';
@@ -103,9 +85,23 @@ export interface TurnLabels {
 const TRACK_DRAWING_WIDTH = 1920;
 const TRACK_DRAWING_HEIGHT = 1080;
 
-export const TrackCanvas = ({
+/** Mount canvas effects only once the requested drawing is available. */
+export const TrackCanvas = (props: TrackProps) => {
+  const override = props.trackDrawing;
+  const loaded = useTrackDrawing(override ? undefined : props.trackId);
+  const drawing = override ?? loaded;
+  return drawing ? (
+    <LoadedTrackCanvas
+      key={props.trackId}
+      {...props}
+      trackDrawing={drawing}
+      hasDrawingOverride={override !== undefined}
+    />
+  ) : null;
+};
+
+const LoadedTrackCanvas = ({
   trackId,
-  trackDrawing: trackDrawingOverride,
   drivers,
   driverIdentities,
   turnLabels = {
@@ -133,11 +129,17 @@ export const TrackCanvas = ({
   playerIconDataUrl: rawPlayerIconDataUrl = null,
   driverLivePositions = {},
   maxFps,
-}: TrackProps) => {
+  trackDrawing,
+  hasDrawingOverride,
+}: TrackProps & {
+  trackDrawing: TrackDrawing;
+  hasDrawingOverride: boolean;
+}) => {
   const playerIconDataUrl = useMemo(
     () => validateImageDataUrl(rawPlayerIconDataUrl),
     [rawPlayerIconDataUrl]
   );
+  const widgetScale = useWidgetScale();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const debounceResizeRef = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -147,13 +149,9 @@ export const TrackCanvas = ({
   const playerIconElRef = useRef<HTMLImageElement>(null);
   const playerPitBadgeRef = useRef<HTMLDivElement>(null);
 
-  const trackDrawing =
-    trackDrawingOverride ?? (tracks as unknown as TrackDrawing[])[trackId];
-  const shouldShow =
-    trackDrawingOverride !== undefined
-      ? !!trackDrawingOverride.active?.inside &&
-        !!trackDrawingOverride.startFinish?.line
-      : shouldShowTrack(trackId, trackDrawing);
+  const shouldShow = hasDrawingOverride
+    ? !!trackDrawing.active?.inside && !!trackDrawing.startFinish?.line
+    : shouldShowTrack(trackId, trackDrawing);
 
   const driversOffTrack = useCarIdxOffTrack();
   const carIdxIsOnPitRoad =
@@ -252,12 +250,12 @@ export const TrackCanvas = ({
       if (!canvas) return;
 
       // Get device pixel ratio for high-DPI displays
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
+      const dpr = (window.devicePixelRatio || 1) * widgetScale;
+      const { clientWidth: width, clientHeight: height } = canvas;
 
       // Set the actual canvas size in memory (scaled up for high-DPI)
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
 
       // Apply device pixel ratio scaling to the context
       const ctx = canvas.getContext('2d');
@@ -266,7 +264,7 @@ export const TrackCanvas = ({
         ctx.scale(dpr, dpr); // Apply DPR scaling
       }
       // Update state to trigger redraw
-      setCanvasSize({ width: rect.width, height: rect.height });
+      setCanvasSize({ width, height });
     };
 
     // Initial resize
@@ -308,7 +306,7 @@ export const TrackCanvas = ({
       }
       cacheCanvasRef.current = null;
     };
-  }, [trackId]);
+  }, [trackId, widgetScale]);
 
   // Static layer — redraws only when track settings, size, or appearance change
   useLayoutEffect(() => {
@@ -334,7 +332,7 @@ export const TrackCanvas = ({
     const offsetX = (canvasSize.width - TRACK_DRAWING_WIDTH * scale) / 2;
     const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = (window.devicePixelRatio || 1) * widgetScale;
     cacheCtx.setTransform(1, 0, 0, 1, 0, 0);
     cacheCtx.scale(dpr, dpr);
 
@@ -398,6 +396,7 @@ export const TrackCanvas = ({
     trackDrawing?.turns,
     turnLabels,
     canvasSize,
+    widgetScale,
     invertTrackColors,
     trackLineWidth,
     trackOutlineWidth,
@@ -416,107 +415,116 @@ export const TrackCanvas = ({
   ]);
 
   // Dynamic layer — interpolates and paints imperatively between 25 Hz snapshots.
-  useProgressAnimation(drivers, (progressValues, count) => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!canvas || !ctx || !cacheCanvasRef.current) return;
-    if (canvasSize.width === 0 || canvasSize.height === 0) return;
-    if (!trackPathPoints || !totalLength || sfIntersectionLength === undefined)
-      return;
+  useProgressAnimation(
+    drivers,
+    (progressValues, count) => {
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (!canvas || !ctx || !cacheCanvasRef.current) return;
+      if (canvasSize.width === 0 || canvasSize.height === 0) return;
+      if (
+        !trackPathPoints ||
+        !totalLength ||
+        sfIntersectionLength === undefined
+      )
+        return;
 
-    for (const entry of positionedDrivers) {
-      if (entry.interpolationIndex >= count) continue;
-      const progress = progressValues[entry.interpolationIndex];
-      entry.progress = progress;
-      progressToTrackPoint(
-        progress,
-        trackPathPoints,
-        totalLength,
-        sfIntersectionLength,
-        sfDirection,
-        entry.position
+      for (const entry of positionedDrivers) {
+        if (entry.interpolationIndex >= count) continue;
+        const progress = progressValues[entry.interpolationIndex];
+        entry.progress = progress;
+        progressToTrackPoint(
+          progress,
+          trackPathPoints,
+          totalLength,
+          sfIntersectionLength,
+          sfDirection,
+          entry.position
+        );
+      }
+
+      // Blit static cache (identity transform to avoid double DPR scaling)
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(cacheCanvasRef.current, 0, 0);
+      ctx.restore();
+
+      // Draw drivers
+      const maxCircleSize = Math.max(driverCircleSize, playerCircleSize);
+      const scaleX =
+        canvasSize.width / (TRACK_DRAWING_WIDTH + 2 * maxCircleSize);
+      const scaleY =
+        canvasSize.height / (TRACK_DRAWING_HEIGHT + 2 * maxCircleSize);
+      const scale = Math.min(scaleX, scaleY);
+      const offsetX = (canvasSize.width - TRACK_DRAWING_WIDTH * scale) / 2;
+      const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
+
+      setupCanvasContext(ctx, scale, offsetX, offsetY, isMinimalCar);
+      const hasIconOverlay = !!playerIconDataUrl;
+      drawDrivers(
+        ctx,
+        positionedDrivers,
+        driverColors,
+        invertLeaderColor,
+        driversOffTrack,
+        driverCircleSize,
+        playerCircleSize,
+        trackmapFontSize,
+        showCarNumbers,
+        displayMode,
+        driverLivePositions,
+        carIdxIsOnPitRoad,
+        hasIconOverlay
       );
-    }
+      ctx.restore();
 
-    // Blit static cache (identity transform to avoid double DPR scaling)
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(cacheCanvasRef.current, 0, 0);
-    ctx.restore();
-
-    // Draw drivers
-    const maxCircleSize = Math.max(driverCircleSize, playerCircleSize);
-    const scaleX = canvasSize.width / (TRACK_DRAWING_WIDTH + 2 * maxCircleSize);
-    const scaleY =
-      canvasSize.height / (TRACK_DRAWING_HEIGHT + 2 * maxCircleSize);
-    const scale = Math.min(scaleX, scaleY);
-    const offsetX = (canvasSize.width - TRACK_DRAWING_WIDTH * scale) / 2;
-    const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
-
-    setupCanvasContext(ctx, scale, offsetX, offsetY, isMinimalCar);
-    const hasIconOverlay = !!playerIconDataUrl;
-    drawDrivers(
-      ctx,
-      positionedDrivers,
-      driverColors,
-      invertLeaderColor,
-      driversOffTrack,
-      driverCircleSize,
-      playerCircleSize,
-      trackmapFontSize,
-      showCarNumbers,
-      displayMode,
-      driverLivePositions,
-      carIdxIsOnPitRoad,
-      hasIconOverlay
-    );
-    ctx.restore();
-
-    // Position the icon overlay imperatively — mutating transform/dimensions
-    // directly avoids a React render on every position tick.
-    const iconEl = playerIconElRef.current;
-    const pitEl = playerPitBadgeRef.current;
-    if (!hasIconOverlay) {
-      if (iconEl) iconEl.style.display = 'none';
-      if (pitEl) pitEl.style.display = 'none';
-      return;
-    }
-    let playerEntry: PositionedTrackDriver | undefined;
-    for (const entry of positionedDrivers) {
-      if (entry.isPlayer) {
-        playerEntry = entry;
-        break;
+      // Position the icon overlay imperatively — mutating transform/dimensions
+      // directly avoids a React render on every position tick.
+      const iconEl = playerIconElRef.current;
+      const pitEl = playerPitBadgeRef.current;
+      if (!hasIconOverlay) {
+        if (iconEl) iconEl.style.display = 'none';
+        if (pitEl) pitEl.style.display = 'none';
+        return;
       }
-    }
-    if (!playerEntry) {
-      if (iconEl) iconEl.style.display = 'none';
-      if (pitEl) pitEl.style.display = 'none';
-      return;
-    }
-    const radius = playerCircleSize * scale;
-    const screenX = playerEntry.position.x * scale + offsetX - radius;
-    const screenY = playerEntry.position.y * scale + offsetY - radius;
-    const size = radius * 2;
-    if (iconEl) {
-      iconEl.style.transform = `translate(${screenX}px, ${screenY}px)`;
-      iconEl.style.width = `${size}px`;
-      iconEl.style.height = `${size}px`;
-      iconEl.style.display = '';
-    }
-    const onPitRoad = !!carIdxIsOnPitRoad?.[playerEntry.driver.CarIdx];
-    if (pitEl) {
-      if (onPitRoad) {
-        pitEl.style.transform = `translate(${screenX}px, ${screenY}px)`;
-        pitEl.style.width = `${size}px`;
-        pitEl.style.height = `${size}px`;
-        pitEl.style.fontSize = `${size * 0.6}px`;
-        pitEl.style.display = '';
-      } else {
-        pitEl.style.display = 'none';
+      let playerEntry: PositionedTrackDriver | undefined;
+      for (const entry of positionedDrivers) {
+        if (entry.isPlayer) {
+          playerEntry = entry;
+          break;
+        }
       }
-    }
-  }, maxFps);
+      if (!playerEntry) {
+        if (iconEl) iconEl.style.display = 'none';
+        if (pitEl) pitEl.style.display = 'none';
+        return;
+      }
+      const radius = playerCircleSize * scale;
+      const screenX = playerEntry.position.x * scale + offsetX - radius;
+      const screenY = playerEntry.position.y * scale + offsetY - radius;
+      const size = radius * 2;
+      if (iconEl) {
+        iconEl.style.transform = `translate(${screenX}px, ${screenY}px)`;
+        iconEl.style.width = `${size}px`;
+        iconEl.style.height = `${size}px`;
+        iconEl.style.display = '';
+      }
+      const onPitRoad = !!carIdxIsOnPitRoad?.[playerEntry.driver.CarIdx];
+      if (pitEl) {
+        if (onPitRoad) {
+          pitEl.style.transform = `translate(${screenX}px, ${screenY}px)`;
+          pitEl.style.width = `${size}px`;
+          pitEl.style.height = `${size}px`;
+          pitEl.style.fontSize = `${size * 0.6}px`;
+          pitEl.style.display = '';
+        } else {
+          pitEl.style.display = 'none';
+        }
+      }
+    },
+    maxFps
+  );
 
   const renderIconOverlay = () =>
     playerIconDataUrl ? (

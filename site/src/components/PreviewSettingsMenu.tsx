@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 
-import { widgetItems } from '../../../src/frontend/components/Settings/menuItems';
-import type { WidgetId } from '../../../src/frontend/WidgetIndex';
+import { widgetItems } from '@irdashies/frontend/components/Settings/menuItems';
+import type { WidgetId } from '@irdashies/types';
 import { EXCLUDED_WIDGETS } from '../utils/previewWidgets';
 
 const previewWidgetItems = widgetItems.filter(

@@ -32,7 +32,7 @@ export interface SimWidgetSupportConfig {
  *
  * LMU's shared memory and REST API are mapped onto the same channels iRacing
  * publishes, with the gaps TinyPedal fills the same way: relative positions
- * from world coordinates, wind from the wind vector, grip from mTrackGripLevel.
+ * from world coordinates, grip from mTrackGripLevel.
  * A spec asserts this list and the one below are exact complements over
  * WIDGET_MAP, so a widget added to the app cannot quietly appear under LMU
  * without someone deciding which list it belongs in.
@@ -75,6 +75,7 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'standings',
   'steeringmeter',
   'stinthistory',
+  'streamchat',
   'suspensionposition',
   'tachometer',
   // Not a sim-specific widget: it reports whatever channels the running sim
@@ -84,20 +85,18 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'telemetryinspector',
   'trackclock',
   'tracknotes',
-  'twitchchat',
   'tyrepanel',
   'weather',
-  'wind',
 ];
 
 /**
- * Hidden while LMU is the running sim.
- *
- * Empty on purpose. Every widget in this build has a path. A widget that
- * cannot be fed from LMU goes here, not into the supported list.
+ * Hidden while LMU is the running sim. A widget that cannot be fed from LMU
+ * goes here, not into the supported list.
  */
-export const LMU_DISABLED_WIDGETS: readonly string[] = [];
-
+export const LMU_DISABLED_WIDGETS: readonly string[] = [
+  // LMU simulates no wind: its wind vector is always zero.
+  'wind',
+];
 /**
  * Seeds the JSON on first run, and the fallback if it cannot be read.
  *
@@ -126,7 +125,7 @@ export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
  * it did, which costs a user their hand edits once per change and is why the
  * number is bumped only for a real one.
  */
-export const SIM_WIDGET_SUPPORT_VERSION = 9;
+export const SIM_WIDGET_SUPPORT_VERSION = 10;
 
 /**
  * Whether a widget is unavailable under the running sim.

@@ -8,6 +8,8 @@ import {
   carSetupOverviewFixture,
   sessionsFixture,
   weatherFixture,
+  tireManagementFixture,
+  watchStandingsFixture,
 } from './restFixture';
 
 const taskById = (id: string) => {
@@ -465,5 +467,288 @@ describe('car-setup-overview fuel slider maximum', () => {
 
     expect(data.session.fuelRatio).toBeCloseTo(0.83, 5);
     expect(data.session.fuelLevelMax).toBeUndefined();
+  });
+});
+
+describe('pitstop-estimate penalty seconds', () => {
+  it('reads the penalty time, which is the only thing naming the penalty', () => {
+    // 0 with a drive-through outstanding, 10 with a stop-go. Observed live.
+    const { data } = apply('pitstop-estimate', {
+      ...pitstopEstimateFixture(),
+      penalties: 10,
+    });
+    expect(data.cells.penaltySeconds?.value).toEqual([10]);
+  });
+
+  it('keeps a zero, which is what a drive-through looks like', () => {
+    // Not treated as absent: zero seconds with a penalty outstanding is the
+    // drive-through case, so it has to survive the parser.
+    const { data, applied } = apply('pitstop-estimate', {
+      ...pitstopEstimateFixture(),
+      penalties: 0,
+    });
+    expect(applied).toContain('penaltySeconds');
+    expect(data.cells.penaltySeconds?.value).toEqual([0]);
+  });
+
+  it('stays a telemetry cell, so it cannot force a session republish', () => {
+    // The poller bumps the REST revision on every successful parse of a
+    // session-targeted output, and this endpoint polls at 1 Hz -- which would
+    // rebuild and rebroadcast the whole session snapshot every second.
+    const output = taskById('pitstop-estimate').outputs.find(
+      (o) => o.id === 'penaltySeconds'
+    );
+    expect(output?.target).toBe('telemetry');
+  });
+
+  it('applies nothing when the field is missing', () => {
+    const { applied } = apply('pitstop-estimate', { total: 5 });
+    expect(applied).not.toContain('penaltySeconds');
+  });
+});
+
+describe('tire-management task', () => {
+  it('reads the compounds in the order the sim indexes them', () => {
+    const { data } = apply('tire-management', tireManagementFixture());
+    expect(data.session.tireCompounds).toEqual([
+      'Hard',
+      'Medium',
+      'Soft',
+      'Wet',
+    ]);
+  });
+
+  it('keeps a hole as a hole, so position stays the compound index', () => {
+    // Filtering an unparseable entry out would renumber every compound after
+    // it, and mislabel every car on one.
+    const { data } = apply('tire-management', {
+      optimalCompoundConditions: {
+        compounds: [{ type: 'Hard' }, { notAType: 1 }, { type: 'Soft' }],
+      },
+    });
+    expect(data.session.tireCompounds).toEqual(['Hard', '', 'Soft']);
+  });
+
+  it('targets the session, not telemetry', () => {
+    // The catalogue reaches widgets through the session snapshot; a telemetry
+    // target would rebuild the session on every poll.
+    taskById('tire-management').outputs.forEach((output) =>
+      expect(output.target).toBe('session')
+    );
+  });
+
+  it('is fetched once per activation, since a session cannot change it', () => {
+    expect(taskById('tire-management').mode).toBe('once');
+  });
+
+  it('applies nothing for a payload it does not recognise', () => {
+    expect(apply('tire-management', { other: 1 }).applied).toEqual([]);
+    expect(
+      apply('tire-management', {
+        optimalCompoundConditions: { compounds: 'nope' },
+      }).applied
+    ).toEqual([]);
+    // Every entry unparseable is the same as no catalogue: leave the previous
+    // one alone rather than wiping it with a list of empty strings.
+    expect(
+      apply('tire-management', {
+        optimalCompoundConditions: { compounds: [{}, {}] },
+      }).applied
+    ).toEqual([]);
+  });
+});
+
+describe('watch-focus task', () => {
+  const focus = (payload: unknown) => {
+    const { data, applied } = apply('watch-focus', payload);
+    return { slot: data.cells.focusCarIdx?.value?.[0], applied };
+  };
+
+  it('reads the watched slot from the shape LMUTraceHUB names', () => {
+    // `mID` is the scoring slot id, which is this app's CarIdx.
+    expect(focus({ mID: 7 }).slot).toBe(7);
+  });
+
+  it('accepts the other spellings and a bare number', () => {
+    // The shape is known from a string table, not a schema.
+    expect(focus({ focusSlot: 3 }).slot).toBe(3);
+    expect(focus({ slot: 3 }).slot).toBe(3);
+    expect(focus({ id: 3 }).slot).toBe(3);
+    expect(focus(3).slot).toBe(3);
+    expect(focus({ mid: '3' }).slot).toBe(3);
+  });
+
+  it('keeps slot 0, which is a real car', () => {
+    // A truthiness test here would drop the car in the first slot.
+    expect(focus({ mID: 0 }).applied).toEqual(['focusCarIdx']);
+    expect(focus({ mID: 0 }).slot).toBe(0);
+  });
+
+  it('takes -1 as a value, meaning nothing is focused', () => {
+    // Not a parse failure: returning undefined would hold the last camera,
+    // so leaving spectate would never hand the overlays back to the player.
+    expect(focus({ mID: -1 }).applied).toEqual(['focusCarIdx']);
+    expect(focus({ mID: -1 }).slot).toBe(-1);
+  });
+
+  it('leaves the previous value alone for anything it cannot read', () => {
+    // The contract every parser here follows. A hiccup must not drop the
+    // camera back to the player's empty slot mid-lap.
+    for (const payload of [
+      {},
+      null,
+      undefined,
+      'focus',
+      { mID: 'abc' },
+      { mID: 1.5 },
+      { mID: -2 },
+      { mID: 104 },
+      { mID: Number.NaN },
+      { somethingElse: 3 },
+    ]) {
+      expect(focus(payload).applied).toEqual([]);
+    }
+  });
+
+  it('polls often, because the camera moves on a keypress', () => {
+    const task = taskById('watch-focus');
+    expect(task.mode).toBe('repeat');
+    expect(task.baseIntervalMs).toBeLessThanOrEqual(500);
+  });
+
+  it('lands in telemetry, so moving the camera is not a session rebuild', () => {
+    expect(
+      taskById('watch-focus').outputs.every((o) => o.target === 'telemetry')
+    ).toBe(true);
+  });
+});
+
+describe('watch-standings task', () => {
+  const teams = (payload: unknown) => {
+    const { data, applied } = apply('watch-standings', payload);
+    return { names: data.session.teamNames, applied };
+  };
+
+  it('takes the team name the endpoint states, not the entry name', () => {
+    // The whole reason this endpoint is polled: the entry name carries the
+    // season, so parsing its prefix gives "Proton Competition 2026".
+    expect(teams(watchStandingsFixture()).names).toEqual({
+      5: 'Proton Competition',
+      8: 'Vista AF Corse',
+    });
+  });
+
+  it('keys by slotID, which is CarIdx', () => {
+    // Confirmed by the spectator camera: /rest/watch/focus answers with a
+    // slotID, and publishing it as CamCarIdx lands on the right car.
+    expect(teams([{ slotID: 0, fullTeamName: ' Proton  ' }]).names).toEqual({
+      0: 'Proton',
+    });
+  });
+
+  it('skips an entry with no usable slot or team', () => {
+    expect(
+      teams([
+        { slotID: 1 },
+        { fullTeamName: 'B' },
+        { slotID: 2, fullTeamName: '   ' },
+        { slotID: -1, fullTeamName: 'C' },
+        { slotID: 104, fullTeamName: 'D' },
+        { slotID: 1.5, fullTeamName: 'E' },
+        { slotID: '3', fullTeamName: 'F' },
+        { slotID: 7, fullTeamName: 'G' },
+      ]).names
+    ).toEqual({ 7: 'G' });
+  });
+
+  it('survives a driver swap without a repoll', () => {
+    // The point of keying by slot: a team runs a car, and the driver in it
+    // changes at every stop of an endurance race. A name key would go stale
+    // on each swap until the next poll.
+    const out = output();
+    const data = createLmuRestData();
+    out.apply(data, out.parse(watchStandingsFixture()));
+
+    const swapped = watchStandingsFixture();
+    swapped[1].driverName = 'Someone Else';
+    expect(out.unchanged?.(data, out.parse(swapped))).toBe(true);
+    expect(data.session.teamNames?.[8]).toBe('Vista AF Corse');
+  });
+
+  it('leaves the previous answer alone for anything it cannot read', () => {
+    // A build whose payload this does not recognise must not clear every
+    // team name on the grid.
+    for (const payload of [null, undefined, {}, [], 'standings', [1, 2, 3]]) {
+      expect(teams(payload).applied).toEqual([]);
+    }
+  });
+
+  const output = () => taskById('watch-standings').outputs[0];
+
+  it('recognises the names it already holds', () => {
+    // The body carries live positions, so it differs on every poll. A session
+    // target that claimed a change each time would rebuild the whole snapshot
+    // and broadcast it every ten seconds.
+    const out = output();
+    const data = createLmuRestData();
+
+    const first = out.parse(watchStandingsFixture());
+    expect(out.unchanged?.(data, first)).toBe(false);
+    out.apply(data, first);
+
+    expect(out.unchanged?.(data, out.parse(watchStandingsFixture()))).toBe(
+      true
+    );
+  });
+
+  it('sees a team being renamed as a change', () => {
+    const out = output();
+    const data = createLmuRestData();
+    out.apply(data, out.parse(watchStandingsFixture()));
+
+    const renamed = watchStandingsFixture();
+    renamed[0].fullTeamName = 'Proton Racing';
+    expect(out.unchanged?.(data, out.parse(renamed))).toBe(false);
+  });
+
+  it('sees a car joining as a change', () => {
+    // The case a key-by-key comparison alone would miss, and the one that
+    // matters: every slot already held still matches, so only the count says
+    // a car has appeared. Without that, a mid-session joiner would never get
+    // a team name.
+    const out = output();
+    const data = createLmuRestData();
+    out.apply(data, out.parse(watchStandingsFixture()));
+
+    const joined = [
+      ...watchStandingsFixture(),
+      { slotID: 11, driverName: 'Late Arrival', fullTeamName: 'Iron Lynx' },
+    ];
+    const parsed = out.parse(joined);
+    expect(out.unchanged?.(data, parsed)).toBe(false);
+
+    out.apply(data, parsed);
+    expect(data.session.teamNames?.[11]).toBe('Iron Lynx');
+  });
+
+  it('sees a car leaving as a change', () => {
+    const out = output();
+    const data = createLmuRestData();
+    out.apply(data, out.parse(watchStandingsFixture()));
+
+    const shorter = watchStandingsFixture().slice(0, 1);
+    expect(out.unchanged?.(data, out.parse(shorter))).toBe(false);
+  });
+
+  it('polls slowly, because the body moves every time', () => {
+    // The hash compare cannot help here, so every poll pays for a JSON.parse
+    // of the whole field. How often is the only lever.
+    expect(taskById('watch-standings').baseIntervalMs).toBeGreaterThanOrEqual(
+      5000
+    );
+  });
+
+  it('is optional, so it keeps probing until a session is live', () => {
+    expect(taskById('watch-standings').optional).toBe(true);
   });
 });

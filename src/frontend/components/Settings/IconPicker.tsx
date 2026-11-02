@@ -153,7 +153,7 @@ export const IconPicker = memo(function IconPicker({
                 }}
                 title={name}
                 className={`flex flex-col items-center gap-0.5 p-1.5 rounded hover:bg-slate-600 transition-colors ${
-                  value === name ? 'bg-slate-600 ring-1 ring-sky-500' : ''
+                  value === name ? 'bg-slate-600 ring-1 ring-accent-500' : ''
                 }`}
               >
                 <span className="inline-flex items-center justify-center w-5 h-5">

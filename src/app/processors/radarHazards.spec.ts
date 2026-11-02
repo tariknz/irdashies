@@ -49,14 +49,86 @@ class Field {
     }
     return this.last;
   }
-
-  /** Every car laps a few times, so the whole profile is learnt. */
-  learnLaps(laps: number) {
-    this.run((laps * TRACK_M) / 50);
-  }
 }
 
 describe('RadarHazardTracker', () => {
+  it('does not warn of a slower car it is not closing in on fast', () => {
+    const field = new Field();
+    // 80% of our speed: well above the slow share however long we follow it.
+    field.speeds = [50, 50, 40];
+
+    const reported: RadarHazard[] = [];
+    for (let second = 0; second < 120; second += 1) {
+      reported.push(...field.run(1));
+    }
+
+    expect(reported).toEqual([]);
+  });
+
+  it('warns when closing fast on a car that crawls', () => {
+    const field = new Field();
+    field.speeds = [40, 50, 11];
+    field.run(3);
+
+    expect(field.run(1)).toEqual([
+      expect.objectContaining({ carIdx: 2, kind: 'slow' }),
+    ]);
+  });
+
+  it('stays quiet about a car steady at corner pace far below us', () => {
+    const field = new Field();
+    field.speeds = [60, 50, 25];
+
+    // A hairpin ahead while we are still on the straight.
+    expect(field.run(3)).toEqual([]);
+  });
+
+  it('does not call braking for a hairpin a crash', () => {
+    const field = new Field();
+    field.run(5);
+    // 50 to 20 m/s in 1.5 s: far under its own top speed, but not stopped.
+    for (const speed of [40, 30, 20]) field.run(0.5, { speed });
+
+    expect(field.run(1).map((hazard) => hazard.kind)).not.toContain('crash');
+  });
+
+  it('starts over when session time runs backwards', () => {
+    const field = new Field();
+    field.run(5);
+    field.time = 1;
+    // A scrub back: the stale top speed must not make a cornering car crash.
+    field.speeds[2] = 20;
+    field.tracker.update({
+      time: field.time,
+      focus: 0,
+      playerPct: field.pcts[0],
+      pcts: field.pcts,
+      speeds: field.speeds,
+      surfaces: field.surfaces,
+      onPitRoad: field.onPitRoad,
+      excluded: new Set(),
+      quiet: false,
+    });
+    expect(field.run(1)).toEqual([]);
+  });
+
+  it('stays quiet about a slow car while we crawl up to it', () => {
+    const field = new Field();
+    // A hairpin: half our speed, but only 10 m/s of closing, 20 s away.
+    field.speeds = [20, 20, 10];
+
+    expect(field.run(3)).toEqual([]);
+  });
+
+  it('stays quiet about a sudden drop we are not closing on', () => {
+    const field = new Field();
+    field.speeds = [20, 20, 50];
+    field.run(5);
+
+    // Braking hard in front of us at the same speed as us.
+    expect(field.run(1, { speed: 18 })).toEqual([]);
+  });
+
   it('reports nothing while the field drives normally', () => {
     const field = new Field();
     expect(field.run(10)).toEqual([]);
@@ -79,21 +151,32 @@ describe('RadarHazardTracker', () => {
     expect(field.run(1, { speed: 50 })).toEqual([]);
   });
 
-  it('judges slow against what the field does at that spot', () => {
+  it('calls a car slowing gradually far below us slow, not a crash', () => {
     const field = new Field();
-    field.learnLaps(3);
-    expect(field.tracker.expectedSpeed(field.pcts[2])).toBeCloseTo(50, 0);
-    // Gradually down to 25 m/s: no sudden drop, but half the field's speed.
-    for (let speed = 45; speed >= 25; speed -= 5) field.run(1, { speed });
-    expect(field.run(1.5)).toEqual([
+    field.run(5);
+    // Gradually down to 15 m/s: no sudden drop, but far below our speed.
+    for (let speed = 45; speed >= 15; speed -= 5) field.run(0.5, { speed });
+    expect(field.last).toEqual([
       expect.objectContaining({ carIdx: 2, kind: 'slow' }),
     ]);
   });
 
-  it('leaves a moderately slow car alone until the profile is learnt', () => {
+  it('sees a steady slowing, not just a fast one', () => {
     const field = new Field();
-    for (let speed = 45; speed >= 25; speed -= 5) field.run(1, { speed });
-    expect(field.run(2)).toEqual([]);
+    field.run(5);
+    // 4 m/s^2 down from our speed: each second is a little slower than the
+    // last few seconds' pace, which must not look like pace every time.
+    for (let speed = 50; speed >= 20; speed -= 2) field.run(0.5, { speed });
+    expect(field.last).toEqual([
+      expect.objectContaining({ carIdx: 2, kind: 'slow' }),
+    ]);
+  });
+
+  it('does not call a hairpin at walking-fast pace a crash', () => {
+    const field = new Field();
+    field.run(5);
+    for (const speed of [40, 28, 18, 11]) field.run(0.4, { speed });
+    expect(field.run(2).map((hazard) => hazard.kind)).not.toContain('crash');
   });
 
   it('clears once the car is back up to speed', () => {
@@ -101,6 +184,14 @@ describe('RadarHazardTracker', () => {
     field.run(5);
     expect(field.run(2, { speed: 0 })).toHaveLength(1);
     expect(field.run(0.2, { speed: 50 })).toEqual([]);
+  });
+
+  it('forgets a drop once the car keeps moving above a crawl for 5 s', () => {
+    const field = new Field();
+    field.run(5);
+    field.run(1, { speed: 2 });
+    expect(field.run(4, { speed: 35 })).toHaveLength(1);
+    expect(field.run(2, { speed: 35 })).toEqual([]);
   });
 
   it('shows an excursion, then the rejoin, then nothing', () => {
@@ -138,7 +229,6 @@ describe('RadarHazardTracker', () => {
 
   it('does not flag the field still at pace speed when the green comes', () => {
     const field = new Field();
-    field.learnLaps(3);
     field.quiet = true;
     field.speeds = [25, 25, 25];
     field.run(10);

@@ -22,14 +22,31 @@ export type {
   TimerHandle,
 } from './channelBus';
 
-const targetFor = (sender: Electron.WebContents): RendererTarget => ({
+interface ChannelBridgeOptions {
+  /**
+   * Renderers that keep receiving snapshot channels while minimised, hidden or
+   * closed to the tray. Only the enabled Gantry, which has to hold the whole
+   * session whether or not it is on screen.
+   */
+  isAlwaysFed?: (sender: Electron.WebContents) => boolean;
+}
+
+const targetFor = (
+  sender: Electron.WebContents,
+  isAlwaysFed: (sender: Electron.WebContents) => boolean
+): RendererTarget => ({
   id: sender.id,
   isDestroyed: () => sender.isDestroyed(),
-  isVisible: () => BrowserWindow.fromWebContents(sender)?.isVisible() ?? false,
+  isVisible: () =>
+    isAlwaysFed(sender) ||
+    (BrowserWindow.fromWebContents(sender)?.isVisible() ?? false),
   send: (channel, name, payload) => sender.send(channel, name, payload),
 });
 
-export const setupChannelBridge = (bus: ChannelBus): (() => void) => {
+export const setupChannelBridge = (
+  bus: ChannelBus,
+  { isAlwaysFed = () => false }: ChannelBridgeOptions = {}
+): (() => void) => {
   const rendererCleanup = new Map<number, () => void>();
   ipcMain.handle(
     CHANNEL_SUBSCRIBE,
@@ -41,7 +58,10 @@ export const setupChannelBridge = (bus: ChannelBus): (() => void) => {
       if (!rendererCleanup.has(event.sender.id)) {
         const window = BrowserWindow.fromWebContents(event.sender);
         const onShow = () => bus.rendererBecameVisible(event.sender.id);
-        const onHide = () => bus.rendererBecameHidden(event.sender.id);
+        const onHide = () => {
+          if (isAlwaysFed(event.sender)) return;
+          bus.rendererBecameHidden(event.sender.id);
+        };
         // `minimize`/`restore` are distinct from `hide`/`show`: Electron never
         // emits `show` when a window returns from the minimised state. Without
         // the `restore` listener a subscription deactivated by `publish()` — it
@@ -64,7 +84,7 @@ export const setupChannelBridge = (bus: ChannelBus): (() => void) => {
           cleanup();
         });
       }
-      bus.subscribe(targetFor(event.sender), channel, rate);
+      bus.subscribe(targetFor(event.sender, isAlwaysFed), channel, rate);
     }
   );
   ipcMain.handle(CHANNEL_UNSUBSCRIBE, (event, channel: unknown) => {

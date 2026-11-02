@@ -114,7 +114,7 @@ export const SessionBarItemsList = ({
                       onClick={() =>
                         updateItemConfig(item.id, { speedPosition: pos })
                       }
-                      className={`flex items-center gap-1 px-2 py-1 rounded-md text-white ${currentPos === pos ? 'bg-blue-500' : 'bg-slate-700 hover:bg-slate-600'}`}
+                      className={`flex items-center gap-1 px-2 py-1 rounded-md ${currentPos === pos ? 'bg-accent-500 text-on-accent' : 'bg-slate-700 hover:bg-slate-600 text-white'}`}
                     >
                       {pos === 'left' ? (
                         <>

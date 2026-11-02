@@ -1,4 +1,6 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { setupStorageStatusBridge } from './app/bridge/storageStatusBridge';
+import { app, autoUpdater, BrowserWindow, ipcMain } from 'electron';
+import { setupReleaseNotesBridge } from './app/bridge/releaseNotesBridge';
 import log from './app/logger';
 import {
   iRacingSDKSetup,
@@ -13,6 +15,7 @@ import {
   ensureGameProfiles,
   getCurrentProfileId,
   getProfile,
+  listDashboards,
   setCurrentProfile,
 } from './app/storage/dashboards';
 import {
@@ -55,10 +58,12 @@ import {
   flushReferenceLapsOnShutdown,
 } from './app/storage/referenceLaps';
 import { flushLapTracesOnShutdown } from './app/storage/lapTraces';
+import { flushPitLaneDataOnShutdown } from './app/storage/pitLaneData';
 import {
   flushGarage61SearchSessionOnShutdown,
   saveGarage61SearchSession,
 } from './app/storage/garage61SearchSession';
+import { flushStorageWritesOnShutdown } from './app/storage/storage';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { getHiddenWidgets } from './app/widgetVisibility';
 import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
@@ -87,17 +92,21 @@ import {
   sealLapHistorySession,
 } from './app/storage/lapHistoryStorage';
 import { ReplayContextRuntime } from './app/processors/replayContextRuntime';
+import { setupTapeReplayBridge } from './app/bridge/tapeReplayBridge';
+import { createTapeReplayWindow } from './app/tapeReplayWindow';
 import type { ArchiveIndex } from './app/processors/ReplayContextProcessor';
+import { flushRadarPoleSideOverrides } from './app/storage/radarPoleSideOverrides';
 import { createKnownLocalUserIdStore } from './app/storage/knownLocalUserIds';
 import { setupLapHistoryBridge } from './app/bridge/lapHistoryBridge';
 import { onDashboardUpdated } from './app/storage/dashboardEvents';
+import { setupStreamChat } from './app/streamChat/setupStreamChat';
 import { loadSimWidgetSupport } from './app/storage/simWidgetSupport';
 import type { DashboardLayout, Session } from '@irdashies/types';
 import { getActivePerfMetrics } from './app/perfMetrics';
 import {
-  activePerfWidgetTypes,
   createPerfDashboard,
   getPerfRunConfig,
+  updatePerfDashboardMetadata,
   PERF_CAPTURE_ORIGIN_LOG_PREFIX,
   PERF_VISIBILITY_LOG_PREFIX,
 } from './app/perfRunConfig';
@@ -145,11 +154,14 @@ if (app.getName() === 'irdashies') {
 const overlayManager = new OverlayManager();
 const analytics = new Analytics();
 const perfRun = getPerfRunConfig();
-analytics.setupLogTransport();
+analytics.setupLogTransport(overlayManager.getVersion());
 
 overlayManager.setupChromiumFlags();
 overlayManager.setupHardwareAcceleration();
 overlayManager.setupSingleInstanceLock();
+const releaseNotes = overlayManager.hasLock()
+  ? setupReleaseNotesBridge()
+  : undefined;
 overlayManager.setupAutoStart();
 
 // Hoisted so the quit handler can tear down the WebHID host window cleanly.
@@ -162,6 +174,7 @@ let sessionProfileSwitcher: SessionProfileSwitcher | undefined;
 let gameProfileSwitcher: GameProfileSwitcher | undefined;
 let incidentRuntime: IncidentRuntime | undefined;
 let disposeLapHistoryRuntime: (() => void) | undefined;
+let disposeStreamChat: (() => void) | undefined;
 let disposeReplayContextRuntime: (() => void) | undefined;
 const knownLocalUserIds = createKnownLocalUserIdStore();
 let disposeGarage61SearchSession: (() => void) | undefined;
@@ -421,9 +434,7 @@ void app.whenReady().then(async () => {
   ensureGameProfiles();
   const runDashboard = createPerfDashboard(dashboard, perfRun);
   if (perfRun.enabled) {
-    process.env.PERF_ACTIVE_WIDGET_TYPES = JSON.stringify(
-      activePerfWidgetTypes(runDashboard)
-    );
+    updatePerfDashboardMetadata(runDashboard);
   }
 
   // Read off the window-build path before anything can ask for it: the
@@ -431,7 +442,9 @@ void app.whenReady().then(async () => {
   // for every overlay window.
   await loadSimWidgetSupport();
 
-  setupChannelBridge(channelBus);
+  setupChannelBridge(channelBus, {
+    isAlwaysFed: (sender) => overlayManager.isGantryWebContents(sender),
+  });
   const rendererDataSubscriptions = setupRendererDataSubscriptions({
     onSubscribe: (sender, stream) => {
       if (stream === 'sessionData') overlayManager.seedSessionData(sender);
@@ -446,6 +459,8 @@ void app.whenReady().then(async () => {
     channelBus
   );
   await iRacingSDKSetup(overlayManager, channelBus);
+  setupTapeReplayBridge(getCurrentBridge);
+  if (process.env.IRDASHIES_TELEMETRY_REPLAY) createTapeReplayWindow();
 
   // Perform one-time cleanup of old reference laps
   validateReferenceLapFile();
@@ -454,8 +469,9 @@ void app.whenReady().then(async () => {
 
   // Setup IPC bridges
   setupLogBridge();
-  setupFuelCalculatorBridge();
-  setupPitLaneBridge();
+  setupStorageStatusBridge();
+  fuelDatabase = setupFuelCalculatorBridge();
+  const pitLaneBridge = setupPitLaneBridge(overlayManager, channelBus);
   setupTrackNotesBridge();
   setupPersonalBestLapTimesBridge();
   setupLapTraceBridge(overlayManager);
@@ -477,6 +493,7 @@ void app.whenReady().then(async () => {
   );
   setupRaceControlBridge(incidents, dashboard, replayContextRuntime);
   setupLapHistoryRuntime(dashboard, replayContextRuntime);
+  disposeStreamChat = setupStreamChat(channelBus, listDashboards);
   // Returns false when the Gantry widget is disabled, so Settings can explain
   // why the button did nothing instead of appearing to be broken.
   ipcMain.handle('raceControl:showGantryWindow', () =>
@@ -501,7 +518,12 @@ void app.whenReady().then(async () => {
   }
 
   // Start component server for browser components
-  await startComponentServer(bridge, dashboardBridge, channelBus);
+  await startComponentServer(
+    bridge,
+    dashboardBridge,
+    channelBus,
+    pitLaneBridge
+  );
 
   ipcMain.handle('getComponentServerPort', () => getComponentServerPort());
 
@@ -511,8 +533,11 @@ void app.whenReady().then(async () => {
     // transparent-window/global-provider cost from widget rendering.
     const windowDashboard =
       perfRun.enabled && perfRun.overlayMode === 'empty'
-        ? dashboard
+        ? { ...dashboard, generalSettings: runDashboard.generalSettings }
         : runDashboard;
+    if (perfRun.enabled && perfRun.overlayMode === 'empty') {
+      overlayManager.setWindowLayoutOverride(windowDashboard);
+    }
     overlayManager.createOverlays(windowDashboard, {
       createSettingsWindow: !perfRun.enabled,
     });
@@ -606,7 +631,14 @@ void app.whenReady().then(async () => {
     overlayManager,
     analytics,
     perfRun.enabled
-      ? (updatedDashboard) => createPerfDashboard(updatedDashboard, perfRun)
+      ? (updatedDashboard) => {
+          const appliedDashboard = createPerfDashboard(
+            updatedDashboard,
+            perfRun
+          );
+          updatePerfDashboardMetadata(appliedDashboard);
+          return appliedDashboard;
+        }
       : undefined
   );
   // Deliberately after publishDashboardUpdates: switching a profile emits
@@ -657,6 +689,8 @@ app.on('quit', () => {
   analytics.shutdown();
 });
 
+let fuelDatabase: ReturnType<typeof setupFuelCalculatorBridge> | undefined;
+
 const SHUTDOWN_FLUSH_TIMEOUT_MS = 5_000;
 
 const handleBeforeQuit = createBeforeQuitHandler({
@@ -669,6 +703,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
     disposeRendererDataSubscriptions?.();
     incidentRuntime?.dispose();
     disposeLapHistoryRuntime?.();
+    disposeStreamChat?.();
     disposeReplayContextRuntime?.();
     disposeGarage61SearchSession?.();
     channelBus.dispose();
@@ -676,11 +711,16 @@ const handleBeforeQuit = createBeforeQuitHandler({
     // coordinator deadline before the process exits.
     await Promise.all([
       flushLapTracesOnShutdown(),
+      flushPitLaneDataOnShutdown(),
       flushReferenceLapsOnShutdown(),
+      fuelDatabase?.flush(),
       flushIncidentsOnShutdown(),
       flushLapHistoryOnShutdown(),
       knownLocalUserIds.flush(),
+      flushRadarPoleSideOverrides(),
+      releaseNotes?.flush(),
       flushGarage61SearchSessionOnShutdown(),
+      flushStorageWritesOnShutdown(),
     ]);
   },
   quit: () => app.quit(),
@@ -689,6 +729,9 @@ const handleBeforeQuit = createBeforeQuitHandler({
 });
 
 app.on('before-quit', handleBeforeQuit);
+// An update restart closes windows before `before-quit`, so the Gantry has to
+// know it is quitting earlier or it hides instead of closing.
+autoUpdater.on('before-quit-for-update', () => overlayManager.markQuitting());
 
 // Terminal shutdown must use the same cleanup and storage flush as tray quit.
 process.on('SIGINT', () => app.quit());

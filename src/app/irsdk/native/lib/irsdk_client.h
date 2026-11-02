@@ -28,6 +28,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef IRSDKCLIENT_H
 #define IRSDKCLIENT_H
 
+#include "irsdk_capture.h"
+
 // A C++ wrapper around the irsdk calls that takes care of the details of maintaining a connection.
 // reads out the data into a cache so you don't have to worry about timming
 class irsdkClient
@@ -87,7 +89,6 @@ protected:
 
 	irsdkClient()
 		: m_data(NULL)
-		, m_nData(0)
 		, m_statusID(0)
 		, m_lastSessionCt(-1)
 	{ }
@@ -97,7 +98,7 @@ protected:
 	void shutdown();
 
 	char *m_data;
-	int m_nData;
+	irsdk_capture m_capture;
 	int m_statusID;
 
 	int m_lastSessionCt;

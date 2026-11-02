@@ -457,7 +457,7 @@ export const CarSetupSettings = () => {
             <button
               onClick={handleTakeSnapshot}
               disabled={!canTakeSnapshot}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded text-sm font-medium transition-colors"
+              className="px-4 py-2 bg-accent-600 hover:bg-accent-700 disabled:opacity-50 disabled:cursor-not-allowed text-on-accent rounded text-sm font-medium transition-colors"
             >
               Take Snapshot
             </button>
@@ -486,7 +486,7 @@ export const CarSetupSettings = () => {
                   onClick={() => setComparisonMode(mode)}
                   className={`px-3 py-1 rounded text-sm transition-colors ${
                     comparisonMode === mode
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-accent-600 text-on-accent'
                       : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                   }`}
                 >

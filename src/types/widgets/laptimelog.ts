@@ -138,7 +138,7 @@ export default defineWidgetManifest({
     },
     scale: {
       type: 'number',
-      label: 'Scale',
+      label: 'Text Scale',
       description:
         "Adjust the size of the font by adjusting this widget's scale",
       min: 50,

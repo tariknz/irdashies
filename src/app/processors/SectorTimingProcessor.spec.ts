@@ -46,15 +46,9 @@ describe('SectorTimingProcessor', () => {
 
     const snapshot = processor.snapshot();
     expect(snapshot.currentSectorIdx).toBe(2);
-    expect(snapshot.inclusive.currentLapSectorTimes).toEqual([
-      32.4,
-      41,
-      null,
-    ]);
+    expect(snapshot.inclusive.currentLapSectorTimes).toEqual([32.4, 41, null]);
     expect(snapshot.inclusive.previousLapSectorTimes).toEqual([
-      32.5,
-      41.2,
-      60.8,
+      32.5, 41.2, 60.8,
     ]);
     expect(snapshot.clean.sessionBestSectorTimes).toEqual([32.1, 40.8, 59.9]);
 
@@ -101,6 +95,47 @@ describe('SectorTimingProcessor', () => {
     expect(snapshot.inclusive.currentLapSectorUnclean[0]).toBe(true);
     expect(snapshot.clean.currentLapSectorTimes[0]).toBeNull();
     expect(snapshot.clean.sessionBestSectorTimes[0]).toBeNull();
+  });
+
+  describe('LMU lap void flag', () => {
+    const lmuFrame = (
+      lapDistPct: number,
+      sessionTime: number,
+      voided: boolean
+    ) =>
+      ({
+        ...frame(lapDistPct, sessionTime),
+        LmuLapInvalidated: { value: [voided] },
+      }) as unknown as Telemetry;
+
+    it('keeps a sector voided by a track cut out of the clean bests', () => {
+      // LMU voids the lap without the car leaving the track.
+      const processor = new SectorTimingProcessor();
+      processor.init(session);
+      processor.onFrame(lmuFrame(0.9, 90, false));
+      processor.onFrame(lmuFrame(0.1, 110, false));
+      processor.onFrame(lmuFrame(0.3, 130, true));
+      processor.onFrame(lmuFrame(0.6, 160, true));
+
+      const snapshot = processor.snapshot();
+      expect(snapshot.inclusive.currentLapSectorTimes[0]).toBeCloseTo(50);
+      expect(snapshot.inclusive.currentLapSectorUnclean[0]).toBe(true);
+      expect(snapshot.clean.currentLapSectorTimes[0]).toBeNull();
+      expect(snapshot.clean.sessionBestSectorTimes[0]).toBeNull();
+    });
+
+    it("ignores the flag just after the line, where it is the previous lap's", () => {
+      const processor = new SectorTimingProcessor();
+      processor.init(session);
+      processor.onFrame(lmuFrame(0.9, 90, true));
+      processor.onFrame(lmuFrame(0.02, 102, true));
+      processor.onFrame(lmuFrame(0.3, 130, false));
+      processor.onFrame(lmuFrame(0.6, 160, false));
+
+      const snapshot = processor.snapshot();
+      expect(snapshot.inclusive.currentLapSectorUnclean[0]).toBe(false);
+      expect(snapshot.clean.sessionBestSectorTimes[0]).not.toBeNull();
+    });
   });
 
   it('resets state for session changes and disconnects', () => {

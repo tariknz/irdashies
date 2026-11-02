@@ -2,6 +2,7 @@ import type {
   LapTimesSnapshot,
   RadarProcessorTuning,
   ReferenceLapsSnapshot,
+  Telemetry,
 } from '@irdashies/types';
 import type { ReferenceLapPersistence } from './ReferenceLapProcessor';
 import { CarSpeedsProcessor } from './CarSpeedsProcessor';
@@ -29,11 +30,14 @@ import { CarSystemsProcessor } from './CarSystemsProcessor';
 import { SessionTimingProcessor } from './SessionTimingProcessor';
 import { StandingsProcessor } from './StandingsProcessor';
 import { TrackStateProcessor } from './TrackStateProcessor';
+import type { PoleSideSettings } from '@irdashies/types';
 
 interface ProcessorRegistryOptions {
   referenceLapPersistence: ReferenceLapPersistence;
   /** The radar's dev tuning from the current dashboard; defaults without. */
   radarTuning?: () => RadarProcessorTuning;
+  /** The player's own pole side per track; the table's without. */
+  radarPoleSides?: PoleSideSettings;
 }
 
 interface DefaultProcessorHostOptions extends ProcessorRegistryOptions {
@@ -41,6 +45,7 @@ interface DefaultProcessorHostOptions extends ProcessorRegistryOptions {
   lifecycle?: SessionLifecycle;
   metrics: ProcessorMetrics;
   aggregateReplay?: boolean;
+  frameClock?: (frame: Telemetry) => number | undefined;
   logError?: (message: string, error: unknown) => void;
 }
 
@@ -65,6 +70,7 @@ const defineProcessor = <K extends AnyProcessorDefinition['channel']>(
 export const createProcessorDefinitions = ({
   referenceLapPersistence,
   radarTuning,
+  radarPoleSides,
 }: ProcessorRegistryOptions): readonly AnyProcessorDefinition[] => [
   defineProcessor({
     channel: 'blind-spot.snapshot',
@@ -116,12 +122,14 @@ export const createProcessorDefinitions = ({
   defineProcessor({
     channel: 'standings.snapshot',
     metricsPrefix: 'standings',
+    // Retain finish crossings when subscribed overlays are temporarily hidden.
+    processWhileHidden: true,
     create: () => new StandingsProcessor(),
   }),
   defineProcessor({
     channel: 'radar.snapshot',
     metricsPrefix: 'radar',
-    create: () => new RadarProcessor(radarTuning),
+    create: () => new RadarProcessor(radarTuning, radarPoleSides),
   }),
   defineProcessor({
     channel: 'radio.snapshot',
@@ -177,6 +185,7 @@ export const createDefaultProcessorHost = (
     lifecycle: options.lifecycle,
     metrics: options.metrics,
     aggregateReplay: options.aggregateReplay,
+    frameClock: options.frameClock,
     logError: options.logError,
     definitions: createProcessorDefinitions(options),
   });

@@ -1,3 +1,4 @@
+import { StorageStatusNotice } from './StorageStatus/StorageStatusNotice';
 import { useEffect, useRef, useState } from 'react';
 import {
   GearIcon,
@@ -25,6 +26,8 @@ import {
 import logger from '@irdashies/utils/logger';
 import { SettingsLoader } from './SettingsLoader';
 import { SettingsMenu } from './SettingsMenu';
+import { ReleaseNotesStatusProvider } from './ReleaseNotes/ReleaseNotesStatusContext';
+import { ReleaseNotesAnnouncement } from './ReleaseNotes/ReleaseNotesAnnouncement';
 import { useSimulatorPreference } from './useSimulatorPreference';
 
 const HEADER_SELECT =
@@ -187,11 +190,7 @@ export const SettingsLayout = () => {
     if (!profileId) return;
     if (
       preference !== 'auto' &&
-      !isProfileAssignedToGame(
-        profileId,
-        preference,
-        assignmentsRef.current
-      )
+      !isProfileAssignedToGame(profileId, preference, assignmentsRef.current)
     ) {
       return;
     }
@@ -205,116 +204,134 @@ export const SettingsLayout = () => {
   }
 
   const headerClass = [
-    'flex flex-row gap-4 items-center justify-between -mx-4 -mt-4 px-4 py-4 rounded-t-md',
-    headerGame === 'iracing' && 'bg-blue-600 text-white',
+    '-mx-4 -mt-4 -mb-4 px-4 pt-4 pb-4 flex flex-row gap-4 items-center justify-between [-webkit-app-region:drag]',
+    headerGame === 'iracing' && 'bg-[#2563eb] text-white',
     headerGame === 'lmu' && 'bg-orange-600 text-white',
   ]
     .filter(Boolean)
     .join(' ');
 
   return (
-    <div className="flex flex-col gap-4 bg-slate-700 p-4 rounded-md w-full h-full">
-      <div className={headerClass}>
-        <div className="flex flex-row gap-4 items-center min-w-0">
-          <GearIcon size={32} weight="bold" />
-          <div className="min-w-0">
-            <div className="flex flex-row gap-x-4 gap-y-2 items-center flex-wrap">
-              <h1 className="text-2xl font-bold">Overlay Settings</h1>
-              <label
-                htmlFor="headline-simulator"
-                className="flex items-center gap-2 text-sm font-medium"
-              >
-                Simulator
-                <select
-                  id="headline-simulator"
-                  value={preference}
-                  onChange={(event) =>
-                    setSimulatorPreference(
-                      event.target.value as SimulatorPreference
-                    )
-                  }
-                  className={HEADER_SELECT}
+    <ReleaseNotesStatusProvider>
+      <div className="flex flex-col gap-4 bg-slate-700 p-4 w-full h-full">
+        <ReleaseNotesAnnouncement />
+        {/* The window has no native title bar: this row is the drag handle, and
+          the right padding keeps clear of the OS min/max/close buttons. Their
+          width comes from the window-controls-overlay env() values, so it
+          follows DPI scaling; without an overlay it resolves to 0. */}
+        <div
+          className={headerClass}
+          style={{
+            paddingRight:
+              'max(1rem, calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw)))',
+          }}
+        >
+          <div className="flex flex-row gap-4 items-center min-w-0">
+            <GearIcon size={32} weight="bold" />
+            <div className="min-w-0">
+              <div className="flex flex-row gap-x-4 gap-y-2 items-center flex-wrap">
+                <h1 className="text-2xl font-bold">Overlay Settings</h1>
+                <label
+                  htmlFor="headline-simulator"
+                  className="flex items-center gap-2 text-sm font-medium [-webkit-app-region:no-drag]"
                 >
-                  <option value="auto">Auto</option>
-                  {SIMULATOR_IDS.map((id) => {
-                    const unavailable = !availableSimulators.includes(id);
-                    return (
-                      <option key={id} value={id} disabled={unavailable}>
-                        {SIMULATOR_LABELS[id]}
-                        {unavailable ? ' (not available in this build)' : ''}
-                      </option>
-                    );
-                  })}
-                </select>
-              </label>
-              <HeadlineProfileSelect
-                profiles={
-                  preference === 'auto'
-                    ? profiles
-                    : profilesReady
-                      ? assignedProfiles(profiles, preference, assignments)
-                      : []
-                }
-                currentProfileId={currentProfile?.id ?? ''}
-                ready={
-                  preference === 'auto' ? profiles.length > 0 : profilesReady
-                }
-                onSwitch={handleProfileSwitch}
-              />
+                  Simulator
+                  <select
+                    id="headline-simulator"
+                    value={preference}
+                    onChange={(event) =>
+                      setSimulatorPreference(
+                        event.target.value as SimulatorPreference
+                      )
+                    }
+                    className={HEADER_SELECT}
+                  >
+                    <option value="auto">Auto</option>
+                    {SIMULATOR_IDS.map((id) => {
+                      const unavailable = !availableSimulators.includes(id);
+                      return (
+                        <option key={id} value={id} disabled={unavailable}>
+                          {SIMULATOR_LABELS[id]}
+                          {unavailable ? ' (not available in this build)' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </label>
+                <div className="[-webkit-app-region:no-drag]">
+                  <HeadlineProfileSelect
+                    profiles={
+                      preference === 'auto'
+                        ? profiles
+                        : profilesReady
+                          ? assignedProfiles(profiles, preference, assignments)
+                          : []
+                    }
+                    currentProfileId={currentProfile?.id ?? ''}
+                    ready={
+                      preference === 'auto'
+                        ? profiles.length > 0
+                        : profilesReady
+                    }
+                    onSwitch={handleProfileSwitch}
+                  />
+                </div>
+              </div>
+              {currentProfile && (
+                <p
+                  className={`text-sm ${headerGame ? 'text-white/80' : 'text-slate-300'}`}
+                >
+                  {currentProfile.name} Profile
+                </p>
+              )}
             </div>
-            {currentProfile && (
-              <p
-                className={`text-sm ${headerGame ? 'text-white/80' : 'text-slate-300'}`}
-              >
-                {currentProfile.name} Profile
-              </p>
-            )}
+          </div>
+          <div className="flex flex-row gap-2 shrink-0 [-webkit-app-region:no-drag]">
+            <button
+              onClick={toggleDemoMode}
+              className="flex flex-row gap-1.5 items-center px-3 py-2 rounded skew-ui settings-heading font-semibold border border-slate-600 bg-slate-800 hover:border-accent-500 transition-colors"
+            >
+              {isDemoMode ? (
+                <>
+                  <PresentationChartIcon size={20} weight="bold" />
+                  <span>Exit Demo</span>
+                </>
+              ) : (
+                <>
+                  <PresentationChartIcon size={20} weight="bold" />
+                  <span>Demo Mode</span>
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleToggleLock}
+              className="flex flex-row gap-1.5 items-center px-3 py-2 rounded skew-ui settings-heading font-semibold border border-slate-600 bg-slate-800 hover:border-accent-500 transition-colors"
+            >
+              <LockIcon size={20} weight="bold" />
+              <span>Edit Layout</span>
+              <kbd className="ml-1 text-xs bg-black/20 px-1 rounded">
+                {editModeAccelerator}
+              </kbd>
+            </button>
           </div>
         </div>
-        <div className="flex flex-row gap-2 shrink-0">
-          <button
-            onClick={toggleDemoMode}
-            className="flex flex-row gap-1.5 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
-          >
-            {isDemoMode ? (
-              <>
-                <PresentationChartIcon size={20} weight="bold" />
-                <span>Exit Demo</span>
-              </>
-            ) : (
-              <>
-                <PresentationChartIcon size={20} weight="bold" />
-                <span>Demo Mode</span>
-              </>
-            )}
-          </button>
-          <button
-            onClick={handleToggleLock}
-            className="flex flex-row gap-1.5 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
-          >
-            <LockIcon size={20} weight="bold" />
-            <span>Edit Layout</span>
-            <kbd className="ml-1 text-xs bg-black/20 px-1 rounded">
-              {editModeAccelerator}
-            </kbd>
-          </button>
-        </div>
-      </div>
-      <div className="flex flex-row gap-4 flex-1 min-h-0 text-sm">
-        {/* Left Column - Widget Menu */}
-        <SettingsMenu />
+        <StorageStatusNotice />
+        <div className="flex flex-row gap-4 flex-1 min-h-0 text-sm">
+          {/* Left Column - Widget Menu */}
+          <SettingsMenu />
 
-        {/* Right Column - Widget Settings */}
-        <div className="w-3/4 bg-slate-800 p-4 rounded-md flex flex-col overflow-hidden">
-          <Routes>
-            <Route
-              path="/"
-              element={<Navigate to="/settings/general" replace />}
-            />
-            <Route path="/:widgetId" element={<SettingsLoader />} />
-          </Routes>
+          {/* Right Column - Widget Settings */}
+          <div className="w-3/4 bg-slate-800 p-4 rounded-md border border-slate-600/60 flex flex-col overflow-hidden">
+            <Routes>
+              <Route
+                path="/"
+                element={<Navigate to="/settings/general" replace />}
+              />
+              <Route path="/:widgetId" element={<SettingsLoader />} />
+            </Routes>
+          </div>
         </div>
       </div>
-    </div>
+    </ReleaseNotesStatusProvider>
   );
 };

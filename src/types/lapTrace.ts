@@ -32,6 +32,42 @@ export const MAX_LAP_SAMPLES = 80_000;
 /** Where a stored lap came from. Only 'best' is populated today. */
 export type LapTraceSource = 'best' | 'manual' | 'garage61';
 
+/**
+ * Why the lap currently being driven can no longer become the reference.
+ *
+ * Recorded by the recorder at the moment it writes the lap off, never derived
+ * later from live telemetry: by the time anything downstream looks, the car is
+ * usually back on track with no incident pending, and the lap would read as
+ * clean when it is not.
+ *
+ * The first cause recorded for a lap is the one kept — a driver who takes an
+ * incident and then pits should be told about the incident.
+ */
+export type LapInvalidReason =
+  /** The lap began in the garage or on pit road. */
+  | 'out-lap'
+  /** Recording started part-way round; no start/finish crossing yet. */
+  | 'partial-lap'
+  /** Active Reset, a tow, or a replay scrub moved the car. */
+  | 'reset'
+  /** Entered the pits part-way through an otherwise clean lap. */
+  | 'pitted'
+  /** Left the track surface entirely part-way through the lap. */
+  | 'off-world'
+  /** iRacing's incident count rose during the lap. */
+  | 'incident'
+  /**
+   * The sim declared the lap void. LMU's `mLapInvalidated` is a bare boolean
+   * with no reason attached, so nothing more specific can be reported.
+   */
+  | 'sim-invalidated'
+  /** Samples went backwards along the track — a spin. */
+  | 'spin'
+  /** A teleport: not every metre of the lap was driven. */
+  | 'discontinuity'
+  /** The lap outran the sample buffer. */
+  | 'too-long';
+
 export interface LapTraceSourceMeta {
   kind: LapTraceSource;
   /** Short label for the widget header, e.g. "Personal Best", "spa_gt3.ibt". */

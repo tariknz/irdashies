@@ -19,6 +19,8 @@ export interface InputProps {
   settings: InputWidgetSettings['config'];
   /** Background colour while the shift flash is on. */
   flashColor?: string;
+  /** Gear number colour while a shift flash is on. */
+  gearFlashColor?: string;
 }
 
 interface LayoutNodeViewProps {
@@ -69,6 +71,7 @@ export const InputContainer = memo(
     brakeAbsActive,
     settings,
     flashColor,
+    gearFlashColor,
   }: InputProps) => {
     const tree = useMemo(() => getInputLayoutTree(settings), [settings]);
 
@@ -99,6 +102,7 @@ export const InputContainer = memo(
                 speedMs={speed}
                 unit={unit}
                 settings={settings.gear}
+                flashColor={gearFlashColor}
               />
             );
           case 'abs':
@@ -120,6 +124,7 @@ export const InputContainer = memo(
                 speedMs={speed}
                 unit={unit}
                 gearSettings={settings.gear}
+                flashColor={gearFlashColor}
               />
             );
           default:
@@ -136,6 +141,7 @@ export const InputContainer = memo(
         unit,
         brakeAbsActive,
         settings,
+        gearFlashColor,
       ]
     );
 

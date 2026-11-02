@@ -1,6 +1,7 @@
 import type { LapLogSnapshot, Telemetry } from '@irdashies/types';
 import { LapLogProcessor } from '../../src/app/processors/LapLogProcessor';
 import type { ReplayProbe, TelemetryFrame } from './validator';
+import { rateLimited } from './rateLimited';
 
 const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
   Object.fromEntries(
@@ -11,11 +12,12 @@ const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
   ) as unknown as Telemetry;
 
 export const createLapLogProbe = (): ReplayProbe<LapLogSnapshot> => {
-  const processor = new LapLogProcessor();
+  const processor = rateLimited(new LapLogProcessor());
   return {
     name: 'lap-log-state',
     schemaVersion: 1,
     variables: [
+      'SessionTick',
       'LapCompleted',
       'LapCurrentLapTime',
       'LapLastLapTime',

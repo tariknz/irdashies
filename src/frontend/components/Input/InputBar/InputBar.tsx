@@ -74,9 +74,9 @@ export const InputBar = memo(
             <div className="flex-1 flex flex-col justify-end relative min-h-0">
               <div
                 data-testid={`input-bar-fill-${key}`}
-                className="w-full transition-[height] duration-50 ease-out"
+                className="h-full w-full origin-bottom transition-transform duration-50 ease-out"
                 style={{
-                  height: `${value * 100}%`,
+                  transform: `scaleY(${Math.max(0, Math.min(1, value))})`,
                   backgroundColor: color,
                 }}
               />

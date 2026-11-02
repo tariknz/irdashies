@@ -160,7 +160,7 @@ export const ArcEventCard = ({
                 onClick={() => onStyle(option.value)}
                 className={`flex flex-col items-center gap-1 rounded-md border p-1.5 text-xs transition-colors ${
                   option.value === style
-                    ? 'border-blue-500 bg-blue-600/20 text-white'
+                    ? 'border-accent-500 bg-accent-600/20 text-white'
                     : 'border-transparent bg-slate-800 text-slate-400 hover:text-slate-200'
                 }`}
               >

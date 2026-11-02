@@ -434,7 +434,7 @@ export const DriverTagsSettings = () => {
                   });
                 }
               }}
-              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500"
             >
               <option value="badge-fill">Badges (icons, filled)</option>
               <option value="badge-regular">Badges (icons, outlined)</option>
@@ -493,7 +493,7 @@ export const DriverTagsSettings = () => {
             <h3 className="text-lg">Custom Groups</h3>
             <button
               onClick={addGroup}
-              className="px-3 py-1 bg-blue-600 rounded"
+              className="px-3 py-1 bg-accent-600 text-on-accent rounded"
             >
               Add Group
             </button>
@@ -559,7 +559,7 @@ export const DriverTagsSettings = () => {
                                 )
                                   setEditingGroupIcon(undefined);
                               }}
-                              className={`px-2 py-0.5 rounded text-xs ${editingGroupIconMode === 'name' ? 'bg-sky-600 text-white' : 'bg-slate-600 text-slate-300'}`}
+                              className={`px-2 py-0.5 rounded text-xs ${editingGroupIconMode === 'name' ? 'bg-accent-600 text-on-accent' : 'bg-slate-600 text-slate-300'}`}
                             >
                               Icon
                             </button>
@@ -572,7 +572,7 @@ export const DriverTagsSettings = () => {
                                 )
                                   setEditingGroupIcon(undefined);
                               }}
-                              className={`px-2 py-0.5 rounded text-xs ${editingGroupIconMode === 'image' ? 'bg-sky-600 text-white' : 'bg-slate-600 text-slate-300'}`}
+                              className={`px-2 py-0.5 rounded text-xs ${editingGroupIconMode === 'image' ? 'bg-accent-600 text-on-accent' : 'bg-slate-600 text-slate-300'}`}
                             >
                               Custom Image
                             </button>
@@ -685,7 +685,7 @@ export const DriverTagsSettings = () => {
                             setEditingGroupIcon(undefined);
                             setEditingGroupColor(undefined);
                           }}
-                          className="px-2 py-1 bg-sky-600 rounded text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="px-2 py-1 bg-accent-600 text-on-accent rounded text-xs disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           Save
                         </button>
@@ -797,7 +797,7 @@ export const DriverTagsSettings = () => {
               <button
                 onClick={() => setActiveGroupFilter(null)}
                 aria-pressed={activeGroupFilter === null}
-                className={`px-3 py-1 rounded font-medium transition-colors shadow-sm ${activeGroupFilter === null ? 'bg-sky-500 text-white ring-2 ring-sky-300' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'}`}
+                className={`px-3 py-1 rounded font-medium transition-colors shadow-sm ${activeGroupFilter === null ? 'bg-accent-500 text-on-accent ring-2 ring-accent-300' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'}`}
               >
                 All
               </button>
@@ -817,7 +817,7 @@ export const DriverTagsSettings = () => {
                     aria-pressed={activeGroupFilter === g.id}
                     title={name}
                     aria-label={name}
-                    className={`px-3 py-1 rounded inline-flex items-center gap-1.5 transition-colors shadow-sm text-sm ${activeGroupFilter === g.id ? 'bg-sky-500 text-white ring-2 ring-sky-300' : 'bg-slate-700 text-slate-200 border border-slate-600 hover:bg-slate-600'}`}
+                    className={`px-3 py-1 rounded inline-flex items-center gap-1.5 transition-colors shadow-sm text-sm ${activeGroupFilter === g.id ? 'bg-accent-500 text-on-accent ring-2 ring-accent-300' : 'bg-slate-700 text-slate-200 border border-slate-600 hover:bg-slate-600'}`}
                   >
                     {settings.display?.displayStyle === 'tag' ? (
                       <span
@@ -860,7 +860,7 @@ export const DriverTagsSettings = () => {
                   aria-pressed={activeGroupFilter === g.id}
                   title={g.name}
                   aria-label={g.name}
-                  className={`px-3 py-1 rounded inline-flex items-center gap-1.5 transition-colors shadow-sm text-sm ${activeGroupFilter === g.id ? 'bg-sky-500 text-white ring-2 ring-sky-300' : 'bg-slate-700 text-slate-200 border border-slate-600 hover:bg-slate-600'}`}
+                  className={`px-3 py-1 rounded inline-flex items-center gap-1.5 transition-colors shadow-sm text-sm ${activeGroupFilter === g.id ? 'bg-accent-500 text-on-accent ring-2 ring-accent-300' : 'bg-slate-700 text-slate-200 border border-slate-600 hover:bg-slate-600'}`}
                 >
                   {settings.display?.displayStyle === 'tag' ? (
                     <span
@@ -913,7 +913,7 @@ export const DriverTagsSettings = () => {
                         value={searchText}
                         onChange={(e) => setSearchText(e.target.value)}
                         placeholder="Search for a Driver ..."
-                        className="px-2 py-0.5 bg-slate-700 rounded text-sm text-slate-200 w-full focus:outline-none focus:ring-1 focus:ring-sky-500"
+                        className="px-2 py-0.5 bg-slate-700 rounded text-sm text-slate-200 w-full focus:outline-none focus:ring-1 focus:ring-accent-500"
                       />
                     );
                   }
@@ -940,7 +940,7 @@ export const DriverTagsSettings = () => {
                     if (searchOpen) setSearchText('');
                   }}
                   title={searchOpen ? 'Close search' : 'Search drivers'}
-                  className={`flex w-full py-0.5 items-center justify-center transition-colors ${searchOpen ? 'text-sky-400' : 'text-slate-400 hover:text-slate-200'}`}
+                  className={`flex w-full py-0.5 items-center justify-center transition-colors ${searchOpen ? 'text-accent-400' : 'text-slate-400 hover:text-slate-200'}`}
                 >
                   {searchOpen ? (
                     <XCircleIcon size={14} />

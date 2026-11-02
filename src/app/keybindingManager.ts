@@ -1,14 +1,19 @@
 import { globalShortcut, desktopCapturer } from 'electron';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import type { KeybindingActionId, KeybindingsMap } from '@irdashies/types';
+import type {
+  KeybindingActionId,
+  KeybindingsMap,
+  KeybindingRegistrationErrors,
+} from '@irdashies/types';
+import { KEYBINDING_MESSAGES } from '@irdashies/types';
 import {
   isGamepadBinding,
   isWidgetToggleActionId,
   widgetIdFromToggleActionId,
 } from '@irdashies/shared';
 import { nextCycledProfileId } from './gameProfiles/resolveGameProfile';
-import { getKeybindings } from './storage/keybindings';
+import { getKeybindings, findKeybindingConflict } from './storage/keybindings';
 import { OverlayManager } from './overlayManager';
 import logger from './logger';
 import { toggleWidgetHidden } from './widgetVisibility';
@@ -18,6 +23,7 @@ export class KeybindingManager {
   private bindings: KeybindingsMap;
   private actionHandlers: Map<KeybindingActionId, () => void>;
   private hideState = false;
+  private registrationErrors: KeybindingRegistrationErrors = {};
 
   /** Owns the gamepad token -> action map, capture mode, and WebHID host. */
   private gamepad: GamepadManager;
@@ -54,6 +60,10 @@ export class KeybindingManager {
     this.actionHandlers.set('next-profile', () => {
       this.cycleProfile(1);
     });
+
+    this.actionHandlers.set('radar-flip-pole-side', () => {
+      void this.flipRadarPoleSide();
+    });
   }
 
   // ponytail: dynamic import keeps storage/dashboards out of the constructor's
@@ -88,6 +98,23 @@ export class KeybindingManager {
       setCurrentProfile(targetId);
     } catch (error) {
       logger.error('Error switching profile via keybind:', error);
+    }
+  }
+
+  // Dynamic import for the same reason as cycleProfile: storage stays out of
+  // the constructor's module graph.
+  private async flipRadarPoleSide(): Promise<void> {
+    try {
+      const { radarPoleSideOverrides } =
+        await import('./storage/radarPoleSideOverrides');
+      const flipped = radarPoleSideOverrides.flip();
+      if (flipped) {
+        logger.info(
+          `Radar pole side for track ${flipped.trackId} is now ${flipped.poleLeft ? 'left' : 'right'}`
+        );
+      }
+    } catch (error) {
+      logger.error('Error flipping the radar pole side via keybind:', error);
     }
   }
 
@@ -154,7 +181,17 @@ export class KeybindingManager {
     return this.bindings;
   }
 
+  public getRegistrationErrors(): KeybindingRegistrationErrors {
+    return this.registrationErrors;
+  }
+
+  /**
+   * Register saved inputs and refresh runtime outcomes without replacing the
+   * first action owning a keyboard shortcut or aborting on a failed binding.
+   */
   public registerAll(): void {
+    const errors: KeybindingRegistrationErrors = {};
+    const owners: Partial<KeybindingsMap> = {};
     this.gamepad.syncBindings(this.bindings);
     for (const [actionId, entry] of Object.entries(this.bindings)) {
       // Unbound entries (empty accelerator) have nothing to register.
@@ -167,39 +204,53 @@ export class KeybindingManager {
       // routes them via syncBindings() above.
       if (isGamepadBinding(entry.accelerator)) continue;
 
-      try {
-        // Skip if already registered (idempotent — safe to call after reloadBindings)
-        if (globalShortcut.isRegistered(entry.accelerator)) continue;
+      const id = actionId as KeybindingActionId;
+      const owner = findKeybindingConflict(owners, id, entry.accelerator);
+      if (owner !== undefined) {
+        errors[id] =
+          `Shortcut already bound to "${owner}" in irDashies. Choose another combination.`;
+        continue;
+      }
+      owners[id] = entry;
 
-        const registered = globalShortcut.register(entry.accelerator, handler);
+      try {
+        // isRegistered only reports registrations owned by this app.
+        const registered =
+          globalShortcut.isRegistered(entry.accelerator) ||
+          globalShortcut.register(entry.accelerator, handler);
         if (!registered) {
+          errors[id] = KEYBINDING_MESSAGES.unavailable;
+          // Normal OS refusal is recoverable; warn/error also reach analytics.
+          logger.info(`Shortcut unavailable for action "${actionId}"`);
+        }
+      } catch (error) {
+        if (KeybindingManager.isAcceleratorSyntaxError(error)) {
+          errors[id] = KEYBINDING_MESSAGES.invalid;
+          logger.info(`Invalid keyboard shortcut for action "${actionId}"`);
+        } else {
+          errors[id] = KEYBINDING_MESSAGES.error;
           logger.error(
-            `Failed to register shortcut "${entry.accelerator}" for action "${actionId}"`
+            `Error registering shortcut for action "${actionId}":`,
+            error
           );
         }
-      } catch (err) {
-        // Electron throws a TypeError when the accelerator string is not parseable
-        // (e.g. unsupported keys like "Pause"). Skip the bad binding so the rest still register.
-        logger.error(
-          `Invalid accelerator "${entry.accelerator}" for action "${actionId}", skipping:`,
-          err
-        );
       }
     }
+    this.registrationErrors = errors;
   }
 
   public unregisterAll(): void {
     for (const entry of Object.values(this.bindings)) {
-      if (isGamepadBinding(entry.accelerator)) continue;
+      // Unbound entries (empty accelerator) were never registered.
+      if (!entry.accelerator || isGamepadBinding(entry.accelerator)) continue;
       try {
         if (globalShortcut.isRegistered(entry.accelerator)) {
           globalShortcut.unregister(entry.accelerator);
         }
       } catch (err) {
-        logger.error(
-          `Invalid accelerator "${entry.accelerator}" while unregistering, skipping:`,
-          err
-        );
+        if (!KeybindingManager.isAcceleratorSyntaxError(err)) {
+          logger.error('Error unregistering keyboard shortcut:', err);
+        }
       }
     }
   }
@@ -224,20 +275,27 @@ export class KeybindingManager {
     this.gamepad.stopCapture();
   }
 
-  /**
-   * Verifies an accelerator string is parseable by Electron by attempting a
-   * trial registration. Returns true if valid (and leaves no registration behind).
-   */
-  public static isValidAccelerator(accelerator: string): boolean {
+  /** Only Electron's accelerator conversion failure is an invalid syntax result. */
+  private static isAcceleratorSyntaxError(error: unknown): boolean {
+    return (
+      error instanceof TypeError && /conversion failure/.test(error.message)
+    );
+  }
+
+  /** Probe availability without conflating OS refusal with invalid syntax. */
+  public static checkAccelerator(
+    accelerator: string
+  ): 'available' | 'invalid' | 'unavailable' {
     try {
-      const noop = () => undefined;
-      const registered = globalShortcut.register(accelerator, noop);
-      if (registered) {
-        globalShortcut.unregister(accelerator);
-      }
-      return registered;
-    } catch {
-      return false;
+      // Never replace or unregister an existing app-owned callback.
+      if (globalShortcut.isRegistered(accelerator)) return 'available';
+      const registered = globalShortcut.register(accelerator, () => undefined);
+      if (!registered) return 'unavailable';
+      globalShortcut.unregister(accelerator);
+      return 'available';
+    } catch (error) {
+      if (this.isAcceleratorSyntaxError(error)) return 'invalid';
+      throw error;
     }
   }
 

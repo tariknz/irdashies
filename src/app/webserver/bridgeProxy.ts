@@ -6,7 +6,11 @@ import {
   type Session,
   type DashboardLayout,
 } from '@irdashies/types';
-import type { IrSdkSourceBridge, DashboardBridge } from '@irdashies/types';
+import type {
+  IrSdkSourceBridge,
+  DashboardBridge,
+  PitLaneBridge,
+} from '@irdashies/types';
 import {
   getActiveSimulator,
   getIsDemoMode,
@@ -29,7 +33,8 @@ export function createBridgeProxy(
   httpServer: HTTPServer,
   irsdkBridge: IrSdkSourceBridge,
   dashboardBridge?: DashboardBridge,
-  channelBus?: ChannelBus
+  channelBus?: ChannelBus,
+  pitLaneBridge?: PitLaneBridge
 ) {
   const wss = new WebSocketServer({ server: httpServer });
 
@@ -55,7 +60,7 @@ export function createBridgeProxy(
   }
 
   const broadcast = (type: string, data: unknown) => {
-    const message = JSON.stringify({ type, data });
+    let message: string | undefined;
     clients.forEach((client) => {
       if (
         (type === 'telemetry' || type === 'sessionData') &&
@@ -66,6 +71,8 @@ export function createBridgeProxy(
         return;
       }
       if (client.readyState === WebSocket.OPEN) {
+        // Serialize once, only after finding an eligible recipient.
+        message ??= JSON.stringify({ type, data });
         client.send(message);
       }
     });
@@ -189,6 +196,44 @@ export function createBridgeProxy(
         const parsed = JSON.parse(message.toString());
 
         switch (parsed.type) {
+          case 'pitLane:getData':
+          case 'pitLane:updateData':
+          case 'pitLane:getCurrentTrack':
+          case 'pitLane:resetData': {
+            const { type, requestId, data } = parsed;
+            try {
+              if (!pitLaneBridge)
+                throw new Error('Pit lane calibration is unavailable');
+              let result: unknown;
+              if (type === 'pitLane:getData')
+                result = await pitLaneBridge.getPitLaneData(data?.trackId);
+              else if (type === 'pitLane:updateData')
+                result = await pitLaneBridge.updatePitLaneData(
+                  data?.trackId,
+                  data?.update,
+                  data?.revision,
+                  data?.sourceId
+                );
+              else if (type === 'pitLane:resetData')
+                result = await pitLaneBridge.resetPitLaneData(data?.trackId);
+              else result = await pitLaneBridge.getCurrentTrackPitLaneInfo();
+              ws.send(
+                JSON.stringify({ type, requestId, data: result ?? null })
+              );
+            } catch (error) {
+              ws.send(
+                JSON.stringify({
+                  type,
+                  requestId,
+                  error:
+                    error instanceof Error
+                      ? error.message
+                      : 'Pit lane request failed',
+                })
+              );
+            }
+            break;
+          }
           case 'telemetryInspectorSubscribe': {
             const stream = parsed.data?.stream;
             if (stream !== 'telemetryInspector' && stream !== 'sessionData') {

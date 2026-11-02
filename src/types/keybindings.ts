@@ -4,7 +4,8 @@ export type StaticKeybindingActionId =
   | 'toggle-edit-mode'
   | 'save-telemetry'
   | 'prev-profile'
-  | 'next-profile';
+  | 'next-profile'
+  | 'radar-flip-pole-side';
 
 /**
  * Dynamic per-widget show/hide action, keyed by the widget instance id, e.g.
@@ -37,9 +38,25 @@ export interface KeybindingEntry {
 
 export type KeybindingsMap = Record<KeybindingActionId, KeybindingEntry>;
 
+/** Runtime registration failures; omitted bindings have no error. Never persisted. */
+export type KeybindingRegistrationErrors = Partial<
+  Record<KeybindingActionId, string>
+>;
+
+export const KEYBINDING_MESSAGES = {
+  invalid: 'Invalid keyboard shortcut. Choose another combination.',
+  unavailable:
+    'Shortcut unavailable—may be used by another application. Choose another combination.',
+  error:
+    'Could not register shortcut. Try again or check the application logs.',
+} as const;
+
+export type KeybindingUpdateResult = KeybindingsMap | { error: string };
+
 /** Bridge methods exposed to the renderer for keybinding management */
 export interface KeybindingsBridge {
   getKeybindings: () => Promise<KeybindingsMap>;
+  getRegistrationErrors: () => Promise<KeybindingRegistrationErrors>;
   updateKeybinding: (
     actionId: KeybindingActionId,
     accelerator: string,
@@ -48,7 +65,7 @@ export interface KeybindingsBridge {
      * action (e.g. a widget toggle) that has no factory default entry.
      */
     meta?: { label: string; description: string }
-  ) => Promise<KeybindingsMap>;
+  ) => Promise<KeybindingUpdateResult>;
   resetKeybinding: (actionId: KeybindingActionId) => Promise<KeybindingsMap>;
   resetAllKeybindings: () => Promise<KeybindingsMap>;
   /**
@@ -70,10 +87,11 @@ export interface KeybindingsBridge {
  * button transition (already encoded as a `gamepad:btn<N>` token) to the main
  * process: `down: true` on press, `false` on release. Releases let the main
  * process track which buttons and hat directions are held together for
- * combo (chord) bindings.
+ * combo (chord) bindings. `initial` marks the first edge seen for a control
+ * since its device was opened, when its prior state was unknown.
  */
 export interface GamepadHostBridge {
-  sendButton: (token: string, down: boolean) => void;
+  sendButton: (token: string, down: boolean, initial: boolean) => void;
 }
 
 export const DEFAULT_KEYBINDINGS: KeybindingsMap = {
@@ -105,6 +123,13 @@ export const DEFAULT_KEYBINDINGS: KeybindingsMap = {
     accelerator: 'Alt+PageDown',
     label: 'Next Profile',
     description: 'Switch to the next configuration profile',
+    isDefault: true,
+  },
+  'radar-flip-pole-side': {
+    accelerator: '',
+    label: 'Radar: Flip Pole Side',
+    description:
+      'Swap the pole line side on the radar for the current track and remember it',
     isDefault: true,
   },
 };
