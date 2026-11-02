@@ -99,6 +99,14 @@ function fetchJson<T>(url: string): Promise<T> {
           reject(error);
         }
       });
+
+      res.on('error', reject);
+
+      res.on('close', () => {
+        if (!res.complete) {
+          reject(new Error(`Response closed before completion: ${url}`));
+        }
+      });
     });
 
     req.on('error', (error) => {
@@ -170,8 +178,9 @@ async function fetchAllCarData(
 }
 
 /**
- * Bundle key: path stem for LMU (carIds collide across team liveries),
- * carId for iRacing (unique and what CarPath already is).
+ * Bundle key: LMU uses the runtime CarModel / carName (liveries share one
+ * chassis; path stems and team carIds are not what settings or CarModel use).
+ * iRacing keeps carId (unique and what CarPath already is).
  */
 function bundleKey(
   game: string,
@@ -179,8 +188,7 @@ function bundleKey(
   car: CarData
 ): string {
   if (game === 'lmu') {
-    const stem = entry.path.replace(/^.*\//, '').replace(/\.json$/i, '');
-    return stem || car.carId;
+    return car.carName || car.carId || entry.carId;
   }
   return car.carId;
 }
@@ -207,7 +215,8 @@ function createBundle(
       );
       continue;
     }
-    bundle.cars[key] = car;
+    bundle.cars[key] =
+      game === 'lmu' ? { ...car, carId: car.carName || car.carId } : car;
   }
 
   return bundle;

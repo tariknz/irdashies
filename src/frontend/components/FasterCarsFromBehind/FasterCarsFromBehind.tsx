@@ -16,6 +16,7 @@ export interface FasterCarsFromBehindProps {
   name?: string;
   license?: string;
   rating?: number;
+  isAi?: boolean;
   distance?: number;
   percent?: number;
   classColor?: number;
@@ -70,6 +71,7 @@ export const FasterCarsFromBehindDisplay = ({
   name,
   license,
   rating,
+  isAi,
   distance,
   percent,
   classColor,
@@ -108,6 +110,7 @@ export const FasterCarsFromBehindDisplay = ({
               <DriverRatingBadge
                 license={license}
                 rating={rating}
+                isAi={isAi}
                 format={
                   settings.badgeFormat as
                     | 'license-color-fullrating-combo'

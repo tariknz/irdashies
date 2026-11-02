@@ -65,6 +65,7 @@ export const useCarBehind = ({
           name: car.driver?.name,
           license: car.driver?.license,
           rating: car.driver?.rating,
+          isAi: car.driver?.isAi ?? car.driver?.isAI,
           distance: parseFloat(car.delta?.toFixed(1) ?? '0'),
           classColor: car.carClass?.color,
           percent: percent,

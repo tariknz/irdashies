@@ -161,5 +161,16 @@ describe('carData', () => {
       const cars = getAvailableCars('iracing');
       expect(cars.length).toBeGreaterThanOrEqual(60);
     });
+
+    it('dedupes LMU chassis liveries under a shared carName identity', () => {
+      const cars = getAvailableCars('lmu');
+      if (cars.length === 0) return;
+
+      const mclarens = cars.filter((c) => c.carName === 'McLaren 720S GT3');
+      expect(mclarens.length).toBeLessThanOrEqual(1);
+      if (mclarens[0]) {
+        expect(mclarens[0].carId).toBe('McLaren 720S GT3');
+      }
+    });
   });
 });

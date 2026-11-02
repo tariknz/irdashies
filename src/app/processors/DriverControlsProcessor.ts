@@ -35,12 +35,12 @@ const meanValues = (
 const cornerValues = (
   frame: Telemetry,
   keys: readonly (string | readonly string[])[]
-): number[] | undefined => {
+): (number | null)[] | undefined => {
   const values = keys.map((key) =>
     typeof key === 'string' ? numberValue(frame, key) : meanValues(frame, key)
   );
   return values.some((value) => value !== undefined)
-    ? values.map((value) => value ?? Number.NaN)
+    ? values.map((value) => value ?? null)
     : undefined;
 };
 

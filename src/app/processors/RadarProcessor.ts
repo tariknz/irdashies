@@ -274,17 +274,19 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         if (carIdx === focus || this.excluded.has(carIdx)) continue;
         let dist = dists[carIdx];
         let lateralM: number | undefined;
-        if (hasWorld) {
+        if (hasWorld && relativeAvailable[carIdx] === true) {
           // TinyPedal places rivals from the rotated world position, not a
           // lane guess. Negative lateral there is left; the projector wants
           // positive left.
-          if (relativeAvailable[carIdx] !== true) continue;
           const lon = numberAt(relativeLongitudinal, carIdx, NaN);
           const lat = numberAt(relativeLateral, carIdx, NaN);
           if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
           dist = lon;
           lateralM = -lat;
         }
+        // available=false: scoring-only car (no world pose) or outside the
+        // world radius. Keep lap-distance `dist` so scoring-only rivals still
+        // appear; the range check below still applies.
         const span =
           lateralM === undefined ? Math.abs(dist) : Math.hypot(dist, lateralM);
         const surface = numberAt(surfaces, carIdx);

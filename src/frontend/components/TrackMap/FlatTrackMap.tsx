@@ -44,7 +44,8 @@ export const FlatTrackMap = ({ embedded = false }: { embedded?: boolean }) => {
     return <></>;
   }
 
-  if (!trackId || !trackDrawing) {
+  // Session-provided LMU drawings can render without a resolved track ID.
+  if (!trackDrawing) {
     return debug ? (
       <div className="w-full h-full flex items-center justify-center text-white">
         <p>No track data available</p>

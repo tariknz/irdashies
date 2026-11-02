@@ -198,7 +198,13 @@ export const loadCarData = (
     const key = resolveCarKey(game, candidates);
 
     if (key && key in bundle.cars) {
-      return bundle.cars[key];
+      const car = bundle.cars[key];
+      // LMU shift-point settings key off CarModel / carName; team-livery
+      // carIds collide across chassis clones in the picker.
+      if (game === 'lmu') {
+        return { ...car, carId: car.carName || car.carId };
+      }
+      return car;
     }
 
     return null;
@@ -230,8 +236,28 @@ export const getAvailableCars = (
   const bundle = bundles[game];
   if (!bundle) return [];
 
-  return Object.values(bundle.cars).map((car) => ({
-    carId: car.carId,
+  if (game !== 'lmu') {
+    return Object.values(bundle.cars).map((car) => ({
+      carId: car.carId,
+      carName: car.carName,
+      ledNumber: car.ledNumber,
+      ledRpm: car.ledRpm,
+    }));
+  }
+
+  // One row per chassis name so McLaren 720S liveries are not indistinguishable
+  // clones; settings identity matches runtime CarModel / loadCarData.
+  const byIdentity = new Map<string, { key: string; car: CarData }>();
+  for (const [key, car] of Object.entries(bundle.cars)) {
+    const identity = normalizeLmuCarKey(car.carName);
+    const existing = byIdentity.get(identity);
+    if (!existing || preferLmuAlias(existing.key, existing.car, key, car)) {
+      byIdentity.set(identity, { key, car });
+    }
+  }
+
+  return [...byIdentity.values()].map(({ car }) => ({
+    carId: car.carName || car.carId,
     carName: car.carName,
     ledNumber: car.ledNumber,
     ledRpm: car.ledRpm,
