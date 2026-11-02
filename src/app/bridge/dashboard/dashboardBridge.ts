@@ -161,7 +161,10 @@ export const dashboardBridge: DashboardBridge = {
     const currentProfileId = getCurrentProfileId();
     const dashboard = getDashboard(currentProfileId);
     if (!dashboard) return dashboard;
-    return mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
+    return mergeDriverTagsIntoLayout(
+      withDashboardDefaults(dashboard),
+      getDriverTagSettings()
+    );
   },
   getDashboardForProfile: async (profileId: string) => {
     // Check if profile exists first

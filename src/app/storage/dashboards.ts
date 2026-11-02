@@ -371,6 +371,16 @@ export const saveDashboard = (
     ...value.generalSettings,
   };
   delete mergedGeneralSettings.settingsTheme;
+  const savedColorPalette: unknown = mergedGeneralSettings.colorPalette;
+  if (
+    savedColorPalette !== undefined &&
+    savedColorPalette !== 'default' &&
+    savedColorPalette !== 'black' &&
+    savedColorPalette !== 'zinc' &&
+    savedColorPalette !== 'stone'
+  ) {
+    mergedGeneralSettings.colorPalette = 'default';
+  }
   const mergedDashboard: DashboardLayout = {
     ...existingDashboard,
     ...value,
