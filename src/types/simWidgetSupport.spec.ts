@@ -9,6 +9,7 @@ import {
   isWidgetDisabledForSim,
   KNOWN_WIDGET_IDS,
   normalizeSimWidgetSupport,
+  isWidgetVisibleInGameFilter,
   normalizeSimWidgetSupportVerbose,
   widgetDisabledMessage,
   widgetIncompatibleLabel,
@@ -106,6 +107,48 @@ describe('per-simulator widget support', () => {
       false
     );
     expect(widgetDisabledMessage(config, 'blindspotmonitor', null)).toBeNull();
+  });
+
+  it('filters the settings list by game without guessing support', () => {
+    const support = normalizeSimWidgetSupport({
+      disabledWidgets: {
+        iracing: ['input'],
+        lmu: ['blindspotmonitor'],
+      },
+    });
+
+    expect(isWidgetVisibleInGameFilter(support, 'standings', 'all')).toBe(true);
+    expect(isWidgetVisibleInGameFilter(support, 'standings', 'iracing')).toBe(
+      true
+    );
+    expect(isWidgetVisibleInGameFilter(support, 'standings', 'lmu')).toBe(true);
+
+    expect(isWidgetVisibleInGameFilter(support, 'input', 'all')).toBe(true);
+    expect(isWidgetVisibleInGameFilter(support, 'input', 'iracing')).toBe(
+      false
+    );
+    expect(isWidgetVisibleInGameFilter(support, 'input', 'lmu')).toBe(true);
+
+    expect(
+      isWidgetVisibleInGameFilter(support, 'blindspotmonitor', 'all')
+    ).toBe(true);
+    expect(
+      isWidgetVisibleInGameFilter(support, 'blindspotmonitor', 'iracing')
+    ).toBe(true);
+    expect(
+      isWidgetVisibleInGameFilter(support, 'blindspotmonitor', 'lmu')
+    ).toBe(false);
+
+    expect(isWidgetVisibleInGameFilter(support, 'not-listed', 'all')).toBe(
+      true
+    );
+    expect(isWidgetVisibleInGameFilter(support, 'not-listed', 'iracing')).toBe(
+      true
+    );
+    expect(isWidgetVisibleInGameFilter(support, 'not-listed', 'lmu')).toBe(
+      true
+    );
+    expect(isWidgetVisibleInGameFilter(support, undefined, 'lmu')).toBe(true);
   });
 
   it('gives a message only for a widget that is actually disabled', () => {

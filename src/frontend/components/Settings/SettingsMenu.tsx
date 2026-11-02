@@ -6,7 +6,14 @@ import {
   useDashboard,
   useSimWidgetSupport,
 } from '@irdashies/context';
-import { widgetDisabledMessage, type MenuLayout } from '@irdashies/types';
+import {
+  SIMULATOR_IDS,
+  SIMULATOR_LABELS,
+  isWidgetVisibleInGameFilter,
+  widgetDisabledMessage,
+  type MenuLayout,
+  type WidgetGameFilter,
+} from '@irdashies/types';
 import {
   generalItems,
   widgetItems,
@@ -23,6 +30,17 @@ import {
   removeGroup,
   toggleCollapsed,
 } from './menuGroups';
+
+const GAME_FILTERS: { value: WidgetGameFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  ...SIMULATOR_IDS.map((id) => ({ value: id, label: SIMULATOR_LABELS[id] })),
+];
+
+const FILTER_PANEL_CLASS: Record<WidgetGameFilter, string> = {
+  all: 'bg-slate-700/60 border-slate-500/40',
+  iracing: 'bg-[#1e3a8a]/30 border-[#3b82f6]/40',
+  lmu: 'bg-orange-900/30 border-orange-500/40',
+};
 
 const MenuLink = ({
   item,
@@ -108,6 +126,7 @@ export const SettingsMenu = () => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const simulator = useActiveSimulator();
   const supportConfig = useSimWidgetSupport();
+  const [gameFilter, setGameFilter] = useState<WidgetGameFilter>('all');
   const [showHidden, setShowHidden] = useState(false);
   const [dragging, setDragging] = useState<string>();
   const [addingGroup, setAddingGroup] = useState(false);
@@ -162,7 +181,17 @@ export const SettingsMenu = () => {
   // Widgets the running sim cannot support are left out unless asked for.
   const supportedItems = menuItems.filter((item) => !unsupported(item));
   const hiddenCount = menuItems.length - supportedItems.length;
-  const visibleItems = showHidden ? menuItems : supportedItems;
+  const runningSimItems = showHidden ? menuItems : supportedItems;
+  const visibleItems =
+    gameFilter === 'all'
+      ? runningSimItems
+      : menuItems.filter((item) =>
+          isWidgetVisibleInGameFilter(
+            supportConfig,
+            item.widgetType,
+            gameFilter
+          )
+        );
   const enabledCount = supportedItems.filter(isItemEnabled).length;
 
   const builtInIds = WIDGET_CATEGORIES.map((c) => c.id);
@@ -198,11 +227,36 @@ export const SettingsMenu = () => {
         ))}
       </ul>
 
+      <div
+        className={`mt-2 rounded border p-2 ${FILTER_PANEL_CLASS[gameFilter]}`}
+      >
+        <label
+          htmlFor="widget-game-filter"
+          className="mb-1 block text-xs font-medium text-slate-200"
+        >
+          Show widgets for
+        </label>
+        <select
+          id="widget-game-filter"
+          value={gameFilter}
+          onChange={(event) =>
+            setGameFilter(event.target.value as WidgetGameFilter)
+          }
+          className="w-full bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded text-sm"
+        >
+          {GAME_FILTERS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="flex items-center gap-1 px-2 pt-2 pb-1">
         <p className="text-xs font-semibold text-slate-400 settings-heading tracking-widest">
           Widgets
         </p>
-        {hiddenCount > 0 && (
+        {gameFilter === 'all' && hiddenCount > 0 && (
           <button
             type="button"
             onClick={() => setShowHidden((v) => !v)}
@@ -300,6 +354,11 @@ export const SettingsMenu = () => {
           </section>
         );
       })}
+      {visibleItems.length === 0 && (
+        <p className="px-2 py-1 text-xs text-slate-500">
+          No widgets match this filter.
+        </p>
+      )}
       <div className="px-2 pt-2">
         {!addingGroup ? (
           <button

@@ -8,6 +8,7 @@ import { LapTimeLogDisplay } from './LapTimeLog';
 import { LapTimeRow } from './components/LapTimeRow';
 import type { LapTimeLogConfig } from '@irdashies/types';
 import { formatTime, formatDelta } from '@irdashies/utils/time';
+import { getDemoLapTimeLogData } from './demoData';
 
 // Mock settings for tests
 const mockSettings = (
@@ -27,6 +28,7 @@ const mockSettings = (
     delta: {
       enabled: true,
       method: 'bestlap',
+      showOnCurrentLap: false,
     },
     history: {
       enabled: true,
@@ -50,6 +52,20 @@ const mockSettings = (
     history: { ...baseConfig.history, ...overrides.history },
   };
 };
+
+describe('getDemoLapTimeLogData', () => {
+  it('ticks the current lap with elapsed time', () => {
+    expect(getDemoLapTimeLogData(12.5).current).toBeCloseTo(12.5);
+    expect(getDemoLapTimeLogData(95).current).toBeCloseTo(5);
+  });
+
+  it('swings the live delta across green and red', () => {
+    const early = getDemoLapTimeLogData(1).delta;
+    const later = getDemoLapTimeLogData(4).delta;
+    expect(early).not.toBeCloseTo(later);
+    expect(Math.abs(early)).toBeLessThanOrEqual(0.85);
+  });
+});
 
 describe('LapTimeLog helpers', () => {
   describe('formatTime', () => {
@@ -162,6 +178,55 @@ describe('LapTimeLogDisplay', () => {
     expect(screen.getByText('LAST LAP')).toBeInTheDocument();
     expect(screen.getByText('SESSION')).toBeInTheDocument();
     expect(screen.getByText('LAP 10')).toBeInTheDocument();
+  });
+
+  it('shows the live delta bar when enabled', () => {
+    const settings = mockSettings({
+      showPredictedLap: false,
+      delta: { enabled: true, method: 'bestlap', showOnCurrentLap: true },
+    });
+    const { container } = render(
+      <LapTimeLogDisplay {...defaultProps} settings={settings} />
+    );
+    const bar = container.querySelector('#live-delta-bar');
+    expect(bar).toBeInTheDocument();
+    expect(bar).toHaveTextContent('-0.20');
+  });
+
+  it('grows red from the right and green from the left on a 1s scale', () => {
+    const settings = mockSettings({
+      showPredictedLap: false,
+      delta: { enabled: true, method: 'bestlap', showOnCurrentLap: true },
+    });
+    const slower = render(
+      <LapTimeLogDisplay {...defaultProps} settings={settings} delta={0.5} />
+    );
+    const slowFill = slower.container.querySelector('#live-delta-bar div');
+    expect(slower.container.querySelector('#live-delta-bar')).toHaveTextContent(
+      '+0.50'
+    );
+    expect(slowFill).toHaveStyle({ left: '50%', width: '50%' });
+    slower.unmount();
+
+    const faster = render(
+      <LapTimeLogDisplay {...defaultProps} settings={settings} delta={-0.25} />
+    );
+    const fastFill = faster.container.querySelector('#live-delta-bar div');
+    expect(faster.container.querySelector('#live-delta-bar')).toHaveTextContent(
+      '-0.25'
+    );
+    expect(fastFill).toHaveStyle({ left: '0%', width: '25%' });
+  });
+
+  it('hides the live delta bar when the option is off', () => {
+    const settings = mockSettings({
+      showPredictedLap: false,
+      delta: { enabled: true, method: 'bestlap', showOnCurrentLap: false },
+    });
+    const { container } = render(
+      <LapTimeLogDisplay {...defaultProps} settings={settings} />
+    );
+    expect(container.querySelector('#live-delta-bar')).not.toBeInTheDocument();
   });
 
   it('hides sections based on settings', () => {

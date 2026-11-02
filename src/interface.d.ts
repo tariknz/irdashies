@@ -11,6 +11,7 @@ import type {
   LapHistoryBridge,
   TelemetryInspectorBridge,
   RendererPerfBridge,
+  TrackNotesBridge,
 } from '@irdashies/types';
 import type { ChannelBridge } from '@irdashies/types';
 
@@ -33,6 +34,7 @@ declare global {
     /** Absent outside the Electron preload, e.g. the browser server. */
     lapHistoryBridge?: LapHistoryBridge;
     rendererPerfBridge?: RendererPerfBridge;
+    trackNotesBridge?: TrackNotesBridge;
     tapeReplayBridge?: import('./types/tapeReplay').TapeReplayBridge;
   }
 }

@@ -117,6 +117,17 @@ const WIDGET_MENU_META: Partial<
   streamchat: { category: 'extras' },
   weather: { category: 'track' },
   wind: { category: 'track' },
+  accelerationtimer: { category: 'car' },
+  brakepressure: { category: 'car' },
+  cruiseodometer: { category: 'car' },
+  damage: { category: 'car' },
+  frictioncircle: { category: 'car' },
+  steeringmeter: { category: 'car' },
+  stinthistory: { category: 'race' },
+  suspensionposition: { category: 'car' },
+  trackclock: { category: 'track' },
+  tracknotes: { category: 'track' },
+  tyrepanel: { category: 'car' },
 };
 
 export const widgetItems: MenuItem[] = WIDGET_MANIFESTS.map(
