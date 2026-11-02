@@ -70,6 +70,8 @@ export const HIGHLIGHT_COLOR_PRESETS = new Map([
 const COLOR_THEME_PRESETS: Record<string, string> = {
   default: 'Slate (default)',
   black: 'Black',
+  zinc: 'Zinc',
+  stone: 'Stone',
 };
 
 interface GeneralSettingsProps {
@@ -497,7 +499,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
           {/* Color Theme Dropdown */}
           <div className="mt-4">
             <select
-              value={settings.colorPalette === 'black' ? 'black' : 'default'}
+              value={settings.colorPalette ?? 'default'}
               onChange={(e) =>
                 handleColorThemeChange(
                   e.target.value as GeneralSettingsType['colorPalette']

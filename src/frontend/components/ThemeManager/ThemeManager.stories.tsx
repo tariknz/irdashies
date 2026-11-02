@@ -186,6 +186,8 @@ const FONT_WEIGHTS: NonNullable<GeneralSettingsType['fontWeight']>[] = [
 const COLOR_PALETTES: NonNullable<GeneralSettingsType['colorPalette']>[] = [
   'default',
   'black',
+  'zinc',
+  'stone',
 ];
 
 const createThemeControls = (

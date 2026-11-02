@@ -171,12 +171,8 @@ export const dashboardBridge: DashboardBridge = {
       return null;
     }
 
-    let dashboard = getDashboard(profileId);
-
-    // If dashboard doesn't exist for this profile, create a default one
-    if (!dashboard) {
-      dashboard = getOrCreateDefaultDashboardForProfile(profileId);
-    }
+    // Normalize and persist stored dashboards; create a default if missing.
+    const dashboard = getOrCreateDefaultDashboardForProfile(profileId);
 
     return mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
   },

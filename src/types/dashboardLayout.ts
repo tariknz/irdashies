@@ -108,7 +108,7 @@ export interface GeneralSettingsType {
   fontSize?: FontSize;
   fontWeight?:
     'light' | 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold';
-  colorPalette?: 'default' | 'black';
+  colorPalette?: 'default' | 'black' | 'zinc' | 'stone';
   showOnlyWhenOnTrack?: boolean;
   highlightColor?: number;
   skipTaskbar?: boolean;

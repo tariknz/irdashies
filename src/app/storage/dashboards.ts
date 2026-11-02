@@ -227,7 +227,9 @@ export const withDashboardDefaults = (
   if (
     savedColorPalette !== undefined &&
     savedColorPalette !== 'default' &&
-    savedColorPalette !== 'black'
+    savedColorPalette !== 'black' &&
+    savedColorPalette !== 'zinc' &&
+    savedColorPalette !== 'stone'
   ) {
     generalSettings.colorPalette = 'default';
   }
