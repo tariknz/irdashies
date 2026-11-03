@@ -49,9 +49,10 @@ jobs:
           persist-credentials: false
 
       - name: Setup Node.js
+        id: setup-node
         uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version: '26'
           cache: 'npm'
 
       - name: Cache node_modules and native builds
@@ -67,10 +68,10 @@ jobs:
           # Every simulator's native sources, not only iRacing's: binding.gyp
           # also builds src/app/lmu/native, and a key blind to it restored
           # build/Release from main and tested a stale lmu_replay.exe.
-          key: ${{ runner.os }}-node-v2-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/binding.gyp', 'src/app/*/native/**/*.c', 'src/app/*/native/**/*.cc', 'src/app/*/native/**/*.cpp', 'src/app/*/native/**/*.h', 'src/app/*/native/**/*.hpp') }}
+          key: ${{ runner.os }}-node-${{ steps.setup-node.outputs.node-version }}-v2-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/binding.gyp', 'src/app/*/native/**/*.c', 'src/app/*/native/**/*.cc', 'src/app/*/native/**/*.cpp', 'src/app/*/native/**/*.h', 'src/app/*/native/**/*.hpp') }}
           restore-keys: |
-            ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-
-            ${{ runner.os }}-node-
+            ${{ runner.os }}-node-${{ steps.setup-node.outputs.node-version }}-v2-${{ hashFiles('**/package-lock.json') }}-
+            ${{ runner.os }}-node-${{ steps.setup-node.outputs.node-version }}-v2-
 
       - name: Install dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'
@@ -171,7 +172,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version: '26'
           cache: 'npm'
 
       - name: Install dependencies

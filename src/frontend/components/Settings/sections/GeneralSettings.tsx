@@ -2,13 +2,8 @@ import { useState } from 'react';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useAvailableSimulators, useDashboard } from '@irdashies/context';
 import { SIMULATOR_IDS, SIMULATOR_LABELS } from '@irdashies/types';
-import {
-  DEFAULT_SETTINGS_THEME,
-  type GeneralSettingsType,
-  type SettingsTheme,
-} from '@irdashies/types';
+import type { GeneralSettingsType } from '@irdashies/types';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 
 const FONT_PRESETS = {
   lato: 'Lato',
@@ -75,12 +70,8 @@ export const HIGHLIGHT_COLOR_PRESETS = new Map([
 const COLOR_THEME_PRESETS: Record<string, string> = {
   default: 'Slate (default)',
   black: 'Black',
-  ...Object.fromEntries(
-    Array.from(HIGHLIGHT_COLOR_PRESETS.values()).map((name) => [
-      name.toLowerCase(),
-      name,
-    ])
-  ),
+  zinc: 'Zinc',
+  stone: 'Stone',
 };
 
 interface GeneralSettingsProps {
@@ -95,9 +86,6 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
     fontSize: currentDashboard?.generalSettings?.fontSize ?? 'sm',
     fontWeight: currentDashboard?.generalSettings?.fontWeight ?? 'normal',
     colorPalette: currentDashboard?.generalSettings?.colorPalette ?? 'default',
-    settingsTheme:
-      currentDashboard?.generalSettings?.settingsTheme ??
-      DEFAULT_SETTINGS_THEME,
     highlightColor: currentDashboard?.generalSettings?.highlightColor ?? 960745,
     skipTaskbar: currentDashboard?.generalSettings?.skipTaskbar ?? true,
     disableHardwareAcceleration:
@@ -132,7 +120,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
   const updateDashboard = (newSettings: GeneralSettingsType) => {
     const updatedDashboard = {
       ...currentDashboard,
-      generalSettings: newSettings,
+      generalSettings: { ...currentDashboard.generalSettings, ...newSettings },
     };
     onDashboardUpdated(updatedDashboard);
   };
@@ -237,12 +225,6 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
     newTheme: GeneralSettingsType['colorPalette']
   ) => {
     const newSettings = { ...settings, colorPalette: newTheme };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
-  };
-
-  const handleSettingsThemeChange = (newTheme: SettingsTheme) => {
-    const newSettings = { ...settings, settingsTheme: newTheme };
     setSettings(newSettings);
     updateDashboard(newSettings);
   };
@@ -516,18 +498,6 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
           </div>
         </BaseSettingsSection>
 
-        <SettingButtonGroupRow<SettingsTheme>
-          title="Settings Window Style"
-          description="Look of this settings window. Overlays are not affected."
-          value={settings.settingsTheme ?? DEFAULT_SETTINGS_THEME}
-          options={[
-            { label: 'Classic', value: 'classic' },
-            { label: 'Carbon', value: 'carbon' },
-            { label: 'Red', value: 'red' },
-          ]}
-          onChange={handleSettingsThemeChange}
-        />
-
         {/* Color Theme Settings */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -536,14 +506,6 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
               <span className="text-sm text-slate-300">
                 {COLOR_THEME_PRESETS[settings.colorPalette ?? 'default']}
               </span>
-              {settings.colorPalette &&
-                settings.colorPalette !== 'default' &&
-                settings.colorPalette !== 'black' && (
-                  <span
-                    className={`bg-${settings.colorPalette}-800 rounded border-2 border-${settings.colorPalette}-500`}
-                    style={{ width: '20px', height: '20px' }}
-                  ></span>
-                )}
             </div>
           </div>
 

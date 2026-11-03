@@ -1004,6 +1004,49 @@ describe('dashboards', () => {
         fontSize: 'sm',
       });
     });
+    it('removes legacy settingsTheme and persists palette normalization idempotently', () => {
+      const dashboard = {
+        ...defaultDashboard,
+        generalSettings: {
+          ...defaultDashboard.generalSettings,
+          settingsTheme: 'legacy',
+          colorPalette: 'legacy-palette',
+        },
+      } as unknown as DashboardLayout;
+      mockReadData.mockImplementation((key: string) => {
+        if (key === 'currentProfile') return 'default';
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
+        if (key === 'dashboards') return { default: dashboard };
+        return null;
+      });
+
+      getOrCreateDefaultDashboard();
+
+      const firstWrite = mockWriteData.mock.calls.find(
+        ([key]) => key === 'dashboards'
+      )?.[1] as Record<string, DashboardLayout>;
+      expect(firstWrite.default.generalSettings).not.toHaveProperty(
+        'settingsTheme'
+      );
+      expect(firstWrite.default.generalSettings?.colorPalette).toBe('default');
+
+      mockReadData.mockImplementation((key: string) => {
+        if (key === 'currentProfile') return 'default';
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
+        if (key === 'dashboards') return firstWrite;
+        return null;
+      });
+      mockWriteData.mockReset();
+
+      getOrCreateDefaultDashboard();
+
+      expect(mockWriteData).not.toHaveBeenCalled();
+      expect(getDashboard('default')?.generalSettings?.colorPalette).toBe(
+        'default'
+      );
+    });
   });
 
   describe('defaultDashboard widgets', () => {

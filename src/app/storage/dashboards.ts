@@ -220,12 +220,28 @@ export const withDashboardDefaults = (
       !storedWidgets.find((widget) => widget.id === defaultWidget.id)
   );
 
+  const savedColorPalette: unknown =
+    dashboard.generalSettings?.colorPalette;
+  const generalSettings: DashboardLayout['generalSettings'] & {
+    settingsTheme?: unknown;
+  } = {
+    ...defaultDashboard.generalSettings,
+    ...dashboard.generalSettings,
+  };
+  delete generalSettings.settingsTheme;
+  if (
+    savedColorPalette !== undefined &&
+    savedColorPalette !== 'default' &&
+    savedColorPalette !== 'black' &&
+    savedColorPalette !== 'zinc' &&
+    savedColorPalette !== 'stone'
+  ) {
+    generalSettings.colorPalette = 'default';
+  }
+
   return {
     ...dashboard,
-    generalSettings: {
-      ...defaultDashboard.generalSettings,
-      ...dashboard.generalSettings,
-    },
+    generalSettings,
     widgets: [...storedWidgets, ...missingWidgets].map((widget) => {
       // A second instance (id `fuel-2`, type `fuel`) takes its type's defaults.
       const defaultWidget = defaultDashboard.widgets.find(
@@ -349,14 +365,28 @@ export const saveDashboard = (
   const existingDashboard = dashboards[id];
 
   // Merge the existing dashboard with the new value to preserve structure
+  const mergedGeneralSettings: DashboardLayout['generalSettings'] & {
+    settingsTheme?: unknown;
+  } = {
+    ...existingDashboard?.generalSettings,
+    ...value.generalSettings,
+  };
+  delete mergedGeneralSettings.settingsTheme;
+  const savedColorPalette: unknown = mergedGeneralSettings.colorPalette;
+  if (
+    savedColorPalette !== undefined &&
+    savedColorPalette !== 'default' &&
+    savedColorPalette !== 'black' &&
+    savedColorPalette !== 'zinc' &&
+    savedColorPalette !== 'stone'
+  ) {
+    mergedGeneralSettings.colorPalette = 'default';
+  }
   const mergedDashboard: DashboardLayout = {
     ...existingDashboard,
     ...value,
     widgets: value.widgets || existingDashboard?.widgets || [],
-    generalSettings: {
-      ...existingDashboard?.generalSettings,
-      ...value.generalSettings,
-    },
+    generalSettings: mergedGeneralSettings,
   };
   // Only save and emit if there are actual changes
   if (isDashboardChanged(existingDashboard, mergedDashboard)) {
