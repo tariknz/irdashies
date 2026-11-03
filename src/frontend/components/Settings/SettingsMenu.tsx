@@ -133,7 +133,6 @@ export const SettingsMenu = () => {
   const supportedItems = menuItems.filter((item) => !unsupported(item));
   const hiddenCount = menuItems.length - supportedItems.length;
   const visibleItems = showHidden ? menuItems : supportedItems;
-  const enabledCount = supportedItems.filter(isItemEnabled).length;
 
   return (
     <div className="w-1/4 bg-slate-800 p-3 rounded-md border border-slate-600/60 flex flex-col gap-0 overflow-y-auto">
@@ -143,11 +142,8 @@ export const SettingsMenu = () => {
         ))}
       </ul>
 
-      <div className="flex items-center gap-1 px-2 pt-2 pb-1">
-        <p className="text-xs font-semibold text-slate-400 tracking-widest">
-          Widgets
-        </p>
-        {hiddenCount > 0 && (
+      {hiddenCount > 0 && (
+        <div className="px-2 pt-2 pb-1">
           <button
             type="button"
             onClick={() => setShowHidden((v) => !v)}
@@ -157,11 +153,9 @@ export const SettingsMenu = () => {
               ? `(showing ${hiddenCount} hidden)`
               : `(${hiddenCount} hidden)`}
           </button>
-        )}
-        <span className="flex-1 mx-2 border-t border-dashed border-accent-500/60" />
-        <span className="text-xs text-slate-500">{enabledCount} on</span>
-      </div>
-      <ul className="flex flex-col pb-2">
+        </div>
+      )}
+      <ul className="flex flex-col py-2">
         {visibleItems.map((item) => (
           <MenuLink
             key={item.path}

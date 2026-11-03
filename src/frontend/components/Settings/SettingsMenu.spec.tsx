@@ -135,7 +135,6 @@ describe('SettingsMenu', () => {
       screen.queryByRole('button', { name: '+ New group' })
     ).not.toBeInTheDocument();
     expect(screen.getByText('(1 hidden)')).toBeInTheDocument();
-    expect(screen.getByText('1 on')).toBeInTheDocument();
     expect(
       screen.queryByRole('link', { name: /Wind/ })
     ).not.toBeInTheDocument();
@@ -194,7 +193,6 @@ describe('SettingsMenu', () => {
     state.simulator = null;
     renderMenu();
     expect(screen.getByRole('link', { name: /Wind/ })).toBeInTheDocument();
-    expect(screen.getByText('0 on')).toBeInTheDocument();
     expect(screen.queryByRole('switch')).not.toBeInTheDocument();
   });
 
