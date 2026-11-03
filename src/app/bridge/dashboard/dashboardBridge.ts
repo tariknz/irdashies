@@ -133,10 +133,12 @@ export const dashboardBridge: DashboardBridge = {
   ) => {
     const targetProfileId = options?.profileId || getCurrentProfileId();
     saveDashboard(targetProfileId, dashboard);
+    const savedDashboard =
+      getDashboard(targetProfileId) ?? withDashboardDefaults(dashboard);
     if (dashboardUpdateCallbacks.size > 0) {
       dashboardUpdateCallbacks.forEach((callback) => {
         try {
-          callback(dashboard, targetProfileId);
+          callback(savedDashboard, targetProfileId);
         } catch (err) {
           logger.error('Error in dashboard update callback:', err);
         }

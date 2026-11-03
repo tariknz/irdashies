@@ -53,7 +53,7 @@ vi.mock('../../logger', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
-import { publishDashboardUpdates } from './dashboardBridge';
+import { dashboardBridge, publishDashboardUpdates } from './dashboardBridge';
 import { emitDashboardUpdated } from '../../storage/dashboardEvents';
 
 const exportedDashboard: DashboardLayout = {
@@ -87,6 +87,34 @@ beforeAll(async () => {
     } as unknown as OverlayManager,
     {} as Analytics
   );
+});
+
+describe('dashboard save callbacks', () => {
+  it('broadcasts the normalized dashboard persisted by storage', () => {
+    mocks.writeData.mockImplementation((key, value) => {
+      if (key === 'dashboards') {
+        mocks.dashboards = value as Record<string, DashboardLayout>;
+      }
+    });
+    const callback = vi.fn();
+    const unsubscribe = dashboardBridge.dashboardUpdated(callback);
+
+    dashboardBridge.saveDashboard(
+      {
+        widgets: [],
+        generalSettings: { colorPalette: 'legacy' as never },
+      },
+      { profileId: 'race' }
+    );
+
+    expect(callback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        generalSettings: expect.objectContaining({ colorPalette: 'default' }),
+      }),
+      'race'
+    );
+    unsubscribe?.();
+  });
 });
 
 describe('dashboard renderer initialization', () => {
