@@ -76,7 +76,7 @@ const formatTime = (seconds: number) => {
   return `${minutes}:${(seconds % 60).toFixed(1).padStart(4, '0')}`;
 };
 
-const valueText = (value: number | undefined, digits = 1) =>
+const valueText = (value: number | null | undefined, digits = 1) =>
   Number.isFinite(value) ? (value as number).toFixed(digits) : '—';
 
 export function TrackNotes() {
@@ -261,7 +261,7 @@ function FourCorners({
   transform = (value) => value,
   suffix,
 }: {
-  values?: readonly number[];
+  values?: readonly (number | null)[];
   transform?: (value: number) => number;
   suffix: string;
 }) {
@@ -285,10 +285,18 @@ export function TyrePanel() {
   const config = useSettings('tyrepanel') as TyrePanelConfig | undefined;
   const controls = useDriverControlsSnapshot();
   const temp = controls?.tyreTemperature?.map((value) =>
-    config?.temperatureUnit === 'F' ? (value * 9) / 5 + 32 : value
+    value == null
+      ? null
+      : config?.temperatureUnit === 'F'
+        ? (value * 9) / 5 + 32
+        : value
   );
   const pressure = controls?.tyrePressure?.map((value) =>
-    config?.pressureUnit === 'psi' ? value * 0.1450377 : value
+    value == null
+      ? null
+      : config?.pressureUnit === 'psi'
+        ? value * 0.1450377
+        : value
   );
   return (
     <MetricFrame config={config} title="Tyres">
@@ -303,7 +311,7 @@ export function TyrePanel() {
               {valueText(pressure?.[index])} {config?.pressureUnit ?? 'kPa'}
             </div>
             <div>
-              {Number.isFinite(controls?.tyreWear?.[index])
+              {Number.isFinite(controls?.tyreWear?.[index] ?? NaN)
                 ? `${((controls?.tyreWear?.[index] as number) * 100).toFixed(0)}%`
                 : '—'}
             </div>

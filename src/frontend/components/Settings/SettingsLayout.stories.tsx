@@ -10,12 +10,9 @@ import type {
 import { releaseNotesFixture } from '@irdashies/types';
 import { SettingsLayout } from './SettingsLayout';
 import { mockDashboardBridge } from '@irdashies/storybook';
-import { themeClasses } from './settingsThemeClasses';
-import type { SettingsTheme } from '@irdashies/types';
 
 interface StoryProps {
   initialPath: string;
-  theme?: SettingsTheme;
 }
 
 // The header selects the simulator and profile itself. This bridge only
@@ -34,8 +31,7 @@ const meta: Meta<typeof SettingsLayout> = {
   title: 'components/SettingsLayout',
   decorators: [
     (Story, context) => {
-      const { initialPath = 'standings', theme = 'classic' } =
-        context.args as StoryProps;
+      const { initialPath = 'standings' } = context.args as StoryProps;
       return (
         <DashboardProvider bridge={mockDashboardBridge}>
           <RunningStateProvider bridge={runningBridge}>
@@ -44,10 +40,7 @@ const meta: Meta<typeof SettingsLayout> = {
                 <Route
                   path="/settings/*"
                   element={
-                    <div
-                      style={{ height: '100vh' }}
-                      className={themeClasses(theme).join(' ')}
-                    >
+                    <div style={{ height: '100vh' }}>
                       <Story />
                     </div>
                   }
@@ -73,27 +66,6 @@ export const Default: Story = {
 
 export const GeneralSettings: Story = {
   args: { initialPath: '/settings/general' },
-};
-
-export const ClassicTheme: Story = {
-  args: {
-    initialPath: '/settings/fuel',
-    theme: 'classic',
-  } as StoryProps,
-};
-
-export const CarbonTheme: Story = {
-  args: {
-    initialPath: '/settings/fuel',
-    theme: 'carbon',
-  } as StoryProps,
-};
-
-export const RedTheme: Story = {
-  args: {
-    initialPath: '/settings/fuel',
-    theme: 'red',
-  } as StoryProps,
 };
 
 // Add more stories for different routes

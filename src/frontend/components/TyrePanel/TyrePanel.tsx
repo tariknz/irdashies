@@ -32,13 +32,13 @@ const wearStyles: Record<WearCondition, string> = {
 
 interface TyrePanelViewProps {
   config: TyrePanelConfig;
-  temperature?: readonly number[];
-  pressure?: readonly number[];
-  wear?: readonly number[];
+  temperature?: readonly (number | null)[];
+  pressure?: readonly (number | null)[];
+  wear?: readonly (number | null)[];
   isLive: boolean;
 }
 
-const displayValue = (value: number | undefined, digits: number) =>
+const displayValue = (value: number | null | undefined, digits: number) =>
   isAvailable(value) ? value.toFixed(digits) : '—';
 
 export function TyrePanelView({

@@ -33,7 +33,9 @@ export const useDamage = (): DamageSnapshot => {
       ? [...wheelDetached]
       : [false, false, false, false],
     suspensionDamage: suspensionDamage.length ? [...suspensionDamage] : [],
-    tyreWear: tyreWear?.length ? [...tyreWear] : [],
+    tyreWear: tyreWear?.length
+      ? tyreWear.map((value) => value ?? Number.NaN)
+      : [],
     aeroDamage,
     repairTime,
     optRepairTime:

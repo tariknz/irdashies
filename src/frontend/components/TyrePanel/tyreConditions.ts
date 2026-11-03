@@ -1,11 +1,12 @@
 export type TemperatureCondition = 'cold' | 'optimal' | 'hot' | 'unavailable';
 export type WearCondition = 'healthy' | 'worn' | 'replace' | 'unavailable';
 
-export const isAvailable = (value: number | undefined): value is number =>
-  Number.isFinite(value) && (value as number) >= 0;
+export const isAvailable = (
+  value: number | null | undefined
+): value is number => Number.isFinite(value) && (value as number) >= 0;
 
 export function getTemperatureCondition(
-  temperature: number | undefined,
+  temperature: number | null | undefined,
   coldThreshold: number,
   hotThreshold: number
 ): TemperatureCondition {
@@ -16,7 +17,7 @@ export function getTemperatureCondition(
 }
 
 export function getWearCondition(
-  remainingFraction: number | undefined,
+  remainingFraction: number | null | undefined,
   wornThreshold: number,
   replaceThreshold: number
 ): WearCondition {

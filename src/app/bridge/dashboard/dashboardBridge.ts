@@ -180,10 +180,12 @@ export const dashboardBridge: DashboardBridge = {
   ) => {
     const targetProfileId = options?.profileId || getCurrentProfileId();
     saveDashboard(targetProfileId, dashboard);
+    const savedDashboard =
+      getDashboard(targetProfileId) ?? withDashboardDefaults(dashboard);
     if (dashboardUpdateCallbacks.size > 0) {
       dashboardUpdateCallbacks.forEach((callback) => {
         try {
-          callback(dashboard, targetProfileId);
+          callback(savedDashboard, targetProfileId);
         } catch (err) {
           logger.error('Error in dashboard update callback:', err);
         }
@@ -208,7 +210,10 @@ export const dashboardBridge: DashboardBridge = {
     const currentProfileId = getCurrentProfileId();
     const dashboard = getDashboard(currentProfileId);
     if (!dashboard) return dashboard;
-    return mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
+    return mergeDriverTagsIntoLayout(
+      withDashboardDefaults(dashboard),
+      getDriverTagSettings()
+    );
   },
   getDashboardForProfile: async (profileId: string) => {
     // Check if profile exists first
@@ -218,12 +223,8 @@ export const dashboardBridge: DashboardBridge = {
       return null;
     }
 
-    let dashboard = getDashboard(profileId);
-
-    // If dashboard doesn't exist for this profile, create a default one
-    if (!dashboard) {
-      dashboard = getOrCreateDefaultDashboardForProfile(profileId);
-    }
+    // Normalize and persist stored dashboards; create a default if missing.
+    const dashboard = getOrCreateDefaultDashboardForProfile(profileId);
 
     return mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
   },
@@ -328,14 +329,6 @@ export async function publishDashboardUpdates(
     const merged = dashboardTransform(
       mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings())
     );
-    // Cosmetic: a failed recolour must not block the dashboard update.
-    try {
-      overlayManager.setSettingsTitleBarTheme(
-        merged.generalSettings?.settingsTheme
-      );
-    } catch (err) {
-      logger.error('Error recolouring the settings title bar:', err);
-    }
     const profileId = getCurrentProfileId();
 
     if (profileId === lastProfileId) {
