@@ -36,6 +36,7 @@ export interface Standings {
     carNum: string;
     license: string;
     rating: number;
+    isAi?: boolean;
     flairId?: number;
     /** Set only when the running sim is LMU; see Driver.LmuRating. */
     lmuRating?: LmuDriverRating;
@@ -344,6 +345,7 @@ export const createDriverStandings = (
           carNum: driver.CarNumber,
           license: driver.LicString,
           rating: driver.IRating,
+          isAi: driver.CarIsAIControlled,
           flairId: driver.FlairID,
           lmuRating: driver.LmuRating,
           teamName: driver.TeamName,
@@ -466,6 +468,7 @@ export const createDriverStandings = (
           carNum: driver.CarNumber,
           license: driver.LicString,
           rating: driver.IRating,
+          isAi: driver.CarIsAIControlled,
           flairId: driver.FlairID,
           lmuRating: driver.LmuRating,
           teamName: driver.TeamName,

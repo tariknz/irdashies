@@ -1,4 +1,10 @@
-import type { ActiveSimulator } from './simulators';
+import type {
+  ActiveSimulator,
+  GameDetectionStatus,
+  GameProfileAssignments,
+  GameProfileDefaults,
+  SimulatorPreference,
+} from './simulators';
 import type { SimWidgetSupportConfig } from './simWidgetSupport';
 import type {
   DashboardLayout,
@@ -66,6 +72,12 @@ export interface DashboardBridge {
   getIsDemoMode?: () => Promise<boolean>;
   /** Rebuilds the telemetry bridge after generalSettings.simulator changes. */
   notifySimulatorPreferenceChanged?: () => void;
+  /** App simulator preference. Not stored on a profile. */
+  getSimulatorPreference?: () => Promise<SimulatorPreference>;
+  setSimulatorPreference?: (preference: SimulatorPreference) => Promise<void>;
+  onSimulatorPreference?: (
+    callback: (preference: SimulatorPreference) => void
+  ) => (() => void) | undefined;
   /** The running simulator, or null while auto-detection is still probing. */
   getActiveSimulator?: () => Promise<ActiveSimulator | null>;
   /** The simulators whose telemetry source is present in this build. */
@@ -88,6 +100,35 @@ export interface DashboardBridge {
   setShowProfileBanner?: (enabled: boolean) => Promise<void>;
   getSessionProfileMap?: () => Promise<SessionProfileMap>;
   setSessionProfileMap?: (map: SessionProfileMap) => Promise<void>;
+  /**
+   * When on, a running iRacing or Le Mans Ultimate process selects that
+   * game's widget profile. Defaults to on. Off leaves profile switches manual.
+   */
+  getAutodetectGameProfiles?: () => Promise<boolean>;
+  setAutodetectGameProfiles?: (enabled: boolean) => Promise<void>;
+  /**
+   * Profile each game loads when it starts. A missing key, or one that is
+   * not assigned to that game, uses the default profile.
+   */
+  getGameProfileDefaults?: () => Promise<GameProfileDefaults>;
+  setGameProfileDefaults?: (map: GameProfileDefaults) => Promise<void>;
+  onGameProfileDefaults?: (
+    callback: (map: GameProfileDefaults) => void
+  ) => (() => void) | undefined;
+  /**
+   * Games each profile is cycled with while that game is running. The
+   * default profile is assigned to every game even with no entry here. A
+   * built-in profile is assigned to its own game even with no entry here.
+   */
+  getGameProfileAssignments?: () => Promise<GameProfileAssignments>;
+  setGameProfileAssignments?: (map: GameProfileAssignments) => Promise<void>;
+  onGameProfileAssignments?: (
+    callback: (map: GameProfileAssignments) => void
+  ) => (() => void) | undefined;
+  getGameDetectionStatus?: () => Promise<GameDetectionStatus>;
+  onGameDetectionStatus?: (
+    callback: (status: GameDetectionStatus) => void
+  ) => (() => void) | undefined;
   listProfiles: () => Promise<DashboardProfile[]>;
   createProfile: (name: string) => Promise<DashboardProfile>;
   cloneProfile: (profileId: string) => Promise<DashboardProfile>;

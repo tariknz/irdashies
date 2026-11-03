@@ -28,70 +28,75 @@ export interface SimWidgetSupportConfig {
 }
 
 /**
- * The widgets verified to work under Le Mans Ultimate.
+ * The widgets that work under Le Mans Ultimate.
  *
- * LMU's data comes from a shared-memory block and a local REST API that carry
- * a fraction of what iRacing publishes, so support is per widget and has to be
- * established one at a time. This is the list that has been, and it is the
- * reason for the one below rather than a second opinion about it: a spec
- * asserts the two are exact complements over WIDGET_MAP, so a widget added to
- * the app cannot quietly appear under LMU without someone deciding which list
- * it belongs in.
+ * LMU's shared memory and REST API are mapped onto the same channels iRacing
+ * publishes, with the gaps TinyPedal fills the same way: relative positions
+ * from world coordinates, grip from mTrackGripLevel.
+ * A spec asserts this list and the one below are exact complements over
+ * WIDGET_MAP, so a widget added to the app cannot quietly appear under LMU
+ * without someone deciding which list it belongs in.
  */
 export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
+  'accelerationtimer',
   'battle',
-  'cornername',
-  'deltaspeed',
-  'flag',
-  'garagecover',
-  'infobar',
-  'input',
-  'laptimelog',
-  'laptrace',
-  'pitlanehelper',
-  'relative',
-  // Timed over nominal thirds of the lap, not LMU's own sector lines: LMU
-  // publishes no boundary distances (see SplitTimeInfo in mapSession.ts).
-  'sectordelta',
-  // Shift point from shiftPoints.ts for GT3 and LMP2, else 95% of the rev
-  // limit. LMU publishes no shift point of its own.
-  'shiftlight',
-  'standings',
-  // Not a sim-specific widget: it reports whatever channels the running sim
-  // publishes, which is how LMU's own mapping gets checked. It is also the
-  // one widget absent from the settings menu, so there would be no toggle to
-  // grey out if it were listed as unsupported.
-  'telemetryinspector',
-  // Without its wind cell, which the widget drops under LMU.
-  'weather',
-];
-
-/** Everything else, hidden while LMU is the running sim. */
-export const LMU_DISABLED_WIDGETS: readonly string[] = [
   'blindspotmonitor',
-  // Broadcast reads iRacing's standings, timing and race control; not yet
-  // checked against LMU's data.
+  'brakepressure',
   'broadcast',
   'broadcastevents',
   'broadcastpodium',
   'broadcastticker',
   'broadcastweather',
   'carsystems',
+  'cornername',
+  'cruiseodometer',
+  'damage',
+  'deltaspeed',
   'fastercarsfrombehind',
+  'flag',
   'flatmap',
+  'frictioncircle',
   'fuel',
   'gantry',
+  'garagecover',
   'heartrate',
+  'infobar',
+  'input',
+  'laptimelog',
+  'laptrace',
   'map',
+  'pitlanehelper',
   'radar',
   'rejoin',
+  'relative',
+  'sectordelta',
+  'shiftlight',
   'slowcarahead',
-  'tachometer',
+  'standings',
+  'steeringmeter',
+  'stinthistory',
   'streamchat',
+  'suspensionposition',
+  'tachometer',
+  // Not a sim-specific widget: it reports whatever channels the running sim
+  // publishes, which is how LMU's own mapping gets checked. It is also the
+  // one widget absent from the settings menu, so there would be no toggle to
+  // grey out if it were listed as unsupported.
+  'telemetryinspector',
+  'trackclock',
+  'tracknotes',
+  'tyrepanel',
+  'weather',
+];
+
+/**
+ * Hidden while LMU is the running sim. A widget that cannot be fed from LMU
+ * goes here, not into the supported list.
+ */
+export const LMU_DISABLED_WIDGETS: readonly string[] = [
   // LMU simulates no wind: its wind vector is always zero.
   'wind',
 ];
-
 /**
  * Seeds the JSON on first run, and the fallback if it cannot be read.
  *
@@ -120,7 +125,7 @@ export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
  * it did, which costs a user their hand edits once per change and is why the
  * number is bumped only for a real one.
  */
-export const SIM_WIDGET_SUPPORT_VERSION = 7;
+export const SIM_WIDGET_SUPPORT_VERSION = 10;
 
 /**
  * Whether a widget is unavailable under the running sim.
@@ -145,6 +150,15 @@ export const widgetDisabledMessage = (
   simulator: ActiveSimulator | null | undefined
 ): string | null =>
   isWidgetDisabledForSim(config, widgetId, simulator) ? config.message : null;
+
+export type WidgetGameFilter = 'all' | ActiveSimulator;
+
+export const isWidgetVisibleInGameFilter = (
+  config: SimWidgetSupportConfig,
+  widgetId: string | undefined,
+  filter: WidgetGameFilter
+): boolean =>
+  filter === 'all' || !isWidgetDisabledForSim(config, widgetId, filter);
 
 /** The label under a greyed-out toggle, e.g. "Not iRacing compatible". */
 export const widgetIncompatibleLabel = (

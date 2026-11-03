@@ -47,6 +47,24 @@ describe('BlindSpotProcessor', () => {
     });
   });
 
+  it('publishes LMU metre offsets on the blind-spot channel', () => {
+    const processor = new BlindSpotProcessor();
+    processor.onFrame({
+      ...frame(1, [0.5, 0.51]),
+      LmuBlindSpotLeftLongitudinal: { value: [-8] },
+      LmuBlindSpotRightLongitudinal: { value: [null] },
+    } as unknown as Telemetry);
+
+    expect(processor.snapshot()).toMatchObject({
+      carLeftRight: 1,
+      // Metre offsets replace the lap-fraction search, so positions stay empty.
+      carIdxLapDistPct: [],
+      leftLongitudinalM: -8,
+      rightLongitudinalM: null,
+      isOnTrack: true,
+    });
+  });
+
   it('does not copy or publish moving positions while there is no overlap', () => {
     const processor = new BlindSpotProcessor();
     processor.onFrame(frame(1, [0.1, 0.2]));

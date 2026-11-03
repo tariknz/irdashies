@@ -6,7 +6,13 @@ import {
   useDashboard,
   useSimWidgetSupport,
 } from '@irdashies/context';
-import { widgetDisabledMessage } from '@irdashies/types';
+import {
+  SIMULATOR_IDS,
+  SIMULATOR_LABELS,
+  isWidgetVisibleInGameFilter,
+  widgetDisabledMessage,
+  type WidgetGameFilter,
+} from '@irdashies/types';
 import {
   generalItems,
   widgetItems,
@@ -15,6 +21,17 @@ import {
   type MenuItem,
 } from './menuItems';
 import { ToggleSwitch } from './components/ToggleSwitch';
+
+const GAME_FILTERS: { value: WidgetGameFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  ...SIMULATOR_IDS.map((id) => ({ value: id, label: SIMULATOR_LABELS[id] })),
+];
+
+const FILTER_PANEL_CLASS: Record<WidgetGameFilter, string> = {
+  all: 'bg-slate-700/60 border-slate-500/40',
+  iracing: 'bg-[#1e3a8a]/30 border-[#3b82f6]/40',
+  lmu: 'bg-orange-900/30 border-orange-500/40',
+};
 
 const MenuLink = ({
   item,
@@ -91,6 +108,7 @@ export const SettingsMenu = () => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const simulator = useActiveSimulator();
   const supportConfig = useSimWidgetSupport();
+  const [gameFilter, setGameFilter] = useState<WidgetGameFilter>('all');
   const [showHidden, setShowHidden] = useState(false);
   // Layout-editor copies of a widget share its menu entry: it is on while any
   // copy is, so a custom layout cannot hide behind a switched-off default.
@@ -132,7 +150,17 @@ export const SettingsMenu = () => {
   // Widgets the running sim cannot support are left out unless asked for.
   const supportedItems = menuItems.filter((item) => !unsupported(item));
   const hiddenCount = menuItems.length - supportedItems.length;
-  const visibleItems = showHidden ? menuItems : supportedItems;
+  const runningSimItems = showHidden ? menuItems : supportedItems;
+  const visibleItems =
+    gameFilter === 'all'
+      ? runningSimItems
+      : menuItems.filter((item) =>
+          isWidgetVisibleInGameFilter(
+            supportConfig,
+            item.widgetType,
+            gameFilter
+          )
+        );
 
   return (
     <div className="w-1/4 bg-slate-800 p-3 rounded-md border border-slate-600/60 flex flex-col gap-0 overflow-y-auto">
@@ -142,8 +170,36 @@ export const SettingsMenu = () => {
         ))}
       </ul>
 
-      {hiddenCount > 0 && (
-        <div className="px-2 pt-2 pb-1">
+      <div
+        className={`mt-2 rounded border p-2 ${FILTER_PANEL_CLASS[gameFilter]}`}
+      >
+        <label
+          htmlFor="widget-game-filter"
+          className="mb-1 block text-xs font-medium text-slate-200"
+        >
+          Show widgets for
+        </label>
+        <select
+          id="widget-game-filter"
+          value={gameFilter}
+          onChange={(event) =>
+            setGameFilter(event.target.value as WidgetGameFilter)
+          }
+          className="w-full bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded text-sm"
+        >
+          {GAME_FILTERS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex items-center gap-1 px-2 pt-2 pb-1">
+        <p className="text-xs font-semibold text-slate-400 tracking-widest">
+          Widgets
+        </p>
+        {gameFilter === 'all' && hiddenCount > 0 && (
           <button
             type="button"
             onClick={() => setShowHidden((v) => !v)}
@@ -153,8 +209,8 @@ export const SettingsMenu = () => {
               ? `(showing ${hiddenCount} hidden)`
               : `(${hiddenCount} hidden)`}
           </button>
-        </div>
-      )}
+        )}
+      </div>
       <ul className="flex flex-col py-2">
         {visibleItems.map((item) => (
           <MenuLink
@@ -171,6 +227,11 @@ export const SettingsMenu = () => {
           />
         ))}
       </ul>
+      {visibleItems.length === 0 && (
+        <p className="px-2 py-1 text-xs text-slate-500">
+          No widgets match this filter.
+        </p>
+      )}
 
       <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col">
         {bottomItems.map((item) => (

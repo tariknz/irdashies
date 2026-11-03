@@ -13,6 +13,7 @@ import {
 interface BadgeCellProps {
   license?: string;
   rating?: number;
+  isAi?: boolean;
   /**
    * Present only when the running sim is LMU, and only once that driver's rank
    * has been resolved. Absent for an AI entry, for a human the rating service
@@ -49,6 +50,7 @@ export const BadgeCell = memo(
   ({
     license,
     rating,
+    isAi,
     lmuRating,
     badgeFormat,
     lmuFormat,
@@ -92,6 +94,7 @@ export const BadgeCell = memo(
           <DriverRatingBadge
             license={license}
             rating={rating}
+            isAi={isAi}
             format={badgeFormat}
             isMinimal={isMinimal}
           />

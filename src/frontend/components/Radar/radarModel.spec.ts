@@ -19,6 +19,18 @@ const car = (carIdx: number, dist: number, onPitRoad = false): RadarCar => ({
 const options = { range: 30, carLength: 4.5, hideInPit: true };
 
 describe('selectRadarCars', () => {
+  it('drops a car that is close along the track but far to the side', () => {
+    const beside = car(1, 2);
+    beside.lateralM = 40;
+
+    expect(
+      selectRadarCars(
+        { cars: [beside, car(2, 10)], focusOnPitRoad: false },
+        options
+      ).map((c) => c.carIdx)
+    ).toEqual([2]);
+  });
+
   it('keeps cars until their body has left the disc', () => {
     const cars = [car(1, 34), car(2, -34.6), car(3, 10)];
 

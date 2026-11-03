@@ -1,5 +1,6 @@
 import {
   CarLeftRight,
+  EngineWarnings,
   GlobalFlags,
   SessionState,
   TIMED_SESSION_LAPS,
@@ -8,6 +9,7 @@ import {
 import {
   createLmuRelativePositionsBuffer,
   deriveLmuRelativePositions,
+  LMU_RADAR_RADIUS_M,
   summariseLmuBlindSpot,
 } from './proximity';
 import { lapTimeOrAbsent } from './sentinels';
@@ -115,6 +117,20 @@ const lapDistPctArr = (v: ArrayLike<number> | undefined) => ({
       )
     : [],
 });
+
+/**
+ * Remap LMU mDentSeverity into TinyPedal display order: FL, FC, FR, CL, CR,
+ * RL, RC, RR. When the body is detached LMU only loses the rear wing, so the
+ * rear-center cell is forced to the detached tier (3).
+ */
+export const remapLmuDentSeverity = (
+  dent: ArrayLike<number>,
+  bodyDetached: boolean
+): number[] => {
+  const d = (i: number) => dent[i] ?? 0;
+  const rearCenter = bodyDetached ? 3 : d(4);
+  return [d(1), d(0), d(7), d(2), d(6), d(3), rearCenter, d(5)];
+};
 
 /**
  * Reused across frames. This runs at the poll rate, so the four arrays it
@@ -306,7 +322,8 @@ export function mapLmuTelemetry(
   const steeringMaxRad = ((raw.visualSteeringWheelRange ?? 0) * Math.PI) / 360;
   const relativePositions = deriveLmuRelativePositions(
     raw,
-    relativePositionsBuffer
+    relativePositionsBuffer,
+    LMU_RADAR_RADIUS_M
   );
   const blindSpot = summariseLmuBlindSpot(relativePositions);
 
@@ -495,17 +512,25 @@ export function mapLmuTelemetry(
   t.CarIdxSessionFlags = numArr(carSessionFlags(raw));
   t.CarDistAhead = numArr(undefined);
   t.CarDistBehind = numArr(undefined);
+  // Radar treats these offsets as relative to CamCarIdx. They are measured
+  // from the player, so withhold them when the camera is on another car and
+  // let RadarProcessor fall back to lap-distance. Blind-spot still uses the
+  // player-relative buffer above.
+  const relativeForRadar =
+    relativePositions && focusCarIdx(restCells, playerIdx) === playerIdx
+      ? relativePositions
+      : null;
   t.LmuCarIdxRelativeAvailable = {
     // Copied, like the three numeric channels below. `available` is the
     // reusable buffer that deriveLmuRelativePositions overwrites in place
     // every frame, so publishing the reference handed consumers an array that
     // changed under them -- anything holding a previous frame to compare
     // against, and anything serialising one later, saw this frame's values.
-    value: relativePositions ? [...relativePositions.available] : [],
+    value: relativeForRadar ? [...relativeForRadar.available] : [],
   };
-  t.LmuCarIdxRelativeLateral = numArr(relativePositions?.lateral);
-  t.LmuCarIdxRelativeLongitudinal = numArr(relativePositions?.longitudinal);
-  t.LmuCarIdxRelativeHeading = numArr(relativePositions?.heading);
+  t.LmuCarIdxRelativeLateral = numArr(relativeForRadar?.lateral);
+  t.LmuCarIdxRelativeLongitudinal = numArr(relativeForRadar?.longitudinal);
+  t.LmuCarIdxRelativeHeading = numArr(relativeForRadar?.heading);
   // Fore(+)/aft(-) metres of the nearest car each side, straight from the
   // 100 Hz world positions. A display of the car's position alongside reads
   // this instead of subtracting lap-distance percentages, which the 5 Hz
@@ -557,6 +582,24 @@ export function mapLmuTelemetry(
   }
   if (restCells?.aeroDamage) t.LmuAeroDamage = staged(restCells.aeroDamage);
 
+  if (raw.dentSeverity) {
+    t.LmuDentSeverity = {
+      value: remapLmuDentSeverity(raw.dentSeverity, !!raw.bodyDetached),
+    };
+  }
+  if (raw.wheelDetached) {
+    t.LmuWheelDetached = boolArr(raw.wheelDetached, (n) => n !== 0);
+  }
+  if (raw.bodyDetached !== undefined) {
+    t.LmuBodyDetached = bool(raw.bodyDetached);
+  }
+  if (raw.lastImpactET !== undefined) {
+    t.LmuLastImpactET = num(raw.lastImpactET);
+  }
+  if (raw.lastImpactPos) {
+    t.LmuLastImpactPos = numArr(raw.lastImpactPos);
+  }
+
   // Shared memory, unlike the cells above. The addon always writes these when
   // LMU is running, so the guard is only for a tape or a build predating the
   // export -- not for a car without a hybrid system, which reports 0. A
@@ -596,6 +639,8 @@ export function mapLmuTelemetry(
   t.LapCurrentLapTime = num(
     Math.max(0, (raw.elapsedTime ?? 0) - (raw.lapStartET ?? 0))
   );
+  t.LapDeltaToBestLap = num(deltaBestOk ? deltaBest : 0);
+  t.LapDeltaToBestLap_OK = bool(deltaBestOk);
   t.LmuCurrentSectorTimes = {
     value: mapLmuSectorTimes(
       raw.vehCurSector1?.[playerIdx],
@@ -683,7 +728,15 @@ export function mapLmuTelemetry(
   t.FuelLevelPct = num(
     raw.fuelCapacity && raw.fuel !== undefined ? raw.fuel / raw.fuelCapacity : 0
   );
-  t.EngineWarnings = num(0);
+  // iRacing publishes PitSpeedLimiter on EngineWarnings when the limiter is
+  // engaged; LMU splits that into a switch (speedLimiter) and an active cut
+  // (speedLimiterActive). Either means "limiter on" for overlays that key off
+  // the iRacing bit (tach blink, pitlane helper).
+  t.EngineWarnings = num(
+    raw.speedLimiterActive || raw.speedLimiter
+      ? EngineWarnings.PitSpeedLimiter
+      : 0
+  );
   t.ShiftGrindRPM = num(raw.engineMaxRPM ?? 0);
   t.ThrottleRaw = num(raw.unfilteredThrottle);
   t.BrakeRaw = num(raw.unfilteredBrake);

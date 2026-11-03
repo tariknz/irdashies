@@ -262,16 +262,41 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         };
       }
 
+      const relativeAvailable = valuesOf(frame, 'LmuCarIdxRelativeAvailable');
+      const relativeLateral = valuesOf(frame, 'LmuCarIdxRelativeLateral');
+      const relativeLongitudinal = valuesOf(
+        frame,
+        'LmuCarIdxRelativeLongitudinal'
+      );
+      const hasWorld = relativeAvailable.length > 0;
+
       for (let carIdx = 0; carIdx < pcts.length; carIdx += 1) {
         if (carIdx === focus || this.excluded.has(carIdx)) continue;
-        const dist = dists[carIdx];
+        let dist = dists[carIdx];
+        let lateralM: number | undefined;
+        if (hasWorld && relativeAvailable[carIdx] === true) {
+          // TinyPedal places rivals from the rotated world position, not a
+          // lane guess. Negative lateral there is left; the projector wants
+          // positive left.
+          const lon = numberAt(relativeLongitudinal, carIdx, NaN);
+          const lat = numberAt(relativeLateral, carIdx, NaN);
+          if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
+          dist = lon;
+          lateralM = -lat;
+        }
+        // available=false: scoring-only car (no world pose) or outside the
+        // world radius. Keep lap-distance `dist` so scoring-only rivals still
+        // appear; the range check below still applies.
+        const span =
+          lateralM === undefined ? Math.abs(dist) : Math.hypot(dist, lateralM);
         const surface = numberAt(surfaces, carIdx);
-        if (!Number.isFinite(dist) || Math.abs(dist) > RADAR_MAX_RANGE_M) {
+        if (!Number.isFinite(dist) || span > RADAR_MAX_RANGE_M) {
           continue;
         }
         cars.push({
           carIdx,
           dist,
+          lateralM,
           relativeSpeed: (this.speeds[carIdx] ?? playerSpeed) - playerSpeed,
           lane: 0,
           laneSource: 'none',
