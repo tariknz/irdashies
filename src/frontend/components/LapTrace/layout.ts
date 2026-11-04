@@ -35,18 +35,6 @@ export const GEAR_LABELS = Object.freeze([
 ]);
 
 /**
- * Size of the pre-rendered gear label pool. Enough to cover a technical section
- * in the widest supported window; anything beyond is simply not labelled.
- */
-export const MAX_GEAR_LABELS = 24;
-
-/**
- * Markers visible at once per kind. A 400 m window holds a handful of corners,
- * so 8 is generous; anything beyond is simply not drawn.
- */
-export const MAX_MARKERS = 8;
-
-/**
  * Height of the optional ABS strip, just under the trace band and above the
  * application markers so the two do not sit on top of each other.
  */
