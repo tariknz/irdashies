@@ -4,7 +4,6 @@
  * Hidden until player is at a user defined speed (Default 30) and not in the pit lane. The gap thresholds are user configured as well
  */
 
-import { useCallback } from 'react';
 import {
   useTrackStateSnapshot,
   useFocusCarIdx,
@@ -16,20 +15,10 @@ import { useDriverRelatives, type Standings } from '@irdashies/domain';
 import { useRejoinSettings } from './hooks/useRejoinSettings';
 import { getDemoRejoinData } from './demoData';
 import { speedFromMs } from '@irdashies/utils/units';
-import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 
 export const RejoinIndicator = () => {
   const { isDemoMode } = useDashboard();
   const settings = useRejoinSettings();
-  // Depend on the threshold numbers only — useRejoinSettings rebuilds its
-  // object every render, which would restart the demo interval.
-  const careGap = settings?.config?.careGap ?? 2;
-  const stopGap = settings?.config?.stopGap ?? 1;
-  const demoAt = useCallback(
-    (t: number) => getDemoRejoinData({ careGap, stopGap }, t),
-    [careGap, stopGap]
-  );
-  const demoData = useDemoFrame(isDemoMode, demoAt);
 
   // Must call all hooks in same order every render
   const isSessionVisible = useSessionVisibility(
@@ -45,9 +34,14 @@ export const RejoinIndicator = () => {
   const { isDriving } = useDrivingState();
   const drivers = useDriverRelatives({ buffer: 3 });
 
-  if (isDemoMode && demoData) {
+  // Generate demo data when in demo mode
+  if (isDemoMode) {
+    const demoData = getDemoRejoinData(settings);
     return (
-      <RejoinIndicatorDisplay gap={demoData.gap} status={demoData.status} />
+      <RejoinIndicatorDisplay
+        gap={demoData.gap}
+        status={demoData.status as 'Clear' | 'Caution' | 'Do Not Rejoin'}
+      />
     );
   }
 

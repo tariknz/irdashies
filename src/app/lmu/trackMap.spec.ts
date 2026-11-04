@@ -169,6 +169,21 @@ describe('LMU track map', () => {
     expect(recorder.update(frame(0, { lapStartET: 200 }))).not.toBeNull();
   });
 
+  it('drops an in-progress lap when lapStartET goes backwards (session restart)', () => {
+    const recorder = new LmuTrackMapRecorder();
+    for (let index = 0; index <= 40; index++) {
+      expect(recorder.update(frame(index / 100))).toBeNull();
+    }
+    expect(recorder.update(frame(0.5, { lapStartET: 50 }))).toBeNull();
+    for (let index = 0; index <= 100; index++) {
+      expect(
+        recorder.update(frame(index / 100, { lapStartET: 50 }))
+      ).toBeNull();
+    }
+    const map = recorder.update(frame(0, { lapStartET: 150, pos: [0, 12, 0] }));
+    expect(map?.active.trackPathPoints).toHaveLength(512);
+  });
+
   it('parses TinyPedal raw map coordinates', () => {
     const points = Array.from(
       { length: 20 },

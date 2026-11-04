@@ -37,6 +37,22 @@ const lmuSectorTimes = (
     : null;
 };
 
+const sectorTimesDiffer = (
+  values: readonly (number | null)[],
+  known: readonly (number | null)[]
+): boolean => known.some((time, index) => (values[index] ?? null) !== time);
+
+const previousBests = (
+  nextBest: readonly (number | null)[],
+  prior: SectorTimingResultSnapshot
+): (number | null)[] =>
+  nextBest.map((best, index) => {
+    const priorBest = prior.sessionBestSectorTimes[index] ?? null;
+    return best !== priorBest
+      ? priorBest
+      : (prior.previousSessionBestSectorTimes[index] ?? null);
+  });
+
 export const getSectorIdx = (
   lapDistPct: number,
   sectors: readonly Sector[]
@@ -266,8 +282,6 @@ export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSna
     best: (number | null)[]
   ): void {
     const count = this.latest.sectors.length;
-    const fit = (values: (number | null)[]) =>
-      Array.from({ length: count }, (_, index) => values[index] ?? null);
     const currentSectorIdx = Math.min(
       count - 1,
       Math.max(0, numericValue(frame, 'LmuSectorIdx') ?? 0)
@@ -280,48 +294,90 @@ export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSna
     ) {
       this.resetState(this.latest.sectors, sessionNum);
     }
+    const prior = this.latest.inclusive;
+    const lapDistPct = numericValue(frame, 'LapDistPct');
+    const invalidated = frame.LmuLapInvalidated?.value?.[0] === true;
+    const farFromLine =
+      lapDistPct === null || lapDistPct >= INVALIDATION_START_PCT;
+    const rolledOver =
+      this.latest.sectorEntryValid &&
+      sectorTimesDiffer(previous, prior.previousLapSectorTimes);
+    // LMU clears the flag on a lap reset, which rewinds the sector index.
+    const lapRestarted =
+      !rolledOver &&
+      !invalidated &&
+      (currentSectorIdx < this.latest.currentSectorIdx || farFromLine);
+    const keepsFlags = !rolledOver && !lapRestarted;
+    const markFrom = invalidated && farFromLine ? currentSectorIdx : count;
+    const uncleanAt = (index: number) =>
+      (keepsFlags && prior.currentLapSectorUnclean[index]) || index >= markFrom;
+
+    let flagsChanged = false;
+    for (let i = 0; i < count; i += 1) {
+      if (uncleanAt(i) !== prior.currentLapSectorUnclean[i])
+        flagsChanged = true;
+    }
+    const unchanged =
+      this.latest.sectorEntryValid &&
+      !flagsChanged &&
+      !rolledOver &&
+      currentSectorIdx === this.latest.currentSectorIdx &&
+      sessionNum === this.latest.sessionNum &&
+      !sectorTimesDiffer(current, prior.currentLapSectorTimes) &&
+      !sectorTimesDiffer(previous, prior.previousLapSectorTimes) &&
+      !sectorTimesDiffer(best, prior.sessionBestSectorTimes);
+    if (unchanged) return;
+
+    const fit = (values: (number | null)[]) =>
+      Array.from({ length: count }, (_, index) => values[index] ?? null);
     const nextCurrent = fit(current);
     const nextPrevious = fit(previous);
     const nextBest = fit(best);
-    const unchanged =
-      currentSectorIdx === this.latest.currentSectorIdx &&
-      sessionNum === this.latest.sessionNum &&
-      nextCurrent.every(
-        (value, index) =>
-          value === this.latest.inclusive.currentLapSectorTimes[index]
-      ) &&
-      nextPrevious.every(
-        (value, index) =>
-          value === this.latest.inclusive.previousLapSectorTimes[index]
-      ) &&
-      nextBest.every(
-        (value, index) =>
-          value === this.latest.inclusive.sessionBestSectorTimes[index]
-      );
-    if (unchanged) return;
-    const invalidated = frame.LmuLapInvalidated?.value?.[0] === true;
-    const previousBests = nextBest.map((best, index) => {
-      const prior = this.latest.inclusive.sessionBestSectorTimes[index] ?? null;
-      return best !== prior
-        ? prior
-        : (this.latest.inclusive.previousSessionBestSectorTimes[index] ?? null);
-    });
-    const result: SectorTimingResultSnapshot = {
+    const currentUnclean = Array.from({ length: count }, (_, i) =>
+      uncleanAt(i)
+    );
+    const previousUnclean = rolledOver
+      ? [...prior.currentLapSectorUnclean]
+      : [...prior.previousLapSectorUnclean];
+
+    const inclusive: SectorTimingResultSnapshot = {
       currentLapSectorTimes: nextCurrent,
       previousLapSectorTimes: nextPrevious,
-      currentLapSectorUnclean: Array<boolean>(count).fill(invalidated),
-      previousLapSectorUnclean: Array<boolean>(count).fill(false),
+      currentLapSectorUnclean: currentUnclean,
+      previousLapSectorUnclean: previousUnclean,
       sessionBestSectorTimes: nextBest,
-      previousSessionBestSectorTimes: previousBests,
+      previousSessionBestSectorTimes: previousBests(nextBest, prior),
     };
-    // Invalidated LMU laps keep times in the inclusive view only; clean must
-    // not inherit them or a cut lap looks valid in clean-timing consumers.
-    const clean = invalidated ? this.latest.clean : cloneResult(result);
+
+    const cleanCurrent = nextCurrent.map((time, i) =>
+      currentUnclean[i] ? null : time
+    );
+    const cleanPrevious = nextPrevious.map((time, i) =>
+      previousUnclean[i] ? null : time
+    );
+    const priorClean = this.latest.clean;
+    const cleanBest = Array.from({ length: count }, (_, i) => {
+      const times = [
+        priorClean.sessionBestSectorTimes[i],
+        cleanCurrent[i],
+        cleanPrevious[i],
+      ].filter((time): time is number => time !== null && time !== undefined);
+      return times.length > 0 ? Math.min(...times) : null;
+    });
+    const clean: SectorTimingResultSnapshot = {
+      currentLapSectorTimes: cleanCurrent,
+      previousLapSectorTimes: cleanPrevious,
+      currentLapSectorUnclean: [...currentUnclean],
+      previousLapSectorUnclean: [...previousUnclean],
+      sessionBestSectorTimes: cleanBest,
+      previousSessionBestSectorTimes: previousBests(cleanBest, priorClean),
+    };
+
     this.latest = {
       ...this.latest,
       currentSectorIdx,
       sectorEntryValid: true,
-      inclusive: result,
+      inclusive,
       clean,
       sessionNum,
       version: this.latest.version + 1,

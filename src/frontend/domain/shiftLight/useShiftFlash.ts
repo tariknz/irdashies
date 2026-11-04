@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  useActiveSimulator,
   useDashboard,
   useDriverControlsSnapshot,
   useSessionStore,
@@ -38,23 +37,16 @@ export const useShiftFlashActive = (
   const driverCarRedLine = useSessionStore(
     (state) => state.session?.DriverInfo?.DriverCarRedLine
   );
-  const gameId = useActiveSimulator();
-  const driver = useSessionStore((state) => {
+  const carPath = useSessionStore((state) => {
     const idx = state.session?.DriverInfo?.DriverCarIdx;
     if (idx === undefined) return undefined;
-    return state.session?.DriverInfo?.Drivers?.find((d) => d.CarIdx === idx);
+    return state.session?.DriverInfo?.Drivers?.find((d) => d.CarIdx === idx)
+      ?.CarPath;
   });
-  const carPath = driver?.CarPath;
-  const carData = useMemo(() => {
-    if (!enabled || !carPath) return null;
-    return loadCarData(
-      carPath,
-      gameId,
-      [driver?.CarCfgName, driver?.CarScreenName].filter(
-        (v): v is string => !!v
-      )
-    );
-  }, [enabled, carPath, gameId, driver?.CarCfgName, driver?.CarScreenName]);
+  const carData = useMemo(
+    () => (enabled && carPath ? loadCarData(carPath) : null),
+    [enabled, carPath]
+  );
 
   if (!enabled || !snapshot) return false;
 

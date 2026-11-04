@@ -11,19 +11,13 @@ export interface RadarFilterOptions {
  * off the edge instead of vanishing at its centre), and on the same side of
  * the pit wall as the focus car when `hideInPit` is set.
  */
-/** Along-track span, or straight-line span when a true lateral exists. */
-const carSpan = (car: Pick<RadarCar, 'dist' | 'lateralM'>): number =>
-  car.lateralM === undefined
-    ? Math.abs(car.dist)
-    : Math.hypot(car.dist, car.lateralM);
-
 export const selectRadarCars = (
   snapshot: Pick<RadarSnapshot, 'cars' | 'focusOnPitRoad'>,
   { range, carLength, hideInPit }: RadarFilterOptions
 ): RadarCar[] =>
   snapshot.cars.filter(
     (car) =>
-      carSpan(car) <= range + carLength &&
+      Math.abs(car.dist) <= range + carLength &&
       (!hideInPit || car.onPitRoad === snapshot.focusOnPitRoad)
   );
 

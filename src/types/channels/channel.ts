@@ -149,12 +149,6 @@ export interface BlindSpotSnapshot {
    * element array off the channel on every tick.
    */
   carIdxLapDistPct: readonly number[];
-  carIdxOnPitRoad?: readonly boolean[];
-  carIdxClass?: readonly number[];
-  relativeAvailable?: readonly boolean[];
-  relativeLateral?: readonly number[];
-  relativeLongitudinal?: readonly number[];
-  relativeHeading?: readonly number[];
   isOnTrack: boolean;
   /**
    * Fore(+)/aft(-) metres of the nearest car on each side.
@@ -182,13 +176,6 @@ export interface RadarCar {
    * estimate (see `laneSource`) and moves smoothly between whole lanes.
    */
   lane: number;
-  /**
-   * Metres left of the focus car, from a true relative position.
-   *
-   * Set when the sim publishes one (LMU). The display uses it instead of
-   * turning `lane` into a guess. Positive is left, matching the projector.
-   */
-  lateralM?: number;
   /**
    * Where `lane` came from: the standing-start grid or the pace line (both
    * known from the sim), the spotter calling this car alongside, a side
@@ -331,14 +318,6 @@ export interface DriverControlsSnapshot {
   engineWarnings?: number;
   shiftRpm?: number;
   blinkRpm?: number;
-  steeringWheelAngleMax?: number;
-  lateralAccel?: number;
-  longitudinalAccel?: number;
-  tyreTemperature?: readonly (number | null)[];
-  tyrePressure?: readonly (number | null)[];
-  tyreWear?: readonly (number | null)[];
-  brakeLinePressure?: readonly (number | null)[];
-  suspensionDeflection?: readonly (number | null)[];
   version: number;
 }
 

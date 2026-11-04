@@ -6,7 +6,7 @@ import {
   getWidgetDefaultConfig,
   SettingsTabType,
 } from '@irdashies/types';
-import { useActiveSimulator, useDashboard } from '@irdashies/context';
+import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { getAvailableCars } from '../../../utils/carData';
@@ -54,7 +54,6 @@ const CustomShiftPointsSection = ({
   const [editingValues, setEditingValues] = useState<Record<string, string>>(
     {}
   );
-  const simulator = useActiveSimulator();
 
   const customShiftPoints = config.shiftPointSettings;
 
@@ -71,11 +70,11 @@ const CustomShiftPointsSection = ({
 
   useEffect(() => {
     const loadAvailableCars = () => {
-      if (!customShiftPoints.enabled) return;
+      if (!customShiftPoints.enabled || availableCars.length > 0) return;
 
       setLoading(true);
       try {
-        const allCars = getAvailableCars(simulator);
+        const allCars = getAvailableCars();
         const cars: CarListItem[] = allCars
           .map((car) => ({
             carId: car.carId,
@@ -97,7 +96,7 @@ const CustomShiftPointsSection = ({
     };
 
     loadAvailableCars();
-  }, [customShiftPoints.enabled, simulator]);
+  }, [customShiftPoints.enabled, availableCars.length]);
 
   const addCar = () => {
     const selectedCar = availableCars.find((c) => c.carId === selectedCarId);

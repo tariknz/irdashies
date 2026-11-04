@@ -41,20 +41,11 @@ describe('DriverControlsProcessor', () => {
 
   it('publishes only changes and resets at lifecycle boundaries', () => {
     const processor = new DriverControlsProcessor();
-    const telemetry = frame({
-      Gear: 2,
-      RPM: 5000,
-      LFcoldPressure: 120,
-      RFcoldPressure: 121,
-      LRcoldPressure: 119,
-      RRcoldPressure: 120,
-    });
+    const telemetry = frame({ Gear: 2, RPM: 5000 });
     processor.onFrame(telemetry);
     expect(processor.snapshot().version).toBe(1);
-    const tyrePressure = processor.snapshot().tyrePressure;
     processor.onFrame(telemetry);
     expect(processor.snapshot().version).toBe(1);
-    expect(processor.snapshot().tyrePressure).toBe(tyrePressure);
 
     processor.onLifecycle({ type: 'sessionNumChange' });
     expect(processor.snapshot()).toMatchObject({

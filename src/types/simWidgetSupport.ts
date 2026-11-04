@@ -50,8 +50,8 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'laptrace',
   'pitlanehelper',
   'relative',
-  // Timed over nominal thirds of the lap, not LMU's own sector lines: LMU
-  // publishes no boundary distances (see SplitTimeInfo in mapSession.ts).
+  // Sector times come from LMU via SectorTimingProcessor; SplitTimeInfo still
+  // uses nominal thirds only as labels (no boundary distances from LMU).
   'sectordelta',
   // Shift point from shiftPoints.ts for GT3 and LMP2, else 95% of the rev
   // limit. LMU publishes no shift point of its own.

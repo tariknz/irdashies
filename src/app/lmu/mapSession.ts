@@ -14,6 +14,11 @@ import { isLmuAiEntry, lmuPlayerSlot } from './aiControl';
 import { fnv1a32 } from './hash';
 import { compareLmuOrder, lmuOrderingKey } from './classPosition';
 import type { LmuDriverRating, LmuRestSession } from '@irdashies/types';
+import { lapTimeOrAbsent } from './sentinels';
+import { lmuCarNumber, lmuCarNumberRaw, lmuTeamName } from './entryName';
+import { lmuDriverTires } from './tireCompound';
+import { lmuSessionUniqueId, type LmuSessionIdentity } from './sessionIdentity';
+import { lmuShiftPointRpm } from './shiftPoints';
 
 /**
  * LMU's pit and rolling-start speed limit, km/h.
@@ -31,7 +36,8 @@ export const LMU_PIT_SPEED_LIMIT_KPH = 60;
  *
  * TinyPedal maps the same four steps onto 0.25 / 0.5 / 0.75 / 0.9. The
  * weather widget only has a string, so the steps are named instead.
- * 0 is "not reported" and stays blank.
+ * 0 is "not reported" and stays blank. Confirm 1–4 against a recording if
+ * the names ever look wrong in live weather.
  */
 export const lmuGripRubber = (grip: number): string => {
   if (grip === 1) return 'low';
@@ -40,11 +46,6 @@ export const lmuGripRubber = (grip: number): string => {
   if (grip === 4) return 'maximum';
   return '';
 };
-import { lapTimeOrAbsent } from './sentinels';
-import { lmuCarNumber, lmuCarNumberRaw, lmuTeamName } from './entryName';
-import { lmuDriverTires } from './tireCompound';
-import { lmuSessionUniqueId, type LmuSessionIdentity } from './sessionIdentity';
-import { lmuShiftPointRpm } from './shiftPoints';
 
 type Raw = import('./native').LmuRawSession;
 
@@ -752,7 +753,8 @@ export function mapLmuSession(
       DriverTires: lmuDriverTires(raw.drivers, rest?.tireCompounds),
       Drivers: drivers,
     },
-    // ponytail: nominal thirds only label the direct LMU timing; replace when LMU exposes boundary distances.
+    // Nominal thirds label sectors until LMU exposes boundary distances.
+    // Sector Delta reads LMU's own sector times via SectorTimingProcessor.
     SplitTimeInfo: {
       Sectors: [
         { SectorNum: 0, SectorStartPct: 0 },

@@ -21,7 +21,6 @@ import type {
   TrackStateSnapshot,
 } from '@irdashies/types';
 import { shallow } from 'zustand/shallow';
-import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 import { PitCountdownBar } from './components/PitCountdownBar';
 import { PitExitInputs } from './components/PitExitInputs';
 import { PitSpeedBar } from './components/PitSpeedBar';
@@ -50,7 +49,6 @@ const getCountdownColor = (distance: number, maxDistance: number): string => {
 export const PitlaneHelper = () => {
   const { isDemoMode } = useDashboard();
   const config = usePitlaneHelperSettings();
-  const demoData = useDemoFrame(isDemoMode, getDemoPitlaneData);
 
   const isSessionVisible = useSessionVisibility(config?.sessionVisibility);
 
@@ -68,7 +66,9 @@ export const PitlaneHelper = () => {
   const limiterWarning = usePitLimiterWarning(config.enablePitLimiterWarning);
   const traffic = usePitlaneTraffic(config.showPitlaneTraffic);
 
-  if (isDemoMode && demoData) {
+  // Generate demo data when in demo mode
+  if (isDemoMode) {
+    const demoData = getDemoPitlaneData();
     return <PitlaneHelperDisplay {...demoData} config={config} />;
   }
 
@@ -214,8 +214,6 @@ export const PitlaneHelperBody = ({
   showEarlyPitboxWarning,
   traffic,
 }: PitlaneHelperBodyProps) => {
-  const hasSpeedLimit = speed.limitKph > 0;
-
   return (
     <div className="flex flex-col h-full">
       <div
@@ -244,7 +242,7 @@ export const PitlaneHelperBody = ({
                     : '',
               ].join(' ')}
             >
-              {config.showSpeedDelta && (
+              {config.showSpeedDelta && speed.hasLimit && (
                 <>
                   <div
                     className={[
@@ -255,16 +253,10 @@ export const PitlaneHelperBody = ({
                     ].join(' ')}
                   >
                     <div className="text-[1.4em]">
-                      {hasSpeedLimit && speed.deltaKph > 0 ? '+' : ''}
+                      {speed.deltaKph > 0 ? '+' : ''}
                       {displayKph
-                        ? (hasSpeedLimit
-                            ? speed.deltaKph
-                            : speed.speedKph
-                          ).toFixed(1)
-                        : (hasSpeedLimit
-                            ? speed.deltaMph
-                            : speed.speedMph
-                          ).toFixed(1)}
+                        ? speed.deltaKph.toFixed(1)
+                        : speed.deltaMph.toFixed(1)}
                     </div>
                   </div>
                   <div className="text-xs text-slate-400">

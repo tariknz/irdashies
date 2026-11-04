@@ -119,20 +119,6 @@ const lapDistPctArr = (v: ArrayLike<number> | undefined) => ({
 });
 
 /**
- * Remap LMU mDentSeverity into TinyPedal display order: FL, FC, FR, CL, CR,
- * RL, RC, RR. When the body is detached LMU only loses the rear wing, so the
- * rear-center cell is forced to the detached tier (3).
- */
-export const remapLmuDentSeverity = (
-  dent: ArrayLike<number>,
-  bodyDetached: boolean
-): number[] => {
-  const d = (i: number) => dent[i] ?? 0;
-  const rearCenter = bodyDetached ? 3 : d(4);
-  return [d(1), d(0), d(7), d(2), d(6), d(3), rearCenter, d(5)];
-};
-
-/**
  * Reused across frames. This runs at the poll rate, so the four arrays it
  * fills were ~250 allocations a second; and the derivation used to run three
  * times per frame -- here, again for CarLeftRight, and once more in the bridge
@@ -583,9 +569,7 @@ export function mapLmuTelemetry(
   if (restCells?.aeroDamage) t.LmuAeroDamage = staged(restCells.aeroDamage);
 
   if (raw.dentSeverity) {
-    t.LmuDentSeverity = {
-      value: remapLmuDentSeverity(raw.dentSeverity, !!raw.bodyDetached),
-    };
+    t.LmuDentSeverity = numArr(raw.dentSeverity);
   }
   if (raw.wheelDetached) {
     t.LmuWheelDetached = boolArr(raw.wheelDetached, (n) => n !== 0);
@@ -627,9 +611,11 @@ export function mapLmuTelemetry(
   t.LapDistPct = num(lapDistPct);
   t.LapBestLapTime = lapTime(raw.vehBestLapTime[playerIdx]);
   t.LapLastLapTime = lapTime(raw.vehLastLapTime[playerIdx]);
-  // LMU's own delta to the player's best lap, negative when ahead -- what
-  // iRacing calls the delta to the session best. Only meaningful once there is
-  // a best lap: until then LMU reports 0, which would read as dead level.
+  // LMU's deltaBest is the delta to the player's own best lap (negative when
+  // ahead) -- the same meaning as iRacing's LapDeltaToBestLap. Also published
+  // as LapDeltaToSessionBestLap because existing widgets already read that.
+  // Only meaningful once there is a best lap: until then LMU reports 0, which
+  // would read as dead level.
   const hasBestLap = (raw.vehBestLapTime[playerIdx] ?? 0) > 0;
   const deltaBest = raw.deltaBest;
   const deltaBestOk =

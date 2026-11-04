@@ -5,11 +5,7 @@ import {
   TIMED_SESSION_LAPS,
 } from '@irdashies/types';
 import type { LmuRawTelemetry } from './native';
-import {
-  mapLmuSectorTimes,
-  mapLmuTelemetry,
-  remapLmuDentSeverity,
-} from './mapTelemetry';
+import { mapLmuSectorTimes, mapLmuTelemetry } from './mapTelemetry';
 import { fixture } from './rawFixture';
 import { createLmuLapDistanceState } from './lapDistance';
 
@@ -1004,27 +1000,25 @@ describe('mapLmuTelemetry adjustable dials', () => {
   });
 });
 
-describe('remapLmuDentSeverity', () => {
-  it('maps SHM order into FL,FC,FR,CL,CR,RL,RC,RR display order', () => {
-    // Indices: 0 FC, 1 FL, 2 CL, 3 RL, 4 RC, 5 RR, 6 CR, 7 FR (TinyPedal LMU).
-    const dent = [10, 11, 12, 13, 14, 15, 16, 17];
-    expect(remapLmuDentSeverity(dent, false)).toEqual([
-      11, 10, 17, 12, 16, 13, 14, 15,
-    ]);
-  });
-
-  it('forces rear-center to detached when the body is detached', () => {
-    const dent = [0, 0, 0, 0, 1, 0, 0, 0];
-    expect(remapLmuDentSeverity(dent, true)[6]).toBe(3);
-  });
-
-  it('publishes remapped dents and wheel flags from the fixture', () => {
+describe('LmuDentSeverity', () => {
+  it('publishes LMU dent order and wheel flags from the fixture', () => {
+    // Fixture dentSeverity: FC=0, FL=1, CL=0, RL=0, RC=0, RR=0, CR=2, FR=0
     const t = mapLmuTelemetry(fixture());
-    expect(t.LmuDentSeverity?.value).toEqual([1, 0, 0, 0, 2, 0, 0, 0]);
+    expect(t.LmuDentSeverity?.value).toEqual([0, 1, 0, 0, 0, 0, 2, 0]);
     expect(t.LmuWheelDetached?.value).toEqual([false, false, false, false]);
     expect(t.LmuBodyDetached?.value[0]).toBe(false);
     expect(t.LmuLastImpactET?.value[0]).toBe(240.1);
     expect(t.LmuLastImpactPos?.value).toEqual([0.4, 0, -1.2]);
+  });
+
+  it('does not force rear-center when the body is detached', () => {
+    const t = mapLmuTelemetry({
+      ...fixture(),
+      dentSeverity: new Uint8Array([0, 0, 0, 0, 1, 0, 0, 0]),
+      bodyDetached: true,
+    });
+    expect(t.LmuDentSeverity?.value?.[4]).toBe(1);
+    expect(t.LmuBodyDetached?.value[0]).toBe(true);
   });
 });
 

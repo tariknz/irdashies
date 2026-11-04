@@ -1,4 +1,3 @@
-import { useCallback } from 'react';
 import {
   useSessionVisibility,
   useDashboard,
@@ -7,7 +6,6 @@ import {
 import { useCarBehind } from './hooks/useCarBehind';
 import { useFasterCarsSettings } from './hooks/useFasterCarsSettings';
 import { getTailwindStyle } from '@irdashies/utils/colors';
-import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 import { DriverRatingBadge } from '../shared/DriverRatingBadge/DriverRatingBadge';
 import { getDemoCarsBehind } from './demoData';
 
@@ -16,7 +14,6 @@ export interface FasterCarsFromBehindProps {
   name?: string;
   license?: string;
   rating?: number;
-  isAi?: boolean;
   distance?: number;
   percent?: number;
   classColor?: number;
@@ -31,16 +28,13 @@ export const FasterCarsFromBehind = () => {
   const carsBehind = useCarBehind({
     distanceThreshold: settings?.distanceThreshold,
   });
-  const driverCount = settings?.numberDriversBehind || 1;
-  const demoAt = useCallback(
-    (t: number) => getDemoCarsBehind(driverCount, t),
-    [driverCount]
-  );
-  const demoCars = useDemoFrame(isDemoMode, demoAt);
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
-  const demoCarsBehind = isDemoMode ? (demoCars ?? []) : carsBehind;
+  // Generate demo data when in demo mode
+  const demoCarsBehind = isDemoMode
+    ? getDemoCarsBehind(settings?.numberDriversBehind || 1)
+    : carsBehind;
 
   if (demoCarsBehind.length === 0) return null;
 
@@ -71,7 +65,6 @@ export const FasterCarsFromBehindDisplay = ({
   name,
   license,
   rating,
-  isAi,
   distance,
   percent,
   classColor,
@@ -110,7 +103,6 @@ export const FasterCarsFromBehindDisplay = ({
               <DriverRatingBadge
                 license={license}
                 rating={rating}
-                isAi={isAi}
                 format={
                   settings.badgeFormat as
                     | 'license-color-fullrating-combo'
