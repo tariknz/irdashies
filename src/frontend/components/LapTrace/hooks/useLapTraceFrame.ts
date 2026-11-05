@@ -1,13 +1,12 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import type { LapTraceSamples, LapTraceView } from '@irdashies/types';
 import { getChannelSnapshotStore, useLapTraceStore } from '@irdashies/context';
-import { perfMetrics } from '@irdashies/utils/perfMetrics';
 import {
   MAX_SAMPLE_GAP_M,
   indexAtOrBefore,
   normalisePct,
-} from '../../../domain/lapTrace/lapSamples';
-import { xForMetres } from '../../../domain/lapTrace/lapTraceWindow';
+} from '@irdashies/domain/lapTrace/lapSamples';
+import { xForMetres } from '@irdashies/domain/lapTrace/lapTraceWindow';
 import {
   REFERENCE_SPAN_SLOTS,
   lapPieces,
@@ -17,7 +16,8 @@ import {
   tileTranslatePct,
   type LapPiece,
   type TileLayout,
-} from '../../../domain/lapTrace/lapTraceTiles';
+} from '@irdashies/domain/lapTrace/lapTraceTiles';
+import { scheduleLapTraceFrames } from './lapTraceFrameScheduler';
 import {
   ABS_BAR_Y,
   GEAR_LABELS,
@@ -417,6 +417,58 @@ function moveSpan(slot: SpanSlot, transform: string): void {
   if (slot.labels) slot.labels.style.transform = transform;
 }
 
+/*
+ * Slot lookups, as plain loops rather than find/some with a callback: they run
+ * on every drawn frame, and a closure per call would allocate where the rest
+ * of the loop does not.
+ */
+
+/** The slot holding `content` of `reference`, or null. */
+function slotHolding(
+  spans: SpanSlot[],
+  content: number,
+  reference: LapTraceView
+): SpanSlot | null {
+  for (const slot of spans) {
+    if (slot.content === content && slot.reference === reference) return slot;
+  }
+  return null;
+}
+
+/** The first slot not on screen, or null. */
+function hiddenSlot(spans: SpanSlot[]): SpanSlot | null {
+  for (const slot of spans) {
+    if (!slot.shown) return slot;
+  }
+  return null;
+}
+
+/** The speed axis, as the minimum and the span above it. */
+interface SpeedScale {
+  min: number;
+  range: number;
+}
+
+/**
+ * Set the speed axis from a lap's speed range. The reference spans and the
+ * driver's lap must share it to be comparable, so both take it from here.
+ */
+function setSpeedScale(
+  out: SpeedScale,
+  minMs: number | undefined,
+  maxMs: number | undefined
+): SpeedScale {
+  let min = minMs ?? 0;
+  let max = maxMs ?? 0;
+  if (!Number.isFinite(min) || !Number.isFinite(max)) {
+    min = 0;
+    max = 0;
+  }
+  out.min = min;
+  out.range = max - min > 1 ? max - min : 1;
+  return out;
+}
+
 /**
  * Drives the lap trace plot.
  *
@@ -487,8 +539,12 @@ export const useLapTraceFrame = (
   }, [carDistanceMOverride]);
 
   useEffect(() => {
-    let raf = 0;
+    // Set once the scheduler below exists, before any frame can run.
+    let requestDraw: () => void = () => undefined;
     const path = new PathBuilder();
+    // Reused by every frame, like `pieces` and `ghostPieces`.
+    const ghostScale: SpeedScale = { min: 0, range: 1 };
+    const spanScale: SpeedScale = { min: 0, range: 1 };
     const pieces: LapPiece[] = [];
     // Reused every frame so the loop never allocates, mirroring `pieces`.
     const ghostPieces: GhostPiece[] = [
@@ -638,13 +694,11 @@ export const useLapTraceFrame = (
       // the axis outside the span, where it is clipped away.
       const pieceCount = lapPieces(fromM, toM, trackLengthM, pieces);
       const s = reference.samples;
-      let speedMin = reference.speedMinMs;
-      let speedMax = reference.speedMaxMs;
-      if (!Number.isFinite(speedMin) || !Number.isFinite(speedMax)) {
-        speedMin = 0;
-        speedMax = 0;
-      }
-      const speedRange = speedMax - speedMin > 1 ? speedMax - speedMin : 1;
+      const speed = setSpeedScale(
+        spanScale,
+        reference.speedMinMs,
+        reference.speedMaxMs
+      );
       buildReferenceTrace(
         slot.throttle,
         s,
@@ -667,8 +721,8 @@ export const useLapTraceFrame = (
         slot.speed,
         s,
         s.speed,
-        speedMin,
-        speedRange,
+        speed.min,
+        speed.range,
         false,
         pieceCount
       );
@@ -722,15 +776,13 @@ export const useLapTraceFrame = (
       }
       const tile = spanTileAt(carDistanceM, metersBehind, tiles);
       const content = tileContent(tile, tiles);
-      const holds = (slot: SpanSlot) =>
-        slot.content === content && slot.reference === reference;
 
       let built = false;
-      let current = spans.find(holds);
+      let current = slotHolding(spans, content, reference);
       if (!current) {
         // Not the slot on screen, if it can be helped: that is the span the
         // window has just left, and the one it is likeliest to go back to.
-        current = spans.find((slot) => !slot.shown) ?? spans[0];
+        current = hiddenSlot(spans) ?? spans[0];
         fillSpan(current, content, reference, tiles);
         built = true;
       }
@@ -764,10 +816,8 @@ export const useLapTraceFrame = (
         spanTileAt(carDistanceM, metersBehind, tiles) + 1,
         tiles
       );
-      if (spans.some((s) => s.content === next && s.reference === reference)) {
-        return;
-      }
-      const spare = spans.find((s) => !s.shown);
+      if (slotHolding(spans, next, reference)) return;
+      const spare = hiddenSlot(spans);
       if (spare) fillSpan(spare, next, reference, tiles);
     };
 
@@ -978,18 +1028,17 @@ export const useLapTraceFrame = (
 
       // Both laps share one speed scale so they are directly comparable.
       // Prefer the reference's range — it is fixed, so the plot does not
-      // rescale under the driver mid-corner. Before a reference exists, fall
-      // back to the running range of the lap in progress.
-      let speedMin = referenceLap?.speedMinMs ?? activeLap?.speedMinMs ?? 0;
-      let speedMax = referenceLap?.speedMaxMs ?? activeLap?.speedMaxMs ?? 0;
-      if (!Number.isFinite(speedMin) || !Number.isFinite(speedMax)) {
-        speedMin = 0;
-        speedMax = 0;
-      }
-      const speedRange = speedMax - speedMin > 1 ? speedMax - speedMin : 1;
+      // rescale under the driver mid-corner, and it is the range its spans
+      // were drawn on. Before a reference exists, fall back to the running
+      // range of the lap in progress.
+      const speed = setSpeedScale(
+        ghostScale,
+        referenceLap?.speedMinMs ?? activeLap?.speedMinMs,
+        referenceLap?.speedMaxMs ?? activeLap?.speedMaxMs
+      );
 
       const built = placeReference(carDistanceM, referenceLap, tiles);
-      drawGhost(carDistanceM, activeLap, speedMin, speedRange, trackLengthM);
+      drawGhost(carDistanceM, activeLap, speed.min, speed.range, trackLengthM);
       if (built) {
         // Leave the next span for a frame of its own rather than doubling
         // this one's work, and make sure there is one even if the car stops
@@ -1000,40 +1049,27 @@ export const useLapTraceFrame = (
       }
     };
 
-    const frame = () => {
-      raf = 0;
-      perfMetrics.measure('lapTraceFrame', draw);
-    };
-    // At most one frame pending, however many inputs change before it runs.
-    const requestDraw = () => {
-      if (raf === 0) raf = requestAnimationFrame(frame);
-    };
-    requestDrawRef.current = requestDraw;
-
     // Nothing is placed until the first frame works out where it goes.
     hideReference();
 
     // The lap store's sample buffers grow in place without notifying (the
     // car's position covers those), so only a change of the objects drawn
-    // from asks for a frame here: a reference loaded or cleared, the track
-    // length, or a new active lap after a reset.
-    const unsubscribeStore = useLapTraceStore.subscribe((state, prev) => {
-      if (
+    // from asks for a frame from the store: a reference loaded or cleared,
+    // the track length, or a new active lap after a reset.
+    const scheduler = scheduleLapTraceFrames(
+      'lapTraceFrame',
+      draw,
+      (state, prev) =>
         state.referenceLap !== prev.referenceLap ||
         state.trackLengthM !== prev.trackLengthM ||
         state.activeLap !== prev.activeLap
-      ) {
-        requestDraw();
-      }
-    });
-
-    // The settings this effect was built from are new, so draw them now.
-    requestDraw();
+    );
+    requestDraw = scheduler.request;
+    requestDrawRef.current = scheduler.request;
 
     return () => {
-      unsubscribeStore();
+      scheduler.dispose();
       requestDrawRef.current = () => undefined;
-      if (raf !== 0) cancelAnimationFrame(raf);
     };
   }, [
     refs,

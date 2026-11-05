@@ -10,18 +10,18 @@ import {
   primeBrakeCueAudio,
   setBrakeCueOutputDevice,
 } from '@irdashies/utils/brakeCueAudio';
-import { perfMetrics } from '@irdashies/utils/perfMetrics';
 import type { LapTraceSamples } from '@irdashies/types';
 import {
   normalisePct,
   valueAtDistance,
-} from '../../../domain/lapTrace/lapSamples';
+} from '@irdashies/domain/lapTrace/lapSamples';
 import {
   createBrakeCueLatch,
   createBrakeCueOutput,
   resetBrakeCueLatch,
   stepBrakeCueLatch,
-} from '../../../domain/lapTrace/brakeCueLatch';
+} from '@irdashies/domain/lapTrace/brakeCueLatch';
+import { scheduleLapTraceFrames } from './lapTraceFrameScheduler';
 import {
   BRAKE_CUE_BAR_COUNT,
   BRAKE_CUE_UNLIT_COLOR,
@@ -167,7 +167,6 @@ export const useBrakeCue = (
 
     const horizontal = isBrakeCueHorizontal(side);
 
-    let raf = 0;
     // Track what was last written rather than reading style back: the CSSOM
     // normalises `rgb(34 197 94)` to `rgb(34, 197, 94)`, so a read-back compare
     // never matches and would repaint every frame.
@@ -274,35 +273,21 @@ export const useBrakeCue = (
       }
     };
 
-    const frame = () => {
-      raf = 0;
-      perfMetrics.measure('lapTraceBrakeCue', draw);
-    };
-    // At most one step pending, however many inputs change before it runs.
-    const step = () => {
-      if (raf === 0) raf = requestAnimationFrame(frame);
-    };
-    requestStep.current = step;
-
     // The reference's cue points arrive as a prop; its speed (the pace gate)
     // and the track length are read from the store, and either can change
     // with no new telemetry.
-    const unsubscribeStore = useLapTraceStore.subscribe((state, prev) => {
-      if (
+    const scheduler = scheduleLapTraceFrames(
+      'lapTraceBrakeCue',
+      draw,
+      (state, prev) =>
         state.referenceLap !== prev.referenceLap ||
         state.trackLengthM !== prev.trackLengthM
-      ) {
-        step();
-      }
-    });
-
-    // The settings this effect was built from are new, so step on them now.
-    step();
+    );
+    requestStep.current = scheduler.request;
 
     return () => {
-      unsubscribeStore();
+      scheduler.dispose();
       requestStep.current = () => undefined;
-      if (raf !== 0) cancelAnimationFrame(raf);
       const strip = refs.strip.current;
       if (strip) strip.style.visibility = 'hidden';
     };
