@@ -32,6 +32,12 @@ export interface LmuLapDistanceState {
   syncedLap: number;
   /** Last value handed out, held monotonic so no consumer ever sees a step back. */
   lastPct: number;
+  /**
+   * `mElapsedTime` when a new lap was anchored at zero ahead of scoring's wrap,
+   * or -1. Until scoring wraps, its value still belongs to the old lap and must
+   * not become the anchor; see estimateLmuLapDistPct.
+   */
+  awaitingWrapSince: number;
 }
 
 export const createLmuLapDistanceState = (): LmuLapDistanceState => ({
@@ -39,6 +45,7 @@ export const createLmuLapDistanceState = (): LmuLapDistanceState => ({
   syncedAt: -1,
   syncedLap: -1,
   lastPct: -1,
+  awaitingWrapSince: -1,
 });
 
 export const resetLmuLapDistanceState = (state: LmuLapDistanceState): void => {
@@ -46,6 +53,7 @@ export const resetLmuLapDistanceState = (state: LmuLapDistanceState): void => {
   state.syncedAt = -1;
   state.syncedLap = -1;
   state.lastPct = -1;
+  state.awaitingWrapSince = -1;
 };
 
 /**
@@ -123,17 +131,35 @@ export function estimateLmuLapDistPct(
     // So a new lap anchors at zero when scoring has not wrapped yet. The first
     // frame of all is excluded: there is no previous lap to have changed from,
     // and scoring's value is the only truth available.
-    const anchorPct = lapChanged && scoringPct > 0.5 ? 0 : scoringPct;
+    const aheadOfWrap = lapChanged && scoringPct > 0.5;
+    const anchorPct = aheadOfWrap ? 0 : scoringPct;
     state.syncedPct = anchorPct;
     state.syncedAt = elapsedTime;
     state.syncedLap = lapNumber;
     state.lastPct = clamp(anchorPct);
+    state.awaitingWrapSince = aheadOfWrap ? elapsedTime : -1;
     return state.lastPct;
+  }
+
+  // Still waiting for scoring to wrap after a lap anchored at zero. Its ~0.99
+  // is the old lap's, and adopting it as the anchor below undid the zero on
+  // the very next frame: the estimate went back to 99%, reached 100% -- a
+  // second start/finish crossing -- and LapTrace dropped the lap it had just
+  // finished before its official time arrived. Integrate from zero instead.
+  //
+  // Bounded by one integration window: scoring wraps within a single 200 ms
+  // update, so a lap change it still disagrees with after that is something
+  // else -- a tow, a reset -- and scoring is the truth again.
+  if (state.awaitingWrapSince >= 0) {
+    const stillOldLap =
+      scoringPct > 0.5 &&
+      elapsedTime - state.awaitingWrapSince <= MAX_INTEGRATION_SEC;
+    if (!stillOldLap) state.awaitingWrapSince = -1;
   }
 
   // Scoring moved on: adopt it as the new anchor. It is authoritative, and this
   // is what keeps the integration from drifting.
-  if (scoringPct !== state.syncedPct) {
+  if (state.awaitingWrapSince < 0 && scoringPct !== state.syncedPct) {
     state.syncedPct = scoringPct;
     state.syncedAt = elapsedTime;
   }
