@@ -230,8 +230,7 @@ describe('LapTracePlot', () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (window as any).channelBridge;
+    Reflect.deleteProperty(window, 'channelBridge');
   });
 
   it('keeps a stopped car on the axis, not below it', async () => {
