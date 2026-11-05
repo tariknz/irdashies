@@ -10,7 +10,7 @@ export interface Candidate {
   index: number;
 }
 
-const REPO_ROOT = path.resolve(
+export const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '..'
 );
@@ -24,12 +24,76 @@ const DEFAULT_TARGETS = [
   'src/types/simWidgetSupport.ts',
 ];
 
-const CODE_LIKE = /[;=|&]|^\s*[\w$]+(?:\.[\w$]+)+\s*$/;
-const JSX_TEXT = />([^<>{}]*[A-Za-z][^<>{}]*)</g;
-const PROP_LITERAL =
-  /(?<![\w-])(?:title|description|label|placeholder|aria-label|alt|name|menuLabel|units|text)['"]?\s*[:=]\s*\{?\s*(['"`])((?:(?!\1)[^\\\n]|\\.)*)\1/g;
+// Code that merely sits between angle brackets (generics, arrows, types).
+const CODE_LIKE =
+  /(?:^|\s)[\w-]+=(?!=)|^\s*(?:export\s+)?(?:interface|type|class|function)\s|`|\?\?|^\s*(?:catch|switch|if|for|while)\s*\(|^\s*\(|^\s*(?:from\s|[,)=;:!.?])|[(=,]\s*$|^\s*(?:catch|else|finally|try)\s*$|;(?=[\s\S]*(?:['"()=]|\b(?:import|const|let|if|catch|return|function|type|interface)\b))|=>|===|!==|\breadonly\b|\bextends\b|\[\]|\?\s*:|\b(?:const|let|var|return)\s|^\s*[\w$]+(?:\.[\w$]+)+\s*$/;
+const JSX_TEXT = /(?<=[>}])([^<>{}]+)(?=[<{])/g;
+const PROP_NAME =
+  /(?<![\w-])(?:title|description|label|placeholder|aria-label|alt|name|menuLabel|units|text|message)['"]?\s*[:=](?!=)\s*/g;
 const DIALOG_LITERAL =
   /\b(?:alert|confirm)\(\s*(['"`])((?:(?!\1)[^\\\n]|\\.)*)\1/g;
+
+const ENTITIES: Record<string, string> = {
+  apos: "'",
+  quot: '"',
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  nbsp: ' ',
+};
+
+const decodeEntities = (text: string): string =>
+  text.replace(/&(#\d+|#x[0-9a-f]+|[a-z]+);/gi, (match, body: string) => {
+    if (body[0] === '#') {
+      const code =
+        body[1].toLowerCase() === 'x'
+          ? parseInt(body.slice(2), 16)
+          : parseInt(body.slice(1), 10);
+      return String.fromCodePoint(code);
+    }
+    return ENTITIES[body] ?? match;
+  });
+
+interface Literal {
+  value: string;
+  index: number;
+}
+
+// Scans a prop/key value expression starting at `start`, returning plain
+// string literals. Stops at the end of the expression (a `,` `;` or closing
+// bracket at depth 0). A leading `{` is a JSX container and is balanced.
+const scanExpression = (source: string, start: number): Literal[] => {
+  const literals: Literal[] = [];
+  let depth = 0;
+  let i = start;
+  while (i < source.length) {
+    const ch = source[i];
+    if (ch === "'" || ch === '"' || ch === '`') {
+      let j = i + 1;
+      let hasInterpolation = false;
+      while (j < source.length && source[j] !== ch) {
+        if (source[j] === '\\') j++;
+        else if (ch === '`' && source[j] === '$' && source[j + 1] === '{') {
+          hasInterpolation = true;
+        } else if (source[j] === '\n' && ch !== '`') break;
+        j++;
+      }
+      if (!hasInterpolation && source[j] === ch) {
+        literals.push({ value: source.slice(i + 1, j), index: i });
+      }
+      i = j + 1;
+      continue;
+    }
+    if (ch === '(' || ch === '[' || ch === '{') depth++;
+    else if (ch === ')' || ch === ']' || ch === '}') {
+      depth--;
+      if (depth < 0) break;
+      if (depth === 0 && source[start] === '{') break;
+    } else if (depth === 0 && (ch === ',' || ch === ';')) break;
+    i++;
+  }
+  return literals;
+};
 
 export const extractCandidates = (source: string): Candidate[] => {
   const found: Candidate[] = [];
@@ -38,10 +102,24 @@ export const extractCandidates = (source: string): Candidate[] => {
     if (LATIN.test(text)) found.push({ text, index });
   };
   for (const m of source.matchAll(JSX_TEXT)) {
-    // Skip code that merely sits between angle brackets (generics, arrows).
-    if (!CODE_LIKE.test(m[1])) add(m[1], m.index + 1);
+    if (CODE_LIKE.test(m[1])) continue;
+    const leading = m[1].length - m[1].trimStart().length;
+    add(decodeEntities(m[1]), m.index + leading);
   }
-  for (const m of source.matchAll(PROP_LITERAL)) add(m[2], m.index);
+  for (const m of source.matchAll(PROP_NAME)) {
+    const start = m.index + m[0].length;
+    const literals = scanExpression(source, start);
+    // A directly quoted value is just that one literal.
+    const direct = /['"`]/.test(source[start] ?? '');
+    for (const literal of direct ? literals.slice(0, 1) : literals) {
+      // JSX attribute strings are entity-decoded; JS string literals are not.
+      const jsxAttribute = direct && m[0].trimEnd().endsWith('=');
+      add(
+        jsxAttribute ? decodeEntities(literal.value) : literal.value,
+        literal.index
+      );
+    }
+  }
   for (const m of source.matchAll(DIALOG_LITERAL)) add(m[2], m.index);
   return found.sort((a, b) => a.index - b.index);
 };
