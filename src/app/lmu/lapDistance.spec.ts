@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createLmuLapDistanceState,
   estimateLmuLapDistPct,
+  lmuCompletedLaps,
   resetLmuLapDistanceState,
 } from './lapDistance';
 
@@ -13,12 +14,14 @@ const frame = (overrides: {
   scoringPct?: number;
   elapsedTime: number;
   lapNumber?: number;
+  completedLaps?: number;
   speedMs?: number;
   trackLengthM?: number;
 }) => ({
   scoringPct: overrides.scoringPct ?? 0.5,
   elapsedTime: overrides.elapsedTime,
   lapNumber: overrides.lapNumber ?? 3,
+  completedLaps: overrides.completedLaps,
   speedMs: overrides.speedMs ?? SPEED,
   trackLengthM: overrides.trackLengthM ?? TRACK_M,
 });
@@ -390,6 +393,115 @@ describe('a lap that turns over before scoring wraps', () => {
         expect(new Set(laps.slice(wrapsAt[0]))).toEqual(new Set([5]));
       }
     );
+  });
+
+  it('takes the counter at once when it goes back, wherever the car is', () => {
+    // A session rolled on the same track with the clock running on, landing
+    // the car in the last sector: the position moves forward, so nothing else
+    // marks it. Keeping the old lap published it again after the line, and a
+    // later fall back read as a reset to the fuel calculator.
+    const state = createLmuLapDistanceState();
+    estimateLmuLapDistPct(
+      state,
+      frame({ lapNumber: 5, scoringPct: 0.4, elapsedTime: 200 })
+    );
+    estimateLmuLapDistPct(
+      state,
+      frame({ lapNumber: 0, scoringPct: 0.98, elapsedTime: 200.2 })
+    );
+    expect(state.lap).toBe(0);
+
+    // And the next crossing counts on from there.
+    estimateLmuLapDistPct(
+      state,
+      frame({ lapNumber: 0, scoringPct: 0.002, elapsedTime: 203 })
+    );
+    expect(state.lap).toBe(1);
+  });
+
+  it('advances a held position frame by frame, not from the last update', () => {
+    // Scoring held at 0 for ten seconds while the car waits at the line, then
+    // the car pulls away. One speed applied to the whole hold invented 700 m.
+    const state = createLmuLapDistanceState();
+    estimateLmuLapDistPct(
+      state,
+      frame({ lapNumber: 4, scoringPct: 0.9995, elapsedTime: 100 })
+    );
+    estimateLmuLapDistPct(
+      state,
+      frame({ lapNumber: 5, scoringPct: 0, elapsedTime: 100.03 })
+    );
+    let previous = 0;
+    for (let i = 1; i <= 1000; i += 1) {
+      previous = estimateLmuLapDistPct(
+        state,
+        frame({
+          lapNumber: 5,
+          scoringPct: 0,
+          elapsedTime: 100.03 + i / 100,
+          speedMs: 0,
+        })
+      );
+    }
+
+    const moving = estimateLmuLapDistPct(
+      state,
+      frame({ lapNumber: 5, scoringPct: 0, elapsedTime: 110.04 })
+    );
+
+    // Still short of the line, 0.7 m on from where it stopped.
+    expect(moving).toBeGreaterThan(0.5);
+    expect((moving - previous) * TRACK_M).toBeCloseTo(SPEED / 100, 6);
+  });
+
+  it('gives completed laps that move with the position', () => {
+    // Learned mid-lap, where the two counts agree: here completed laps run
+    // one behind the counter. At the line it follows the position, not the
+    // count, which moved at the timing line.
+    const state = createLmuLapDistanceState();
+    estimateLmuLapDistPct(
+      state,
+      frame({
+        lapNumber: 6,
+        completedLaps: 5,
+        scoringPct: 0.5,
+        elapsedTime: 10,
+      })
+    );
+    estimateLmuLapDistPct(
+      state,
+      frame({
+        lapNumber: 6,
+        completedLaps: 5,
+        scoringPct: 0.5,
+        elapsedTime: 10.01,
+      })
+    );
+    expect(lmuCompletedLaps(state)).toBe(5);
+
+    // The counts move on at the timing line, short of scoring's wrap.
+    estimateLmuLapDistPct(
+      state,
+      frame({
+        lapNumber: 7,
+        completedLaps: 6,
+        scoringPct: 0.999,
+        elapsedTime: 20,
+      })
+    );
+    expect(lmuCompletedLaps(state)).toBe(5);
+
+    // Past the line: the position wraps, and the count with it.
+    estimateLmuLapDistPct(
+      state,
+      frame({
+        lapNumber: 7,
+        completedLaps: 6,
+        scoringPct: 0.002,
+        elapsedTime: 20.2,
+      })
+    );
+    expect(lmuCompletedLaps(state)).toBe(6);
   });
 
   it('takes the lap number from the counter mid-lap', () => {

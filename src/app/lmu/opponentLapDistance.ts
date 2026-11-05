@@ -38,8 +38,12 @@
 import {
   createLmuLapDistanceState,
   estimateLmuLapDistPct,
+  lmuCompletedLaps,
   type LmuLapDistanceState,
 } from './lapDistance';
+
+/** Shared, so a call without lap arrays allocates nothing. */
+const NO_LAPS_OUT: readonly number[][] = [];
 
 /** Per-car integrator state, indexed by car slot. Grown as slots appear. */
 export interface LmuOpponentLapDistanceState {
@@ -61,8 +65,10 @@ export interface LmuOpponentLapDistanceFrame {
   scoringPcts: ArrayLike<number> | undefined;
   /** 100 Hz speed magnitude per car, m/s. */
   speeds: ArrayLike<number> | undefined;
-  /** 100 Hz lap number per car, so a lap boundary forces a resync. */
+  /** 100 Hz lap counter per car, which seeds each car's lap number. */
   lapNumbers: ArrayLike<number> | undefined;
+  /** Completed laps per car, as scoring counts them. */
+  completedLaps?: ArrayLike<number>;
   /** 100 Hz per-car telemetry clock, seconds. */
   elapsedTimes: ArrayLike<number> | undefined;
   /** 1 when this slot had a telemetry entry this frame. */
@@ -77,16 +83,23 @@ export interface LmuOpponentLapDistanceFrame {
  *
  * Untouched means the caller's scoring value stands, so the worst case is
  * exactly the behaviour before this existed.
+ *
+ * Each array in `lapsOut` takes, for every car refined, the completed laps
+ * that go with its refined fraction (see `lmuCompletedLaps`). Lap plus
+ * fraction is how progress is measured, and the fraction now wraps where the
+ * estimate does rather than where the count moved.
  */
 export function refineLmuOpponentLapDistPcts(
   state: LmuOpponentLapDistanceState,
   out: number[],
-  frame: LmuOpponentLapDistanceFrame
+  frame: LmuOpponentLapDistanceFrame,
+  lapsOut: readonly number[][] = NO_LAPS_OUT
 ): void {
   const {
     scoringPcts,
     speeds,
     lapNumbers,
+    completedLaps,
     elapsedTimes,
     telemetryAvailable,
     trackLengthM,
@@ -129,8 +142,15 @@ export function refineLmuOpponentLapDistPcts(
       scoringPct,
       elapsedTime: elapsedTimes[carIdx],
       lapNumber: lapNumbers[carIdx],
+      completedLaps: completedLaps?.[carIdx],
       speedMs: speeds[carIdx],
       trackLengthM,
     });
+    const laps = lmuCompletedLaps(carState);
+    if (laps !== null) {
+      for (const lapsArray of lapsOut) {
+        if (carIdx < lapsArray.length) lapsArray[carIdx] = laps;
+      }
+    }
   }
 }

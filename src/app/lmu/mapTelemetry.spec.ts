@@ -452,10 +452,11 @@ describe('mapLmuTelemetry lap-distance reconstruction', () => {
     );
   });
 
-  it('moves Lap in the frame LapDistPct wraps, not when the counter flips', () => {
-    // LMU's counter flips at the timing line, here 20 m before scoring's
+  it('moves the lap counts in the frame LapDistPct wraps, not when the counters flip', () => {
+    // LMU's counters flip at the timing line, here 20 m before scoring's
     // distance wraps. The fuel calculator pairs Lap with LapDistPct, and seeing
-    // the counter and then the wrap left it ignoring live usage all lap.
+    // the counter and then the wrap left it ignoring live usage all lap; the
+    // standings and race projections take lap plus fraction from CarIdxLap.
     const state = createLmuLapDistanceState();
     const lapDist = 7004;
     const speed = 51.234;
@@ -465,6 +466,7 @@ describe('mapLmuTelemetry lap-distance reconstruction', () => {
       const trueM = lapDist - 60 + speed * (i * 0.01);
       raw.elapsedTime = 250 + i * 0.01;
       raw.lapNumber = trueM >= lapDist - 20 ? 4 : 3;
+      raw.vehTotalLaps = new Int32Array([2, raw.lapNumber, 1]);
       // Scoring updates every 200 ms with the true position.
       const scoringM = lapDist - 60 + speed * (Math.floor(i / 20) * 0.2);
       raw.vehLapDistPct = new Float64Array([
@@ -485,6 +487,10 @@ describe('mapLmuTelemetry lap-distance reconstruction', () => {
       const wrapped = previousPct >= 0 && pct < previousPct - 0.5;
       if (wrapped) wraps += 1;
       if (previousLap >= 0) expect(lap !== previousLap).toBe(wrapped);
+      // The completed counts move with it, for the player's slots too.
+      expect(t.LapCompleted?.value[0]).toBe(lap);
+      expect((t.CarIdxLap?.value as number[])[1]).toBe(lap);
+      expect((t.CarIdxLapCompleted?.value as number[])[1]).toBe(lap);
       previousPct = pct;
       previousLap = lap;
     }

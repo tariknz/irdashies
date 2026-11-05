@@ -16,7 +16,11 @@ import { lmuCarCompound, lmuCompoundChannel } from './tireCompound';
 import { lmuTrackLimitsChannel, lmuTrackLimitsMax } from './trackLimits';
 import { lmuEnergyChannel } from './fuelEnergy';
 import { lmuSessionUniqueId, type LmuSessionIdentity } from './sessionIdentity';
-import { estimateLmuLapDistPct, type LmuLapDistanceState } from './lapDistance';
+import {
+  estimateLmuLapDistPct,
+  lmuCompletedLaps,
+  type LmuLapDistanceState,
+} from './lapDistance';
 import {
   refineLmuOpponentLapDistPcts,
   type LmuOpponentLapDistanceState,
@@ -295,10 +299,17 @@ export function mapLmuTelemetry(
           scoringPct: scoringLapDistPct,
           elapsedTime: raw.elapsedTime ?? -1,
           lapNumber: raw.lapNumber ?? -1,
+          completedLaps: raw.vehTotalLaps[playerIdx],
           speedMs: raw.speed ?? 0,
           trackLengthM: raw.lapDist ?? 0,
         })
       : scoringLapDistPct;
+  // The player's completed laps to go with that position, for LapCompleted
+  // and the player's own CarIdxLap slots below.
+  const playerCompletedLaps =
+    lapDistanceState && playerIdx >= 0
+      ? lmuCompletedLaps(lapDistanceState)
+      : null;
   // The estimator passes the negative "no car here" sentinel straight through;
   // clamping here keeps the published value inside the [0, 1] contract this
   // mapper has always had.
@@ -416,27 +427,44 @@ export function mapLmuTelemetry(
   // The player's own slot takes the smoothed value too, so anything measuring
   // against the player sees continuous motion rather than a 5 Hz step.
   const carIdxLapDistPct = t.CarIdxLapDistPct.value as number[];
+  // Lap plus fraction is how standings and race projections measure progress,
+  // so each refined fraction takes the lap count that goes with it.
+  const carIdxLaps = [
+    t.CarIdxLap.value as number[],
+    t.CarIdxLapCompleted.value as number[],
+  ];
   if (
     playerIdx >= 0 &&
     playerIdx < carIdxLapDistPct.length &&
     estimatedLapDistPct >= 0
   ) {
     carIdxLapDistPct[playerIdx] = lapDistPct;
+    if (playerCompletedLaps !== null) {
+      for (const laps of carIdxLaps) {
+        if (playerIdx < laps.length) laps[playerIdx] = playerCompletedLaps;
+      }
+    }
   }
   // And every other car, from the same 100 Hz telemetry block. Without this
   // they sit at the 5 Hz scoring rate -- ~14 m steps on a long circuit -- and
   // CarSpeedsProcessor differentiates those steps into opponent speed, which
   // the slow-car and faster-car warnings then threshold on.
   if (opponentLapDistanceState) {
-    refineLmuOpponentLapDistPcts(opponentLapDistanceState, carIdxLapDistPct, {
-      scoringPcts: raw.vehLapDistPct,
-      speeds: raw.vehSpeed,
-      lapNumbers: raw.vehLapNumber,
-      elapsedTimes: raw.vehElapsedTime,
-      telemetryAvailable: raw.vehTelemetryAvailable,
-      trackLengthM: raw.lapDist,
-      playerCarIdx: playerIdx,
-    });
+    refineLmuOpponentLapDistPcts(
+      opponentLapDistanceState,
+      carIdxLapDistPct,
+      {
+        scoringPcts: raw.vehLapDistPct,
+        speeds: raw.vehSpeed,
+        lapNumbers: raw.vehLapNumber,
+        completedLaps: raw.vehTotalLaps,
+        elapsedTimes: raw.vehElapsedTime,
+        telemetryAvailable: raw.vehTelemetryAvailable,
+        trackLengthM: raw.lapDist,
+        playerCarIdx: playerIdx,
+      },
+      carIdxLaps
+    );
   }
   t.CarIdxTrackSurface = {
     value: Array.from(raw.vehInPits, (_, carIdx) => trackLocation(raw, carIdx)),
@@ -588,7 +616,7 @@ export function mapLmuTelemetry(
       ? lapDistanceState.lap
       : raw.lapNumber
   );
-  t.LapCompleted = num(raw.vehTotalLaps[playerIdx] ?? 0);
+  t.LapCompleted = num(playerCompletedLaps ?? raw.vehTotalLaps[playerIdx] ?? 0);
   t.LapDistPct = num(lapDistPct);
   t.LapBestLapTime = lapTime(raw.vehBestLapTime[playerIdx]);
   t.LapLastLapTime = lapTime(raw.vehLastLapTime[playerIdx]);

@@ -44,17 +44,25 @@ export interface LmuLapDistanceState {
    */
   lastPct: number;
   /**
-   * Scoring dropped to exactly 0 while the estimate was still short of the
-   * line. That is scoring held at its own line rather than a position past
-   * it, so the old lap carries on from `syncedPct` until scoring moves.
+   * `mElapsedTime` when scoring dropped to exactly 0 while the estimate was
+   * still short of the line, or -1. That is scoring held at its own line
+   * rather than a position past it, so the old lap carries on until scoring
+   * moves, advanced frame by frame from `syncedPct`.
    */
-  heldAtLine: boolean;
+  heldAtLineSince: number;
   /**
    * The lap number that goes with the position: advanced in the frame the
    * position wraps, and taken from the sim's counter while the car is
    * mid-lap. Null until the sim has reported one.
    */
   lap: number | null;
+  /** The sim's counter on the last frame, to see it go backwards. */
+  lastLapNumber: number;
+  /**
+   * Completed laps minus the lap counter, as seen mid-lap, where the two
+   * agree; see `lmuCompletedLaps`.
+   */
+  completedOffset: number;
 }
 
 export const createLmuLapDistanceState = (): LmuLapDistanceState => ({
@@ -62,8 +70,10 @@ export const createLmuLapDistanceState = (): LmuLapDistanceState => ({
   syncedAt: -1,
   lastScoringPct: -1,
   lastPct: -1,
-  heldAtLine: false,
+  heldAtLineSince: -1,
   lap: null,
+  lastLapNumber: -1,
+  completedOffset: 0,
 });
 
 export const resetLmuLapDistanceState = (state: LmuLapDistanceState): void => {
@@ -71,9 +81,22 @@ export const resetLmuLapDistanceState = (state: LmuLapDistanceState): void => {
   state.syncedAt = -1;
   state.lastScoringPct = -1;
   state.lastPct = -1;
-  state.heldAtLine = false;
+  state.heldAtLineSince = -1;
   state.lap = null;
+  state.lastLapNumber = -1;
+  state.completedOffset = 0;
 };
+
+/**
+ * Completed laps to go with the position, or null when unknown: the sim's own
+ * count moved in the frame the position wraps, as `lap` is. Lap plus fraction
+ * is how standings and race projections measure progress, and a count that
+ * moved at the timing line while the fraction wrapped later put every car a
+ * lap ahead for that stretch, or a lap behind when the fraction ran over the
+ * line ahead of scoring.
+ */
+export const lmuCompletedLaps = (state: LmuLapDistanceState): number | null =>
+  state.lap === null ? null : state.lap + state.completedOffset;
 
 /**
  * Longest stretch that may be integrated before falling back to scoring.
@@ -116,9 +139,39 @@ export interface LmuLapDistanceFrame {
   elapsedTime: number;
   /** The sim's lap counter, which seeds `lap`; negative when unknown. */
   lapNumber: number;
+  /**
+   * The sim's completed-lap count, if it publishes one beside the counter;
+   * seeds `lmuCompletedLaps`.
+   */
+  completedLaps?: number;
   /** Speed in m/s, 100 Hz. Always positive: it is a velocity magnitude. */
   speedMs: number;
   trackLengthM: number;
+}
+
+/*
+ * Plain functions rather than closures inside the estimator: it runs for the
+ * player and every opponent on every poll, and a closure per call would
+ * allocate where nothing else on that path does.
+ */
+
+function clampPct(value: number): number {
+  return Math.min(1, Math.max(0, value));
+}
+
+/** Start again from scoring, as on the first frame. */
+function anchorToScoring(
+  state: LmuLapDistanceState,
+  frame: LmuLapDistanceFrame
+): number {
+  state.syncedPct = frame.scoringPct;
+  state.syncedAt = frame.elapsedTime;
+  state.lastScoringPct = frame.scoringPct;
+  state.lastPct = clampPct(frame.scoringPct);
+  state.heldAtLineSince = -1;
+  state.lap = frame.lapNumber >= 0 ? frame.lapNumber : null;
+  state.lastLapNumber = frame.lapNumber;
+  return state.lastPct;
 }
 
 /**
@@ -133,8 +186,6 @@ export function estimateLmuLapDistPct(
 ): number {
   const { scoringPct, elapsedTime, lapNumber, speedMs, trackLengthM } = frame;
 
-  const clamp = (value: number) => Math.min(1, Math.max(0, value));
-
   // Nothing usable: hand back what scoring said and forget any history.
   if (
     !(trackLengthM > 0) ||
@@ -143,23 +194,14 @@ export function estimateLmuLapDistPct(
     !Number.isFinite(elapsedTime)
   ) {
     resetLmuLapDistanceState(state);
-    return scoringPct >= 0 ? clamp(scoringPct) : scoringPct;
+    return scoringPct >= 0 ? clampPct(scoringPct) : scoringPct;
   }
-
-  /** Start again from scoring, as on the first frame. */
-  const anchor = (): number => {
-    state.syncedPct = scoringPct;
-    state.syncedAt = elapsedTime;
-    state.lastScoringPct = scoringPct;
-    state.lastPct = clamp(scoringPct);
-    state.heldAtLine = false;
-    state.lap = lapNumber >= 0 ? lapNumber : null;
-    return state.lastPct;
-  };
 
   // Nothing to advance from yet, or the clock went back: a session restart or
   // a replay scrub. Either way nothing before it describes the car now.
-  if (state.syncedPct < 0 || elapsedTime < state.syncedAt) return anchor();
+  if (state.syncedPct < 0 || elapsedTime < state.syncedAt) {
+    return anchorToScoring(state, frame);
+  }
 
   const before = state.lastPct >= 1 ? state.lastPct - 1 : state.lastPct;
 
@@ -177,7 +219,19 @@ export function estimateLmuLapDistPct(
         !ranOver &&
         shortOfLineM <= LINE_GAP_MAX_PCT * trackLengthM
       ) {
-        state.heldAtLine = true;
+        // Carried on from where the estimate is now, and from here advanced
+        // a frame at a time: scoring may hold for seconds, and one speed
+        // applied to all of that would invent the distance.
+        const dt = elapsedTime - state.syncedAt;
+        if (dt >= 0 && dt <= MAX_INTEGRATION_SEC && Number.isFinite(speedMs)) {
+          state.lastPct = Math.max(
+            state.lastPct,
+            state.syncedPct + (Math.max(0, speedMs) * dt) / trackLengthM
+          );
+        }
+        state.syncedPct = state.lastPct;
+        state.syncedAt = elapsedTime;
+        state.heldAtLineSince = elapsedTime;
       } else {
         // Measured from the new lap now. An estimate that already ran over
         // the line keeps its lead, monotonic as ever.
@@ -186,32 +240,39 @@ export function estimateLmuLapDistPct(
           : scoringPct;
         state.syncedPct = scoringPct;
         state.syncedAt = elapsedTime;
-        state.heldAtLine = false;
+        state.heldAtLineSince = -1;
       }
     } else if (scoringPct < state.syncedPct - DISCONTINUITY_PCT) {
       // A real backward move -- a tow, a reset, a restart -- not the run to
       // the line. Scoring is the truth.
-      return anchor();
+      return anchorToScoring(state, frame);
     } else {
       // Scoring moved on: adopt it as the new anchor. It is authoritative,
       // and this is what keeps the integration from drifting.
       state.syncedPct = scoringPct;
       state.syncedAt = elapsedTime;
-      state.heldAtLine = false;
+      state.heldAtLineSince = -1;
     }
   }
 
   const dt = elapsedTime - state.syncedAt;
-  const limit = state.heldAtLine ? HELD_AT_LINE_MAX_SEC : MAX_INTEGRATION_SEC;
-  if (!(dt >= 0) || dt > limit || !Number.isFinite(speedMs)) {
-    if (state.heldAtLine && dt > limit) {
-      // Held at the line for longer than any gap takes to drive: take
-      // scoring's 0 after all.
-      state.heldAtLine = false;
-      state.syncedPct = 0;
+  const held = state.heldAtLineSince >= 0;
+  if (held && elapsedTime - state.heldAtLineSince > HELD_AT_LINE_MAX_SEC) {
+    // Held at the line for longer than any gap takes to drive: take
+    // scoring's 0 after all.
+    state.heldAtLineSince = -1;
+    state.syncedPct = 0;
+    state.syncedAt = elapsedTime;
+    if (state.lastPct >= 1) state.lastPct -= 1;
+    else state.lastPct = 0;
+  } else if (
+    !(dt >= 0) ||
+    dt > MAX_INTEGRATION_SEC ||
+    !Number.isFinite(speedMs)
+  ) {
+    if (held) {
+      // A stall while held: skip it rather than integrate across it.
       state.syncedAt = elapsedTime;
-      if (state.lastPct >= 1) state.lastPct -= 1;
-      else state.lastPct = 0;
     } else if (state.syncedPct >= state.lastPct) {
       // Stop integrating, but hold rather than step back. The point of this
       // branch is not to project a stale speed; dropping to the frozen
@@ -233,20 +294,46 @@ export function estimateLmuLapDistPct(
     const estimated =
       state.syncedPct + (Math.max(0, speedMs) * dt) / trackLengthM;
     state.lastPct = Math.min(2, Math.max(state.lastPct, estimated));
+    if (held) {
+      // Held at the line, the anchor moves with each frame, so each frame's
+      // speed covers only its own time.
+      state.syncedPct = estimated;
+      state.syncedAt = elapsedTime;
+    }
   }
 
   const after = state.lastPct >= 1 ? state.lastPct - 1 : state.lastPct;
 
   // The lap number moves in the same frame as the position wraps, so nothing
   // pairing the two sees the line twice. Mid-lap the sim's counter is right
-  // whatever happened at the line, so any disagreement there is settled.
-  if (after >= MID_LAP_FROM && after <= MID_LAP_TO) {
-    if (lapNumber >= 0) state.lap = lapNumber;
+  // whatever happened at the line, so any disagreement there is settled. So
+  // is the counter going backwards, or apart by more than the line can
+  // explain: a session rolled or restarted, wherever on the lap the car is.
+  const counterReset =
+    lapNumber >= 0 &&
+    state.lap !== null &&
+    ((state.lastLapNumber >= 0 && lapNumber < state.lastLapNumber) ||
+      Math.abs(lapNumber - state.lap) > 1);
+  if (
+    lapNumber >= 0 &&
+    (counterReset || (after >= MID_LAP_FROM && after <= MID_LAP_TO))
+  ) {
+    state.lap = lapNumber;
+    const completed = frame.completedLaps;
+    if (
+      !counterReset &&
+      completed !== undefined &&
+      Number.isFinite(completed) &&
+      completed >= 0
+    ) {
+      state.completedOffset = completed - lapNumber;
+    }
   } else if (before > 0.5 && after < 0.5 && state.lap !== null) {
     state.lap += 1;
   } else if (state.lap === null && lapNumber >= 0) {
     state.lap = lapNumber;
   }
+  state.lastLapNumber = lapNumber;
 
-  return clamp(after);
+  return clampPct(after);
 }
