@@ -12,12 +12,7 @@ import { SortableList } from '../../SortableList';
 import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { FormatSelect } from '../components/FormatSelect';
-import { LmuBadgeFormatPreview } from '../components/LmuBadgeFormatPreview';
-import {
-  LMU_BADGE_FORMATS,
-  type LmuBadgeFormat,
-  type RelativeBadgeFormat,
-} from '@irdashies/types';
+import { type RelativeBadgeFormat } from '@irdashies/types';
 import { DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { DriverNamePreview } from '../components/DriverNamePreview';
@@ -86,7 +81,6 @@ const sortableSettings: SortableSetting[] = [
     hasSubSetting: true,
   },
   { id: 'driverTag', label: 'Driver Tag', configKey: 'driverTag' },
-  { id: 'lmuBadge', label: 'LMU Badge', configKey: 'lmuBadge' },
   { id: 'badge', label: 'Rating', configKey: 'badge' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
   {
@@ -185,26 +179,6 @@ const DisplaySettingsList = ({
                       >;
                       handleConfigChange({
                         [setting.configKey]: { ...cv, badgeFormat },
-                      });
-                    }}
-                  />
-                  <FormatSelect
-                    label="LMU"
-                    value={
-                      (configValue as { lmuFormat?: LmuBadgeFormat })
-                        .lmuFormat ?? 'plates'
-                    }
-                    options={LMU_BADGE_FORMATS}
-                    renderOption={(format) => (
-                      <LmuBadgeFormatPreview format={format} />
-                    )}
-                    onChange={(lmuFormat) => {
-                      const cv = settings.config[setting.configKey] as Record<
-                        string,
-                        unknown
-                      >;
-                      handleConfigChange({
-                        [setting.configKey]: { ...cv, lmuFormat },
                       });
                     }}
                   />
