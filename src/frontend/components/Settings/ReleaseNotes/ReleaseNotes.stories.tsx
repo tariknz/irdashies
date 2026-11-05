@@ -62,6 +62,24 @@ export const Cached: Story = {
     state: { status: 'ready', cached: true, release: releaseNotesFixture() },
   },
 };
+export const PullRequestLinks: Story = {
+  args: {
+    state: {
+      status: 'ready',
+      cached: true,
+      release: {
+        ...releaseNotesFixture(),
+        body: `## Fixes
+
+- Fixed overlays in https://github.com/tariknz/irdashies/pull/1234
+- Improved settings in https://github.com/tariknz/irdashies/pull/1235
+
+Read the [implementation details](https://github.com/tariknz/irdashies/pull/1234).
+`,
+      },
+    },
+  },
+};
 export const UnsafeMarkdown: Story = {
   args: {
     state: {

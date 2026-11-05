@@ -61,6 +61,32 @@ afterEach(() => {
 });
 
 describe('safe release notes rendering', () => {
+  it('shortens bare pull request URLs while preserving their destination and named links', () => {
+    const url = 'https://github.com/tariknz/irdashies/pull/1234';
+    render(
+      <ReleaseNotesPanel
+        version="2.1.0"
+        state={{
+          ...ready,
+          cached: true,
+          release: {
+            ...release,
+            body: `- Fixed overlays in ${url}\n\n[Details](${url})`,
+          },
+        }}
+      />
+    );
+    const link = screen.getByRole('link', { name: '#1234' });
+    expect(link).toHaveAttribute('href', url);
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(screen.getByRole('link', { name: 'Details' })).toHaveAttribute(
+      'href',
+      url
+    );
+    expect(screen.queryByText('Showing saved release notes.')).toBeNull();
+  });
+
   it('renders Markdown features, blocks unsafe HTML/URLs and untrusted media', () => {
     const { container } = render(
       <ReleaseNotesPanel
