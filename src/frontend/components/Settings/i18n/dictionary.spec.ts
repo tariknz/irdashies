@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { buildDictionary, ruDictionary } from './dictionary';
+import {
+  WIDGET_MANIFESTS,
+  type PropertySpecs,
+  type WidgetManifest,
+} from '@irdashies/types';
+import { buildDictionary, ruDictionary, ruTranslator } from './dictionary';
+import { normalizeText } from './domTranslator';
+import { KEEP_AS_IS } from './ru/keepAsIs';
 import { pluralRu } from './ru/patterns';
 
 describe('buildDictionary', () => {
@@ -36,6 +43,43 @@ describe('ruDictionary hygiene', () => {
     expect(
       entries.filter(([, v]) => /\p{Extended_Pictographic}/u.test(v))
     ).toEqual([]);
+  });
+});
+
+const manifestStrings = (manifest: WidgetManifest): string[] => {
+  const strings = [manifest.name, manifest.menuLabel];
+  const specs: PropertySpecs = manifest.properties ?? {};
+  for (const spec of Object.values(specs)) {
+    if (!spec) continue;
+    strings.push(spec.label, spec.description);
+    if (spec.type === 'number') strings.push(spec.units);
+    if (spec.type === 'enum') {
+      strings.push(...spec.options.map((option) => option.label));
+    }
+  }
+  return strings.filter((s): s is string => s !== undefined);
+};
+
+describe('widget manifest coverage', () => {
+  it('every manifest string is translated or kept', () => {
+    const missing = [
+      ...new Set(WIDGET_MANIFESTS.flatMap(manifestStrings)),
+    ].filter(
+      (s) =>
+        /[A-Za-z]/.test(s) &&
+        ruTranslator.translateText(s) === undefined &&
+        !KEEP_AS_IS.has(normalizeText(s))
+    );
+    expect(missing).toEqual([]);
+  });
+});
+
+describe('ruPatterns', () => {
+  it.each([
+    ['(3 hidden)', '(скрыто: 3)'],
+    ['(showing 12 hidden)', '(показаны скрытые: 12)'],
+  ])('%s -> %s', (text, expected) => {
+    expect(ruTranslator.translateText(text)).toBe(expected);
   });
 });
 

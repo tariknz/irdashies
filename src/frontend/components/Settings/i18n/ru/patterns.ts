@@ -12,4 +12,14 @@ export const pluralRu = (
   return forms.many;
 };
 
-export const ruPatterns: readonly Pattern[] = [];
+export const ruPatterns: readonly Pattern[] = [
+  // Settings menu: hidden (unsupported by the running sim) widgets toggle.
+  {
+    match: /^\((\d+) hidden\)$/,
+    replace: ([, n]) => `(скрыто: ${n})`,
+  },
+  {
+    match: /^\(showing (\d+) hidden\)$/,
+    replace: ([, n]) => `(показаны скрытые: ${n})`,
+  },
+];

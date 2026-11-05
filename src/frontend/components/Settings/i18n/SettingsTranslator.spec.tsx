@@ -12,13 +12,18 @@ const testTranslator: Translator = {
 };
 
 // .storybook is outside the vitest alias scope, so mockDashboardBridge cannot be
-// imported here; this covers the one method the settings pages need.
+// imported here; this covers what DashboardProvider and a settings page call.
 const mockDashboardBridge = {
   dashboardUpdated: (callback: (d: typeof defaultDashboard) => void) => {
     callback(defaultDashboard);
     return () => undefined;
   },
+  reloadDashboard: () => undefined,
   saveDashboard: () => undefined,
+  listProfiles: async () => [],
+  getCurrentProfile: async () => null,
+  onEditModeToggled: () => () => undefined,
+  stop: () => undefined,
 } as unknown as DashboardBridge;
 
 const flush = () => act(() => Promise.resolve());
@@ -80,8 +85,7 @@ describe('SettingsTranslator', () => {
     expect(document.documentElement.lang).toBe('en');
   });
 
-  // Enabled in Task 6 once the dictionary has translations.
-  it.todo('translates a real settings page (WindSettings)', async () => {
+  it('translates a real settings page (WindSettings)', async () => {
     const { findByText } = render(
       <DashboardProvider bridge={mockDashboardBridge}>
         <SettingsTranslator language="ru" translator={ruTranslator} />

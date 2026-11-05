@@ -10,4 +10,12 @@ export const KEEP_AS_IS: ReadonlySet<string> = new Set([
   'YouTube',
   'ABS',
   'RPM',
+  // Units, matrix sizes and class/series names shown as-is
+  'px',
+  '8x8',
+  '16x16',
+  'LMP',
+  'NASCAR',
+  '°C',
+  '°F',
 ]);
