@@ -14,6 +14,15 @@ let channelCallbackTimes: FixedSampleBuffer | undefined;
 /** One buffer per named measure, reported as `<name>Ms`. */
 let measureTimes:
   Record<RendererPerfMeasureName, FixedSampleBuffer> | undefined;
+/**
+ * The measures this window has recorded at least once. Only those are
+ * reported: the analyzer takes a measure's rate over the windows that report
+ * it, and a window that never runs the loop -- every other overlay, with
+ * per-widget windows -- would otherwise add its whole interval to the time
+ * and divide the rate by the number of windows. A window that does run it
+ * keeps reporting its idle intervals, at a count of 0.
+ */
+let measuresRun: Set<RendererPerfMeasureName> | undefined;
 
 export function isRendererPerfMetricsEnabled(): boolean {
   return telemetryCallbackTimes !== undefined;
@@ -31,7 +40,9 @@ export function recordRendererMeasure(
   name: RendererPerfMeasureName,
   durationMs: number
 ): void {
-  measureTimes?.[name].add(durationMs);
+  if (!measureTimes) return;
+  measureTimes[name].add(durationMs);
+  measuresRun?.add(name);
 }
 
 export function startRendererPerfMetrics(): void {
@@ -55,6 +66,10 @@ export function startRendererPerfMetrics(): void {
     ])
   ) as Record<RendererPerfMeasureName, FixedSampleBuffer>;
   measureTimes = measures;
+  const run = new Set<RendererPerfMeasureName>();
+  measuresRun = run;
+  const measured = (name: RendererPerfMeasureName) =>
+    run.has(name) ? measures[name].summarize() : undefined;
   const resetMeasures = () => {
     for (const name of RENDERER_PERF_MEASURE_NAMES) measures[name].reset();
   };
@@ -102,11 +117,11 @@ export function startRendererPerfMetrics(): void {
       frameTimeMs: stats,
       telemetryCallbackMs: callbackTimes.summarize(),
       channelCallbackMs: channelTimes.summarize(),
-      trackMapAnimationFrameMs: measures.trackMapAnimationFrame.summarize(),
-      standingsFinalTimingMs: measures.standingsFinalTiming.summarize(),
-      standingsPlayerGapsMs: measures.standingsPlayerGaps.summarize(),
-      lapTraceFrameMs: measures.lapTraceFrame.summarize(),
-      lapTraceBrakeCueMs: measures.lapTraceBrakeCue.summarize(),
+      trackMapAnimationFrameMs: measured('trackMapAnimationFrame'),
+      standingsFinalTimingMs: measured('standingsFinalTiming'),
+      standingsPlayerGapsMs: measured('standingsPlayerGaps'),
+      lapTraceFrameMs: measured('lapTraceFrame'),
+      lapTraceBrakeCueMs: measured('lapTraceBrakeCue'),
       telemetryWakeups: callbackTimes.summarize().count,
       channelWakeups: channelTimes.summarize().count,
       framesOver25Ms,

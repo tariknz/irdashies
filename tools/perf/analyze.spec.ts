@@ -244,6 +244,12 @@ describe('performance analysis', () => {
     expect(comparisonMarkdown(comparison)).toContain(
       '| Lap Trace brake-cue steps / second | -119.00 Hz |'
     );
+
+    // The Lap Trace window idle for an interval -- reported, at a count of 0
+    // -- is still its time: the rate halves, unlike for the other window,
+    // which reports nothing at all.
+    input.renderer.push(rendererSample(5000, { frame: 0, cue: 0, p99: 0 }));
+    expect(summarizeCapture(input, 0).renderer.lapTraceFrameRateHz).toBe(72);
   });
 
   it('flags a material iRacing FPS regression with conclusive evidence', () => {
