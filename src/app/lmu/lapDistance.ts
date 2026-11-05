@@ -33,15 +33,15 @@ export interface LmuLapDistanceState {
   /** Last value handed out, held monotonic so no consumer ever sees a step back. */
   lastPct: number;
   /**
-   * `mElapsedTime` when a new lap was anchored at zero ahead of scoring's wrap,
-   * or -1. Until scoring wraps, its value still belongs to the old lap and must
-   * not become the anchor; see estimateLmuLapDistPct.
+   * True from the lap counter flipping until scoring wraps. In between,
+   * `syncedPct` is measured from the line -- negative while short of it -- and
+   * scoring's values still belong to the old lap; see estimateLmuLapDistPct.
    */
-  awaitingWrapSince: number;
+  awaitingWrap: boolean;
   /**
-   * Scoring's fraction on the frame the lap counter flipped. Scoring can
-   * already read 0 there, wrapped but not yet past its own line, and that
-   * value is not adopted either: only the next scoring update is.
+   * The scoring fraction last taken as an anchor while awaiting the wrap, so
+   * the same value is not taken twice. On the flip frame it can already read
+   * 0, wrapped but not yet past its own line, and is not adopted as a wrap.
    */
   scoringAtTurnover: number;
 }
@@ -51,7 +51,7 @@ export const createLmuLapDistanceState = (): LmuLapDistanceState => ({
   syncedAt: -1,
   syncedLap: -1,
   lastPct: -1,
-  awaitingWrapSince: -1,
+  awaitingWrap: false,
   scoringAtTurnover: -1,
 });
 
@@ -60,7 +60,7 @@ export const resetLmuLapDistanceState = (state: LmuLapDistanceState): void => {
   state.syncedAt = -1;
   state.syncedLap = -1;
   state.lastPct = -1;
-  state.awaitingWrapSince = -1;
+  state.awaitingWrap = false;
   state.scoringAtTurnover = -1;
 };
 
@@ -83,15 +83,12 @@ const MAX_INTEGRATION_SEC = 0.5;
 const DISCONTINUITY_PCT = 0.005;
 
 /**
- * How far short of the line the estimate may be when the lap counter flips and
- * still be carried across it rather than snapped to zero.
+ * How far short of the line the estimate may be, when the lap counter flips
+ * with scoring already reading exactly 0, for that 0 to be read as scoring
+ * held at its own line rather than as a position past it.
  *
- * The two do not agree on where the line is. LMU's lap counter flips about
- * 1.6 m before scoring's distance reaches the end of the lap -- measured at
- * Laguna Seca and Fuji, at different speeds -- and the estimate follows
- * scoring. Snapping to zero at the flip showed as the plot jumping forward at
- * the line and then standing still when scoring wrapped. A shortfall beyond
- * this is not that offset but a stale estimate, and zero is the better guess.
+ * The counter and scoring do not agree on where the line is: at Laguna Seca
+ * and Fuji the counter flips about 1.6 m before scoring's distance wraps.
  */
 const LINE_OFFSET_TOLERANCE_M = 10;
 
@@ -166,40 +163,47 @@ export function estimateLmuLapDistPct(
     elapsedTime < state.syncedAt;
 
   if (hardResync) {
-    // The lap counter increments a little before scoring's percentage wraps,
-    // so for those few frames lapNumber says "new lap" while scoringPct still
-    // reads ~0.99. Anchoring the new lap up there meant the estimate started
-    // the lap at 99% and then fell to zero when scoring caught up -- a
-    // backwards step large enough for LapTrace's jump detection to read as
-    // impossible, which discarded the partial lap and began a dirty one.
+    // LMU's lap counter and scoring's distance do not agree on where the line
+    // is. The counter flips first -- about 1.6 m first at Laguna Seca and
+    // Fuji, and evidently much further at a circuit whose start and finish
+    // lines are apart -- so for a while lapNumber says "new lap" while
+    // scoringPct still reads ~0.99.
     //
-    // So a new lap is measured from the line until scoring's next update. The
-    // first frame of all is excluded: there is no previous lap to have changed
-    // from, and scoring's value is the only truth available.
+    // Anchoring the new lap at scoring's 0.99 started it at 99% and fell back
+    // to zero when scoring wrapped, a reversal LapTrace reads as impossible.
+    // Snapping to zero instead jumped the car forward by the gap, and once the
+    // gap took longer to drive than the estimator would wait, fell back to the
+    // old lap and crossed the line a second time, replaying the same metres.
+    //
+    // So the flip only starts the wait. The old lap carries on, following
+    // scoring as usual, and the new lap begins where scoring wraps, wherever
+    // that is. The first frame of all is excluded: there is no previous lap
+    // to have changed from, and scoring's value is the only truth available.
     state.syncedLap = lapNumber;
-    state.awaitingWrapSince = -1;
+    state.awaitingWrap = false;
     if (lapChanged) {
-      // Where the old lap's estimate is now. Usually a metre or two short of
-      // the line (see LINE_OFFSET_TOLERANCE_M): it carries on from there
-      // rather than jumping to zero, and starts the new lap when it reaches
-      // the line. Further out, the new lap starts at zero.
-      //
-      // Carried too when scoring has wrapped on this same frame but reads
-      // exactly 0: held at its own line, not yet past it. Anchoring there
-      // jumped the car forward by the offset and held it on the next update,
-      // as snapping to zero did. A wrapped reading above zero is a real
-      // position past the line, and is the anchor as before.
+      // Where the old lap is now: scoring itself if it has just updated,
+      // otherwise the estimate projected to this frame.
       const dtOld = elapsedTime - state.syncedAt;
       const oldPct =
-        dtOld >= 0 && dtOld <= MAX_INTEGRATION_SEC && Number.isFinite(speedMs)
-          ? state.syncedPct + (Math.max(0, speedMs) * dtOld) / trackLengthM
-          : state.lastPct;
-      const offLineM = Math.abs(1 - oldPct) * trackLengthM;
-      const carry = offLineM <= LINE_OFFSET_TOLERANCE_M;
-      if (scoringPct > 0.5 || (carry && scoringPct === 0)) {
-        state.syncedPct = carry ? oldPct - 1 : 0;
+        scoringPct > 0.5 && scoringPct !== state.syncedPct
+          ? scoringPct
+          : dtOld >= 0 &&
+              dtOld <= MAX_INTEGRATION_SEC &&
+              Number.isFinite(speedMs)
+            ? state.syncedPct + (Math.max(0, speedMs) * dtOld) / trackLengthM
+            : state.lastPct;
+      // Scoring reading exactly 0 on this frame has wrapped but is held at its
+      // own line, not past it, when the estimate says the line is a metre or
+      // two away; a 0 from further out, or anything above it, is a real
+      // position on the new lap.
+      const heldAtLine =
+        scoringPct === 0 &&
+        Math.abs(1 - oldPct) * trackLengthM <= LINE_OFFSET_TOLERANCE_M;
+      if (scoringPct > 0.5 || heldAtLine) {
+        state.syncedPct = oldPct - 1;
         state.syncedAt = elapsedTime;
-        state.awaitingWrapSince = elapsedTime;
+        state.awaitingWrap = true;
         state.scoringAtTurnover = scoringPct;
         return carryAcrossLine(state.syncedPct);
       }
@@ -210,29 +214,43 @@ export function estimateLmuLapDistPct(
     return state.lastPct;
   }
 
-  // Still waiting for scoring's first update of the new lap. Before it, its
-  // ~0.99 is the old lap's, and adopting it as the anchor below undid the new
-  // lap on the very next frame: the estimate went back to 99%, reached 100% --
-  // a second start/finish crossing -- and LapTrace dropped the lap it had just
-  // finished before its official time arrived. Integrate from the line
-  // instead.
-  //
-  // Bounded by one integration window: scoring wraps within a single 200 ms
-  // update, so a lap change it still disagrees with after that is something
-  // else -- a tow, a reset -- and scoring is the truth again.
-  if (state.awaitingWrapSince >= 0) {
-    const stillOldLap =
-      (scoringPct > 0.5 || scoringPct === state.scoringAtTurnover) &&
-      elapsedTime - state.awaitingWrapSince <= MAX_INTEGRATION_SEC;
-    if (stillOldLap) {
-      const dt = Math.max(0, elapsedTime - state.syncedAt);
-      const speed = Number.isFinite(speedMs) ? Math.max(0, speedMs) : 0;
-      return carryAcrossLine(state.syncedPct + (speed * dt) / trackLengthM);
+  // Between the lap counter flipping and scoring wrapping. Scoring's values
+  // are the old lap's, measured here from the line as value - 1, and each new
+  // one is adopted as the anchor exactly as on any other frame -- adopting
+  // them as they stand undid the new lap on the next frame, and the estimate
+  // crossed the line twice. No time limit: however long the gap takes to
+  // drive, scoring keeps the position honest until it wraps.
+  if (state.awaitingWrap) {
+    const wrapped = scoringPct <= 0.5 && scoringPct !== state.scoringAtTurnover;
+    if (!wrapped) {
+      if (scoringPct > 0.5 && scoringPct !== state.scoringAtTurnover) {
+        const fromLine = scoringPct - 1;
+        if (fromLine < state.syncedPct - DISCONTINUITY_PCT) {
+          // Scoring went well back on the old lap: a tow or a reset, not the
+          // run to the line. That is the truth, and the wait is over.
+          state.awaitingWrap = false;
+          state.syncedPct = scoringPct;
+          state.syncedAt = elapsedTime;
+          state.lastPct = clamp(scoringPct);
+          return state.lastPct;
+        }
+        state.syncedPct = fromLine;
+        state.syncedAt = elapsedTime;
+        state.scoringAtTurnover = scoringPct;
+      }
+      const dt = elapsedTime - state.syncedAt;
+      if (!(dt >= 0) || dt > MAX_INTEGRATION_SEC || !Number.isFinite(speedMs)) {
+        // Stalled, as below: hold rather than project a stale speed.
+        return state.lastPct;
+      }
+      return carryAcrossLine(
+        state.syncedPct + (Math.max(0, speedMs) * dt) / trackLengthM
+      );
     }
-    state.awaitingWrapSince = -1;
+    state.awaitingWrap = false;
     // Scoring wrapped before the carried estimate reached the line: the new
     // lap starts now, so what was handed out on the old one must not hold it.
-    if (scoringPct <= 0.5 && state.lastPct > 0.5) state.lastPct = 0;
+    if (state.lastPct > 0.5) state.lastPct = 0;
   }
 
   // Scoring moved on: adopt it as the new anchor. It is authoritative, and this
