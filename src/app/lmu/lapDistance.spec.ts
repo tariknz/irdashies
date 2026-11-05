@@ -504,6 +504,22 @@ describe('a lap that turns over before scoring wraps', () => {
     expect(lmuCompletedLaps(state)).toBe(6);
   });
 
+  it('gives completed laps from the very first frame, even near the line', () => {
+    // Waiting for a mid-lap frame to learn the offset published the counter
+    // as the completed count until then, and the correction stepped it back.
+    const state = createLmuLapDistanceState();
+    estimateLmuLapDistPct(
+      state,
+      frame({
+        lapNumber: 6,
+        completedLaps: 5,
+        scoringPct: 0.97,
+        elapsedTime: 10,
+      })
+    );
+    expect(lmuCompletedLaps(state)).toBe(5);
+  });
+
   it('takes the lap number from the counter mid-lap', () => {
     // Whatever happened at the line, mid-lap the sim's counter is right.
     const state = createLmuLapDistanceState();

@@ -171,6 +171,17 @@ function anchorToScoring(
   state.heldAtLineSince = -1;
   state.lap = frame.lapNumber >= 0 ? frame.lapNumber : null;
   state.lastLapNumber = frame.lapNumber;
+  // From this frame too, as the lap is. Left to the first mid-lap frame, an
+  // anchor near the line published the counter as the completed count, and
+  // the correction later could step it backwards.
+  const completed = frame.completedLaps;
+  state.completedOffset =
+    frame.lapNumber >= 0 &&
+    completed !== undefined &&
+    Number.isFinite(completed) &&
+    completed >= 0
+      ? completed - frame.lapNumber
+      : 0;
   return state.lastPct;
 }
 
