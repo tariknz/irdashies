@@ -16,8 +16,10 @@ export const TRANSLATED_ATTRIBUTES = [
 ] as const;
 
 const HAS_LATIN = /[A-Za-z]/;
+// `.font-mono` marks identifiers and values in the settings window (file
+// paths, CSV column names, accelerators, URLs), so its text stays as is.
 const SKIP_SELECTOR =
-  'input,textarea,code,pre,kbd,script,style,[translate="no"]';
+  'input,textarea,code,pre,kbd,script,style,.font-mono,[translate="no"]';
 // Elements whose own attributes (placeholder, title) are still translated.
 const ATTRIBUTE_SKIP_SELECTOR = 'code,pre,kbd,script,style,[translate="no"]';
 

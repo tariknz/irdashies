@@ -197,6 +197,25 @@ describe('domTranslator', () => {
     expect(container.querySelectorAll('input')[1].placeholder).toBe('Привет');
   });
 
+  it('keeps monospace text and its descendants untranslated', async () => {
+    const translator = createTranslator(new Map([['Speed', 'Скорость']]), []);
+    const { container } = render(
+      <div>
+        <span className="rounded font-mono">Speed</span>
+        <div className="font-mono">
+          <b>Speed</b>
+        </div>
+        <p>Speed</p>
+      </div>
+    );
+    stop = startDomTranslation(document.body, translator);
+    await flush();
+
+    expect(container.querySelector('span')?.textContent).toBe('Speed');
+    expect(container.querySelector('b')?.textContent).toBe('Speed');
+    expect(container.querySelector('p')?.textContent).toBe('Скорость');
+  });
+
   it('settles when translation contains Latin', async () => {
     const base = createTranslator(DICT, []);
     const translateText = vi.fn((text: string) => base.translateText(text));
