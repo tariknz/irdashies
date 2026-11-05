@@ -38,6 +38,12 @@ export interface LmuLapDistanceState {
    * not become the anchor; see estimateLmuLapDistPct.
    */
   awaitingWrapSince: number;
+  /**
+   * Scoring's fraction on the frame the lap counter flipped. Scoring can
+   * already read 0 there, wrapped but not yet past its own line, and that
+   * value is not adopted either: only the next scoring update is.
+   */
+  scoringAtTurnover: number;
 }
 
 export const createLmuLapDistanceState = (): LmuLapDistanceState => ({
@@ -46,6 +52,7 @@ export const createLmuLapDistanceState = (): LmuLapDistanceState => ({
   syncedLap: -1,
   lastPct: -1,
   awaitingWrapSince: -1,
+  scoringAtTurnover: -1,
 });
 
 export const resetLmuLapDistanceState = (state: LmuLapDistanceState): void => {
@@ -54,6 +61,7 @@ export const resetLmuLapDistanceState = (state: LmuLapDistanceState): void => {
   state.syncedLap = -1;
   state.lastPct = -1;
   state.awaitingWrapSince = -1;
+  state.scoringAtTurnover = -1;
 };
 
 /**
@@ -73,6 +81,19 @@ const MAX_INTEGRATION_SEC = 0.5;
  * integration error.
  */
 const DISCONTINUITY_PCT = 0.005;
+
+/**
+ * How far short of the line the estimate may be when the lap counter flips and
+ * still be carried across it rather than snapped to zero.
+ *
+ * The two do not agree on where the line is. LMU's lap counter flips about
+ * 1.6 m before scoring's distance reaches the end of the lap -- measured at
+ * Laguna Seca and Fuji, at different speeds -- and the estimate follows
+ * scoring. Snapping to zero at the flip showed as the plot jumping forward at
+ * the line and then standing still when scoring wrapped. A shortfall beyond
+ * this is not that offset but a stale estimate, and zero is the better guess.
+ */
+const LINE_OFFSET_TOLERANCE_M = 10;
 
 export interface LmuLapDistanceFrame {
   /** The 5 Hz scoring fraction, 0..1, or negative when unknown. */
@@ -111,11 +132,35 @@ export function estimateLmuLapDistPct(
     return scoringPct >= 0 ? clamp(scoringPct) : scoringPct;
   }
 
+  /**
+   * The value to hand out while a new lap waits for scoring to wrap, from its
+   * position on the new lap: negative while still short of the line.
+   *
+   * Short of the line, the old lap continues; at or past it, the new lap
+   * starts. Monotonic either way, and never back from the new lap to the old.
+   */
+  const carryAcrossLine = (newLapPct: number): number => {
+    const onOldLap = state.lastPct > 0.5;
+    if (newLapPct < 0) {
+      if (onOldLap)
+        state.lastPct = Math.max(state.lastPct, clamp(1 + newLapPct));
+      return state.lastPct;
+    }
+    state.lastPct = onOldLap
+      ? clamp(newLapPct)
+      : Math.max(state.lastPct, clamp(newLapPct));
+    return state.lastPct;
+  };
+
+  // -1 is the "nothing known yet" sentinel. A lap carried across the line
+  // anchors a little below zero, so the test is not `>= 0`.
+  const anchored = state.syncedPct > -0.5;
+
   // A genuine lap change, as opposed to the first frame we have ever seen.
-  const lapChanged = state.syncedPct >= 0 && lapNumber !== state.syncedLap;
+  const lapChanged = anchored && lapNumber !== state.syncedLap;
 
   const hardResync =
-    state.syncedPct < 0 ||
+    !anchored ||
     lapChanged ||
     scoringPct < state.syncedPct - DISCONTINUITY_PCT ||
     elapsedTime < state.syncedAt;
@@ -128,38 +173,71 @@ export function estimateLmuLapDistPct(
     // backwards step large enough for LapTrace's jump detection to read as
     // impossible, which discarded the partial lap and began a dirty one.
     //
-    // So a new lap anchors at zero when scoring has not wrapped yet. The first
-    // frame of all is excluded: there is no previous lap to have changed from,
-    // and scoring's value is the only truth available.
-    const aheadOfWrap = lapChanged && scoringPct > 0.5;
-    const anchorPct = aheadOfWrap ? 0 : scoringPct;
-    state.syncedPct = anchorPct;
-    state.syncedAt = elapsedTime;
+    // So a new lap is measured from the line until scoring's next update. The
+    // first frame of all is excluded: there is no previous lap to have changed
+    // from, and scoring's value is the only truth available.
     state.syncedLap = lapNumber;
-    state.lastPct = clamp(anchorPct);
-    state.awaitingWrapSince = aheadOfWrap ? elapsedTime : -1;
+    state.awaitingWrapSince = -1;
+    if (lapChanged) {
+      // Where the old lap's estimate is now. Usually a metre or two short of
+      // the line (see LINE_OFFSET_TOLERANCE_M): it carries on from there
+      // rather than jumping to zero, and starts the new lap when it reaches
+      // the line. Further out, the new lap starts at zero.
+      //
+      // Carried too when scoring has wrapped on this same frame but reads
+      // exactly 0: held at its own line, not yet past it. Anchoring there
+      // jumped the car forward by the offset and held it on the next update,
+      // as snapping to zero did. A wrapped reading above zero is a real
+      // position past the line, and is the anchor as before.
+      const dtOld = elapsedTime - state.syncedAt;
+      const oldPct =
+        dtOld >= 0 && dtOld <= MAX_INTEGRATION_SEC && Number.isFinite(speedMs)
+          ? state.syncedPct + (Math.max(0, speedMs) * dtOld) / trackLengthM
+          : state.lastPct;
+      const offLineM = Math.abs(1 - oldPct) * trackLengthM;
+      const carry = offLineM <= LINE_OFFSET_TOLERANCE_M;
+      if (scoringPct > 0.5 || (carry && scoringPct === 0)) {
+        state.syncedPct = carry ? oldPct - 1 : 0;
+        state.syncedAt = elapsedTime;
+        state.awaitingWrapSince = elapsedTime;
+        state.scoringAtTurnover = scoringPct;
+        return carryAcrossLine(state.syncedPct);
+      }
+    }
+    state.syncedPct = scoringPct;
+    state.syncedAt = elapsedTime;
+    state.lastPct = clamp(scoringPct);
     return state.lastPct;
   }
 
-  // Still waiting for scoring to wrap after a lap anchored at zero. Its ~0.99
-  // is the old lap's, and adopting it as the anchor below undid the zero on
-  // the very next frame: the estimate went back to 99%, reached 100% -- a
-  // second start/finish crossing -- and LapTrace dropped the lap it had just
-  // finished before its official time arrived. Integrate from zero instead.
+  // Still waiting for scoring's first update of the new lap. Before it, its
+  // ~0.99 is the old lap's, and adopting it as the anchor below undid the new
+  // lap on the very next frame: the estimate went back to 99%, reached 100% --
+  // a second start/finish crossing -- and LapTrace dropped the lap it had just
+  // finished before its official time arrived. Integrate from the line
+  // instead.
   //
   // Bounded by one integration window: scoring wraps within a single 200 ms
   // update, so a lap change it still disagrees with after that is something
   // else -- a tow, a reset -- and scoring is the truth again.
   if (state.awaitingWrapSince >= 0) {
     const stillOldLap =
-      scoringPct > 0.5 &&
+      (scoringPct > 0.5 || scoringPct === state.scoringAtTurnover) &&
       elapsedTime - state.awaitingWrapSince <= MAX_INTEGRATION_SEC;
-    if (!stillOldLap) state.awaitingWrapSince = -1;
+    if (stillOldLap) {
+      const dt = Math.max(0, elapsedTime - state.syncedAt);
+      const speed = Number.isFinite(speedMs) ? Math.max(0, speedMs) : 0;
+      return carryAcrossLine(state.syncedPct + (speed * dt) / trackLengthM);
+    }
+    state.awaitingWrapSince = -1;
+    // Scoring wrapped before the carried estimate reached the line: the new
+    // lap starts now, so what was handed out on the old one must not hold it.
+    if (scoringPct <= 0.5 && state.lastPct > 0.5) state.lastPct = 0;
   }
 
   // Scoring moved on: adopt it as the new anchor. It is authoritative, and this
   // is what keeps the integration from drifting.
-  if (state.awaitingWrapSince < 0 && scoringPct !== state.syncedPct) {
+  if (scoringPct !== state.syncedPct) {
     state.syncedPct = scoringPct;
     state.syncedAt = elapsedTime;
   }
