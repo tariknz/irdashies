@@ -224,18 +224,26 @@ describe('domTranslator', () => {
     expect(container.querySelector('p')?.textContent).toBe('Скорость');
   });
 
-  it('translates a monospace button but not monospace text inside it', async () => {
+  it('translates only the allowlisted labels in monospace text', async () => {
     const translator = createTranslator(
       new Map([
         ['Not set', 'Не задано'],
+        ['Press keys...', 'Нажмите клавиши…'],
         ['Speed', 'Скорость'],
+        ['S', 'С'],
+        ['Left', 'Слева'],
+        ['Delete', 'Удалить'],
       ]),
       []
     );
     const { container } = render(
       <div>
         <button className="font-mono">Not set</button>
+        <button className="font-mono">Press keys...</button>
         <button className="font-mono">Ctrl + Shift + F6</button>
+        <button className="font-mono">S</button>
+        <button className="font-mono">Left</button>
+        <button className="font-mono">Delete</button>
         <span className="font-mono">Speed</span>
         <button>
           <span className="font-mono">Speed</span>
@@ -245,11 +253,19 @@ describe('domTranslator', () => {
     stop = startDomTranslation(document.body, translator);
     await flush();
 
-    const buttons = container.querySelectorAll('button');
-    expect(buttons[0].textContent).toBe('Не задано');
-    expect(buttons[1].textContent).toBe('Ctrl + Shift + F6');
+    const buttons = [...container.querySelectorAll('button')].map(
+      (button) => button.textContent
+    );
+    expect(buttons).toEqual([
+      'Не задано',
+      'Нажмите клавиши…',
+      'Ctrl + Shift + F6',
+      'S',
+      'Left',
+      'Delete',
+      'Speed',
+    ]);
     expect(container.querySelector('div > span')?.textContent).toBe('Speed');
-    expect(buttons[2].textContent).toBe('Speed');
   });
 
   it('settles when translation contains Latin', async () => {

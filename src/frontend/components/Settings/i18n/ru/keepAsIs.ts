@@ -96,6 +96,9 @@ export const KEEP_AS_IS: ReadonlySet<string> = new Set([
   'Conditions',
   // iRacing camera group name (Gantry incident camera default)
   'Far Chase',
+  // Telemetry Inspector source badge (Telemetry / Session)
+  'T',
+  'S',
   // Radar dev tuning keys, shown as identifiers
   'speedSmoothing',
   'extrapolationS',

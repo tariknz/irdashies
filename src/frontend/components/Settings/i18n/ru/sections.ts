@@ -260,7 +260,7 @@ export default {
   'Reset All': 'Сбросить все',
   'Reset to default': 'Вернуть по умолчанию',
   'Failed to set keybinding': 'Не удалось назначить сочетание',
-  // Text of the (font-mono) shortcut recorder button
+  // Text of the (font-mono) shortcut recorder button; see MONO_TRANSLATABLE
   'Press keys...': 'Нажмите клавиши…',
   'Not set': 'Не задано',
   'Widget Visibility': 'Видимость виджетов',
@@ -1092,10 +1092,10 @@ export default {
     'Использовать профиль «Овал» на овалах. Внешний вид, расстояния и предупреждения хранятся отдельно для каждого профиля.',
   Preset: 'Пресет',
   'Find a setting': 'Найти настройку',
-  'Find a setting…': 'Найти настройку…',
+  'Find a setting…': 'Найти настройку (по-английски)…',
   'Radar settings sections': 'Разделы настроек радара',
   'No setting matches. The search looks through every level, Dev included.':
-    'Ничего не найдено. Поиск идёт по всем уровням, включая служебные.',
+    'Ничего не найдено. Поиск идёт по английским названиям настроек на всех уровнях, включая служебные.',
   'Radar preview': 'Предпросмотр радара',
   'Pole side key': 'Клавиша стороны поула',
   'In some cases the radar may draw the lanes on the wrong side at a start, restart or standing grid, because the sim does not say which side the pole line is on. The key flips the side on the current track and remembers it for future races.':
@@ -1343,9 +1343,6 @@ export default {
   'Watched Properties (': 'Отслеживаемые свойства (',
   'No properties configured. Add some below.':
     'Свойства не заданы. Добавьте их ниже.',
-  // Source badge of a watched property: Telemetry / Session
-  T: 'Т',
-  S: 'С',
   'Add Custom Property': 'Добавить своё свойство',
   Telemetry: 'Телеметрия',
   'Property path (e.g., Speed)': 'Путь к свойству (например, Speed)',
@@ -1364,7 +1361,7 @@ export default {
   'Car Position': 'Позиции машин',
   'Player Position': 'Ваша позиция',
   'Player Class Position': 'Ваша позиция в классе',
-  'Track Temp (Crew)': 'Температура трассы (для команды)',
+  'Track Temp (Crew)': 'Температура трассы (замер команды)',
   'LMU Pit Stop Time': 'Время пит-стопа LMU',
   'LMU Repair Time': 'Время ремонта LMU',
   'LMU Refuel Target': 'Цель заправки LMU',

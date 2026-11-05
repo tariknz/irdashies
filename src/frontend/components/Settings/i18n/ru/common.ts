@@ -138,8 +138,9 @@ export default {
   Session: 'Сессия',
   Track: 'Трасса',
   Drivers: 'Пилоты',
-  Label: 'Подпись',
-  Value: 'Значение',
+  // Fuel font-size sliders: a narrow (w-8) label beside each slider
+  Label: 'Подп.',
+  Value: 'Знач.',
   Style: 'Стиль',
   Theme: 'Тема',
   Add: 'Добавить',
