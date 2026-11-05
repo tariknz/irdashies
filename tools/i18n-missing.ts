@@ -54,6 +54,31 @@ const decodeEntities = (text: string): string =>
     return ENTITIES[body] ?? match;
   });
 
+const SIMPLE_ESCAPES: Record<string, string> = {
+  n: ' ',
+  r: ' ',
+  t: ' ',
+  b: '',
+  f: '',
+  v: '',
+  '0': '',
+};
+
+// Decodes the escape sequences of a JS string literal body (not JSX text).
+export const decodeEscapes = (text: string): string =>
+  text.replace(
+    /\\(?:u\{([0-9a-fA-F]+)\}|u([0-9a-fA-F]{4})|x([0-9a-fA-F]{2})|([\s\S]))/g,
+    (_, braced?: string, uni?: string, hex?: string, simple?: string) => {
+      const code = braced ?? uni ?? hex;
+      if (code !== undefined) {
+        const point = parseInt(code, 16);
+        return point <= 0x10ffff ? String.fromCodePoint(point) : _;
+      }
+      if (simple === '\n') return '';
+      return SIMPLE_ESCAPES[simple as string] ?? (simple as string);
+    }
+  );
+
 interface Literal {
   value: string;
   index: number;
@@ -115,12 +140,15 @@ export const extractCandidates = (source: string): Candidate[] => {
       // JSX attribute strings are entity-decoded; JS string literals are not.
       const jsxAttribute = direct && m[0].trimEnd().endsWith('=');
       add(
-        jsxAttribute ? decodeEntities(literal.value) : literal.value,
+        jsxAttribute
+          ? decodeEntities(literal.value)
+          : decodeEscapes(literal.value),
         literal.index
       );
     }
   }
-  for (const m of source.matchAll(DIALOG_LITERAL)) add(m[2], m.index);
+  for (const m of source.matchAll(DIALOG_LITERAL))
+    add(decodeEscapes(m[2]), m.index);
   return found.sort((a, b) => a.index - b.index);
 };
 

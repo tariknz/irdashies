@@ -59,7 +59,10 @@ export const createTranslator = (
 export const startDomTranslation = (
   root: Node,
   translator: Translator,
-  options: { onMissing?: (text: string) => void } = {}
+  options: {
+    onMissing?: (text: string) => void;
+    onError?: (error: unknown) => void;
+  } = {}
 ): (() => void) => {
   const reported = new Set<string>();
   // Last value written by us per node/attribute, so our own output (which may
@@ -115,9 +118,18 @@ export const startDomTranslation = (
     }
   };
 
+  // One throwing pattern must not drop the rest of a batch or the window.
+  const guarded = (work: () => void) => {
+    try {
+      work();
+    } catch (error) {
+      options.onError?.(error);
+    }
+  };
+
   const walk = (node: Node) => {
     if (node.nodeType === Node.TEXT_NODE) {
-      translateTextNode(node as Text);
+      guarded(() => translateTextNode(node as Text));
       return;
     }
     if (
@@ -130,7 +142,9 @@ export const startDomTranslation = (
     if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node as Element;
       if (el.matches(ATTRIBUTE_SKIP_SELECTOR)) return;
-      for (const name of TRANSLATED_ATTRIBUTES) translateAttribute(el, name);
+      for (const name of TRANSLATED_ATTRIBUTES) {
+        guarded(() => translateAttribute(el, name));
+      }
       if (el.matches(SKIP_SELECTOR)) return;
     }
     node.childNodes.forEach(walk);
@@ -138,17 +152,19 @@ export const startDomTranslation = (
 
   const observer = new MutationObserver((records) => {
     for (const record of records) {
-      if (record.type === 'characterData') {
-        if (record.target.nodeType === Node.TEXT_NODE) {
-          translateTextNode(record.target as Text);
+      guarded(() => {
+        if (record.type === 'characterData') {
+          if (record.target.nodeType === Node.TEXT_NODE) {
+            translateTextNode(record.target as Text);
+          }
+        } else if (record.type === 'attributes') {
+          if (record.attributeName && record.target.nodeType === 1) {
+            translateAttribute(record.target as Element, record.attributeName);
+          }
+        } else {
+          record.addedNodes.forEach(walk);
         }
-      } else if (record.type === 'attributes') {
-        if (record.attributeName && record.target.nodeType === 1) {
-          translateAttribute(record.target as Element, record.attributeName);
-        }
-      } else {
-        record.addedNodes.forEach(walk);
-      }
+      });
     }
   });
 

@@ -256,9 +256,9 @@ export default {
 
   // Key Bindings
   'Customize keyboard shortcuts. Click a binding then press a new key combination, or hold two or more controller buttons together for a combo.':
-    'Настройте горячие клавиши. Нажмите на привязку, затем нажмите новое сочетание клавиш или одновременно удерживайте две и более кнопки контроллера, чтобы задать комбинацию.',
+    'Настройте горячие клавиши. Щёлкните привязку, затем нажмите новое сочетание клавиш или одновременно удерживайте две и более кнопки контроллера, чтобы задать комбинацию.',
   'Reset All': 'Сбросить все',
-  'Reset to default': 'Вернуть по умолчанию',
+  'Reset to default': 'Вернуть сочетание по умолчанию',
   'Failed to set keybinding': 'Не удалось назначить сочетание',
   // Text of the (font-mono) shortcut recorder button; see MONO_TRANSLATABLE
   'Press keys...': 'Нажмите клавиши…',
@@ -749,7 +749,7 @@ export default {
   'Off-Track For': 'Вне трассы в течение',
   'How long a car must be off the racing surface before an off-track is logged. Raise it to ignore cars clipping a kerb or putting a wheel wide; lower it to catch every excursion.':
     'Сколько машина должна пробыть за пределами трассы, чтобы вылет попал в ленту. Увеличьте, чтобы не учитывать заезды на поребрик и колесо за линией; уменьшите, чтобы ловить каждый выезд.',
-  'Pit Entry After': 'Заезд в боксы через',
+  'Pit Entry After': 'Въезд на пит-лейн через',
   'How long a car must be on pit road before a pit entry is logged. Raise it to avoid false entries from cars hugging the pit exit line; lower it to log entries sooner.':
     'Сколько машина должна пробыть на пит-лейне, чтобы заезд в боксы попал в ленту. Увеличьте, чтобы избежать ложных заездов от машин, прижимающихся к линии выезда с пит-лейна; уменьшите, чтобы фиксировать заезды раньше.',
   'Per-Type Cooldown': 'Пауза для каждого типа',
@@ -960,7 +960,7 @@ export default {
   Duration: 'Длительность',
   Level: 'Уровень',
   'Test sound': 'Проверить звук',
-  'Test Sound': 'Проверка звука',
+  'Test Sound': 'Проверить звук',
   'Plays the three beeps and the brake tone here in Settings, so you can tune them without being on track.':
     'Проигрывает три сигнала отсчёта и сигнал торможения прямо в настройках, чтобы их можно было подобрать, не выезжая на трассу.',
   'Restore default sound': 'Вернуть звук по умолчанию',

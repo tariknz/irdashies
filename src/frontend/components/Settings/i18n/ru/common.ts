@@ -49,7 +49,7 @@ export default {
   Throttle: 'Газ',
   Brake: 'Тормоз',
   Speed: 'Скорость',
-  Overlay: 'Оверлей',
+  Overlay: 'Наложение',
   'km/h': 'км/ч',
   mph: 'миль/ч',
   Left: 'Слева',

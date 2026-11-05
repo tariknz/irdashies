@@ -300,6 +300,34 @@ describe('domTranslator', () => {
     expect(onMissing).toHaveBeenCalledWith('Unknown text');
   });
 
+  it('keeps translating and reports errors when translateText throws', async () => {
+    const onError = vi.fn();
+    const inner = createTranslator(DICT, []);
+    const translator = {
+      translateText: (text: string) => {
+        if (text.includes('Boom')) throw new Error('bad pattern');
+        return inner.translateText(text);
+      },
+    };
+    render(
+      <div>
+        <p>Hello</p>
+        <p>Boom</p>
+        <p>Show</p>
+      </div>
+    );
+    stop = startDomTranslation(document.body, translator, { onError });
+    await flush();
+    const added = document.createElement('div');
+    added.innerHTML = '<p>Boom</p><p>Hide</p>';
+    document.body.appendChild(added);
+    await flush();
+
+    const texts = [...document.querySelectorAll('p')].map((p) => p.textContent);
+    expect(texts).toEqual(['Привет', 'Boom', 'Показать', 'Boom', 'Скрыть']);
+    expect(onError).toHaveBeenCalledTimes(2);
+  });
+
   it('stop() disconnects', async () => {
     const translator = createTranslator(DICT, []);
     const { container } = render(<div />);

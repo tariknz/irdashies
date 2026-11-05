@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 import logger from '@irdashies/utils/logger';
 import { ruTranslator } from './dictionary';
 import { startDomTranslation, type Translator } from './domTranslator';
@@ -13,11 +13,12 @@ export const SettingsTranslator = ({
   language = getSettingsLanguage(),
   translator = ruTranslator,
 }: SettingsTranslatorProps): null => {
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.lang = language;
     if (language !== 'ru') return;
 
     const stop = startDomTranslation(document.body, translator, {
+      onError: (error) => logger.warn('i18n: translation failed', error),
       onMissing: import.meta.env.DEV
         ? (text) => logger.debug('i18n missing:', text)
         : undefined,

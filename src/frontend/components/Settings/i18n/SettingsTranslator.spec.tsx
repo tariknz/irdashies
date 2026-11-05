@@ -222,6 +222,41 @@ describe('SettingsTranslator', () => {
       ),
     ];
 
+    // Tabs found per page, so a restyle that breaks the selector fails loudly
+    // instead of silently skipping every tab.
+    const tabsFound = new Map<string, number>();
+
+    // Minimum tab count per page, from the current behaviour. Pages without
+    // tabs are not listed.
+    const MIN_TABS: Record<string, number> = {
+      battle: 3,
+      blindspotmonitor: 3,
+      carsystems: 2,
+      cornername: 3,
+      deltaspeed: 2,
+      fastercarsfrombehind: 2,
+      flag: 2,
+      flatmap: 3,
+      fuel: 5,
+      gantry: 4,
+      infobar: 3,
+      input: 3,
+      laptimelog: 3,
+      laptrace: 6,
+      map: 4,
+      pitlanehelper: 3,
+      radar: 11,
+      rejoin: 2,
+      relative: 6,
+      sectordelta: 2,
+      shiftlight: 3,
+      slowcarahead: 2,
+      standings: 6,
+      streamchat: 3,
+      tachometer: 3,
+      weather: 3,
+    };
+
     const missingOn = async (Page: Page, type: string) => {
       const missing = new Set<string>();
       const { container } = render(
@@ -245,6 +280,7 @@ describe('SettingsTranslator', () => {
       // Open every tab (and radar section) in turn; the translator follows.
       // Buttons are looked up again each time, as a click re-renders the page.
       const count = tabButtons(container).length;
+      tabsFound.set(type, count);
       for (let i = 0; i < count; i++) {
         const button = tabButtons(container)[i];
         await act(async () => {
@@ -288,6 +324,9 @@ describe('SettingsTranslator', () => {
       'leaves no English text on the %s page',
       async (type, Page) => {
         expect(await missingOn(Page, type)).toEqual([]);
+        expect(tabsFound.get(type) ?? 0).toBeGreaterThanOrEqual(
+          MIN_TABS[type] ?? 0
+        );
       }
     );
   });

@@ -110,6 +110,16 @@ describe('extractCandidateStrings coverage', () => {
     ]);
   });
 
+  it('decodes JS escape sequences in string literals', () => {
+    const source =
+      "{ label: 'Fast \\u2014 slow', title: 'Caf\\u{e9} \\x41ll', description: 'It\\'s\\nhere \\\\ ok' }";
+    expect(extractCandidateStrings(source)).toEqual([
+      'Fast \u2014 slow',
+      'Caf\u00e9 All',
+      "It's here \\ ok",
+    ]);
+  });
+
   it('collects message props', () => {
     expect(extractCandidateStrings("{ message: 'Saved' }")).toEqual(['Saved']);
   });

@@ -289,7 +289,7 @@ export default {
     'Окрашивать ваш график тормоза там, где срабатывала ABS, тем же жёлтым, что и в виджете «Педали и руль»',
   'ABS Style': 'Вид ABS',
   "'Bar' fills your brake trace down to the axis where ABS engaged, the same as the Input Trace widget, and blends colour with a filled reference trace it overlaps. 'Overlay' just colours the line.":
-    '«Полоса» заливает ваш график тормоза до оси там, где сработала ABS, как в виджете «Графики педалей и руля», и смешивает цвет с залитым эталонным графиком, который она перекрывает. «Оверлей» только окрашивает линию.',
+    '«Полоса» заливает ваш график тормоза до оси там, где сработала ABS, как в виджете «Графики педалей и руля», и смешивает цвет с залитым эталонным графиком, который она перекрывает. «Наложение» только окрашивает линию.',
   'Bar (fill under curve)': 'Полоса (заливка под кривой)',
   'ABS Strip': 'Полоса ABS',
   'Also mark where ABS engaged as a bar beneath the traces, easier to spot than the trace colour alone':
@@ -335,7 +335,7 @@ export default {
     'Насколько крупнее рисуется только что пройденный поворот по сравнению с предыдущими',
   // map
   Numbers: 'Номера',
-  Names: 'Имена',
+  Names: 'Названия',
   Both: 'Оба',
   'High Contrast Labels': 'Контрастные подписи',
   'Use black background for turn numbers and turn names for better legibility':
