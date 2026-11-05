@@ -185,9 +185,9 @@ function tileX(distanceM: number, geometry: TileGeometry): number {
  * Within each bin the first, lowest, highest and last samples are emitted at
  * their own x in sample order, which is what keeps a throttle lift drawn
  * before the brake application that followed it: every emitted point sits
- * where the sim measured it. Bins are counted from the start of the lap
- * rather than from `fromM`, so two tiles sharing a stretch of track emit the
- * same points along it.
+ * where the sim measured it. Bins are counted from the start of the lap, on
+ * the lap-local distance -- not from `fromM`, and not after `offsetM` -- so two
+ * tiles sharing a stretch of track emit the same points along it.
  *
  * Values are normalised as `(value - min) / range` so pedals (0..1) and speed
  * (m/s against the lap's own range) share one code path.
@@ -279,7 +279,11 @@ function appendSamples(
       binIndex = Number.NaN;
     }
 
-    const bin = Math.floor((d + offsetM) / binM);
+    // From the lap-local distance, not the unwrapped one: the same stretch of
+    // track is drawn at different offsets in neighbouring spans, and rounding
+    // could put a sample on a bin boundary in a different bin in each, moving
+    // the trace when the plot swaps spans. Each call bins its own piece.
+    const bin = Math.floor(d / binM);
     if (bin !== binIndex) {
       flushBin();
       binIndex = bin;

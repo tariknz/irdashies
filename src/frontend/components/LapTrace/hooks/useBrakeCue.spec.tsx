@@ -6,7 +6,7 @@ import {
   type TrackStateSnapshot,
 } from '@irdashies/types';
 import { useLapTraceStore } from '@irdashies/context';
-import { hydrateLapTrace } from '../../../domain/lapTrace/hydrateLapTrace';
+import { hydrateLapTrace } from '@irdashies/domain/lapTrace/hydrateLapTrace';
 import { makeSyntheticLapTrace } from '../fixtures/syntheticLap';
 import { BrakeCue } from '../components/BrakeCue';
 
@@ -85,8 +85,7 @@ describe('useBrakeCue', () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (window as any).channelBridge;
+    Reflect.deleteProperty(window, 'channelBridge');
     useLapTraceStore.getState().reset();
   });
 
