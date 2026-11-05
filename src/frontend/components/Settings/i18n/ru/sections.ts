@@ -26,9 +26,9 @@ export default {
   'Automatic learning is paused while editing. Save changes, then Reload file to resume learning and enable Reset.':
     'Во время правки автоматическое определение приостановлено. Сохраните изменения, затем нажмите «Перезагрузить файл», чтобы возобновить определение и разблокировать сброс.',
   'No learned calibration for this track. Pit entry and exit are learned as cars use the pit lane.':
-    'Для этой трассы калибровки пока нет. Въезд и выезд с пит-лейна определяются, когда машины проезжают по пит-лейну.',
+    'Для этой трассы калибровки пока нет. Точки въезда на пит-лейн и выезда с него определяются, когда машины проезжают по пит-лейну.',
   'Clear learned pit entry and exit positions for this track. Other tracks are kept.':
-    'Удалить определённые позиции въезда и выезда с пит-лейна для этой трассы. Данные других трасс сохранятся.',
+    'Удалить определённые точки въезда на пит-лейн и выезда с него для этой трассы. Данные других трасс сохранятся.',
   'Reset calibration': 'Сбросить калибровку',
   'Resetting…': 'Сброс…',
   'Calibration file': 'Файл калибровки',
@@ -257,7 +257,7 @@ export default {
   'Reset All': 'Сбросить все',
   'Reset to default': 'Вернуть по умолчанию',
   'Failed to set keybinding': 'Не удалось назначить сочетание',
-  // Text of the recorder button; .font-mono currently keeps it in English.
+  // Text of the (font-mono) shortcut recorder button
   'Press keys...': 'Нажмите клавиши…',
   'Not set': 'Не задано',
   'Widget Visibility': 'Видимость виджетов',
@@ -379,7 +379,7 @@ export default {
     'Показывают, какие виджеты включены и как они настроены. Это помогает улучшать настройки по умолчанию и покрытие тестами, а также принимать решения об отказе от функций.',
   'Pit-lane calibration': 'Калибровка пит-лейна',
   'Track IDs and learned pit entry and exit positions are sent at startup when calibration changes to help improve pit-lane detection.':
-    'ID трасс и определённые позиции въезда и выезда с пит-лейна отправляются при запуске, если калибровка изменилась, чтобы улучшить распознавание пит-лейна.',
+    'ID трасс и определённые точки въезда на пит-лейн и выезда с него отправляются при запуске, если калибровка изменилась, чтобы улучшить распознавание пит-лейна.',
   'Radar pole-side corrections': 'Исправления стороны поула на радаре',
   'Track IDs and the pole side you chose for a race start, a restart or a standing grid with the radar key, together with the side the built-in table gave, are sent shortly after your corrections change (or at the next startup), to improve the table for everyone.':
     'ID трасс и сторона поула, которую вы выбрали клавишей радара для старта гонки, рестарта или старта с места, вместе со стороной из встроенной таблицы отправляются вскоре после изменения ваших исправлений (или при следующем запуске), чтобы улучшить таблицу для всех.',

@@ -108,15 +108,15 @@ describe('ruPatterns', () => {
     ],
     [
       'Calibration reset for Spa. Pit entry and exit will be learned again as cars use the pit lane.',
-      'Калибровка трассы «Spa» сброшена. Въезд и выезд с пит-лейна будут определены заново, когда машины проедут по пит-лейну.',
+      'Калибровка трассы «Spa» сброшена. Точки въезда на пит-лейн и выезда с него будут определены заново, когда машины проедут по пит-лейну.',
     ],
     [
       'Clear learned pit entry and exit positions for Spa? The overlay will relearn them as cars use the pit lane.',
-      'Удалить определённые позиции въезда и выезда с пит-лейна для трассы «Spa»? Оверлей определит их заново, когда машины проедут по пит-лейну.',
+      'Удалить определённые точки въезда на пит-лейн и выезда с него для трассы «Spa»? Оверлей определит их заново, когда машины проедут по пит-лейну.',
     ],
     [
       'Clear learned pit entry and exit positions for this track? The overlay will relearn them as cars use the pit lane.',
-      'Удалить определённые позиции въезда и выезда с пит-лейна для этой трассы? Оверлей определит их заново, когда машины проедут по пит-лейну.',
+      'Удалить определённые точки въезда на пит-лейн и выезда с него для этой трассы? Оверлей определит их заново, когда машины проедут по пит-лейну.',
     ],
   ])('%s -> %s', (text, expected) => {
     expect(ruTranslator.translateText(text)).toBe(expected);

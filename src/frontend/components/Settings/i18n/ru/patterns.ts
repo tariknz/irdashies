@@ -119,13 +119,13 @@ export const createRuPatterns = (lookup: Lookup): readonly Pattern[] => {
       match:
         /^Calibration reset for (.+)\. Pit entry and exit will be learned again as cars use the pit lane\.$/,
       replace: ([, track]) =>
-        `Калибровка трассы «${track}» сброшена. Въезд и выезд с пит-лейна будут определены заново, когда машины проедут по пит-лейну.`,
+        `Калибровка трассы «${track}» сброшена. Точки въезда на пит-лейн и выезда с него будут определены заново, когда машины проедут по пит-лейну.`,
     },
     {
       match:
         /^Clear learned pit entry and exit positions for (.+)\? The overlay will relearn them as cars use the pit lane\.$/,
       replace: ([, track]) =>
-        `Удалить определённые позиции въезда и выезда с пит-лейна для ${
+        `Удалить определённые точки въезда на пит-лейн и выезда с него для ${
           track === 'this track' ? 'этой трассы' : `трассы «${track}»`
         }? Оверлей определит их заново, когда машины проедут по пит-лейну.`,
     },

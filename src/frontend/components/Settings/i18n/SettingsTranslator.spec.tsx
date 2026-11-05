@@ -73,6 +73,7 @@ describe('SettingsTranslator', () => {
 
   afterEach(() => {
     document.documentElement.lang = '';
+    Reflect.deleteProperty(window, 'keybindingsBridge');
   });
 
   it('translates the document and sets lang for ru', async () => {
@@ -128,11 +129,15 @@ describe('SettingsTranslator', () => {
     expect(await findByText('Показывать только на трассе')).toBeInTheDocument();
   });
 
-  // User data on the page (profile date, server address, group name).
+  // Data on the pages (profile date, server address, group name, shortcuts).
   const pageData = [
     new Date(PROFILE.lastModified).toLocaleString(),
     'localhost',
     'Rivals',
+    // Shortcut recorder buttons show accelerators, e.g. "Alt + H".
+    ...Object.values(DEFAULT_KEYBINDINGS)
+      .filter(({ accelerator }) => accelerator)
+      .map(({ accelerator }) => accelerator.split('+').join(' + ')),
   ];
 
   it.each([
@@ -161,6 +166,23 @@ describe('SettingsTranslator', () => {
     await flush();
     stop();
     expect(missing).toEqual([]);
+  });
+
+  it('translates the shortcut recorder buttons on the Key Bindings page', async () => {
+    const { container } = render(
+      <DashboardProvider bridge={mockDashboardBridge}>
+        <KeybindingsSettings />
+      </DashboardProvider>
+    );
+    await flush();
+    const stop = startDomTranslation(container, ruTranslator);
+    await flush();
+    stop();
+    const texts = [...container.querySelectorAll('*')].map((el) =>
+      el.textContent?.trim()
+    );
+    expect(texts).not.toContain('Not set');
+    expect(texts).toContain('Не задано');
   });
 
   it('translates text split around inline code on the Chromium flags page', async () => {

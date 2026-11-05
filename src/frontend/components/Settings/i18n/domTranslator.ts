@@ -17,10 +17,16 @@ export const TRANSLATED_ATTRIBUTES = [
 ] as const;
 
 const HAS_LATIN = /[A-Za-z]/;
-// `.font-mono` marks identifiers and values in the settings window (file
-// paths, CSV column names, accelerators, URLs), so its text stays as is.
 const SKIP_SELECTOR =
-  'input,textarea,code,pre,kbd,script,style,.font-mono,[translate="no"]';
+  'input,textarea,code,pre,kbd,script,style,[translate="no"]';
+// `.font-mono` marks identifiers and values in the settings window (file
+// paths, CSV column names, URLs), so its text stays as is. A font-mono
+// button is the exception: its text is a label ("Not set") or an accelerator,
+// and accelerators never match the dictionary.
+const isMonospace = (el: Element): boolean => {
+  const mono = el.closest('.font-mono');
+  return !!mono && mono.tagName !== 'BUTTON';
+};
 // Elements whose own attributes (placeholder, title) are still translated.
 const ATTRIBUTE_SKIP_SELECTOR = 'code,pre,kbd,script,style,[translate="no"]';
 
@@ -77,7 +83,9 @@ export const startDomTranslation = (
     const value = node.data;
     if (writtenText.get(node) === value) return;
     const parent = node.parentElement;
-    if (parent?.closest(SKIP_SELECTOR)) return;
+    if (parent && (parent.closest(SKIP_SELECTOR) || isMonospace(parent))) {
+      return;
+    }
     const translated = resolve(value);
     if (translated !== undefined && translated !== value) {
       writtenText.set(node, translated);
@@ -117,7 +125,7 @@ export const startDomTranslation = (
       const el = node as Element;
       if (el.matches(ATTRIBUTE_SKIP_SELECTOR)) return;
       for (const name of TRANSLATED_ATTRIBUTES) translateAttribute(el, name);
-      if (el.matches(SKIP_SELECTOR)) return;
+      if (el.matches(SKIP_SELECTOR) || isMonospace(el)) return;
     }
     node.childNodes.forEach(walk);
   };

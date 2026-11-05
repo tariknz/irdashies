@@ -224,6 +224,34 @@ describe('domTranslator', () => {
     expect(container.querySelector('p')?.textContent).toBe('Скорость');
   });
 
+  it('translates a monospace button but not monospace text inside it', async () => {
+    const translator = createTranslator(
+      new Map([
+        ['Not set', 'Не задано'],
+        ['Speed', 'Скорость'],
+      ]),
+      []
+    );
+    const { container } = render(
+      <div>
+        <button className="font-mono">Not set</button>
+        <button className="font-mono">Ctrl + Shift + F6</button>
+        <span className="font-mono">Speed</span>
+        <button>
+          <span className="font-mono">Speed</span>
+        </button>
+      </div>
+    );
+    stop = startDomTranslation(document.body, translator);
+    await flush();
+
+    const buttons = container.querySelectorAll('button');
+    expect(buttons[0].textContent).toBe('Не задано');
+    expect(buttons[1].textContent).toBe('Ctrl + Shift + F6');
+    expect(container.querySelector('div > span')?.textContent).toBe('Speed');
+    expect(buttons[2].textContent).toBe('Speed');
+  });
+
   it('settles when translation contains Latin', async () => {
     const base = createTranslator(DICT, []);
     const translateText = vi.fn((text: string) => base.translateText(text));
