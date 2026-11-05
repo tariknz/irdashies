@@ -18,6 +18,8 @@ export const pluralRu = (
 export type Lookup = (text: string) => string | undefined;
 
 const widgetNames: ReadonlyMap<string, string> = new Map(Object.entries(menu));
+// Widget names that stay English in the menu (e.g. "Gantry").
+const keptWidgetNames: ReadonlySet<string> = new Set(Object.values(menu));
 
 const LAPS = { one: 'круг', few: 'круга', many: 'кругов' };
 // After "до" / "от … до": genitive.
@@ -59,7 +61,9 @@ export const createRuPatterns = (lookup: Lookup): readonly Pattern[] => {
     {
       match: /^Enable (.+)$/,
       replace: ([, label]) => {
-        const name = widgetNames.get(label);
+        const name =
+          widgetNames.get(label) ??
+          (keptWidgetNames.has(label) ? label : undefined);
         return name && `Включить виджет «${name}»`;
       },
     },

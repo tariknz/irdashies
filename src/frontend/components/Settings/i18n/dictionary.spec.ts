@@ -79,6 +79,7 @@ describe('ruPatterns', () => {
     ['(3 hidden)', '(скрыто: 3)'],
     ['(showing 12 hidden)', '(показаны скрытые: 12)'],
     ['Enable Standings', 'Включить виджет «Таблица позиций»'],
+    ['Enable Gantry', 'Включить виджет «Gantry»'],
     ['Not iRacing compatible', 'Несовместимо с iRacing'],
     ['Not Le Mans Ultimate compatible', 'Несовместимо с Le Mans Ultimate'],
     [': 2 s', ': 2 с'],
