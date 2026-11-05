@@ -318,7 +318,7 @@ export default {
     'Показывать полосы, которые убывают перед точкой торможения эталонного круга и становятся красными в самой точке торможения. Следуют точкам торможения эталонного круга; лёгкие касания тормоза игнорируются.',
   'Final Bar': 'Последняя полоса',
   'Which end the last bar sits at — the one that turns red at the brake point. The strip drains towards it.':
-    'С какого края стоит последняя полоса — та, что краснеет в точке торможения. Шкала убывает в её сторону.',
+    'С какого края стоит последняя полоса — та, что краснеет в точке торможения. Полосы убывают в её сторону.',
   'Countdown Sound': 'Звуковой отсчёт',
   'Three beeps at 3, 2 and 1 second, then a distinct tone at the brake point.':
     'Три сигнала за 3, 2 и 1 секунду, затем отдельный тон в точке торможения.',
@@ -335,7 +335,7 @@ export default {
     'Насколько крупнее рисуется только что пройденный поворот по сравнению с предыдущими',
   // map
   Numbers: 'Номера',
-  Names: 'Названия',
+  Names: 'Имена',
   Both: 'Оба',
   'High Contrast Labels': 'Контрастные подписи',
   'Use black background for turn numbers and turn names for better legibility':
@@ -455,7 +455,7 @@ export default {
   'Show Closing Speed': 'Показывать скорость сближения',
   'Write how much faster the car is in km/h, and the seconds until it is beside you.':
     'Писать, на сколько км/ч машина быстрее и через сколько секунд она окажется рядом.',
-  'Warn From': 'Предупреждать с',
+  'Warn From': 'Предупреждать за',
   'How far ahead a hazard is shown.':
     'На каком расстоянии впереди показывается опасность.',
   'Flash Closer Than': 'Мигать ближе чем',
@@ -472,7 +472,7 @@ export default {
     'Машина, которая дольше полсекунды находится за пределами трассы, а затем — пока снова набирает скорость. Жёлтый.',
   'Show What Happened': 'Показывать, что случилось',
   'Write CRASH, SLOW, OFF or REJOIN before the distance on the rim.':
-    'Писать CRASH, SLOW, OFF или REJOIN перед расстоянием на ободе.',
+    'Писать CRASH, SLOW, OFF или REJOIN перед расстоянием на краю радара.',
   'Show Its Speed': 'Показывать её скорость',
   'Write the hazard car speed in km/h under the distance.':
     'Писать скорость опасной машины в км/ч под расстоянием.',

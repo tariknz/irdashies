@@ -70,4 +70,38 @@ export const KEEP_AS_IS: ReadonlySet<string> = new Set([
   'Rose',
   'Zinc',
   'Stone',
+  'White',
+  // Broadcast tower themes (series names) and feature, car and service names
+  'IMSA',
+  'WEC',
+  'F1',
+  'Push to Pass',
+  'BMW M4 GT4',
+  'HypeRate',
+  // Heart Rate and Stream Chat examples (ids, widget names, handles)
+  'KiY',
+  'Bouncing_Heart_Widget',
+  'app.hyperate.io/animation/59/YOUR-ID-HERE',
+  'channelname',
+  '@channelname',
+  // Lap Trace help: Garage 61 CSV columns and the telemetry folder (monospace)
+  'LapDistPct',
+  'Lat',
+  'Lon',
+  'ABSActive',
+  'Documents\\iRacing\\telemetry',
+  // Overlay content drawn in settings previews (overlays stay English)
+  'Preview Raceway',
+  'Rain started',
+  'Conditions',
+  // iRacing camera group name (Gantry incident camera default)
+  'Far Chase',
+  // Radar dev tuning keys, shown as identifiers
+  'speedSmoothing',
+  'extrapolationS',
+  'laneRate',
+  'laneGapM',
+  'overlapSearchM',
+  'gridMaxSpeedMs',
+  'minLabelPx',
 ]);

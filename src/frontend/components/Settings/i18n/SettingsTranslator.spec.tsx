@@ -1,4 +1,6 @@
-import { act, render } from '@testing-library/react';
+import { act, fireEvent, render } from '@testing-library/react';
+import type { ComponentType } from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DashboardProvider } from '@irdashies/context';
 import {
@@ -14,6 +16,11 @@ import { DriverTagsSettings } from '../sections/DriverTagsSettings';
 import { KeybindingsSettings } from '../sections/KeybindingsSettings';
 import { ProfileSettings } from '../sections/ProfileSettings';
 import { GeneralSettings } from '../sections/GeneralSettings';
+import { TelemetryInspectorSettings } from '../sections/TelemetryInspectorSettings';
+import { GantryDockSettings } from '../sections/GantryDockSettings';
+import { LapTraceHelp } from '../sections/LapTraceHelp';
+import { withGantryDock } from '../sections/gantryDockEdits';
+import { WIDGET_SETTINGS } from '../SettingsLoader';
 import { SettingsTranslator } from './SettingsTranslator';
 import { ruTranslator } from './dictionary';
 import { startDomTranslation, type Translator } from './domTranslator';
@@ -198,5 +205,142 @@ describe('SettingsTranslator', () => {
     ).toBe(
       '# Один ключ в строке, без "--" в начале\n# Примеры:\n# disable-gpu-vsync\n# force-color-profile=srgb'
     );
+  });
+
+  describe('widget settings pages', () => {
+    type Page = ComponentType<{ widgetId?: string; widgetType?: string }>;
+
+    // Data on the pages: widget ids in the instance pickers, the default
+    // iRacing camera group and the inspector's default telemetry path.
+    const widgetData = ['fuel', 'input', 'Far Chase', 'SessionTime'];
+
+    // Tab bars (TabButton) and the radar's section rail. Not by aria-label:
+    // that is translated as soon as the page is.
+    const tabButtons = (root: HTMLElement) => [
+      ...root.querySelectorAll<HTMLButtonElement>(
+        'button.border-b-2, nav button'
+      ),
+    ];
+
+    const missingOn = async (Page: Page, type: string) => {
+      const missing = new Set<string>();
+      const { container } = render(
+        <MemoryRouter>
+          <DashboardProvider bridge={mockDashboardBridge}>
+            <Page widgetId={type} widgetType={type} />
+          </DashboardProvider>
+        </MemoryRouter>
+      );
+      await flush();
+      // The broadcast preview draws the overlays, which stay English.
+      container.querySelector('.sticky.w-72')?.setAttribute('translate', 'no');
+      const stop = startDomTranslation(container, ruTranslator, {
+        onMissing: (text) => {
+          if (!KEEP_AS_IS.has(text) && !widgetData.includes(text)) {
+            missing.add(text);
+          }
+        },
+      });
+      await flush();
+      // Open every tab (and radar section) in turn; the translator follows.
+      // Buttons are looked up again each time, as a click re-renders the page.
+      const count = tabButtons(container).length;
+      for (let i = 0; i < count; i++) {
+        const button = tabButtons(container)[i];
+        await act(async () => {
+          fireEvent.click(button);
+        });
+        await flush();
+      }
+      stop();
+      return [...missing];
+    };
+
+    beforeEach(() => {
+      // Show every radar setting, Dev level included.
+      localStorage.setItem('radarSettingsLevel', '2');
+      // Live data the previews and Gantry read; none arrives in a test.
+      Object.assign(window, {
+        channelBridge: { subscribe: () => () => undefined },
+        ResizeObserver: class {
+          observe() {
+            return undefined;
+          }
+          disconnect() {
+            return undefined;
+          }
+        },
+      });
+    });
+
+    afterEach(() => {
+      localStorage.clear();
+      Reflect.deleteProperty(window, 'channelBridge');
+    });
+
+    const pages: [string, Page][] = [
+      ...Object.entries(WIDGET_SETTINGS),
+      // Shown on the Advanced page rather than one of its own.
+      ['telemetryinspector', TelemetryInspectorSettings],
+    ];
+
+    it.each(pages)(
+      'leaves no English text on the %s page',
+      async (type, Page) => {
+        expect(await missingOn(Page, type)).toEqual([]);
+      }
+    );
+  });
+
+  it('translates text split around inline elements on widget pages', async () => {
+    const help = render(<LapTraceHelp />);
+    let stop = startDomTranslation(help.container, ruTranslator);
+    await flush();
+    stop();
+    expect(help.container.textContent).toContain(
+      'Файл .ibt — это телеметрия, которую iRacing записывает'
+    );
+    expect(help.container.textContent).toContain(
+      'Вернитесь сюда, нажмите Импортировать круг Garage 61 на вкладке «График» и выберите файл.'
+    );
+    help.unmount();
+
+    // A dock with a fuel panel and a track map panel.
+    const dashboard = withGantryDock(defaultDashboard, (dock) => ({
+      ...dock,
+      enabled: true,
+      panels: [
+        { id: 'p1', type: 'fuel', widgetId: 'fuel' },
+        { id: 'p2', type: 'map' },
+      ],
+    }));
+    const missing: string[] = [];
+    const dock = render(
+      <MemoryRouter>
+        <DashboardProvider
+          bridge={{
+            ...mockDashboardBridge,
+            dashboardUpdated: (callback: (d: typeof dashboard) => void) => {
+              callback(dashboard);
+              return () => undefined;
+            },
+          }}
+        >
+          <GantryDockSettings />
+        </DashboardProvider>
+      </MemoryRouter>
+    );
+    await flush();
+    stop = startDomTranslation(dock.container, ruTranslator, {
+      onMissing: (text) => missing.push(text),
+    });
+    await flush();
+    stop();
+    expect(missing).toEqual([]);
+    const text = dock.container.textContent;
+    expect(text).toContain('До 3 панелей.');
+    expect(text).toContain('Использует виджет Карта трассы и его настройки.');
+    expect(text).toContain('Изменить Карта трассы (настройки)');
+    expect(text).toContain('Как на оверлее: Расчёт топлива');
   });
 });
