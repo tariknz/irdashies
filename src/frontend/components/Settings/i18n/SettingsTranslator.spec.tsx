@@ -1,14 +1,32 @@
 import { act, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DashboardProvider } from '@irdashies/context';
-import { defaultDashboard, type DashboardBridge } from '@irdashies/types';
+import {
+  DEFAULT_KEYBINDINGS,
+  defaultDashboard,
+  type DashboardBridge,
+} from '@irdashies/types';
 import { WindSettings } from '../sections/WindSettings';
+import { AboutSettings } from '../sections/AboutSettings';
+import { AdvancedSettings } from '../sections/AdvancedSettings';
+import { ChromiumFlagsSettings } from '../sections/ChromiumFlagsSettings';
+import { DriverTagsSettings } from '../sections/DriverTagsSettings';
+import { KeybindingsSettings } from '../sections/KeybindingsSettings';
+import { ProfileSettings } from '../sections/ProfileSettings';
+import { GeneralSettings } from '../sections/GeneralSettings';
 import { SettingsTranslator } from './SettingsTranslator';
 import { ruTranslator } from './dictionary';
-import type { Translator } from './domTranslator';
+import { startDomTranslation, type Translator } from './domTranslator';
+import { KEEP_AS_IS } from './ru/keepAsIs';
 
 const testTranslator: Translator = {
   translateText: (text) => (text.trim() === 'Hello' ? 'Привет' : undefined),
+};
+
+const PROFILE = {
+  id: 'default',
+  name: 'Default',
+  lastModified: '2026-11-05T10:00:00.000Z',
 };
 
 // .storybook is outside the vitest alias scope, so mockDashboardBridge cannot be
@@ -20,10 +38,18 @@ const mockDashboardBridge = {
   },
   reloadDashboard: () => undefined,
   saveDashboard: () => undefined,
-  listProfiles: async () => [],
-  getCurrentProfile: async () => null,
+  listProfiles: async () => [PROFILE],
+  getCurrentProfile: async () => PROFILE,
   onEditModeToggled: () => () => undefined,
   stop: () => undefined,
+  getAnalyticsOptOut: async () => false,
+  getComponentServerPort: async () => 3000,
+  getDriverTagSettings: async () => ({
+    groups: [{ id: 'g1', name: 'Rivals', color: 0xff0000 }],
+    entries: [{ id: '123', name: 'Max Verstappen', groupId: 'g1' }],
+    mapping: {},
+    display: { enabled: true, displayStyle: 'badge' },
+  }),
 } as unknown as DashboardBridge;
 
 const flush = () => act(() => Promise.resolve());
@@ -37,6 +63,12 @@ describe('SettingsTranslator', () => {
     confirmSpy = vi.fn(() => true);
     window.alert = alertSpy as unknown as typeof window.alert;
     window.confirm = confirmSpy as unknown as typeof window.confirm;
+    Object.assign(window, {
+      keybindingsBridge: {
+        getKeybindings: async () => DEFAULT_KEYBINDINGS,
+        getRegistrationErrors: async () => ({}),
+      },
+    });
   });
 
   afterEach(() => {
@@ -94,5 +126,55 @@ describe('SettingsTranslator', () => {
     );
     await flush();
     expect(await findByText('Показывать только на трассе')).toBeInTheDocument();
+  });
+
+  // User data on the page (profile date, server address, group name).
+  const pageData = [
+    new Date(PROFILE.lastModified).toLocaleString(),
+    'localhost',
+    'Rivals',
+  ];
+
+  it.each([
+    ['General', GeneralSettings],
+    ['About', AboutSettings],
+    ['Advanced', AdvancedSettings],
+    ['Chromium flags', ChromiumFlagsSettings],
+    ['Profiles', ProfileSettings],
+    ['Key Bindings', KeybindingsSettings],
+    ['Driver Tags', DriverTagsSettings],
+  ])('leaves no English text on the %s page', async (_, Page) => {
+    const missing: string[] = [];
+    const { container } = render(
+      <DashboardProvider bridge={mockDashboardBridge}>
+        <Page />
+      </DashboardProvider>
+    );
+    await flush();
+    const stop = startDomTranslation(container, ruTranslator, {
+      onMissing: (text) => {
+        if (!KEEP_AS_IS.has(text) && !pageData.includes(text)) {
+          missing.push(text);
+        }
+      },
+    });
+    await flush();
+    stop();
+    expect(missing).toEqual([]);
+  });
+
+  it('translates text split around inline code on the Chromium flags page', async () => {
+    const { container } = render(<ChromiumFlagsSettings />);
+    const stop = startDomTranslation(container, ruTranslator);
+    await flush();
+    stop();
+    expect(container.textContent).toContain(
+      '(без --). Строки с символом # в начале игнорируются.'
+    );
+    expect(
+      container.querySelector('textarea[rows="6"]')?.getAttribute('placeholder')
+    ).toBe(
+      '# Один ключ в строке, без "--" в начале\n# Примеры:\n# disable-gpu-vsync\n# force-color-profile=srgb'
+    );
   });
 });

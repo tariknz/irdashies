@@ -7,14 +7,14 @@ export default {
   // Header "<profile name> Profile"; the only standalone "Profile" (Radar
   // page) is rendered uppercase, so lower case reads right in both places.
   Profile: 'профиль',
-  'Loading...': 'Загрузка...',
+  'Loading...': 'Загрузка…',
   // Settings menu
   General: 'Общие',
   Profiles: 'Профили',
   'Key Bindings': 'Горячие клавиши',
   'Driver Tags': 'Метки пилотов',
   'Setup Comparison': 'Сравнение сетапов',
-  Advanced: 'Дополнительно',
+  Advanced: 'Расширенные',
   'Release notes': 'Список изменений',
   About: 'О программе',
   New: 'Новое',

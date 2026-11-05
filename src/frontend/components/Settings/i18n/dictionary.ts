@@ -7,7 +7,7 @@ import common from './ru/common';
 import dialogs from './ru/dialogs';
 import manifests from './ru/manifests';
 import menu from './ru/menu';
-import { ruPatterns } from './ru/patterns';
+import { createRuPatterns } from './ru/patterns';
 import sections from './ru/sections';
 
 // Relative imports only: tools/ scripts load this file via tsx without
@@ -46,5 +46,5 @@ export const ruDictionary: ReadonlyMap<string, string> = buildDictionary({
 
 export const ruTranslator: Translator = createTranslator(
   ruDictionary,
-  ruPatterns
+  createRuPatterns((text) => ruDictionary.get(normalizeText(text)))
 );

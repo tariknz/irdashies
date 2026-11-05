@@ -1,6 +1,7 @@
 export interface Pattern {
   match: RegExp;
-  replace: (match: RegExpMatchArray) => string;
+  /** The translation, or undefined to decline (e.g. an unknown inner part). */
+  replace: (match: RegExpMatchArray) => string | undefined;
 }
 
 export interface Translator {
@@ -37,10 +38,8 @@ export const createTranslator = (
     if (translated === undefined) {
       for (const { match, replace } of patterns) {
         const result = key.match(match);
-        if (result) {
-          translated = replace(result);
-          break;
-        }
+        translated = result ? replace(result) : undefined;
+        if (translated !== undefined) break;
       }
     }
     if (translated === undefined) return undefined;

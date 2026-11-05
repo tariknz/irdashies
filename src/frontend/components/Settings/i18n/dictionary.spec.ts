@@ -78,8 +78,60 @@ describe('ruPatterns', () => {
   it.each([
     ['(3 hidden)', '(скрыто: 3)'],
     ['(showing 12 hidden)', '(показаны скрытые: 12)'],
+    ['Enable Standings', 'Включить виджет «Таблица позиций»'],
+    ['Not iRacing compatible', 'Несовместимо с iRacing'],
+    ['Not Le Mans Ultimate compatible', 'Несовместимо с Le Mans Ultimate'],
+    [': 2 s', ': 2 с'],
+    [': 12 px', ': 12 px'],
+    ['Reset showIcon, iconSize', 'Сбросить: showIcon, iconSize'],
+    ['iRacing rating format', 'Формат рейтинга iRacing'],
+    ['1 result', '1 результат'],
+    ['3 results', '3 результата'],
+    ['11 results', '11 результатов'],
+    [
+      'Showing first 120 of 1512 — search to filter',
+      'Показаны первые 120 из 1512 — введите запрос для поиска',
+    ],
+    ["What's new in v2.1.0", 'Что нового в версии 2.1.0'],
+    [
+      'Change shortcut for Hide / Show UI',
+      'Изменить сочетание: Скрыть / показать интерфейс',
+    ],
+    ['Change shortcut for Standings', 'Изменить сочетание: Таблица позиций'],
+    [
+      'Show / hide the Track Map widget',
+      'Показать или скрыть виджет «Карта трассы»',
+    ],
+    [
+      'Are you sure you want to delete the profile "Race night"? This action cannot be undone and all widget configurations for this profile will be permanently lost.',
+      'Удалить профиль «Race night»? Это действие нельзя отменить: все настройки виджетов этого профиля будут безвозвратно потеряны.',
+    ],
+    [
+      'Calibration reset for Spa. Pit entry and exit will be learned again as cars use the pit lane.',
+      'Калибровка трассы «Spa» сброшена. Въезд и выезд с пит-лейна будут определены заново, когда машины проедут по пит-лейну.',
+    ],
+    [
+      'Clear learned pit entry and exit positions for Spa? The overlay will relearn them as cars use the pit lane.',
+      'Удалить определённые позиции въезда и выезда с пит-лейна для трассы «Spa»? Оверлей определит их заново, когда машины проедут по пит-лейну.',
+    ],
+    [
+      'Clear learned pit entry and exit positions for this track? The overlay will relearn them as cars use the pit lane.',
+      'Удалить определённые позиции въезда и выезда с пит-лейна для этой трассы? Оверлей определит их заново, когда машины проедут по пит-лейну.',
+    ],
   ])('%s -> %s', (text, expected) => {
     expect(ruTranslator.translateText(text)).toBe(expected);
+  });
+
+  it.each([
+    // Only widget names get the widget switch wording.
+    'Enable Something Else',
+    // Unknown units or labels leave the whole string untranslated.
+    ': 2 furlongs',
+    'Change shortcut for Something Else',
+    'Show / hide the Something Else widget',
+    'Unknown Sim rating format',
+  ])('declines %s', (text) => {
+    expect(ruTranslator.translateText(text)).toBeUndefined();
   });
 });
 

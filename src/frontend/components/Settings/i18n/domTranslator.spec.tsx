@@ -98,6 +98,8 @@ describe('domTranslator', () => {
     const patterns: Pattern[] = [
       { match: /^(\d+) laps$/, replace: (m) => `${m[1]} кругов` },
       { match: /^Hello$/, replace: () => 'Из шаблона' },
+      { match: /^Say (.+)$/, replace: (m) => DICT.get(m[1]) },
+      { match: /^Say (\w+)$/, replace: (m) => `Сказать ${m[1]}` },
     ];
     const translator = createTranslator(DICT, patterns);
 
@@ -119,6 +121,12 @@ describe('domTranslator', () => {
     it('applies patterns and prefers the dictionary', () => {
       expect(translator.translateText('5 laps')).toBe('5 кругов');
       expect(translator.translateText('Hello')).toBe('Привет');
+    });
+
+    it('moves on when a pattern declines', () => {
+      expect(translator.translateText('Say Hello')).toBe('Привет');
+      expect(translator.translateText('Say Bye')).toBe('Сказать Bye');
+      expect(translator.translateText('Say Bye now')).toBeUndefined();
     });
   });
 
