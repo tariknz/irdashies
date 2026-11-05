@@ -52,7 +52,7 @@ const SessionProfileRow = ({
       value={value}
       disabled={disabled}
       onChange={(e) => onChange(triggerKey, e.target.value)}
-      className="bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded text-sm min-w-52 disabled:opacity-50 disabled:cursor-not-allowed"
+      className="settings-field  min-w-52 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <option value="">Don&apos;t switch</option>
       {profiles.map((profile) => (
@@ -332,15 +332,17 @@ export const ProfileSettings = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-none p-4 bg-slate-700 rounded">
-        <h2 className="text-xl mb-1">Configuration Profiles</h2>
+      <div className="flex-none border-b border-slate-700 px-1 pb-5 pt-1">
+        <h2 className="mb-1 text-xl font-semibold tracking-tight text-white">
+          Configuration Profiles
+        </h2>
         <p className="text-slate-400">
           Manage different dashboard configurations for various scenarios. Each
           profile stores separate widget configurations and layouts.
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0 space-y-6 p-4 mt-4">
+      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto pt-5 pr-1 [scrollbar-gutter:stable]">
         {error && (
           <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded">
             {error}
@@ -355,6 +357,7 @@ export const ProfileSettings = () => {
           <div className="flex gap-2">
             <input
               type="text"
+              aria-label="New profile name"
               value={newProfileName}
               onChange={(e) => setNewProfileName(e.target.value)}
               onKeyDown={(e) => {
@@ -362,12 +365,12 @@ export const ProfileSettings = () => {
               }}
               placeholder="Enter profile name..."
               disabled={isCreating}
-              className="flex-1 bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded focus:outline-none focus:border-accent-500 disabled:opacity-50"
+              className="settings-field flex-1  disabled:opacity-50"
             />
             <button
               onClick={handleCreateProfile}
               disabled={isCreating || !newProfileName.trim()}
-              className="bg-accent-600 hover:bg-accent-700 disabled:bg-slate-600 disabled:text-slate-400 disabled:cursor-not-allowed text-on-accent px-4 py-2 rounded font-medium transition-colors"
+              className="bg-accent-600 hover:bg-accent-700 disabled:bg-settings-control disabled:text-slate-400 disabled:cursor-not-allowed text-on-accent px-4 py-2 rounded font-medium transition-colors"
             >
               {isCreating ? 'Creating...' : 'Create'}
             </button>
@@ -376,7 +379,7 @@ export const ProfileSettings = () => {
 
         {/* Profiles List */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden">
-          <div className="px-4 py-3 bg-slate-700/50 border-b border-slate-600">
+          <div className="px-4 py-3 bg-slate-700/50 border-b border-settings-boundary">
             <h3 className="text-lg font-semibold text-white">Your Profiles</h3>
             <p className="text-sm text-slate-400 mt-1">
               Browser and OBS widget positions are saved separately from the
@@ -421,7 +424,7 @@ export const ProfileSettings = () => {
                             if (e.key === 'Escape') handleCancelEdit();
                           }}
                           autoFocus
-                          className="flex-1 bg-slate-900 border border-slate-600 text-white px-2 py-1 rounded text-sm focus:outline-none focus:border-accent-500"
+                          className="settings-field flex-1"
                         />
                       ) : (
                         <div className="flex-1">
@@ -449,7 +452,7 @@ export const ProfileSettings = () => {
                           </button>
                           <button
                             onClick={handleCancelEdit}
-                            className="bg-slate-600 hover:bg-slate-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
+                            className="border border-settings-boundary bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1 rounded text-sm font-medium transition-colors"
                           >
                             Cancel
                           </button>
@@ -509,7 +512,7 @@ export const ProfileSettings = () => {
                                   setOpenDropdownId(profile.id);
                                 }
                               }}
-                              className="bg-slate-600 hover:bg-slate-500 text-white px-3 py-1 rounded text-sm font-medium transition-colors flex items-center gap-1"
+                              className="min-h-9 border border-settings-boundary bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1"
                             >
                               Actions
                               <CaretDownIcon size={12} />
@@ -525,7 +528,7 @@ export const ProfileSettings = () => {
                                   right: dropdownPos.right,
                                   zIndex: 9999,
                                 }}
-                                className="bg-slate-700 border border-slate-600 rounded shadow-lg min-w-[130px]"
+                                className="bg-slate-700 border border-settings-boundary rounded shadow-lg min-w-[130px]"
                               >
                                 {browserUrlsReady && (
                                   <a
@@ -533,7 +536,7 @@ export const ProfileSettings = () => {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     onClick={() => setOpenDropdownId(null)}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-slate-600 transition-colors text-left"
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-slate-700 transition-colors text-left"
                                     title="Open this profile in your browser to arrange its OBS widgets"
                                   >
                                     <ArrowSquareOutIcon size={14} />
@@ -545,7 +548,7 @@ export const ProfileSettings = () => {
                                     setOpenDropdownId(null);
                                     handleCloneProfile(profile);
                                   }}
-                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-slate-600 transition-colors text-left"
+                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-slate-700 transition-colors text-left"
                                 >
                                   <CopySimpleIcon size={14} />
                                   Clone
@@ -555,7 +558,7 @@ export const ProfileSettings = () => {
                                     setOpenDropdownId(null);
                                     handleStartEdit(profile);
                                   }}
-                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-slate-600 transition-colors text-left"
+                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-slate-700 transition-colors text-left"
                                 >
                                   <PencilSimpleIcon size={14} />
                                   Rename
@@ -566,7 +569,7 @@ export const ProfileSettings = () => {
                                       setOpenDropdownId(null);
                                       handleDeleteProfile(profile.id);
                                     }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-slate-600 transition-colors text-left"
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-slate-700 transition-colors text-left"
                                   >
                                     <TrashIcon size={14} />
                                     Delete
@@ -734,7 +737,7 @@ export const ProfileSettings = () => {
                   type="text"
                   readOnly
                   value={browserUrlFor(currentProfile.id, 'localhost')}
-                  className="flex-1 bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded text-sm font-mono"
+                  className="settings-field flex-1 font-mono"
                 />
                 <button
                   onClick={() => {
@@ -742,7 +745,7 @@ export const ProfileSettings = () => {
                       browserUrlFor(currentProfile.id, 'localhost')
                     );
                   }}
-                  className="bg-slate-600 hover:bg-slate-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap"
+                  className="border border-settings-boundary bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap"
                 >
                   Copy
                 </button>
@@ -758,7 +761,7 @@ export const ProfileSettings = () => {
                   type="text"
                   readOnly
                   value={browserUrlFor(currentProfile.id)}
-                  className="flex-1 bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded text-sm font-mono"
+                  className="settings-field flex-1 font-mono"
                 />
                 <button
                   onClick={() => {

@@ -60,7 +60,7 @@ export const BlindSpotMonitorSettings = () => {
         >
           <div className="space-y-4">
             {/* Tabs */}
-            <div className="flex border-b border-slate-700/50">
+            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
               <TabButton
                 id="display"
                 activeTab={activeTab}
@@ -123,7 +123,7 @@ export const BlindSpotMonitorSettings = () => {
                                   indicatorColor: parseInt(e.target.value),
                                 })
                               }
-                              className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500 text-sm"
+                              className="settings-field"
                             >
                               {Array.from(
                                 HIGHLIGHT_COLOR_PRESETS.entries()
@@ -172,7 +172,7 @@ export const BlindSpotMonitorSettings = () => {
                                     indicatorColor: parseInt(e.target.value),
                                   })
                                 }
-                                className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500 text-sm"
+                                className="settings-field"
                               >
                                 {Array.from(
                                   HIGHLIGHT_COLOR_PRESETS.entries()
@@ -210,7 +210,7 @@ export const BlindSpotMonitorSettings = () => {
                                       thresholdColor1: parseInt(e.target.value),
                                     })
                                   }
-                                  className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500 text-sm"
+                                  className="settings-field"
                                 >
                                   {Array.from(
                                     HIGHLIGHT_COLOR_PRESETS.entries()
@@ -245,7 +245,7 @@ export const BlindSpotMonitorSettings = () => {
                                       thresholdColor2: parseInt(e.target.value),
                                     })
                                   }
-                                  className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500 text-sm"
+                                  className="settings-field"
                                 >
                                   {Array.from(
                                     HIGHLIGHT_COLOR_PRESETS.entries()

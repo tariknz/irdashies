@@ -24,20 +24,21 @@ export const DualFontSizeInput = ({
   };
 
   return (
-    <div className="flex items-center justify-between py-4 mb-0 border-b border-white/5">
+    <div className="grid grid-cols-1 items-center gap-4 border-b border-slate-700 py-4 lg:grid-cols-[minmax(0,1fr)_220px]">
       <div>
         <span className="text-md text-slate-300">{title}</span>
         {description && (
-          <span className="block text-sm text-slate-500 pr-8">
+          <span className="mt-1 block text-sm text-slate-400">
             {description}
           </span>
         )}
       </div>
-      <div className="flex flex-col gap-1 w-full max-w-[140px] mr-20">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 w-8">Label</span>
+      <div className="flex w-full min-w-0 flex-col gap-2">
+        <div className="grid grid-cols-[3rem_minmax(0,1fr)_2rem] items-center gap-2">
+          <span className="text-sm text-slate-400">Label</span>
           <input
             type="range"
+            aria-label={`${title} label font size`}
             min="8"
             max="48"
             step="1"
@@ -45,16 +46,17 @@ export const DualFontSizeInput = ({
             onChange={(e) =>
               updateStyle('labelFontSize', parseInt(e.target.value))
             }
-            className="flex-1 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
+            className="h-5 w-full min-w-0 cursor-pointer accent-accent-400"
           />
-          <span className="text-xs text-slate-300 w-4 text-right">
+          <span className="text-right text-sm tabular-nums text-slate-300">
             {labelSize}
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 w-8">Value</span>
+        <div className="grid grid-cols-[3rem_minmax(0,1fr)_2rem] items-center gap-2">
+          <span className="text-sm text-slate-400">Value</span>
           <input
             type="range"
+            aria-label={`${title} value font size`}
             min="8"
             max="64"
             step="1"
@@ -62,9 +64,9 @@ export const DualFontSizeInput = ({
             onChange={(e) =>
               updateStyle('valueFontSize', parseInt(e.target.value))
             }
-            className="flex-1 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
+            className="h-5 w-full min-w-0 cursor-pointer accent-accent-400"
           />
-          <span className="text-xs text-slate-300 w-4 text-right">
+          <span className="text-right text-sm tabular-nums text-slate-300">
             {valueSize}
           </span>
         </div>
@@ -90,6 +92,7 @@ export const BarFontSizeInput = ({
       <span className="text-xs text-slate-400 w-8">Inside</span>
       <input
         type="range"
+        aria-label={`${widgetId} bar font size`}
         min="6"
         max="32"
         step="1"
@@ -100,7 +103,7 @@ export const BarFontSizeInput = ({
           newStyles[widgetId] = { ...newStyles[widgetId], barFontSize: val };
           onChange({ widgetStyles: newStyles });
         }}
-        className="flex-1 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer slider w-[60px]"
+        className="h-5 w-16 min-w-0 flex-1 cursor-pointer accent-accent-400"
       />
       <span className="text-xs text-slate-300 w-4 text-right">
         {fontSize ?? 8}
@@ -125,6 +128,7 @@ export const HeightInput = ({
     <div className="flex items-center gap-2">
       <input
         type="range"
+        aria-label={`${widgetId} height`}
         min="40"
         max="300"
         step="5"
@@ -135,7 +139,7 @@ export const HeightInput = ({
           newStyles[widgetId] = { ...newStyles[widgetId], height: val };
           onChange({ widgetStyles: newStyles });
         }}
-        className="w-24 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
+        className="h-5 w-24 min-w-0 cursor-pointer accent-accent-400"
       />
       <span className="text-xs text-slate-300 w-8 text-right">
         {height ?? 64}px

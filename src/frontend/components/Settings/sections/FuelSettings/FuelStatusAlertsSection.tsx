@@ -43,7 +43,7 @@ export const FuelStatusAlertsSection = ({
                   >,
                 });
               }}
-              className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+              className="w-32 h-1.5 bg-settings-control rounded-lg appearance-none cursor-pointer"
             />
             <span className="text-xs text-slate-300 w-8 text-right">
               {settings.config.fuelStatusThresholds?.green ?? 60}%
@@ -73,7 +73,7 @@ export const FuelStatusAlertsSection = ({
                   >,
                 });
               }}
-              className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+              className="w-32 h-1.5 bg-settings-control rounded-lg appearance-none cursor-pointer"
             />
             <span className="text-xs text-slate-300 w-8 text-right">
               {settings.config.fuelStatusThresholds?.amber ?? 30}%

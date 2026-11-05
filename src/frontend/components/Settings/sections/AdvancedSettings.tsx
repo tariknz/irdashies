@@ -99,15 +99,17 @@ export const AdvancedSettings = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-none p-4 bg-slate-700 rounded">
-        <h2 className="text-xl mb-1">Advanced</h2>
+      <div className="flex-none border-b border-slate-700 px-1 pb-5 pt-1">
+        <h2 className="mb-1 text-xl font-semibold tracking-tight text-white">
+          Advanced
+        </h2>
         <p className="text-slate-400 text-sm">
           Configure advanced system settings and preferences.
         </p>
       </div>
 
       <div className="flex-none mt-4 px-4">
-        <div className="flex border-b border-slate-700/50">
+        <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
           <TabButton
             id="dashboard"
             activeTab={activeTab}
@@ -138,8 +140,8 @@ export const AdvancedSettings = () => {
             Directly edit the dashboard configuration file and apply changes
           </p>
 
-          <div className="flex flex-col flex-1 min-h-0 rounded border border-slate-600 overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-1.5 bg-slate-700/60 border-b border-slate-600">
+          <div className="flex flex-col flex-1 min-h-0 rounded border border-settings-boundary overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-1.5 bg-slate-700/60 border-b border-settings-boundary">
               <span className="text-xs text-slate-400 font-mono">
                 dashboard.json
               </span>
@@ -147,7 +149,7 @@ export const AdvancedSettings = () => {
                 <button
                   type="button"
                   onClick={handleImport}
-                  className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-600 rounded px-2 py-1 transition-colors cursor-pointer"
+                  className="settings-button"
                 >
                   <UploadSimpleIcon size={13} />
                   Import
@@ -155,23 +157,23 @@ export const AdvancedSettings = () => {
                 <button
                   type="button"
                   onClick={handleExport}
-                  className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-600 rounded px-2 py-1 transition-colors cursor-pointer"
+                  className="settings-button"
                 >
                   <DownloadSimpleIcon size={13} />
                   Export
                 </button>
-                <div className="w-px bg-slate-600 mx-1" />
+                <div className="w-px bg-settings-control mx-1" />
                 <button
                   type="button"
                   onClick={handleSave}
-                  className="flex items-center gap-1.5 text-xs text-white bg-slate-600 hover:bg-slate-500 rounded px-3 py-1 transition-colors cursor-pointer font-medium"
+                  className="settings-button"
                 >
                   Save
                 </button>
               </div>
             </div>
             <textarea
-              className="flex-1 w-full bg-slate-800 p-4 font-mono text-sm focus:outline-none resize-none"
+              className="settings-field flex-1 w-full resize-none font-mono"
               value={dashboardInput}
               onChange={onInputUpdated}
               placeholder="Dashboard configuration JSON..."

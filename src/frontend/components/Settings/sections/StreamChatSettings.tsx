@@ -56,7 +56,7 @@ const ChannelField = ({
       value={value}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value.trim())}
-      className="w-full rounded border-slate-600 bg-slate-700 p-2 text-slate-300"
+      className="settings-field w-full"
     />
     {error ? (
       <p className="text-sm text-red-400">{error}</p>
@@ -110,7 +110,7 @@ export const StreamChatSettings = () => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <div className="flex border-b border-slate-700/50">
+            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
               <TabButton
                 id="display"
                 activeTab={activeTab}

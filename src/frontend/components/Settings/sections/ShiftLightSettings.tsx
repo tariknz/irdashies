@@ -303,7 +303,7 @@ const CustomShiftPointsSection = ({
                   indicatorType: e.target.value as 'glow' | 'pulse' | 'border',
                 })
               }
-              className="w-full bg-slate-700 text-white px-3 py-2 rounded text-sm"
+              className="settings-field w-full"
             >
               <option value="glow">Glow</option>
               <option value="pulse">Pulse</option>
@@ -330,7 +330,7 @@ const CustomShiftPointsSection = ({
               <select
                 value={selectedCarId}
                 onChange={(e) => setSelectedCarId(e.target.value)}
-                className="flex-1 bg-slate-700 text-white px-3 py-2 rounded text-sm"
+                className="settings-field flex-1"
                 disabled={loading}
               >
                 <option value="">Select a car...</option>
@@ -348,7 +348,7 @@ const CustomShiftPointsSection = ({
               <button
                 onClick={addCar}
                 disabled={!selectedCarId || loading}
-                className="px-4 py-2 bg-accent-600 hover:bg-accent-700 disabled:bg-slate-600 disabled:text-slate-400 disabled:cursor-not-allowed text-on-accent rounded text-sm transition-colors"
+                className="px-4 py-2 bg-accent-600 hover:bg-accent-700 disabled:bg-settings-control disabled:text-slate-400 disabled:cursor-not-allowed text-on-accent rounded text-sm transition-colors"
               >
                 Add
               </button>
@@ -397,7 +397,7 @@ const CustomShiftPointsSection = ({
                     </div>
 
                     {expandedCarId === car.carId && (
-                      <div className="ml-6 space-y-2 pt-2 border-t border-slate-600">
+                      <div className="ml-6 space-y-2 pt-2 border-t border-settings-boundary">
                         <p className="text-xs text-slate-400">
                           Redline: {car.redlineRpm} RPM
                         </p>
@@ -441,7 +441,7 @@ const CustomShiftPointsSection = ({
                                       )
                                     );
                                   }}
-                                  className="flex-1 bg-slate-600 text-white px-2 py-1 rounded text-xs"
+                                  className="settings-field flex-1"
                                   min={MIN_SHIFT_RPM}
                                   max={car.redlineRpm}
                                 />
@@ -509,7 +509,7 @@ export const ShiftLightSettings = () => {
           >
             <div className="space-y-6">
               {/* Tabs */}
-              <div className="flex border-b border-slate-700/50">
+              <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
                 <TabButton
                   id="display"
                   activeTab={activeTab}

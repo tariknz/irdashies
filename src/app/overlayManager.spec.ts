@@ -572,15 +572,18 @@ describe('individual overlay windows', () => {
 });
 
 describe('settings window title bar', () => {
-  it.skipIf(process.platform === 'darwin')('uses the slate style', () => {
-    const manager = new OverlayManager();
-    manager.createSettingsWindow();
-    expect(createdWindows.at(-1)?.options.titleBarOverlay).toEqual({
-      color: '#314158',
-      symbolColor: '#cad5e2',
-      height: 40,
-    });
-  });
+  it.skipIf(process.platform === 'darwin')(
+    'matches the charcoal settings header',
+    () => {
+      const manager = new OverlayManager();
+      manager.createSettingsWindow();
+      expect(createdWindows.at(-1)?.options.titleBarOverlay).toEqual({
+        color: '#141a21',
+        symbolColor: '#cad5e2',
+        height: 40,
+      });
+    }
+  );
 });
 
 describe('settings that are read outside a dashboard update', () => {

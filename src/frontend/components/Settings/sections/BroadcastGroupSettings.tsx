@@ -182,7 +182,7 @@ export const BroadcastGroupSettings = ({
               <span
                 title={isEnabled(type) ? 'On' : 'Off'}
                 className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                  isEnabled(type) ? 'bg-green-400' : 'bg-slate-600'
+                  isEnabled(type) ? 'bg-green-400' : 'bg-settings-control'
                 }`}
               />
               <span className="flex-1">{label}</span>

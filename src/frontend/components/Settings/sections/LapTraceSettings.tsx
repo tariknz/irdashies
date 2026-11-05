@@ -425,7 +425,7 @@ export const LapTraceSettings = () => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <div className="flex border-b border-slate-700/50">
+            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
               <TabButton
                 id="trace"
                 activeTab={activeTab}
@@ -508,7 +508,7 @@ export const LapTraceSettings = () => {
                           type="button"
                           disabled={!bestLapInfo?.hasBest}
                           onClick={() => setConfirmingResetBest(true)}
-                          className="text-xs text-slate-300 hover:text-white hover:bg-slate-600 rounded px-2 py-1 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-default disabled:hover:bg-transparent disabled:hover:text-slate-300"
+                          className="text-xs text-slate-300 hover:text-white hover:bg-settings-hover rounded px-2 py-1 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-default disabled:hover:bg-transparent disabled:hover:text-slate-300"
                         >
                           Reset my best lap
                         </button>
@@ -571,7 +571,7 @@ export const LapTraceSettings = () => {
                         }
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-600 rounded px-2 py-1 transition-colors cursor-pointer"
+                        className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-settings-hover rounded px-2 py-1 transition-colors cursor-pointer"
                       >
                         <ArrowSquareOutIcon size={13} />
                         Find laps on Garage 61
@@ -588,7 +588,7 @@ export const LapTraceSettings = () => {
                       <button
                         type="button"
                         onClick={handleImportGarage61}
-                        className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-600 rounded px-2 py-1 transition-colors cursor-pointer"
+                        className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-settings-hover rounded px-2 py-1 transition-colors cursor-pointer"
                       >
                         <UploadSimpleIcon size={13} />
                         Import Garage 61 Lap
@@ -653,7 +653,7 @@ export const LapTraceSettings = () => {
                         type="button"
                         onClick={handleImportIbt}
                         disabled={ibtImporting}
-                        className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-600 rounded px-2 py-1 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-default"
+                        className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-settings-hover rounded px-2 py-1 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-default"
                       >
                         <UploadSimpleIcon size={13} />
                         {ibtImporting ? 'Importing…' : 'Import .ibt Lap'}

@@ -182,7 +182,7 @@ export const BroadcastSettings = () => {
                       <button
                         type="button"
                         onClick={() => handleConfigChange({ logo: '' })}
-                        className="rounded bg-slate-600 px-3 py-1 text-sm text-slate-200 hover:bg-slate-500"
+                        className="settings-button"
                       >
                         Remove
                       </button>
@@ -326,7 +326,7 @@ export const BroadcastSettings = () => {
                     onChange={(e) =>
                       handleConfigChange({ title: e.target.value })
                     }
-                    className="w-full rounded border-slate-600 bg-slate-700 p-2 text-slate-300"
+                    className="settings-field w-full"
                   />
                 </div>
               )}

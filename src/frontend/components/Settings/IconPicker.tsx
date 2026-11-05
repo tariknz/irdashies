@@ -86,7 +86,7 @@ export const IconPicker = memo(function IconPicker({
       <button
         type="button"
         onClick={() => setIsOpen((o) => !o)}
-        className="flex items-center gap-1.5 px-2 py-1 bg-slate-600 hover:bg-slate-500 rounded text-sm min-w-[150px]"
+        className="flex items-center gap-1.5 px-2 py-1 bg-settings-control hover:bg-settings-hover rounded text-sm min-w-[150px]"
       >
         <span className="flex-none inline-flex items-center justify-center w-5 h-5">
           {selectedEntry
@@ -108,15 +108,15 @@ export const IconPicker = memo(function IconPicker({
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 top-full mt-1 left-0 w-80 bg-slate-800 border border-slate-600 rounded shadow-xl">
-          <div className="p-2 border-b border-slate-600 space-y-1">
+        <div className="absolute z-50 top-full mt-1 left-0 w-80 bg-slate-800 border border-settings-boundary rounded shadow-xl">
+          <div className="p-2 border-b border-settings-boundary space-y-1">
             <input
               ref={searchRef}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search icons..."
-              className="w-full px-2 py-1 bg-slate-700 rounded text-sm placeholder-slate-400"
+              className="settings-field w-full placeholder-slate-400"
             />
             <p className="text-xs text-slate-500">
               {search.trim()
@@ -152,8 +152,10 @@ export const IconPicker = memo(function IconPicker({
                   setSearch('');
                 }}
                 title={name}
-                className={`flex flex-col items-center gap-0.5 p-1.5 rounded hover:bg-slate-600 transition-colors ${
-                  value === name ? 'bg-slate-600 ring-1 ring-accent-500' : ''
+                className={`flex flex-col items-center gap-0.5 p-1.5 rounded hover:bg-settings-hover transition-colors ${
+                  value === name
+                    ? 'bg-settings-control ring-1 ring-accent-500'
+                    : ''
                 }`}
               >
                 <span className="inline-flex items-center justify-center w-5 h-5">

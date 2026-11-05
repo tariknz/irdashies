@@ -135,7 +135,7 @@ export const SingleFuelWidgetSettings = ({
 
   return (
     <BaseSettingsSection
-      title={`Fuel Calculator Settings - ${widgetId}`}
+      title="Fuel Calculator"
       description="Configure the Fuel Calculator layout."
       settings={settings}
       onSettingsChange={setSettings}
@@ -156,7 +156,7 @@ export const SingleFuelWidgetSettings = ({
           >
             <div className="space-y-4">
               {/* Tabs */}
-              <div className="flex border-b border-slate-700/50">
+              <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
                 <TabButton
                   id="layout"
                   activeTab={activeTab}
@@ -199,15 +199,16 @@ export const SingleFuelWidgetSettings = ({
                 {activeTab === 'layout' && (
                   <>
                     {/* Top Manager Bar */}
-                    <div className="bg-slate-800 p-3 rounded flex items-center justify-between border border-slate-700">
-                      <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800/40 p-3">
+                      <div className="flex min-w-0 flex-wrap items-center gap-3">
                         <span className="text-sm font-bold text-slate-200">
                           Editing Widget:
                         </span>
                         <select
+                          aria-label="Editing fuel widget"
                           value={selectedId}
                           onChange={(e) => handleWidgetChange(e.target.value)}
-                          className="bg-slate-900 border border-slate-600 text-white text-sm rounded px-2 py-1"
+                          className="settings-field"
                         >
                           {fuelWidgets.map((w) => (
                             <option key={w.id} value={w.id}>

@@ -607,14 +607,14 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
             <div className="flex gap-2 justify-end">
               <button
                 type="button"
-                className="px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md"
+                className="px-3 py-1 text-sm bg-settings-control hover:bg-settings-hover text-slate-300 rounded-md"
                 onClick={() => set(PALETTES.standard)}
               >
                 Standard
               </button>
               <button
                 type="button"
-                className="px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md"
+                className="px-3 py-1 text-sm bg-settings-control hover:bg-settings-hover text-slate-300 rounded-md"
                 onClick={() => set(PALETTES.colourBlind)}
               >
                 Colour-blind friendly

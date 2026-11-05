@@ -187,7 +187,12 @@ const DisplaySettingsList = ({
             {setting.configKey === 'driverName' &&
               (configValue as { enabled: boolean }).enabled && (
                 <div className="mt-3">
-                  <div className="flex flex-wrap gap-3 justify-end">
+                  <p className="mb-2 text-sm text-slate-400">Name format</p>
+                  <div
+                    role="group"
+                    aria-label="Driver name format"
+                    className="grid grid-cols-2 gap-2 xl:grid-cols-3"
+                  >
                     {(
                       [
                         'name-middlename-surname',
@@ -202,12 +207,12 @@ const DisplaySettingsList = ({
                         key={format}
                         format={format}
                         selected={
-                          (
+                          ((
                             configValue as {
                               enabled: boolean;
                               nameFormat: string;
                             }
-                          ).nameFormat === format
+                          ).nameFormat ?? 'name-middlename-surname') === format
                         }
                         onClick={() => {
                           const cv = settings.config[setting.configKey] as {
@@ -253,7 +258,7 @@ const DisplaySettingsList = ({
                         },
                       });
                     }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="settings-field"
                   >
                     <option value="full">1:42.123</option>
                     <option value="mixed">1:42.1</option>
@@ -372,7 +377,7 @@ export const RelativeSettings = () => {
           >
             <div className="space-y-4">
               {/* Tabs */}
-              <div className="flex border-b border-slate-700/50">
+              <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
                 <TabButton
                   id="display"
                   activeTab={activeTab}
@@ -459,7 +464,7 @@ export const RelativeSettings = () => {
                       <SettingProp path="titleBar.enabled" />
 
                       {settings.config.titleBar.enabled && (
-                        <SettingsSection>
+                        <SettingsSection variant="inline">
                           <SettingProp path="titleBar.progressBar.enabled" />
                         </SettingsSection>
                       )}
@@ -486,7 +491,7 @@ export const RelativeSettings = () => {
                     <SettingProp path="headerBar.enabled" />
 
                     {settings.config.headerBar.enabled && (
-                      <SettingsSection>
+                      <SettingsSection variant="inline">
                         <SessionBarItemsList
                           items={settings.config.headerBar.displayOrder}
                           onReorder={(newOrder) => {
@@ -558,7 +563,7 @@ export const RelativeSettings = () => {
                     <SettingProp path="footerBar.enabled" />
 
                     {settings.config.footerBar.enabled && (
-                      <SettingsSection>
+                      <SettingsSection variant="inline">
                         <SessionBarItemsList
                           items={settings.config.footerBar.displayOrder}
                           onReorder={(newOrder) => {

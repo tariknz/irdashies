@@ -69,7 +69,7 @@ export const ReleaseNotesSettings = () => {
               <select
                 value={version ?? ''}
                 onChange={(event) => setSelected(event.target.value)}
-                className="rounded bg-slate-700 p-2"
+                className="settings-field"
               >
                 <option value={status.currentVersion}>
                   Installed: {status.currentVersion}
@@ -88,10 +88,10 @@ export const ReleaseNotesSettings = () => {
             />
           )}
           {status.development && (
-            <div className="mt-8 border-t border-slate-600 pt-4">
+            <div className="mt-8 border-t border-settings-boundary pt-4">
               <button
                 onClick={() => setPreview(true)}
-                className="rounded bg-slate-700 px-3 py-2 hover:bg-slate-600"
+                className="rounded bg-slate-700 px-3 py-2 hover:bg-settings-hover"
               >
                 Preview update dialog
               </button>

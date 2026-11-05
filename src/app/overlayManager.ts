@@ -1515,7 +1515,7 @@ export class OverlayManager {
       ...(process.platform !== 'darwin' && {
         titleBarStyle: 'hidden' as const,
         titleBarOverlay: {
-          color: '#314158',
+          color: '#141a21',
           symbolColor: '#cad5e2',
           height: 40,
         },

@@ -68,4 +68,36 @@ describe('individual window setting', () => {
       })
     ).toHaveAttribute('aria-checked', 'true');
   });
+
+  it('shows the selected overlay font configuration without saving on mount', () => {
+    render(<GeneralSettings />);
+    const sample = screen.getByRole('figure', { name: 'Overlay font sample' });
+    expect(sample).toHaveTextContent('Lato / Normal / Medium');
+    expect(mocks.update).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Overlay font' }), {
+      target: { value: 'inter' },
+    });
+    fireEvent.change(
+      screen.getByRole('combobox', { name: 'Overlay font weight' }),
+      {
+        target: { value: 'bold' },
+      }
+    );
+    fireEvent.change(
+      screen.getByRole('slider', { name: 'Overlay font size' }),
+      {
+        target: { value: '6' },
+      }
+    );
+    expect(sample).toHaveTextContent('Inter / Bold / Large');
+    expect(mocks.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        generalSettings: expect.objectContaining({
+          fontType: 'inter',
+          fontWeight: 'bold',
+          fontSize: 'lg',
+        }),
+      })
+    );
+  });
 });

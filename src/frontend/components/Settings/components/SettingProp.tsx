@@ -131,7 +131,7 @@ const SettingPropRow = ({
             value={String(value)}
             onChange={(e) => change(fromString(spec.options, e.target.value))}
             aria-label={spec.label}
-            className="bg-slate-700 text-white rounded-md px-2 py-1"
+            className="settings-field"
           >
             {spec.options.map((o) => (
               <option key={o.value} value={String(o.value)}>

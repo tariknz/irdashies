@@ -162,8 +162,8 @@ export const PitLaneCalibrationSettings = ({
 
   return (
     <SettingsSection title="Pit Lane Calibration">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 flex-1 basis-52">
           <h4 className="text-md font-medium text-slate-300">
             {track?.trackName ?? 'Current track unavailable'}
           </h4>
@@ -175,7 +175,7 @@ export const PitLaneCalibrationSettings = ({
             loading || busy || !track?.hasCalibration || track.learningPaused
           }
           onClick={() => setConfirmTrack(track)}
-          className="shrink-0 rounded-md bg-slate-600 px-3 py-1 text-sm text-slate-200 transition-colors hover:bg-slate-500 disabled:cursor-not-allowed disabled:opacity-40"
+          className="settings-button shrink-0"
         >
           {pendingAction === 'reset' ? 'Resetting…' : 'Reset calibration'}
         </button>
@@ -190,13 +190,13 @@ export const PitLaneCalibrationSettings = ({
             1, or null. Opening pauses automatic learning. Save changes, then
             Reload file to apply them and resume learning.
           </p>
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             {bridge.openPitLaneDataFile && (
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => void editFile('open')}
-                className="rounded-md bg-slate-600 px-3 py-1 text-sm text-slate-200 transition-colors hover:bg-slate-500 disabled:cursor-not-allowed disabled:opacity-40"
+                className="settings-button"
               >
                 {pendingAction === 'open'
                   ? 'Opening…'
@@ -208,7 +208,7 @@ export const PitLaneCalibrationSettings = ({
                 type="button"
                 disabled={busy}
                 onClick={() => void editFile('reload')}
-                className="rounded-md bg-slate-600 px-3 py-1 text-sm text-slate-200 transition-colors hover:bg-slate-500 disabled:cursor-not-allowed disabled:opacity-40"
+                className="settings-button"
               >
                 {pendingAction === 'reload' ? 'Reloading…' : 'Reload file'}
               </button>

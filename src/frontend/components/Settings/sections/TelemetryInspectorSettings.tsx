@@ -174,7 +174,7 @@ export const TelemetryInspectorSettings = () => {
                       </div>
                       <button
                         onClick={() => removeProperty(index)}
-                        className="p-1 hover:bg-slate-600 rounded transition-colors"
+                        className="p-1 hover:bg-settings-hover rounded transition-colors"
                       >
                         <TrashIcon size={16} className="text-red-400" />
                       </button>
@@ -185,7 +185,7 @@ export const TelemetryInspectorSettings = () => {
             </div>
 
             {/* Add Custom Property */}
-            <div className="space-y-2 border-t border-slate-600 pt-4">
+            <div className="space-y-2 border-t border-settings-boundary pt-4">
               <h3 className="text-lg font-medium text-slate-200">
                 Add Custom Property
               </h3>
@@ -198,7 +198,7 @@ export const TelemetryInspectorSettings = () => {
                       source: e.target.value as 'telemetry' | 'session',
                     })
                   }
-                  className="bg-slate-700 text-slate-300 rounded px-2 py-1.5 text-sm"
+                  className="settings-field"
                 >
                   <option value="telemetry">Telemetry</option>
                   <option value="session">Session</option>
@@ -210,7 +210,7 @@ export const TelemetryInspectorSettings = () => {
                   onChange={(e) =>
                     setNewProperty({ ...newProperty, path: e.target.value })
                   }
-                  className="flex-1 bg-slate-700 text-slate-300 rounded px-3 py-1.5 text-sm"
+                  className="settings-field flex-1"
                 />
                 <input
                   type="text"
@@ -219,7 +219,7 @@ export const TelemetryInspectorSettings = () => {
                   onChange={(e) =>
                     setNewProperty({ ...newProperty, label: e.target.value })
                   }
-                  className="w-32 bg-slate-700 text-slate-300 rounded px-3 py-1.5 text-sm"
+                  className="settings-field w-32"
                 />
                 <button
                   onClick={() => {
@@ -228,7 +228,7 @@ export const TelemetryInspectorSettings = () => {
                     }
                   }}
                   disabled={!newProperty.path}
-                  className="px-3 py-1.5 bg-accent-600 hover:bg-accent-500 disabled:bg-slate-600 disabled:text-slate-400 disabled:cursor-not-allowed text-on-accent rounded text-sm transition-colors"
+                  className="px-3 py-1.5 bg-accent-600 hover:bg-accent-500 disabled:bg-settings-control disabled:text-slate-400 disabled:cursor-not-allowed text-on-accent rounded text-sm transition-colors"
                 >
                   <PlusIcon size={16} />
                 </button>
@@ -236,7 +236,7 @@ export const TelemetryInspectorSettings = () => {
             </div>
 
             {/* Quick Add Common Properties */}
-            <div className="space-y-2 border-t border-slate-600 pt-4">
+            <div className="space-y-2 border-t border-settings-boundary pt-4">
               <h3 className="text-lg font-medium text-slate-200">
                 Quick Add - Telemetry
               </h3>
@@ -251,7 +251,7 @@ export const TelemetryInspectorSettings = () => {
                         label: prop.label,
                       })
                     }
-                    className="px-2 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors"
+                    className="px-2 py-1 text-xs bg-slate-700 hover:bg-settings-hover text-slate-300 rounded transition-colors"
                   >
                     {prop.label}
                   </button>
@@ -274,7 +274,7 @@ export const TelemetryInspectorSettings = () => {
                         label: prop.label,
                       })
                     }
-                    className="px-2 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors"
+                    className="px-2 py-1 text-xs bg-slate-700 hover:bg-settings-hover text-slate-300 rounded transition-colors"
                   >
                     {prop.label}
                   </button>
@@ -283,7 +283,7 @@ export const TelemetryInspectorSettings = () => {
             </div>
 
             {/* Background Opacity */}
-            <div className="flex items-center justify-between border-t border-slate-600 pt-4">
+            <div className="flex items-center justify-between border-t border-settings-boundary pt-4">
               <span className="text-sm text-slate-300">Background Opacity</span>
               <div className="flex items-center gap-2">
                 <input
@@ -296,7 +296,7 @@ export const TelemetryInspectorSettings = () => {
                       background: { opacity: parseInt(e.target.value) },
                     })
                   }
-                  className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                  className="w-20 h-2 bg-settings-control rounded-lg appearance-none cursor-pointer"
                 />
                 <span className="text-xs text-slate-400 w-8">
                   {settings.config.background?.opacity ?? 80}%

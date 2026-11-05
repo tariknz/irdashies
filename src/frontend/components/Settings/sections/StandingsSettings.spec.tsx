@@ -63,6 +63,26 @@ describe('StandingsSettings', () => {
     expect(screen.queryByText('Copy settings from overlay')).toBeNull();
   });
 
+  it('shows the rendered default name format and saves a new explicit selection', () => {
+    render(<StandingsSettings />);
+    const defaultFormat = screen.getByRole('button', {
+      name: 'Max Emilian Verstappen',
+    });
+    expect(defaultFormat).toHaveAttribute('aria-pressed', 'true');
+    expect(mocks.onDashboardUpdated).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Max Verstappen' }));
+    expect(
+      screen.getByRole('button', { name: 'Max Verstappen' })
+    ).toHaveAttribute('aria-pressed', 'true');
+    const next = mocks.onDashboardUpdated.mock.calls.at(
+      -1
+    )?.[0] as DashboardLayout;
+    expect(
+      next.widgets.find((widget) => widget.id === 'standings')?.config
+        ?.driverName
+    ).toMatchObject({ nameFormat: 'name-surname' });
+  });
+
   it('edits the Gantry-only layout it is given and marks it', () => {
     render(<StandingsSettings widgetId="standings-g1" />);
 

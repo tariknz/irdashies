@@ -3,16 +3,20 @@ import { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { DashboardProvider, RunningStateProvider } from '@irdashies/context';
 import type {
+  DashboardBridge,
+  DriverTagSettings,
+  PitLaneBridge,
   IrSdkBridge,
   ReleaseNotesBridge,
   ReleaseNotesStatus,
 } from '@irdashies/types';
-import { releaseNotesFixture } from '@irdashies/types';
+import { DEFAULT_KEYBINDINGS, releaseNotesFixture } from '@irdashies/types';
 import { SettingsLayout } from './SettingsLayout';
 import { mockDashboardBridge } from '@irdashies/storybook';
 
 interface StoryProps {
   initialPath: string;
+  emptyFuel?: boolean;
 }
 
 // The header reads the running state to decide whether to name a simulator.
@@ -26,21 +30,142 @@ const runningBridge: IrSdkBridge = {
   stop: () => undefined,
 };
 
+// Reproduce the observed Extra Small preference without touching a real profile.
+const settingsPreviewBridge: DashboardBridge = {
+  ...mockDashboardBridge,
+  getDriverTagSettings: async () => structuredClone(driverTagsFixture),
+  saveDriverTagSettings: async () => undefined,
+  dashboardUpdated: (callback) =>
+    mockDashboardBridge.dashboardUpdated((dashboard, profileId) =>
+      callback(
+        {
+          ...dashboard,
+          generalSettings: {
+            ...dashboard.generalSettings,
+            fontType: 'lato',
+            fontSize: 'xs',
+            fontWeight: 'normal',
+          },
+        },
+        profileId
+      )
+    ),
+};
+
+const driverTagsFixture: DriverTagSettings = {
+  groups: [
+    { id: 'team', name: 'Endurance team', color: 0xf87171, icon: 'UsersThree' },
+    {
+      id: 'league',
+      name: 'League drivers',
+      color: 0x7dd3fc,
+      icon: 'FlagCheckered',
+    },
+  ],
+  entries: [
+    { id: '10001', name: 'Alex Morgan', label: 'TEAM', groupId: 'team' },
+    { id: '10002', name: 'Jamie Taylor', label: 'LEAGUE', groupId: 'league' },
+  ],
+  mapping: {},
+  display: { enabled: true, displayStyle: 'badge', iconWeight: 'regular' },
+};
+
+const installSettingsBridges = () => {
+  const previousPitLane = window.pitLaneBridge;
+  const previousKeybindings = window.keybindingsBridge;
+  let hasCalibration = true;
+  let learningPaused = false;
+  window.pitLaneBridge = {
+    getPitLaneData: async (trackId) => ({
+      trackId,
+      sourceId: 'settings-fixture',
+      revision: 0,
+      data: null,
+    }),
+    updatePitLaneData: async () => true,
+    getCurrentTrackPitLaneInfo: async () => ({
+      trackId: '47',
+      trackName: 'WeatherTech Raceway Laguna Seca',
+      hasCalibration,
+      learningPaused,
+    }),
+    resetPitLaneData: async () => {
+      hasCalibration = false;
+    },
+    openPitLaneDataFile: async () => {
+      learningPaused = true;
+    },
+    reloadPitLaneDataFile: async () => {
+      throw new Error('Isolated fixture: calibration file is invalid');
+    },
+  } satisfies PitLaneBridge;
+  let bindings = structuredClone(DEFAULT_KEYBINDINGS);
+  window.keybindingsBridge = {
+    getKeybindings: async () => bindings,
+    getRegistrationErrors: async () => ({}),
+    updateKeybinding: async (id, accelerator) => {
+      bindings = {
+        ...bindings,
+        [id]: { ...bindings[id], accelerator, isDefault: false },
+      };
+      return bindings;
+    },
+    resetKeybinding: async () =>
+      (bindings = structuredClone(DEFAULT_KEYBINDINGS)),
+    resetAllKeybindings: async () =>
+      (bindings = structuredClone(DEFAULT_KEYBINDINGS)),
+    startRecording: async () => undefined,
+    stopRecording: async () => undefined,
+    onGamepadCaptured: () => () => undefined,
+  };
+  return () => {
+    window.pitLaneBridge = previousPitLane;
+    window.keybindingsBridge = previousKeybindings;
+  };
+};
+
 const meta: Meta<typeof SettingsLayout> = {
   component: SettingsLayout,
   title: 'components/SettingsLayout',
+  parameters: { layout: 'fullscreen' },
+  beforeEach: installSettingsBridges,
   decorators: [
     (Story, context) => {
-      const { initialPath = 'standings' } = context.args as StoryProps;
+      const { initialPath = 'standings', emptyFuel } =
+        context.args as StoryProps;
       return (
-        <DashboardProvider bridge={mockDashboardBridge}>
+        <DashboardProvider
+          bridge={
+            emptyFuel
+              ? {
+                  ...settingsPreviewBridge,
+                  dashboardUpdated: (callback) =>
+                    settingsPreviewBridge.dashboardUpdated(
+                      (dashboard, profileId) =>
+                        callback(
+                          {
+                            ...dashboard,
+                            widgets: dashboard.widgets.filter(
+                              (widget) => (widget.type ?? widget.id) !== 'fuel'
+                            ),
+                          },
+                          profileId
+                        )
+                    ),
+                }
+              : settingsPreviewBridge
+          }
+        >
           <RunningStateProvider bridge={runningBridge}>
             <MemoryRouter initialEntries={[initialPath]}>
               <Routes>
                 <Route
                   path="/settings/*"
                   element={
-                    <div style={{ height: '100vh' }}>
+                    <div
+                      className="overlay-window overlay-theme-xs overlay-theme-font-face-lato overlay-theme-font-weight-normal"
+                      style={{ height: '100vh' }}
+                    >
                       <Story />
                     </div>
                   }
@@ -66,6 +191,32 @@ export const Default: Story = {
 
 export const GeneralSettings: Story = {
   args: { initialPath: '/settings/general' },
+};
+
+export const FuelRoute: Story = {
+  args: { initialPath: '/settings/fuel' },
+};
+
+export const FuelEmpty: Story = {
+  args: { initialPath: '/settings/fuel', emptyFuel: true },
+};
+
+export const ProfilesRoute: Story = {
+  args: { initialPath: '/settings/profiles' },
+};
+
+export const DriverTagsRoute: Story = {
+  args: { initialPath: '/settings/driver-tags' },
+};
+export const CalibrationRoute: Story = {
+  args: { initialPath: '/settings/pitlanehelper' },
+};
+export const AdvancedRoute: Story = {
+  args: { initialPath: '/settings/advanced' },
+};
+
+export const KeybindingsRoute: Story = {
+  args: { initialPath: '/settings/keybindings' },
 };
 
 // Add more stories for different routes
