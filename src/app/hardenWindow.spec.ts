@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { shell } from 'electron';
 import { hardenWindow, isInternalAppUrl } from './hardenWindow';
 
 vi.mock('electron', () => ({
@@ -87,6 +88,17 @@ describe('isInternalAppUrl', () => {
 });
 
 describe('hardenWindow', () => {
+  it.each([
+    'https://github.com/tariknz/irdashies/releases/tag/v2.1.0',
+    'https://github.com/tariknz/irdashies/pull/1234',
+  ])('opens release note link %s through the system browser', (url) => {
+    const { window, openWindow } = createWindow();
+    hardenWindow(window);
+
+    expect(openWindow(url)).toEqual({ action: 'deny' });
+    expect(shell.openExternal).toHaveBeenCalledWith(url);
+  });
+
   it.each([
     'https://github.com/tariknz/irdashies',
     'http://192.168.1.50:4321/dashboard?profile=race-night',

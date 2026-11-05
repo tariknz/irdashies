@@ -12,9 +12,17 @@ import { ArrowSquareOutIcon, ArrowClockwiseIcon } from '@phosphor-icons/react';
 import type { ReleaseNotesResult } from '@irdashies/types';
 
 const releaseNotesComponents: Components = {
-  a: ({ children, href }) => (
-    <ReleaseNotesLink href={href}>{children}</ReleaseNotesLink>
-  ),
+  a: ({ children, href, node }) => {
+    const pullRequest = href?.match(
+      /^https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/(\d+)\/?$/
+    );
+    const text = node?.children.length === 1 ? node.children[0] : null;
+    const label =
+      pullRequest && text?.type === 'text' && text.value === href
+        ? `#${pullRequest[1]}`
+        : children;
+    return <ReleaseNotesLink href={href}>{label}</ReleaseNotesLink>;
+  },
   img: ({ src, alt }) => (
     <ReleaseNotesMedia
       key={typeof src === 'string' ? src : ''}
@@ -141,11 +149,6 @@ export const ReleaseNotesPanel = ({
             </button>
           )}
         </div>
-      )}
-      {state.status === 'ready' && state.cached && (
-        <p role="status" className="text-sm text-amber-200">
-          Showing saved release notes.
-        </p>
       )}
       {release &&
         (release.body.trim() ? (
