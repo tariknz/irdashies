@@ -419,7 +419,14 @@ export function stepBrakeCueLatch(
       // chicane. Runs once: a point just acquired lies ahead of the car, so
       // the next step either counts down to it or holds it, and cannot get
       // back here.
-      return stepBrakeCueLatch(state, out, tick);
+      //
+      // That step starts from a blank output, so a beep set above for the
+      // point just passed is put back. It wins over a count for the next
+      // point on the same tick: it is the cue to brake now.
+      const fired = out.fire;
+      stepBrakeCueLatch(state, out, tick);
+      if (fired !== null) out.fire = fired;
+      return out;
     }
   }
 

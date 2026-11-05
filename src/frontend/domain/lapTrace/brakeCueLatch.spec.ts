@@ -278,6 +278,20 @@ describe('stepBrakeCueLatch', () => {
     expect(r.fired).toEqual(['count3', 'count2', 'count1', 'brake', 'brake']);
   });
 
+  it('still beeps for a point the car is already well past by the next tick', () => {
+    // A late or stalled frame can land the car beyond the release distance in
+    // one step. The point is then released and the next one looked for on the
+    // same tick, and that look must not swallow the brake beep.
+    const r = rig([1000, 3000]);
+    r.approach(800, 960, 40);
+    expect(r.fired).not.toContain('brake');
+
+    r.tick(1080);
+
+    expect(r.fired[r.fired.length - 1]).toBe('brake');
+    expect(r.fired.filter((sound) => sound === 'brake')).toHaveLength(1);
+  });
+
   it('still walks the bars down for a point it will not count out loud', () => {
     // Only the beeps are held back — the strip is the driver's read on how far
     // away the point is, and it is no less true for being close.
