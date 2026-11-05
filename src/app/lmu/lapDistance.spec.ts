@@ -137,7 +137,9 @@ describe('estimateLmuLapDistPct', () => {
     ).toBe(-1);
   });
 
-  it('clamps to the end of the lap', () => {
+  it('runs on into the next lap rather than stopping at the line', () => {
+    // Standing at 100% until scoring's next update wrapped held the car still
+    // for up to 200 ms and then jumped it forward.
     const state = createLmuLapDistanceState();
     estimateLmuLapDistPct(state, frame({ elapsedTime: 10, scoringPct: 0.999 }));
     expect(
@@ -145,7 +147,7 @@ describe('estimateLmuLapDistPct', () => {
         state,
         frame({ elapsedTime: 10.4, speedMs: 300, scoringPct: 0.999 })
       )
-    ).toBe(1);
+    ).toBeCloseTo(0.999 + 120 / TRACK_M - 1, 9);
   });
 
   it('forgets its anchor on reset', () => {
@@ -252,51 +254,51 @@ describe('estimateLmuLapDistPct invariants', () => {
     }
   });
 
-  // Saturation at 1.0 repeats a value the sample buffer then drops, so the
-  // last metres of a lap record as a single point. It is bounded rather than
-  // fixed: it can only begin once integration crosses 1.0, which is at most
-  // one 200 ms scoring interval before the line.
-  it('saturates for no more than one scoring interval of travel', () => {
+  // Ahead of scoring's own wrap, the line is where the estimate reaches it:
+  // not immediately, but once it has covered the distance the anchor left.
+  it('wraps once it has covered the distance to the line', () => {
     const state = createLmuLapDistanceState();
     // Anchor just inside the final scoring window: 0.998 of 7 km is 14 m out.
     const scoringPct = 0.998;
     let elapsedTime = 50;
-    estimateLmuLapDistPct(state, frame({ scoringPct, elapsedTime }));
+    let previous = estimateLmuLapDistPct(
+      state,
+      frame({ scoringPct, elapsedTime })
+    );
 
-    let firstSaturatedAt: number | undefined;
+    let wrappedAt: number | undefined;
     for (let i = 0; i < 25; i += 1) {
       elapsedTime += 0.008;
       const value = estimateLmuLapDistPct(
         state,
         frame({ scoringPct, elapsedTime })
       );
-      if (value >= 1 && firstSaturatedAt === undefined) {
-        firstSaturatedAt = elapsedTime;
+      if (value < previous - 0.5 && wrappedAt === undefined) {
+        wrappedAt = elapsedTime;
       }
+      previous = value;
     }
 
-    expect(firstSaturatedAt).toBeDefined();
-    // It saturated only after covering the 14 m the anchor left to the line,
-    // not immediately.
-    expect((firstSaturatedAt ?? 0) - 50).toBeGreaterThan(0.15);
+    expect(wrappedAt).toBeDefined();
+    // 14 m at 70 m/s is 0.2 s.
+    expect((wrappedAt ?? 0) - 50).toBeGreaterThan(0.19);
+    expect((wrappedAt ?? 0) - 50).toBeLessThan(0.21);
   });
 
-  // lapNumber comes from the 100 Hz telemetry block, not the 5 Hz scoring one,
-  // so the boundary resync lands on the next poll rather than up to 200 ms
-  // later. That is what bounds the saturated span above.
-  it('recovers on the very next frame after the lap counter flips', () => {
+  it('takes up scoring after the line without stepping back', () => {
     const state = createLmuLapDistanceState();
     estimateLmuLapDistPct(
       state,
       frame({ scoringPct: 0.999, elapsedTime: 50, lapNumber: 3 })
     );
-    // Integrate past the line so the estimate is pinned at 1.
-    const saturated = estimateLmuLapDistPct(
+    // Integrated past the line, ahead of scoring's wrap.
+    const ranOver = estimateLmuLapDistPct(
       state,
       frame({ scoringPct: 0.999, elapsedTime: 50.2, lapNumber: 3 })
     );
-    expect(saturated).toBe(1);
+    expect(ranOver).toBeCloseTo(0.999 + 14 / TRACK_M - 1, 9);
 
+    // Scoring wraps a little further on, and is taken up from there.
     const afterLine = estimateLmuLapDistPct(
       state,
       frame({ scoringPct: 0.002, elapsedTime: 50.208, lapNumber: 4 })
@@ -309,61 +311,141 @@ describe('a lap that turns over before scoring wraps', () => {
   /**
    * Drives across the line at a steady SPEED: 10 ms frames, a scoring update
    * every 200 ms reading the true position, and the lap counter flipping
-   * `gapM` before scoring's line. Returns each frame's position in metres from
-   * scoring's line (negative before it) and how often the value wrapped.
+   * `gapM` before scoring's line. Between the two, scoring either still reads
+   * the old lap or, `heldAtZero`, already reads exactly 0 -- the Laguna Seca
+   * tape shows the latter. Returns each frame's position in metres from
+   * scoring's line (negative before it), the lap number published with it, and
+   * the frame indexes where the position wrapped.
    */
-  const driveAcross = (gapM: number) => {
+  const driveAcross = (gapM: number, heldAtZero = false) => {
     const state = createLmuLapDistanceState();
     const startM = -gapM - 100;
     let scoringPct = 0;
     const metres: number[] = [];
-    let wraps = 0;
+    const laps: (number | null)[] = [];
+    const wrapsAt: number[] = [];
     let previous: number | undefined;
     for (let i = 0; i <= 400; i += 1) {
       const elapsedTime = 100 + i / 100;
       const trueM = startM + SPEED * (i / 100);
+      const pastCounter = trueM >= -gapM;
       // Scoring updates on the 200 ms boundaries only.
       if (i % 20 === 0) {
-        scoringPct = (((trueM % TRACK_M) + TRACK_M) % TRACK_M) / TRACK_M;
+        scoringPct =
+          heldAtZero && pastCounter && trueM < 0
+            ? 0
+            : (((trueM % TRACK_M) + TRACK_M) % TRACK_M) / TRACK_M;
       }
       const value = estimateLmuLapDistPct(
         state,
-        frame({
-          lapNumber: trueM >= -gapM ? 5 : 4,
-          scoringPct,
-          elapsedTime,
-        })
+        frame({ lapNumber: pastCounter ? 5 : 4, scoringPct, elapsedTime })
       );
-      if (previous !== undefined && value < previous - 0.5) wraps += 1;
+      if (previous !== undefined && value < previous - 0.5) wrapsAt.push(i);
       previous = value;
       metres.push((value > 0.5 ? value - 1 : value) * TRACK_M);
+      laps.push(state.lap);
     }
-    return { metres, wraps };
+    return { metres, laps, wrapsAt };
   };
 
   // LMU increments the lap counter before scoring's percentage wraps, so for a
-  // while lapNumber says "new lap" while scoringPct still reads ~0.99: about
-  // 1.6 m at Laguna Seca and Fuji, and far more at a circuit whose start and
-  // finish lines are apart. Anchoring the new lap at 0.99 stepped back to zero
-  // when scoring wrapped; snapping to zero at the flip jumped forward by the
-  // gap, and once the gap outlasted the wait, fell back and crossed the line a
-  // second time, replaying the same metres on the plot.
-  it.each([1.6, 35, 60, 150])(
-    'moves steadily through a %f m gap, wrapping once where scoring does',
-    (gapM) => {
-      const { metres, wraps } = driveAcross(gapM);
+  // while lapNumber says "new lap" while scoringPct still reads ~0.99, or
+  // already 0: about 1.6 m at Laguna Seca and Fuji, and far more at a circuit
+  // whose start and finish lines are apart. Anchoring the new lap at 0.99
+  // stepped back to zero when scoring wrapped; snapping to zero at the flip
+  // jumped forward by the gap, and once the gap outlasted the wait, fell back
+  // and crossed the line a second time, replaying the same metres on the plot.
+  describe.each([
+    ['still reads the old lap', false],
+    ['already reads 0', true],
+  ])('when scoring %s past the counter', (_, heldAtZero) => {
+    it.each([1.6, 35, 60, 150])(
+      'moves steadily through a %f m gap, wrapping once where scoring does',
+      (gapM) => {
+        const { metres, wrapsAt } = driveAcross(gapM, heldAtZero);
 
-      expect(wraps).toBe(1);
-      // 0.7 m every frame: no jump at the flip, the line or scoring's wrap.
-      for (let i = 1; i < metres.length; i += 1) {
-        expect(metres[i] - metres[i - 1]).toBeCloseTo(SPEED / 100, 6);
+        expect(wrapsAt).toHaveLength(1);
+        // 0.7 m every frame: no jump at the flip, the line or scoring's wrap.
+        for (let i = 1; i < metres.length; i += 1) {
+          expect(metres[i] - metres[i - 1]).toBeCloseTo(SPEED / 100, 6);
+        }
+        // The new lap starts where scoring's line is, not where the counter
+        // flipped.
+        expect(metres[wrapsAt[0]]).toBeGreaterThanOrEqual(0);
+        expect(metres[wrapsAt[0]]).toBeLessThan(SPEED / 100);
       }
-      // The new lap starts where scoring's line is, not where the counter
-      // flipped.
-      const firstOnNewLap = metres.findIndex((m) => m >= 0);
-      expect(metres[firstOnNewLap]).toBeLessThan(SPEED / 100);
+    );
+
+    it.each([1.6, 150])(
+      'moves the lap number with the position through a %f m gap',
+      (gapM) => {
+        // Anything pairing the lap number with the position -- the fuel
+        // calculator does -- must see the line once, not at the counter and
+        // again at the wrap.
+        const { laps, wrapsAt } = driveAcross(gapM, heldAtZero);
+
+        expect(laps[wrapsAt[0] - 1]).toBe(4);
+        expect(laps[wrapsAt[0]]).toBe(5);
+        expect(new Set(laps.slice(0, wrapsAt[0]))).toEqual(new Set([4]));
+        expect(new Set(laps.slice(wrapsAt[0]))).toEqual(new Set([5]));
+      }
+    );
+  });
+
+  it('takes the lap number from the counter mid-lap', () => {
+    // Whatever happened at the line, mid-lap the sim's counter is right.
+    const state = createLmuLapDistanceState();
+    estimateLmuLapDistPct(
+      state,
+      frame({ lapNumber: 7, scoringPct: 0.4, elapsedTime: 10 })
+    );
+    state.lap = 3;
+    estimateLmuLapDistPct(
+      state,
+      frame({ lapNumber: 7, scoringPct: 0.4, elapsedTime: 10.01 })
+    );
+    expect(state.lap).toBe(7);
+  });
+
+  // A session restarted on the same track, where the bridge keeps this state.
+  // Treating the counter going back as a crossing held the position on the old
+  // value until the car drove past it or crossed the line.
+  it.each([
+    ['with the clock going back', 50],
+    ['with the clock running on', 200.2],
+  ])('follows a session restart %s', (_, restartAt) => {
+    for (const [from, to] of [
+      [0.9, 0.6],
+      [0.4, 0.98],
+    ]) {
+      const state = createLmuLapDistanceState();
+      estimateLmuLapDistPct(
+        state,
+        frame({ lapNumber: 5, scoringPct: from, elapsedTime: 200 })
+      );
+      const restarted = estimateLmuLapDistPct(
+        state,
+        frame({
+          lapNumber: 0,
+          scoringPct: to,
+          elapsedTime: restartAt,
+          speedMs: 0,
+        })
+      );
+      expect(restarted).toBeCloseTo(to, 9);
+      expect(
+        estimateLmuLapDistPct(
+          state,
+          frame({
+            lapNumber: 0,
+            scoringPct: to,
+            elapsedTime: restartAt + 0.1,
+            speedMs: 0,
+          })
+        )
+      ).toBeCloseTo(to, 9);
     }
-  );
+  });
 
   it('takes a tow back on the old lap as the truth while waiting', () => {
     // The counter has flipped, but scoring then jumps a long way back on the

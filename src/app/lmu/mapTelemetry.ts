@@ -579,7 +579,15 @@ export function mapLmuTelemetry(
   );
   t.Gear = num(raw.gear);
   t.RPM = num(raw.engineRPM);
-  t.Lap = num(raw.lapNumber);
+  // The lap that goes with LapDistPct rather than LMU's counter as it stands:
+  // the counter flips at the timing line, which can be well short of where
+  // the position wraps, and anything pairing the two -- the fuel calculator
+  // does -- then saw the line twice. Moved in the same frame as the position.
+  t.Lap = num(
+    lapDistanceState && playerIdx >= 0 && lapDistanceState.lap !== null
+      ? lapDistanceState.lap
+      : raw.lapNumber
+  );
   t.LapCompleted = num(raw.vehTotalLaps[playerIdx] ?? 0);
   t.LapDistPct = num(lapDistPct);
   t.LapBestLapTime = lapTime(raw.vehBestLapTime[playerIdx]);
