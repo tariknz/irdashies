@@ -1,6 +1,6 @@
 /**
  * Fetch and bundle iRacing car data from lovely-car-data repository
- * 
+ *
  * Usage:
  *   npm run fetch-lovely-data          # Fetches only if missing or stale
  *   npm run fetch-lovely-data -- --force  # Forces fresh fetch
@@ -9,6 +9,7 @@
 import fs from 'fs';
 import path from 'path';
 import https from 'https';
+import { getFreshBundleAgeMs } from './lovely-bundle-cache';
 
 interface CarManifestEntry {
   carName: string;
@@ -36,7 +37,8 @@ interface CarDataBundle {
   cars: Record<string, CarData>;
 }
 
-const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data';
+const GITHUB_RAW_BASE =
+  'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data';
 const TARGET_GAME = 'iracing';
 const DATA_DIR = path.join(process.cwd(), 'src', 'frontend', 'assets', 'data');
 const OUTPUT_FILE = path.join(DATA_DIR, 'cars-bundle.json');
@@ -44,29 +46,20 @@ const OUTPUT_FILE = path.join(DATA_DIR, 'cars-bundle.json');
 // Check if force flag is passed
 const FORCE_FETCH = process.argv.includes('--force');
 
-// Max age: 7 days in milliseconds
-const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
-
 /**
  * Check if the bundle file exists and is recent enough
  */
-function shouldSkipFetch(): boolean {
+async function shouldSkipFetch(): Promise<boolean> {
   if (FORCE_FETCH) {
     console.log('🔄 Force flag detected, fetching fresh data...\n');
     return false;
   }
 
-  if (!fs.existsSync(OUTPUT_FILE)) {
-    console.log('📦 No existing bundle found, fetching...\n');
-    return false;
-  }
-
-  const stats = fs.statSync(OUTPUT_FILE);
-  const age = Date.now() - stats.mtimeMs;
-
-  if (age > MAX_AGE_MS) {
-    const daysOld = Math.floor(age / (24 * 60 * 60 * 1000));
-    console.log(`📦 Bundle is ${daysOld} days old, fetching fresh data...\n`);
+  const age = await getFreshBundleAgeMs(OUTPUT_FILE);
+  if (age === null) {
+    console.log(
+      'Bundle is missing, stale, or has an invalid fetch timestamp; fetching fresh data...\n'
+    );
     return false;
   }
 
@@ -81,27 +74,29 @@ function shouldSkipFetch(): boolean {
  */
 function fetchJson<T>(url: string): Promise<T> {
   return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
-      let data = '';
+    https
+      .get(url, (res) => {
+        let data = '';
 
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
 
-      res.on('end', () => {
-        try {
-          if (res.statusCode === 200) {
-            resolve(JSON.parse(data));
-          } else {
-            reject(new Error(`HTTP ${res.statusCode}: ${url}`));
+        res.on('end', () => {
+          try {
+            if (res.statusCode === 200) {
+              resolve(JSON.parse(data));
+            } else {
+              reject(new Error(`HTTP ${res.statusCode}: ${url}`));
+            }
+          } catch (error) {
+            reject(error);
           }
-        } catch (error) {
-          reject(error);
-        }
+        });
+      })
+      .on('error', (error) => {
+        reject(error);
       });
-    }).on('error', (error) => {
-      reject(error);
-    });
   });
 }
 
@@ -131,7 +126,10 @@ async function fetchCarData(entry: CarManifestEntry): Promise<CarData | null> {
     const carData = await fetchJson<CarData>(url);
     return carData;
   } catch (error) {
-    console.warn(`⚠ Failed to fetch car ${entry.carId} (${entry.path}):`, (error as Error).message);
+    console.warn(
+      `⚠ Failed to fetch car ${entry.carId} (${entry.path}):`,
+      (error as Error).message
+    );
     return null;
   }
 }
@@ -139,7 +137,9 @@ async function fetchCarData(entry: CarManifestEntry): Promise<CarData | null> {
 /**
  * Fetch all car data using the manifest
  */
-async function fetchAllCarData(manifest: CarManifestEntry[]): Promise<CarData[]> {
+async function fetchAllCarData(
+  manifest: CarManifestEntry[]
+): Promise<CarData[]> {
   console.log(`\n🚗 Fetching ${manifest.length} car files...`);
   const cars: CarData[] = [];
   let successCount = 0;
@@ -147,7 +147,7 @@ async function fetchAllCarData(manifest: CarManifestEntry[]): Promise<CarData[]>
   for (let i = 0; i < manifest.length; i++) {
     const entry = manifest[i];
     const carData = await fetchCarData(entry);
-    
+
     if (carData) {
       cars.push(carData);
       successCount++;
@@ -155,7 +155,9 @@ async function fetchAllCarData(manifest: CarManifestEntry[]): Promise<CarData[]>
 
     // Progress indicator every 20 cars
     if ((i + 1) % 20 === 0) {
-      console.log(`  ${i + 1}/${manifest.length} processed (${successCount} successful)`);
+      console.log(
+        `  ${i + 1}/${manifest.length} processed (${successCount} successful)`
+      );
     }
   }
 
@@ -170,7 +172,7 @@ function createBundle(cars: CarData[]): CarDataBundle {
   const bundle: CarDataBundle = {
     version: '1.0',
     timestamp: Date.now(),
-    cars: {}
+    cars: {},
   };
 
   for (const car of cars) {
@@ -208,12 +210,12 @@ function saveBundle(bundle: CarDataBundle): void {
 async function main(): Promise<void> {
   try {
     // Skip if bundle exists and is recent
-    if (shouldSkipFetch()) {
+    if (await shouldSkipFetch()) {
       return;
     }
 
     console.log('🔄 Fetching car data from lovely-car-data repository...\n');
-    
+
     const manifest = await fetchManifest();
     const cars = await fetchAllCarData(manifest);
     const bundle = createBundle(cars);
