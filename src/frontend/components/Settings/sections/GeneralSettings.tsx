@@ -4,6 +4,7 @@ import { useAvailableSimulators, useDashboard } from '@irdashies/context';
 import { SIMULATOR_IDS, SIMULATOR_LABELS } from '@irdashies/types';
 import type { GeneralSettingsType } from '@irdashies/types';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { LanguageSelect } from '../i18n/LanguageSelect';
 
 const FONT_PRESETS = {
   lato: 'Lato',
@@ -346,6 +347,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0 space-y-6 p-4 mt-4">
+        <LanguageSelect />
         {/* Font Settings */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
