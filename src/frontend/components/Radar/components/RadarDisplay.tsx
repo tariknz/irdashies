@@ -1,3 +1,4 @@
+import { getSettingsLanguage } from '../../Settings/i18n/language';
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useWidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import type { TrackGeometry } from '@irdashies/domain/track';
@@ -215,7 +216,9 @@ export const RadarDisplay = memo(
           follow.carIdx = isPaceCar ? null : carIdx;
           follow.dist = tracked ? tracked.dist : dist;
           follow.label = isPaceCar
-            ? 'PACE'
+            ? getSettingsLanguage() === 'ru'
+              ? 'ТЕМП'
+              : 'PACE'
             : current.appearance.get(carIdx)?.label
               ? `#${current.appearance.get(carIdx)?.label}`
               : '';
