@@ -9,6 +9,7 @@ import manifests from './ru/manifests';
 import menu from './ru/menu';
 import { createRuPatterns } from './ru/patterns';
 import sections from './ru/sections';
+import runtime from './ru/runtime';
 
 // Relative imports only: tools/ scripts load this file via tsx without
 // path-alias or import.meta.glob support.
@@ -42,6 +43,7 @@ export const ruDictionary: ReadonlyMap<string, string> = buildDictionary({
   manifests,
   sections,
   dialogs,
+  runtime,
 });
 
 export const ruTranslator: Translator = createTranslator(
