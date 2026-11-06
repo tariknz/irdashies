@@ -272,7 +272,7 @@ The visual iteration handoff was uncommitted on `t3/settings-ui-redesign`. Publi
 
 ## UX interaction rules and measured pass
 
-The [settings UX review](docs/research/settings-ux-review.md) records the research, ten predeclared tasks, before/after results and limits. Scripted task checks improved from 6/10 to 10/10; modal focus/recovery checks improved from 2/5 to 5/5. These are deterministic workflow checks, not participant success rates or an aesthetic-score revision.
+The [PR audit record](https://github.com/tariknz/irdashies/pull/880) records the research, ten predeclared tasks, before/after results and limits. Scripted task checks improved from 6/10 to 10/10; modal focus/recovery checks improved from 2/5 to 5/5. These are deterministic workflow checks, not participant success rates or an aesthetic-score revision.
 
 Use **App settings** for the persistent disclosure of app-wide routes. Workspace was an ambiguous metaphor, confirmed by the user's request for its meaning. Existing historical reviews above retain their original term.
 
@@ -284,7 +284,7 @@ Destructive confirmations start on Cancel, contain forward/backward Tab, make ba
 
 Driver group choices retain native buttons and selected-state feedback. Escape closes and restores trigger focus; selecting closes and returns focus; tabbing outside closes without stealing focus. Expose the current value as the trigger's accessible description. Do not add a combobox/listbox role without implementing its complete keyboard contract.
 
-Maintain the existing red/logo identity and typography. Keyboard improvements do not justify decorative panels or prominent repeated reorder chrome. This pass adds no telemetry, storage, bridge, dependency or persisted-schema changes. Research references and remaining real-user/native verification needs are in the linked UX review. Review media and machine-specific audit scripts are local evidence, excluded from source commits.
+Maintain the existing red/logo identity and typography. Keyboard improvements do not justify decorative panels or prominent repeated reorder chrome. This pass adds no telemetry, storage, bridge, dependency or persisted-schema changes. Research references and remaining real-user/native verification needs are in the PR audit record. Review media and machine-specific audit scripts are local evidence, excluded from source commits.
 
 Publication self-review preserves the intent of upstream PR #873: do not add a redundant sidebar widget count. The Overlays heading supplies context; filtering and the no-results status communicate search outcomes without a persistent total.
 
