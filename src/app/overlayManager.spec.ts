@@ -573,16 +573,26 @@ describe('individual overlay windows', () => {
 });
 
 describe('settings window title bar', () => {
-  it.skipIf(process.platform === 'darwin')(
-    'matches the charcoal settings header',
-    () => {
-      const manager = new OverlayManager();
-      manager.createSettingsWindow();
-      expect(createdWindows.at(-1)?.options.titleBarOverlay).toEqual({
-        color: '#141a21',
-        symbolColor: '#cad5e2',
-        height: 40,
-      });
+  it.each(['darwin', 'win32', 'linux'])(
+    'uses the app header with native window controls on %s',
+    (platform) => {
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, 'platform', { value: platform });
+      try {
+        const manager = new OverlayManager();
+        manager.createSettingsWindow();
+        expect(createdWindows.at(-1)?.options).toMatchObject({
+          frame: true,
+          titleBarStyle: 'hidden',
+          titleBarOverlay: {
+            color: '#141a21',
+            symbolColor: '#cad5e2',
+            height: 40,
+          },
+        });
+      } finally {
+        Object.defineProperty(process, 'platform', { value: originalPlatform });
+      }
     }
   );
 });
