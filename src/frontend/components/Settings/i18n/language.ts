@@ -16,6 +16,16 @@ export const getSettingsLanguage = (): SettingsLanguage => {
   }
 };
 
+export const reloadOnLanguageChange = (
+  reload: () => void = () => window.location.reload()
+): (() => void) => {
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === LANGUAGE_STORAGE_KEY) reload();
+  };
+  window.addEventListener('storage', handleStorage);
+  return () => window.removeEventListener('storage', handleStorage);
+};
+
 export const setSettingsLanguage = (language: SettingsLanguage): void => {
   try {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
