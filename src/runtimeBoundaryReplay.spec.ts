@@ -24,14 +24,16 @@ type EventChannelName =
   | 'pit-lane.reset';
 /**
  * Channels owned by a standalone runtime rather than the ProcessorHost, so
- * this harness never sees them. `lap-history.snapshot` is recorded by
- * LapHistoryRuntime, which deliberately runs outside demand gating so an
+ * this harness never sees them. `lap-history.snapshot` and `pit-stops.snapshot`
+ * are recorded by their own runtimes (LapHistoryRuntime, PitStopRuntime),
+ * which deliberately run outside demand gating so an
  * enabled Gantry keeps recording with its window closed. `replay.context` is
  * owned by ReplayContextRuntime, which the other runtimes read to pause.
  * `streamchat.*` are published by StreamChatService, which reads no telemetry.
  */
 type RuntimeOwnedChannelName =
   | 'lap-history.snapshot'
+  | 'pit-stops.snapshot'
   | 'replay.context'
   | 'streamchat.messages'
   | 'streamchat.emotes';

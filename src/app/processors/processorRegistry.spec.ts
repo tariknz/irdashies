@@ -4,8 +4,8 @@ import { createProcessorDefinitions } from './processorRegistry';
 
 /**
  * Snapshot channels owned by a standalone runtime instead of the host.
- * LapHistoryRuntime records lap crossings outside demand gating so an enabled
- * Gantry keeps recording with its window closed; registering it here as well
+ * LapHistoryRuntime and PitStopRuntime record outside demand gating so an enabled
+ * Gantry keeps recording with its window closed; registering them here as well
  * would run a second processor and publish a competing snapshot.
  * ReplayContextRuntime is read by the incident and lap-history runtimes, so it
  * must run whether or not a window subscribes.
@@ -14,6 +14,7 @@ import { createProcessorDefinitions } from './processorRegistry';
  */
 const RUNTIME_OWNED_CHANNELS = [
   'lap-history.snapshot',
+  'pit-stops.snapshot',
   'replay.context',
   'streamchat.messages',
   'streamchat.emotes',

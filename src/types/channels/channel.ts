@@ -8,6 +8,7 @@ import type {
 } from '../streamChat';
 import type { ReplayContextSnapshot } from './replayContext';
 import type { RacePlanProgressSnapshot } from './racePlanProgress';
+import type { PitStopsSnapshot } from './pitStops';
 import type { PitLaneCalibration } from '../pitLane';
 
 export type SessionLifecycleEvent =
@@ -46,6 +47,7 @@ export interface ChannelPayloads {
   'streamchat.messages': StreamChatMessagesSnapshot;
   'streamchat.emotes': StreamChatEmotesSnapshot;
   'race-plan.progress': RacePlanProgressSnapshot;
+  'pit-stops.snapshot': PitStopsSnapshot;
 }
 
 export interface TrackStateSnapshot {
@@ -796,6 +798,13 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 1,
     maxRateHz: 1,
+  },
+  // Publishes when a car enters, stops in, leaves or exits the pits; the cap
+  // only bounds a burst of stops under a full-course caution.
+  'pit-stops.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 1,
+    maxRateHz: 2,
   },
 } as const satisfies ChannelRegistry;
 

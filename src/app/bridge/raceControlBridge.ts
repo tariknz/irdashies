@@ -89,6 +89,8 @@ const isValidReplayIncident = (
 const isValidReplaySeconds = (value: unknown): value is number =>
   isFiniteNumber(value) && value >= 0 && value <= 300;
 
+const PIT_STOP_CAMERA_GROUP = 'Far Chase';
+
 /**
  * iRacing camera groups are numbered from 1, and `CameraSwitchNum` treats
  * group 0 as "leave the camera group alone" — which is why passing 0 switched
@@ -259,34 +261,46 @@ export const setupRaceControlBridge = (
     bridge.changeCameraNumber(carNumber, groupNum, 0);
   });
 
+  const replayAt = (
+    channel: string,
+    target: unknown,
+    seconds: unknown,
+    groupName: string
+  ) => {
+    if (!isValidReplayIncident(target)) {
+      logger.warn(`[RaceControl] Rejected invalid ${channel} payload`);
+      return;
+    }
+    if (!isValidReplaySeconds(seconds)) {
+      logger.warn(
+        `[RaceControl] Rejected invalid ${channel} seconds:`,
+        seconds
+      );
+      return;
+    }
+    const bridge = getCurrentBridge();
+    if (!bridge) return;
+    const targetTimeMs = Math.max(
+      0,
+      Math.round((target.sessionTime - seconds) * 1000)
+    );
+    const groupNum = resolveCameraGroupNum(latestSession, groupName);
+    logger.info(
+      `[RaceControl] ${channel} car=${target.carIdx ?? 'unknown'} (${target.driverName ?? 'unknown'} #${target.carNumber}) type=${target.type ?? 'unknown'} sessionTime=${target.sessionTime.toFixed(2)} sessionNum=${target.sessionNum} offset=-${seconds}s targetTimeMs=${targetTimeMs} cameraGroup=${groupName} num=${groupNum}`
+    );
+    bridge.changeCameraNumber(target.carNumber, groupNum, 0);
+    bridge.triggerReplaySessionSearch(target.sessionNum, targetTimeMs);
+  };
+
   ipcMain.handle(
     'raceControl:replayIncident',
-    (_event, incident: unknown, seconds: unknown) => {
-      if (!isValidReplayIncident(incident)) {
-        logger.warn(
-          '[RaceControl] Rejected invalid replayIncident incident payload'
-        );
-        return;
-      }
-      if (!isValidReplaySeconds(seconds)) {
-        logger.warn(
-          '[RaceControl] Rejected invalid replayIncident seconds:',
-          seconds
-        );
-        return;
-      }
-      const bridge = getCurrentBridge();
-      if (!bridge) return;
-      const targetTimeMs = Math.max(
-        0,
-        Math.round((incident.sessionTime - seconds) * 1000)
-      );
-      const groupNum = resolveCameraGroupNum(latestSession, cameraGroupName);
-      logger.info(
-        `[RaceControl] replayIncident car=${incident.carIdx ?? 'unknown'} (${incident.driverName ?? 'unknown'} #${incident.carNumber}) type=${incident.type ?? 'unknown'} sessionTime=${incident.sessionTime.toFixed(2)} sessionNum=${incident.sessionNum} offset=-${seconds}s targetTimeMs=${targetTimeMs} cameraGroup=${cameraGroupName} num=${groupNum}`
-      );
-      bridge.changeCameraNumber(incident.carNumber, groupNum, 0);
-      bridge.triggerReplaySessionSearch(incident.sessionNum, targetTimeMs);
-    }
+    (_event, incident: unknown, seconds: unknown) =>
+      replayAt('replayIncident', incident, seconds, cameraGroupName)
+  );
+
+  ipcMain.handle(
+    'raceControl:replayPitStop',
+    (_event, stop: unknown, seconds: unknown) =>
+      replayAt('replayPitStop', stop, seconds, PIT_STOP_CAMERA_GROUP)
   );
 };

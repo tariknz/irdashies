@@ -68,6 +68,14 @@ import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
 import { setupRacePlanBridge } from './app/bridge/racePlanBridge';
 import { flushRacePlanHistoryOnShutdown } from './app/storage/racePlanHistory';
 import {
+  flushPitStopHistoryOnShutdown,
+  getPitStopHistoryStore,
+} from './app/storage/pitStopHistory';
+import {
+  PitStopRuntime,
+  type PitStopPersistence,
+} from './app/processors/pitStopRuntime';
+import {
   flushIncidentsOnShutdown,
   appendIncident,
   listArchivedIncidentSessions,
@@ -184,6 +192,7 @@ let disconnectLifecycleChannel: (() => void) | undefined;
 let sessionProfileSwitcher: SessionProfileSwitcher | undefined;
 let incidentRuntime: IncidentRuntime | undefined;
 let disposeLapHistoryRuntime: (() => void) | undefined;
+let disposePitStopRuntime: (() => void) | undefined;
 let disposeStreamChat: (() => void) | undefined;
 let disposeReplayContextRuntime: (() => void) | undefined;
 const knownLocalUserIds = createKnownLocalUserIdStore();
@@ -307,6 +316,70 @@ function setupLapHistoryRuntime(
     unsubscribeBridgeChanged?.();
     unsubscribeDemand();
     unsubscribeSessionId?.();
+    unsubscribeReplayContext();
+    runtime.dispose();
+  };
+}
+
+const pitStopPersistence: PitStopPersistence = {
+  load: async (key) => {
+    const store = getPitStopHistoryStore();
+    await store.load();
+    return store.get(key);
+  },
+  save: (key, stops) => getPitStopHistoryStore().save(key, stops),
+};
+
+/**
+ * Hosts pit stop recording like lap history: gated on the Gantry widget, and
+ * kept running while the Gantry window is closed.
+ */
+function setupPitStopRuntime(
+  initialDashboard: DashboardLayout,
+  replayContext: ReplayContextRuntime
+): void {
+  const runtime = new PitStopRuntime(
+    channelBus,
+    getSessionLifecycle(),
+    runtimePerfMetrics,
+    pitStopPersistence
+  );
+  runtime.updateReplayPaused(replayContext.isReplayFile());
+  const unsubscribeReplayContext = replayContext.onChange((context) =>
+    runtime.updateReplayPaused(context.mode === 'replayFile')
+  );
+
+  const applyDashboard = (layout: DashboardLayout | undefined) => {
+    const widget = layout?.widgets.find((w) => w.id === 'gantry');
+    runtime.updateEnabled(widget?.enabled ?? false);
+  };
+  applyDashboard(initialDashboard);
+  const unsubscribeDashboard = onDashboardUpdated(applyDashboard);
+
+  let unsubscribeSession: (() => void) | undefined;
+  let unsubscribeTelemetry: (() => void) | undefined;
+  const wireToTelemetryBridge = () => {
+    unsubscribeSession?.();
+    unsubscribeTelemetry?.();
+    const bridge = getCurrentBridge();
+    if (!bridge) return;
+    unsubscribeSession =
+      bridge.onSessionData((session) => runtime.onSession(session)) ??
+      undefined;
+    unsubscribeTelemetry =
+      bridge.onTelemetry((telemetry) => runtime.onFrame(telemetry)) ??
+      undefined;
+  };
+  wireToTelemetryBridge();
+  const unsubscribeBridgeChanged = onBridgeChanged(wireToTelemetryBridge);
+
+  disposePitStopRuntime = () => {
+    unsubscribeSession?.();
+    unsubscribeTelemetry?.();
+    unsubscribeSession = undefined;
+    unsubscribeTelemetry = undefined;
+    unsubscribeBridgeChanged?.();
+    unsubscribeDashboard?.();
     unsubscribeReplayContext();
     runtime.dispose();
   };
@@ -512,6 +585,7 @@ void app.whenReady().then(async () => {
   );
   setupRaceControlBridge(incidents, dashboard, replayContextRuntime);
   setupLapHistoryRuntime(dashboard, replayContextRuntime);
+  setupPitStopRuntime(dashboard, replayContextRuntime);
   disposeStreamChat = setupStreamChat(channelBus, listDashboards);
   // Returns false when the Gantry widget is disabled, so Settings can explain
   // why the button did nothing instead of appearing to be broken.
@@ -710,6 +784,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
     disposeRendererDataSubscriptions?.();
     incidentRuntime?.dispose();
     disposeLapHistoryRuntime?.();
+    disposePitStopRuntime?.();
     disposeStreamChat?.();
     disposeReplayContextRuntime?.();
     disposeGarage61SearchSession?.();
@@ -729,6 +804,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
       releaseNotes?.flush(),
       racePlan?.flush(),
       flushRacePlanHistoryOnShutdown(),
+      flushPitStopHistoryOnShutdown(),
       flushGarage61SearchSessionOnShutdown(),
       flushStorageWritesOnShutdown(),
       flushSettingsWindowBoundsOnShutdown(),

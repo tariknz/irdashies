@@ -11,6 +11,7 @@ export default {
   channels: [
     'lap-times.snapshot',
     'lap-history.snapshot',
+    'pit-stops.snapshot',
     'standings.snapshot',
     'track-state.snapshot',
     'radio.snapshot',
@@ -27,6 +28,8 @@ export default {
     // Publishes on version change, so this only caps the worst case. A 60-car
     // field completes a lap about 0.6 times a second.
     'lap-history.snapshot': 2,
+    // Publishes when a car enters, stops in or leaves the pits.
+    'pit-stops.snapshot': 2,
     // Publishes only when a replay loads or its provenance resolves.
     'replay.context': 1,
   },
