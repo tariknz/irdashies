@@ -338,117 +338,200 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-none p-4 bg-slate-700 rounded">
-        <h2 className="text-xl mb-1">General</h2>
-        <p className="text-slate-400">
+    <div className="flex min-h-0 h-full flex-col">
+      <header className="flex-none border-b border-slate-700 px-1 pb-5 pt-1">
+        <h2 className="mb-1 text-xl font-semibold tracking-tight text-white">
+          General
+        </h2>
+        <p className="text-sm text-slate-400">
           Configure general application settings and preferences.
         </p>
-      </div>
+      </header>
 
-      <div className="flex-1 overflow-y-auto min-h-0 space-y-6 p-4 mt-4">
+      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto pt-5 pr-1 [scrollbar-gutter:stable]">
         <LanguageSelect />
-        {/* Font Settings */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-slate-200">Font</h3>
+        <section className="space-y-5 rounded-lg border border-slate-700 bg-slate-800/40 p-4">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-200">
+              Overlay appearance
+            </h3>
+            <p className="mt-1 text-sm text-slate-400">
+              These preferences apply to racing overlays. Settings keeps its own
+              readable text size.
+            </p>
           </div>
-          {/* Font Weight Dropdown */}
-          <div className="mt-4">
-            <select
-              value={settings.fontType ?? 'lato'}
-              onChange={(e) =>
-                handleFontChange(
-                  e.target.value as NonNullable<GeneralSettingsType['fontType']>
-                )
-              }
-              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500"
-            >
-              {Object.entries(FONT_PRESETS).map(([key, value]) => (
-                <option key={key} value={key}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Font Weight Settings */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-slate-200">Font Weight</h3>
-          </div>
-          {/* Font Weight Dropdown */}
-          <div className="mt-4">
-            <select
-              value={resolvedFontWeight}
-              onChange={(e) =>
-                handleFontWeightChange(
-                  e.target.value as NonNullable<
-                    GeneralSettingsType['fontWeight']
-                  >
-                )
-              }
-              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500"
-            >
-              {Object.entries(filteredWeights).map(([key, value]) => (
-                <option key={key} value={key}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Font Size Settings */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-slate-200">Font Size</h3>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-300">
-                {FONT_SIZE_PRESETS[settings.fontSize ?? 'sm']}
-              </span>
+          {/* Font Settings */}
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-center gap-x-5 gap-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-md font-medium text-slate-200">Font</h4>
+            </div>
+            {/* Font Weight Dropdown */}
+            <div className="min-w-0">
+              <select
+                aria-label="Overlay font"
+                value={settings.fontType ?? 'lato'}
+                onChange={(e) =>
+                  handleFontChange(
+                    e.target.value as NonNullable<
+                      GeneralSettingsType['fontType']
+                    >
+                  )
+                }
+                className="settings-field w-full"
+              >
+                {Object.entries(FONT_PRESETS).map(([key, value]) => (
+                  <option key={key} value={key}>
+                    {value}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
-          {/* Font Size Slider */}
-          <div className="mt-4">
-            <input
-              type="range"
-              min="0"
-              max="15"
-              step="1"
-              value={getSliderValue(settings.fontSize)}
-              onChange={handleSliderChange}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider accent-accent-500"
-            />
+          {/* Font Weight Settings */}
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-center gap-x-5 gap-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-md font-medium text-slate-200">
+                Font Weight
+              </h4>
+            </div>
+            {/* Font Weight Dropdown */}
+            <div className="min-w-0">
+              <select
+                aria-label="Overlay font weight"
+                value={resolvedFontWeight}
+                onChange={(e) =>
+                  handleFontWeightChange(
+                    e.target.value as NonNullable<
+                      GeneralSettingsType['fontWeight']
+                    >
+                  )
+                }
+                className="settings-field w-full"
+              >
+                {Object.entries(filteredWeights).map(([key, value]) => (
+                  <option key={key} value={key}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-        </div>
 
-        {/* Compact Mode Setting */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-slate-200">Compact Mode</h3>
+          {/* Font Size Settings */}
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-center gap-x-5 gap-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h4 className="text-md font-medium text-slate-200">Font Size</h4>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-300">
+                  {FONT_SIZE_PRESETS[settings.fontSize ?? 'sm']}
+                </span>
+              </div>
+            </div>
+
+            {/* Font Size Slider */}
+            <div className="min-w-0">
+              <input
+                aria-label="Overlay font size"
+                type="range"
+                min="0"
+                max="15"
+                step="1"
+                value={getSliderValue(settings.fontSize)}
+                onChange={handleSliderChange}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider accent-accent-500"
+              />
+            </div>
           </div>
-          <div className="mt-4">
+
+          <figure
+            aria-label="Overlay font sample"
+            className="space-y-2 border-y border-slate-700 py-3"
+          >
+            <figcaption className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-slate-400">
+              <span>Overlay font sample</span>
+              <span>
+                {FONT_PRESETS[settings.fontType ?? 'lato']} /{' '}
+                {FONT_WEIGHT_PRESETS[resolvedFontWeight]} /{' '}
+                {FONT_SIZE_PRESETS[settings.fontSize ?? 'sm']}
+              </span>
+            </figcaption>
+            <p
+              className={`overlay-window overlay-theme-${settings.fontSize ?? 'sm'} overlay-theme-font-face-${settings.fontType ?? 'lato'} overlay-theme-font-weight-${resolvedFontWeight} text-base break-words text-slate-200`}
+            >
+              irDashies overlay text 0123456789
+            </p>
+          </figure>
+
+          {/* Compact Mode Setting */}
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-center gap-x-5 gap-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-md font-medium text-slate-200">
+                Compact Mode
+              </h4>
+            </div>
+            <div className="min-w-0">
+              <select
+                aria-label="Overlay compact mode"
+                value={settings.compactMode ?? 'off'}
+                onChange={(e) =>
+                  handleCompactModeChange(
+                    e.target.value as NonNullable<
+                      GeneralSettingsType['compactMode']
+                    >
+                  )
+                }
+                className="settings-field w-full"
+              >
+                <option value="off">Off</option>
+                <option value="compact">Compact</option>
+                <option value="ultra">Ultra</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Color Theme Settings */}
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-center gap-x-5 gap-y-2">
+            <h4 className="text-md font-medium text-slate-200">Color Theme</h4>
             <select
-              value={settings.compactMode ?? 'off'}
+              aria-label="Overlay color theme"
+              value={settings.colorPalette ?? 'default'}
               onChange={(e) =>
-                handleCompactModeChange(
-                  e.target.value as NonNullable<
-                    GeneralSettingsType['compactMode']
-                  >
+                handleColorThemeChange(
+                  e.target.value as GeneralSettingsType['colorPalette']
                 )
               }
-              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500"
+              className="settings-field w-full"
             >
-              <option value="off">Off</option>
-              <option value="compact">Compact</option>
-              <option value="ultra">Ultra</option>
+              {Object.entries(COLOR_THEME_PRESETS).map(([key, value]) => (
+                <option key={key} value={key}>
+                  {value}
+                </option>
+              ))}
             </select>
           </div>
-        </div>
-
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-center gap-x-5 gap-y-2">
+            <h4 className="text-md font-medium text-slate-200">
+              Highlight Color
+            </h4>
+            <select
+              aria-label="Overlay highlight color"
+              value={settings.highlightColor ?? 960745}
+              onChange={(e) =>
+                handleHighlightColorChange(parseInt(e.target.value))
+              }
+              className="settings-field w-full"
+            >
+              {Array.from(HIGHLIGHT_COLOR_PRESETS.entries()).map(
+                ([key, value]) => (
+                  <option key={key} value={key}>
+                    {value}
+                  </option>
+                )
+              )}
+            </select>
+          </div>
+        </section>
         {/* Edit Mode Settings */}
         <BaseSettingsSection
           title="Edit Mode"
@@ -500,74 +583,6 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
           </div>
         </BaseSettingsSection>
 
-        {/* Color Theme Settings */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-slate-200">Color Theme</h3>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-300">
-                {COLOR_THEME_PRESETS[settings.colorPalette ?? 'default']}
-              </span>
-            </div>
-          </div>
-
-          {/* Color Theme Dropdown */}
-          <div className="mt-4">
-            <select
-              value={settings.colorPalette ?? 'default'}
-              onChange={(e) =>
-                handleColorThemeChange(
-                  e.target.value as GeneralSettingsType['colorPalette']
-                )
-              }
-              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500"
-            >
-              {Object.entries(COLOR_THEME_PRESETS).map(([key, value]) => (
-                <option key={key} value={key}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Highlight Color Settings */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-slate-200">
-              Highlight Color
-            </h3>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-300">
-                {HIGHLIGHT_COLOR_PRESETS.get(settings.highlightColor ?? 960745)}
-              </span>
-              <span
-                className={`bg-${HIGHLIGHT_COLOR_PRESETS.get(settings.highlightColor ?? 960745)?.toLowerCase()}-800 rounded border-2 border-${HIGHLIGHT_COLOR_PRESETS.get(settings.highlightColor ?? 960745)?.toLowerCase()}-500`}
-                style={{ width: '20px', height: '20px' }}
-              ></span>
-            </div>
-          </div>
-
-          {/* Highlight Color Dropdown */}
-          <div className="mt-4">
-            <select
-              value={settings.highlightColor ?? 960745}
-              onChange={(e) =>
-                handleHighlightColorChange(parseInt(e.target.value))
-              }
-              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500"
-            >
-              {Array.from(HIGHLIGHT_COLOR_PRESETS.entries()).map(
-                ([key, value]) => (
-                  <option key={key} value={key}>
-                    {value}
-                  </option>
-                )
-              )}
-            </select>
-          </div>
-        </div>
-
         {previewMode && (
           <div className="p-3 bg-slate-700/50 rounded text-sm text-slate-400">
             More settings are available in the desktop app, including taskbar
@@ -576,16 +591,19 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
         )}
 
         {!previewMode && (
-          <>
+          <section className="space-y-6 rounded-lg border border-slate-700 bg-slate-800/40 p-4">
+            <h3 className="text-lg font-semibold text-slate-200">
+              Application &amp; connectivity
+            </h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3
+                  <h4
                     id="individual-overlay-windows-label"
-                    className="text-lg font-medium text-slate-200"
+                    className="text-md font-medium text-slate-200"
                   >
                     Individual Overlay Windows
-                  </h3>
+                  </h4>
                   <p className="text-sm text-slate-400">
                     Give each widget its own window, allowing it to span
                     monitors. Applies immediately. Edit Layout temporarily uses
@@ -609,12 +627,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3
+                  <h4
                     id="skip-taskbar-label"
-                    className="text-lg font-medium text-slate-200"
+                    className="text-md font-medium text-slate-200"
                   >
                     Hide Overlays from Taskbar
-                  </h3>
+                  </h4>
                   <p className="text-sm text-slate-400">
                     When enabled, overlay windows won&apos;t appear in the
                     taskbar. The app is still accessible via the system tray.
@@ -633,12 +651,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3
+                  <h4
                     id="overlay-always-on-top-label"
-                    className="text-lg font-medium text-slate-200"
+                    className="text-md font-medium text-slate-200"
                   >
                     Keep Overlays Always On Top
-                  </h3>
+                  </h4>
                   <p className="text-sm text-slate-400">
                     When enabled, overlay windows will always stay on top of
                     other applications. (requires restart)
@@ -658,12 +676,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3
+                  <h4
                     id="enable-web-server-label"
-                    className="text-lg font-medium text-slate-200"
+                    className="text-md font-medium text-slate-200"
                   >
                     Enable Web Server
-                  </h3>
+                  </h4>
                   <p className="text-sm text-slate-400">
                     Runs the built-in web server that exposes your overlays as
                     browser sources for OBS. When disabled, the app listens on
@@ -684,12 +702,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3
+                  <h4
                     id="enable-network-access-label"
-                    className="text-lg font-medium text-slate-200"
+                    className="text-md font-medium text-slate-200"
                   >
                     Enable Network Access
-                  </h3>
+                  </h4>
                   <p className="text-sm text-slate-400">
                     When enabled, the component server binds to all network
                     interfaces (0.0.0.0), allowing other devices on your network
@@ -709,12 +727,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3
+                  <h4
                     id="hardware-acceleration-label"
-                    className="text-lg font-medium text-slate-200"
+                    className="text-md font-medium text-slate-200"
                   >
                     Hardware Acceleration
-                  </h3>
+                  </h4>
                   <p className="text-sm text-slate-400">
                     Uses GPU hardware acceleration for rendering. Only disable
                     this if you are experiencing compatibility issues, as it
@@ -735,12 +753,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3
+                  <h4
                     id="auto-start-label"
-                    className="text-lg font-medium text-slate-200"
+                    className="text-md font-medium text-slate-200"
                   >
                     Start on system startup
-                  </h3>
+                  </h4>
                   <p className="text-sm text-slate-400">
                     If enabled, irDashies will start automatically on system
                     start up.
@@ -758,12 +776,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3
+                  <h4
                     id="start-minimized-label"
-                    className="text-lg font-medium text-slate-200"
+                    className="text-md font-medium text-slate-200"
                   >
                     Start minimized
-                  </h3>
+                  </h4>
                   <p className="text-sm text-slate-400">
                     If enabled, the main settings window will start minimized to
                     the system tray.
@@ -781,12 +799,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3
+                  <h4
                     id="close-to-tray-label"
-                    className="text-lg font-medium text-slate-200"
+                    className="text-md font-medium text-slate-200"
                   >
                     Close to tray
-                  </h3>
+                  </h4>
                   <p className="text-sm text-slate-400">
                     If enabled, closing the app will minimise to the system tray
                     rather than quitting.
@@ -804,9 +822,9 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-medium text-slate-200">
+                  <h4 className="text-md font-medium text-slate-200">
                     Simulator
-                  </h3>
+                  </h4>
                   <p className="text-sm text-slate-400">
                     Which simulator to read telemetry from. Auto picks whichever
                     supported simulator is running.
@@ -821,7 +839,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                       >
                     )
                   }
-                  className="shrink-0 px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500"
+                  className="settings-field shrink-0"
                 >
                   <option value="auto">Auto</option>
                   {SIMULATOR_IDS.map((id) => {
@@ -839,7 +857,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                 </select>
               </div>
             </div>
-          </>
+          </section>
         )}
       </div>
     </div>
