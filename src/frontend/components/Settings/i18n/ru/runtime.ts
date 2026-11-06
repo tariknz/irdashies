@@ -71,6 +71,9 @@ export default {
   'Rewind 10 seconds': 'Назад на 10 секунд',
   'Fast forward 10 seconds': 'Вперёд на 10 секунд',
   'Playback speed': 'Скорость воспроизведения',
+  // Telemetry Inspector empty state
+  'No properties configured.': 'Свойства не настроены.',
+  'Add properties in widget settings.': 'Добавьте свойства в настройках виджета.',
   'Pause replay': 'Приостановить повтор',
   'Play replay': 'Воспроизвести повтор',
 } satisfies Record<string, string>;
