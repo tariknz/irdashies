@@ -3,6 +3,7 @@ import logger from '@irdashies/utils/logger';
 import {
   LANGUAGE_STORAGE_KEY,
   getSettingsLanguage,
+  reloadOnLanguageChange,
   setSettingsLanguage,
 } from './language';
 
@@ -33,6 +34,22 @@ describe('settings language storage', () => {
     });
     expect(getSettingsLanguage()).toBe('ru');
     expect(warn).toHaveBeenCalled();
+  });
+
+  it('reloads other windows when the stored language changes', () => {
+    const reload = vi.fn();
+    const stop = reloadOnLanguageChange(reload);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'unrelated' }));
+    expect(reload).not.toHaveBeenCalled();
+    window.dispatchEvent(
+      new StorageEvent('storage', { key: LANGUAGE_STORAGE_KEY, newValue: 'en' })
+    );
+    expect(reload).toHaveBeenCalledOnce();
+    stop();
+    window.dispatchEvent(
+      new StorageEvent('storage', { key: LANGUAGE_STORAGE_KEY, newValue: 'ru' })
+    );
+    expect(reload).toHaveBeenCalledOnce();
   });
 
   it('stores the language', () => {
