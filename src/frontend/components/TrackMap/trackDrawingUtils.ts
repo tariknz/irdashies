@@ -1,3 +1,4 @@
+import { getSettingsLanguage } from '../Settings/i18n/language';
 import { getColor } from '@irdashies/utils/colors';
 import { TrackDrawing, TrackDriver, TurnLabels } from './TrackCanvas';
 import type { Sector } from '@irdashies/types';
@@ -111,6 +112,11 @@ export const drawTurnNames = (
   turns.forEach((turn) => {
     const { x, y, content } = turn;
     if (!content || x === undefined || y === undefined) return;
+    // "Straight" is the fallback name for unnamed track sections.
+    const displayContent =
+      content === 'Straight' && getSettingsLanguage() === 'ru'
+        ? 'Прямая'
+        : content;
 
     // type of display
     const isNumeric = /^\d+/.test(content.trim());
@@ -143,7 +149,7 @@ export const drawTurnNames = (
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `${fontSize}rem sans-serif`;
-    const m = ctx.measureText(content);
+    const m = ctx.measureText(displayContent);
 
     if (turnLabels.highContrast) {
       const padding = 20 * scaleFactor;
@@ -164,7 +170,7 @@ export const drawTurnNames = (
     // visual offset
     const visualOffset =
       (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
-    ctx.fillText(content, renderX, renderY + visualOffset);
+    ctx.fillText(displayContent, renderX, renderY + visualOffset);
   });
 };
 
