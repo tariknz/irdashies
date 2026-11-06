@@ -58,7 +58,8 @@ describe('FasterCarsFromBehind', () => {
 
       const card = screen.getByRole('listitem');
       expect(card.querySelector('span[aria-hidden]')).toHaveClass(expected);
-      expect(card).not.toHaveClass(expected, 'animate-pulse');
+      expect(card).not.toHaveClass(expected);
+      expect(card).not.toHaveClass('animate-pulse');
     }
   );
 
