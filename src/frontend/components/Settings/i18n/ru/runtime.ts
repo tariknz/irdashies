@@ -76,4 +76,43 @@ export default {
   'Add properties in widget settings.': 'Добавьте свойства в настройках виджета.',
   'Pause replay': 'Приостановить повтор',
   'Play replay': 'Воспроизвести повтор',
+  // Additional overlay widgets and layout controls
+  'Drag to resize. Double-click to reset.':
+    'Перетащите, чтобы изменить размер. Дважды щёлкните, чтобы сбросить.',
+  'Exit Edit Mode': 'Выйти из режима редактирования',
+  'The standings hit a problem. They will try again shortly.':
+    'В таблице позиций возникла проблема. Скоро будет выполнена повторная попытка.',
+  'This panel hit a problem. It will try again shortly.':
+    'В этой панели возникла проблема. Скоро будет выполнена повторная попытка.',
+  'Waiting for iRacing.': 'Ожидание iRacing.',
+  'Waiting for the grid.': 'Ожидание стартовой решётки.',
+  'Waiting for lap data.': 'Ожидание данных круга.',
+  'Recording lap data...': 'Запись данных круга...',
+  'No clean lap': 'Нет чистого круга',
+  'No track data available': 'Данные трассы недоступны',
+  'Warning: Track path unavailable': 'Предупреждение: траектория трассы недоступна',
+  'Warning: Track start point unavailable':
+    'Предупреждение: точка старта трассы недоступна',
+  'Track ID:': 'ID трассы:',
+  'Error:': 'Ошибка:',
+  'Issue:': 'Проблема:',
+  'Needs Fuel Data': 'Недостаточно данных о топливе',
+  'Fuel at end': 'Топлива на финише',
+  'Fuel Used': 'Израсходовано топлива',
+  'Fuel used per completed lap': 'Расход топлива за завершённый круг',
+  'Fuelling for': 'Заправка на',
+  'Waiting for a completed lap': 'Ожидание завершённого круга',
+  'Pit scenarios available after more laps':
+    'Сценарии пит-стопа появятся после нескольких кругов',
+  'Next pit': 'Следующий пит-стоп',
+  'Fuel History': 'История топлива',
+  'Lap count uncertain': 'Количество кругов неизвестно',
+  'Lap graph car class': 'Класс машин на графике кругов',
+  'Lap graph plot': 'График кругов',
+  'Lap graph y axis mode': 'Режим оси Y графика кругов',
+  'Lap graph y axis range': 'Диапазон оси Y графика кругов',
+  'Lap window overview': 'Обзор окна круга',
+  'Follow live': 'Следовать за текущей позицией',
+  'Set a HypeRate Session ID in settings':
+    'Укажите ID сессии HypeRate в настройках',
 } satisfies Record<string, string>;
