@@ -9,7 +9,7 @@ export interface SettingsTranslatorProps {
   translator?: Translator;
 }
 
-export const SettingsTranslator = ({
+export const AppTranslator = ({
   language = getSettingsLanguage(),
   translator = ruTranslator,
 }: SettingsTranslatorProps): null => {
@@ -42,3 +42,6 @@ export const SettingsTranslator = ({
 
   return null;
 };
+
+// Backwards-compatible name for existing settings-window tests and stories.
+export const SettingsTranslator = AppTranslator;
