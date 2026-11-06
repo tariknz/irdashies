@@ -4,8 +4,8 @@
 
 ## Как это работает
 
-- `SettingsTranslator` подключён в `src/frontend/windows/SettingsWindow.tsx`.
-  Когда выбран русский язык, он обходит DOM окна настроек и через
+- `AppTranslator` подключён в `src/frontend/App.tsx`. Когда выбран русский
+  язык, он обходит DOM текущего окна приложения и через
   `MutationObserver` заменяет английские строки русскими: текстовые узлы и
   атрибуты `title`, `placeholder`, `aria-label`, `alt`. Исходные компоненты
   апстрима не меняются.
