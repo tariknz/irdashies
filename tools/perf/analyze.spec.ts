@@ -10,6 +10,7 @@ import {
   parseCliArgs,
   parsePerfLog,
   summarizeCapture,
+  summaryMarkdown,
 } from './analyze';
 
 const stats = (
@@ -181,6 +182,74 @@ describe('performance analysis', () => {
     expect(comparisonMarkdown(comparison)).toContain(
       '| Track-map animation-frame p99 mean | 0.500 ms |'
     );
+  });
+
+  it('summarizes the Lap Trace frame and brake-cue measures', () => {
+    const input = capture([
+      mainSample(5, 100, 100, 100, 5000),
+      mainSample(10, 100, 100, 100, 5000),
+    ]);
+    const rendererSample = (
+      intervalMs: number,
+      lapTrace?: { frame: number; cue: number; p99: number }
+    ): RendererPerfSample => ({
+      schemaVersion: 1,
+      timestamp: new Date(5_000).toISOString(),
+      runId: 'run',
+      scenario: 'full',
+      pid: 1,
+      route: '/',
+      visibilityState: 'visible',
+      intervalMs,
+      frameTimeMs: stats(16),
+      lapTraceFrameMs: lapTrace
+        ? stats(0.3, { count: lapTrace.frame, p99: lapTrace.p99 })
+        : undefined,
+      lapTraceBrakeCueMs: lapTrace
+        ? stats(0.05, { count: lapTrace.cue, p99: lapTrace.p99 / 10 })
+        : undefined,
+      framesOver25Ms: 0,
+      framesOver50Ms: 0,
+    });
+    input.renderer = [
+      // The Lap Trace window, measured at a 144 Hz display's rate.
+      rendererSample(5000, { frame: 720, cue: 720, p99: 2 }),
+      // Another overlay window, which never runs the widget: it must not
+      // dilute the rate.
+      rendererSample(5000),
+    ];
+    const summary = summarizeCapture(input, 0);
+
+    expect(summary.renderer.lapTraceFrameRateHz).toBe(144);
+    expect(summary.renderer.lapTraceFrameP99MeanMs).toBe(2);
+    expect(summary.renderer.lapTraceBrakeCueRateHz).toBe(144);
+    expect(summary.renderer.lapTraceBrakeCueP99WorstMs).toBeCloseTo(0.2);
+    expect(summaryMarkdown(summary)).toContain(
+      '| Lap Trace plot frames / second | 144.00 |'
+    );
+
+    const candidate = {
+      ...summary,
+      renderer: {
+        ...summary.renderer,
+        lapTraceFrameRateHz: 60,
+        lapTraceFrameP99MeanMs: 1.5,
+        lapTraceBrakeCueRateHz: 25,
+      },
+    };
+    const comparison = compareSummaries(summary, candidate);
+    expect(comparison.delta.lapTraceFrameRateHz).toBe(-84);
+    expect(comparison.delta.lapTraceFrameP99Ms).toBeCloseTo(-0.5);
+    expect(comparison.delta.lapTraceBrakeCueRateHz).toBe(-119);
+    expect(comparisonMarkdown(comparison)).toContain(
+      '| Lap Trace brake-cue steps / second | -119.00 Hz |'
+    );
+
+    // The Lap Trace window idle for an interval -- reported, at a count of 0
+    // -- is still its time: the rate halves, unlike for the other window,
+    // which reports nothing at all.
+    input.renderer.push(rendererSample(5000, { frame: 0, cue: 0, p99: 0 }));
+    expect(summarizeCapture(input, 0).renderer.lapTraceFrameRateHz).toBe(72);
   });
 
   it('flags a material iRacing FPS regression with conclusive evidence', () => {

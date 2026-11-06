@@ -3,6 +3,7 @@ import type {
   RendererPerfMeasureName,
   RendererPerfSample,
 } from '@irdashies/types';
+import { RENDERER_PERF_MEASURE_NAMES } from '../types/performance';
 import { FixedSampleBuffer } from '../shared/performanceSamples';
 import { readRendererPerfArguments } from './perfRendererArguments';
 
@@ -10,9 +11,18 @@ export const PERF_RENDERER_LOG_PREFIX = '[PerfRenderer:JSON] ';
 
 let telemetryCallbackTimes: FixedSampleBuffer | undefined;
 let channelCallbackTimes: FixedSampleBuffer | undefined;
-let standingsFinalTimingTimes: FixedSampleBuffer | undefined;
-let standingsPlayerGapTimes: FixedSampleBuffer | undefined;
-let trackMapAnimationFrameTimes: FixedSampleBuffer | undefined;
+/** One buffer per named measure, reported as `<name>Ms`. */
+let measureTimes:
+  Record<RendererPerfMeasureName, FixedSampleBuffer> | undefined;
+/**
+ * The measures this window has recorded at least once. Only those are
+ * reported: the analyzer takes a measure's rate over the windows that report
+ * it, and a window that never runs the loop -- every other overlay, with
+ * per-widget windows -- would otherwise add its whole interval to the time
+ * and divide the rate by the number of windows. A window that does run it
+ * keeps reporting its idle intervals, at a count of 0.
+ */
+let measuresRun: Set<RendererPerfMeasureName> | undefined;
 
 export function isRendererPerfMetricsEnabled(): boolean {
   return telemetryCallbackTimes !== undefined;
@@ -30,15 +40,9 @@ export function recordRendererMeasure(
   name: RendererPerfMeasureName,
   durationMs: number
 ): void {
-  if (name === 'standingsFinalTiming') {
-    standingsFinalTimingTimes?.add(durationMs);
-  }
-  if (name === 'standingsPlayerGaps') {
-    standingsPlayerGapTimes?.add(durationMs);
-  }
-  if (name === 'trackMapAnimationFrame') {
-    trackMapAnimationFrameTimes?.add(durationMs);
-  }
+  if (!measureTimes) return;
+  measureTimes[name].add(durationMs);
+  measuresRun?.add(name);
 }
 
 export function startRendererPerfMetrics(): void {
@@ -55,12 +59,20 @@ export function startRendererPerfMetrics(): void {
   telemetryCallbackTimes = callbackTimes;
   const channelTimes = new FixedSampleBuffer(4096);
   channelCallbackTimes = channelTimes;
-  const finalTimingTimes = new FixedSampleBuffer(4096);
-  standingsFinalTimingTimes = finalTimingTimes;
-  const playerGapTimes = new FixedSampleBuffer(4096);
-  standingsPlayerGapTimes = playerGapTimes;
-  const trackMapFrameTimes = new FixedSampleBuffer(4096);
-  trackMapAnimationFrameTimes = trackMapFrameTimes;
+  const measures = Object.fromEntries(
+    RENDERER_PERF_MEASURE_NAMES.map((name) => [
+      name,
+      new FixedSampleBuffer(4096),
+    ])
+  ) as Record<RendererPerfMeasureName, FixedSampleBuffer>;
+  measureTimes = measures;
+  const run = new Set<RendererPerfMeasureName>();
+  measuresRun = run;
+  const measured = (name: RendererPerfMeasureName) =>
+    run.has(name) ? measures[name].summarize() : undefined;
+  const resetMeasures = () => {
+    for (const name of RENDERER_PERF_MEASURE_NAMES) measures[name].reset();
+  };
   let intervalStart = performance.now();
   let previousFrameTime = 0;
   let framesOver25Ms = 0;
@@ -87,9 +99,7 @@ export function startRendererPerfMetrics(): void {
       previousFrameTime = 0;
       callbackTimes.reset();
       channelTimes.reset();
-      trackMapFrameTimes.reset();
-      playerGapTimes.reset();
-      finalTimingTimes.reset();
+      resetMeasures();
       framesOver25Ms = 0;
       framesOver50Ms = 0;
       return;
@@ -107,9 +117,11 @@ export function startRendererPerfMetrics(): void {
       frameTimeMs: stats,
       telemetryCallbackMs: callbackTimes.summarize(),
       channelCallbackMs: channelTimes.summarize(),
-      trackMapAnimationFrameMs: trackMapFrameTimes.summarize(),
-      standingsFinalTimingMs: finalTimingTimes.summarize(),
-      standingsPlayerGapsMs: playerGapTimes.summarize(),
+      trackMapAnimationFrameMs: measured('trackMapAnimationFrame'),
+      standingsFinalTimingMs: measured('standingsFinalTiming'),
+      standingsPlayerGapsMs: measured('standingsPlayerGaps'),
+      lapTraceFrameMs: measured('lapTraceFrame'),
+      lapTraceBrakeCueMs: measured('lapTraceBrakeCue'),
       telemetryWakeups: callbackTimes.summarize().count,
       channelWakeups: channelTimes.summarize().count,
       framesOver25Ms,
@@ -126,9 +138,7 @@ export function startRendererPerfMetrics(): void {
     frameTimes.reset();
     callbackTimes.reset();
     channelTimes.reset();
-    trackMapFrameTimes.reset();
-    playerGapTimes.reset();
-    finalTimingTimes.reset();
+    resetMeasures();
     framesOver25Ms = 0;
     framesOver50Ms = 0;
   }, reportIntervalMs);

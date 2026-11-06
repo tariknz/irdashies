@@ -24,16 +24,25 @@ export interface RendererPerfSample {
   trackMapAnimationFrameMs?: NumericSampleStats;
   standingsPlayerGapsMs?: NumericSampleStats;
   standingsFinalTimingMs?: NumericSampleStats;
+  lapTraceFrameMs?: NumericSampleStats;
+  lapTraceBrakeCueMs?: NumericSampleStats;
   telemetryWakeups?: number;
   channelWakeups?: number;
   framesOver25Ms: number;
   framesOver50Ms: number;
 }
 
+/** Every measure the renderer may report; the preload bridge drops any other. */
+export const RENDERER_PERF_MEASURE_NAMES = [
+  'trackMapAnimationFrame',
+  'standingsPlayerGaps',
+  'standingsFinalTiming',
+  'lapTraceFrame',
+  'lapTraceBrakeCue',
+] as const;
+
 export type RendererPerfMeasureName =
-  | 'trackMapAnimationFrame'
-  | 'standingsPlayerGaps'
-  | 'standingsFinalTiming';
+  (typeof RENDERER_PERF_MEASURE_NAMES)[number];
 
 export interface RendererPerfBridge {
   recordMeasure: (name: RendererPerfMeasureName, durationMs: number) => void;
