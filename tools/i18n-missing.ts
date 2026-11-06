@@ -32,7 +32,7 @@ const CODE_LIKE =
   /(?:^|\s)[\w-]+=(?!=)|^\s*(?:export\s+)?(?:interface|type|class|function)\s|`|\?\?|^\s*(?:catch|switch|if|for|while)\s*\(|^\s*\(|^\s*(?:from\s|[,)=;:!.?])|[(=,]\s*$|^\s*(?:catch|else|finally|try)\s*$|;(?=[\s\S]*(?:['"()=]|\b(?:import|const|let|if|catch|return|function|type|interface)\b))|=>|===|!==|\breadonly\b|\bextends\b|\[\]|\?\s*:|\b(?:const|let|var|return)\s|^\s*[\w$]+(?:\.[\w$]+)+\s*$/;
 const JSX_TEXT = /(?<=[>}])([^<>{}]+)(?=[<{])/g;
 const PROP_NAME =
-  /(?<![\w-])(?:title|description|label|placeholder|aria-label|alt|name|menuLabel|units|text|message)['"]?\s*[:=](?!=)\s*/g;
+  /(?<![\w-])(?:title|description|label|placeholder|aria-label|aria-description|alt|name|menuLabel|units|text|message|content|tip|tooltip|hint|helperText)['"]?\s*[:=](?!=)\s*/g;
 const DIALOG_LITERAL =
   /\b(?:alert|confirm)\(\s*(['"`])((?:(?!\1)[^\\\n]|\\.)*)\1/g;
 
