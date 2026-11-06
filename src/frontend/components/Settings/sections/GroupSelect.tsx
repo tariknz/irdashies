@@ -5,6 +5,7 @@ import { CaretDownIcon } from '@phosphor-icons/react';
 
 interface GroupSelectProps {
   value: string;
+  label?: string;
   onChange: (value: string) => void;
   groups: (
     TagGroup | { id: string; name: string; icon: unknown; color: number }
@@ -34,6 +35,7 @@ const renderIcon = (
 
 export const GroupSelect = ({
   value,
+  label = 'Driver group',
   onChange,
   groups,
   displayStyle = 'badge',
@@ -88,7 +90,7 @@ export const GroupSelect = ({
         aria-expanded={isOpen}
         aria-controls={isOpen ? optionsId : undefined}
         aria-describedby={selectedGroup ? valueId : undefined}
-        aria-label="Driver group"
+        aria-label={label}
         className="settings-field w-full text-left flex items-center justify-between gap-2 hover:bg-settings-hover"
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">

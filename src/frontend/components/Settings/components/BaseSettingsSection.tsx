@@ -1,6 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { menuHasToggle } from '../menuItems';
 import { ToggleSwitch } from './ToggleSwitch';
+import { ConfirmDialog } from './ConfirmDialog';
 import { BaseWidgetSettings } from '@irdashies/types';
 import {
   useActiveSimulator,
@@ -248,35 +249,14 @@ export const BaseSettingsSection = <T,>({
           </div>
         )}
 
-        {showResetConfirm && (
-          <div className="fixed inset-0 z-50 [-webkit-app-region:no-drag] flex items-center justify-center bg-black/60">
-            <div className="bg-slate-800 rounded-lg border border-settings-boundary p-5 w-80 shadow-xl">
-              <h3 className="text-base font-semibold text-white mb-2">
-                Reset Position
-              </h3>
-              <p className="text-sm text-slate-300 mb-4">
-                This will reset the position for both the on-screen overlay and
-                the browser/URL source version.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={confirmResetPosition}
-                  className="flex-1 px-3 py-1.5 text-sm bg-red-700 hover:bg-red-600 text-white rounded-md transition-colors"
-                >
-                  Reset Position
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowResetConfirm(false)}
-                  className="min-h-9 flex-1 rounded-md border border-settings-boundary bg-slate-800 px-3 py-1.5 text-sm text-slate-200 transition-colors hover:border-accent-400"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmDialog
+          isOpen={showResetConfirm}
+          title="Reset Position"
+          message="This will reset the position for both the on-screen overlay and the browser/URL source version."
+          confirmText="Reset Position"
+          onConfirm={confirmResetPosition}
+          onCancel={() => setShowResetConfirm(false)}
+        />
       </div>
     </div>
   );

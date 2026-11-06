@@ -35,6 +35,7 @@ layer(base);
   --color-settings-control: #242c36;
   --color-settings-hover: #343d49;
   --color-settings-boundary: #8794a6;
+  --color-settings-track: #8794a6;
   --font-sans: 'Lato', sans-serif;
   --color-accent-100: var(--color-blue-100);
   --color-accent-200: var(--color-blue-200);

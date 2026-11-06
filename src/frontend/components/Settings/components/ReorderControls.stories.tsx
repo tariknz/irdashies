@@ -17,6 +17,8 @@ export const Interactive: Story = {
         <span>Session Time: position {position} of 3</span>
         <ReorderControls
           label="Session Time"
+          position={position}
+          total={3}
           onMoveUp={position > 1 ? () => setPosition(position - 1) : undefined}
           onMoveDown={
             position < 3 ? () => setPosition(position + 1) : undefined

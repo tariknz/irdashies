@@ -239,7 +239,10 @@ export const SettingsMenu = () => {
               item={item}
               pathname={pathname}
               showIcon
-              onNavigate={() => setWorkspaceOpen(false)}
+              onNavigate={() => {
+                setWorkspaceOpen(false);
+                if (pathname === item.to) workspaceButtonRef.current?.focus();
+              }}
             />
           ))}
         </ul>

@@ -15,6 +15,7 @@ import type {
   SimWidgetSupportConfig,
 } from '@irdashies/types';
 import { SettingsMenu } from './SettingsMenu';
+import userEvent from '@testing-library/user-event';
 
 const state = vi.hoisted(() => ({
   dashboard: undefined as DashboardLayout | undefined,
@@ -158,6 +159,22 @@ describe('SettingsMenu', () => {
     expect(workspace).toHaveAttribute('aria-expanded', 'false');
     expect(search).toHaveValue('Stand');
     expect(screen.getByRole('link', { name: 'Standings' })).toBeInTheDocument();
+  });
+
+  it('returns focus to App settings when selecting the page that is already open', async () => {
+    const user = userEvent.setup();
+    renderMenu(false);
+    const trigger = screen.getByRole('button', { name: /App settings/ });
+    await user.click(trigger);
+    const current = screen.getByRole('link', { name: 'General' });
+    current.focus();
+    await user.keyboard('{Enter}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveFocus();
+    expect(screen.getByTestId('current-path')).toHaveTextContent(
+      '/settings/general'
+    );
+    expect(state.onDashboardUpdated).not.toHaveBeenCalled();
   });
 
   it('lists supported widgets without groups or redundant live labels', () => {

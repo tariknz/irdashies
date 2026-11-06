@@ -3,6 +3,8 @@ import { ArrowDownIcon, ArrowUpIcon } from '@phosphor-icons/react';
 
 interface ReorderControlsProps {
   label: string;
+  position: number;
+  total: number;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
 }
@@ -10,6 +12,8 @@ interface ReorderControlsProps {
 /** A single-pointer and keyboard alternative to the existing drag handle. */
 export const ReorderControls = ({
   label,
+  position,
+  total,
   onMoveUp,
   onMoveDown,
 }: ReorderControlsProps) => {
@@ -19,11 +23,11 @@ export const ReorderControls = ({
   const [announcement, setAnnouncement] = useState('');
 
   useLayoutEffect(() => {
-    // A move to the first/last position disables its button. Keep keyboard
-    // focus in the same row on the remaining valid direction.
-    if (moved.current === 'up' && !onMoveUp) downRef.current?.focus();
-    if (moved.current === 'down' && !onMoveDown) upRef.current?.focus();
+    // Reinserted rows may lose focus even before reaching a boundary.
+    const direction = moved.current;
     moved.current = null;
+    if (direction === 'up') (onMoveUp ? upRef : downRef).current?.focus();
+    if (direction === 'down') (onMoveDown ? downRef : upRef).current?.focus();
   }, [onMoveUp, onMoveDown]);
 
   return (
@@ -37,7 +41,9 @@ export const ReorderControls = ({
         onClick={() => {
           moved.current = 'up';
           onMoveUp?.();
-          setAnnouncement(`${label} moved up.`);
+          setAnnouncement(
+            `${label} moved up. Position ${position - 1} of ${total}.`
+          );
         }}
         className="inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-400 hover:bg-settings-hover hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
       >
@@ -52,7 +58,9 @@ export const ReorderControls = ({
         onClick={() => {
           moved.current = 'down';
           onMoveDown?.();
-          setAnnouncement(`${label} moved down.`);
+          setAnnouncement(
+            `${label} moved down. Position ${position + 1} of ${total}.`
+          );
         }}
         className="inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-400 hover:bg-settings-hover hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
       >

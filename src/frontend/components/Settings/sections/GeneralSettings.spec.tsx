@@ -27,6 +27,24 @@ vi.mock('../components/BaseSettingsSection', () => ({
 }));
 
 describe('individual window setting', () => {
+  it('places appearance field headings below their section heading', () => {
+    render(<GeneralSettings />);
+    expect(
+      screen.getByRole('heading', { name: 'Overlay appearance', level: 3 })
+    ).toBeInTheDocument();
+    for (const name of [
+      'Font',
+      'Font Weight',
+      'Font Size',
+      'Compact Mode',
+      'Color Theme',
+      'Highlight Color',
+    ]) {
+      expect(
+        screen.getByRole('heading', { name, level: 4 })
+      ).toBeInTheDocument();
+    }
+  });
   beforeEach(() => {
     mocks.update.mockClear();
     mocks.dashboard = { widgets: [], generalSettings: { fontSize: 'md' } };

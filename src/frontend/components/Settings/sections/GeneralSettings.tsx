@@ -361,7 +361,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
           {/* Font Settings */}
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-center gap-x-5 gap-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-md font-medium text-slate-200">Font</h3>
+              <h4 className="text-md font-medium text-slate-200">Font</h4>
             </div>
             {/* Font Weight Dropdown */}
             <div className="min-w-0">
@@ -389,9 +389,9 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
           {/* Font Weight Settings */}
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-center gap-x-5 gap-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-md font-medium text-slate-200">
+              <h4 className="text-md font-medium text-slate-200">
                 Font Weight
-              </h3>
+              </h4>
             </div>
             {/* Font Weight Dropdown */}
             <div className="min-w-0">
@@ -419,7 +419,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
           {/* Font Size Settings */}
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-center gap-x-5 gap-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-md font-medium text-slate-200">Font Size</h3>
+              <h4 className="text-md font-medium text-slate-200">Font Size</h4>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-slate-300">
                   {FONT_SIZE_PRESETS[settings.fontSize ?? 'sm']}
@@ -464,9 +464,9 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
           {/* Compact Mode Setting */}
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-center gap-x-5 gap-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-md font-medium text-slate-200">
+              <h4 className="text-md font-medium text-slate-200">
                 Compact Mode
-              </h3>
+              </h4>
             </div>
             <div className="min-w-0">
               <select

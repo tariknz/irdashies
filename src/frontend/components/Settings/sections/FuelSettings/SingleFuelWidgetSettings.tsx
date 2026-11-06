@@ -136,7 +136,7 @@ export const SingleFuelWidgetSettings = ({
   return (
     <BaseSettingsSection
       title="Fuel Calculator"
-      description="Configure the Fuel Calculator layout."
+      description={`Configure the Fuel Calculator layout. Editing: ${widgetId}${isGantryOnly ? ' (Gantry)' : ''}.`}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={widgetId}

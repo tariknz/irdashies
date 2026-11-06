@@ -288,6 +288,7 @@ export const TelemetryInspectorSettings = () => {
               <div className="flex items-center gap-2">
                 <input
                   type="range"
+                  aria-label="Background Opacity"
                   min="0"
                   max="100"
                   value={settings.config.background?.opacity ?? 80}
@@ -296,7 +297,7 @@ export const TelemetryInspectorSettings = () => {
                       background: { opacity: parseInt(e.target.value) },
                     })
                   }
-                  className="w-20 h-2 bg-settings-control rounded-lg appearance-none cursor-pointer"
+                  className="w-20 h-2 bg-settings-track rounded-lg appearance-none cursor-pointer"
                 />
                 <span className="text-xs text-slate-400 w-8">
                   {settings.config.background?.opacity ?? 80}%

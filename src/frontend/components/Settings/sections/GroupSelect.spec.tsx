@@ -10,6 +10,21 @@ const groups = [
 ];
 
 describe('driver group keyboard interaction', () => {
+  it('identifies the driver row independently of the current group value', () => {
+    render(
+      <GroupSelect
+        value="team"
+        label="Driver group for Alex Morgan (10001)"
+        onChange={vi.fn()}
+        groups={groups}
+      />
+    );
+    expect(
+      screen.getByRole('button', {
+        name: 'Driver group for Alex Morgan (10001)',
+      })
+    ).toHaveAccessibleDescription('Team');
+  });
   it('dismisses choices with Escape and returns to the trigger without changing the group', async () => {
     const change = vi.fn();
     const user = userEvent.setup();

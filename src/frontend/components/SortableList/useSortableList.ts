@@ -16,6 +16,8 @@ interface UseSortableListOptions<T> {
 export interface SortableItemProps {
   isDragging: boolean;
   isOver: boolean;
+  position: number;
+  total: number;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   dragHandleProps: {
@@ -54,6 +56,8 @@ export function useSortableList<T>({
       return {
         isDragging,
         isOver,
+        position: index + 1,
+        total: items.length,
         onMoveUp:
           !draggedId && index > 0
             ? () => onReorder(arrayMove(items, index, index - 1))

@@ -110,8 +110,13 @@ const installSettingsBridges = () => {
       };
       return bindings;
     },
-    resetKeybinding: async () =>
-      (bindings = structuredClone(DEFAULT_KEYBINDINGS)),
+    resetKeybinding: async (actionId) => {
+      bindings = {
+        ...bindings,
+        [actionId]: structuredClone(DEFAULT_KEYBINDINGS[actionId]),
+      };
+      return bindings;
+    },
     resetAllKeybindings: async () =>
       (bindings = structuredClone(DEFAULT_KEYBINDINGS)),
     startRecording: async () => undefined,

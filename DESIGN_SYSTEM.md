@@ -16,7 +16,7 @@ Do not change global overlay typography, telemetry colours or user preferences t
 
 ## Palette and real tokens
 
-Neutral/accent aliases are scoped to `.settings-shell`. The three settings-prefixed semantic roles are registered in Tailwind @theme for opt-in utilities and are only consumed by settings controls; they do not remap overlay tokens. Opaque surfaces remain the foundation. Alpha is used only for selected backgrounds and light panel differentiation.
+Neutral/accent aliases are scoped to `.settings-shell`. Settings-prefixed semantic roles are registered in Tailwind @theme for opt-in utilities and are only consumed by settings controls; they do not remap overlay tokens. Opaque surfaces remain the foundation. Alpha is used only for selected backgrounds and light panel differentiation.
 
 | Semantic role                            | Existing utility token      | Value     |
 | ---------------------------------------- | --------------------------- | --------- |
@@ -28,6 +28,7 @@ Neutral/accent aliases are scoped to `.settings-shell`. The three settings-prefi
 | Neutral filled control                   | `--color-settings-control`  | `#242c36` |
 | Neutral hover fill                       | `--color-settings-hover`    | `#343d49` |
 | Interactive boundary                     | `--color-settings-boundary` | `#8794a6` |
+| Legacy range track                       | `--color-settings-track`    | `#8794a6` |
 | Secondary legacy copy                    | `--color-slate-500`         | `#9aa5b4` |
 | Helper/navigation copy                   | `--color-slate-400`         | `#a5afbd` |
 | Secondary labels                         | `--color-slate-300`         | `#c5cdd7` |
@@ -288,5 +289,20 @@ Maintain the existing red/logo identity and typography. Keyboard improvements do
 Publication self-review preserves the intent of upstream PR #873: do not add a redundant sidebar widget count. The Overlays heading supplies context; filtering and the no-results status communicate search outcomes without a persistent total.
 
 The parent inspected the final compact Header/Display, focus-only skip link, General, wide Footer and confirmation captures after the UX changes. Quiet, borderless reorder arrows preserve the form hierarchy and restraint. All seven aesthetic categories retain 9/10 in this representative settings review; the separate UX result remains 10/10 scripted tasks rather than an invented usability rating.
+
+## PR review follow-up — 6 November 2026
+
+The initial review covered representative views and ten selected tasks; it did not establish that every route, modal and repeated interaction was consistent. An exhaustive view audit is separate work. PR review exposed ten distinct issues across eleven threads, including duplicate reports of repeated move announcements. Preserve that coverage limit when interpreting the earlier scores.
+
+- Use the shared `ConfirmDialog` for Reset Position, retaining the exact reset action/message while gaining Cancel-first focus, Tab containment, Escape dismissal and focus recovery.
+- Reorder announcements include the new one-based position and item count so consecutive moves produce meaningful live-region changes. Restore focus to the used button after every move, using the other direction only at a boundary; keyed DOM reinsertion can otherwise blur a middle-row control.
+- Legacy range tracks use the explicit `settings-track` role rather than a neutral control fill. Browser measurements, including composited CSS colours, give 4.94:1 against the Fuel panel and 5.20:1 against the legacy Inspector page. These are track/surrounding measurements, not a complete slider or screen-reader certification.
+- A Fuel layout's instance ID remains in the persistent page description on all five tabs. Driver group triggers identify their row by name/ID; the selected group remains an accessible description. Appearance field headings sit at h4 below the h3 section.
+- Below the lg breakpoint, the Fuel editor reserves 300px and its available-widget pool scrolls within 240px. The pool spans the column width; at lg the existing 450px row layout and 192px pool return. The compact rendered drop area is 265px high, and medium/wide drop areas are 415px. No horizontal page overflow was measured at 808, 1280 or 1920px.
+- Choosing the current app-wide route returns focus to the disclosure trigger, since no pathname change occurs to trigger main-region focus. The Key Bindings fixture resets only the requested action, preserving other edited shortcuts.
+
+Focused component regressions cover repeated moves in both directions, reset/cancel semantics, all Fuel tab identities, heading ranks, row-specific labels and same-route navigation. Browser fixtures additionally verify geometry, range contrast, live-region changes, focus recovery and single-shortcut reset isolation. The legacy Inspector is excluded from SettingsLoader; its contrast fixture is a standalone story and does not reintroduce a production route. Review media remains outside the source worktree.
+
+Validation for this follow-up: full suite 5,703 passed / 4 skipped across 489 files; 251 settings tests across 37 files; TypeScript/ESLint, Storybook production build, formatting and diff checks passed. The isolated Chrome protocol reports no page errors. No additional live iRacing or native free-drag testing is claimed.
 
 Prior parent iteration 02 scores remain 8 / 9 / 8 / 8 / 8 / 9 / 9, total 8.4. The parent alone awards iteration 03 scores under unchanged definitions and weights.

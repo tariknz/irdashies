@@ -689,7 +689,10 @@ export const LayoutVisualizer = ({
   return (
     <div className="flex min-h-[450px] flex-col gap-4 lg:h-[450px] lg:flex-row">
       {/* Visual Editor */}
-      <div className="flex-1 bg-slate-900 border border-slate-700 rounded overflow-hidden flex flex-col">
+      <div
+        data-layout-editor
+        className="min-h-[300px] shrink-0 flex-1 bg-slate-900 border border-slate-700 rounded overflow-hidden flex flex-col lg:min-h-0 lg:shrink"
+      >
         <div className="flex-1 flex p-2 overflow-hidden relative">
           <RecursiveRenderer
             node={tree}
@@ -709,7 +712,8 @@ export const LayoutVisualizer = ({
 
       {/* Sidebar Pool */}
       <div
-        className={`w-48 bg-slate-800 border box-border rounded p-3 flex flex-col gap-3 overflow-y-auto transition-colors ${
+        data-layout-pool
+        className={`max-h-60 w-full shrink-0 bg-slate-800 border box-border rounded p-3 flex flex-col gap-3 overflow-y-auto transition-colors lg:max-h-none lg:w-48 ${
           dragState.draggedNode
             ? 'border-red-500/50 bg-red-900/20'
             : 'border-slate-700'

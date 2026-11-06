@@ -46,8 +46,14 @@ export const SessionBarItemsList = ({
   return (
     <div className="space-y-3">
       {displayItems.map((item) => {
-        const { dragHandleProps, itemProps, onMoveUp, onMoveDown } =
-          getItemProps(item);
+        const {
+          dragHandleProps,
+          itemProps,
+          onMoveUp,
+          onMoveDown,
+          position,
+          total,
+        } = getItemProps(item);
         const itemConfig = getItemConfig(item.id);
 
         if (!itemConfig) {
@@ -74,6 +80,8 @@ export const SessionBarItemsList = ({
               </div>
               <ReorderControls
                 label={SESSION_BAR_ITEM_LABELS[item.id]}
+                position={position}
+                total={total}
                 onMoveUp={onMoveUp}
                 onMoveDown={onMoveDown}
               />

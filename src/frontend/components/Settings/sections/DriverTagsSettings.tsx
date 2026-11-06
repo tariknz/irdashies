@@ -956,7 +956,7 @@ export const DriverTagsSettings = () => {
               </div>
             )}
 
-            {sortedFilteredEntries.map((row) => (
+            {sortedFilteredEntries.map((row, rowIndex) => (
               <div
                 key={row.uiKey}
                 className="grid grid-cols-2 items-end gap-3 rounded-md border border-slate-700 p-3 lg:grid-cols-[5rem_9rem_9rem_minmax(0,1fr)_6rem] lg:border-0 lg:p-0"
@@ -1067,6 +1067,7 @@ export const DriverTagsSettings = () => {
                     Group
                   </span>
                   <GroupSelect
+                    label={`Driver group for ${row.name || row.id || `new driver ${rowIndex + 1}`}${row.name && row.id ? ` (${row.id})` : ''}`}
                     value={row.groupId}
                     onChange={(value) => updateEntryGroup(row.uiKey, value)}
                     groups={allGroups}

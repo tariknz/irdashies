@@ -17,7 +17,14 @@ export function DraggableSettingItem({
   label,
   enabled,
   onToggle,
-  sortableProps: { dragHandleProps, itemProps, onMoveUp, onMoveDown },
+  sortableProps: {
+    dragHandleProps,
+    itemProps,
+    onMoveUp,
+    onMoveDown,
+    position,
+    total,
+  },
   showToggle = true,
   children,
 }: DraggableSettingItemProps) {
@@ -35,6 +42,8 @@ export function DraggableSettingItem({
         </div>
         <ReorderControls
           label={label}
+          position={position}
+          total={total}
           onMoveUp={onMoveUp}
           onMoveDown={onMoveDown}
         />
