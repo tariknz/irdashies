@@ -27,7 +27,7 @@ export const LanguageSelect = memo(
           <h3 className="text-lg font-medium text-slate-200">Language</h3>
         </div>
         <p className="text-sm text-slate-400">
-          Language of the settings window. Overlays stay in English.
+          Changes apply to all open windows.
         </p>
         <div className="mt-4">
           <select
