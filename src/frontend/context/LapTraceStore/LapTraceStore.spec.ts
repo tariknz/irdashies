@@ -539,6 +539,39 @@ describe('LapTraceStore', () => {
     expect(useLapTraceStore.getState().referenceLap?.lapTimeSec).toBe(90);
   });
 
+  it('promotes a lap whose official time arrives just before the crossing', () => {
+    // LMU's lap counter, and the official time with it, flips a couple of
+    // metres before the distance the recorder follows reaches the line. The
+    // time is then already showing on the crossing frame and the one before,
+    // and a baseline taken from either would wait for a change that never
+    // comes.
+    feed({ pct: 0, time: 0 });
+    for (let i = 0; i < STEPS; i++) {
+      feed({ pct: 0.01 + i * 0.0485, time: 1 + i * 4 });
+    }
+    feed({ pct: 0.98, time: 89.9, lastLapTime: 90.1, lapCompleted: 1 });
+    feed({ pct: 0.01, time: 90.2, lastLapTime: 90.1, lapCompleted: 1 });
+    feed({ pct: 0.02, time: 90.3, lastLapTime: 90.1, lapCompleted: 1 });
+
+    expect(useLapTraceStore.getState().referenceLap?.lapTimeSec).toBe(90.1);
+    expect(useLapTraceStore.getState().bestLapTimeSec).toBe(90.1);
+  });
+
+  it('does not take a late time for the previous lap as this one', () => {
+    // iRacing publishes LapLastLapTime a few ticks after the line. That late
+    // value belongs to the lap before, and must not promote the next one when
+    // it crosses.
+    driveLapAndCross(90);
+    feed({ pct: 0.02, time: clock, lastLapTime: 90 });
+    expect(useLapTraceStore.getState().bestLapTimeSec).toBe(90);
+
+    driveLapAndCross(85);
+    feed({ pct: 0.02, time: clock });
+    expect(useLapTraceStore.getState().bestLapTimeSec).toBe(90);
+    feed({ pct: 0.03, time: clock, lastLapTime: 85 });
+    expect(useLapTraceStore.getState().bestLapTimeSec).toBe(85);
+  });
+
   it('records the telemetry lap time, not the coarse sessionTime delta', () => {
     // The frames imply a 90.000 s delta, but the official time is 90.123.
     driveCleanLap(90, 90.123);
