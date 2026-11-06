@@ -1,4 +1,5 @@
 export default {
+  'Changes apply to all open windows.': 'Изменения применяются ко всем открытым окнам.',
   // Session types
   Race: 'Гонка',
   'Lone Qualify': 'Одиночная квалификация',
