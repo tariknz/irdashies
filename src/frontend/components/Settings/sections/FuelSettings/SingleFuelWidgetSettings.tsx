@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BaseSettingsSection } from '../../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../../components/WidgetScaleSettings';
 import {
   FuelWidgetSettings,
   LayoutNode,
@@ -14,10 +13,8 @@ import { TabButton } from '../../components/TabButton';
 import { LayoutVisualizer, migrateToTree } from '../LayoutVisualizer';
 import { DEFAULT_FUEL_LAYOUT_TREE } from '../../../FuelCalculator/defaults';
 import { getWidgetDefaultConfig } from '@irdashies/types';
-import { DualFontSizeInput } from './FontSizeInputs';
 import { GridOrderSettingsList } from './GridOrderSettingsList';
 import { AVAILABLE_WIDGETS_FUEL, generateId } from './utils';
-import { WidgetFontSizeSettings } from './WidgetFontSizeSettings';
 import { FuelStatusAlertsSection } from './FuelStatusAlertsSection';
 import { FuelHistorySection } from './FuelHistorySection';
 import { PitStrategySection } from './PitStrategySection';
@@ -135,13 +132,13 @@ export const SingleFuelWidgetSettings = ({
 
   return (
     <BaseSettingsSection
-      title={`Fuel Calculator Settings - ${widgetId}`}
-      description="Configure the Fuel Calculator layout."
+      title="Fuel Calculator"
+      description={`Configure the Fuel Calculator layout. Editing: ${widgetId}${isGantryOnly ? ' (Gantry)' : ''}.`}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={widgetId}
       disableInternalScroll={true}
-      hidePositionReset={isGantryOnly}
+      hidePositionReset={isGantryOnly || activeTab === 'history'}
     >
       {(handleConfigChange) => {
         const handleTreeUpdate = (newTree: LayoutNode) => {
@@ -156,7 +153,7 @@ export const SingleFuelWidgetSettings = ({
           >
             <div className="space-y-4">
               {/* Tabs */}
-              <div className="flex border-b border-slate-700/50">
+              <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
                 <TabButton
                   id="layout"
                   activeTab={activeTab}
@@ -199,15 +196,16 @@ export const SingleFuelWidgetSettings = ({
                 {activeTab === 'layout' && (
                   <>
                     {/* Top Manager Bar */}
-                    <div className="bg-slate-800 p-3 rounded flex items-center justify-between border border-slate-700">
-                      <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800/40 p-3">
+                      <div className="flex min-w-0 flex-wrap items-center gap-3">
                         <span className="text-sm font-bold text-slate-200">
                           Editing Widget:
                         </span>
                         <select
+                          aria-label="Editing fuel widget"
                           value={selectedId}
                           onChange={(e) => handleWidgetChange(e.target.value)}
-                          className="bg-slate-900 border border-slate-600 text-white text-sm rounded px-2 py-1"
+                          className="settings-field"
                         >
                           {fuelWidgets.map((w) => (
                             <option key={w.id} value={w.id}>
@@ -236,10 +234,10 @@ export const SingleFuelWidgetSettings = ({
                               ? 'Default widget cannot be deleted. Disable it instead.'
                               : 'Delete this layout configuration'
                           }
-                          className={`px-3 py-1 text-xs rounded border transition-colors ${
+                          className={`settings-button-danger ${
                             selectedId === 'fuel'
                               ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed opacity-50'
-                              : 'bg-red-900/50 hover:bg-red-900 text-red-200 border-red-800'
+                              : ''
                           }`}
                         >
                           {selectedId === 'fuel'
@@ -248,7 +246,7 @@ export const SingleFuelWidgetSettings = ({
                         </button>
                         <button
                           onClick={handleAddWidget}
-                          className="flex items-center gap-1 px-3 py-1 bg-green-700 hover:bg-green-600 text-white text-xs rounded transition-colors"
+                          className="settings-button-primary"
                         >
                           <PlusIcon /> New Layout
                         </button>
@@ -278,83 +276,14 @@ export const SingleFuelWidgetSettings = ({
 
                 {/* DISPLAY TAB */}
                 {activeTab === 'display' && (
-                  <>
-                    <WidgetScaleSettings widgetId={widgetId} className="px-4" />
-                    <SettingsSection title="Display">
+                  <div className="space-y-5">
+                    <SettingsSection title="Display" scaleWidgetId={widgetId}>
                       <SettingProp path="useGeneralCompactMode" />
 
                       {/* Background Opacity */}
                       <SettingProp path="background.opacity" />
                     </SettingsSection>
-
-                    {/* Widget Font Size Settings */}
-                    <SettingsSection title="Font Sizes">
-                      {/* General Control Toggles */}
-                      <SettingProp path="useGeneralFontSize" />
-
-                      {!settings.config.useGeneralFontSize && (
-                        <>
-                          <WidgetFontSizeSettings
-                            settings={settings}
-                            onChange={handleConfigChange}
-                          />
-
-                          {/* Consumption Details Section */}
-                          <DualFontSizeInput
-                            widgetId="fuelGrid"
-                            title="Consumption Details"
-                            description="Configures rows in Consumption Grid."
-                            settings={settings}
-                            onChange={handleConfigChange}
-                          />
-
-                          {/* Economy Predict */}
-                          <DualFontSizeInput
-                            widgetId="fuelEconomyPredict"
-                            title="Economy Predict"
-                            description="Predicts fuel usage vs target. Adjust Label/Value sizes."
-                            settings={settings}
-                            onChange={handleConfigChange}
-                          />
-
-                          {/* Fuel History */}
-                          <DualFontSizeInput
-                            widgetId="fuelGraph"
-                            title="Fuel History"
-                            description="Used for Fuel History - see options."
-                            settings={settings}
-                            onChange={handleConfigChange}
-                          />
-
-                          {/* Fuel Scenarios */}
-                          <DualFontSizeInput
-                            widgetId="fuelScenarios"
-                            title="Fuel Scenarios"
-                            description="Pit stop calculations (-1, Ideal, +1 Lap)."
-                            settings={settings}
-                            onChange={handleConfigChange}
-                          />
-
-                          {/* Target Message Font */}
-                          <DualFontSizeInput
-                            widgetId="fuelTargetMessage"
-                            title="Target Message Font"
-                            description="Used for Pit Strategy - see options."
-                            settings={settings}
-                            onChange={handleConfigChange}
-                          />
-
-                          <DualFontSizeInput
-                            widgetId="fuelAtFinish"
-                            title="Fuel at End"
-                            description="Shows the estimated fuel balance at race finish."
-                            settings={settings}
-                            onChange={handleConfigChange}
-                          />
-                        </>
-                      )}
-                    </SettingsSection>
-                  </>
+                  </div>
                 )}
 
                 {/* OPTIONS TAB */}

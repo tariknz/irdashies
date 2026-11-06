@@ -1,10 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useId } from 'react';
+import { SettingsPopover } from '../components/SettingsPopover';
 import type { TagGroup } from '@irdashies/types';
 import { renderDriverIcon } from '@irdashies/utils/driverIcons';
 import { CaretDownIcon } from '@phosphor-icons/react';
 
 interface GroupSelectProps {
   value: string;
+  label?: string;
   onChange: (value: string) => void;
   groups: (
     TagGroup | { id: string; name: string; icon: unknown; color: number }
@@ -34,38 +36,30 @@ const renderIcon = (
 
 export const GroupSelect = ({
   value,
+  label = 'Driver group',
   onChange,
   groups,
   displayStyle = 'badge',
   iconWeight,
 }: GroupSelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const optionsId = useId();
+  const valueId = useId();
 
   const selectedGroup = groups.find((g) => g.id === value);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () =>
-        document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
-
   return (
-    <div className="relative w-full" ref={containerRef}>
+    <div className="relative w-full">
       <button
+        ref={triggerRef}
+        type="button"
         onClick={() => setIsOpen((v) => !v)}
-        className="px-2 py-1 bg-slate-700 rounded w-full text-left flex items-center justify-between gap-2 hover:bg-slate-600 transition-colors"
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? optionsId : undefined}
+        aria-describedby={selectedGroup ? valueId : undefined}
+        aria-label={label}
+        className="settings-field w-full text-left flex items-center justify-between gap-2 hover:bg-settings-hover"
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {selectedGroup && (
@@ -111,7 +105,9 @@ export const GroupSelect = ({
                   )}
                 </span>
               )}
-              <span className="truncate text-sm">{selectedGroup.name}</span>
+              <span id={valueId} className="truncate text-sm">
+                {selectedGroup.name}
+              </span>
             </>
           )}
         </div>
@@ -122,64 +118,68 @@ export const GroupSelect = ({
         />
       </button>
 
-      {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-slate-700 rounded border border-slate-600 shadow-lg z-10 max-h-60 overflow-y-auto">
-          {groups.map((g) => (
-            <button
-              key={g.id}
-              onClick={() => {
-                onChange(g.id);
-                setIsOpen(false);
-              }}
-              className={`w-full px-2 py-2 flex items-center gap-2 text-left text-sm transition-colors ${
-                g.id === value
-                  ? 'bg-accent-600 text-on-accent'
-                  : 'text-slate-200 hover:bg-slate-600'
-              }`}
-            >
-              {displayStyle === 'tag' ? (
-                <span
-                  style={{
-                    display: 'inline-block',
-                    width: 12,
-                    height: 12,
-                    borderRadius: 3,
-                    background: g.color
-                      ? `#${(g.color & 0xffffff).toString(16).padStart(6, '0')}`
-                      : '#888',
-                    flexShrink: 0,
-                  }}
-                />
-              ) : (
-                <span className="inline-flex items-center leading-none flex-shrink-0">
-                  {g.icon &&
-                  typeof g.icon === 'string' &&
-                  g.icon.startsWith('data:') ? (
-                    <div style={{ width: 16, height: 16 }}>
-                      <img
-                        src={g.icon}
-                        alt={g.name}
-                        className="object-contain"
-                      />
-                    </div>
-                  ) : (
-                    renderIcon(
-                      g.icon,
-                      14,
-                      undefined,
-                      g.color,
-                      undefined,
-                      undefined,
-                      iconWeight
-                    )
-                  )}
-                </span>
-              )}
-              <span className="truncate">{g.name}</span>
-            </button>
-          ))}
-        </div>
-      )}
+      <SettingsPopover
+        open={isOpen}
+        anchorRef={triggerRef}
+        onClose={() => setIsOpen(false)}
+        id={optionsId}
+        label={`${label} options`}
+        matchAnchorWidth
+      >
+        {groups.map((g) => (
+          <button
+            key={g.id}
+            type="button"
+            aria-pressed={g.id === value}
+            onClick={() => {
+              onChange(g.id);
+              setIsOpen(false);
+              triggerRef.current?.focus();
+            }}
+            className={`w-full px-2 py-2 flex items-center gap-2 text-left text-sm transition-colors ${
+              g.id === value
+                ? 'bg-accent-600 text-on-accent'
+                : 'text-slate-200 hover:bg-settings-hover'
+            }`}
+          >
+            {displayStyle === 'tag' ? (
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: 12,
+                  height: 12,
+                  borderRadius: 3,
+                  background: g.color
+                    ? `#${(g.color & 0xffffff).toString(16).padStart(6, '0')}`
+                    : '#888',
+                  flexShrink: 0,
+                }}
+              />
+            ) : (
+              <span className="inline-flex items-center leading-none flex-shrink-0">
+                {g.icon &&
+                typeof g.icon === 'string' &&
+                g.icon.startsWith('data:') ? (
+                  <div style={{ width: 16, height: 16 }}>
+                    <img src={g.icon} alt={g.name} className="object-contain" />
+                  </div>
+                ) : (
+                  renderIcon(
+                    g.icon,
+                    14,
+                    undefined,
+                    g.color,
+                    undefined,
+                    undefined,
+                    iconWeight
+                  )
+                )}
+              </span>
+            )}
+            <span className="truncate">{g.name}</span>
+          </button>
+        ))}
+      </SettingsPopover>
     </div>
   );
 };

@@ -1,76 +1,82 @@
-import { memo, useMemo, useRef, type RefObject } from 'react';
+import { memo, useMemo, useRef, type ReactNode, type RefObject } from 'react';
 import type { LapTraceColors } from '@irdashies/types';
-import { carXForWindow } from '../../domain/lapTrace/lapTraceWindow';
-import {
-  MAX_GEAR_LABELS,
-  MAX_MARKERS,
-  PLOT_BOTTOM,
-  PLOT_TOP,
-  VIEW_HEIGHT,
-  VIEW_WIDTH,
-  yForNorm,
-} from './layout';
+import { carXForWindow } from '@irdashies/domain/lapTrace/lapTraceWindow';
+import { REFERENCE_SPAN_SLOTS } from '@irdashies/domain/lapTrace/lapTraceTiles';
+import { VIEW_HEIGHT, VIEW_WIDTH, yForNorm } from './layout';
 import {
   useLapTraceFrame,
   type LapTraceFrameRefs,
 } from './hooks/useLapTraceFrame';
 
-/**
+/*
  * All trace/marker/grid colours are user-configurable and arrive via the
  * `colors` prop (defaults in DEFAULT_LAP_TRACE_COLORS). Reference traces read
  * pastel/washed as a background target; the ghost (live) lap reads bright; the
  * fills take a saturated weight so a filled area still says which pedal it is.
- *
- * 'screen' blend mode so the ABS fill lightens/mixes with whatever's beneath
- * it — a filled reference throttle or brake bar it overlaps — instead of just
- * occluding it, so both "ABS was on" and "the reference had the pedal down
- * here" stay readable at once. Against the plot's dark background alone
- * (nothing to mix with) it reads as the plain ABS colour, same as normal alpha
- * blending would.
  */
-const ABS_BLEND_MODE = 'screen' as const;
 
 const GRID_TICKS = [0, 0.25, 0.5, 0.75, 1];
 
 /**
- * A fixed pool of vertical marker lines. Rendered once by React and positioned
- * each frame by setting x1/x2, so no node is created in the draw loop.
- *
- * Dotted and run the full height of the trace band, rather than solid and
- * confined to a strip beneath it: a dotted line reads as a position marker
- * without a solid stroke competing with the throttle/brake/speed curves it
- * crosses, and running the full height makes it easy to read off exactly
- * where each curve sits at that point.
+ * A span of the reference lap: sized, filled and slid by the frame loop. Its
+ * own composited layer, so sliding it moves pixels already rasterised instead
+ * of repainting them.
  */
-const MarkerPool = ({
-  poolRef,
-  stroke,
-  opacity,
+const SPAN_CLASS =
+  'absolute left-0 top-0 h-full overflow-hidden will-change-transform';
+
+/**
+ * A reference layer: one copy of `children` per span slot, each registering
+ * itself in `slotsRef` at its index for the frame loop to find.
+ */
+const SpanLayer = ({
+  slotsRef,
+  layer,
+  children,
 }: {
-  poolRef: RefObject<(SVGLineElement | null)[]>;
-  stroke: string;
-  opacity: number;
+  slotsRef: RefObject<(SVGSVGElement | null)[]>;
+  layer: string;
+  children: ReactNode;
 }) => (
   <>
-    {Array.from({ length: MAX_MARKERS }, (_, i) => (
-      <line
+    {Array.from({ length: REFERENCE_SPAN_SLOTS }, (_, i) => (
+      <svg
         key={i}
         ref={(el) => {
-          poolRef.current[i] = el;
+          slotsRef.current[i] = el;
         }}
-        x1={0}
-        x2={0}
-        y1={PLOT_TOP}
-        y2={PLOT_BOTTOM}
-        stroke={stroke}
-        strokeOpacity={opacity}
-        strokeWidth={2}
-        strokeLinecap="butt"
-        strokeDasharray="4,3"
-        style={{ visibility: 'hidden' }}
-      />
+        data-layer={layer}
+        className={SPAN_CLASS}
+        preserveAspectRatio="none"
+      >
+        {children}
+      </svg>
     ))}
   </>
+);
+
+/**
+ * A layer of the driver's lap, drawn in window coordinates and rebuilt as it
+ * is driven. The whole plot, like the grid beneath it.
+ */
+const WindowLayer = ({
+  layerRef,
+  layer,
+  children,
+}: {
+  layerRef: RefObject<SVGSVGElement | null>;
+  layer: string;
+  children: ReactNode;
+}) => (
+  <svg
+    ref={layerRef}
+    data-layer={layer}
+    className="absolute inset-0 h-full w-full"
+    viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
+    preserveAspectRatio="none"
+  >
+    {children}
+  </svg>
 );
 
 export interface LapTracePlotProps {
@@ -111,9 +117,15 @@ export interface LapTracePlotProps {
 }
 
 /**
- * The trace itself. React renders the static frame once; the paths and gear
- * labels are updated imperatively from a rAF loop, so this component does not
- * re-render at telemetry rate.
+ * The trace itself. React renders the frame once — the static grid and car
+ * line, and empty layers — and the frame loop fills and slides them, so this
+ * component does not re-render at telemetry rate.
+ *
+ * Layers stack in paint order: grid, reference, the driver's lap, the ABS
+ * fill (blended over everything beneath it), the ABS line and strip, the
+ * reference pedal markers, and the car line on top. Nothing here makes the
+ * plot a stacking context of its own, so the blend reaches the widget's
+ * background too, as it did when every layer was one SVG.
  */
 export const LapTracePlot = memo(
   ({
@@ -137,35 +149,21 @@ export const LapTracePlot = memo(
     strokeWidth,
     carDistanceMOverride,
   }: LapTracePlotProps) => {
-    const refThrottle = useRef<SVGPathElement>(null);
-    const refBrake = useRef<SVGPathElement>(null);
-    const refSpeed = useRef<SVGPathElement>(null);
-    const ghostThrottle = useRef<SVGPathElement>(null);
-    const ghostBrake = useRef<SVGPathElement>(null);
-    const ghostSpeed = useRef<SVGPathElement>(null);
-    const ghostBrakeAbs = useRef<SVGPathElement>(null);
-    const ghostAbsArea = useRef<SVGPathElement>(null);
-    const absBar = useRef<SVGPathElement>(null);
-    const gearLabels = useRef<(HTMLSpanElement | null)[]>([]);
-    const plotContainer = useRef<HTMLDivElement>(null);
-    const markerRefBrakeOn = useRef<(SVGLineElement | null)[]>([]);
-    const markerRefThrottleOn = useRef<(SVGLineElement | null)[]>([]);
+    const referenceSpans = useRef<(SVGSVGElement | null)[]>([]);
+    const markerSpans = useRef<(SVGSVGElement | null)[]>([]);
+    const gearLabelSpans = useRef<(HTMLDivElement | null)[]>([]);
+    const ghost = useRef<SVGSVGElement>(null);
+    const absArea = useRef<SVGSVGElement>(null);
+    const ghostOverlay = useRef<SVGSVGElement>(null);
 
     const refs = useMemo<LapTraceFrameRefs>(
       () => ({
-        refThrottle,
-        refBrake,
-        refSpeed,
-        ghostThrottle,
-        ghostBrake,
-        ghostSpeed,
-        ghostBrakeAbs,
-        ghostAbsArea,
-        absBar,
-        gearLabels,
-        plotContainer,
-        markerRefBrakeOn,
-        markerRefThrottleOn,
+        referenceSpans,
+        markerSpans,
+        gearLabelSpans,
+        ghost,
+        absArea,
+        ghostOverlay,
       }),
       []
     );
@@ -197,16 +195,17 @@ export const LapTracePlot = memo(
       [metersBehind, metersAhead]
     );
 
+    const showAbsLine = showBrake && showAbs;
+    const showAbsArea = showAbsLine && absStyle === 'bar';
+    const showMarkers = showBrakePointMarkers || showThrottlePointMarkers;
+
     // Three stacked rows: the trace takes whatever height is left, then the
     // gear labels and the distance axis each hold a fixed strip beneath it.
     // Keeping them as rows rather than overlays is what stops the labels
     // drifting into the trace when the widget is made short.
     return (
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
-        <div
-          ref={plotContainer}
-          className="relative min-h-0 flex-1 overflow-hidden"
-        >
+        <div className="relative min-h-0 flex-1 overflow-hidden">
           <svg
             className="absolute inset-0 h-full w-full"
             viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
@@ -224,13 +223,15 @@ export const LapTracePlot = memo(
                 strokeDasharray="3,3"
               />
             ))}
+          </svg>
 
-            {/* Reference (the saved lap) is pastel and drawn first, as the
-                washed-out background target the ghost is read against. */}
+          {/* Reference (the saved lap) is pastel and drawn first, as the
+              washed-out background target the ghost is read against. */}
+          <SpanLayer slotsRef={referenceSpans} layer="reference">
             <g strokeOpacity={ghostOpacity}>
               {showSpeed && (
                 <path
-                  ref={refSpeed}
+                  data-trace="speed"
                   fill="none"
                   stroke={colors.referenceSpeed}
                   strokeWidth={Math.max(1, strokeWidth - 1)}
@@ -238,7 +239,7 @@ export const LapTracePlot = memo(
               )}
               {showThrottle && (
                 <path
-                  ref={refThrottle}
+                  data-trace="throttle"
                   fill={referenceFilled ? colors.referenceThrottleFill : 'none'}
                   fillOpacity={
                     referenceFilled ? 0.35 * ghostOpacity : undefined
@@ -249,7 +250,7 @@ export const LapTracePlot = memo(
               )}
               {showBrake && (
                 <path
-                  ref={refBrake}
+                  data-trace="brake"
                   fill={referenceFilled ? colors.referenceBrakeFill : 'none'}
                   fillOpacity={
                     referenceFilled ? 0.35 * ghostOpacity : undefined
@@ -259,15 +260,17 @@ export const LapTracePlot = memo(
                 />
               )}
             </g>
+          </SpanLayer>
 
-            {/* Ghost (the lap currently being driven) draws over the
-                reference, bright and solid — it is the input the driver is
-                actually watching, not a faint background layer. */}
-            {showGhost && (
+          {/* Ghost (the lap currently being driven) draws over the
+              reference, bright and solid — it is the input the driver is
+              actually watching, not a faint background layer. */}
+          {showGhost && (
+            <WindowLayer layerRef={ghost} layer="ghost">
               <g strokeOpacity={driverOpacity}>
                 {showSpeed && (
                   <path
-                    ref={ghostSpeed}
+                    data-trace="speed"
                     fill="none"
                     stroke={colors.ghostSpeed}
                     strokeWidth={Math.max(1, strokeWidth - 1)}
@@ -275,7 +278,7 @@ export const LapTracePlot = memo(
                 )}
                 {showThrottle && (
                   <path
-                    ref={ghostThrottle}
+                    data-trace="throttle"
                     fill="none"
                     stroke={colors.ghostThrottle}
                     strokeWidth={strokeWidth}
@@ -283,74 +286,104 @@ export const LapTracePlot = memo(
                 )}
                 {showBrake && (
                   <path
-                    ref={ghostBrake}
+                    data-trace="brake"
                     fill="none"
                     stroke={colors.ghostBrake}
                     strokeWidth={strokeWidth}
                   />
                 )}
-                {/* The 'bar' style: brake value down to the axis, wherever
-                    ABS engaged — same shape the Input Trace widget's ABS bar
-                    uses. Blended rather than plain alpha so it visibly mixes
-                    with a filled reference trace underneath it instead of
-                    just covering it up. */}
-                {showBrake && showAbs && absStyle === 'bar' && (
+              </g>
+            </WindowLayer>
+          )}
+
+          {/* The 'bar' style: brake value down to the axis, wherever ABS
+              engaged — same shape the Input Trace widget's ABS bar uses. A
+              layer of its own so it can be blended rather than plain alpha,
+              visibly mixing with a filled reference trace underneath instead
+              of just covering it up; the frame loop sets the blend only
+              while there is ABS to draw. */}
+          {showGhost && showAbsArea && (
+            <WindowLayer layerRef={absArea} layer="abs-area">
+              <path
+                data-trace="abs-area"
+                fill={colors.absFill}
+                fillOpacity={0.55 * driverOpacity}
+                stroke="none"
+              />
+            </WindowLayer>
+          )}
+
+          {/* Over the fill, so the ABS runs sit on top of the stretch of
+              brake they belong to. */}
+          {showGhost && (showAbsLine || showAbsBar) && (
+            <WindowLayer layerRef={ghostOverlay} layer="ghost-overlay">
+              {showAbsLine && (
+                <g strokeOpacity={driverOpacity}>
                   <path
-                    ref={ghostAbsArea}
-                    fill={colors.absFill}
-                    fillOpacity={0.55 * driverOpacity}
-                    stroke="none"
-                    style={{ mixBlendMode: ABS_BLEND_MODE }}
-                  />
-                )}
-                {/* Drawn after the brake trace so the ABS runs sit on top of
-                    the stretch of brake they belong to. */}
-                {showBrake && showAbs && (
-                  <path
-                    ref={ghostBrakeAbs}
+                    data-trace="brake-abs"
                     fill="none"
                     stroke={colors.abs}
                     strokeWidth={strokeWidth}
                   />
-                )}
-              </g>
-            )}
+                </g>
+              )}
+              {showAbsBar && (
+                <path
+                  data-trace="abs-bar"
+                  fill="none"
+                  stroke={colors.abs}
+                  strokeWidth={4}
+                  strokeLinecap="butt"
+                  strokeOpacity={driverOpacity}
+                />
+              )}
+            </WindowLayer>
+          )}
 
-            {showGhost && showAbsBar && (
-              <path
-                ref={absBar}
-                fill="none"
-                stroke={colors.abs}
-                strokeWidth={4}
-                strokeLinecap="butt"
-                strokeOpacity={driverOpacity}
-              />
-            )}
+          {/* Pedal application points, interpolated between the two
+              telemetry samples that straddle the threshold, so these sit at
+              the real sub-metre position. Dotted and through the full height
+              of the trace band: a dotted line reads as a position marker
+              without a solid stroke competing with the curves it crosses.
+              Brake and throttle are independent toggles: a driver working
+              purely on braking, say, has no use for the throttle marker
+              cluttering the plot too. Only the reference lap's brake
+              application is marked — not its release, nor the driver's own
+              live brake points. */}
+          {showMarkers && (
+            <SpanLayer slotsRef={markerSpans} layer="markers">
+              {showBrakePointMarkers && (
+                <path
+                  data-trace="brake-markers"
+                  fill="none"
+                  stroke={colors.brakeMarker}
+                  strokeOpacity={0.9 * ghostOpacity}
+                  strokeWidth={2}
+                  strokeLinecap="butt"
+                  strokeDasharray="4,3"
+                />
+              )}
+              {showThrottlePointMarkers && (
+                <path
+                  data-trace="throttle-markers"
+                  fill="none"
+                  stroke={colors.throttleMarker}
+                  strokeOpacity={0.9 * ghostOpacity}
+                  strokeWidth={2}
+                  strokeLinecap="butt"
+                  strokeDasharray="4,3"
+                />
+              )}
+            </SpanLayer>
+          )}
 
-            {/* Pedal application points, interpolated between the two
-                telemetry samples that straddle the threshold, so these sit
-                at the real sub-metre position. Brake and throttle are
-                independent toggles: a driver working purely on braking, say,
-                doesn't need the throttle marker cluttering the plot too.
-                Only the reference lap's brake *application* is marked — not its
-                release, nor the driver's own live brake points. */}
-            {showBrakePointMarkers && (
-              <MarkerPool
-                poolRef={markerRefBrakeOn}
-                stroke={colors.brakeMarker}
-                opacity={0.9 * ghostOpacity}
-              />
-            )}
-            {showThrottlePointMarkers && (
-              <MarkerPool
-                poolRef={markerRefThrottleOn}
-                stroke={colors.throttleMarker}
-                opacity={0.9 * ghostOpacity}
-              />
-            )}
-
-            {/* The car sits wherever the ahead/behind split puts it — the
-                midpoint only when the two are equal. */}
+          {/* The car sits wherever the ahead/behind split puts it — the
+              midpoint only when the two are equal. */}
+          <svg
+            className="absolute inset-0 h-full w-full"
+            viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
+            preserveAspectRatio="none"
+          >
             <line
               x1={carX}
               x2={carX}
@@ -364,22 +397,22 @@ export const LapTracePlot = memo(
 
         {/* Gear labels live in HTML, not the SVG: preserveAspectRatio="none"
             stretches the viewBox non-uniformly and would distort any text
-            inside it. The pool is rendered once and positioned each frame.
-            Their strip is a row of its own beneath the trace, the same width,
-            so they stay under the graph however short the widget gets. */}
+            inside it. They are laid out in spans like the reference they
+            label, so they slide with it, and their strip is a row of its own beneath the
+            trace, the same width, so they stay under the graph however short
+            the widget gets. */}
         {showGearLabels && (
           <div
             data-testid="gear-labels"
             className="relative h-3 flex-none pointer-events-none"
           >
-            {Array.from({ length: MAX_GEAR_LABELS }, (_, i) => (
-              <span
+            {Array.from({ length: REFERENCE_SPAN_SLOTS }, (_, i) => (
+              <div
                 key={i}
                 ref={(el) => {
-                  gearLabels.current[i] = el;
+                  gearLabelSpans.current[i] = el;
                 }}
-                className="absolute left-0 bottom-0 text-[10px] leading-none font-semibold text-slate-300 tabular-nums"
-                style={{ visibility: 'hidden' }}
+                className="absolute left-0 top-0 h-full will-change-transform"
               />
             ))}
           </div>

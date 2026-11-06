@@ -29,7 +29,7 @@ export const ColorRow = ({
 }) => (
   <div className="flex items-center gap-3">
     <span
-      className="rounded border-2 border-slate-600 shrink-0"
+      className="rounded border-2 border-settings-boundary shrink-0"
       style={{ width: 20, height: 20, backgroundColor: hex(value) }}
     />
     <div className="flex-1">
@@ -75,6 +75,7 @@ export const CustomColorRow = ({
         )}
         <input
           type="color"
+          aria-label="Rival Fill"
           value={shown}
           onChange={(e) => onChange(parseInt(e.target.value.slice(1), 16))}
           className="w-10 h-8 bg-slate-700 rounded cursor-pointer"
@@ -257,7 +258,7 @@ export const NumberRow = ({
           onChange(Math.min(max, Math.max(min, next)));
         }
       }}
-      className="w-24 rounded-md bg-slate-700 text-white px-2 py-1 text-right font-mono text-sm shrink-0"
+      className="settings-field w-24  text-right shrink-0 font-mono"
     />
   </div>
 );

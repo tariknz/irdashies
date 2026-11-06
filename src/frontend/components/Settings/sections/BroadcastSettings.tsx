@@ -1,7 +1,6 @@
 import { validateImageDataUrl } from '@irdashies/utils/imageDataUrl';
 import { Fragment, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { changeMarker } from '../components/ChangedMark';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
@@ -107,6 +106,8 @@ export const BroadcastSettings = () => {
 
   return (
     <BaseSettingsSection
+      disableInternalScroll
+      headingLevel="h3"
       title="Broadcast Tower"
       description="TV-style timing tower that cycles between names, per-class intervals with close battles, positions gained, pit laps and tyres, plus a card for the car on camera."
       settings={settings}
@@ -126,8 +127,7 @@ export const BroadcastSettings = () => {
         );
         return (
           <div className="space-y-4">
-            <SettingsSection title="Look">
-              <WidgetScaleSettings widgetId={SETTING_ID} />
+            <SettingsSection title="Look" scaleWidgetId={SETTING_ID}>
               {mark(
                 ['theme'],
                 <SettingButtonGroupRow<BroadcastTheme>
@@ -145,7 +145,7 @@ export const BroadcastSettings = () => {
                     Shown above the tower title. PNG with transparency works
                     best, up to 300 KB.
                   </p>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     {logoSrc && (
                       <img
                         src={logoSrc}
@@ -155,8 +155,9 @@ export const BroadcastSettings = () => {
                     )}
                     <input
                       type="file"
+                      aria-label="Series logo image"
                       accept="image/*"
-                      className="text-sm text-slate-300"
+                      className="min-h-9 min-w-0 max-w-full text-sm text-slate-300 file:mr-3 file:min-h-9 file:rounded-md file:border file:border-settings-boundary file:bg-settings-control file:px-3 file:text-sm file:text-slate-200 hover:file:bg-settings-hover"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         e.target.value = '';
@@ -182,7 +183,7 @@ export const BroadcastSettings = () => {
                       <button
                         type="button"
                         onClick={() => handleConfigChange({ logo: '' })}
-                        className="rounded bg-slate-600 px-3 py-1 text-sm text-slate-200 hover:bg-slate-500"
+                        className="settings-button"
                       >
                         Remove
                       </button>
@@ -326,7 +327,7 @@ export const BroadcastSettings = () => {
                     onChange={(e) =>
                       handleConfigChange({ title: e.target.value })
                     }
-                    className="w-full rounded border-slate-600 bg-slate-700 p-2 text-slate-300"
+                    className="settings-field w-full"
                   />
                 </div>
               )}

@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlusIcon } from '@phosphor-icons/react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
 import {
@@ -170,7 +169,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                   <select
                     value={widgetId}
                     onChange={(e) => handleWidgetChange(e.target.value)}
-                    className="bg-slate-900 border border-slate-600 text-white text-sm rounded px-2 py-1"
+                    className="settings-field"
                   >
                     {inputWidgets.map((w) => (
                       <option key={w.id} value={w.id}>
@@ -199,7 +198,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                   </button>
                   <button
                     onClick={handleAddWidget}
-                    className="flex items-center gap-1 px-3 py-1 bg-green-700 hover:bg-green-600 text-white text-xs rounded transition-colors"
+                    className="settings-button-primary"
                   >
                     <PlusIcon /> New Input Widget
                   </button>
@@ -207,7 +206,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
               </div>
 
               {/* Tabs */}
-              <div className="flex border-b border-slate-700/50">
+              <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
                 <TabButton
                   id="layout"
                   activeTab={activeTab}
@@ -259,9 +258,11 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
                 {/* OPTIONS TAB */}
                 {activeTab === 'options' && (
-                  <>
-                    <WidgetScaleSettings widgetId={widgetId} className="px-4" />
-                    <SettingsSection title="Options">
+                  <div className="space-y-5">
+                    <SettingsSection
+                      title="Widget options"
+                      scaleWidgetId={widgetId}
+                    >
                       <SettingProp path="useRawValues" />
                       <SettingProp path="background.opacity" />
                     </SettingsSection>
@@ -301,6 +302,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                               Flash Color
                             </span>
                             <input
+                              aria-label="Flash Color"
                               type="color"
                               value={shiftFlash.color}
                               onChange={(e) =>
@@ -442,7 +444,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                         </SettingsSection>
                       )}
                     </SettingsSection>
-                  </>
+                  </div>
                 )}
 
                 {/* VISIBILITY TAB */}

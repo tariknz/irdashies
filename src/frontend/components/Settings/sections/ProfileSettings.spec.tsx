@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { ProfileSettings } from './ProfileSettings';
+import userEvent from '@testing-library/user-event';
 
 vi.mock('@irdashies/utils/logger', () => ({
   default: { warn: vi.fn() },
@@ -59,6 +60,17 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('ProfileSettings browser layout URLs', () => {
+  it('returns from the delete confirmation to the originating profile Actions button', async () => {
+    render(<ProfileSettings />);
+    await screen.findByDisplayValue(expectedUrl('default', 4321));
+    const trigger = screen.getAllByRole('button', { name: 'Actions' })[1];
+    await userEvent.click(trigger);
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(screen.getByRole('button', { name: 'Keep Profile' })).toHaveFocus();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(trigger).toHaveFocus();
+  });
   it.each([3007, 4321])(
     'uses the detected server port %i for displayed and copied OBS URLs',
     async (port) => {

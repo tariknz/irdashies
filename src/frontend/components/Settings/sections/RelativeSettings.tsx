@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { useDashboard } from '@irdashies/context';
 import {
   RelativeWidgetSettings,
@@ -187,7 +186,12 @@ const DisplaySettingsList = ({
             {setting.configKey === 'driverName' &&
               (configValue as { enabled: boolean }).enabled && (
                 <div className="mt-3">
-                  <div className="flex flex-wrap gap-3 justify-end">
+                  <p className="mb-2 text-sm text-slate-400">Name format</p>
+                  <div
+                    role="group"
+                    aria-label="Driver name format"
+                    className="grid grid-cols-2 gap-2 xl:grid-cols-3"
+                  >
                     {(
                       [
                         'name-middlename-surname',
@@ -202,12 +206,12 @@ const DisplaySettingsList = ({
                         key={format}
                         format={format}
                         selected={
-                          (
+                          ((
                             configValue as {
                               enabled: boolean;
                               nameFormat: string;
                             }
-                          ).nameFormat === format
+                          ).nameFormat ?? 'name-middlename-surname') === format
                         }
                         onClick={() => {
                           const cv = settings.config[setting.configKey] as {
@@ -253,7 +257,7 @@ const DisplaySettingsList = ({
                         },
                       });
                     }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="settings-field"
                   >
                     <option value="full">1:42.123</option>
                     <option value="mixed">1:42.1</option>
@@ -372,7 +376,7 @@ export const RelativeSettings = () => {
           >
             <div className="space-y-4">
               {/* Tabs */}
-              <div className="flex border-b border-slate-700/50">
+              <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
                 <TabButton
                   id="display"
                   activeTab={activeTab}
@@ -421,8 +425,10 @@ export const RelativeSettings = () => {
                 {/* DISPLAY TAB */}
                 {activeTab === 'display' && (
                   <>
-                    <WidgetScaleSettings widgetId="relative" className="px-4" />
-                    <SettingsSection title="Display Order">
+                    <SettingsSection title="Display" scaleWidgetId="relative">
+                      <h4 className="text-md font-medium text-slate-200">
+                        Display Order
+                      </h4>
                       <DisplaySettingsList
                         itemsOrder={itemsOrder}
                         onReorder={handleDisplayOrderChange}
@@ -459,7 +465,7 @@ export const RelativeSettings = () => {
                       <SettingProp path="titleBar.enabled" />
 
                       {settings.config.titleBar.enabled && (
-                        <SettingsSection>
+                        <SettingsSection variant="inline">
                           <SettingProp path="titleBar.progressBar.enabled" />
                         </SettingsSection>
                       )}
@@ -486,7 +492,7 @@ export const RelativeSettings = () => {
                     <SettingProp path="headerBar.enabled" />
 
                     {settings.config.headerBar.enabled && (
-                      <SettingsSection>
+                      <SettingsSection variant="inline">
                         <SessionBarItemsList
                           items={settings.config.headerBar.displayOrder}
                           onReorder={(newOrder) => {
@@ -558,7 +564,7 @@ export const RelativeSettings = () => {
                     <SettingProp path="footerBar.enabled" />
 
                     {settings.config.footerBar.enabled && (
-                      <SettingsSection>
+                      <SettingsSection variant="inline">
                         <SessionBarItemsList
                           items={settings.config.footerBar.displayOrder}
                           onReorder={(newOrder) => {
@@ -626,26 +632,20 @@ export const RelativeSettings = () => {
 
                 {/* STYLING TAB */}
                 {activeTab === 'styling' && (
-                  <>
+                  <div className="space-y-5">
                     <SettingsSection title="Driver Position">
                       <SettingProp path="stylingOptions.driverPosition.background" />
                     </SettingsSection>
-
-                    <SettingDivider />
 
                     <SettingsSection title="Car Number">
                       <SettingProp path="stylingOptions.driverNumber.background" />
                       <SettingProp path="stylingOptions.driverNumber.border" />
                     </SettingsSection>
 
-                    <SettingDivider />
-
                     <SettingsSection title="Badges">
                       <SettingProp path="stylingOptions.badge" />
                       <SettingProp path="stylingOptions.statusBadges" />
                     </SettingsSection>
-
-                    <SettingDivider />
 
                     <SettingsSection title="Flag Contour">
                       <SettingProp path="stylingOptions.flagContour.enabled" />
@@ -653,7 +653,7 @@ export const RelativeSettings = () => {
                         <SettingProp path="stylingOptions.flagContour.borderWidth" />
                       )}
                     </SettingsSection>
-                  </>
+                  </div>
                 )}
 
                 {/* VISIBILITY TAB */}

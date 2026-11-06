@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { LayoutNode, BoxConfig } from '@irdashies/types';
 import { DotsSixVerticalIcon, TrashIcon } from '@phosphor-icons/react';
 
@@ -156,7 +156,7 @@ const RecursiveRenderer = ({
   if (node.type === 'box') {
     return (
       <div
-        className="relative flex-1 min-w-0 min-h-0 bg-slate-800 border border-slate-600 rounded p-1 m-1 transition-all flex flex-col gap-1 hover:border-accent-400 group/box"
+        className="relative flex-1 min-w-0 min-h-0 border border-settings-boundary rounded p-1 m-1 transition-all flex flex-col gap-1 hover:border-accent-400 group/box"
         onDragOver={(e) => onDragOver(e, node)}
         onDragLeave={handleDragLeave}
         onDrop={(e) => onDrop(e, node)}
@@ -169,16 +169,16 @@ const RecursiveRenderer = ({
             onDragStart={(e) => onDragStart(e, node)}
           >
             <DotsSixVerticalIcon className="text-slate-600 cursor-grab" />
-            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
-              Box
-            </span>
+            <span className="sr-only">Group</span>
           </div>
           <button
+            type="button"
+            aria-label={`Remove group: ${(node.widgets ?? []).map((id) => getWidgetLabel(id, availableWidgets)).join(', ') || 'empty'}`}
             onClick={(e) => {
               e.stopPropagation();
               onRemoveBox(node.id);
             }}
-            className="text-slate-600 hover:text-red-400 p-0.5 opacity-0 group-hover/box:opacity-100 transition-opacity"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 hover:text-red-300 focus-visible:text-red-300"
           >
             <TrashIcon size={12} />
           </button>
@@ -186,7 +186,7 @@ const RecursiveRenderer = ({
 
         {/* Content: List of Widgets in Box */}
         <div
-          className={`rounded bg-slate-900/50 p-1 flex-1 flex gap-2 overflow-hidden ${node.direction === 'row' ? 'flex-row' : 'flex-col'}`}
+          className={`p-1 flex-1 flex gap-2 overflow-auto ${node.direction === 'row' ? 'flex-row' : 'flex-col'}`}
         >
           {node.widgets?.map((wId, idx) => {
             const isTargetWidget =
@@ -198,7 +198,7 @@ const RecursiveRenderer = ({
             return (
               <div
                 key={`${node.id}-${wId}`}
-                className="relative flex items-center group/widget-container"
+                className="relative flex min-w-28 shrink-0 items-center group/widget-container"
               >
                 {/* Insertion Ghost Indicator */}
                 {isTargetWidget && isReordering && (
@@ -235,21 +235,23 @@ const RecursiveRenderer = ({
 
                     onDragOver(e, node, idx, isAfter);
                   }}
-                  className={`bg-slate-700 hover:bg-slate-600 border p-1.5 flex items-center gap-2 justify-between group/widget min-w-0 cursor-grab active:cursor-grabbing transition-all ${
+                  className={`bg-slate-800 hover:bg-settings-hover border min-h-9 p-1.5 flex flex-1 items-center gap-2 justify-between group/widget min-w-0 cursor-grab active:cursor-grabbing transition-all ${
                     isTargetWidget && isReordering
-                      ? 'border-accent-400 scale-[1.02] shadow-lg z-10 bg-slate-600'
-                      : 'border-slate-600'
+                      ? 'border-accent-400 scale-[1.02] shadow-lg z-10 bg-settings-control'
+                      : 'border-transparent'
                   }`}
                 >
                   <span className="text-xs text-slate-200 truncate">
                     {getWidgetLabel(wId, availableWidgets)}
                   </span>
                   <button
+                    type="button"
+                    aria-label={`Remove ${getWidgetLabel(wId, availableWidgets)} from group`}
                     onClick={(e) => {
                       e.stopPropagation();
                       onRemoveWidgetFromBox(node.id, idx);
                     }}
-                    className="text-slate-500 hover:text-red-400 opacity-0 group-hover/widget:opacity-100"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 hover:text-red-300"
                   >
                     <TrashIcon size={10} />
                   </button>
@@ -456,6 +458,244 @@ const updateTree = (
 
   const result = insertNode(cleanTree);
   return result ? flatten(result) : null;
+};
+
+/** Move one item using the same tree representation as the visual editor. */
+export const arrangeLayoutItem = (
+  tree: LayoutNode,
+  source: { boxId?: string; widgetIndex?: number; widgetId?: string },
+  targetId: string,
+  placement: 'top' | 'bottom' | 'left' | 'right' | 'first' | 'last'
+): LayoutNode => {
+  const boxes = layoutBoxes(tree);
+  const origin = boxes.find((box) => box.id === source.boxId);
+  const target = boxes.find((box) => box.id === targetId);
+  if (!target) return tree;
+  const widget =
+    source.widgetId ??
+    (origin?.type === 'box' && source.widgetIndex !== undefined
+      ? origin.widgets[source.widgetIndex]
+      : undefined);
+  const wholeBox = source.widgetIndex === undefined && !source.widgetId;
+  if (wholeBox && (!origin || origin.id === targetId)) return tree;
+  if (!wholeBox && !widget) return tree;
+  if (
+    origin?.id === targetId &&
+    origin.widgets.length === 1 &&
+    !['first', 'last'].includes(placement)
+  )
+    return tree;
+
+  const remove = (node: LayoutNode): LayoutNode | null => {
+    if (node.type === 'box') {
+      if (node.id !== source.boxId) return node;
+      if (wholeBox) return null;
+      const widgets = node.widgets.filter(
+        (_, index) => index !== source.widgetIndex
+      );
+      // Keep the destination when reordering the only item in its group.
+      return widgets.length || node.id === targetId
+        ? { ...node, widgets }
+        : null;
+    }
+    const children = node.children
+      .map(remove)
+      .filter((child): child is LayoutNode => !!child);
+    return children.length === 0
+      ? null
+      : children.length === 1
+        ? children[0]
+        : { ...node, children };
+  };
+  const remaining = remove(tree);
+  const moving: LayoutNode =
+    wholeBox && origin
+      ? origin
+      : {
+          id: generateId(),
+          type: 'box',
+          direction: 'col',
+          weight: 1,
+          widgets: widget ? [widget] : [],
+        };
+  if (placement === 'first' || placement === 'last') {
+    const merge = (node: LayoutNode): LayoutNode => {
+      if (node.type === 'split')
+        return { ...node, children: node.children.map(merge) };
+      if (node.id !== targetId) return node;
+      const added =
+        moving.type === 'box'
+          ? moving.widgets.filter((id) => !node.widgets.includes(id))
+          : [];
+      return {
+        ...node,
+        widgets:
+          placement === 'first'
+            ? [...added, ...node.widgets]
+            : [...node.widgets, ...added],
+      };
+    };
+    return remaining ? merge(remaining) : tree;
+  }
+  return updateTree(remaining, moving, target, placement) ?? tree;
+};
+
+const layoutBoxes = (
+  node: LayoutNode
+): Extract<LayoutNode, { type: 'box' }>[] =>
+  node.type === 'box' ? [node] : node.children.flatMap(layoutBoxes);
+
+const LayoutArrangementControls = ({
+  tree,
+  onChange,
+  availableWidgets,
+}: {
+  tree: LayoutNode;
+  onChange: (tree: LayoutNode) => void;
+  availableWidgets: { id: string; label: string }[];
+}) => {
+  const id = useId();
+  const [sourceKey, setSourceKey] = useState('');
+  const [targetKey, setTargetKey] = useState('');
+  const [placement, setPlacement] = useState<
+    'top' | 'bottom' | 'left' | 'right' | 'first' | 'last'
+  >('last');
+  const [announcement, setAnnouncement] = useState('');
+  const boxes = layoutBoxes(tree);
+  const groupLabel = (box: (typeof boxes)[number], index: number) =>
+    `Group ${index + 1}: ${box.widgets.map((widget) => getWidgetLabel(widget, availableWidgets)).join(', ') || 'empty'}`;
+  const used = getUsedWidgetIds(tree);
+  const sources = [
+    ...boxes.flatMap((box, index) => [
+      {
+        key: `box-${box.id}`,
+        label: groupLabel(box, index),
+        boxId: box.id,
+        widgetIndex: undefined as number | undefined,
+        widgetId: undefined as string | undefined,
+      },
+      ...box.widgets.map((widget, widgetIndex) => ({
+        key: `item-${box.id}-${widget}`,
+        label: `${getWidgetLabel(widget, availableWidgets)} (group ${index + 1})`,
+        boxId: box.id,
+        widgetIndex,
+        widgetId: undefined as string | undefined,
+      })),
+    ]),
+    ...availableWidgets
+      .filter((widget) => !used.includes(widget.id))
+      .map((widget) => ({
+        key: `new-${widget.id}`,
+        label: `${widget.label} (available)`,
+        widgetId: widget.id,
+        boxId: undefined as string | undefined,
+        widgetIndex: undefined as number | undefined,
+      })),
+  ];
+  const source =
+    sources.find((item) => item.key === sourceKey) ??
+    sources.find((item) => item.widgetId) ??
+    sources.find((item) => item.widgetIndex !== undefined) ??
+    sources[0];
+  const targets = boxes.filter(
+    (box) => source?.boxId !== box.id || source.widgetIndex !== undefined
+  );
+  const target = targets.find((box) => box.id === targetKey) ?? targets[0];
+  const sameSingle =
+    target?.id === source?.boxId && target?.widgets.length === 1;
+  const effectivePlacement =
+    sameSingle && !['first', 'last'].includes(placement) ? 'last' : placement;
+  return (
+    <details className="rounded-md border border-slate-700 p-3">
+      <summary className="min-h-9 cursor-pointer text-sm text-slate-300">
+        Arrange without dragging
+      </summary>
+      <div className="mt-3 grid grid-cols-2 items-end gap-3">
+        <label
+          htmlFor={`${id}-source`}
+          className="flex min-w-0 flex-col gap-1 text-sm text-slate-300"
+        >
+          Item
+          <select
+            id={`${id}-source`}
+            value={source?.key ?? ''}
+            onChange={(event) => setSourceKey(event.target.value)}
+            className="settings-field w-full"
+          >
+            {sources.map((item) => (
+              <option key={item.key} value={item.key}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label
+          htmlFor={`${id}-target`}
+          className="flex min-w-0 flex-col gap-1 text-sm text-slate-300"
+        >
+          Destination group
+          <select
+            id={`${id}-target`}
+            value={target?.id ?? ''}
+            onChange={(event) => setTargetKey(event.target.value)}
+            className="settings-field w-full"
+            disabled={!target}
+          >
+            {!target && <option value="">Choose an individual item</option>}
+            {targets.map((box) => (
+              <option key={box.id} value={box.id}>
+                {groupLabel(box, boxes.indexOf(box))}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label
+          htmlFor={`${id}-placement`}
+          className="flex min-w-0 flex-col gap-1 text-sm text-slate-300"
+        >
+          Placement
+          <select
+            id={`${id}-placement`}
+            value={effectivePlacement}
+            onChange={(event) =>
+              setPlacement(event.target.value as typeof placement)
+            }
+            className="settings-field w-full"
+          >
+            <option value="first">First in group</option>
+            <option value="last">Last in group</option>
+            {!sameSingle && (
+              <>
+                <option value="top">New group above</option>
+                <option value="bottom">New group below</option>
+                <option value="left">New group to left</option>
+                <option value="right">New group to right</option>
+              </>
+            )}
+          </select>
+        </label>
+        <button
+          type="button"
+          className="settings-button"
+          disabled={!source || !target}
+          onClick={() => {
+            if (!source || !target) return;
+            onChange(
+              arrangeLayoutItem(tree, source, target.id, effectivePlacement)
+            );
+            setAnnouncement(
+              `${source.label} moved ${effectivePlacement === 'first' || effectivePlacement === 'last' ? `${effectivePlacement} in` : effectivePlacement === 'top' ? 'above' : effectivePlacement === 'bottom' ? 'below' : `to the ${effectivePlacement} of`} ${groupLabel(target, boxes.indexOf(target))}.`
+            );
+          }}
+        >
+          Apply arrangement
+        </button>
+      </div>
+      <p role="status" className="mt-2 text-sm text-slate-400">
+        {announcement}
+      </p>
+    </details>
+  );
 };
 
 export const LayoutVisualizer = ({
@@ -687,112 +927,126 @@ export const LayoutVisualizer = ({
   };
 
   return (
-    <div className="flex gap-4 h-[450px]">
-      {/* Visual Editor */}
-      <div className="flex-1 bg-slate-900 border border-slate-700 rounded overflow-hidden flex flex-col">
-        <div className="flex-1 flex p-2 overflow-hidden relative">
-          <RecursiveRenderer
-            node={tree}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            onRemoveBox={handleRemoveBox}
-            onRemoveWidgetFromBox={handleRemoveWidgetFromBox}
-            dragState={dragState}
-            availableWidgets={availableWidgets}
-          />
-        </div>
-        <div className="p-2 bg-slate-800 text-xs text-slate-400 border-t border-slate-700 flex justify-between items-center">
-          <span>Drag items to split. Drop in CENTER to join group.</span>
-        </div>
-      </div>
-
-      {/* Sidebar Pool */}
-      <div
-        className={`w-48 bg-slate-800 border box-border rounded p-3 flex flex-col gap-3 overflow-y-auto transition-colors ${
-          dragState.draggedNode
-            ? 'border-red-500/50 bg-red-900/20'
-            : 'border-slate-700'
-        }`}
-        onDragOver={(e) => {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
-        }}
-        onDrop={(e) => {
-          e.preventDefault();
-          // 1. Dragging a specific widget from a box
-          if (dragState.sourceBoxId !== null && dragState.widgetIdx !== null) {
-            handleRemoveWidgetFromBox(
-              dragState.sourceBoxId,
-              dragState.widgetIdx
-            );
-          }
-          // 2. Dragging an entire box from the layout (sourceBoxId is null for box drags)
-          // We check if it is in the tree by trying to remove it
-          else if (
-            dragState.draggedNode &&
-            dragState.draggedNode.id &&
-            dragState.sourceBoxId === null
-          ) {
-            // Only remove if it's not a temporary new node from the sidebar itself
-            // Sidebar drags create new IDs, so removing them won't affect the tree, which is fine.
-            // But we want to ensure we don't error out.
-            handleRemoveBox(dragState.draggedNode.id);
-          }
-
-          // Reset drag state
-          setDragState({
-            draggedNode: null,
-            targetId: null,
-            dropZone: null,
-            sourceBoxId: null,
-            widgetIdx: null,
-            targetWidgetIdx: null,
-          });
-        }}
-      >
-        <div className="flex items-center justify-between">
-          <h4 className="text-sm font-medium text-slate-300">
-            Available Widgets
-          </h4>
-          {dragState.draggedNode && (
-            <TrashIcon className="text-red-400 animate-pulse" weight="fill" />
-          )}
-        </div>
-        <div className="flex flex-col gap-2">
-          {unusedWidgets.map((widget) => (
-            <div
-              key={widget.id}
-              draggable
-              onDragStart={(e) => {
-                handleDragStart(e, {
-                  id: generateId(),
-                  type: 'box',
-                  widgets: [widget.id],
-                  direction: 'col',
-                  weight: 1,
-                });
-              }}
-              className="bg-slate-700 hover:bg-slate-600 border border-slate-600 p-2 rounded text-xs text-slate-200 cursor-grab active:cursor-grabbing flex items-center gap-2"
-            >
-              <DotsSixVerticalIcon className="text-slate-400" />
-              {widget.label}
-            </div>
-          ))}
-          {unusedWidgets.length === 0 && (
-            <span className="text-xs text-slate-500 italic">
-              All widgets used
-            </span>
-          )}
-        </div>
-
-        {dragState.draggedNode && (
-          <div className="mt-auto p-4 border-2 border-dashed border-red-500/30 rounded-lg flex flex-col items-center justify-center text-red-300 gap-2 bg-slate-900/50">
-            <TrashIcon size={24} />
-            <span className="text-xs font-medium">Drop to Remove</span>
+    <div className="space-y-4">
+      <div className="flex min-h-[450px] flex-col gap-4 lg:h-[450px] lg:flex-row">
+        {/* Visual Editor */}
+        <div
+          data-layout-editor
+          className="min-h-[300px] shrink-0 flex-1 bg-slate-900 border border-slate-700 rounded overflow-hidden flex flex-col lg:min-h-0 lg:shrink"
+        >
+          <div className="flex-1 flex p-2 overflow-hidden relative">
+            <RecursiveRenderer
+              node={tree}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onRemoveBox={handleRemoveBox}
+              onRemoveWidgetFromBox={handleRemoveWidgetFromBox}
+              dragState={dragState}
+              availableWidgets={availableWidgets}
+            />
           </div>
-        )}
+          <div className="p-2 bg-slate-800 text-xs text-slate-400 border-t border-slate-700 flex justify-between items-center">
+            <span>Drag items to split. Drop in CENTER to join group.</span>
+          </div>
+        </div>
+
+        {/* Sidebar Pool */}
+        <div
+          data-layout-pool
+          className={`max-h-60 w-full shrink-0 bg-slate-800 border box-border rounded p-3 flex flex-col gap-3 overflow-y-auto transition-colors lg:max-h-none lg:w-48 ${
+            dragState.draggedNode
+              ? 'border-red-500/50 bg-red-900/20'
+              : 'border-slate-700'
+          }`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            // 1. Dragging a specific widget from a box
+            if (
+              dragState.sourceBoxId !== null &&
+              dragState.widgetIdx !== null
+            ) {
+              handleRemoveWidgetFromBox(
+                dragState.sourceBoxId,
+                dragState.widgetIdx
+              );
+            }
+            // 2. Dragging an entire box from the layout (sourceBoxId is null for box drags)
+            // We check if it is in the tree by trying to remove it
+            else if (
+              dragState.draggedNode &&
+              dragState.draggedNode.id &&
+              dragState.sourceBoxId === null
+            ) {
+              // Only remove if it's not a temporary new node from the sidebar itself
+              // Sidebar drags create new IDs, so removing them won't affect the tree, which is fine.
+              // But we want to ensure we don't error out.
+              handleRemoveBox(dragState.draggedNode.id);
+            }
+
+            // Reset drag state
+            setDragState({
+              draggedNode: null,
+              targetId: null,
+              dropZone: null,
+              sourceBoxId: null,
+              widgetIdx: null,
+              targetWidgetIdx: null,
+            });
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-medium text-slate-300">
+              Available Widgets
+            </h4>
+            {dragState.draggedNode && (
+              <TrashIcon className="text-red-400 animate-pulse" weight="fill" />
+            )}
+          </div>
+          <div className="flex flex-col gap-2">
+            {unusedWidgets.map((widget) => (
+              <div
+                key={widget.id}
+                draggable
+                onDragStart={(e) => {
+                  handleDragStart(e, {
+                    id: generateId(),
+                    type: 'box',
+                    widgets: [widget.id],
+                    direction: 'col',
+                    weight: 1,
+                  });
+                }}
+                className="bg-slate-700 hover:bg-settings-hover border border-settings-boundary min-h-9 p-2 rounded text-sm text-slate-200 cursor-grab active:cursor-grabbing flex items-center gap-2"
+              >
+                <DotsSixVerticalIcon className="text-slate-400" />
+                {widget.label}
+              </div>
+            ))}
+            {unusedWidgets.length === 0 && (
+              <span className="text-xs text-slate-500 italic">
+                All widgets used
+              </span>
+            )}
+          </div>
+
+          {dragState.draggedNode && (
+            <div className="mt-auto p-4 border-2 border-dashed border-red-500/30 rounded-lg flex flex-col items-center justify-center text-red-300 gap-2 bg-slate-900/50">
+              <TrashIcon size={24} />
+              <span className="text-xs font-medium">Drop to Remove</span>
+            </div>
+          )}
+        </div>
       </div>
+      <LayoutArrangementControls
+        tree={tree}
+        onChange={onChange}
+        availableWidgets={availableWidgets}
+      />
     </div>
   );
 };

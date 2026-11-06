@@ -54,6 +54,10 @@ import {
   saveGarage61SearchSession,
 } from './app/storage/garage61SearchSession';
 import { flushStorageWritesOnShutdown } from './app/storage/storage';
+import {
+  initializeSettingsWindowBounds,
+  flushSettingsWindowBoundsOnShutdown,
+} from './app/storage/settingsWindowBounds';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { getHiddenWidgets } from './app/widgetVisibility';
 import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
@@ -106,6 +110,7 @@ import { setupRendererDataSubscriptions } from './app/bridge/rendererDataSubscri
 import { PerfHeapProfiler } from './app/perfHeapProfiler';
 import { createBeforeQuitHandler } from './app/shutdownCoordinator';
 import { monitorDevParent } from './app/devParentMonitor';
+import { flushSettingsWindowMovementOnShutdown } from './app/trackWindowMovement';
 
 const safeErrorDetails = (error: unknown) => {
   const code =
@@ -410,6 +415,8 @@ void app.whenReady().then(async () => {
     return;
   }
 
+  await initializeSettingsWindowBounds();
+
   if (perfRun.enabled) {
     log.info('[PerfRun] Configuration', perfRun);
   }
@@ -671,6 +678,7 @@ const SHUTDOWN_FLUSH_TIMEOUT_MS = 5_000;
 const handleBeforeQuit = createBeforeQuitHandler({
   prepareToQuit: () => overlayManager.markQuitting(),
   shutdown: async () => {
+    flushSettingsWindowMovementOnShutdown();
     keybindingManager?.stopGamepad();
     disconnectLifecycleChannel?.();
     sessionProfileSwitcher?.dispose();
@@ -695,6 +703,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
       releaseNotes?.flush(),
       flushGarage61SearchSessionOnShutdown(),
       flushStorageWritesOnShutdown(),
+      flushSettingsWindowBoundsOnShutdown(),
     ]);
   },
   quit: () => app.quit(),

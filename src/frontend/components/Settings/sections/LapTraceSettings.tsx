@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowSquareOutIcon, UploadSimpleIcon } from '@phosphor-icons/react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   LapTraceWidgetSettings,
   SettingsTabType,
@@ -412,8 +411,9 @@ export const LapTraceSettings = () => {
 
   return (
     <BaseSettingsSection
+      hidePositionReset={activeTab === 'help'}
       title="Lap Trace"
-      description="Plots a saved lap's throttle, brake and speed against position on track, in a window that slides with your car, drawn pastel as a background target. Your current lap is drawn over it as a bright ghost so you can see where the reference brakes and gets back on power."
+      description="Compare your throttle, brake and speed with a saved reference lap as you drive."
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -425,7 +425,7 @@ export const LapTraceSettings = () => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <div className="flex border-b border-slate-700/50">
+            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
               <TabButton
                 id="trace"
                 activeTab={activeTab}
@@ -508,7 +508,7 @@ export const LapTraceSettings = () => {
                           type="button"
                           disabled={!bestLapInfo?.hasBest}
                           onClick={() => setConfirmingResetBest(true)}
-                          className="text-xs text-slate-300 hover:text-white hover:bg-slate-600 rounded px-2 py-1 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-default disabled:hover:bg-transparent disabled:hover:text-slate-300"
+                          className="text-xs text-slate-300 hover:text-white hover:bg-settings-hover rounded px-2 py-1 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-default disabled:hover:bg-transparent disabled:hover:text-slate-300"
                         >
                           Reset my best lap
                         </button>
@@ -571,7 +571,7 @@ export const LapTraceSettings = () => {
                         }
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-600 rounded px-2 py-1 transition-colors cursor-pointer"
+                        className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-settings-hover rounded px-2 py-1 transition-colors cursor-pointer"
                       >
                         <ArrowSquareOutIcon size={13} />
                         Find laps on Garage 61
@@ -588,7 +588,7 @@ export const LapTraceSettings = () => {
                       <button
                         type="button"
                         onClick={handleImportGarage61}
-                        className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-600 rounded px-2 py-1 transition-colors cursor-pointer"
+                        className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-settings-hover rounded px-2 py-1 transition-colors cursor-pointer"
                       >
                         <UploadSimpleIcon size={13} />
                         Import Garage 61 Lap
@@ -653,7 +653,7 @@ export const LapTraceSettings = () => {
                         type="button"
                         onClick={handleImportIbt}
                         disabled={ibtImporting}
-                        className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-600 rounded px-2 py-1 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-default"
+                        className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-settings-hover rounded px-2 py-1 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-default"
                       >
                         <UploadSimpleIcon size={13} />
                         {ibtImporting ? 'Importing…' : 'Import .ibt Lap'}
@@ -889,13 +889,13 @@ export const LapTraceSettings = () => {
                           {SOUND_CUES.map(({ key, label }) => {
                             const cue = soundCfg[key];
                             return (
-                              <div
+                              <fieldset
                                 key={key}
-                                className="space-y-1 border-t border-slate-700/40 pt-2"
+                                className="space-y-3 border-t border-slate-700 pt-4"
                               >
-                                <span className="text-md font-semibold text-slate-300">
+                                <legend className="pr-3 text-sm font-semibold text-slate-200">
                                   {label}
-                                </span>
+                                </legend>
                                 <SettingSliderRow
                                   title="Frequency"
                                   value={Math.round(cue.frequency)}
@@ -935,7 +935,7 @@ export const LapTraceSettings = () => {
                                     updateCue(key, { peak: v / 100 })
                                   }
                                 />
-                              </div>
+                              </fieldset>
                             );
                           })}
 
@@ -966,8 +966,7 @@ export const LapTraceSettings = () => {
 
               {activeTab === 'styling' && (
                 <>
-                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
-                  <SettingsSection title="Styling">
+                  <SettingsSection title="Styling" scaleWidgetId={SETTING_ID}>
                     <SettingProp path="strokeWidth" />
 
                     <SettingSliderRow

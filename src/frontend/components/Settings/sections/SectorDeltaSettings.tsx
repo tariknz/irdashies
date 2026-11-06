@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   SectorDeltaWidgetSettings,
   SettingsTabType,
@@ -64,7 +63,7 @@ export const SectorDeltaSettings = () => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <div className="flex border-b border-slate-700/50">
+            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
               <TabButton
                 id="options"
                 activeTab={activeTab}
@@ -84,8 +83,7 @@ export const SectorDeltaSettings = () => {
             <div>
               {activeTab === 'options' && (
                 <>
-                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
-                  <SettingsSection title="Display">
+                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
                     <SettingProp path="background.opacity" />
                     <SettingProp path="timeFormat" />
                     <SettingProp path="ghostComparison" />

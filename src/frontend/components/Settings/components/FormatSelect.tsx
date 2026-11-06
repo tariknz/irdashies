@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { CaretDownIcon } from '@phosphor-icons/react';
+import { SettingsPopover } from './SettingsPopover';
 
 export interface FormatSelectProps<T extends string> {
   /** Shown above the control, e.g. the simulator the formats belong to. */
@@ -32,70 +33,87 @@ export const FormatSelect = <T extends string>({
   onChange,
 }: FormatSelectProps<T>) => {
   const [open, setOpen] = useState(false);
-  const root = useRef<HTMLDivElement>(null);
-
-  // Closes on a click anywhere else and on Escape. Without the first, the
-  // panel outlives the click that should have dismissed it; without the
-  // second there is no way out for the keyboard.
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: MouseEvent) => {
-      if (!root.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('mousedown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [open]);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const listId = useId();
 
   return (
-    <div ref={root} className="relative flex items-center gap-2">
+    <div className="relative flex items-center gap-2">
       <span className="text-xs text-slate-400 shrink-0">{label}</span>
       <button
+        ref={trigger}
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-controls={open ? listId : undefined}
         aria-label={`${label} rating format`}
         onClick={() => setOpen((wasOpen) => !wasOpen)}
-        className="flex items-center gap-2 rounded border border-slate-600 bg-slate-800 px-2 py-1 cursor-pointer hover:border-slate-400"
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            setOpen(true);
+          }
+        }}
+        className="settings-button"
       >
         {renderOption(value)}
         <CaretDownIcon size={12} className="text-slate-400 shrink-0" />
       </button>
 
-      {open && (
-        <div
-          role="listbox"
-          // Opens under its own control, which now sits inline with the
-          // other simulator's rather than at the panel's right edge.
-          className="absolute left-0 top-full z-50 mt-1 flex flex-col gap-1 rounded border border-slate-600 bg-slate-900 p-1 shadow-lg"
-        >
-          {options.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="option"
-              aria-selected={option === value}
-              onClick={() => {
-                onChange(option);
+      <SettingsPopover
+        open={open}
+        anchorRef={trigger}
+        onClose={() => setOpen(false)}
+        role="listbox"
+        label={`${label} rating formats`}
+        id={listId}
+      >
+        {options.map((option, index) => (
+          <button
+            key={option}
+            type="button"
+            role="option"
+            aria-selected={option === value}
+            tabIndex={option === value ? 0 : -1}
+            onKeyDown={(event) => {
+              const step =
+                event.key === 'ArrowDown'
+                  ? 1
+                  : event.key === 'ArrowUp'
+                    ? -1
+                    : 0;
+              if (step || event.key === 'Home' || event.key === 'End') {
+                event.preventDefault();
+                const next =
+                  event.key === 'Home'
+                    ? 0
+                    : event.key === 'End'
+                      ? options.length - 1
+                      : (index + step + options.length) % options.length;
+                event.currentTarget.parentElement
+                  ?.querySelectorAll<HTMLButtonElement>('[role="option"]')
+                  ?.[next]?.focus();
+              } else if (event.key === 'Tab') {
+                // Continue from the field, rather than from the portal at the
+                // end of the settings shell.
+                trigger.current?.focus();
                 setOpen(false);
-              }}
-              className={`flex items-center justify-start rounded border px-2 py-1 cursor-pointer ${
-                option === value
-                  ? 'border-accent-500 bg-accent-500/10'
-                  : 'border-transparent hover:bg-slate-800'
-              }`}
-            >
-              {renderOption(option)}
-            </button>
-          ))}
-        </div>
-      )}
+              }
+            }}
+            onClick={() => {
+              onChange(option);
+              setOpen(false);
+              trigger.current?.focus();
+            }}
+            className={`flex min-h-9 items-center justify-start rounded border px-2 py-1 cursor-pointer ${
+              option === value
+                ? 'border-accent-500 bg-accent-500/10'
+                : 'border-transparent hover:bg-slate-800'
+            }`}
+          >
+            {renderOption(option)}
+          </button>
+        ))}
+      </SettingsPopover>
     </div>
   );
 };

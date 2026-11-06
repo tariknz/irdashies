@@ -41,6 +41,9 @@ import {
 } from './rendererDataSubscriptions';
 import { createSubscriptionBridgeClient, defineBridge } from './defineBridge';
 import type { TapeReplayBridge } from '@irdashies/types';
+// The module itself, not the barrel: preload needs this one list, not every
+// default the types package exports.
+import { RENDERER_PERF_MEASURE_NAMES } from '../../types/performance';
 
 export function exposeBridge() {
   defineBridge<TapeReplayBridge>('tapeReplayBridge', {
@@ -58,12 +61,7 @@ export function exposeBridge() {
     defineBridge<RendererPerfBridge>('rendererPerfBridge', {
       recordMeasure: (name, durationMs) => {
         if (!isRendererPerfMetricsEnabled()) return;
-        if (
-          name !== 'trackMapAnimationFrame' &&
-          name !== 'standingsPlayerGaps' &&
-          name !== 'standingsFinalTiming'
-        )
-          return;
+        if (!RENDERER_PERF_MEASURE_NAMES.includes(name)) return;
         if (!Number.isFinite(durationMs) || durationMs < 0) return;
         recordRendererMeasure(name, durationMs);
       },

@@ -99,7 +99,7 @@ const DialogPreview = () => {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="rounded bg-slate-600 p-3"
+        className="rounded bg-settings-control p-3"
       >
         Open update dialog
       </button>

@@ -7,10 +7,14 @@ export interface DemoDriver {
   distance: number;
   percent: number;
   classColor: number;
+  className: string;
+  classPosition: number;
 }
 
 // Generate demo data for faster cars behind
-export const getDemoCarsBehind = (numberDriversBehind: number): DemoDriver[] => {
+export const getDemoCarsBehind = (
+  numberDriversBehind: number
+): DemoDriver[] => {
   const demoDrivers: DemoDriver[] = [
     {
       carIdx: 1001,
@@ -19,7 +23,9 @@ export const getDemoCarsBehind = (numberDriversBehind: number): DemoDriver[] => 
       rating: 1281,
       distance: -1.2,
       percent: 85,
-      classColor: 16767577, // BMW M4 GT4 color
+      classColor: 0xffda59,
+      className: 'GTP',
+      classPosition: 3,
     },
     {
       carIdx: 1002,
@@ -28,7 +34,9 @@ export const getDemoCarsBehind = (numberDriversBehind: number): DemoDriver[] => 
       rating: 1256,
       distance: -2.5,
       percent: 65,
-      classColor: 16734344, // Toyota GR86 color
+      classColor: 0xffda59,
+      className: 'GTP',
+      classPosition: 5,
     },
     {
       carIdx: 1003,
@@ -37,7 +45,9 @@ export const getDemoCarsBehind = (numberDriversBehind: number): DemoDriver[] => 
       rating: 1300,
       distance: -3.8,
       percent: 45,
-      classColor: 11430911, // MX-5 Cup color
+      classColor: 0x33ceff,
+      className: 'LMP2',
+      classPosition: 2,
     },
     {
       carIdx: 1004,
@@ -46,7 +56,9 @@ export const getDemoCarsBehind = (numberDriversBehind: number): DemoDriver[] => 
       rating: 1510,
       distance: -4.1,
       percent: 35,
-      classColor: 16767577, // BMW M4 GT4 color
+      classColor: 0xffda59,
+      className: 'GTP',
+      classPosition: 7,
     },
     {
       carIdx: 1005,
@@ -55,7 +67,9 @@ export const getDemoCarsBehind = (numberDriversBehind: number): DemoDriver[] => 
       rating: 1490,
       distance: -4.8,
       percent: 28,
-      classColor: 16767577, // BMW M4 GT4 color
+      classColor: 0xffda59,
+      className: 'GTP',
+      classPosition: 9,
     },
     {
       carIdx: 1006,
@@ -64,7 +78,9 @@ export const getDemoCarsBehind = (numberDriversBehind: number): DemoDriver[] => 
       rating: 1271,
       distance: -5.2,
       percent: 22,
-      classColor: 16767577, // BMW M4 GT4 color
+      classColor: 0xffda59,
+      className: 'GTP',
+      classPosition: 11,
     },
     {
       carIdx: 1007,
@@ -73,7 +89,9 @@ export const getDemoCarsBehind = (numberDriversBehind: number): DemoDriver[] => 
       rating: 1512,
       distance: -5.9,
       percent: 18,
-      classColor: 16734344, // Toyota GR86 color
+      classColor: 0x33ceff,
+      className: 'LMP2',
+      classPosition: 4,
     },
     {
       carIdx: 1008,
@@ -82,7 +100,9 @@ export const getDemoCarsBehind = (numberDriversBehind: number): DemoDriver[] => 
       rating: 1505,
       distance: -6.5,
       percent: 15,
-      classColor: 16734344, // Toyota GR86 color
+      classColor: 0x33ceff,
+      className: 'LMP2',
+      classPosition: 6,
     },
     {
       carIdx: 1009,
@@ -91,7 +111,9 @@ export const getDemoCarsBehind = (numberDriversBehind: number): DemoDriver[] => 
       rating: 1444,
       distance: -7.1,
       percent: 12,
-      classColor: 16734344, // Toyota GR86 color
+      classColor: 0x33ceff,
+      className: 'LMP2',
+      classPosition: 8,
     },
     {
       carIdx: 1010,
@@ -100,7 +122,9 @@ export const getDemoCarsBehind = (numberDriversBehind: number): DemoDriver[] => 
       rating: 2401,
       distance: -7.8,
       percent: 8,
-      classColor: 11430911, // MX-5 Cup color
+      classColor: 0x33ceff,
+      className: 'LMP2',
+      classPosition: 10,
     },
   ];
 

@@ -16,6 +16,10 @@ interface UseSortableListOptions<T> {
 export interface SortableItemProps {
   isDragging: boolean;
   isOver: boolean;
+  position: number;
+  total: number;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
   dragHandleProps: {
     draggable: true;
     onDragStart: (e: DragEvent<HTMLElement>) => void;
@@ -47,10 +51,21 @@ export function useSortableList<T>({
       const id = getItemId(item);
       const isDragging = draggedId === id;
       const isOver = overId === id && draggedId !== id;
+      const index = items.findIndex((entry) => getItemId(entry) === id);
 
       return {
         isDragging,
         isOver,
+        position: index + 1,
+        total: items.length,
+        onMoveUp:
+          !draggedId && index > 0
+            ? () => onReorder(arrayMove(items, index, index - 1))
+            : undefined,
+        onMoveDown:
+          !draggedId && index >= 0 && index < items.length - 1
+            ? () => onReorder(arrayMove(items, index, index + 1))
+            : undefined,
         dragHandleProps: {
           draggable: true as const,
           onDragStart: (e: DragEvent<HTMLElement>) => {
@@ -73,7 +88,8 @@ export function useSortableList<T>({
               document.body.appendChild(clone);
 
               const handleRect = e.currentTarget.getBoundingClientRect();
-              const offsetX = handleRect.left - rect.left + handleRect.width / 2;
+              const offsetX =
+                handleRect.left - rect.left + handleRect.width / 2;
               const offsetY = handleRect.top - rect.top + handleRect.height / 2;
               e.dataTransfer.setDragImage(clone, offsetX, offsetY);
 

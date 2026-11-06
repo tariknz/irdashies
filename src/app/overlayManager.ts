@@ -36,7 +36,14 @@ import {
   markCorrectedBounds,
   trackSettingsWindowMovement,
 } from './trackWindowMovement';
-import { sanitizeWindowBounds } from './windowBounds';
+import {
+  defaultSettingsWindowBounds,
+  sanitizeWindowBounds,
+} from './windowBounds';
+import {
+  initializeSettingsWindowBounds,
+  readSettingsWindowBounds,
+} from './storage/settingsWindowBounds';
 import logger from './logger';
 import { createRendererPerfArguments } from './perfRendererArguments';
 import {
@@ -1275,7 +1282,11 @@ export class OverlayManager {
 
     this.hasSingleInstanceLock = true;
     app.on('second-instance', () => {
-      this.focusSettingsWindow();
+      // A second launch can arrive while the first is still initializing.
+      void app.whenReady().then(async () => {
+        await initializeSettingsWindowBounds();
+        this.focusSettingsWindow();
+      });
     });
     return true;
   }
@@ -1508,20 +1519,16 @@ export class OverlayManager {
     const defaultOptions: BrowserWindowConstructorOptions = {
       title: `irDashies - Settings`,
       frame: true,
-      // Windows/Linux: the renderer draws its own header (and drag region);
-      // the OS keeps drawing min/max/close, recoloured to match the theme.
-      // macOS keeps its native title bar so the traffic lights don't cover
-      // the header.
-      ...(process.platform !== 'darwin' && {
-        titleBarStyle: 'hidden' as const,
-        titleBarOverlay: {
-          color: '#314158',
-          symbolColor: '#cad5e2',
-          height: 40,
-        },
-      }),
-      width: 800,
-      height: 700,
+      // The renderer draws the header and drag region on every platform.
+      // The overlay exposes the native controls' safe area to the renderer,
+      // including the traffic lights on the left on macOS.
+      titleBarStyle: 'hidden',
+      titleBarOverlay: {
+        color: '#141a21',
+        symbolColor: '#cad5e2',
+        height: 40,
+      },
+      ...defaultSettingsWindowBounds(screen.getPrimaryDisplay().workArea),
       autoHideMenuBar: true,
       acceptFirstMouse: true,
       icon: getIconPath(),
@@ -1635,7 +1642,7 @@ function ensureWindowOnScreen(browserWindow: BrowserWindow): void {
 }
 
 function loadWindowBounds(): Electron.Rectangle | undefined {
-  const saved = readData<Electron.Rectangle>('settingsWindowBounds');
+  const saved = readSettingsWindowBounds();
   if (!saved) return undefined;
 
   // Saved bounds outlive the display arrangement that produced them, so they

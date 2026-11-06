@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { changeMarker } from '../components/ChangedMark';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
@@ -38,6 +37,8 @@ export const BroadcastPodiumSettings = () => {
 
   return (
     <BaseSettingsSection
+      disableInternalScroll
+      headingLevel="h3"
       title="Broadcast Podium"
       description="The top three of each class on steps, up after the checkered flag of a race. Demo mode shows it all the time so it can be placed."
       settings={settings}
@@ -51,8 +52,7 @@ export const BroadcastPodiumSettings = () => {
           handleConfigChange
         );
         return (
-          <SettingsSection title="Options">
-            <WidgetScaleSettings widgetId={SETTING_ID} />
+          <SettingsSection title="Widget options" scaleWidgetId={SETTING_ID}>
             {mark(
               ['style'],
               <SettingButtonGroupRow<BroadcastPodiumStyle>

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   LapTimeLogWidgetSettings,
   SettingsTabType,
@@ -59,7 +58,7 @@ export const LapTimeLogSettings = () => {
         >
           <div className="space-y-4">
             {/* Tabs */}
-            <div className="flex border-b border-slate-700/50">
+            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
               <TabButton
                 id="display"
                 activeTab={activeTab}
@@ -87,8 +86,7 @@ export const LapTimeLogSettings = () => {
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <>
-                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
-                  <SettingsSection title="Display">
+                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
                     <SettingProp path="showCurrentLap" />
 
                     <SettingProp path="showPredictedLap" />

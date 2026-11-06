@@ -36,7 +36,9 @@ export const ReleaseNotesSettings = () => {
   };
   return (
     <div className="h-full overflow-y-auto">
-      <h2 className="mb-4 text-xl font-bold">Release notes</h2>
+      <h2 className="mb-5 border-b border-slate-700 pb-5 pt-1 text-xl font-semibold tracking-tight text-white">
+        Release notes
+      </h2>
       {error && (
         <p role="alert" className="mb-4 text-amber-200">
           Could not load or save release notes preferences.{' '}
@@ -69,7 +71,7 @@ export const ReleaseNotesSettings = () => {
               <select
                 value={version ?? ''}
                 onChange={(event) => setSelected(event.target.value)}
-                className="rounded bg-slate-700 p-2"
+                className="settings-field"
               >
                 <option value={status.currentVersion}>
                   Installed: {status.currentVersion}
@@ -88,10 +90,10 @@ export const ReleaseNotesSettings = () => {
             />
           )}
           {status.development && (
-            <div className="mt-8 border-t border-slate-600 pt-4">
+            <div className="mt-8 border-t border-settings-boundary pt-4">
               <button
                 onClick={() => setPreview(true)}
-                className="rounded bg-slate-700 px-3 py-2 hover:bg-slate-600"
+                className="rounded bg-slate-700 px-3 py-2 hover:bg-settings-hover"
               >
                 Preview update dialog
               </button>

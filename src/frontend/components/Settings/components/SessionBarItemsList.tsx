@@ -1,6 +1,7 @@
-import { useMemo, useCallback } from 'react';
+import { useCallback } from 'react';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { ToggleSwitch } from './ToggleSwitch';
+import { ReorderControls } from './ReorderControls';
 import { useSortableList } from '../../SortableList';
 import { SESSION_BAR_ITEM_LABELS } from '../sessionBarConstants';
 
@@ -30,10 +31,22 @@ export const SessionBarItemsList = ({
   getItemConfig,
   updateItemConfig,
 }: SessionBarItemsListProps) => {
-  const wrappedItems = useMemo(() => items.map((id) => ({ id })), [items]);
+  // Move targets and announcements describe the rows users can actually see.
+  const wrappedItems = items
+    .filter((id) => Boolean(getItemConfig(id)))
+    .map((id) => ({ id }));
   const handleReorder = useCallback(
-    (newItems: { id: string }[]) => onReorder(newItems.map((i) => i.id)),
-    [onReorder]
+    (newItems: { id: string }[]) => {
+      const renderedIds = new Set(newItems.map((item) => item.id));
+      let renderedIndex = 0;
+      // Unknown/unconfigured saved IDs retain their slots for future recovery.
+      onReorder(
+        items.map((id) =>
+          renderedIds.has(id) ? newItems[renderedIndex++].id : id
+        )
+      );
+    },
+    [items, onReorder]
   );
 
   const { getItemProps, displayItems } = useSortableList({
@@ -45,7 +58,14 @@ export const SessionBarItemsList = ({
   return (
     <div className="space-y-3">
       {displayItems.map((item) => {
-        const { dragHandleProps, itemProps } = getItemProps(item);
+        const {
+          dragHandleProps,
+          itemProps,
+          onMoveUp,
+          onMoveDown,
+          position,
+          total,
+        } = getItemProps(item);
         const itemConfig = getItemConfig(item.id);
 
         if (!itemConfig) {
@@ -53,20 +73,32 @@ export const SessionBarItemsList = ({
         }
 
         return (
-          <div key={item.id} {...itemProps}>
-            <div className="flex items-center justify-between group">
-              <div className="flex items-center gap-2 flex-1">
+          <div
+            key={item.id}
+            {...itemProps}
+            className="border-b border-slate-700 pb-3"
+          >
+            <div className="group flex min-h-9 items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2 flex-1">
                 <div
                   {...dragHandleProps}
-                  className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded"
+                  className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-settings-hover rounded"
                 >
                   <DotsSixVerticalIcon size={16} className="text-slate-400" />
                 </div>
-                <span className="text-sm text-slate-300">
+                <span className="text-md text-slate-300">
                   {SESSION_BAR_ITEM_LABELS[item.id]}
                 </span>
               </div>
+              <ReorderControls
+                label={SESSION_BAR_ITEM_LABELS[item.id]}
+                position={position}
+                total={total}
+                onMoveUp={onMoveUp}
+                onMoveDown={onMoveDown}
+              />
               <ToggleSwitch
+                ariaLabel={SESSION_BAR_ITEM_LABELS[item.id]}
                 enabled={itemConfig.enabled}
                 onToggle={(enabled) => updateItemConfig(item.id, { enabled })}
               />
@@ -74,25 +106,29 @@ export const SessionBarItemsList = ({
 
             {(item.id === 'airTemperature' || item.id === 'trackTemperature') &&
               itemConfig.enabled && (
-                <div className="flex items-center justify-between pl-4 mt-2">
-                  <span></span>
-                  <select
-                    value={itemConfig.unit ?? 'Metric'}
-                    onChange={(e) =>
-                      updateItemConfig(item.id, {
-                        unit: e.target.value as 'Metric' | 'Imperial',
-                      })
-                    }
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value="Metric">°C</option>
-                    <option value="Imperial">°F</option>
-                  </select>
+                <div className="mt-2 grid max-w-xl grid-cols-2 gap-3 pl-8 sm:grid-cols-3">
+                  <label className="flex min-w-0 flex-col gap-1 text-xs text-slate-400">
+                    <span>Units</span>
+                    <select
+                      aria-label={`${SESSION_BAR_ITEM_LABELS[item.id]} units`}
+                      value={itemConfig.unit ?? 'Metric'}
+                      onChange={(e) =>
+                        updateItemConfig(item.id, {
+                          unit: e.target.value as 'Metric' | 'Imperial',
+                        })
+                      }
+                      className="settings-field w-full"
+                    >
+                      <option value="Metric">°C</option>
+                      <option value="Imperial">°F</option>
+                    </select>
+                  </label>
                 </div>
               )}
 
             {item.id === 'wind' && itemConfig.enabled && (
-              <div className="flex items-center justify-end gap-2 pl-4 mt-2">
+              <div className="mt-2 flex flex-wrap items-center gap-2 pl-8">
+                <span className="text-xs text-slate-400">Speed position</span>
                 {(['left', 'right'] as const).map((pos) => {
                   const currentPos = itemConfig.speedPosition ?? 'right';
                   const arrow = (
@@ -114,7 +150,9 @@ export const SessionBarItemsList = ({
                       onClick={() =>
                         updateItemConfig(item.id, { speedPosition: pos })
                       }
-                      className={`flex items-center gap-1 px-2 py-1 rounded-md ${currentPos === pos ? 'bg-accent-500 text-on-accent' : 'bg-slate-700 hover:bg-slate-600 text-white'}`}
+                      aria-pressed={currentPos === pos}
+                      aria-label={`Wind speed on ${pos}`}
+                      className="settings-button aria-pressed:border-accent-400 aria-pressed:bg-accent-400/10 aria-pressed:text-accent-200"
                     >
                       {pos === 'left' ? (
                         <>
@@ -134,20 +172,23 @@ export const SessionBarItemsList = ({
             )}
 
             {item.id === 'sessionLaps' && itemConfig.enabled && (
-              <div className="flex items-center justify-end gap-3 pl-4 mt-2">
-                <span></span>
-                <select
-                  value={itemConfig.mode ?? 'Elapsed'}
-                  onChange={(e) =>
-                    updateItemConfig(item.id, {
-                      mode: e.target.value as 'Elapsed' | 'Remaining',
-                    })
-                  }
-                  className="bg-slate-700 text-white rounded-md px-2 py-1"
-                >
-                  <option value="Elapsed">Elapsed</option>
-                  <option value="Remaining">Remaining</option>
-                </select>
+              <div className="mt-2 grid max-w-xl grid-cols-2 gap-3 pl-8 sm:grid-cols-3">
+                <label className="flex min-w-0 flex-col gap-1 text-xs text-slate-400">
+                  <span>Mode</span>
+                  <select
+                    aria-label={`${SESSION_BAR_ITEM_LABELS[item.id]} mode`}
+                    value={itemConfig.mode ?? 'Elapsed'}
+                    onChange={(e) =>
+                      updateItemConfig(item.id, {
+                        mode: e.target.value as 'Elapsed' | 'Remaining',
+                      })
+                    }
+                    className="settings-field w-full"
+                  >
+                    <option value="Elapsed">Elapsed</option>
+                    <option value="Remaining">Remaining</option>
+                  </select>
+                </label>
               </div>
             )}
 
@@ -179,46 +220,57 @@ export const SessionBarItemsList = ({
             )}
 
             {item.id === 'sessionTime' && itemConfig.enabled && (
-              <div className="flex items-center justify-end gap-3 pl-4 mt-2">
-                <span></span>
-                <select
-                  value={itemConfig.mode ?? 'Remaining'}
-                  onChange={(e) =>
-                    updateItemConfig(item.id, {
-                      mode: e.target.value as 'Remaining' | 'Elapsed',
-                    })
-                  }
-                  className="bg-slate-700 text-white rounded-md px-2 py-1"
-                >
-                  <option value="Remaining">Remaining</option>
-                  <option value="Elapsed">Elapsed</option>
-                </select>
-                <select
-                  value={itemConfig.totalFormat ?? 'minimal'}
-                  onChange={(e) =>
-                    updateItemConfig(item.id, {
-                      totalFormat: e.target.value as 'hh:mm' | 'minimal',
-                    })
-                  }
-                  className="bg-slate-700 text-white rounded-md px-2 py-1"
-                >
-                  <option value="minimal">2:34</option>
-                  <option value="hh:mm">00:12:34</option>
-                </select>
-                <select
-                  value={itemConfig.labelStyle ?? 'minimal'}
-                  onChange={(e) =>
-                    updateItemConfig(item.id, {
-                      labelStyle: e.target.value as
-                        'none' | 'short' | 'minimal',
-                    })
-                  }
-                  className="bg-slate-700 text-white rounded-md px-2 py-1"
-                >
-                  <option value="minimal">Minimal Labels</option>
-                  <option value="short">Short Labels</option>
-                  <option value="none">Hide Labels</option>
-                </select>
+              <div className="mt-2 grid max-w-xl grid-cols-2 gap-3 pl-8 sm:grid-cols-3">
+                <label className="flex min-w-0 flex-col gap-1 text-xs text-slate-400">
+                  <span>Mode</span>
+                  <select
+                    aria-label={`${SESSION_BAR_ITEM_LABELS[item.id]} mode`}
+                    value={itemConfig.mode ?? 'Remaining'}
+                    onChange={(e) =>
+                      updateItemConfig(item.id, {
+                        mode: e.target.value as 'Remaining' | 'Elapsed',
+                      })
+                    }
+                    className="settings-field w-full"
+                  >
+                    <option value="Remaining">Remaining</option>
+                    <option value="Elapsed">Elapsed</option>
+                  </select>
+                </label>
+                <label className="flex min-w-0 flex-col gap-1 text-xs text-slate-400">
+                  <span>Format</span>
+                  <select
+                    aria-label={`${SESSION_BAR_ITEM_LABELS[item.id]} total format`}
+                    value={itemConfig.totalFormat ?? 'minimal'}
+                    onChange={(e) =>
+                      updateItemConfig(item.id, {
+                        totalFormat: e.target.value as 'hh:mm' | 'minimal',
+                      })
+                    }
+                    className="settings-field w-full"
+                  >
+                    <option value="minimal">2:34</option>
+                    <option value="hh:mm">00:12:34</option>
+                  </select>
+                </label>
+                <label className="flex min-w-0 flex-col gap-1 text-xs text-slate-400">
+                  <span>Labels</span>
+                  <select
+                    aria-label={`${SESSION_BAR_ITEM_LABELS[item.id]} label style`}
+                    value={itemConfig.labelStyle ?? 'minimal'}
+                    onChange={(e) =>
+                      updateItemConfig(item.id, {
+                        labelStyle: e.target.value as
+                          'none' | 'short' | 'minimal',
+                      })
+                    }
+                    className="settings-field w-full"
+                  >
+                    <option value="minimal">Minimal Labels</option>
+                    <option value="short">Short Labels</option>
+                    <option value="none">Hide Labels</option>
+                  </select>
+                </label>
               </div>
             )}
           </div>

@@ -28,6 +28,22 @@ const setup = (value: (typeof OPTIONS)[number] = 'plates') => {
 };
 
 describe('FormatSelect', () => {
+  it('opens on arrows, navigates without selecting, and restores focus after choosing', async () => {
+    const { onChange } = setup('chip-both');
+    const trigger = screen.getByRole('button', { name: /format/i });
+    trigger.focus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(screen.getByRole('option', { name: 'chip-both' })).toHaveFocus();
+    await userEvent.keyboard('{End}');
+    expect(screen.getByRole('option', { name: 'chip-none' })).toHaveFocus();
+    expect(onChange).not.toHaveBeenCalled();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(screen.getByRole('option', { name: 'plates' })).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    expect(onChange).toHaveBeenCalledWith('plates');
+    expect(trigger).toHaveFocus();
+    expect(screen.queryByRole('listbox')).toBeNull();
+  });
   it('shows the selected option and not the others', async () => {
     setup('chip-both');
 

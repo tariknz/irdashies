@@ -9,7 +9,7 @@ import {
   trackStateSelectors,
   useDrivingState,
   useLapTraceInvalidReason,
-  useLapTraceRecordingProgress,
+  useLapTraceRecordingPercent,
   useLapTraceStore,
   useSessionVisibility,
   useTrackStateSelector,
@@ -42,6 +42,29 @@ export type LapTraceProps = Partial<LapTraceConfig> & {
 const EMPTY_CUE_POINTS = new Float32Array(0);
 
 /**
+ * The bar towards a first reference. Its own component so that only it
+ * re-renders as the lap is driven, and only while it is on screen: the lap
+ * store publishes the lap in progress every few metres for the whole session,
+ * reference or not.
+ */
+const RecordingProgress = () => {
+  const percent = useLapTraceRecordingPercent();
+  return (
+    <>
+      <div className="w-2/3 h-1 bg-slate-700/60 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-amber-400 rounded-full"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      <span className="text-slate-500 text-[10px] tabular-nums">
+        Recording {percent}%
+      </span>
+    </>
+  );
+};
+
+/**
  * Plots a saved reference lap's inputs against position on track, in a window
  * that slides with the car. The reference is drawn pastel, as a washed-out
  * background target; the lap currently being driven is overlaid as a bright
@@ -57,7 +80,6 @@ export const LapTrace = (props: LapTraceProps) => {
   const referenceLap = useLapTraceStore((s) => s.referenceLap);
   const referenceError = useLapTraceStore((s) => s.referenceError);
   const trackLengthM = useLapTraceStore((s) => s.trackLengthM);
-  const recordingProgress = useLapTraceRecordingProgress();
   const invalidReason = useLapTraceInvalidReason();
 
   // Changes essentially never, so this costs no per-frame renders.
@@ -243,17 +265,7 @@ export const LapTrace = (props: LapTraceProps) => {
                 {invalidLapMessage(invalidReason)}
               </span>
             ) : (
-              <>
-                <div className="w-2/3 h-1 bg-slate-700/60 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-amber-400 rounded-full"
-                    style={{ width: `${Math.round(recordingProgress * 100)}%` }}
-                  />
-                </div>
-                <span className="text-slate-500 text-[10px] tabular-nums">
-                  Recording {Math.round(recordingProgress * 100)}%
-                </span>
-              </>
+              <RecordingProgress />
             ))}
         </div>
       )}

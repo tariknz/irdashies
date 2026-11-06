@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   WeatherWidgetSettings,
   SettingsTabType,
@@ -152,7 +151,7 @@ export const WeatherSettings = () => {
           >
             <div className="space-y-4">
               {/* Tabs */}
-              <div className="flex border-b border-slate-700/50">
+              <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
                 <TabButton
                   id="display"
                   activeTab={activeTab}
@@ -180,11 +179,10 @@ export const WeatherSettings = () => {
                 {/* DISPLAY TAB */}
                 {activeTab === 'display' && (
                   <>
-                    <WidgetScaleSettings
-                      widgetId={SETTING_ID}
-                      className="px-4"
-                    />
-                    <SettingsSection title="Display Order">
+                    <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+                      <h4 className="text-md font-medium text-slate-200">
+                        Display Order
+                      </h4>
                       <DisplaySettingsList
                         itemsOrder={itemsOrder}
                         onReorder={handleDisplayOrderChange}

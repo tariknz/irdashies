@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   StandingsWidgetSettings,
   SettingsTabType,
@@ -288,7 +287,12 @@ const DisplaySettingsList = ({
             {setting.configKey === 'driverName' &&
               (configValue as { enabled: boolean }).enabled && (
                 <div className="mt-3">
-                  <div className="flex flex-wrap gap-3 justify-end">
+                  <p className="mb-2 text-sm text-slate-400">Name format</p>
+                  <div
+                    role="group"
+                    aria-label="Driver name format"
+                    className="grid grid-cols-2 gap-2 xl:grid-cols-3"
+                  >
                     {(
                       [
                         'name-middlename-surname',
@@ -303,12 +307,12 @@ const DisplaySettingsList = ({
                         key={format}
                         format={format}
                         selected={
-                          (
+                          ((
                             configValue as {
                               enabled: boolean;
                               nameFormat: string;
                             }
-                          ).nameFormat === format
+                          ).nameFormat ?? 'name-middlename-surname') === format
                         }
                         onClick={() => {
                           const cv = settings.config[setting.configKey] as {
@@ -380,7 +384,7 @@ const DisplaySettingsList = ({
                         },
                       });
                     }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="settings-field"
                   >
                     <option value="full">1:42.123</option>
                     <option value="mixed">1:42.1</option>
@@ -492,14 +496,14 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                       )
                     }
                     title="Replace this layout with the overlay Standings settings"
-                    className="px-3 py-1 text-xs rounded border transition-colors bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600"
+                    className="px-3 py-1 text-xs rounded border transition-colors bg-slate-700 hover:bg-settings-hover text-slate-200 border-settings-boundary"
                   >
                     Copy settings from overlay
                   </button>
                 </div>
               )}
               {/* Tabs */}
-              <div className="flex border-b border-slate-700/50">
+              <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
                 <TabButton
                   id="display"
                   activeTab={activeTab}
@@ -550,8 +554,10 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                 {/* DISPLAY TAB */}
                 {shownTab === 'display' && (
                   <>
-                    <WidgetScaleSettings widgetId={widgetId} className="px-4" />
-                    <SettingsSection title="Display Order">
+                    <SettingsSection title="Display" scaleWidgetId={widgetId}>
+                      <h4 className="text-md font-medium text-slate-200">
+                        Display Order
+                      </h4>
                       <DisplaySettingsList
                         itemsOrder={itemsOrder}
                         onReorder={handleDisplayOrderChange}
@@ -605,7 +611,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                       <SettingProp path="titleBar.enabled" />
 
                       {settings.config.titleBar.enabled && (
-                        <SettingsSection>
+                        <SettingsSection variant="inline">
                           <SettingProp path="titleBar.progressBar.enabled" />
                         </SettingsSection>
                       )}
@@ -627,7 +633,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                     <SettingProp path="headerBar.enabled" />
 
                     {settings.config.headerBar.enabled && (
-                      <SettingsSection>
+                      <SettingsSection variant="inline">
                         <SessionBarItemsList
                           items={settings.config.headerBar.displayOrder}
                           onReorder={(newOrder) => {
@@ -699,7 +705,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                     <SettingProp path="footerBar.enabled" />
 
                     {settings.config.footerBar.enabled && (
-                      <SettingsSection>
+                      <SettingsSection variant="inline">
                         <SessionBarItemsList
                           items={settings.config.footerBar.displayOrder}
                           onReorder={(newOrder) => {
@@ -767,7 +773,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
 
                 {/* STYLING TAB */}
                 {shownTab === 'styling' && (
-                  <>
+                  <div className="space-y-5">
                     <SettingsSection title="Class Header">
                       <SettingToggleRow
                         title="Class Name Background"
@@ -920,14 +926,12 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                         {(settings.config.classHeaderStyle?.estimatedLaps
                           ?.enabled ??
                           false) && (
-                          <div className="ml-2 pl-4 border-l-2 border-slate-600">
+                          <div className="ml-2 pl-4 border-l-2 border-settings-boundary">
                             <SettingProp path="classHeaderStyle.estimatedLaps.numLaps" />
                           </div>
                         )}
                       </div>
                     </SettingsSection>
-
-                    <SettingDivider />
 
                     <SettingsSection title="Columns">
                       <SettingToggleRow
@@ -948,8 +952,6 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                       />
                     </SettingsSection>
 
-                    <SettingDivider />
-
                     <SettingsSection title="Driver Position">
                       <SettingToggleRow
                         title="Position Background"
@@ -968,8 +970,6 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                         }
                       />
                     </SettingsSection>
-
-                    <SettingDivider />
 
                     <SettingsSection title="Car Number">
                       <SettingToggleRow
@@ -1011,8 +1011,6 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                         }
                       />
                     </SettingsSection>
-
-                    <SettingDivider />
 
                     <SettingsSection title="Badges">
                       <SettingToggleRow
@@ -1060,7 +1058,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                         }
                       />
                     </SettingsSection>
-                  </>
+                  </div>
                 )}
 
                 {/* VISIBILITY TAB */}

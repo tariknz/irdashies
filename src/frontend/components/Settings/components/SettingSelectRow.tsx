@@ -14,8 +14,8 @@ export function SettingSelectRow<T extends string>({
   onChange,
 }: SettingSelectRowProps<T>) {
   return (
-    <div className="flex items-center justify-between">
-      <div className="max-w-[70%]">
+    <div className="flex min-h-9 flex-wrap items-center justify-between gap-x-5 gap-y-2">
+      <div className="min-w-0 flex-1 basis-40">
         <h4 className="text-md font-medium text-slate-300">{title}</h4>
         {description && (
           <p className="text-sm text-slate-500 mt-1">{description}</p>
@@ -26,7 +26,7 @@ export function SettingSelectRow<T extends string>({
         // The visible <h4> is not tied to the control, so without this a
         // screen reader announces an unnamed combobox.
         aria-label={title}
-        className="bg-slate-900 border border-slate-600 focus:border-accent-500 focus:outline-none text-white rounded-md px-2 py-1"
+        className="settings-field max-w-full"
         value={value}
         onChange={(e) => {
           const next = e.target.value as T;

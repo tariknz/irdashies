@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { changeMarker } from '../components/ChangedMark';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
@@ -33,6 +32,8 @@ export const BroadcastTickerSettings = () => {
 
   return (
     <BaseSettingsSection
+      disableInternalScroll
+      headingLevel="h3"
       title="Broadcast Ticker"
       description="Scrolling bottom-of-screen ticker. After each full loop it moves on: standings, fastest laps, then the best car of each manufacturer."
       settings={settings}
@@ -49,8 +50,7 @@ export const BroadcastTickerSettings = () => {
         );
         return (
           <div className="space-y-4">
-            <SettingsSection title="Options">
-              <WidgetScaleSettings widgetId={SETTING_ID} />
+            <SettingsSection title="Widget options" scaleWidgetId={SETTING_ID}>
               {mark(
                 ['background'],
                 <SettingSliderRow

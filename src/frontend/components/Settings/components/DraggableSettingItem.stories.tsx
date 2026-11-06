@@ -14,6 +14,8 @@ type Story = StoryObj<typeof meta>;
 const noopSortableProps: SortableItemProps = {
   isDragging: false,
   isOver: false,
+  position: 1,
+  total: 1,
   dragHandleProps: {
     draggable: true,
     onDragStart: () => undefined,

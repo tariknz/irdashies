@@ -128,9 +128,11 @@ export const BroadcastGroupSettings = ({
   const { Section } = MODULES.find((m) => m.type === active) ?? MODULES[0];
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="mb-4 flex flex-none items-center justify-between">
-        <h2 className="text-xl">Broadcast</h2>
+    <div className="h-full space-y-5 overflow-y-auto pr-1 [scrollbar-gutter:stable]">
+      <div className="flex items-center justify-between gap-4 border-b border-slate-700 pb-5 pt-1">
+        <h2 className="text-xl font-semibold tracking-tight text-white">
+          Broadcast
+        </h2>
         <ToggleSwitch
           label="All modules"
           enabled={anyEnabled}
@@ -143,9 +145,11 @@ export const BroadcastGroupSettings = ({
             type="button"
             title="Changed: click to reset"
             aria-label="Reset transition"
-            className="absolute left-1 top-2 h-2 w-2 rounded-full bg-accent-400 hover:bg-accent-300"
+            className="absolute -left-2 -top-0.5 flex h-6 w-6 items-center justify-center rounded group"
             onClick={() => setTransition('random')}
-          />
+          >
+            <span className="h-2 w-2 rounded-full bg-accent-400 group-hover:bg-accent-300" />
+          </button>
         )}
         <SettingSelectRow<BroadcastTransition>
           title="Transition"
@@ -160,29 +164,27 @@ export const BroadcastGroupSettings = ({
         size and place on the stream:{' '}
         <span className="select-all font-mono text-slate-300">{obsUrl}</span>
       </p>
-      <div className="flex min-h-0 flex-1 flex-wrap items-start gap-4">
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_288px]">
         <nav
           aria-label="Broadcast modules"
-          className="w-36 shrink-0 space-y-0.5"
+          className="flex flex-wrap gap-1 border-b border-slate-700 pb-1 xl:col-span-2"
         >
-          <div className="px-2 pt-1 pb-0.5 text-[10.5px] uppercase tracking-wider text-slate-500">
-            Modules
-          </div>
+          <div className="sr-only">Modules</div>
           {MODULES.map(({ type, label }) => (
             <Link
               key={type}
               to={`/settings/${type}`}
               aria-current={type === active ? 'page' : undefined}
-              className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
+              className={`flex min-h-9 items-center gap-2 rounded-md border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
                 type === active
-                  ? 'bg-slate-700 text-white'
-                  : 'text-slate-400 hover:bg-slate-700/40 hover:text-slate-200'
+                  ? 'border-accent-400 bg-accent-400/10 text-accent-200'
+                  : 'border-transparent text-slate-400 hover:bg-settings-hover hover:text-slate-200'
               }`}
             >
               <span
                 title={isEnabled(type) ? 'On' : 'Off'}
                 className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                  isEnabled(type) ? 'bg-green-400' : 'bg-slate-600'
+                  isEnabled(type) ? 'bg-green-400' : 'bg-settings-control'
                 }`}
               />
               <span className="flex-1">{label}</span>
@@ -195,23 +197,23 @@ export const BroadcastGroupSettings = ({
             </Link>
           ))}
         </nav>
-        <div className="flex h-full min-w-64 flex-1 flex-col pl-3">
+        <div className="min-w-0 space-y-3">
           {isChanged(active) && (
             <div className="flex flex-none justify-end pb-2">
               <button
                 type="button"
-                className="text-xs text-accent-400 hover:text-accent-300"
+                className="settings-button"
                 onClick={resetModule}
               >
                 Reset section
               </button>
             </div>
           )}
-          <div className="min-h-0 flex-1">
+          <div className="min-w-0">
             <Section key={`${active}-${resets}`} />
           </div>
         </div>
-        <div className="sticky top-2 w-72 shrink-0">
+        <div className="w-full max-w-72 justify-self-center overflow-hidden rounded-md xl:sticky xl:top-0">
           <BroadcastPreview module={active} />
         </div>
       </div>

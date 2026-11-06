@@ -36,7 +36,9 @@ export const AboutSettings = () => {
     <div className="h-full overflow-y-auto">
       <div className="flex flex-col gap-6">
         <div>
-          <h2 className="text-xl font-bold mb-4">About</h2>
+          <h2 className="mb-5 border-b border-slate-700 pb-5 pt-1 text-xl font-semibold tracking-tight text-white">
+            About
+          </h2>
           <p className="text-slate-300">
             iRacing Dashies is an open-source iRacing Dashboards & Overlays
             application that helps you customize and enhance your racing
@@ -87,9 +89,9 @@ export const AboutSettings = () => {
             </div>
 
             <div>
-              <h2 className="text-sm font-medium mb-2 text-slate-300">
+              <h3 className="text-sm font-medium mb-2 text-slate-300">
                 Data We Collect
-              </h2>
+              </h3>
               <p className="mb-2">We collect the following anonymous data:</p>
               <ul className="space-y-2 ml-4 list-disc list-outside">
                 <li>
@@ -147,9 +149,9 @@ export const AboutSettings = () => {
             </div>
 
             <div className="pt-2">
-              <h2 className="text-sm font-medium mb-2 text-slate-300">
+              <h3 className="text-sm font-medium mb-2 text-slate-300">
                 How Data Is Collected
-              </h2>
+              </h3>
               <p className="mb-2">
                 Product analytics are collected using PostHog with
                 privacy-focused settings:
@@ -162,9 +164,9 @@ export const AboutSettings = () => {
             </div>
 
             <div className="pt-2">
-              <h2 className="text-sm font-medium mb-2 text-slate-300">
+              <h3 className="text-sm font-medium mb-2 text-slate-300">
                 Important Privacy Information
-              </h2>
+              </h3>
               <ul className="space-y-1.5 ml-2 list-disc list-inside">
                 <li>
                   No personally identifiable information (PII) is collected
@@ -179,9 +181,9 @@ export const AboutSettings = () => {
             </div>
 
             <div className="pt-2">
-              <h2 className="text-sm font-medium mb-2 text-slate-300">
+              <h3 className="text-sm font-medium mb-2 text-slate-300">
                 Legal Basis
-              </h2>
+              </h3>
               <p>
                 Analytics data is processed under our legitimate interest in
                 maintaining, improving, and securing the application.
@@ -189,9 +191,9 @@ export const AboutSettings = () => {
             </div>
 
             <div className="pt-2">
-              <h2 className="text-sm font-medium mb-2 text-slate-300">
+              <h3 className="text-sm font-medium mb-2 text-slate-300">
                 Data Retention
-              </h2>
+              </h3>
               <p>
                 Analytics event data is retained for up to 1 year, after which
                 it is automatically deleted.
@@ -199,9 +201,9 @@ export const AboutSettings = () => {
             </div>
 
             <div className="pt-2">
-              <h2 className="text-sm font-medium mb-2 text-slate-300">
+              <h3 className="text-sm font-medium mb-2 text-slate-300">
                 Your Choices
-              </h2>
+              </h3>
               <p>
                 You may disable analytics collection at any time by opting out
                 below.
@@ -209,9 +211,9 @@ export const AboutSettings = () => {
             </div>
 
             <div className="pt-2">
-              <h2 className="text-sm font-medium mb-2 text-slate-300">
+              <h3 className="text-sm font-medium mb-2 text-slate-300">
                 Contact
-              </h2>
+              </h3>
               <p className="mb-2">
                 If you have any questions about this policy or data collection,
                 you can contact us via our GitHub repository by creating an
@@ -235,7 +237,7 @@ export const AboutSettings = () => {
               checked={analyticsEnabled}
               onChange={(e) => handleAnalyticsChange(e.target.checked)}
               disabled={isLoading}
-              className="mt-1 w-4 h-4 text-accent-600 bg-slate-700 border-slate-600 rounded focus:ring-accent-500 focus:ring-2 disabled:opacity-50"
+              className="mt-1 w-4 h-4 text-accent-600 bg-slate-700 border-settings-boundary rounded focus:ring-accent-500 focus:ring-2 disabled:opacity-50"
             />
             <label
               htmlFor="analytics-enabled"
