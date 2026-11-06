@@ -268,7 +268,7 @@ type Story = StoryObj<typeof SettingsLayout>;
 
 export const Default: Story = {
   args: {
-    initialPath: '/settings/standings',
+    initialPath: '/settings',
   },
 };
 

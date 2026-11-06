@@ -72,14 +72,25 @@ describe('SettingsLayout navigation', () => {
     ).toBeInTheDocument();
   });
 
-  it('returns to a usable overlay after the settings root redirects to General', async () => {
-    renderLayout('/settings');
-    await screen.findByRole('heading', { name: 'general' });
-    fireEvent.click(screen.getByRole('link', { name: 'Back to overlays' }));
-    expect(
-      screen.getByRole('heading', { name: 'relative' })
-    ).toBeInTheDocument();
-  });
+  it.each(['/settings', '/settings/'])(
+    'opens %s on overlay settings and keeps app settings accessible',
+    async (path) => {
+      renderLayout(path);
+      await screen.findByRole('heading', { name: 'relative' });
+      expect(screen.getByRole('searchbox')).toBeInTheDocument();
+      expect(
+        screen.getByRole('main', { name: 'Overlay settings page' })
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('link', { name: 'App settings' }));
+      expect(
+        screen.getByRole('heading', { name: 'general' })
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('link', { name: 'Back to overlays' }));
+      expect(
+        screen.getByRole('heading', { name: 'relative' })
+      ).toBeInTheDocument();
+    }
+  );
 
   it('opens direct service routes with app navigation and manages profiles from the header', async () => {
     renderLayout('/settings/advanced');
