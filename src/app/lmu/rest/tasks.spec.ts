@@ -558,6 +558,63 @@ describe('tire-management task', () => {
   });
 });
 
+describe('multiplayer-teams task', () => {
+  const output = () => {
+    const found = taskById('multiplayer-teams').outputs.find(
+      (candidate) => candidate.id === 'nationalities'
+    );
+    if (!found) throw new Error('no nationalities output');
+    return found;
+  };
+
+  it('applies the flags it can read', () => {
+    const { data } = apply('multiplayer-teams', {
+      drivers: {
+        'Jean Dupont': { nationality: 'FRA' },
+        'Ana Kosova': { nationality: 'XKX' },
+      },
+    });
+    expect(data.session.nationalities).toEqual({ 'Jean Dupont': 'FR' });
+  });
+
+  it('reports each driver left without a flag, with what the sim sent', () => {
+    const value = output().parse({
+      drivers: {
+        'Jean Dupont': { nationality: 'FRA' },
+        'Ana Kosova': { nationality: 'XKX' },
+        'No Body': { nationality: '' },
+      },
+    });
+
+    expect(output().report?.(value)).toBe(
+      '[lmuRest] No country flag for 2 of 3 drivers: ' +
+        '"Ana Kosova" (XKX), "No Body" (empty)'
+    );
+  });
+
+  it('says nothing when every driver has a flag', () => {
+    const value = output().parse({
+      drivers: { 'Jean Dupont': { nationality: 'FRA' } },
+    });
+    expect(output().report?.(value)).toBeUndefined();
+  });
+
+  it('still reports a payload with no flag at all, but keeps the old ones', () => {
+    // Nothing to write, so the flags already held stay; the reason they are
+    // not joined by these drivers' is still worth a line.
+    const value = output().parse({
+      drivers: { 'No Body': { nationality: '' } },
+    });
+    const data = createLmuRestData();
+    data.session.nationalities = { 'Jean Dupont': 'FR' };
+
+    expect(output().report?.(value)).toBe(
+      '[lmuRest] No country flag for 1 of 1 drivers: "No Body" (empty)'
+    );
+    expect(output().unchanged?.(data, value)).toBe(true);
+  });
+});
+
 describe('watch-focus task', () => {
   const focus = (payload: unknown) => {
     const { data, applied } = apply('watch-focus', payload);

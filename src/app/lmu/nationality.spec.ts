@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { normaliseNationality, parseTeamNationalities } from './nationality';
+import {
+  normaliseNationality,
+  parseTeamNationalities,
+  readTeamNationalities,
+} from './nationality';
 
 describe('normaliseNationality', () => {
   it('passes an alpha-2 code through, upper-cased', () => {
@@ -82,5 +86,30 @@ describe('parseTeamNationalities', () => {
     ]) {
       expect(parseTeamNationalities(payload).size).toBe(0);
     }
+  });
+});
+
+describe('readTeamNationalities', () => {
+  it('names the drivers left without a flag, with what the sim sent', () => {
+    const { found, unknown } = readTeamNationalities({
+      drivers: {
+        Known: { nationality: 'ITA' },
+        Kosovo: { nationality: ' XKX ' },
+        Empty: { nationality: '' },
+        Missing: {},
+        NotAString: { nationality: 42 },
+        NotAnObject: 'nope',
+      },
+    });
+
+    expect([...found.keys()]).toEqual(['Known']);
+    // Trimmed as sent; '' for nothing usable. An entry that is not even an
+    // object is not a driver, and is skipped as before.
+    expect(unknown).toEqual([
+      { name: 'Kosovo', nationality: 'XKX' },
+      { name: 'Empty', nationality: '' },
+      { name: 'Missing', nationality: '' },
+      { name: 'NotAString', nationality: '' },
+    ]);
   });
 });

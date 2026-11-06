@@ -123,9 +123,23 @@ export function normaliseNationality(value: unknown): string | undefined {
   return SUBDIVISIONS[code] ?? ALPHA3_TO_ALPHA2[code];
 }
 
+/** A driver the teams payload names but gives no usable country for. */
+export interface UnknownNationality {
+  name: string;
+  /** What the sim sent, trimmed; '' when it sent nothing or no string. */
+  nationality: string;
+}
+
+export interface TeamNationalities {
+  /** Flag code by driver name. */
+  found: Map<string, string>;
+  /** Drivers left without a flag, so the log can say why. */
+  unknown: UnknownNationality[];
+}
+
 /**
  * Nationalities from LMU's own `/rest/multiplayer/teams`, keyed by driver
- * name.
+ * name, with the drivers it could not place.
  *
  * The sim reports a nationality for every entry in a multiplayer session, so
  * a flag can be shown with no external service involved at all. Keyed by name
@@ -134,19 +148,30 @@ export function normaliseNationality(value: unknown): string | undefined {
  * Shape: `{ "drivers": { "<name>": { "nationality": "FRA" } } }`
  *
  * Never throws, per the parser contract in `lmu/rest/tasks.ts`: an
- * unrecognised payload yields an empty map and the caller keeps what it had.
+ * unrecognised payload yields empty results and the caller keeps what it had.
  */
-export function parseTeamNationalities(payload: unknown): Map<string, string> {
-  const out = new Map<string, string>();
-  if (!payload || typeof payload !== 'object') return out;
+export function readTeamNationalities(payload: unknown): TeamNationalities {
+  const found = new Map<string, string>();
+  const unknown: UnknownNationality[] = [];
+  if (!payload || typeof payload !== 'object') return { found, unknown };
   const drivers = (payload as Record<string, unknown>).drivers;
-  if (!drivers || typeof drivers !== 'object') return out;
+  if (!drivers || typeof drivers !== 'object') return { found, unknown };
   for (const [name, entry] of Object.entries(drivers)) {
     if (!entry || typeof entry !== 'object') continue;
-    const code = normaliseNationality(
-      (entry as Record<string, unknown>).nationality
-    );
-    if (code) out.set(name, code);
+    const raw = (entry as Record<string, unknown>).nationality;
+    const code = normaliseNationality(raw);
+    if (code) found.set(name, code);
+    else {
+      unknown.push({
+        name,
+        nationality: typeof raw === 'string' ? raw.trim() : '',
+      });
+    }
   }
-  return out;
+  return { found, unknown };
+}
+
+/** The flag codes alone; see `readTeamNationalities`. */
+export function parseTeamNationalities(payload: unknown): Map<string, string> {
+  return readTeamNationalities(payload).found;
 }

@@ -1,5 +1,5 @@
 import type { LmuWeatherNode } from '@irdashies/types';
-import { parseTeamNationalities } from '../nationality';
+import { readTeamNationalities, type UnknownNationality } from '../nationality';
 import type { LmuRestData } from './state';
 
 /**
@@ -51,6 +51,12 @@ export interface LmuRestOutput {
    * spectator view. Absent, the value is kept, as it always was.
    */
   readonly clear?: (data: LmuRestData) => void;
+  /**
+   * A line for the log about a value just parsed, or undefined for nothing
+   * to say. Logged by the poller, which owns the IO, so parsers stay pure;
+   * and only for a changed body, so a value is reported once, not per poll.
+   */
+  readonly report?: (value: unknown) => string | undefined;
 }
 
 export interface LmuRestTask {
@@ -276,22 +282,44 @@ const sessionSetting = (
 const garageNumber = (payload: unknown, key: string): number | undefined =>
   firstNumber(at(payload, ['carSetup', 'garageValues', key, 'stringValue']));
 
+interface ParsedNationalities {
+  codes: Record<string, string>;
+  unknown: UnknownNationality[];
+}
+
 /**
  * Driver nationalities, which only multiplayer reports.
  *
- * Returns undefined rather than an empty map when nothing parses, so the
- * "parser found nothing" case leaves any previous value alone instead of
- * wiping the flags -- the same contract every other output here follows.
+ * A payload with no flag at all leaves any previous value alone instead of
+ * wiping the flags -- the same contract every other output here follows --
+ * but is still reported: the drivers it names without a usable country are
+ * logged, with what the sim sent, since otherwise a missing flag says nothing
+ * about why.
  */
 const nationalities: LmuRestOutput = {
   id: 'nationalities',
   target: 'session',
-  parse: (payload) => {
-    const found = parseTeamNationalities(payload);
-    return found.size > 0 ? Object.fromEntries(found) : undefined;
+  parse: (payload): ParsedNationalities | undefined => {
+    const { found, unknown } = readTeamNationalities(payload);
+    if (found.size === 0 && unknown.length === 0) return undefined;
+    return { codes: Object.fromEntries(found), unknown };
   },
+  unchanged: (_data, value) =>
+    Object.keys((value as ParsedNationalities).codes).length === 0,
   apply: (data, value) => {
-    data.session.nationalities = value as Record<string, string>;
+    data.session.nationalities = (value as ParsedNationalities).codes;
+  },
+  report: (value) => {
+    const { codes, unknown } = value as ParsedNationalities;
+    if (unknown.length === 0) return undefined;
+    const total = Object.keys(codes).length + unknown.length;
+    const drivers = unknown
+      .map(
+        ({ name, nationality }) =>
+          `${JSON.stringify(name)} (${nationality ? nationality : 'empty'})`
+      )
+      .join(', ');
+    return `[lmuRest] No country flag for ${unknown.length} of ${total} drivers: ${drivers}`;
   },
 };
 

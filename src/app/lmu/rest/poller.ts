@@ -205,6 +205,10 @@ export function createLmuRestPoller({
     for (const output of task.outputs) {
       const value = output.parse(payload);
       if (value === undefined) continue;
+      // Before the unchanged check: what a parser has to say about a body is
+      // worth saying even when there is nothing new to write.
+      const report = output.report?.(value);
+      if (report) logger?.info(report);
       // An output may recognise a value as the one it already holds. Only a
       // session target really cares: those bump `revision`, which costs a
       // full snapshot rebuild and a whole-object broadcast, and a payload

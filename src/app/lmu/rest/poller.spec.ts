@@ -310,6 +310,36 @@ describe('createLmuRestPoller', () => {
     expect(calls).toHaveLength(afterGivingUp);
   });
 
+  it('logs what an output reports, once per changed response', async () => {
+    // A parser's report goes through the poller's logger, so parsers stay
+    // free of IO; and only a body that changed is parsed at all, so an
+    // answer repeated every poll is reported once.
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const reportingTask: LmuRestTask = {
+      ...repeatTask,
+      outputs: [
+        {
+          ...repeatTask.outputs[0],
+          report: (value) => `total is ${String(value)}`,
+        },
+      ],
+    };
+    const { transport } = makeTransport(() => ok('{"total":7}'));
+    const poller = createLmuRestPoller({
+      data: createLmuRestData(),
+      transport,
+      logger,
+      tasks: [reportingTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    await advance(REST_MAX_INTERVAL_MS * 3);
+
+    expect(logger.info).toHaveBeenCalledTimes(1);
+    expect(logger.info).toHaveBeenCalledWith('total is 7');
+  });
+
   it('treats a refusal on the first request as the API being absent', async () => {
     // An older LMU has no REST API. That must cost one failed connect for the
     // whole poller, not three per task.
