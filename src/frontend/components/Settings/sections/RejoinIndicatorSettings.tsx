@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   RejoinIndicatorWidgetSettings,
   SettingsTabType,
@@ -79,8 +78,10 @@ export const RejoinIndicatorSettings = () => {
               {/* DISPLAY TAB */}
               {activeTab === 'options' && (
                 <>
-                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
-                  <SettingsSection title="Options">
+                  <SettingsSection
+                    title="Widget options"
+                    scaleWidgetId={SETTING_ID}
+                  >
                     <SettingProp path="showAtSpeed" />
                     <SettingProp path="careGap" />
                     <SettingProp path="stopGap" />

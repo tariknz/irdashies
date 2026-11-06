@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   TrackMapWidgetSettings,
   SettingsTabType,
@@ -456,8 +455,10 @@ export const TrackMapSettings = () => {
                 {/* STYLING TAB */}
                 {activeTab === 'styling' && (
                   <>
-                    <WidgetScaleSettings widgetId="map" className="px-4" />
-                    <SettingsSection title="Minimal Styling">
+                    <SettingsSection title="Styling" scaleWidgetId="map">
+                      <h4 className="text-md font-medium text-slate-200">
+                        Minimal Styling
+                      </h4>
                       <SettingProp path="styling.isMinimalTrack" />
                       <SettingProp path="styling.isMinimalCar" />
                     </SettingsSection>

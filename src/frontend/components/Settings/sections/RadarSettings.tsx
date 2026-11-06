@@ -173,7 +173,12 @@ const SectionView = ({
           <p className="text-sm text-slate-500">{section.summary}</p>
         )}
       </div>
-      {showScale && <WidgetScaleSettings widgetId={SETTING_ID} />}
+      {showScale && (
+        <WidgetScaleSettings
+          widgetId={SETTING_ID}
+          separated={items.length > 0}
+        />
+      )}
       {section.dev && level === 2 && section.id === 'processing' && (
         <p className="text-sm rounded-md border border-amber-500/40 bg-amber-500/10 text-amber-200 px-3 py-2">
           Internals the radar was tuned on. Odd values break lanes and warnings;

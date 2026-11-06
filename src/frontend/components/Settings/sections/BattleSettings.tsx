@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   BattleWidgetSettings,
   SettingsTabType,
@@ -192,8 +191,10 @@ export const BattleSettings = () => {
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <>
-                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
-                  <SettingsSection title="Columns">
+                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+                    <h4 className="text-md font-medium text-slate-200">
+                      Columns
+                    </h4>
                     <DisplaySettingsList
                       itemsOrder={
                         settings.config.displayOrder ??

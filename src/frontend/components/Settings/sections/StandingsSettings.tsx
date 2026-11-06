@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   StandingsWidgetSettings,
   SettingsTabType,
@@ -555,8 +554,10 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                 {/* DISPLAY TAB */}
                 {shownTab === 'display' && (
                   <>
-                    <WidgetScaleSettings widgetId={widgetId} className="px-4" />
-                    <SettingsSection title="Display Order">
+                    <SettingsSection title="Display" scaleWidgetId={widgetId}>
+                      <h4 className="text-md font-medium text-slate-200">
+                        Display Order
+                      </h4>
                       <DisplaySettingsList
                         itemsOrder={itemsOrder}
                         onReorder={handleDisplayOrderChange}

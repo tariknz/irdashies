@@ -1,7 +1,6 @@
 import { CaretDownIcon, CaretRightIcon } from '@phosphor-icons/react';
 import { useState, useEffect, useId } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   TachometerWidgetSettings,
   getWidgetDefaultConfig,
@@ -510,8 +509,7 @@ export const TachometerSettings = () => {
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <>
-                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
-                  <SettingsSection title="Display">
+                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
                     <SettingProp path="background.opacity" />
 
                     <SettingProp path="showRpmText" />

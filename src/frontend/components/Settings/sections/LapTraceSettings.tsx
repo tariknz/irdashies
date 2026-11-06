@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowSquareOutIcon, UploadSimpleIcon } from '@phosphor-icons/react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   LapTraceWidgetSettings,
   SettingsTabType,
@@ -967,8 +966,7 @@ export const LapTraceSettings = () => {
 
               {activeTab === 'styling' && (
                 <>
-                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
-                  <SettingsSection title="Styling">
+                  <SettingsSection title="Styling" scaleWidgetId={SETTING_ID}>
                     <SettingProp path="strokeWidth" />
 
                     <SettingSliderRow
