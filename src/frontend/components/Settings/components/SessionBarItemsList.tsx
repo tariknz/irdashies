@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useCallback } from 'react';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { ToggleSwitch } from './ToggleSwitch';
 import { ReorderControls } from './ReorderControls';
@@ -31,10 +31,22 @@ export const SessionBarItemsList = ({
   getItemConfig,
   updateItemConfig,
 }: SessionBarItemsListProps) => {
-  const wrappedItems = useMemo(() => items.map((id) => ({ id })), [items]);
+  // Move targets and announcements describe the rows users can actually see.
+  const wrappedItems = items
+    .filter((id) => Boolean(getItemConfig(id)))
+    .map((id) => ({ id }));
   const handleReorder = useCallback(
-    (newItems: { id: string }[]) => onReorder(newItems.map((i) => i.id)),
-    [onReorder]
+    (newItems: { id: string }[]) => {
+      const renderedIds = new Set(newItems.map((item) => item.id));
+      let renderedIndex = 0;
+      // Unknown/unconfigured saved IDs retain their slots for future recovery.
+      onReorder(
+        items.map((id) =>
+          renderedIds.has(id) ? newItems[renderedIndex++].id : id
+        )
+      );
+    },
+    [items, onReorder]
   );
 
   const { getItemProps, displayItems } = useSortableList({

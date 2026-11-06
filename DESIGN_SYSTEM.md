@@ -305,4 +305,8 @@ Focused component regressions cover repeated moves in both directions, reset/can
 
 Validation for this follow-up: full suite 5,703 passed / 4 skipped across 489 files; 251 settings tests across 37 files; TypeScript/ESLint, Storybook production build, formatting and diff checks passed. The isolated Chrome protocol reports no page errors. No additional live iRacing or native free-drag testing is claimed.
 
+The subsequent review identified an additional saved-order edge case: Header/Footer arrays can retain IDs with no configuration. Such invisible entries must not count as move targets or announcement positions. Sort the rendered rows, then merge their new order into the original visible slots while retaining unconfigured IDs in their original slots. Disabled-but-configured rows remain visible and participate normally. A regression covers moves in both directions with hidden entries before, between and after the rendered rows, including accurate position feedback and preservation of the full saved order.
+
+Validation of that edge-case follow-up: 5 SessionBarItemsList tests and the full local suite pass (5,704 passed / 4 skipped); TypeScript/ESLint, formatting and diff checks pass.
+
 Prior parent iteration 02 scores remain 8 / 9 / 8 / 8 / 8 / 9 / 9, total 8.4. The parent alone awards iteration 03 scores under unchanged definitions and weights.

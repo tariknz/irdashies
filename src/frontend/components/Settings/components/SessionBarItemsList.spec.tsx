@@ -5,6 +5,69 @@ import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 
 describe('session bar secondary options', () => {
+  it('moves only rendered rows and preserves unconfigured IDs in their saved slots', async () => {
+    const user = userEvent.setup();
+    const reorder = vi.fn();
+    const original = [
+      'unknown-leading',
+      'sessionName',
+      'unknown-middle',
+      'sessionTime',
+      'unknown-trailing',
+    ];
+    function Harness() {
+      const [items, setItems] = useState(original);
+      return (
+        <SessionBarItemsList
+          items={items}
+          onReorder={(next) => {
+            reorder(next);
+            setItems(next);
+          }}
+          getItemConfig={(id) =>
+            id === 'sessionName' || id === 'sessionTime'
+              ? { enabled: id === 'sessionName' }
+              : undefined
+          }
+          updateItemConfig={vi.fn()}
+        />
+      );
+    }
+    const { container } = render(<Harness />);
+    const renderedOrder = () =>
+      [...container.querySelectorAll('[data-sortable-id]')].map((e) =>
+        e.getAttribute('data-sortable-id')
+      );
+    expect(renderedOrder()).toEqual(['sessionName', 'sessionTime']);
+    expect(
+      screen.getByRole('button', { name: 'Move Session Name up' })
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Move Session Time down' })
+    ).toBeDisabled();
+    screen.getByRole('button', { name: 'Move Session Time up' }).focus();
+    await user.keyboard('{Enter}');
+    expect(renderedOrder()).toEqual(['sessionTime', 'sessionName']);
+    expect(reorder).toHaveBeenLastCalledWith([
+      'unknown-leading',
+      'sessionTime',
+      'unknown-middle',
+      'sessionName',
+      'unknown-trailing',
+    ]);
+    expect(
+      screen.getByText('Session Time moved up. Position 1 of 2.')
+    ).toHaveAttribute('role', 'status');
+    expect(
+      screen.getByRole('button', { name: 'Move Session Time down' })
+    ).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(renderedOrder()).toEqual(['sessionName', 'sessionTime']);
+    expect(reorder).toHaveBeenLastCalledWith(original);
+    expect(
+      screen.getByText('Session Time moved down. Position 2 of 2.')
+    ).toHaveAttribute('role', 'status');
+  });
   it.each([
     { direction: 'up', firstPosition: 2, lastPosition: 1, other: 'down' },
     { direction: 'down', firstPosition: 4, lastPosition: 5, other: 'up' },
