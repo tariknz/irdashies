@@ -133,4 +133,117 @@ export default {
   'This profile has no widget called "':
     'В этом профиле нет виджета "',
   'Y axis': 'Ось Y',
+  // Broadcast overlays
+  Incident: 'Инцидент',
+  'Slow Car': 'Медленная машина',
+  'Yellow Flag': 'Жёлтый флаг',
+  'Full Course Yellow': 'Жёлтый флаг на всей трассе',
+  'Fastest Lap': 'Самый быстрый круг',
+  'Pit Stop': 'Пит-стоп',
+  'Meatball Flag': 'Чёрно-оранжевый флаг',
+  'Final Lap': 'Последний круг',
+  'Checkered Flag': 'Клетчатый флаг',
+  Repair: 'Ремонт',
+  gaps: 'отставания',
+  Air: 'Воздух',
+  Rain: 'Дождь',
+  Surface: 'Покрытие',
+  Rubber: 'Прорезиненность',
+  // Fuel calculator and lap history widgets
+  'TRACKING...': 'СОБИРАЕМ ДАННЫЕ...',
+  avg: 'ср.',
+  tgt: 'цел.',
+  Avg: 'Среднее',
+  Tgt: 'Цель',
+  'laps (worst case)': 'кругов (по худшему сценарию)',
+  'Race L': 'Гонка, круг ',
+  'USE/LAP': 'РАСХ./КРУГ',
+  LAPS: 'КРУГИ',
+  'EST.': 'ПРОГН.',
+  MAX: 'МАКС.',
+  MIN: 'МИН.',
+  QUAL: 'КВАЛ.',
+  ADD: 'ДОЛИТЬ',
+  Tank: 'Бак',
+  laps: 'круг.',
+  cap: 'ёмк.',
+  Stops: 'Пит-стопы',
+  TARGET: 'ЦЕЛЬ',
+  'PIT @': 'ПИТ-СТОП НА',
+  FINISH: 'ФИНИШ',
+  WINDOW: 'ОКНО',
+  'Need:': 'Нужно:',
+  'Time Empty': 'Время до пустого бака',
+  'Fuelling for': 'Топлива на',
+  'Lap count uncertain': 'Число кругов приблизительное',
+  PERSONAL: 'ЛИЧНЫЙ',
+  SESSION: 'СЕССИЯ',
+  AVG: 'СР.',
+  Recording: 'Запись',
+  // Gantry standings and lap graph
+  Driver: 'Пилот',
+  Pit: 'Пит',
+  Int: 'Инт.',
+  Best: 'Лучший',
+  Last: 'Последний',
+  Follow: 'Следить',
+  Class: 'Класс',
+  Shown: 'Видимые',
+  'Running order within the car class. Rows are grouped by class, leader first.':
+    'Порядок машин в классе. Строки сгруппированы по классам, сначала лидер.',
+  "Car number. The coloured bar to its left is the car's class.":
+    'Номер машины. Цветная полоса слева показывает её класс.',
+  'Driver name, in the format set on the Gantry options tab. Click any row to point the sim camera at that car — this only does anything in a replay or while spectating.':
+    'Имя пилота в формате, заданном на вкладке параметров Gantry. Нажмите на строку, чтобы навести камеру симулятора на машину; это работает только в повторе или в режиме наблюдателя.',
+  'Tyre compound currently fitted, for cars that report one.':
+    'Установленный состав шин, если симулятор сообщает эти данные.',
+  "Driver's iRating at the start of the event.":
+    'iRating пилота на старте события.',
+  'Shows PIT while the car is on pit road, and DNF once it has retired or been disqualified.':
+    'Показывает PIT, пока машина находится на пит-лейне, и DNF после схода или дисквалификации.',
+  "Time behind the class leader. A value such as 1L means whole laps down; the leader's own row reads 'gap'.":
+    'Отставание от лидера класса. Значение 1L означает отставание на круг; у лидера в этой строке показано «отставание».',
+  "Time behind the car directly ahead in class. The leader's own row reads 'int'.":
+    'Отставание от машины впереди в классе. У лидера в этой строке показан интервал.',
+  'Fastest lap this car has set in the session. Purple marks the fastest lap set by anyone.':
+    'Самый быстрый круг машины в сессии. Фиолетовым отмечен лучший круг среди всех пилотов.',
+  "Most recently completed lap. Purple is a session best, green is that driver's personal best.":
+    'Последний завершённый круг. Фиолетовым отмечен лучший круг сессии, зелёным — личный рекорд пилота.',
+  'Chooses which car class the graph plots. Everything is measured against that class\'s leader, so only one class is shown at a time.':
+    'Выбирает класс машин для графика. Все значения сравниваются с лидером класса, поэтому одновременно отображается только один класс.',
+  'Time gained or lost against the reference lap, added up over the race. A flat line means running at reference pace. A step down is a pit stop.':
+    'Накопленный выигрыш или потеря времени относительно эталонного круга. Ровная линия означает движение в темпе эталона, скачок вниз — пит-стоп.',
+  'Class position at the end of each lap. Position 1 sits at the top. Pit stops and being lapped do not distort it.':
+    'Позиция в классе в конце каждого круга. Первое место отображается сверху. Пит-стопы и отставание на круг не искажают график.',
+  'Seconds behind the class leader at the same lap count. Below zero means ahead of them.':
+    'Отставание от лидера класса в секундах при одинаковом числе кругов. Отрицательное значение означает, что машина впереди.',
+  'Sizes the axis to your car and the pinned cars only. A car far off the pace rides along the edge instead of squashing the battle you are watching.':
+    'Масштабирует ось по вашей машине и закреплённым пилотам. Машина с большим отставанием останется у края графика, не сжимая интересующий участок.',
+  'Sizes the axis to every car in the class, including the faint ones in the background.':
+    'Масштабирует ось по всем машинам класса, включая бледные линии на фоне.',
+  'Your own line is always drawn': 'Ваша линия отображается всегда',
+  'Waiting for the class leader to set a reference pace.':
+    'Ожидание эталонного темпа лидера класса.',
+  'Waiting for the first completed lap.': 'Ожидание первого завершённого круга.',
+  'Choose which fuel layout this panel shows.':
+    'Выберите компоновку топливного калькулятора для этой панели.',
+  'The fuel layout this panel used was removed.':
+    'Компоновка топливного калькулятора, использованная этой панелью, удалена.',
+  'Choose a layout': 'Выбрать компоновку',
+  'Choose another': 'Выбрать другую',
+  'No track data available': 'Данные трассы недоступны',
+  'Entering Pit Lane': 'Въезд на пит-лейн',
+  'EARLY PITBOX': 'РАННИЙ ПИТ-БОКС',
+  LIMIT: 'ЛИМИТ',
+  behind: 'сзади',
+  'ahead ·': 'впереди ·',
+  Caution: 'Осторожно',
+  'Do Not Rejoin': 'Не выезжайте на трассу',
+  SHIFT: 'ПЕРЕКЛЮЧАЙТЕ',
+  'Warning: Track path unavailable': 'Предупреждение: траектория трассы недоступна',
+  'Warning: Track start point unavailable':
+    'Предупреждение: точка старта трассы недоступна',
+  'Fuel history cleared successfully.': 'История топлива очищена.',
+  'Fuel history or reference laps cannot be saved. Free disk space to resume saving.':
+    'Не удаётся сохранить историю топлива и эталонные круги. Освободите место на диске, чтобы возобновить сохранение.',
 } satisfies Record<string, string>;
