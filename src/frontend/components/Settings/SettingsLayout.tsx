@@ -158,7 +158,7 @@ export const SettingsLayout = () => {
             ref={mainRef}
             tabIndex={-1}
             aria-label="Settings page"
-            className="min-w-0 flex-1 bg-slate-900 p-4 lg:p-7"
+            className="min-w-0 flex-1 bg-slate-900 p-4 focus:outline-none lg:p-7"
           >
             <div className="mx-auto flex h-full max-w-[960px] flex-col overflow-hidden">
               <Routes>
