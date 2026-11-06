@@ -17,6 +17,9 @@ export const REPO_ROOT = path.resolve(
 const LATIN = /[A-Za-z]/;
 
 const DEFAULT_TARGETS = [
+  'src/frontend/components',
+  'src/frontend/windows',
+  'src/frontend/App.tsx',
   'src/frontend/components/Settings',
   'src/frontend/components/SortableList',
   'src/types/widgets',
