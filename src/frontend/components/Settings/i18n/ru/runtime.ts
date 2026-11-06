@@ -243,8 +243,6 @@ export default {
   // Confidence and fuel-planning explanations
   'Not enough data': 'Недостаточно данных',
   'Low confidence': 'Низкая точность прогноза',
-  'laps (worst case)': 'кругов (по худшему сценарию)',
-  // Gantry incident descriptions (including the settings hint appended at runtime)
   'Raised when a car stops suddenly from speed, crawls for several seconds during a race, or goes off alongside another car. Thresholds live in Settings > Gantry > Incident Detection.':
     'Срабатывает, если машина резко теряет скорость, несколько секунд ползёт во время гонки или вылетает рядом с другой машиной. Пороговые значения задаются в настройках Gantry → Обнаружение инцидентов.',
   'Raised when a car leaves the racing surface on its own for longer than the debounce window. Thresholds live in Settings > Gantry > Incident Detection.':
@@ -255,25 +253,6 @@ export default {
     'Срабатывает, когда машина находится на пит-лейне достаточно долго, чтобы засчитать настоящий пит-стоп, а не случайное касание въезда. Пороговые значения задаются в настройках Gantry → Обнаружение инцидентов.',
   'Raised the moment race control shows a car the black flag or disqualifies it.':
     'Срабатывает, как только гоночный контроль показывает машине чёрный флаг или дисквалифицирует её.',
-  'Running order within the car class. Rows are grouped by class, leader first.':
-    'Порядок машин в классе. Строки сгруппированы по классам, сначала лидер.',
-  "Car number. The coloured bar to its left is the car's class.":
-    'Номер машины. Цветная полоса слева показывает её класс.',
-  'Driver name, in the format set on the Gantry options tab. Click any row to point the sim camera at that car — this only does anything in a replay or while spectating.':
-    'Имя пилота в формате, заданном на вкладке параметров Gantry. Нажмите на строку, чтобы навести камеру симулятора на машину; это работает только в повторе или в режиме наблюдателя.',
-  'Tyre compound currently fitted, for cars that report one.':
-    'Установленный состав шин, если симулятор сообщает эти данные.',
-  "Driver's iRating at the start of the event.": 'iRating пилота на старте события.',
-  'Shows PIT while the car is on pit road, and DNF once it has retired or been disqualified.':
-    'Показывает PIT, пока машина находится на пит-лейне, и DNF после схода или дисквалификации.',
-  "Time behind the class leader. A value such as 1L means whole laps down; the leader's own row reads 'gap'.":
-    'Отставание от лидера класса. Значение 1L означает отставание на круг; у лидера в этой строке показано «отставание».',
-  "Time behind the car directly ahead in class. The leader's own row reads 'int'.":
-    'Отставание от машины впереди в классе. У лидера в этой строке показан интервал.',
-  'Fastest lap this car has set in the session. Purple marks the fastest lap set by anyone.':
-    'Самый быстрый круг машины в сессии. Фиолетовым отмечен лучший круг среди всех пилотов.',
-  "Most recently completed lap. Purple is a session best, green is that driver's personal best.":
-    'Последний завершённый круг. Фиолетовым отмечен лучший круг сессии, зелёным — личный рекорд пилота.',
   "How that driver's third-most-recent lap compared with your lap of the same age. Green means they were slower than you, red means faster.":
     'Сравнение третьего с конца круга пилота с вашим кругом в той же последовательности. Зелёный означает, что он ехал медленнее вас, красный — быстрее.',
   "How that driver's second-most-recent lap compared with your lap of the same age. Green means they were slower than you, red means faster.":
@@ -281,4 +260,14 @@ export default {
   "How that driver's last completed lap compared with your last lap. Green means they were slower than you, red means faster.":
     'Сравнение последнего завершённого круга пилота с вашим последним кругом. Зелёный означает, что он ехал медленнее вас, красный — быстрее.',
   'Unable to display fuel layout?': 'Не удаётся показать компоновку топлива?',
+  // Compact widget labels and radar notices
+  LAST: "ПОСЛЕДНИЙ",
+  BEST: "ЛУЧШИЙ",
+  LAP: "КРУГ",
+  "/lap": "/круг",
+  BRAKE: "ТОРМОЗИ",
+  Straight: "Прямая",
+  PACE: "ТЕМП",
+  "POLE LEFT": "СТОЙКА СЛЕВА",
+  "POLE RIGHT": "СТОЙКА СПРАВА",
 } satisfies Record<string, string>;
