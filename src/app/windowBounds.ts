@@ -30,11 +30,40 @@ export const MIN_VISIBLE_HEIGHT = 40;
 
 const isPositiveFinite = (n: number): boolean => Number.isFinite(n) && n > 0;
 
-const isValidRect = (rect: Rect): boolean =>
+export const isValidRect = (rect: unknown): rect is Rect =>
+  typeof rect === 'object' &&
+  rect !== null &&
+  !Array.isArray(rect) &&
+  'x' in rect &&
+  'y' in rect &&
+  'width' in rect &&
+  'height' in rect &&
+  typeof rect.x === 'number' &&
+  typeof rect.y === 'number' &&
+  typeof rect.width === 'number' &&
+  typeof rect.height === 'number' &&
   Number.isFinite(rect.x) &&
   Number.isFinite(rect.y) &&
   isPositiveFinite(rect.width) &&
   isPositiveFinite(rect.height);
+
+/** Default outer window rectangle, in Electron's logical pixels (DIP). */
+export const defaultSettingsWindowBounds = (primaryWorkArea: Rect): Rect => {
+  const width = Math.max(
+    1,
+    Math.min(1280, Math.floor(primaryWorkArea.width * 0.9))
+  );
+  const height = Math.max(
+    1,
+    Math.min(800, Math.floor(primaryWorkArea.height * 0.9))
+  );
+  return {
+    width,
+    height,
+    x: Math.round(primaryWorkArea.x + (primaryWorkArea.width - width) / 2),
+    y: Math.round(primaryWorkArea.y + (primaryWorkArea.height - height) / 2),
+  };
+};
 
 /**
  * The overlapping rectangle between two rectangles, or null when they do not
@@ -95,7 +124,7 @@ const fitWithin = (bounds: Rect, target: Rect): Rect => {
  * back to its own defaults.
  */
 export const sanitizeWindowBounds = (
-  saved: Rect | undefined,
+  saved: unknown,
   displays: Rect[],
   primary: Rect | undefined
 ): Rect | undefined => {

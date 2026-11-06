@@ -86,6 +86,34 @@ The sidebar is 232px below the 1280px Tailwind `xl` breakpoint and 252px above i
 
 The persistent header is at least 80px and can wrap its actions if needed. Native control clearance uses environment values, not a guessed button width. Navigation and page content have independent vertical scroll areas. Navigation service links remain at the bottom. Workspace access stays outside the scrolling overlay list. Route reveal is limited to that scroller; ordinary rerenders preserve manual scroll. Search stays outside the scroller too. Page tabs wrap at compact widths, preserving every action without horizontal scrolling. Select/number/button rows wrap when necessary. Fuel's existing editor and widget pool stack below 1024px, and sit side by side above it. Supported evidence sizes are 808 × 656, 1280 × 800, 1920 × 1080 and 2560 × 1440; this iteration does not claim a phone layout.
 
+## Settings window geometry and one-time transition
+
+The preferred native Settings **outer window** is 1280 × 800 logical pixels
+(Electron DIP). For the PRIMARY monitor's usable `workArea`, independently set
+`width = min(1280, floor(workArea.width × 0.9))` and
+`height = min(800, floor(workArea.height × 0.9))`. Centre it with
+`x = round(workArea.x + (workArea.width - width) / 2)` and the equivalent `y`
+formula. Include taskbar/dock offsets and negative origins. Do not multiply by
+`scaleFactor` or use full/physical display bounds. The cap applies to defaults;
+users may resize and move the window and later restore their saved rectangle.
+
+This separately authorized bounds transition discards every pre-update saved
+Settings size **and** position once, including custom old rectangles. A dedicated
+`settings-window-bounds.json` in application user data atomically stores
+`defaultSizeApplied: true` alongside any later user bounds. The legacy
+`config.json.settingsWindowBounds` key is ignored; shared config, dashboards,
+profiles and overlays are untouched. Initialization is asynchronous and awaited
+before Settings can open. Future window construction reads only the cache;
+existing off-screen rescue, start-minimized, window reuse and native titlebar
+options remain in place. See [the focused change note](docs/settings-window-sizing.md)
+for failure/restart behavior and verification scope.
+
+There is no app-imposed minimum that could exceed a small screen. The only
+integer floor is one logical pixel when 90% rounds to zero. Extremely small
+logical work areas cannot accommodate the desktop form and native controls;
+the OS may enforce a larger native frame. This sizing change does not claim a
+new compact UI layout. It preserves the actual irDashies logo and red identity.
+
 ## Shell and information hierarchy
 
 1. Window header: irDashies identity, settings context, active profile, existing Demo and Edit Layout actions.
