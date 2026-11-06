@@ -64,7 +64,7 @@ const readSection = (): string => {
 };
 
 const LEVELS: { level: SettingsLevel; label: string; active: string }[] = [
-  { level: 0, label: 'Basic', active: 'bg-slate-600 text-white' },
+  { level: 0, label: 'Basic', active: 'bg-settings-control text-white' },
   { level: 1, label: 'Advanced', active: 'bg-teal-700 text-white' },
   { level: 2, label: 'Dev', active: 'bg-amber-600 text-white' },
 ];
@@ -96,7 +96,7 @@ const Segmented = <T extends string | number>({
         onClick={() => onChange(option.value)}
         className={`px-3 py-1 rounded text-sm transition-colors ${
           option.value === value
-            ? (option.active ?? 'bg-slate-600 text-white')
+            ? (option.active ?? 'bg-settings-control text-white')
             : 'text-slate-400 hover:text-slate-200'
         }`}
       >
@@ -428,7 +428,7 @@ export const RadarSettings = () => {
                     </button>
                   ))}
                   {!preset && (
-                    <span className="px-3 py-1 rounded-full text-sm border border-dashed border-slate-600 text-slate-400">
+                    <span className="px-3 py-1 rounded-full text-sm border border-dashed border-settings-boundary text-slate-400">
                       Custom
                     </span>
                   )}
@@ -451,7 +451,7 @@ export const RadarSettings = () => {
                   placeholder="Find a setting…"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  className="flex-1 min-w-40 rounded-md bg-slate-900 border border-slate-700 text-slate-200 px-2 py-1 text-sm"
+                  className="settings-field flex-1 min-w-40"
                 />
               </div>
             </div>
@@ -493,7 +493,7 @@ export const RadarSettings = () => {
                                 section.master
                                   ? view[section.master]
                                     ? 'bg-green-400'
-                                    : 'bg-slate-600'
+                                    : 'bg-settings-control'
                                   : 'bg-transparent'
                               }`}
                               title={

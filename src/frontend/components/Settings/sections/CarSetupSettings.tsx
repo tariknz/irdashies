@@ -487,7 +487,7 @@ export const CarSetupSettings = () => {
                   className={`px-3 py-1 rounded text-sm transition-colors ${
                     comparisonMode === mode
                       ? 'bg-accent-600 text-on-accent'
-                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      : 'bg-slate-700 text-slate-300 hover:bg-settings-hover'
                   }`}
                 >
                   {label}
@@ -527,20 +527,20 @@ export const CarSetupSettings = () => {
                     <button
                       onClick={() => handleMoveLeft(index)}
                       disabled={index === 0}
-                      className="px-1 py-0.5 text-[10px] bg-slate-600 hover:bg-slate-500 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded transition-colors"
+                      className="settings-button disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       ←
                     </button>
                     <button
                       onClick={() => handleMoveRight(index)}
                       disabled={index === snapshots.length - 1}
-                      className="px-1 py-0.5 text-[10px] bg-slate-600 hover:bg-slate-500 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded transition-colors"
+                      className="settings-button disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       →
                     </button>
                     <button
                       onClick={() => handleRemove(snapshot.id)}
-                      className="px-1 py-0.5 text-[10px] bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+                      className="min-h-9 rounded-md border border-red-400 bg-red-950/40 px-3 py-1.5 text-sm text-red-200 hover:bg-red-950/70"
                     >
                       x
                     </button>

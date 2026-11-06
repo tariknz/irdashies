@@ -29,14 +29,21 @@ export const DriverNamePreview = ({
   return (
     <button
       type="button"
+      aria-pressed={selected}
       onClick={onClick}
-      className={`px-3 py-1 rounded border cursor-pointer transition-colors inline-flex items-center justify-center ${
+      className={`min-h-12 w-full gap-2 px-3 py-1.5 text-sm font-normal rounded-md border cursor-pointer transition-colors inline-flex items-center text-left ${
         selected
-          ? 'border-accent-500 bg-accent-500/10'
-          : 'border-transparent hover:bg-slate-800'
+          ? 'border-accent-400 bg-accent-400/10 text-accent-200'
+          : 'border-settings-boundary bg-settings-control text-slate-300 hover:bg-settings-hover'
       }`}
     >
+      <CheckIcon
+        size={14}
+        aria-hidden="true"
+        className={selected ? 'shrink-0' : 'invisible shrink-0'}
+      />
       {renderPreview()}
     </button>
   );
 };
+import { CheckIcon } from '@phosphor-icons/react';

@@ -15,6 +15,7 @@ import type {
   SimWidgetSupportConfig,
 } from '@irdashies/types';
 import { SettingsMenu } from './SettingsMenu';
+import userEvent from '@testing-library/user-event';
 
 const state = vi.hoisted(() => ({
   dashboard: undefined as DashboardLayout | undefined,
@@ -74,13 +75,16 @@ function CurrentPath() {
   return <output data-testid="current-path">{useLocation().pathname}</output>;
 }
 
-function renderMenu() {
-  return render(
+function renderMenu(openWorkspace = true) {
+  const result = render(
     <MemoryRouter initialEntries={['/settings/general']}>
       <SettingsMenu />
       <CurrentPath />
     </MemoryRouter>
   );
+  if (openWorkspace)
+    fireEvent.click(screen.getByRole('button', { name: /App settings/ }));
+  return result;
 }
 
 describe('SettingsMenu', () => {
@@ -119,6 +123,58 @@ describe('SettingsMenu', () => {
 
   afterEach(() => {
     window.dashboardBridge = originalBridge;
+  });
+
+  it('keeps workspace access outside overlay navigation and returns there without changing settings', () => {
+    renderMenu(false);
+    const workspace = screen.getByRole('button', { name: /App settings/ });
+    expect(workspace).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      screen.queryByRole('link', { name: 'General' })
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: 'Standings' }));
+    expect(screen.getByTestId('current-path')).toHaveTextContent(
+      '/settings/standings'
+    );
+    fireEvent.click(workspace);
+    expect(workspace).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(screen.getByRole('link', { name: 'General' }));
+    expect(screen.getByTestId('current-path')).toHaveTextContent(
+      '/settings/general'
+    );
+    expect(workspace).toHaveAttribute('aria-expanded', 'false');
+    expect(state.onDashboardUpdated).not.toHaveBeenCalled();
+  });
+
+  it('dismisses workspace links with Escape, restores focus and preserves overlay search', () => {
+    renderMenu(false);
+    const search = screen.getByRole('searchbox');
+    fireEvent.change(search, { target: { value: 'Stand' } });
+    const workspace = screen.getByRole('button', { name: /App settings/ });
+    fireEvent.click(workspace);
+    fireEvent.keyDown(screen.getByRole('link', { name: 'General' }), {
+      key: 'Escape',
+    });
+    expect(workspace).toHaveFocus();
+    expect(workspace).toHaveAttribute('aria-expanded', 'false');
+    expect(search).toHaveValue('Stand');
+    expect(screen.getByRole('link', { name: 'Standings' })).toBeInTheDocument();
+  });
+
+  it('returns focus to App settings when selecting the page that is already open', async () => {
+    const user = userEvent.setup();
+    renderMenu(false);
+    const trigger = screen.getByRole('button', { name: /App settings/ });
+    await user.click(trigger);
+    const current = screen.getByRole('link', { name: 'General' });
+    current.focus();
+    await user.keyboard('{Enter}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveFocus();
+    expect(screen.getByTestId('current-path')).toHaveTextContent(
+      '/settings/general'
+    );
+    expect(state.onDashboardUpdated).not.toHaveBeenCalled();
   });
 
   it('lists supported widgets without groups or redundant live labels', () => {
@@ -245,5 +301,30 @@ describe('SettingsMenu', () => {
     expect(
       screen.queryByRole('switch', { name: 'Enable Wind' })
     ).not.toBeInTheDocument();
+  });
+
+  it('filters overlay names without hiding workspace links or changing saved settings', () => {
+    renderMenu();
+    const search = screen.getByRole('searchbox', { name: 'Find an overlay' });
+    fireEvent.change(search, { target: { value: '  STAND  ' } });
+    expect(screen.getByRole('link', { name: 'Standings' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Twitch Chat' })
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'General' })).toHaveAttribute(
+      'aria-current',
+      'page'
+    );
+    expect(screen.getByRole('link', { name: 'About' })).toBeInTheDocument();
+    fireEvent.change(search, { target: { value: 'no matching widget' } });
+    expect(screen.getByText(/No overlays match/)).toHaveAttribute(
+      'role',
+      'status'
+    );
+    fireEvent.change(search, { target: { value: '' } });
+    expect(
+      screen.getByRole('link', { name: 'Twitch Chat' })
+    ).toBeInTheDocument();
+    expect(state.onDashboardUpdated).not.toHaveBeenCalled();
   });
 });

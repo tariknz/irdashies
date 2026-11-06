@@ -309,7 +309,7 @@ const KeyRecorder = ({ actionId, entry, onUpdated }: KeyRecorderProps) => {
           'px-3 py-1.5 rounded text-sm font-mono min-w-[120px] text-center transition-all cursor-pointer',
           recording
             ? 'bg-accent-600/30 border border-accent-400 text-accent-300 animate-pulse'
-            : 'bg-slate-700 border border-slate-600 text-white hover:bg-slate-600',
+            : 'bg-slate-700 border border-settings-boundary text-white hover:bg-settings-hover',
         ].join(' ')}
       >
         {recording
@@ -398,10 +398,12 @@ export const KeybindingsSettings = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-none p-4 bg-slate-700 rounded">
-        <div className="flex items-center justify-between">
+      <div className="flex-none border-b border-slate-700 px-1 pb-5 pt-1">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl mb-1">Key Bindings</h2>
+            <h2 className="mb-1 text-xl font-semibold tracking-tight text-white">
+              Key Bindings
+            </h2>
             <p className="text-slate-400 text-sm">
               Customize keyboard shortcuts. Click a binding then press a new key
               combination, or hold two or more controller buttons together for a
@@ -411,7 +413,7 @@ export const KeybindingsSettings = () => {
           <button
             type="button"
             onClick={handleResetAll}
-            className="text-xs text-slate-300 hover:text-white bg-slate-600 hover:bg-slate-500 rounded px-3 py-1.5 transition-colors cursor-pointer whitespace-nowrap"
+            className="min-h-9 rounded-md border border-settings-boundary bg-slate-800 px-3 py-1.5 text-sm text-slate-200 transition-colors hover:border-accent-400 cursor-pointer whitespace-nowrap"
           >
             Reset All
           </button>

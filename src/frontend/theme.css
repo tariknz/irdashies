@@ -32,6 +32,10 @@ layer(base);
 }
 
 @theme {
+  --color-settings-control: #242c36;
+  --color-settings-hover: #343d49;
+  --color-settings-boundary: #8794a6;
+  --color-settings-track: #8794a6;
   --font-sans: 'Lato', sans-serif;
   --color-accent-100: var(--color-blue-100);
   --color-accent-200: var(--color-blue-200);
@@ -147,8 +151,84 @@ layer(base);
   }
 }
 
+/* Explicit settings control roles: a boundary must never become a fill.
+   Opt-in utility for legacy action buttons while preserving native semantics. */
+@utility settings-button {
+  @apply inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-settings-boundary bg-settings-control px-3 py-1.5 text-sm font-normal text-slate-200 transition-colors;
+  &:hover {
+    background-color: var(--color-settings-hover);
+  }
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+}
+
+/* Opt-in text, number and select fields; never applied to overlay inputs. */
+@utility settings-field {
+  @apply min-h-9 min-w-0 rounded-md border border-settings-boundary bg-settings-control px-3 py-1.5 text-sm font-normal text-slate-200 transition-colors;
+  &::placeholder {
+    color: var(--color-slate-400);
+    opacity: 1;
+  }
+  &:hover:not(:disabled) {
+    border-color: var(--color-slate-300);
+  }
+  &[aria-invalid='true']:not(:disabled) {
+    border-color: var(--color-red-400);
+  }
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+}
+
 html {
   color-scheme: dark;
+}
+
+/* Settings owns its type and palette. Overlay preferences remain on the
+   overlay-window ancestor and must never determine these interface roles. */
+.settings-shell {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 14px;
+  --text-base: 14px;
+  --text-lg: 17px;
+  --text-xl: 24px;
+  --text-2xl: 26px;
+  --color-slate-50: #f6f7f9;
+  --color-slate-100: #edf0f4;
+  --color-slate-200: #e0e5eb;
+  --color-slate-300: #c5cdd7;
+  --color-slate-400: #a5afbd;
+  --color-slate-500: #9aa5b4;
+  --color-slate-600: #768394;
+  --color-slate-700: #343d49;
+  --color-slate-800: #242c36;
+  --color-slate-900: #1b222b;
+  --color-slate-950: #141a21;
+  --color-accent-100: #fee2e2;
+  --color-accent-200: #fecaca;
+  --color-accent-300: #fca5a5;
+  --color-accent-400: #f87171;
+  --color-accent-500: #dc2626;
+  --color-accent-600: #b91c1c;
+  --color-accent-700: #991b1b;
+  --color-accent-900: #450a0a;
+  --color-on-accent: #fff;
+  accent-color: var(--color-accent-400);
+}
+
+/* Shared keyboard treatment also covers legacy controls while they migrate
+   to the Settings primitives. No selectors escape this settings surface. */
+.settings-shell :where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--color-accent-400);
+  outline-offset: 3px;
 }
 
 .overlay-window.overlay-theme-font-face-lato {

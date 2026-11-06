@@ -156,7 +156,7 @@ const RecursiveRenderer = ({
   if (node.type === 'box') {
     return (
       <div
-        className="relative flex-1 min-w-0 min-h-0 bg-slate-800 border border-slate-600 rounded p-1 m-1 transition-all flex flex-col gap-1 hover:border-accent-400 group/box"
+        className="relative flex-1 min-w-0 min-h-0 bg-slate-800 border border-settings-boundary rounded p-1 m-1 transition-all flex flex-col gap-1 hover:border-accent-400 group/box"
         onDragOver={(e) => onDragOver(e, node)}
         onDragLeave={handleDragLeave}
         onDrop={(e) => onDrop(e, node)}
@@ -169,7 +169,7 @@ const RecursiveRenderer = ({
             onDragStart={(e) => onDragStart(e, node)}
           >
             <DotsSixVerticalIcon className="text-slate-600 cursor-grab" />
-            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
+            <span className="text-xs text-slate-400 uppercase font-medium tracking-wider">
               Box
             </span>
           </div>
@@ -235,10 +235,10 @@ const RecursiveRenderer = ({
 
                     onDragOver(e, node, idx, isAfter);
                   }}
-                  className={`bg-slate-700 hover:bg-slate-600 border p-1.5 flex items-center gap-2 justify-between group/widget min-w-0 cursor-grab active:cursor-grabbing transition-all ${
+                  className={`bg-slate-700 hover:bg-settings-hover border p-1.5 flex items-center gap-2 justify-between group/widget min-w-0 cursor-grab active:cursor-grabbing transition-all ${
                     isTargetWidget && isReordering
-                      ? 'border-accent-400 scale-[1.02] shadow-lg z-10 bg-slate-600'
-                      : 'border-slate-600'
+                      ? 'border-accent-400 scale-[1.02] shadow-lg z-10 bg-settings-control'
+                      : 'border-settings-boundary'
                   }`}
                 >
                   <span className="text-xs text-slate-200 truncate">
@@ -687,9 +687,12 @@ export const LayoutVisualizer = ({
   };
 
   return (
-    <div className="flex gap-4 h-[450px]">
+    <div className="flex min-h-[450px] flex-col gap-4 lg:h-[450px] lg:flex-row">
       {/* Visual Editor */}
-      <div className="flex-1 bg-slate-900 border border-slate-700 rounded overflow-hidden flex flex-col">
+      <div
+        data-layout-editor
+        className="min-h-[300px] shrink-0 flex-1 bg-slate-900 border border-slate-700 rounded overflow-hidden flex flex-col lg:min-h-0 lg:shrink"
+      >
         <div className="flex-1 flex p-2 overflow-hidden relative">
           <RecursiveRenderer
             node={tree}
@@ -709,7 +712,8 @@ export const LayoutVisualizer = ({
 
       {/* Sidebar Pool */}
       <div
-        className={`w-48 bg-slate-800 border box-border rounded p-3 flex flex-col gap-3 overflow-y-auto transition-colors ${
+        data-layout-pool
+        className={`max-h-60 w-full shrink-0 bg-slate-800 border box-border rounded p-3 flex flex-col gap-3 overflow-y-auto transition-colors lg:max-h-none lg:w-48 ${
           dragState.draggedNode
             ? 'border-red-500/50 bg-red-900/20'
             : 'border-slate-700'
@@ -773,7 +777,7 @@ export const LayoutVisualizer = ({
                   weight: 1,
                 });
               }}
-              className="bg-slate-700 hover:bg-slate-600 border border-slate-600 p-2 rounded text-xs text-slate-200 cursor-grab active:cursor-grabbing flex items-center gap-2"
+              className="bg-slate-700 hover:bg-settings-hover border border-settings-boundary min-h-9 p-2 rounded text-sm text-slate-200 cursor-grab active:cursor-grabbing flex items-center gap-2"
             >
               <DotsSixVerticalIcon className="text-slate-400" />
               {widget.label}

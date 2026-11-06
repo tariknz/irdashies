@@ -62,7 +62,7 @@ export const FormatSelect = <T extends string>({
         aria-expanded={open}
         aria-label={`${label} rating format`}
         onClick={() => setOpen((wasOpen) => !wasOpen)}
-        className="flex items-center gap-2 rounded border border-slate-600 bg-slate-800 px-2 py-1 cursor-pointer hover:border-slate-400"
+        className="flex items-center gap-2 rounded border border-settings-boundary bg-slate-800 px-2 py-1 cursor-pointer hover:border-slate-400"
       >
         {renderOption(value)}
         <CaretDownIcon size={12} className="text-slate-400 shrink-0" />
@@ -73,7 +73,7 @@ export const FormatSelect = <T extends string>({
           role="listbox"
           // Opens under its own control, which now sits inline with the
           // other simulator's rather than at the panel's right edge.
-          className="absolute left-0 top-full z-50 mt-1 flex flex-col gap-1 rounded border border-slate-600 bg-slate-900 p-1 shadow-lg"
+          className="absolute left-0 top-full z-50 mt-1 flex flex-col gap-1 rounded border border-settings-boundary bg-slate-900 p-1 shadow-lg"
         >
           {options.map((option) => (
             <button

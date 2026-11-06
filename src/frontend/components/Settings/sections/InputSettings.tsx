@@ -170,7 +170,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                   <select
                     value={widgetId}
                     onChange={(e) => handleWidgetChange(e.target.value)}
-                    className="bg-slate-900 border border-slate-600 text-white text-sm rounded px-2 py-1"
+                    className="settings-field"
                   >
                     {inputWidgets.map((w) => (
                       <option key={w.id} value={w.id}>
@@ -207,7 +207,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
               </div>
 
               {/* Tabs */}
-              <div className="flex border-b border-slate-700/50">
+              <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
                 <TabButton
                   id="layout"
                   activeTab={activeTab}

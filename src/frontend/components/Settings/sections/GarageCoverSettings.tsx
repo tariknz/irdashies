@@ -199,7 +199,7 @@ export const GarageCoverSettings = () => {
                   e.preventDefault();
                   e.stopPropagation();
                 }}
-                className="w-full border-2 border-dashed border-slate-600 rounded-lg p-6 text-center cursor-pointer hover:border-slate-500 transition-colors"
+                className="w-full border-2 border-dashed border-settings-boundary rounded-lg p-6 text-center cursor-pointer hover:border-slate-500 transition-colors"
               >
                 <input
                   type="file"

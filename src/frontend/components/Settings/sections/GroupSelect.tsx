@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
 import type { TagGroup } from '@irdashies/types';
 import { renderDriverIcon } from '@irdashies/utils/driverIcons';
 import { CaretDownIcon } from '@phosphor-icons/react';
 
 interface GroupSelectProps {
   value: string;
+  label?: string;
   onChange: (value: string) => void;
   groups: (
     TagGroup | { id: string; name: string; icon: unknown; color: number }
@@ -34,6 +35,7 @@ const renderIcon = (
 
 export const GroupSelect = ({
   value,
+  label = 'Driver group',
   onChange,
   groups,
   displayStyle = 'badge',
@@ -41,6 +43,9 @@ export const GroupSelect = ({
 }: GroupSelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const optionsId = useId();
+  const valueId = useId();
 
   const selectedGroup = groups.find((g) => g.id === value);
 
@@ -62,10 +67,31 @@ export const GroupSelect = ({
   }, [isOpen]);
 
   return (
-    <div className="relative w-full" ref={containerRef}>
+    <div
+      className="relative w-full"
+      ref={containerRef}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget))
+          setIsOpen(false);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && isOpen) {
+          event.preventDefault();
+          event.stopPropagation();
+          setIsOpen(false);
+          triggerRef.current?.focus();
+        }
+      }}
+    >
       <button
+        ref={triggerRef}
+        type="button"
         onClick={() => setIsOpen((v) => !v)}
-        className="px-2 py-1 bg-slate-700 rounded w-full text-left flex items-center justify-between gap-2 hover:bg-slate-600 transition-colors"
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? optionsId : undefined}
+        aria-describedby={selectedGroup ? valueId : undefined}
+        aria-label={label}
+        className="settings-field w-full text-left flex items-center justify-between gap-2 hover:bg-settings-hover"
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {selectedGroup && (
@@ -111,7 +137,9 @@ export const GroupSelect = ({
                   )}
                 </span>
               )}
-              <span className="truncate text-sm">{selectedGroup.name}</span>
+              <span id={valueId} className="truncate text-sm">
+                {selectedGroup.name}
+              </span>
             </>
           )}
         </div>
@@ -123,18 +151,26 @@ export const GroupSelect = ({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-slate-700 rounded border border-slate-600 shadow-lg z-10 max-h-60 overflow-y-auto">
+        <div
+          id={optionsId}
+          role="group"
+          aria-label="Driver groups"
+          className="absolute top-full left-0 right-0 mt-1 bg-slate-700 rounded border border-settings-boundary shadow-lg z-10 max-h-60 overflow-y-auto"
+        >
           {groups.map((g) => (
             <button
               key={g.id}
+              type="button"
+              aria-pressed={g.id === value}
               onClick={() => {
                 onChange(g.id);
                 setIsOpen(false);
+                triggerRef.current?.focus();
               }}
               className={`w-full px-2 py-2 flex items-center gap-2 text-left text-sm transition-colors ${
                 g.id === value
                   ? 'bg-accent-600 text-on-accent'
-                  : 'text-slate-200 hover:bg-slate-600'
+                  : 'text-slate-200 hover:bg-settings-hover'
               }`}
             >
               {displayStyle === 'tag' ? (

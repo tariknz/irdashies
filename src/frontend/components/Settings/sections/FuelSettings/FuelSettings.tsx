@@ -75,7 +75,7 @@ export const FuelSettings = ({ widgetId }: FuelSettingsProps) => {
         <p className="text-slate-400">No fuel calculator widgets added yet.</p>
         <button
           onClick={handleAddWidget}
-          className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-600 text-white rounded transition-colors"
+          className="flex min-h-9 items-center gap-2 rounded-md bg-accent-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-600"
         >
           <PlusIcon size={20} /> Create New Widget
         </button>
