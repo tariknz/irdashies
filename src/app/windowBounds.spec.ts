@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   MIN_VISIBLE_HEIGHT,
   MIN_VISIBLE_WIDTH,
+  defaultSettingsWindowBounds,
   intersection,
   isReachable,
   sanitizeWindowBounds,
@@ -14,6 +15,31 @@ const PRIMARY: Rect = { x: 0, y: 0, width: 2048, height: 1152 };
 const LEFT: Rect = { x: -2048, y: 0, width: 2048, height: 1152 };
 const FAR_LEFT: Rect = { x: -5488, y: 0, width: 3440, height: 1440 };
 const DISPLAYS = [FAR_LEFT, LEFT, PRIMARY];
+
+describe('defaultSettingsWindowBounds', () => {
+  it.each([
+    ['desktop', 2560, 1400, 1280, 800],
+    ['laptop', 1366, 728, 1229, 655],
+    ['small', 800, 560, 720, 504],
+    ['ultrawide', 3440, 1400, 1280, 800],
+    ['portrait', 900, 1560, 810, 800],
+    ['very small', 100, 60, 90, 54],
+  ])('fits and centres on a %s workArea', (_label, w, h, width, height) => {
+    const area = { x: -1500, y: 44, width: w, height: h };
+    expect(defaultSettingsWindowBounds(area)).toEqual({
+      width,
+      height,
+      x: Math.round(area.x + (w - width) / 2),
+      y: Math.round(area.y + (h - height) / 2),
+    });
+  });
+
+  it('uses a positive integer even when 90% is less than one pixel', () => {
+    expect(
+      defaultSettingsWindowBounds({ x: 8, y: -9, width: 1, height: 1 })
+    ).toEqual({ x: 8, y: -9, width: 1, height: 1 });
+  });
+});
 
 describe('intersection', () => {
   it('returns the overlapping rectangle', () => {
@@ -152,6 +178,11 @@ describe('sanitizeWindowBounds', () => {
     ['infinite y', { x: 0, y: Infinity, width: 800, height: 700 }],
     ['zero width', { x: 0, y: 0, width: 0, height: 700 }],
     ['negative height', { x: 0, y: 0, width: 800, height: -700 }],
+    ['null', null],
+    ['string', 'bad'],
+    ['array', []],
+    ['partial object', { width: 800 }],
+    ['string width', { x: 0, y: 0, width: '800', height: 700 }],
   ])('discards malformed bounds (%s)', (_label, saved) => {
     expect(
       sanitizeWindowBounds(saved as Rect, DISPLAYS, PRIMARY)

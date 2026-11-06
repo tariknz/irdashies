@@ -68,7 +68,10 @@ vi.mock('electron', () => ({
   Notification: vi.fn(),
   screen: {
     getAllDisplays: vi.fn(() => []),
-    getPrimaryDisplay: vi.fn(() => ({ id: 1, bounds: {} })),
+    getPrimaryDisplay: vi.fn(() => ({
+      id: 1,
+      workArea: { x: 0, y: 0, width: 1920, height: 1040 },
+    })),
   },
 }));
 
@@ -90,10 +93,6 @@ vi.mock('./storage/simWidgetSupport', () => ({
     message: 'This widget is not compatible with the running sim',
     disabledWidgets: { iracing: [], lmu: [] },
   }),
-}));
-vi.mock('./windowBounds', () => ({
-  loadWindowBounds: vi.fn(() => undefined),
-  ensureWindowOnScreen: vi.fn(),
 }));
 vi.mock('./logger', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
