@@ -299,7 +299,7 @@ export const RadarDisplay = memo(
       };
       paint();
       return () => cancelAnimationFrame(handle);
-    }, [size, active, widgetScale]);
+    }, [size, active, widgetScale, settingsLanguage]);
 
     return (
       <div
