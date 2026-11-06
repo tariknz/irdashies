@@ -1,5 +1,12 @@
 import { getSettingsLanguage } from '../../Settings/i18n/language';
-import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  memo,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useWidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import type { TrackGeometry } from '@irdashies/domain/track';
 import {
@@ -110,6 +117,7 @@ export const RadarDisplay = memo(
     dive = NO_DIVES,
   }: RadarDisplayProps) => {
     const widgetScale = useWidgetScale();
+    const settingsLanguage = useMemo(getSettingsLanguage, []);
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [size, setSize] = useState(0);
@@ -216,7 +224,7 @@ export const RadarDisplay = memo(
           follow.carIdx = isPaceCar ? null : carIdx;
           follow.dist = tracked ? tracked.dist : dist;
           follow.label = isPaceCar
-            ? getSettingsLanguage() === 'ru'
+            ? settingsLanguage === 'ru'
               ? 'ТЕМП'
               : 'PACE'
             : current.appearance.get(carIdx)?.label
