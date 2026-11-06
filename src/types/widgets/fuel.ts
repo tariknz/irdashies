@@ -138,11 +138,6 @@ export default defineWidgetManifest({
       step: 1,
       units: '%',
     },
-    useGeneralFontSize: {
-      type: 'boolean',
-      label: 'Use General font Sizes',
-      description: 'Syncs with Font Size slider in General tab',
-    },
     fuelUnits: {
       type: 'enum',
       label: 'Fuel Units',

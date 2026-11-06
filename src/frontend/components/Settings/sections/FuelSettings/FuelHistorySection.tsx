@@ -1,7 +1,7 @@
 import { SettingNumberRow } from '../../components/SettingNumberRow';
 import { SettingsSection } from '../../components/SettingSection';
 import { FuelWidgetSettings } from '@irdashies/types';
-import { BarFontSizeInput, HeightInput } from './FontSizeInputs';
+import { HeightInput } from './HeightInput';
 import { settingPropFor } from '../../components/SettingProp';
 
 const SettingProp = settingPropFor('fuel');
@@ -27,13 +27,8 @@ export const FuelHistorySection = ({
           ) : (
             <>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">Graph Properties</span>
+                <span className="text-sm text-slate-300">Graph Height</span>
                 <div className="flex items-center gap-4">
-                  <BarFontSizeInput
-                    widgetId="fuelGraph"
-                    settings={settings}
-                    onChange={onChange}
-                  />
                   <HeightInput
                     widgetId="fuelGraph"
                     settings={settings}

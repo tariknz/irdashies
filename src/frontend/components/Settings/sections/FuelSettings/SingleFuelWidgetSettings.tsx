@@ -14,10 +14,8 @@ import { TabButton } from '../../components/TabButton';
 import { LayoutVisualizer, migrateToTree } from '../LayoutVisualizer';
 import { DEFAULT_FUEL_LAYOUT_TREE } from '../../../FuelCalculator/defaults';
 import { getWidgetDefaultConfig } from '@irdashies/types';
-import { DualFontSizeInput } from './FontSizeInputs';
 import { GridOrderSettingsList } from './GridOrderSettingsList';
 import { AVAILABLE_WIDGETS_FUEL, generateId } from './utils';
-import { WidgetFontSizeSettings } from './WidgetFontSizeSettings';
 import { FuelStatusAlertsSection } from './FuelStatusAlertsSection';
 import { FuelHistorySection } from './FuelHistorySection';
 import { PitStrategySection } from './PitStrategySection';
@@ -286,74 +284,6 @@ export const SingleFuelWidgetSettings = ({
 
                       {/* Background Opacity */}
                       <SettingProp path="background.opacity" />
-                    </SettingsSection>
-
-                    {/* Widget Font Size Settings */}
-                    <SettingsSection title="Font Sizes">
-                      {/* General Control Toggles */}
-                      <SettingProp path="useGeneralFontSize" />
-
-                      {!settings.config.useGeneralFontSize && (
-                        <>
-                          <WidgetFontSizeSettings
-                            settings={settings}
-                            onChange={handleConfigChange}
-                          />
-
-                          {/* Consumption Details Section */}
-                          <DualFontSizeInput
-                            widgetId="fuelGrid"
-                            title="Consumption Details"
-                            description="Configures rows in Consumption Grid."
-                            settings={settings}
-                            onChange={handleConfigChange}
-                          />
-
-                          {/* Economy Predict */}
-                          <DualFontSizeInput
-                            widgetId="fuelEconomyPredict"
-                            title="Economy Predict"
-                            description="Predicts fuel usage vs target. Adjust Label/Value sizes."
-                            settings={settings}
-                            onChange={handleConfigChange}
-                          />
-
-                          {/* Fuel History */}
-                          <DualFontSizeInput
-                            widgetId="fuelGraph"
-                            title="Fuel History"
-                            description="Used for Fuel History - see options."
-                            settings={settings}
-                            onChange={handleConfigChange}
-                          />
-
-                          {/* Fuel Scenarios */}
-                          <DualFontSizeInput
-                            widgetId="fuelScenarios"
-                            title="Fuel Scenarios"
-                            description="Pit stop calculations (-1, Ideal, +1 Lap)."
-                            settings={settings}
-                            onChange={handleConfigChange}
-                          />
-
-                          {/* Target Message Font */}
-                          <DualFontSizeInput
-                            widgetId="fuelTargetMessage"
-                            title="Target Message Font"
-                            description="Used for Pit Strategy - see options."
-                            settings={settings}
-                            onChange={handleConfigChange}
-                          />
-
-                          <DualFontSizeInput
-                            widgetId="fuelAtFinish"
-                            title="Fuel at End"
-                            description="Shows the estimated fuel balance at race finish."
-                            settings={settings}
-                            onChange={handleConfigChange}
-                          />
-                        </>
-                      )}
                     </SettingsSection>
                   </>
                 )}

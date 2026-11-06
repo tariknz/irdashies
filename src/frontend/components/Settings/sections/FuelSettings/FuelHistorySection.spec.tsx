@@ -35,7 +35,7 @@ describe('Fuel history settings', () => {
       target: { value: 'table' },
     });
     expect(save).toHaveBeenLastCalledWith({ fuelHistoryType: 'table' });
-    expect(screen.queryByText('Graph Properties')).not.toBeInTheDocument();
+    expect(screen.queryByText('Graph Height')).not.toBeInTheDocument();
     expect(screen.queryByText('Target Line')).not.toBeInTheDocument();
     expect(screen.getByRole('spinbutton')).toHaveValue(5);
     fireEvent.change(screen.getByRole('spinbutton'), {
