@@ -235,9 +235,6 @@ export default {
   Caution: 'Осторожно',
   'Do Not Rejoin': 'Не выезжайте на трассу',
   SHIFT: 'ПЕРЕКЛЮЧАЙТЕ',
-  'Fuel history cleared successfully.': 'История топлива очищена.',
-  'Fuel history or reference laps cannot be saved. Free disk space to resume saving.':
-    'Не удаётся сохранить историю топлива и эталонные круги. Освободите место на диске, чтобы возобновить сохранение.',
   // Broadcast ticker
   'battle for': 'борьба за',
   // Confidence and fuel-planning explanations
