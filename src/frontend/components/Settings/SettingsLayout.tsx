@@ -70,7 +70,7 @@ export const SettingsLayout = () => {
 
   return (
     <ReleaseNotesStatusProvider>
-      <div className="settings-shell flex h-full w-full flex-col bg-slate-950 text-slate-200">
+      <div className="settings-shell flex h-full w-full flex-col overflow-hidden bg-slate-950 text-slate-200">
         <a
           href="#settings-content"
           onClick={(event) => {
@@ -83,12 +83,13 @@ export const SettingsLayout = () => {
         </a>
         <ReleaseNotesAnnouncement />
         {/* The window has no native title bar: this row is the drag handle, and
-          the right padding keeps clear of the OS min/max/close buttons. Their
+          the side padding keeps clear of the OS window controls. Their
           width comes from the window-controls-overlay env() values, so it
           follows DPI scaling; without an overlay it resolves to 0. */}
         <div
           className="flex min-h-20 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-slate-700 px-5 py-3 [-webkit-app-region:drag]"
           style={{
+            paddingLeft: 'max(1.25rem, env(titlebar-area-x, 0px))',
             paddingRight:
               'max(1.25rem, calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw)))',
           }}

@@ -7,7 +7,10 @@ export const Settings = () => {
   if (!currentDashboard || !onDashboardUpdated) {
     // No native title bar: keep a drag handle clear of the window controls.
     return (
-      <div className="h-10 pr-[124px] [-webkit-app-region:drag]">
+      <div
+        className="h-10 pr-[124px] [-webkit-app-region:drag]"
+        style={{ paddingLeft: 'env(titlebar-area-x, 0px)' }}
+      >
         Loading...
       </div>
     );
