@@ -105,8 +105,7 @@ Settings size **and** position once, including custom old rectangles. A dedicate
 profiles and overlays are untouched. Initialization is asynchronous and awaited
 before Settings can open. Future window construction reads only the cache;
 existing off-screen rescue, start-minimized, window reuse and native titlebar
-options remain in place. See [the focused change note](docs/settings-window-sizing.md)
-for failure/restart behavior and verification scope.
+options remain in place.
 
 There is no app-imposed minimum that could exceed a small screen. The only
 integer floor is one logical pixel when 90% rounds to zero. Extremely small
