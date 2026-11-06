@@ -6,6 +6,7 @@ import {
   Route,
   Routes,
   Navigate,
+  Link,
   useLocation,
   useNavigate,
 } from 'react-router-dom';
@@ -17,18 +18,25 @@ import {
 import { simulatorDisplayName } from '@irdashies/types';
 import { SettingsLoader } from './SettingsLoader';
 import { SettingsMenu } from './SettingsMenu';
+import { HeaderProfilePicker } from './components/HeaderProfilePicker';
+import { generalItems, bottomItems } from './menuItems';
 import { ReleaseNotesStatusProvider } from './ReleaseNotes/ReleaseNotesStatusContext';
 import { ReleaseNotesAnnouncement } from './ReleaseNotes/ReleaseNotesAnnouncement';
 
 export const SettingsLayout = () => {
-  const {
-    bridge,
-    isDemoMode,
-    toggleDemoMode,
-    currentDashboard,
-    currentProfile,
-  } = useDashboard();
+  const { bridge, isDemoMode, toggleDemoMode, currentDashboard } =
+    useDashboard();
   const { pathname } = useLocation();
+  const appPage = [...generalItems, ...bottomItems].some(
+    (item) => item.to === pathname
+  );
+  const lastApp = useRef('/settings/general');
+  const lastOverlay = useRef('/settings/relative');
+  useEffect(() => {
+    if (appPage) lastApp.current = pathname;
+    else if (pathname.replace(/\/$/, '') !== '/settings')
+      lastOverlay.current = pathname;
+  }, [appPage, pathname]);
   const mainRef = useRef<HTMLElement>(null);
   const previousPath = useRef(pathname);
   useEffect(() => {
@@ -81,6 +89,14 @@ export const SettingsLayout = () => {
         >
           Skip to settings
         </a>
+        {!appPage && (
+          <Link
+            to={lastApp.current}
+            className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus:rounded-md focus:bg-slate-800 focus:px-4 focus:py-2 focus:text-slate-200 [-webkit-app-region:no-drag]"
+          >
+            Go to App settings
+          </Link>
+        )}
         <ReleaseNotesAnnouncement />
         {/* The window has no native title bar: this row is the drag handle, and
           the side padding keeps clear of the OS window controls. Their
@@ -102,7 +118,7 @@ export const SettingsLayout = () => {
                   ir<span className="text-red-600">Dashies</span>
                 </span>
                 <h1 className="text-sm font-medium text-slate-400">
-                  Overlay Settings
+                  {appPage ? 'App settings' : 'Overlay Settings'}
                 </h1>
                 {simulatorName && (
                   <span className="text-xs text-slate-400">
@@ -110,11 +126,12 @@ export const SettingsLayout = () => {
                   </span>
                 )}
               </div>
-              {currentProfile && (
-                <p className="truncate text-xs text-slate-400">
-                  {currentProfile.name} Profile
-                </p>
-              )}
+              <HeaderProfilePicker
+                onManage={() => {
+                  if (pathname === '/settings/profiles')
+                    mainRef.current?.focus();
+                }}
+              />
             </div>
           </div>
           <div className="flex shrink-0 flex-row gap-2 [-webkit-app-region:no-drag]">
@@ -150,14 +167,17 @@ export const SettingsLayout = () => {
         <StorageStatusNotice />
         <div className="flex min-h-0 flex-1">
           {/* Left Column - Widget Menu */}
-          <SettingsMenu />
+          <SettingsMenu
+            appTo={lastApp.current}
+            returnTo={lastOverlay.current}
+          />
 
           {/* Right Column - Widget Settings */}
           <main
             id="settings-content"
             ref={mainRef}
             tabIndex={-1}
-            aria-label="Settings page"
+            aria-label={appPage ? 'App settings page' : 'Overlay settings page'}
             className="min-w-0 flex-1 bg-slate-900 p-4 focus:outline-none lg:p-7"
           >
             <div className="mx-auto flex h-full max-w-[960px] flex-col overflow-hidden">
