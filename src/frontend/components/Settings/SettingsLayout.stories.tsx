@@ -25,6 +25,8 @@ interface StoryProps {
     key: 'fuelWidgetTab' | 'inputTab' | 'standingsTab';
     value: 'display' | 'options';
   };
+
+  profileChoices?: boolean;
 }
 
 // The header reads the running state to decide whether to name a simulator.
@@ -157,13 +159,36 @@ const meta: Meta<typeof SettingsLayout> = {
         initialPath = 'standings',
         emptyFuel,
         scaleInstances,
+        profileChoices,
       } = context.args as StoryProps;
+      const choices = ['Default', 'Endurance'].map((name, index) => ({
+        id: index === 0 ? 'default' : 'endurance',
+        name,
+        createdAt: '2026-11-06T00:00:00.000Z',
+        lastModified: '2026-11-06T00:00:00.000Z',
+      }));
+      let activeProfile = 'default';
+      const previewBridge: DashboardBridge = {
+        ...settingsPreviewBridge,
+        ...(profileChoices && {
+          listProfiles: async () => structuredClone(choices),
+          getCurrentProfile: async () =>
+            structuredClone(
+              choices.find((profile) => profile.id === activeProfile) ??
+                choices[0]
+            ),
+          switchProfile: async (id: string) => {
+            if (choices.some((profile) => profile.id === id))
+              activeProfile = id;
+          },
+        }),
+      };
       return (
         <DashboardProvider
           bridge={
             emptyFuel || scaleInstances
               ? {
-                  ...settingsPreviewBridge,
+                  ...previewBridge,
                   dashboardUpdated: (callback) =>
                     settingsPreviewBridge.dashboardUpdated(
                       (dashboard, profileId) =>
@@ -211,7 +236,7 @@ const meta: Meta<typeof SettingsLayout> = {
                         )
                     ),
                 }
-              : settingsPreviewBridge
+              : previewBridge
           }
         >
           <RunningStateProvider bridge={runningBridge}>
@@ -389,4 +414,8 @@ export const StorageFull: Story = {
       return <Story />;
     },
   ],
+};
+
+export const ProfilePicker: Story = {
+  args: { initialPath: '/settings/relative', profileChoices: true },
 };

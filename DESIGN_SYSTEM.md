@@ -392,3 +392,11 @@ of adding a card is the local design choice. The
 informs percentage semantics, arrow steps and Home/End behavior. Keep native
 keyboard handling. [WCAG target-size guidance](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)
 informs the slider/reset targets without changing scale values or semantics.
+
+## Proposed navigation guidance - selected for implementation
+
+The selected E pattern gives App settings its own local navigation. A persistent **App settings** link at the bottom of the overlay sidebar opens the last app destination (General initially). Show General, Profiles, Key Bindings, Driver Tags and Setup Comparison there, with Advanced, Release notes and About below. **Back to overlays** returns to the previous overlay page. Keep the overlay query, simulator-support reveal and manual list scroll while changing areas. The earlier App settings disclosure guidance above describes the prior implementation and is superseded by this proposal.
+
+Make the current profile caption beneath the logo a compact, labeled profile picker with a chevron. Offer existing profiles and **Manage profiles…**; keep Profiles in the App settings sidebar. Use the existing switch action and management route. This shared entry point reflects profiles' relevance to overlays without repeating a second sidebar destination.
+
+Keep **Skip to settings** first in keyboard order and focus main on route changes. On overlay pages, offer a second focus-only **Go to App settings** link so keyboard users can bypass the catalog. The profile picker uses native buttons/links: Tab traverses choices, Escape closes and restores trigger focus, and leaving the picker dismisses it. Preserve visible active-route indication, overlay search and switches, the actual logo, red identity, type roles and window-control clearance. These are design choices informed by the [navigation research](docs/research/settings-navigation-alternatives.md), not measured participant usability claims.
