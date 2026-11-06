@@ -1,8 +1,12 @@
-import { useLayoutEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import logger from '@irdashies/utils/logger';
 import { ruTranslator } from './dictionary';
 import { startDomTranslation, type Translator } from './domTranslator';
-import { getSettingsLanguage, type SettingsLanguage } from './language';
+import {
+  getSettingsLanguage,
+  LANGUAGE_STORAGE_KEY,
+  type SettingsLanguage,
+} from './language';
 
 export interface SettingsTranslatorProps {
   language?: SettingsLanguage;
@@ -13,6 +17,14 @@ export const AppTranslator = ({
   language = getSettingsLanguage(),
   translator = ruTranslator,
 }: SettingsTranslatorProps): null => {
+  useEffect(() => {
+    const reloadOnLanguageChange = (event: StorageEvent) => {
+      if (event.key === LANGUAGE_STORAGE_KEY) window.location.reload();
+    };
+    window.addEventListener('storage', reloadOnLanguageChange);
+    return () => window.removeEventListener('storage', reloadOnLanguageChange);
+  }, []);
+
   useLayoutEffect(() => {
     document.documentElement.lang = language;
     if (language !== 'ru') return;
