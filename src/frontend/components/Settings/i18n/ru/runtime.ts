@@ -131,6 +131,6 @@ export default {
   'HypeRate heart rate': 'Пульс в HypeRate',
   'AVG 10': 'СР. 10',
   'This profile has no widget called "':
-    'В этом профиле нет виджета «',
+    'В этом профиле нет виджета "',
   'Y axis': 'Ось Y',
 } satisfies Record<string, string>;
