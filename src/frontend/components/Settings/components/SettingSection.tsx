@@ -2,6 +2,7 @@ import { WidgetScaleSettings } from './WidgetScaleSettings';
 
 interface SettingsSectionProps {
   title?: string;
+  headingLevel?: 'h3' | 'h4';
   children?: React.ReactNode;
   /** Content scale belongs to this panel, ahead of its specialised controls. */
   scaleWidgetId?: string;
@@ -11,6 +12,7 @@ interface SettingsSectionProps {
 
 export function SettingsSection({
   title,
+  headingLevel: Heading = 'h3',
   children,
   scaleWidgetId,
   variant = title ? 'panel' : 'inline',
@@ -24,7 +26,9 @@ export function SettingsSection({
       }
     >
       {title && (
-        <h3 className="text-lg font-semibold text-slate-200">{title}</h3>
+        <Heading className="text-lg font-semibold text-slate-200">
+          {title}
+        </Heading>
       )}
       <div
         className={

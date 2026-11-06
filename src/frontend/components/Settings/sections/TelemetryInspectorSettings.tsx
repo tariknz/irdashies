@@ -143,12 +143,12 @@ export const TelemetryInspectorSettings = ({
 
         return (
           <div className="space-y-4">
-            <SettingsSection title="Display" scaleWidgetId={SETTING_ID} />
             {/* Current Properties */}
-            <div className="space-y-2">
-              <GroupHeading className="text-sm font-semibold text-slate-200">
-                Watched Properties ({properties.length})
-              </GroupHeading>
+            <SettingsSection
+              title={`Watched Properties (${properties.length})`}
+              headingLevel={GroupHeading}
+              scaleWidgetId={SETTING_ID}
+            >
               {properties.length === 0 ? (
                 <p className="text-sm text-slate-400">
                   No properties configured. Add some below.
@@ -191,7 +191,7 @@ export const TelemetryInspectorSettings = ({
                   ))}
                 </div>
               )}
-            </div>
+            </SettingsSection>
 
             {/* Add Custom Property */}
             <div className="space-y-2 border-t border-settings-boundary pt-4">
