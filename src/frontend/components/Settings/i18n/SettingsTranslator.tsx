@@ -4,7 +4,7 @@ import { ruTranslator } from './dictionary';
 import { startDomTranslation, type Translator } from './domTranslator';
 import {
   getSettingsLanguage,
-  LANGUAGE_STORAGE_KEY,
+  reloadOnLanguageChange,
   type SettingsLanguage,
 } from './language';
 
@@ -17,13 +17,7 @@ export const AppTranslator = ({
   language = getSettingsLanguage(),
   translator = ruTranslator,
 }: SettingsTranslatorProps): null => {
-  useEffect(() => {
-    const reloadOnLanguageChange = (event: StorageEvent) => {
-      if (event.key === LANGUAGE_STORAGE_KEY) window.location.reload();
-    };
-    window.addEventListener('storage', reloadOnLanguageChange);
-    return () => window.removeEventListener('storage', reloadOnLanguageChange);
-  }, []);
+  useEffect(() => reloadOnLanguageChange(), []);
 
   useLayoutEffect(() => {
     document.documentElement.lang = language;
