@@ -164,6 +164,20 @@ layer(base);
   }
 }
 
+@utility settings-button-primary {
+  @apply settings-button border-accent-600 bg-accent-600 text-on-accent;
+  &:hover {
+    background-color: var(--color-accent-700);
+  }
+}
+
+@utility settings-button-danger {
+  @apply settings-button text-red-300;
+  &:hover {
+    background-color: var(--color-red-950);
+  }
+}
+
 /* Opt-in text, number and select fields; never applied to overlay inputs. */
 @utility settings-field {
   @apply min-h-9 min-w-0 rounded-md border border-settings-boundary bg-settings-control px-3 py-1.5 text-sm font-normal text-slate-200 transition-colors;

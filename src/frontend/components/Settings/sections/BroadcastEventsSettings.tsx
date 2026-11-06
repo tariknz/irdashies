@@ -53,6 +53,8 @@ export const BroadcastEventsSettings = () => {
 
   return (
     <BaseSettingsSection
+      disableInternalScroll
+      headingLevel="h3"
       title="Broadcast Events"
       description="Race control popups for the stream: incidents, yellow and black flags, with a card for the driver involved. Uses the Gantry incident detector and its thresholds."
       settings={settings}

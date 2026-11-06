@@ -412,8 +412,9 @@ export const LapTraceSettings = () => {
 
   return (
     <BaseSettingsSection
+      hidePositionReset={activeTab === 'help'}
       title="Lap Trace"
-      description="Plots a saved lap's throttle, brake and speed against position on track, in a window that slides with your car, drawn pastel as a background target. Your current lap is drawn over it as a bright ghost so you can see where the reference brakes and gets back on power."
+      description="Compare your throttle, brake and speed with a saved reference lap as you drive."
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -889,13 +890,13 @@ export const LapTraceSettings = () => {
                           {SOUND_CUES.map(({ key, label }) => {
                             const cue = soundCfg[key];
                             return (
-                              <div
+                              <fieldset
                                 key={key}
-                                className="space-y-1 border-t border-slate-700/40 pt-2"
+                                className="space-y-3 border-t border-slate-700 pt-4"
                               >
-                                <span className="text-md font-semibold text-slate-300">
+                                <legend className="pr-3 text-sm font-semibold text-slate-200">
                                   {label}
-                                </span>
+                                </legend>
                                 <SettingSliderRow
                                   title="Frequency"
                                   value={Math.round(cue.frequency)}
@@ -935,7 +936,7 @@ export const LapTraceSettings = () => {
                                     updateCue(key, { peak: v / 100 })
                                   }
                                 />
-                              </div>
+                              </fieldset>
                             );
                           })}
 

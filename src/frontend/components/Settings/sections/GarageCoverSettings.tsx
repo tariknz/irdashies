@@ -176,7 +176,7 @@ export const GarageCoverSettings = () => {
         return (
           <div className="space-y-4">
             {/* Info Banner */}
-            <div className="bg-accent-900/30 border border-accent-700/50 rounded-md p-4 space-y-2">
+            <div className="bg-slate-800/40 border border-slate-700 rounded-md p-4 space-y-2">
               <p className="text-sm text-slate-300">
                 <strong>Note:</strong> The garage cover is intended for use
                 whilst streaming. It only appears when you have the garage
@@ -199,13 +199,14 @@ export const GarageCoverSettings = () => {
                   e.preventDefault();
                   e.stopPropagation();
                 }}
-                className="w-full border-2 border-dashed border-settings-boundary rounded-lg p-6 text-center cursor-pointer hover:border-slate-500 transition-colors"
+                className="w-full border-2 border-dashed border-settings-boundary rounded-lg p-6 text-center cursor-pointer hover:border-slate-500 focus-within:outline-2 focus-within:outline-accent-300 transition-colors"
               >
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => handleImageSelect(e)}
-                  className="hidden"
+                  aria-label="Garage image"
+                  className="sr-only"
                   id="garage-image-input"
                 />
                 <label
@@ -235,7 +236,7 @@ export const GarageCoverSettings = () => {
                     localStorage.removeItem(LOCALSTORAGE_KEY);
                     handleConfigChange({ imageFilename: '' });
                   }}
-                  className="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-slate-200 rounded transition-colors"
+                  className="settings-button-danger"
                 >
                   Remove Image
                 </button>

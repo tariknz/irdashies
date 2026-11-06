@@ -15,6 +15,7 @@ import {
 
 interface BaseSettingsSectionProps<T> {
   title: string;
+  headingLevel?: 'h2' | 'h3';
   description: string;
   settings?: BaseWidgetSettings<T>;
   onSettingsChange?: (settings: BaseWidgetSettings<T>) => void;
@@ -30,6 +31,7 @@ interface BaseSettingsSectionProps<T> {
 
 export const BaseSettingsSection = <T,>({
   title,
+  headingLevel: Heading = 'h2',
   description,
   settings,
   onSettingsChange,
@@ -197,9 +199,15 @@ export const BaseSettingsSection = <T,>({
       <header className="flex-none border-b border-slate-700 px-1 pb-5 pt-1">
         <div>
           <div className="flex justify-between items-center mb-1">
-            <h2 className="text-xl font-semibold tracking-tight text-white">
+            <Heading
+              className={
+                Heading === 'h2'
+                  ? 'text-xl font-semibold tracking-tight text-white'
+                  : 'text-lg font-semibold text-white'
+              }
+            >
               {title}
-            </h2>
+            </Heading>
             <div className="flex flex-col items-end gap-0.5">
               {!menuToggles && !isGantryOnly && (
                 <ToggleSwitch

@@ -327,7 +327,7 @@ export const TrackMapSettings = () => {
                             e.preventDefault();
                             e.stopPropagation();
                           }}
-                          className="w-full border-2 border-dashed border-settings-boundary rounded-lg p-4 text-center cursor-pointer hover:border-slate-500 transition-colors"
+                          className="w-full border-2 border-dashed border-settings-boundary rounded-lg p-4 text-center cursor-pointer hover:border-slate-500 focus-within:outline-2 focus-within:outline-accent-300 transition-colors"
                         >
                           <input
                             type="file"
@@ -337,7 +337,8 @@ export const TrackMapSettings = () => {
                               if (file) handleIconFile(file);
                               e.target.value = '';
                             }}
-                            className="hidden"
+                            className="sr-only"
+                            aria-label="Player icon image"
                             id="player-icon-input"
                           />
                           <label
@@ -392,13 +393,13 @@ export const TrackMapSettings = () => {
                                   });
                                   setShowRemoveConfirm(false);
                                 }}
-                                className="px-3 py-1 text-sm bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+                                className="settings-button-danger"
                               >
                                 Yes, remove
                               </button>
                               <button
                                 onClick={() => setShowRemoveConfirm(false)}
-                                className="px-3 py-1 text-sm bg-settings-control hover:bg-settings-hover text-white rounded transition-colors"
+                                className="settings-button"
                               >
                                 Cancel
                               </button>
@@ -406,7 +407,7 @@ export const TrackMapSettings = () => {
                           ) : (
                             <button
                               onClick={() => setShowRemoveConfirm(true)}
-                              className="px-3 py-1 text-sm bg-slate-700 hover:bg-settings-hover text-slate-300 rounded transition-colors"
+                              className="settings-button-danger"
                             >
                               Remove icon
                             </button>

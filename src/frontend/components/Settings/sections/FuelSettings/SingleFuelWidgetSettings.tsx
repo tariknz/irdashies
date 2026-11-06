@@ -139,7 +139,7 @@ export const SingleFuelWidgetSettings = ({
       onSettingsChange={setSettings}
       widgetId={widgetId}
       disableInternalScroll={true}
-      hidePositionReset={isGantryOnly}
+      hidePositionReset={isGantryOnly || activeTab === 'history'}
     >
       {(handleConfigChange) => {
         const handleTreeUpdate = (newTree: LayoutNode) => {
@@ -235,10 +235,10 @@ export const SingleFuelWidgetSettings = ({
                               ? 'Default widget cannot be deleted. Disable it instead.'
                               : 'Delete this layout configuration'
                           }
-                          className={`px-3 py-1 text-xs rounded border transition-colors ${
+                          className={`settings-button-danger ${
                             selectedId === 'fuel'
                               ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed opacity-50'
-                              : 'bg-red-900/50 hover:bg-red-900 text-red-200 border-red-800'
+                              : ''
                           }`}
                         >
                           {selectedId === 'fuel'
@@ -247,7 +247,7 @@ export const SingleFuelWidgetSettings = ({
                         </button>
                         <button
                           onClick={handleAddWidget}
-                          className="flex items-center gap-1 px-3 py-1 bg-green-700 hover:bg-green-600 text-white text-xs rounded transition-colors"
+                          className="settings-button-primary"
                         >
                           <PlusIcon /> New Layout
                         </button>
@@ -277,7 +277,7 @@ export const SingleFuelWidgetSettings = ({
 
                 {/* DISPLAY TAB */}
                 {activeTab === 'display' && (
-                  <>
+                  <div className="space-y-5">
                     <WidgetScaleSettings widgetId={widgetId} className="px-4" />
                     <SettingsSection title="Display">
                       <SettingProp path="useGeneralCompactMode" />
@@ -285,7 +285,7 @@ export const SingleFuelWidgetSettings = ({
                       {/* Background Opacity */}
                       <SettingProp path="background.opacity" />
                     </SettingsSection>
-                  </>
+                  </div>
                 )}
 
                 {/* OPTIONS TAB */}

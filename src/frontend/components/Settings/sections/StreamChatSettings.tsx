@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { TwitchLogoIcon, YoutubeLogoIcon } from '@phosphor-icons/react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import type {
@@ -48,23 +48,35 @@ const ChannelField = ({
   description,
   error,
   onChange,
-}: ChannelFieldProps) => (
-  <div className="space-y-2">
-    <label className="text-md text-slate-300">{label}</label>
-    <input
-      type="text"
-      value={value}
-      placeholder={placeholder}
-      onChange={(e) => onChange(e.target.value.trim())}
-      className="settings-field w-full"
-    />
-    {error ? (
-      <p className="text-sm text-red-400">{error}</p>
-    ) : (
-      <p className="text-sm text-slate-500">{description}</p>
-    )}
-  </div>
-);
+}: ChannelFieldProps) => {
+  const id = useId();
+  return (
+    <div className="space-y-2">
+      <label htmlFor={id} className="text-sm text-slate-300">
+        {label}
+      </label>
+      <input
+        id={id}
+        aria-describedby={`${id}-help`}
+        aria-invalid={!!error}
+        type="text"
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value.trim())}
+        className="settings-field w-full"
+      />
+      {error ? (
+        <p id={`${id}-help`} role="alert" className="text-sm text-red-300">
+          {error}
+        </p>
+      ) : (
+        <p id={`${id}-help`} className="text-sm text-slate-400">
+          {description}
+        </p>
+      )}
+    </div>
+  );
+};
 
 export const StreamChatSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -141,20 +153,20 @@ export const StreamChatSettings = () => {
             </div>
 
             {activeTab === 'display' && (
-              <>
+              <div className="space-y-5">
                 <SettingsSection title="Display">
                   <SettingProp path="display.background.opacity" />
                   <SettingProp path="display.fontSize" />
                   <SettingProp path="display.showPlatformIcons" />
                 </SettingsSection>
 
-                <SettingsSection title="Automatic message disappearance">
+                <SettingsSection title="Message visibility">
                   <SettingProp path="display.autoHide.enabled" />
                   {(settings.config.display?.autoHide?.enabled ?? false) && (
                     <SettingProp path="display.autoHide.intervalSeconds" />
                   )}
                 </SettingsSection>
-              </>
+              </div>
             )}
 
             {activeTab === 'twitch' && (
