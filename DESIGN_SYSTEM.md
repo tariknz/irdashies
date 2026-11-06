@@ -351,3 +351,44 @@ The full ledger has 479 rows: 406 inspected view/state rows, 54 shared menu/cont
 The parent subsequently supplied `6cbc1fe5d7759be9bcba9ed96af691b7ce9978c0`. Its source diff fixes Reset Position's dialog family, reorder announcements/focus, compact Fuel sizing, selected range tracks/naming, persistent Fuel instance identity, appearance heading ranks, driver-specific group names, same-route focus and a shortcut fixture reset. The audit records these as newer-head corrections pending a rendered integration re-check; its baseline evidence and scores are not erased or presented as current-head validation. Widget Scale and navigation changes remain owned by their separate threads.
 
 This audit makes no production UI or startup-size change. Keep the actual logo artwork, red identity, settings-owned typography, overlay preferences and telemetry/profile/storage/IPC semantics intact when addressing the findings. A future all-view claim requires rechecking the affected inventory rows, including compact and expanded/error states, rather than extending representative scores to unreviewed views.
+
+## Widget Scale ownership
+
+Widget Scale belongs inside the first relevant widget configuration section,
+in its existing route and tab. Use `SettingsSection.scaleWidgetId` for shared
+containment and spacing, not a standalone scale card or caller padding. Keep
+specific Display Order, Columns and Minimal Styling names as subordinate
+headings under Display/Styling. Use Widget options for general widget controls.
+Radar retains its existing Look section and search/level rules; the shared
+row's `separated` option supplies the same quiet rule when controls follow.
+
+Keep the visible label, percentage, native slider and labelled Reset action
+together. Reset remains disabled at 100% and returns focus to the slider after
+activation. Preserve the existing scale setter, normalization, 50-200% range,
+5% steps, default, instance targeting and persistence callback. Specialised
+font, gear, graph, physical-distance and nested Gantry scale models remain
+independent.
+
+Reuse existing settings colour/type roles. The scale label uses the 14px
+control role, percentage uses 13px tabular numerals, and Reset uses a 16px
+Phosphor icon plus visible 13px text. Disabled Reset uses slate-500 text without
+opacity, retaining legibility while its native disabled state communicates
+availability. Enabled text uses slate-300 and hover uses slate-200 on slate-700;
+the existing red keyboard outline remains.
+
+Bound the shared row to 36rem (`max-w-xl`) with a 7rem label column, flexible
+slider, 3rem value and 5rem Reset column. Use 12px column gaps and an 8px row
+gap. Below a 24rem container width, place the label above slider/value/reset.
+This responds to narrow Radar/Broadcast forms even inside a wide window.
+The range target is 24px high and Reset is 80 by 36px. Scale-owning panels use
+8px heading separation, a 12px inset before the quiet rule and 16px separation
+before following controls. Other panels retain their established spacing.
+
+[WAI grouping controls](https://www.w3.org/WAI/tutorials/forms/grouping/)
+supports visual and programmatic relationships: the visible label names both
+the native range and its enclosing group. Reusing an existing panel instead
+of adding a card is the local design choice. The
+[WAI slider pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider/)
+informs percentage semantics, arrow steps and Home/End behavior. Keep native
+keyboard handling. [WCAG target-size guidance](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)
+informs the slider/reset targets without changing scale values or semantics.

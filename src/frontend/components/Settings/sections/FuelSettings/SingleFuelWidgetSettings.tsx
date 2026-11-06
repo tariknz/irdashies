@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BaseSettingsSection } from '../../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../../components/WidgetScaleSettings';
 import {
   FuelWidgetSettings,
   LayoutNode,
@@ -278,8 +277,7 @@ export const SingleFuelWidgetSettings = ({
                 {/* DISPLAY TAB */}
                 {activeTab === 'display' && (
                   <div className="space-y-5">
-                    <WidgetScaleSettings widgetId={widgetId} className="px-4" />
-                    <SettingsSection title="Display">
+                    <SettingsSection title="Display" scaleWidgetId={widgetId}>
                       <SettingProp path="useGeneralCompactMode" />
 
                       {/* Background Opacity */}

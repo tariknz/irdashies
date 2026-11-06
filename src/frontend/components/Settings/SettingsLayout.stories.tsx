@@ -12,11 +12,15 @@ import type {
 } from '@irdashies/types';
 import { DEFAULT_KEYBINDINGS, releaseNotesFixture } from '@irdashies/types';
 import { SettingsLayout } from './SettingsLayout';
-import { mockDashboardBridge } from '@irdashies/storybook';
+import {
+  ChannelSnapshotDecorator,
+  mockDashboardBridge,
+} from '@irdashies/storybook';
 
 interface StoryProps {
   initialPath: string;
   emptyFuel?: boolean;
+  scaleInstances?: boolean;
 }
 
 // The header reads the running state to decide whether to name a simulator.
@@ -135,13 +139,17 @@ const meta: Meta<typeof SettingsLayout> = {
   parameters: { layout: 'fullscreen' },
   beforeEach: installSettingsBridges,
   decorators: [
+    ChannelSnapshotDecorator({}),
     (Story, context) => {
-      const { initialPath = 'standings', emptyFuel } =
-        context.args as StoryProps;
+      const {
+        initialPath = 'standings',
+        emptyFuel,
+        scaleInstances,
+      } = context.args as StoryProps;
       return (
         <DashboardProvider
           bridge={
-            emptyFuel
+            emptyFuel || scaleInstances
               ? {
                   ...settingsPreviewBridge,
                   dashboardUpdated: (callback) =>
@@ -150,9 +158,42 @@ const meta: Meta<typeof SettingsLayout> = {
                         callback(
                           {
                             ...dashboard,
-                            widgets: dashboard.widgets.filter(
-                              (widget) => (widget.type ?? widget.id) !== 'fuel'
-                            ),
+                            widgets: emptyFuel
+                              ? dashboard.widgets.filter(
+                                  (widget) =>
+                                    (widget.type ?? widget.id) !== 'fuel'
+                                )
+                              : [
+                                  ...dashboard.widgets,
+                                  ...dashboard.widgets
+                                    .filter((widget) =>
+                                      ['fuel', 'input', 'standings'].includes(
+                                        widget.id
+                                      )
+                                    )
+                                    .flatMap((widget) => [
+                                      {
+                                        ...structuredClone(widget),
+                                        id: `${widget.id}-review`,
+                                        type: widget.id,
+                                        scale: 125,
+                                        ...(widget.id === 'standings'
+                                          ? { placement: 'gantry' as const }
+                                          : {}),
+                                      },
+                                      ...(widget.id === 'fuel'
+                                        ? [
+                                            {
+                                              ...structuredClone(widget),
+                                              id: 'fuel-docked',
+                                              type: 'fuel',
+                                              placement: 'gantry' as const,
+                                              scale: 90,
+                                            },
+                                          ]
+                                        : []),
+                                    ]),
+                                ],
                           },
                           profileId
                         )
@@ -204,6 +245,22 @@ export const FuelRoute: Story = {
 
 export const FuelEmpty: Story = {
   args: { initialPath: '/settings/fuel', emptyFuel: true },
+};
+
+export const FuelCustomScale: Story = {
+  args: { initialPath: '/settings/fuel-review', scaleInstances: true },
+};
+
+export const FuelDockedScale: Story = {
+  args: { initialPath: '/settings/fuel-docked', scaleInstances: true },
+};
+
+export const InputCustomScale: Story = {
+  args: { initialPath: '/settings/input-review', scaleInstances: true },
+};
+
+export const StandingsDockedScale: Story = {
+  args: { initialPath: '/settings/standings-review', scaleInstances: true },
 };
 
 export const ProfilesRoute: Story = {

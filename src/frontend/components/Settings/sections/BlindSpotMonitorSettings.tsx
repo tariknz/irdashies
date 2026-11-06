@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { useDashboard } from '@irdashies/context';
 import {
   BlindSpotMonitorWidgetSettings,
@@ -88,8 +87,7 @@ export const BlindSpotMonitorSettings = () => {
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <>
-                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
-                  <SettingsSection title="Display">
+                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
                     {/* Display Mode */}
                     <SettingProp path="displayMode" />
 

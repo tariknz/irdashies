@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   FasterCarsFromBehindWidgetSettings,
   SettingsTabType,
@@ -80,8 +79,7 @@ export const FasterCarsFromBehindSettings = () => {
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <>
-                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
-                  <SettingsSection title="Display">
+                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
                     {/* Distance Threshold */}
                     <SettingSliderRow
                       title="Distance Threshold"

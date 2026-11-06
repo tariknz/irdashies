@@ -1,6 +1,5 @@
 import { memo, useEffect, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   GantryWidgetSettings,
   GantryConfig,
@@ -344,8 +343,10 @@ export const GantrySettings = memo(() => {
             <div>
               {activeTab === 'options' && (
                 <>
-                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
-                  <SettingsSection title="Options">
+                  <SettingsSection
+                    title="Widget options"
+                    scaleWidgetId={SETTING_ID}
+                  >
                     <SettingActionButton
                       title="Gantry Window"
                       description={`The Gantry runs in its own resizable window rather than as an on-screen overlay. Use this to bring it back if you closed it.${

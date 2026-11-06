@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   CAR_SYSTEM_ADJUSTMENTS,
   CarSystemsWidgetSettings,
@@ -128,8 +127,7 @@ export const CarSystemsSettings = () => {
             <div>
               {activeTab === 'options' && (
                 <>
-                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
-                  <SettingsSection title="Display">
+                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
                     <SettingProp path="background.opacity" />
                     <SettingProp path="showUnsupportedRows" />
                     <SettingProp path="showOffRows" />

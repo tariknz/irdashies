@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { useDashboard } from '@irdashies/context';
 import {
   RelativeWidgetSettings,
@@ -426,8 +425,10 @@ export const RelativeSettings = () => {
                 {/* DISPLAY TAB */}
                 {activeTab === 'display' && (
                   <>
-                    <WidgetScaleSettings widgetId="relative" className="px-4" />
-                    <SettingsSection title="Display Order">
+                    <SettingsSection title="Display" scaleWidgetId="relative">
+                      <h4 className="text-md font-medium text-slate-200">
+                        Display Order
+                      </h4>
                       <DisplaySettingsList
                         itemsOrder={itemsOrder}
                         onReorder={handleDisplayOrderChange}

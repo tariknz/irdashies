@@ -1,6 +1,6 @@
+import { SettingsSection } from '../components/SettingSection';
 import { useState, useEffect, useRef } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { useDashboard } from '@irdashies/context';
 import {
   GarageCoverWidgetSettings,
@@ -242,7 +242,7 @@ export const GarageCoverSettings = () => {
                 </button>
               )}
             </div>
-            <WidgetScaleSettings widgetId={SETTING_ID} />
+            <SettingsSection title="Display" scaleWidgetId={SETTING_ID} />
           </div>
         );
       }}

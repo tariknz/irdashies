@@ -1,7 +1,6 @@
 import { CaretDownIcon, CaretRightIcon } from '@phosphor-icons/react';
 import { useState, useEffect, useId } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   ShiftLightWidgetSettings,
   getWidgetDefaultConfig,
@@ -572,8 +571,7 @@ export const ShiftLightSettings = () => {
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <>
-                  <WidgetScaleSettings widgetId="shiftlight" className="px-4" />
-                  <SettingsSection title="Display">
+                  <SettingsSection title="Display" scaleWidgetId="shiftlight">
                     <SettingProp path="background.opacity" />
 
                     <SettingProp path="showRpmText" />

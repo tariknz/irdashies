@@ -1,6 +1,5 @@
 import { useId, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { SettingsSection } from '../components/SettingSection';
 import { useDashboard } from '@irdashies/context';
 import { getWidgetDefaultConfig } from '@irdashies/types';
@@ -35,8 +34,7 @@ export const HeartRateSettings = () => {
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
-        <SettingsSection title="HypeRate">
-          <WidgetScaleSettings widgetId={SETTING_ID} />
+        <SettingsSection title="HypeRate" scaleWidgetId={SETTING_ID}>
           <div className="space-y-2">
             <label
               htmlFor={`${fieldId}-session`}

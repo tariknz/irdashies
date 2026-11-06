@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
 import {
@@ -90,8 +89,10 @@ export const FlatTrackMapSettings = () => {
               {/* TRACK TAB */}
               {activeTab === 'track' && (
                 <>
-                  <WidgetScaleSettings widgetId="flatmap" className="px-4" />
-                  <SettingsSection title="Track Settings">
+                  <SettingsSection
+                    title="Track Settings"
+                    scaleWidgetId="flatmap"
+                  >
                     <SettingProp path="trackLineWidth" />
 
                     <SettingProp path="trackOutlineWidth" />

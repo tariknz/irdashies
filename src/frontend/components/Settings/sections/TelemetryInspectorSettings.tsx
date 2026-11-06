@@ -1,7 +1,7 @@
+import { SettingsSection } from '../components/SettingSection';
 import { useState } from 'react';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { useDashboard } from '@irdashies/context';
 import { TrashIcon, PlusIcon } from '@phosphor-icons/react';
 
@@ -143,7 +143,7 @@ export const TelemetryInspectorSettings = ({
 
         return (
           <div className="space-y-4">
-            <WidgetScaleSettings widgetId={SETTING_ID} />
+            <SettingsSection title="Display" scaleWidgetId={SETTING_ID} />
             {/* Current Properties */}
             <div className="space-y-2">
               <GroupHeading className="text-sm font-semibold text-slate-200">
