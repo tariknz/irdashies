@@ -33,7 +33,6 @@ describe('driver group keyboard interaction', () => {
       name: 'Driver group',
     });
     await user.click(trigger);
-    await user.tab();
     expect(screen.getByRole('button', { name: 'Team' })).toHaveFocus();
     await user.keyboard('{Escape}');
     expect(trigger).toHaveFocus();

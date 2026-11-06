@@ -337,3 +337,17 @@ The subsequent review identified an additional saved-order edge case: Header/Foo
 Validation of that edge-case follow-up: 5 SessionBarItemsList tests and the full local suite pass (5,704 passed / 4 skipped); TypeScript/ESLint, formatting and diff checks pass.
 
 Prior parent iteration 02 scores remain 8 / 9 / 8 / 8 / 8 / 9 / 9, total 8.4. The parent alone awards iteration 03 scores under unchanged definitions and weights.
+
+## Complete-view audit findings and coverage limits — 6 November 2026
+
+The independent [complete settings audit](docs/research/settings-complete-view-audit.md) is pinned to `d936a4ec54b2860df73666e91046267b80e6db5c`. It preserves the score history above and the original seven-category rubric and weights. The earlier all-9 result covered representative views; it is not an all-pages assessment.
+
+The exhaustive navigation inventory contains 100 base route/tab views across 34 widget routes and eight app-wide/bottom routes, 19 Radar section/depth views (one entry alias) and 18 repeated editor route/tabs: **136 distinct route/tab views**. Each was rendered at 808×656, 1280×800 and 1920×1080; all 100 base views also have separate LMU evidence. Compact/preferred review includes scrolling; wide review combines per-view geometry with representative visual inspection. The external ledger distinguishes that coverage explicitly.
+
+**74 of 136 views have at least one aesthetic category below 9; 62 meet all seven targets in the inspected states.** Broadcast compact containment, Profile action menus, Radar's competing configuration layers, custom layout-editor treatment, action roles and Advanced Telemetry are the main discrepancies. General, common visibility forms and the refined Header/Footer subgrids remain strong examples. These are independent heuristic judgements, not real-user results or accessibility certification.
+
+The full ledger has 479 rows: 406 inspected view/state rows, 54 shared menu/control rows, 17 native visual states blocked by the headless capture boundary and two unreachable candidate states. It indexes 2,380 exact-resolution screenshots. All media, fixtures and capture artifacts live outside the worktree in `C:/Users/tarik/.t3/review-media/settings-complete-view-audit`; exact evidence, category scores, priorities and limits are linked from the audit. Native dialogs/choosers are not silently counted as passed. Arbitrary combinations of configuration values are not additional navigation views.
+
+The parent subsequently supplied `6cbc1fe5d7759be9bcba9ed96af691b7ce9978c0`. Its source diff fixes Reset Position's dialog family, reorder announcements/focus, compact Fuel sizing, selected range tracks/naming, persistent Fuel instance identity, appearance heading ranks, driver-specific group names, same-route focus and a shortcut fixture reset. The audit records these as newer-head corrections pending a rendered integration re-check; its baseline evidence and scores are not erased or presented as current-head validation. Widget Scale and navigation changes remain owned by their separate threads.
+
+This audit makes no production UI or startup-size change. Keep the actual logo artwork, red identity, settings-owned typography, overlay preferences and telemetry/profile/storage/IPC semantics intact when addressing the findings. A future all-view claim requires rechecking the affected inventory rows, including compact and expanded/error states, rather than extending representative scores to unreviewed views.

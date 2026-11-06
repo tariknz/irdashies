@@ -631,26 +631,20 @@ export const RelativeSettings = () => {
 
                 {/* STYLING TAB */}
                 {activeTab === 'styling' && (
-                  <>
+                  <div className="space-y-5">
                     <SettingsSection title="Driver Position">
                       <SettingProp path="stylingOptions.driverPosition.background" />
                     </SettingsSection>
-
-                    <SettingDivider />
 
                     <SettingsSection title="Car Number">
                       <SettingProp path="stylingOptions.driverNumber.background" />
                       <SettingProp path="stylingOptions.driverNumber.border" />
                     </SettingsSection>
 
-                    <SettingDivider />
-
                     <SettingsSection title="Badges">
                       <SettingProp path="stylingOptions.badge" />
                       <SettingProp path="stylingOptions.statusBadges" />
                     </SettingsSection>
-
-                    <SettingDivider />
 
                     <SettingsSection title="Flag Contour">
                       <SettingProp path="stylingOptions.flagContour.enabled" />
@@ -658,7 +652,7 @@ export const RelativeSettings = () => {
                         <SettingProp path="stylingOptions.flagContour.borderWidth" />
                       )}
                     </SettingsSection>
-                  </>
+                  </div>
                 )}
 
                 {/* VISIBILITY TAB */}

@@ -33,6 +33,8 @@ export const BroadcastTickerSettings = () => {
 
   return (
     <BaseSettingsSection
+      disableInternalScroll
+      headingLevel="h3"
       title="Broadcast Ticker"
       description="Scrolling bottom-of-screen ticker. After each full loop it moves on: standings, fastest laps, then the best car of each manufacturer."
       settings={settings}

@@ -155,7 +155,7 @@ const PanelRowControls = ({
           <button
             type="button"
             onClick={() => onCreateGantryFuel(panel.id)}
-            className={`${smallButtonClass} bg-green-800/60 hover:bg-green-700 text-green-100 border-green-700`}
+            className={`settings-button-primary`}
           >
             <PlusIcon size={12} /> Create Gantry fuel layout
           </button>

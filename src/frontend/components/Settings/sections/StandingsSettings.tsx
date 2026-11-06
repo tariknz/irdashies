@@ -772,7 +772,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
 
                 {/* STYLING TAB */}
                 {shownTab === 'styling' && (
-                  <>
+                  <div className="space-y-5">
                     <SettingsSection title="Class Header">
                       <SettingToggleRow
                         title="Class Name Background"
@@ -932,8 +932,6 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                       </div>
                     </SettingsSection>
 
-                    <SettingDivider />
-
                     <SettingsSection title="Columns">
                       <SettingToggleRow
                         title="Show Column Headers"
@@ -953,8 +951,6 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                       />
                     </SettingsSection>
 
-                    <SettingDivider />
-
                     <SettingsSection title="Driver Position">
                       <SettingToggleRow
                         title="Position Background"
@@ -973,8 +969,6 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                         }
                       />
                     </SettingsSection>
-
-                    <SettingDivider />
 
                     <SettingsSection title="Car Number">
                       <SettingToggleRow
@@ -1016,8 +1010,6 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                         }
                       />
                     </SettingsSection>
-
-                    <SettingDivider />
 
                     <SettingsSection title="Badges">
                       <SettingToggleRow
@@ -1065,7 +1057,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                         }
                       />
                     </SettingsSection>
-                  </>
+                  </div>
                 )}
 
                 {/* VISIBILITY TAB */}

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { CaretDownIcon, CaretRightIcon } from '@phosphor-icons/react';
+import { useState, useEffect, useId } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
@@ -84,6 +85,7 @@ const CustomShiftPointsSection = ({
     changes: Partial<ShiftLightWidgetSettings['config']>
   ) => void;
 }) => {
+  const fieldId = useId();
   const [expandedCarId, setExpandedCarId] = useState<string | null>(null);
   const [availableCars, setAvailableCars] = useState<CarListItem[]>([]);
   const [selectedCarId, setSelectedCarId] = useState('');
@@ -280,11 +282,11 @@ const CustomShiftPointsSection = ({
       {customShiftPoints.enabled && (
         <div className="space-y-4 border-slate-700 pl-4">
           {/* Demo Mode Info */}
-          <div className="bg-accent-900/30 border border-accent-700/50 rounded p-3 text-xs">
+          <div className="bg-slate-800/40 border border-slate-700 rounded p-3 text-xs">
             <div className="flex items-start gap-2">
               <div className="flex-1">
-                <p className="text-accent-200 mb-1">Demo Mode Car</p>
-                <p className="text-accent-300">
+                <p className="text-slate-200 mb-1">Demo Mode Car</p>
+                <p className="text-slate-400">
                   Demo mode uses the <strong>BMW M4 GT4</strong> (bmwm4gt4).
                   Configure custom shift points for this car to test in demo
                   mode.
@@ -295,8 +297,14 @@ const CustomShiftPointsSection = ({
 
           {/* Indicator Settings */}
           <div className="space-y-2">
-            <label className="text-xs text-slate-400">Indicator Type</label>
+            <label
+              htmlFor={`${fieldId}-type`}
+              className="text-sm text-slate-300"
+            >
+              Indicator Type
+            </label>
             <select
+              id={`${fieldId}-type`}
               value={customShiftPoints.indicatorType}
               onChange={(e) =>
                 updateCustomShiftPoints({
@@ -311,23 +319,35 @@ const CustomShiftPointsSection = ({
             </select>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs text-slate-400">Indicator Color</label>
+          <div className="flex items-center justify-between gap-3">
+            <label
+              htmlFor={`${fieldId}-color`}
+              className="text-sm text-slate-300"
+            >
+              Indicator Color
+            </label>
             <input
               type="color"
+              id={`${fieldId}-color`}
               value={customShiftPoints.indicatorColor}
               onChange={(e) =>
                 updateCustomShiftPoints({ indicatorColor: e.target.value })
               }
-              className="w-full h-10 bg-slate-700 rounded cursor-pointer"
+              className="h-9 w-14 rounded border border-settings-boundary bg-settings-control cursor-pointer"
             />
           </div>
 
           {/* Add Car */}
           <div className="space-y-2">
-            <label className="text-xs text-slate-400">Add Car</label>
+            <label
+              htmlFor={`${fieldId}-car`}
+              className="text-sm text-slate-300"
+            >
+              Add Car
+            </label>
             <div className="flex gap-2">
               <select
+                id={`${fieldId}-car`}
                 value={selectedCarId}
                 onChange={(e) => setSelectedCarId(e.target.value)}
                 className="settings-field flex-1"
@@ -348,7 +368,7 @@ const CustomShiftPointsSection = ({
               <button
                 onClick={addCar}
                 disabled={!selectedCarId || loading}
-                className="px-4 py-2 bg-accent-600 hover:bg-accent-700 disabled:bg-settings-control disabled:text-slate-400 disabled:cursor-not-allowed text-on-accent rounded text-sm transition-colors"
+                className="settings-button-primary"
               >
                 Add
               </button>
@@ -364,7 +384,7 @@ const CustomShiftPointsSection = ({
                 {configuredCars.map((car) => (
                   <div
                     key={car.carId}
-                    className="bg-slate-700 rounded p-3 space-y-2"
+                    className="rounded-md border border-slate-700 p-3 space-y-3"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -374,9 +394,19 @@ const CustomShiftPointsSection = ({
                               expandedCarId === car.carId ? null : car.carId
                             )
                           }
-                          className="text-slate-400 hover:text-white"
+                          type="button"
+                          aria-label={`Shift points for ${car.carName}`}
+                          aria-expanded={expandedCarId === car.carId}
+                          aria-controls={`${fieldId}-${car.carId}`}
+                          className="settings-button h-9 w-9 shrink-0 p-0"
                         >
-                          <span>{expandedCarId === car.carId ? '▼' : '▶'}</span>
+                          <span aria-hidden="true">
+                            {expandedCarId === car.carId ? (
+                              <CaretDownIcon size={16} />
+                            ) : (
+                              <CaretRightIcon size={16} />
+                            )}
+                          </span>
                         </button>
                         <span className="text-sm text-white">
                           {car.carName}
@@ -384,12 +414,14 @@ const CustomShiftPointsSection = ({
                       </div>
                       <div className="flex items-center gap-2">
                         <ToggleSwitch
+                          ariaLabel={`Enable custom shift points for ${car.carName}`}
                           enabled={car.enabled}
                           onToggle={(enabled) => toggleCar(car.carId, enabled)}
                         />
                         <button
+                          aria-label={`Delete shift points for ${car.carName}`}
                           onClick={() => deleteCar(car.carId)}
-                          className="text-red-400 hover:text-red-300 text-xs px-2 py-1"
+                          className="settings-button-danger"
                         >
                           Delete
                         </button>
@@ -397,7 +429,10 @@ const CustomShiftPointsSection = ({
                     </div>
 
                     {expandedCarId === car.carId && (
-                      <div className="ml-6 space-y-2 pt-2 border-t border-settings-boundary">
+                      <div
+                        id={`${fieldId}-${car.carId}`}
+                        className="space-y-3 pt-3 border-t border-slate-700"
+                      >
                         <p className="text-xs text-slate-400">
                           Redline: {car.redlineRpm} RPM
                         </p>
@@ -412,6 +447,7 @@ const CustomShiftPointsSection = ({
                                   Gear {gear}:
                                 </label>
                                 <input
+                                  aria-label={`${car.carName}, gear ${gear} shift RPM`}
                                   type="number"
                                   value={
                                     editingValues[`${car.carId}-${gear}`] ??

@@ -32,6 +32,8 @@ export const BroadcastWeatherSettings = () => {
 
   return (
     <BaseSettingsSection
+      disableInternalScroll
+      headingLevel="h3"
       title="Broadcast Weather"
       description="Pops up with an animated card when rain starts or stops, the track gets wetter or dries, or track temperature swings by 3 degrees."
       settings={settings}

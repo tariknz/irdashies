@@ -30,7 +30,7 @@ export function DraggableSettingItem({
 }: DraggableSettingItemProps) {
   return (
     <div {...itemProps} className="border-b border-slate-700 px-1 pb-3">
-      <div className="group flex min-h-7 items-center justify-between gap-3">
+      <div className="group flex min-h-9 items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2 flex-1">
           <div
             {...dragHandleProps}
@@ -38,7 +38,7 @@ export function DraggableSettingItem({
           >
             <DotsSixVerticalIcon size={16} className="text-slate-400" />
           </div>
-          <span className="text-md font-medium text-slate-200">{label}</span>
+          <span className="text-sm font-normal text-slate-200">{label}</span>
         </div>
         <ReorderControls
           label={label}

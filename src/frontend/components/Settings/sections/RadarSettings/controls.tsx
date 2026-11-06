@@ -75,6 +75,7 @@ export const CustomColorRow = ({
         )}
         <input
           type="color"
+          aria-label="Rival Fill"
           value={shown}
           onChange={(e) => onChange(parseInt(e.target.value.slice(1), 16))}
           className="w-10 h-8 bg-slate-700 rounded cursor-pointer"

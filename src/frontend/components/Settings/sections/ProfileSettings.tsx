@@ -1,6 +1,6 @@
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { SettingsPopover } from '../components/SettingsPopover';
 import { useDashboard } from '@irdashies/context';
 import type {
   DashboardProfile,
@@ -185,11 +185,7 @@ export const ProfileSettings = () => {
     profileName: string;
   }>({ isOpen: false, profileId: '', profileName: '' });
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-  const [dropdownPos, setDropdownPos] = useState<{
-    top: number;
-    right: number;
-  } | null>(null);
-  const dropdownButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const popupAnchor = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const close = () => setOpenDropdownId(null);
@@ -357,12 +353,12 @@ export const ProfileSettings = () => {
           <div className="flex gap-2">
             <input
               type="text"
-              aria-label="New profile name"
               value={newProfileName}
               onChange={(e) => setNewProfileName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleCreateProfile();
               }}
+              aria-label="New profile name"
               placeholder="Enter profile name..."
               disabled={isCreating}
               className="settings-field flex-1  disabled:opacity-50"
@@ -415,6 +411,7 @@ export const ProfileSettings = () => {
                       {isEditing ? (
                         <input
                           type="text"
+                          aria-label={`Name for ${profile.name}`}
                           value={editingProfileName}
                           onChange={(e) =>
                             setEditingProfileName(e.target.value)
@@ -446,13 +443,13 @@ export const ProfileSettings = () => {
                         <>
                           <button
                             onClick={() => handleSaveEdit(profile.id)}
-                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
+                            className="settings-button-primary"
                           >
                             Save
                           </button>
                           <button
                             onClick={handleCancelEdit}
-                            className="border border-settings-boundary bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1 rounded text-sm font-medium transition-colors"
+                            className="settings-button"
                           >
                             Cancel
                           </button>
@@ -462,7 +459,7 @@ export const ProfileSettings = () => {
                           {!isActive && (
                             <button
                               onClick={() => handleSwitchProfile(profile.id)}
-                              className="bg-accent-600 hover:bg-accent-700 text-on-accent px-3 py-1 rounded text-sm font-medium transition-colors"
+                              className="settings-button-primary"
                             >
                               Switch
                             </button>
@@ -475,7 +472,7 @@ export const ProfileSettings = () => {
                                   browserUrlFor(profile.id)
                                 )
                               }
-                              className="bg-accent-600 hover:bg-accent-700 text-on-accent px-3 py-1 rounded text-sm font-medium transition-colors"
+                              className="settings-button"
                               title="Copy browser URL for this profile"
                             >
                               Copy URL
@@ -485,99 +482,83 @@ export const ProfileSettings = () => {
                           {/* Actions dropdown */}
                           <div className="relative">
                             <button
-                              ref={(el) => {
-                                if (el)
-                                  dropdownButtonRefs.current.set(
-                                    profile.id,
-                                    el
-                                  );
-                                else
-                                  dropdownButtonRefs.current.delete(profile.id);
-                              }}
+                              aria-expanded={openDropdownId === profile.id}
+                              aria-controls={
+                                openDropdownId === profile.id
+                                  ? `profile-actions-${profile.id}`
+                                  : undefined
+                              }
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (openDropdownId === profile.id) {
-                                  setOpenDropdownId(null);
-                                  setDropdownPos(null);
-                                } else {
-                                  const rect = dropdownButtonRefs.current
-                                    .get(profile.id)
-                                    ?.getBoundingClientRect();
-                                  if (rect) {
-                                    setDropdownPos({
-                                      top: rect.bottom + 4,
-                                      right: window.innerWidth - rect.right,
-                                    });
-                                  }
-                                  setOpenDropdownId(profile.id);
-                                }
+                                popupAnchor.current = e.currentTarget;
+                                setOpenDropdownId(
+                                  openDropdownId === profile.id
+                                    ? null
+                                    : profile.id
+                                );
                               }}
-                              className="min-h-9 border border-settings-boundary bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1"
+                              className="settings-button"
                             >
                               Actions
                               <CaretDownIcon size={12} />
                             </button>
                           </div>
-                          {openDropdownId === profile.id &&
-                            dropdownPos &&
-                            createPortal(
-                              <div
-                                style={{
-                                  position: 'fixed',
-                                  top: dropdownPos.top,
-                                  right: dropdownPos.right,
-                                  zIndex: 9999,
-                                }}
-                                className="bg-slate-700 border border-settings-boundary rounded shadow-lg min-w-[130px]"
+                          <SettingsPopover
+                            open={openDropdownId === profile.id}
+                            anchorRef={popupAnchor}
+                            onClose={() => setOpenDropdownId(null)}
+                            label={`${profile.name} actions`}
+                            id={`profile-actions-${profile.id}`}
+                          >
+                            {browserUrlsReady && (
+                              <a
+                                href={browserUrlFor(profile.id)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => setOpenDropdownId(null)}
+                                className="flex min-h-9 w-full items-center gap-2 rounded px-3 py-1.5 text-left text-sm text-slate-200 hover:bg-settings-hover"
+                                title="Open this profile in your browser to arrange its OBS widgets"
                               >
-                                {browserUrlsReady && (
-                                  <a
-                                    href={browserUrlFor(profile.id)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    onClick={() => setOpenDropdownId(null)}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-slate-700 transition-colors text-left"
-                                    title="Open this profile in your browser to arrange its OBS widgets"
-                                  >
-                                    <ArrowSquareOutIcon size={14} />
-                                    Edit Browser Layout
-                                  </a>
-                                )}
-                                <button
-                                  onClick={() => {
-                                    setOpenDropdownId(null);
-                                    handleCloneProfile(profile);
-                                  }}
-                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-slate-700 transition-colors text-left"
-                                >
-                                  <CopySimpleIcon size={14} />
-                                  Clone
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setOpenDropdownId(null);
-                                    handleStartEdit(profile);
-                                  }}
-                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-slate-700 transition-colors text-left"
-                                >
-                                  <PencilSimpleIcon size={14} />
-                                  Rename
-                                </button>
-                                {profile.id !== 'default' && (
-                                  <button
-                                    onClick={() => {
-                                      setOpenDropdownId(null);
-                                      handleDeleteProfile(profile.id);
-                                    }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-slate-700 transition-colors text-left"
-                                  >
-                                    <TrashIcon size={14} />
-                                    Delete
-                                  </button>
-                                )}
-                              </div>,
-                              document.body
+                                <ArrowSquareOutIcon size={14} />
+                                Edit Browser Layout
+                              </a>
                             )}
+                            <button
+                              onClick={() => {
+                                popupAnchor.current?.focus();
+                                setOpenDropdownId(null);
+                                handleCloneProfile(profile);
+                              }}
+                              className="flex min-h-9 w-full items-center gap-2 rounded px-3 py-1.5 text-left text-sm text-slate-200 hover:bg-settings-hover"
+                            >
+                              <CopySimpleIcon size={14} />
+                              Clone
+                            </button>
+                            <button
+                              onClick={() => {
+                                popupAnchor.current?.focus();
+                                setOpenDropdownId(null);
+                                handleStartEdit(profile);
+                              }}
+                              className="flex min-h-9 w-full items-center gap-2 rounded px-3 py-1.5 text-left text-sm text-slate-200 hover:bg-settings-hover"
+                            >
+                              <PencilSimpleIcon size={14} />
+                              Rename
+                            </button>
+                            {profile.id !== 'default' && (
+                              <button
+                                onClick={() => {
+                                  popupAnchor.current?.focus();
+                                  setOpenDropdownId(null);
+                                  handleDeleteProfile(profile.id);
+                                }}
+                                className="flex min-h-9 w-full items-center gap-2 rounded px-3 py-1.5 text-left text-sm text-red-300 hover:bg-settings-hover"
+                              >
+                                <TrashIcon size={14} />
+                                Delete
+                              </button>
+                            )}
+                          </SettingsPopover>
                         </>
                       )}
                     </div>
@@ -783,9 +764,9 @@ export const ProfileSettings = () => {
         )}
 
         {/* Info Box */}
-        <div className="bg-accent-500/10 border border-accent-500/30 rounded-lg p-4">
-          <h4 className="text-accent-300 font-semibold mb-2">About Profiles</h4>
-          <ul className="text-sm text-accent-200 space-y-1 list-disc list-inside">
+        <div className="bg-slate-800/40 border border-slate-700 rounded-lg p-4">
+          <h4 className="text-slate-200 font-semibold mb-2">About Profiles</h4>
+          <ul className="text-sm text-slate-400 space-y-1 list-disc list-inside">
             <li>Each profile has its own widget configurations and layouts</li>
             <li>Switch between profiles to use different dashboard setups</li>
             <li>The Default cannot be deleted</li>

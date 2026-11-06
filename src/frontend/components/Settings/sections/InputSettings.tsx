@@ -199,7 +199,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                   </button>
                   <button
                     onClick={handleAddWidget}
-                    className="flex items-center gap-1 px-3 py-1 bg-green-700 hover:bg-green-600 text-white text-xs rounded transition-colors"
+                    className="settings-button-primary"
                   >
                     <PlusIcon /> New Input Widget
                   </button>
@@ -259,7 +259,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
                 {/* OPTIONS TAB */}
                 {activeTab === 'options' && (
-                  <>
+                  <div className="space-y-5">
                     <WidgetScaleSettings widgetId={widgetId} className="px-4" />
                     <SettingsSection title="Options">
                       <SettingProp path="useRawValues" />
@@ -301,6 +301,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                               Flash Color
                             </span>
                             <input
+                              aria-label="Flash Color"
                               type="color"
                               value={shiftFlash.color}
                               onChange={(e) =>
@@ -442,7 +443,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                         </SettingsSection>
                       )}
                     </SettingsSection>
-                  </>
+                  </div>
                 )}
 
                 {/* VISIBILITY TAB */}

@@ -85,7 +85,12 @@ const commonSessionProperties = [
   { path: 'LmuRest.fuelLevelMax', label: 'LMU Fuel Slider Max (L)' },
 ];
 
-export const TelemetryInspectorSettings = () => {
+export const TelemetryInspectorSettings = ({
+  embedded = false,
+}: {
+  embedded?: boolean;
+}) => {
+  const GroupHeading = embedded ? 'h4' : 'h3';
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
@@ -108,6 +113,8 @@ export const TelemetryInspectorSettings = () => {
 
   return (
     <BaseSettingsSection
+      headingLevel={embedded ? 'h3' : 'h2'}
+      disableInternalScroll={embedded}
       title="Telemetry Inspector"
       description="Debug widget to display raw telemetry and session values. Add properties to watch."
       settings={settings}
@@ -139,9 +146,9 @@ export const TelemetryInspectorSettings = () => {
             <WidgetScaleSettings widgetId={SETTING_ID} />
             {/* Current Properties */}
             <div className="space-y-2">
-              <h3 className="text-lg font-medium text-slate-200">
+              <GroupHeading className="text-sm font-semibold text-slate-200">
                 Watched Properties ({properties.length})
-              </h3>
+              </GroupHeading>
               {properties.length === 0 ? (
                 <p className="text-sm text-slate-400">
                   No properties configured. Add some below.
@@ -151,9 +158,9 @@ export const TelemetryInspectorSettings = () => {
                   {properties.map((prop, index) => (
                     <div
                       key={`${prop.source}-${prop.path}-${index}`}
-                      className="flex items-center justify-between bg-slate-700 rounded px-3 py-1.5"
+                      className="flex items-center justify-between gap-2 border-b border-slate-700 py-1.5"
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
                         <span
                           className={`text-xs px-1.5 py-0.5 rounded ${
                             prop.source === 'telemetry'
@@ -174,7 +181,9 @@ export const TelemetryInspectorSettings = () => {
                       </div>
                       <button
                         onClick={() => removeProperty(index)}
-                        className="p-1 hover:bg-settings-hover rounded transition-colors"
+                        type="button"
+                        aria-label={`Remove ${prop.label || prop.path}`}
+                        className="settings-button h-9 w-9 shrink-0 p-0"
                       >
                         <TrashIcon size={16} className="text-red-400" />
                       </button>
@@ -186,41 +195,50 @@ export const TelemetryInspectorSettings = () => {
 
             {/* Add Custom Property */}
             <div className="space-y-2 border-t border-settings-boundary pt-4">
-              <h3 className="text-lg font-medium text-slate-200">
+              <GroupHeading className="text-sm font-semibold text-slate-200">
                 Add Custom Property
-              </h3>
-              <div className="flex gap-2">
-                <select
-                  value={newProperty.source}
-                  onChange={(e) =>
-                    setNewProperty({
-                      ...newProperty,
-                      source: e.target.value as 'telemetry' | 'session',
-                    })
-                  }
-                  className="settings-field"
-                >
-                  <option value="telemetry">Telemetry</option>
-                  <option value="session">Session</option>
-                </select>
-                <input
-                  type="text"
-                  placeholder="Property path (e.g., Speed)"
-                  value={newProperty.path}
-                  onChange={(e) =>
-                    setNewProperty({ ...newProperty, path: e.target.value })
-                  }
-                  className="settings-field flex-1"
-                />
-                <input
-                  type="text"
-                  placeholder="Label (optional)"
-                  value={newProperty.label ?? ''}
-                  onChange={(e) =>
-                    setNewProperty({ ...newProperty, label: e.target.value })
-                  }
-                  className="settings-field w-32"
-                />
+              </GroupHeading>
+              <div className="grid grid-cols-2 items-end gap-3">
+                <label className="flex min-w-0 flex-col gap-1 text-sm text-slate-300">
+                  Source
+                  <select
+                    value={newProperty.source}
+                    onChange={(e) =>
+                      setNewProperty({
+                        ...newProperty,
+                        source: e.target.value as 'telemetry' | 'session',
+                      })
+                    }
+                    className="settings-field"
+                  >
+                    <option value="telemetry">Telemetry</option>
+                    <option value="session">Session</option>
+                  </select>
+                </label>
+                <label className="flex min-w-0 flex-col gap-1 text-sm text-slate-300">
+                  Property path
+                  <input
+                    type="text"
+                    placeholder="Property path (e.g., Speed)"
+                    value={newProperty.path}
+                    onChange={(e) =>
+                      setNewProperty({ ...newProperty, path: e.target.value })
+                    }
+                    className="settings-field w-full"
+                  />
+                </label>
+                <label className="flex min-w-0 flex-col gap-1 text-sm text-slate-300">
+                  Label (optional)
+                  <input
+                    type="text"
+                    placeholder="Label (optional)"
+                    value={newProperty.label ?? ''}
+                    onChange={(e) =>
+                      setNewProperty({ ...newProperty, label: e.target.value })
+                    }
+                    className="settings-field w-full"
+                  />
+                </label>
                 <button
                   onClick={() => {
                     if (newProperty.path) {
@@ -228,18 +246,19 @@ export const TelemetryInspectorSettings = () => {
                     }
                   }}
                   disabled={!newProperty.path}
-                  className="px-3 py-1.5 bg-accent-600 hover:bg-accent-500 disabled:bg-settings-control disabled:text-slate-400 disabled:cursor-not-allowed text-on-accent rounded text-sm transition-colors"
+                  type="button"
+                  className="settings-button-primary"
                 >
-                  <PlusIcon size={16} />
+                  <PlusIcon size={16} /> Add property
                 </button>
               </div>
             </div>
 
             {/* Quick Add Common Properties */}
             <div className="space-y-2 border-t border-settings-boundary pt-4">
-              <h3 className="text-lg font-medium text-slate-200">
+              <GroupHeading className="text-sm font-semibold text-slate-200">
                 Quick Add - Telemetry
-              </h3>
+              </GroupHeading>
               <div className="flex flex-wrap gap-1">
                 {commonTelemetryProperties.map((prop) => (
                   <button
@@ -251,7 +270,12 @@ export const TelemetryInspectorSettings = () => {
                         label: prop.label,
                       })
                     }
-                    className="px-2 py-1 text-xs bg-slate-700 hover:bg-settings-hover text-slate-300 rounded transition-colors"
+                    disabled={properties.some(
+                      (existing) =>
+                        existing.source === 'telemetry' &&
+                        existing.path === prop.path
+                    )}
+                    className="settings-button"
                   >
                     {prop.label}
                   </button>
@@ -260,9 +284,9 @@ export const TelemetryInspectorSettings = () => {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-lg font-medium text-slate-200">
+              <GroupHeading className="text-sm font-semibold text-slate-200">
                 Quick Add - Session
-              </h3>
+              </GroupHeading>
               <div className="flex flex-wrap gap-1">
                 {commonSessionProperties.map((prop) => (
                   <button
@@ -274,7 +298,12 @@ export const TelemetryInspectorSettings = () => {
                         label: prop.label,
                       })
                     }
-                    className="px-2 py-1 text-xs bg-slate-700 hover:bg-settings-hover text-slate-300 rounded transition-colors"
+                    disabled={properties.some(
+                      (existing) =>
+                        existing.source === 'session' &&
+                        existing.path === prop.path
+                    )}
+                    className="settings-button"
                   >
                     {prop.label}
                   </button>

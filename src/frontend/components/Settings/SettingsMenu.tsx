@@ -254,7 +254,7 @@ export const SettingsMenu = () => {
             Overlays
           </h2>
         </div>
-        <label className="flex min-h-9 items-center gap-2 rounded-md border border-settings-boundary bg-slate-900 px-2 text-slate-400 focus-within:border-accent-400">
+        <label className="flex min-h-9 items-center gap-2 rounded-md border border-settings-boundary bg-slate-900 px-2 text-slate-400 focus-within:outline-2 focus-within:outline-offset-3 focus-within:outline-accent-400">
           <MagnifyingGlassIcon size={16} className="shrink-0" />
           <input
             type="search"
@@ -262,7 +262,7 @@ export const SettingsMenu = () => {
             placeholder="Find an overlay"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            className="min-h-9 w-full min-w-0 bg-transparent text-sm text-slate-200 outline-none placeholder:text-slate-400"
+            className="min-h-9 w-full min-w-0 bg-transparent text-sm text-slate-200 outline-none placeholder:text-slate-400 focus-visible:outline-none!"
           />
         </label>
       </div>
