@@ -115,4 +115,22 @@ export default {
   'Follow live': 'Следовать за текущей позицией',
   'Set a HypeRate Session ID in settings':
     'Укажите ID сессии HypeRate в настройках',
+  // Small labels and statuses in the remaining overlay widgets
+  'Docked panels': 'Закреплённые панели',
+  'EARLY PITBOX': 'РАННИЙ ПИТ-БОКС',
+  'Entering Pit Lane': 'Въезд на пит-лейн',
+  Pitbox: 'Пит-бокс',
+  'Past Box': 'После пит-бокса',
+  'Missing Settings': 'Настройки отсутствуют',
+  'Layout Error': 'Ошибка компоновки',
+  'To go': 'Осталось',
+  Fuel: 'Топливо',
+  'LAST LAP': 'ПОСЛЕДНИЙ КРУГ',
+  'TO ADD': 'ДОЛИТЬ',
+  'Telemetry replay': 'Повтор телеметрии',
+  'HypeRate heart rate': 'Пульс в HypeRate',
+  'AVG 10': 'СР. 10',
+  'This profile has no widget called "':
+    'В этом профиле нет виджета «',
+  'Y axis': 'Ось Y',
 } satisfies Record<string, string>;
