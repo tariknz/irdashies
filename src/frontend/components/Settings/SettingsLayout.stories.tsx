@@ -21,6 +21,10 @@ interface StoryProps {
   initialPath: string;
   emptyFuel?: boolean;
   scaleInstances?: boolean;
+  initialTab?: {
+    key: 'fuelWidgetTab' | 'inputTab' | 'standingsTab';
+    value: 'display' | 'options';
+  };
 }
 
 // The header reads the running state to decide whether to name a simulator.
@@ -74,7 +78,10 @@ const driverTagsFixture: DriverTagSettings = {
   display: { enabled: true, displayStyle: 'badge', iconWeight: 'regular' },
 };
 
-const installSettingsBridges = () => {
+/** Install isolated bridges and tab state, restoring their prior values on cleanup. */
+const installSettingsBridges = (initialTab?: StoryProps['initialTab']) => {
+  const previousTab = initialTab ? localStorage.getItem(initialTab.key) : null;
+  if (initialTab) localStorage.setItem(initialTab.key, initialTab.value);
   const previousPitLane = window.pitLaneBridge;
   const previousKeybindings = window.keybindingsBridge;
   let hasCalibration = true;
@@ -130,6 +137,10 @@ const installSettingsBridges = () => {
   return () => {
     window.pitLaneBridge = previousPitLane;
     window.keybindingsBridge = previousKeybindings;
+    if (initialTab) {
+      if (previousTab === null) localStorage.removeItem(initialTab.key);
+      else localStorage.setItem(initialTab.key, previousTab);
+    }
   };
 };
 
@@ -137,7 +148,8 @@ const meta: Meta<typeof SettingsLayout> = {
   component: SettingsLayout,
   title: 'components/SettingsLayout',
   parameters: { layout: 'fullscreen' },
-  beforeEach: installSettingsBridges,
+  beforeEach: ({ args }) =>
+    installSettingsBridges((args as StoryProps).initialTab),
   decorators: [
     ChannelSnapshotDecorator({}),
     (Story, context) => {
@@ -248,19 +260,35 @@ export const FuelEmpty: Story = {
 };
 
 export const FuelCustomScale: Story = {
-  args: { initialPath: '/settings/fuel-review', scaleInstances: true },
+  args: {
+    initialPath: '/settings/fuel-review',
+    scaleInstances: true,
+    initialTab: { key: 'fuelWidgetTab', value: 'display' },
+  },
 };
 
 export const FuelDockedScale: Story = {
-  args: { initialPath: '/settings/fuel-docked', scaleInstances: true },
+  args: {
+    initialPath: '/settings/fuel-docked',
+    scaleInstances: true,
+    initialTab: { key: 'fuelWidgetTab', value: 'display' },
+  },
 };
 
 export const InputCustomScale: Story = {
-  args: { initialPath: '/settings/input-review', scaleInstances: true },
+  args: {
+    initialPath: '/settings/input-review',
+    scaleInstances: true,
+    initialTab: { key: 'inputTab', value: 'options' },
+  },
 };
 
 export const StandingsDockedScale: Story = {
-  args: { initialPath: '/settings/standings-review', scaleInstances: true },
+  args: {
+    initialPath: '/settings/standings-review',
+    scaleInstances: true,
+    initialTab: { key: 'standingsTab', value: 'display' },
+  },
 };
 
 export const ProfilesRoute: Story = {
