@@ -11,6 +11,8 @@
  * What the endpoint answers:
  *
  * - `{"MultiStintState":"DRIVING", ...}` -- in the car.
+ * - `{"MultiStintState":"END_OF_RACE_GRACE", ...}` -- still in the car after
+ *   the checkered flag (`gamePhase` GPHASE_CHECKERED), read as driving.
  * - `{"MultiStintState":"PAUSED", ...}` -- in the car with a menu open.
  * - `{"MultiStintState":"MONITOR_MENU", ...}` -- in the session, at the
  *   monitor rather than in the car.
@@ -37,7 +39,7 @@ export type LmuGameState =
 export interface ParsedLmuGameState {
   state: LmuGameState;
   /**
-   * The `MultiStintState` the sim sent, when it is not one of the three this
+   * The `MultiStintState` the sim sent, when it is not one of those this
    * knows. Read as being at the monitor -- in the session, out of the car --
    * which is the reading that cannot keep a driving widget on screen; kept so
    * the log can say what arrived.
@@ -47,6 +49,9 @@ export interface ParsedLmuGameState {
 
 const MULTI_STINT_STATES: Record<string, LmuGameState> = {
   DRIVING: 'driving',
+  // The grace after the checkered flag: the player is still driving to the
+  // line or the pits, and the widgets stay as they were.
+  END_OF_RACE_GRACE: 'driving',
   PAUSED: 'paused',
   MONITOR_MENU: 'monitor',
 };

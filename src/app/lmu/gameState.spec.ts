@@ -20,6 +20,14 @@ const MONITOR = {
 };
 const DRIVING = { ...MONITOR, MultiStintState: 'DRIVING', inMonitor: false };
 const PAUSED = { ...MONITOR, MultiStintState: 'PAUSED', inMonitor: false };
+const END_OF_RACE_GRACE = {
+  ...MONITOR,
+  MultiStintState: 'END_OF_RACE_GRACE',
+  inMonitor: false,
+  gamePhase: 'GPHASE_CHECKERED',
+  PitState: 'REQUEST',
+  raceFinished: false,
+};
 const UNAVAILABLE = {
   status: 'unavailable',
   reason: 'Game is not in an active session',
@@ -31,6 +39,10 @@ describe('parseLmuGameState', () => {
     expect(parseLmuGameState(DRIVING)).toEqual({ state: 'driving' });
     expect(parseLmuGameState(PAUSED)).toEqual({ state: 'paused' });
     expect(parseLmuGameState(MONITOR)).toEqual({ state: 'monitor' });
+  });
+
+  it('reads the grace after the checkered flag as still driving', () => {
+    expect(parseLmuGameState(END_OF_RACE_GRACE)).toEqual({ state: 'driving' });
   });
 
   it('reads the unavailable answer as out of any session', () => {

@@ -709,6 +709,13 @@ describe('game-state task', () => {
     expect(stateOf({ MultiStintState: 'MONITOR_MENU', inMonitor: true })).toBe(
       'monitor'
     );
+    expect(
+      stateOf({
+        MultiStintState: 'END_OF_RACE_GRACE',
+        gamePhase: 'GPHASE_CHECKERED',
+        inMonitor: false,
+      })
+    ).toBe('driving');
   });
 
   it('reads the unavailable answer as out of any session', () => {
@@ -749,6 +756,12 @@ describe('game-state task', () => {
         'read as in the session, out of the car'
     );
     expect(output.report?.(value, value)).toBeUndefined();
+  });
+
+  it('knows the grace after the checkered flag, and does not report it', () => {
+    const output = task().outputs[0];
+    const value = output.parse({ MultiStintState: 'END_OF_RACE_GRACE' });
+    expect(output.report?.(value, undefined)).toBeUndefined();
   });
 });
 
