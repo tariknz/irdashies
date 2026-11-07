@@ -1,10 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import {
-  trackStateSelectors,
-  useDashboard,
-  useFuelProjectionSnapshot,
-  useTrackStateSelector,
-} from '@irdashies/context';
+import { useDashboard, useFuelProjectionSnapshot } from '@irdashies/context';
 import { useFuelCalculation } from './useFuelCalculation';
 import {
   FuelCalculatorHeader,
@@ -77,20 +72,15 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
   const { fuelUnits, safetyMargin } = settings;
 
   const projection = useFuelProjectionSnapshot();
-  // Out of any session reads as Offline Testing, as useSessionVisibility has it.
-  const notInSession =
-    useTrackStateSelector(trackStateSelectors.notInSession) ?? false;
-  const visibilityKey = notInSession
-    ? 'offlineTesting'
-    : projection?.sessionType
-      ? {
-          Race: 'race',
-          'Lone Qualify': 'loneQualify',
-          'Open Qualify': 'openQualify',
-          Practice: 'practice',
-          'Offline Testing': 'offlineTesting',
-        }[projection.sessionType]
-      : undefined;
+  const visibilityKey = projection?.sessionType
+    ? {
+        Race: 'race',
+        'Lone Qualify': 'loneQualify',
+        'Open Qualify': 'openQualify',
+        Practice: 'practice',
+        'Offline Testing': 'offlineTesting',
+      }[projection.sessionType]
+    : undefined;
   const isSessionVisible = visibilityKey
     ? (settings.sessionVisibility?.[
         visibilityKey as keyof typeof settings.sessionVisibility

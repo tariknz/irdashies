@@ -191,11 +191,7 @@ export const useCarState = () => {
         penaltyKind: lmuPenaltyKindFromCode(carIdxPenaltyKind[index]),
         penaltySeconds: carIdxPenaltySeconds[index],
         finishState: lmuFinishStateFromCode(carIdxFinishStatus[index]),
-        // LMU's DQ raises Disqualify too, and the finish badge already says
-        // so; without this the pit column repeats it as DNF.
-        dnf:
-          lmuFinishStateFromCode(carIdxFinishStatus[index]) === undefined &&
-          !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Disqualify),
+        dnf: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Disqualify),
         repair: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Repair),
         penalty: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Black),
         slowdown: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Furled),

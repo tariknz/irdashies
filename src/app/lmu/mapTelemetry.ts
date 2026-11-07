@@ -274,8 +274,9 @@ export function mapLmuTelemetry(
   livePenalties?: LmuLivePenaltyChannels,
   /**
    * Where the player is, from LMU's GetGameState, polled once a second. When
-   * known it decides IsOnTrack and LmuDataStale outright, and `dataFrozen`
-   * and the realtime and ignition flags are not consulted. Omitted -- no REST
+   * known it decides IsOnTrack outright, and LmuDataStale except at the
+   * monitor, where `dataFrozen` still has its say; the realtime and ignition
+   * flags are not consulted. Omitted -- no REST
    * API, a tape that never recorded it, or as every spec does -- those
    * inferences from shared memory stand, as they did before. See
    * gameState.ts.
@@ -817,12 +818,24 @@ export function mapLmuTelemetry(
         playerIdx >= 0 &&
         (raw.inRealtime || (raw.ignitionStarter ?? 0) > 0);
   t.IsOnTrack = bool(inCar);
+  // In the car, the sim's word stands over a frozen block: a pause stops the
+  // writes and ends nothing. Out of any session, the frame describes nothing.
+  // At the monitor the freeze watch still decides, as it did before the sim
+  // was asked: a session that ended with the player's car in the pit lane
+  // freezes with `onPitRoad` set, which the driving gate would otherwise read
+  // as driving at the monitor for as long as the player sat there.
   t.LmuDataStale = bool(
-    gameState !== undefined ? !lmuInSession(gameState) : (dataFrozen ?? false)
+    gameState === undefined
+      ? (dataFrozen ?? false)
+      : !lmuInCar(gameState) &&
+          (!lmuInSession(gameState) || (dataFrozen ?? false))
   );
-  // Only the sim's own "unavailable", not an inference: this hides widgets,
-  // and a guess from a frozen block is not enough to do that on.
-  t.LmuNotInSession = bool(gameState === 'notInSession');
+  // Only the sim's own word, not an inference: this hides widgets, and a
+  // guess from a frozen block is not enough to do that on. Outside a game is
+  // further out of a session still.
+  t.LmuNotInSession = bool(
+    gameState === 'notInSession' || gameState === 'notInGame'
+  );
   // Reported as the snapshot has them, frozen or not. Falsifying these while
   // frozen was a mistake: isDriving reads them as `!isInGarage`, so clearing
   // them removed the one term that would have excluded a parked player.

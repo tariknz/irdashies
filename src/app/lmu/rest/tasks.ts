@@ -117,6 +117,12 @@ export interface LmuRestTask {
    * and one log line.
    */
   readonly optional?: boolean;
+  /**
+   * How many failures in a row an optional task takes before it reports
+   * itself absent and clears its outputs. One if unset: the last answer goes
+   * the moment the path stops answering.
+   */
+  readonly clearAfterFailures?: number;
   readonly outputs: readonly LmuRestOutput[];
 }
 
@@ -406,8 +412,8 @@ const gameState: LmuRestOutput = {
       return undefined;
     }
     return (
-      `[lmuRest] Unrecognised MultiStintState ${JSON.stringify(unrecognised)}; ` +
-      'read as in the session, out of the car'
+      `[lmuRest] Unrecognised GetGameState ${unrecognised}; ` +
+      'reading in-car and in-session from shared memory'
     );
   },
 };
@@ -730,6 +736,11 @@ export const LMU_REST_TASKS: readonly LmuRestTask[] = [
     // anything else just means the bridge reads shared memory until it
     // answers again.
     optional: true,
+    // But not after one miss. A request that times out behind another on the
+    // single socket says nothing about the player, and dropping to shared
+    // memory for it would flicker a paused player out of the car -- the
+    // frozen block reads as out. Three in a row, about three seconds.
+    clearAfterFailures: 3,
     answerFailure: (data, failure) => {
       const parsed = readLmuGameStateFailure(failure);
       if (!parsed) return false;

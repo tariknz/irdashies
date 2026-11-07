@@ -38,17 +38,21 @@ void applyTimeout(SOCKET socketHandle, int timeoutMs) {
       sizeof(value));
 }
 
-/** True for a status line carrying a 2xx. */
-bool isSuccessStatus(const std::string& response) {
+/** The code on the status line, or 0 if there is none to read. */
+int statusCodeOf(const std::string& response) {
   const auto lineEnd = response.find("\r\n");
-  if (lineEnd == std::string::npos) return false;
+  if (lineEnd == std::string::npos) return 0;
   const std::string statusLine = response.substr(0, lineEnd);
   // "HTTP/1.1 200 OK" -- the code follows the first space.
   const auto space = statusLine.find(' ');
-  if (space == std::string::npos || space + 2 >= statusLine.size()) {
-    return false;
+  if (space == std::string::npos || space + 4 > statusLine.size()) return 0;
+  int code = 0;
+  for (std::size_t i = space + 1; i < space + 4; ++i) {
+    const char digit = statusLine[i];
+    if (digit < '0' || digit > '9') return 0;
+    code = code * 10 + (digit - '0');
   }
-  return statusLine[space + 1] == '2';
+  return code;
 }
 
 }  // namespace
@@ -76,8 +80,10 @@ HttpResult httpGet(
     std::uint16_t port,
     const std::string& path,
     int timeoutMs,
-    std::string& body) {
+    std::string& body,
+    int* status) {
   body.clear();
+  if (status != nullptr) *status = 0;
 
   addrinfo hints{};
   hints.ai_family = AF_INET;  // The API is served on 127.0.0.1.
@@ -154,9 +160,13 @@ HttpResult httpGet(
   }
   closesocket(socketHandle);
 
-  if (!isSuccessStatus(response)) return HttpResult::Status;
-
+  const int code = statusCodeOf(response);
+  if (status != nullptr) *status = code;
   const auto headerEnd = response.find("\r\n\r\n");
+  if (code < 200 || code >= 300) {
+    if (headerEnd != std::string::npos) body = response.substr(headerEnd + 4);
+    return HttpResult::Status;
+  }
   if (headerEnd == std::string::npos) return HttpResult::Network;
   body = response.substr(headerEnd + 4);
   return HttpResult::Ok;

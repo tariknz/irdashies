@@ -319,6 +319,15 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
 
   const badgeMinimal = config?.stylingOptions?.badge ?? false;
   const statusBadgesMinimal = config?.stylingOptions?.statusBadges ?? false;
+  // LMU's DQ also raises Disqualify, so the pit column would repeat as DNF
+  // what the name cell already writes out -- but only there: with the name
+  // cell's badges off or the column hidden, the pit column is the only sign.
+  const nameShowsRetirement =
+    (finishState === 'DNF' || finishState === 'DQ') &&
+    (displayOrder ? displayOrder.includes('driverName') : true) &&
+    (config?.driverName?.enabled ?? true) &&
+    (config?.driverName?.showStatusBadges ?? true);
+  const pitStatusDnf = dnf && !nameShowsRetirement;
   const positionBackground =
     config?.stylingOptions?.driverPosition?.background ?? true;
   const numberBackground =
@@ -492,7 +501,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             lastPitLap={lastPitLap}
             lastLap={lastLap}
             currentSessionType={currentSessionType}
-            dnf={dnf}
+            dnf={pitStatusDnf}
             pitStopDuration={pitStopDuration}
             showPitTime={config?.pitStatus?.showPitTime ?? false}
             pitLapDisplayMode={config?.pitStatus?.pitLapDisplayMode}
@@ -827,7 +836,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     lastPitLap,
     lastLap,
     currentSessionType,
-    dnf,
+    pitStatusDnf,
     repair,
     penalty,
     slowdown,

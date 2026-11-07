@@ -191,8 +191,3 @@ export function readTeamNationalities(payload: unknown): TeamNationalities {
   }
   return { found, unknown };
 }
-
-/** The flag codes alone; see `readTeamNationalities`. */
-export function parseTeamNationalities(payload: unknown): Map<string, string> {
-  return readTeamNationalities(payload).found;
-}

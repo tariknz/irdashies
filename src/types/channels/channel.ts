@@ -60,8 +60,9 @@ export interface TrackStateSnapshot {
    */
   dataStale: boolean;
   /**
-   * True while LMU says it is running and in no session. Session visibility
-   * treats it as Offline Testing. Always false under iRacing.
+   * True while LMU says it is running and in no session, or in no game at
+   * all. Session visibility treats it as Offline Testing. Always false under
+   * iRacing.
    */
   notInSession: boolean;
   playerCarInPitStall: boolean;

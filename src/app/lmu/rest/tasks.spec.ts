@@ -699,6 +699,12 @@ describe('game-state task', () => {
     expect(task().optional).toBe(true);
   });
 
+  it('holds its last answer through two misses, not one', () => {
+    // A single timeout behind another request on the one socket says nothing
+    // about the player.
+    expect(task().clearAfterFailures).toBe(3);
+  });
+
   it('reads where the player is from MultiStintState', () => {
     expect(stateOf({ MultiStintState: 'DRIVING', inMonitor: false })).toBe(
       'driving'
@@ -747,15 +753,25 @@ describe('game-state task', () => {
     expect(data.gameState).toBeUndefined();
   });
 
-  it('reports a MultiStintState it does not know, once', () => {
+  it('reports a MultiStintState it does not know, once, and reads no state', () => {
     const output = task().outputs[0];
     const value = output.parse({ MultiStintState: 'SPECTATING' });
-    expect(stateOf({ MultiStintState: 'SPECTATING' })).toBe('monitor');
+    expect(stateOf({ MultiStintState: 'SPECTATING' })).toBeUndefined();
     expect(output.report?.(value, undefined)).toBe(
-      '[lmuRest] Unrecognised MultiStintState "SPECTATING"; ' +
-        'read as in the session, out of the car'
+      '[lmuRest] Unrecognised GetGameState MultiStintState "SPECTATING"; ' +
+        'reading in-car and in-session from shared memory'
     );
     expect(output.report?.(value, value)).toBeUndefined();
+  });
+
+  it('drops the last state for an answer of any other shape', () => {
+    // A load screen answering something new must not leave the player in
+    // the car for as long as it lasts.
+    const data = createLmuRestData();
+    data.gameState = 'driving';
+    const output = task().outputs[0];
+    output.apply(data, output.parse({ status: 'loading' }));
+    expect(data.gameState).toBeUndefined();
   });
 
   it('knows the grace after the checkered flag, and does not report it', () => {

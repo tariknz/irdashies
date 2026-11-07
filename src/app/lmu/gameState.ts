@@ -20,8 +20,10 @@
  *   -- running, but not in a session.
  * - HTTP 404 -- not in a game at all.
  *
- * Pure and dependency-free, like the other parsers: it never throws, and
- * returns undefined for anything it does not recognise.
+ * Pure and dependency-free, like the other parsers: it never throws. An
+ * answer it does not recognise is no state at all, so the bridge reads shared
+ * memory as it does when nothing answers, rather than holding the last state
+ * or guessing a new one.
  */
 
 export type LmuGameState =
@@ -37,13 +39,9 @@ export type LmuGameState =
   | 'notInGame';
 
 export interface ParsedLmuGameState {
-  state: LmuGameState;
-  /**
-   * The `MultiStintState` the sim sent, when it is not one of those this
-   * knows. Read as being at the monitor -- in the session, out of the car --
-   * which is the reading that cannot keep a driving widget on screen; kept so
-   * the log can say what arrived.
-   */
+  /** Undefined for an answer this does not recognise. */
+  state: LmuGameState | undefined;
+  /** What arrived, when it was not recognised, so the log can say. */
   unrecognised?: string;
 }
 
@@ -61,21 +59,42 @@ const isUnavailable = (payload: Record<string, unknown>): boolean =>
   typeof payload.status === 'string' &&
   payload.status.toLowerCase() === 'unavailable';
 
-/** Reads a GetGameState body. */
-export function parseLmuGameState(
-  payload: unknown
-): ParsedLmuGameState | undefined {
+/** A short account of an answer that is neither shape, for the log. */
+const describeAnswer = (payload: unknown): string => {
+  if (payload === undefined) return 'answer that is not JSON';
+  if (payload === null || typeof payload !== 'object') {
+    return `answer ${JSON.stringify(payload).slice(0, 40)}`;
+  }
+  if (Array.isArray(payload)) return 'answer that is an array';
+  const keys = Object.keys(payload);
+  return keys.length
+    ? `answer with ${keys.slice(0, 6).join(', ')}`
+    : 'empty answer';
+};
+
+/**
+ * Reads a GetGameState body, or `undefined` for one that is not JSON.
+ *
+ * Always returns a value, so the poller writes it: an unrecognised answer
+ * has to replace the state before it, not leave it standing.
+ */
+export function parseLmuGameState(payload: unknown): ParsedLmuGameState {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-    return undefined;
+    return { state: undefined, unrecognised: describeAnswer(payload) };
   }
   const record = payload as Record<string, unknown>;
   const multiStint = record.MultiStintState;
   if (typeof multiStint === 'string') {
     const state = MULTI_STINT_STATES[multiStint];
-    return state ? { state } : { state: 'monitor', unrecognised: multiStint };
+    return state
+      ? { state }
+      : {
+          state: undefined,
+          unrecognised: `MultiStintState ${JSON.stringify(multiStint)}`,
+        };
   }
   if (isUnavailable(record)) return { state: 'notInSession' };
-  return undefined;
+  return { state: undefined, unrecognised: describeAnswer(record) };
 }
 
 /**
@@ -97,7 +116,7 @@ export function readLmuGameStateFailure(failure: {
   } catch {
     return undefined;
   }
-  return parseLmuGameState(payload)?.state === 'notInSession'
+  return parseLmuGameState(payload).state === 'notInSession'
     ? { state: 'notInSession' }
     : undefined;
 }

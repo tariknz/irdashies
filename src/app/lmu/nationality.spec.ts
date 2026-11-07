@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  normaliseNationality,
-  parseTeamNationalities,
-  readTeamNationalities,
-} from './nationality';
+import { normaliseNationality, readTeamNationalities } from './nationality';
 
 describe('normaliseNationality', () => {
   it('passes an alpha-2 code through, upper-cased', () => {
@@ -47,9 +43,9 @@ describe('normaliseNationality', () => {
   });
 });
 
-describe('parseTeamNationalities', () => {
+describe('readTeamNationalities found', () => {
   it('reads the teams payload into a name-keyed map', () => {
-    const map = parseTeamNationalities({
+    const { found: map } = readTeamNationalities({
       drivers: {
         'Jean Dupont': { nationality: 'FRA' },
         'Max Muster': { nationality: 'DEU' },
@@ -61,7 +57,7 @@ describe('parseTeamNationalities', () => {
   });
 
   it('skips drivers whose nationality cannot be read', () => {
-    const map = parseTeamNationalities({
+    const { found: map } = readTeamNationalities({
       drivers: {
         Known: { nationality: 'ITA' },
         Unknown: { nationality: 'XYZ' },
@@ -84,7 +80,7 @@ describe('parseTeamNationalities', () => {
       {},
       { drivers: 7 },
     ]) {
-      expect(parseTeamNationalities(payload).size).toBe(0);
+      expect(readTeamNationalities(payload).found.size).toBe(0);
     }
   });
 });

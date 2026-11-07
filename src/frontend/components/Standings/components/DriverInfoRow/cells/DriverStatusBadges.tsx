@@ -54,6 +54,9 @@ const CHECKERED_SQUARES = Array.from({ length: 20 }, (_, i) => ({
 /**
  * The finished car's checkered flag, as a badge of its own.
  *
+ * Drawn here rather than taken from Phosphor, an exception to the icon rule
+ * in AGENTS.md: Phosphor's FlagCheckered is not visible enough at badge size.
+ *
  * As tall as a DT or SG badge beside it, whose colour fills its 2px border
  * too: StatusBadge's line height plus that border. So the flag matches the
  * badges and the row keeps its height.
@@ -139,7 +142,12 @@ export const DriverStatusBadges = memo(
     isMinimal = false,
   }: DriverStatusBadgesProps) => {
     const muted = 'border-transparent';
-    const retired = finishState === 'DNF' || finishState === 'DQ';
+    // A car that is out says so in the penalty badge's place: once it is
+    // out, a penalty has nothing left to say.
+    const redBadgeText =
+      finishState === 'DNF' || finishState === 'DQ'
+        ? finishState
+        : penaltyKind && lmuPenaltyBadgeText(penaltyKind, penaltySeconds);
     const hasStatus =
       finishState ||
       penaltyKind ||
@@ -184,26 +192,15 @@ export const DriverStatusBadges = memo(
         {/* First, so the reversed row draws it rightmost and a penalty
             badge keeps its own place beside it. */}
         {finishState === 'FINISHED' && <CheckeredFlagBadge />}
-        {retired ? (
+        {redBadgeText && (
           <StatusBadge
             textColor="text-white"
             borderColorClass="border-transparent"
             additionalClasses="inline-block min-w-6 font-bold"
             backgroundColor="#FF0000"
           >
-            {finishState}
+            {redBadgeText}
           </StatusBadge>
-        ) : (
-          penaltyKind && (
-            <StatusBadge
-              textColor="text-white"
-              borderColorClass="border-transparent"
-              additionalClasses="inline-block min-w-6 font-bold"
-              backgroundColor="#FF0000"
-            >
-              {lmuPenaltyBadgeText(penaltyKind, penaltySeconds)}
-            </StatusBadge>
-          )
         )}
         {penalty && (
           <StatusBadge

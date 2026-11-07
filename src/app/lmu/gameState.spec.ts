@@ -49,16 +49,18 @@ describe('parseLmuGameState', () => {
     expect(parseLmuGameState(UNAVAILABLE)).toEqual({ state: 'notInSession' });
   });
 
-  it('reads a state it does not know as the monitor, and says what it was', () => {
-    // In the session, out of the car: the reading that cannot keep a driving
-    // widget on screen.
+  it('reads a state it does not know as no state, and says what it was', () => {
+    // A guess would be wrong one way or the other -- END_OF_RACE_GRACE read
+    // as the monitor took a driving player out of the car -- so shared memory
+    // decides instead.
     expect(parseLmuGameState({ MultiStintState: 'SPECTATING' })).toEqual({
-      state: 'monitor',
-      unrecognised: 'SPECTATING',
+      state: undefined,
+      unrecognised: 'MultiStintState "SPECTATING"',
     });
   });
 
-  it('never throws on a payload it does not recognise', () => {
+  it('reads any other answer as no state, never leaving the last one up', () => {
+    // A value every time, so the poller writes it over the state before.
     for (const payload of [
       null,
       undefined,
@@ -67,9 +69,18 @@ describe('parseLmuGameState', () => {
       [],
       {},
       { status: 1 },
+      { status: 'loading' },
     ]) {
-      expect(parseLmuGameState(payload)).toBeUndefined();
+      const parsed = parseLmuGameState(payload);
+      expect(parsed.state).toBeUndefined();
+      expect(parsed.unrecognised).toBeTruthy();
     }
+    expect(parseLmuGameState(undefined).unrecognised).toBe(
+      'answer that is not JSON'
+    );
+    expect(parseLmuGameState({ status: 'loading' }).unrecognised).toBe(
+      'answer with status'
+    );
   });
 });
 
@@ -147,6 +158,19 @@ describe('mapLmuTelemetry with a game state', () => {
     expect(telemetry.LmuDataStale?.value[0]).toBe(false);
   });
 
+  it('lets a frozen block mark the frame stale at the monitor', () => {
+    // A session that ended with the player's car in the pit lane: the last
+    // frame keeps `OnPitRoad`, which the driving gate reads as driving unless
+    // the frame is stale.
+    const raw = fixture();
+    raw.vehInPits[raw.playerVehicleIdx] = 1;
+    const telemetry = map(raw, 'monitor', true);
+    expect(telemetry.OnPitRoad.value[0]).toBe(true);
+    expect(telemetry.LmuDataStale?.value[0]).toBe(true);
+    // In the car the sim's word still stands over the freeze.
+    expect(map(raw, 'driving', true).LmuDataStale?.value[0]).toBe(false);
+  });
+
   it('marks the frame stale outside a session or a game', () => {
     for (const state of ['notInSession', 'notInGame'] as const) {
       const telemetry = map(fixture(), state);
@@ -174,14 +198,11 @@ describe('mapLmuTelemetry with a game state', () => {
   });
 
   it('flags out of a session only on the sim saying so', () => {
-    expect(map(fixture(), 'notInSession').LmuNotInSession?.value[0]).toBe(true);
-    for (const state of [
-      'driving',
-      'paused',
-      'monitor',
-      'notInGame',
-      undefined,
-    ] as const) {
+    // Outside a game is further out of a session still.
+    for (const state of ['notInSession', 'notInGame'] as const) {
+      expect(map(fixture(), state).LmuNotInSession?.value[0]).toBe(true);
+    }
+    for (const state of ['driving', 'paused', 'monitor', undefined] as const) {
       expect(map(fixture(), state).LmuNotInSession?.value[0]).toBe(false);
     }
     // A frozen block is a guess, and not enough to hide widgets on.

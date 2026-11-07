@@ -5,7 +5,7 @@ import {
   type LmuRestTransport,
 } from './poller';
 import { createLmuRestData, type LmuRestData } from './state';
-import type { LmuRestTask } from './tasks';
+import { LMU_REST_TASKS, type LmuRestTask } from './tasks';
 import {
   REST_MAX_INTERVAL_MS,
   REST_RETRY_DELAY_MS,
@@ -1083,15 +1083,28 @@ describe('createLmuRestPoller with a burst task', () => {
     expect(data.session.nationalities).toEqual({ A: 'FR' });
   });
 
-  it('keeps waiting on a pending source only for the length of the burst', async () => {
-    const { poller, calls } = setup(() => ({ ok: false, reason: 'pending' }));
+  it('waits on a pending source, then gives the burst its full length', async () => {
+    // A tape whose first teams record comes late. Spending the window on the
+    // wait ended the burst before the record it was started for.
+    let pending = true;
+    const { poller, calls, logger } = setup(() =>
+      pending ? { ok: false, reason: 'pending' } : ok('{"codes":{"A":"FR"}}')
+    );
     poller.setActive(true);
     await advance(0);
 
     poller.burst('burst', { delayMs: 0, isComplete: () => false });
+    await advance(40_000);
+    const waited = calls.length;
+    expect(waited).toBe(40_000 / BURST_INTERVAL_MS + 1);
+
+    pending = false;
     await advance(BURST_MS + 60_000);
 
-    expect(calls).toHaveLength(BURST_MS / BURST_INTERVAL_MS + 1);
+    expect(calls.length - waited).toBe(BURST_MS / BURST_INTERVAL_MS + 1);
+    expect(logger.info).toHaveBeenCalledWith(
+      '[lmuRest] /rest/multiplayer/teams: stopped incomplete after 9 polls, 16.0s'
+    );
   });
 
   it('drops a burst when deactivated', async () => {
@@ -1277,5 +1290,107 @@ describe('createLmuRestPoller and a failure that is an answer', () => {
     await advance(BASE_MS);
 
     expect(data.gameState).toBeUndefined();
+  });
+
+  it('does not take a refusal after an answer for an absent API', async () => {
+    // The 404 drops the task's hash so the next body is read afresh. Read off
+    // that hash, one reset socket -- which the transport reports as refused
+    // -- latched every task off as if there were no API at all.
+    let answer: LmuRestResponse = {
+      ok: false,
+      reason: 'status',
+      status: 404,
+      body: '',
+    };
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const { transport, calls } = makeTransport((path) =>
+      path === stateTask.path ? answer : ok('{"total":30}')
+    );
+    const data = createLmuRestData();
+    const poller = createLmuRestPoller({
+      data,
+      transport,
+      logger,
+      tasks: [stateTask, repeatTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    expect(data.gameState).toBe('notInGame');
+
+    answer = fail('refused');
+    await advance(BASE_MS);
+    const estimates = calls.filter((path) => path === repeatTask.path).length;
+    await advance(BASE_MS * 10);
+
+    expect(logger.info).not.toHaveBeenCalledWith(
+      expect.stringContaining('No REST API')
+    );
+    // The other task polls on, and the state goes through the optional path.
+    expect(
+      calls.filter((path) => path === repeatTask.path).length
+    ).toBeGreaterThan(estimates);
+    expect(data.gameState).toBeUndefined();
+  });
+
+  it('holds the last answer through the misses it is allowed', async () => {
+    let answer: LmuRestResponse = ok('{"MultiStintState":"DRIVING"}');
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const { transport } = makeTransport(() => answer);
+    const data = createLmuRestData();
+    const poller = createLmuRestPoller({
+      data,
+      transport,
+      logger,
+      tasks: [{ ...stateTask, clearAfterFailures: 3 }],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    answer = fail('timeout');
+    await advance(BASE_MS);
+    await advance(BASE_MS);
+    expect(data.gameState).toBe('driving');
+    expect(logger.info).not.toHaveBeenCalled();
+
+    await advance(BASE_MS);
+    expect(data.gameState).toBeUndefined();
+    expect(logger.info).toHaveBeenCalledTimes(1);
+
+    // An answer starts the count over.
+    answer = ok('{"MultiStintState":"DRIVING"}');
+    await advance(BASE_MS);
+    answer = fail('timeout');
+    await advance(BASE_MS);
+    expect(data.gameState).toBe('driving');
+  });
+
+  it('hands the outputs a body that is not JSON, as nothing', async () => {
+    // So GetGameState drops the last state rather than holding it through an
+    // answer it cannot read.
+    const gameState = LMU_REST_TASKS.find((task) => task.id === 'game-state');
+    if (!gameState) throw new Error('no game-state task');
+    let answer: LmuRestResponse = ok('{"MultiStintState":"DRIVING"}');
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const { transport } = makeTransport(() => answer);
+    const data = createLmuRestData();
+    const poller = createLmuRestPoller({
+      data,
+      transport,
+      logger,
+      tasks: [gameState],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    expect(data.gameState).toBe('driving');
+
+    answer = ok('<html>loading</html>');
+    await advance(BASE_MS);
+    expect(data.gameState).toBeUndefined();
+    expect(logger.info).toHaveBeenCalledWith(
+      '[lmuRest] Unrecognised GetGameState answer that is not JSON; ' +
+        'reading in-car and in-session from shared memory'
+    );
   });
 });

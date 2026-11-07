@@ -1560,7 +1560,9 @@ describe('createDriverStandings and the LMU finish status', () => {
     }
   );
 
-  it('does not repeat an LMU DQ as DNF', () => {
+  it('leaves an LMU DQ flagged DNF for everything else that reads it', () => {
+    // The broadcast tower, its events and the gantry read `dnf` and nothing
+    // else; only the row drops the pit column's DNF beside its own DQ badge.
     const rows = build(
       {
         carIdxFinishStatusValue: [0, 0, 0, 3],
@@ -1569,8 +1571,9 @@ describe('createDriverStandings and the LMU finish status', () => {
       true
     );
 
-    expect(rows.find((r) => r.carIdx === 3)?.dnf).toBe(false);
-    // Without a finish status -- iRacing -- the flag still says DNF.
+    const dq = rows.find((r) => r.carIdx === 3);
+    expect(dq?.finishState).toBe('DQ');
+    expect(dq?.dnf).toBe(true);
     expect(rows.find((r) => r.carIdx === 0)?.dnf).toBe(true);
   });
 

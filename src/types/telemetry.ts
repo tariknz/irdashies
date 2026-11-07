@@ -90,10 +90,11 @@ export type Telemetry = {
    */
   LmuDataStale?: TelemetryVar<boolean[]>;
   /**
-   * True while LMU's GetGameState answers `{"status":"unavailable"}`: the sim
-   * is running and in no session. Widgets read it as Offline Testing for their
-   * session visibility, so only those allowed there stay on screen. False
-   * whenever the game state is anything else or unknown.
+   * True while LMU's GetGameState answers `{"status":"unavailable"}` or 404:
+   * the sim is running and in no session, or in no game at all. Widgets read
+   * it as Offline Testing for their session visibility, so only those allowed
+   * there stay on screen. False whenever the game state is anything else or
+   * unknown.
    */
   LmuNotInSession?: TelemetryVar<boolean[]>;
   /**

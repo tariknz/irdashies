@@ -421,16 +421,10 @@ export const createDriverStandings = (
         carTrackSurface:
           telemetry?.carIdxTrackSurfaceValue?.[result.CarIdx] ?? undefined,
         currentSessionType: currentSession.sessionType,
-        // LMU's DQ also raises Disqualify, and its finish badge already
-        // says so; the pit column would otherwise repeat it as DNF.
-        dnf:
-          lmuFinishStateFromCode(
-            telemetry?.carIdxFinishStatusValue?.[result.CarIdx]
-          ) === undefined &&
-          !!(
-            (telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) &
-            GlobalFlags.Disqualify
-          ),
+        dnf: !!(
+          (telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) &
+          GlobalFlags.Disqualify
+        ),
         repair: !!(
           (telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) &
           GlobalFlags.Repair

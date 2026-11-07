@@ -172,6 +172,14 @@ export function createLmuRestPoller({
    * means the API is not there at all rather than one resource being absent.
    */
   let absent = false;
+  /**
+   * Whether the server has answered anything this activation, error statuses
+   * included: that is the API being there. Its own flag rather than a task's
+   * hash, which is dropped whenever a body has to be read afresh -- read off
+   * the hash, one reset socket while GetGameState was answering 404 latched
+   * every task off for half a minute.
+   */
+  let answered = false;
   let reportedAbsent = false;
   let absentRetryMs = REST_ABSENT_RETRY_MS;
   /**
@@ -235,8 +243,10 @@ export function createLmuRestPoller({
     } catch {
       // Served something that is not JSON. Treated as a changed-but-useless
       // response: the hash is remembered, so an endpoint stuck on a non-JSON
-      // error page is not re-parsed every interval.
-      return true;
+      // error page is not re-parsed every interval. The outputs still see it,
+      // as a payload of nothing, which every parser rejects -- except one that
+      // must not hold its last value through an answer it cannot read.
+      payload = undefined;
     }
 
     let sessionChanged = false;
@@ -331,11 +341,19 @@ export function createLmuRestPoller({
       return;
     }
 
+    if (response.ok || response.reason === 'status') answered = true;
+
     if (!response.ok) {
       // Not an error: the source has nothing for this path yet. Try again at
-      // the base rate without spending a retry -- except inside a burst,
-      // whose own end bounds the waiting.
-      if (response.reason === 'pending' && task.mode !== 'burst') {
+      // the base rate without spending a retry. A burst's window starts over
+      // with it: a tape reaches its first teams record when it does, and a
+      // burst that spent its sixteen seconds waiting would end before the
+      // record it was started for.
+      if (response.reason === 'pending') {
+        if (state.burst) {
+          state.burst.startsAt = Date.now() + task.baseIntervalMs;
+          state.burst.endsAt = state.burst.startsAt + (task.burstMs ?? 0);
+        }
         schedule(task, task.baseIntervalMs);
         return;
       }
@@ -343,8 +361,10 @@ export function createLmuRestPoller({
       // Nothing has ever answered and the port refused: the API is not there
       // -- for now. The sim's REST server need not have its port open at the
       // moment the app first reaches shared memory, so this is re-probed
-      // rather than latched for the life of the process.
-      if (response.reason === 'refused' && state.hash === undefined) {
+      // rather than latched for the life of the process. Only before any
+      // answer, so the latch never holds data an answer wrote: a refusal
+      // after one is a path failing, and takes that path's own course.
+      if (response.reason === 'refused' && !answered) {
         absent = true;
         clearTimers();
         if (!reportedAbsent) {
@@ -388,7 +408,11 @@ export function createLmuRestPoller({
       // time anyone used it. Backed off like an unchanged body, so an absence
       // that lasts all session is one cheap probe per ceiling.
       if (task.optional) {
-        if (!state.reportedAbsent) {
+        state.failures += 1;
+        if (
+          !state.reportedAbsent &&
+          state.failures >= (task.clearAfterFailures ?? 1)
+        ) {
           state.reportedAbsent = true;
           logger?.info(
             `[lmuRest] ${task.path} is not answering (${response.reason}); ` +
@@ -471,6 +495,7 @@ export function createLmuRestPoller({
         absentTimer = undefined;
         // A fresh session gets a fresh probe at the short interval.
         absent = false;
+        answered = false;
         reportedAbsent = false;
         absentRetryMs = REST_ABSENT_RETRY_MS;
         resetLmuRestData(data);

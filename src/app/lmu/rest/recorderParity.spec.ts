@@ -3,6 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { REPLAY_RATINGS_PATH } from '../raceos/tapeRatings';
 import { LMU_REST_TASKS } from './tasks';
+import { TAPE_REST_FAILURE_KEY } from './tapeTransport';
 
 /**
  * The recorder's path list against the app's.
@@ -102,5 +103,26 @@ describe('baked driver ratings path', () => {
     // It is written by anonymise, after recording. Polling the sim for it
     // would be asking a question nothing can answer.
     expect(recorderPaths()).not.toContain(REPLAY_RATINGS_PATH);
+  });
+});
+
+/**
+ * The key a recorded GetGameState failure is wrapped in.
+ *
+ * Written by the recorder, unwrapped by tapeTransport. A mismatch fails
+ * quietly: the wrapper is served as an ordinary body, GetGameState reads it as
+ * an answer it does not recognise, and a replay never leaves the session.
+ */
+describe('recorded REST failure key', () => {
+  it('matches the key tapeTransport unwraps', () => {
+    const source = fs.readFileSync(RECORDER_SOURCE, 'utf8');
+    const found = /const char\* const kRestFailureKey = "([^"]+)";/.exec(
+      source
+    );
+    if (!found) {
+      throw new Error(`kRestFailureKey not found in ${RECORDER_SOURCE}`);
+    }
+
+    expect(found[1]).toBe(TAPE_REST_FAILURE_KEY);
   });
 });
