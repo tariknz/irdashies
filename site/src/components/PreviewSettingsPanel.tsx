@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   MemoryRouter,
   Routes,
@@ -190,7 +191,7 @@ function SettingsContent({ onClose, request }: SettingsContentProps) {
     interactionRef.current = null;
   };
 
-  return (
+  return createPortal(
     // Fixed popovers use viewport coordinates. Keep this portal host free of
     // transforms so dropdowns still line up after dragging the panel.
     <dialog
@@ -367,7 +368,8 @@ function SettingsContent({ onClose, request }: SettingsContentProps) {
           </button>
         )}
       </div>
-    </dialog>
+    </dialog>,
+    document.body
   );
 }
 

@@ -37,6 +37,18 @@ vi.mock('@irdashies/frontend/components/Settings/SettingsLoader', () => ({
 }));
 
 describe('preview settings panel', () => {
+  it('renders outside the preview toolbar stacking context', async () => {
+    render(
+      <div role="toolbar">
+        <PreviewSettingsButton />
+      </div>
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    const dialog = screen.getByRole('dialog', { name: 'Preview settings' });
+    expect(screen.getByRole('toolbar')).not.toContainElement(dialog);
+    expect(document.body).toContainElement(dialog);
+  });
+
   it('handles repeated gear requests and restores a minimized panel without resetting its geometry', async () => {
     function PreviewWithGears() {
       const [request, setRequest] = useState<PreviewSettingsRequest | null>(
