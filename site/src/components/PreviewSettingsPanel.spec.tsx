@@ -3,12 +3,19 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { FormatSelect } from '@irdashies/frontend/components/Settings/components/FormatSelect';
-import { PreviewSettingsButton } from './PreviewSettingsPanel';
+import {
+  PreviewSettingsButton,
+  type PreviewSettingsRequest,
+} from './PreviewSettingsPanel';
 
 vi.mock('./PreviewSettingsMenu', () => ({
-  PreviewSettingsMenu: () => null,
+  PreviewSettingsMenu: () => (
+    <nav>
+      <Link to="/settings/input">Input</Link>
+    </nav>
+  ),
 }));
 vi.mock('@irdashies/frontend/components/Settings/SettingsLoader', () => ({
   SettingsLoader: function SettingsLoader() {
@@ -30,6 +37,81 @@ vi.mock('@irdashies/frontend/components/Settings/SettingsLoader', () => ({
 }));
 
 describe('preview settings panel', () => {
+  it('handles repeated gear requests and restores a minimized panel without resetting its geometry', async () => {
+    function PreviewWithGears() {
+      const [request, setRequest] = useState<PreviewSettingsRequest | null>(
+        null
+      );
+      return (
+        <>
+          <button onClick={() => setRequest({ widgetId: 'relative' })}>
+            Relative gear
+          </button>
+          <button onClick={() => setRequest({ widgetId: 'input' })}>
+            Input gear
+          </button>
+          <PreviewSettingsButton
+            openRequest={request}
+            defaultWidget="map"
+            onClose={() => setRequest(null)}
+          />
+        </>
+      );
+    }
+    render(<PreviewWithGears />);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Relative gear' })
+    );
+    await screen.findByRole('heading', { name: 'relative' });
+    const resize = screen.getByRole('button', { name: 'Resize settings' });
+    const panel = resize.parentElement;
+    if (!panel) throw new Error('Missing settings panel');
+    fireEvent.keyDown(resize, { key: 'ArrowLeft' });
+    const width = panel.style.width;
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Choose widget' })
+    );
+    await userEvent.click(screen.getByRole('link', { name: 'Input' }));
+    await screen.findByRole('heading', { name: 'input' });
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Relative gear' })
+    );
+    await screen.findByRole('heading', { name: 'relative' });
+    expect(
+      screen.getByRole('button', { name: 'Resize settings' }).parentElement
+    ).toBe(panel);
+    expect(panel.style.width).toBe(width);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Minimize settings' })
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Relative gear' })
+    );
+    await screen.findByRole('heading', { name: 'relative' });
+    expect(
+      screen.queryByRole('button', { name: 'Restore settings' })
+    ).toBeNull();
+    expect(panel.style.width).toBe(width);
+    await userEvent.click(screen.getByRole('button', { name: 'Input gear' }));
+    await screen.findByRole('heading', { name: 'input' });
+    expect(panel.style.width).toBe(width);
+    await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    await screen.findByRole('heading', { name: 'map' });
+  });
+
+  it('navigates back to the configured widget on every Configure click', async () => {
+    render(<PreviewSettingsButton defaultWidget="relative" />);
+    await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    await screen.findByRole('heading', { name: 'relative' });
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Choose widget' })
+    );
+    await userEvent.click(screen.getByRole('link', { name: 'Input' }));
+    await screen.findByRole('heading', { name: 'input' });
+    await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    await screen.findByRole('heading', { name: 'relative' });
+  });
+
   it('opens the current preview widget and keeps its page until reopened', async () => {
     const { rerender } = render(
       <PreviewSettingsButton defaultWidget="input" />

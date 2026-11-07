@@ -1,5 +1,11 @@
 import { lazy, Suspense, useState, useRef, useEffect } from 'react';
-import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
+import {
+  MemoryRouter,
+  Routes,
+  Route,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 import { PreviewSettingsMenu } from './PreviewSettingsMenu';
 import {
   ArrowsOutSimple,
@@ -18,6 +24,7 @@ const SettingsLoader = lazy(() =>
 
 interface SettingsContentProps {
   onClose: () => void;
+  request: PreviewSettingsRequest;
 }
 
 interface PanelBounds {
@@ -54,8 +61,10 @@ function fitPanel(
   };
 }
 
-function SettingsContent({ onClose }: SettingsContentProps) {
+function SettingsContent({ onClose, request }: SettingsContentProps) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
   const mainRef = useRef<HTMLElement>(null);
   const previousPath = useRef(pathname);
   const [bounds, setBounds] = useState(() =>
@@ -72,6 +81,19 @@ function SettingsContent({ onClose }: SettingsContentProps) {
   } | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    navigateRef.current = navigate;
+  }, [navigate]);
+
+  useEffect(() => {
+    // Menu navigation changes useNavigate's identity; only an open request
+    // should select this target page again.
+    navigateRef.current(`/settings/${request.widgetId}`, { replace: true });
+    setBounds((previous) => fitPanel(previous));
+    setMinimized(false);
+    setMenuOpen(false);
+  }, [request]);
 
   useEffect(() => {
     if (previousPath.current !== pathname) mainRef.current?.focus();
@@ -349,43 +371,52 @@ function SettingsContent({ onClose }: SettingsContentProps) {
   );
 }
 
+export interface PreviewSettingsRequest {
+  widgetId: string;
+}
+
 interface PreviewSettingsButtonProps {
-  openToWidget?: string | null;
+  /** A new object represents each gear click, including repeated widget IDs. */
+  openRequest?: PreviewSettingsRequest | null;
   defaultWidget?: string;
   onClose?: () => void;
 }
 
 export function PreviewSettingsButton({
-  openToWidget,
+  openRequest,
   defaultWidget = 'relative',
   onClose,
 }: PreviewSettingsButtonProps) {
-  const [internalWidget, setInternalWidget] = useState<string | null>(null);
-
-  const isOpen = !!internalWidget || !!openToWidget;
-  const initialRoute = `/settings/${openToWidget || internalWidget || defaultWidget}`;
+  const [request, setRequest] = useState<PreviewSettingsRequest | null>(
+    openRequest ?? null
+  );
+  useEffect(() => {
+    setRequest(openRequest ?? null);
+  }, [openRequest]);
 
   const handleClose = () => {
-    setInternalWidget(null);
+    setRequest(null);
     onClose?.();
   };
 
   return (
     <>
       <button
-        onClick={() => setInternalWidget(defaultWidget)}
+        onClick={() => setRequest({ widgetId: defaultWidget })}
         className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wide text-white border border-red-600 bg-red-600/20 hover:bg-red-600/40 hover:border-red-500 transition-colors"
       >
         <GearSix size={12} weight="bold" />
         Configure
       </button>
 
-      {isOpen && (
-        <MemoryRouter initialEntries={[initialRoute]} key={initialRoute}>
+      {request && (
+        <MemoryRouter initialEntries={[`/settings/${request.widgetId}`]}>
           <Routes>
             <Route
               path="/settings/:widgetId"
-              element={<SettingsContent onClose={handleClose} />}
+              element={
+                <SettingsContent onClose={handleClose} request={request} />
+              }
             />
           </Routes>
         </MemoryRouter>
