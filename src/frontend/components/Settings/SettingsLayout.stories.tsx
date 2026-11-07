@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { DashboardProvider, RunningStateProvider } from '@irdashies/context';
@@ -12,6 +12,7 @@ import type {
 } from '@irdashies/types';
 import { DEFAULT_KEYBINDINGS, releaseNotesFixture } from '@irdashies/types';
 import { SettingsLayout } from './SettingsLayout';
+import { GitHubStarNotice } from './GitHubStarPrompt/GitHubStarPrompt';
 import {
   ChannelSnapshotDecorator,
   mockDashboardBridge,
@@ -38,6 +39,14 @@ const runningBridge: IrSdkBridge = {
     return () => undefined;
   },
   stop: () => undefined,
+};
+
+const offlineBridge: IrSdkBridge = {
+  ...runningBridge,
+  onRunningState: (callback) => {
+    callback(false);
+    return () => undefined;
+  },
 };
 
 // Reproduce the observed Extra Small preference without touching a real profile.
@@ -239,16 +248,19 @@ const meta: Meta<typeof SettingsLayout> = {
               : previewBridge
           }
         >
-          <RunningStateProvider bridge={runningBridge}>
+          <RunningStateProvider
+            bridge={
+              context.parameters.githubStarPreview
+                ? offlineBridge
+                : runningBridge
+            }
+          >
             <MemoryRouter initialEntries={[initialPath]}>
               <Routes>
                 <Route
                   path="/settings/*"
                   element={
-                    <div
-                      className="overlay-window overlay-theme-xs overlay-theme-font-face-lato overlay-theme-font-weight-normal fixed inset-0 overflow-hidden"
-                      style={{ height: '100vh' }}
-                    >
+                    <div className="overlay-window overlay-theme-xs overlay-theme-font-face-lato overlay-theme-font-weight-normal h-screen">
                       <Story />
                     </div>
                   }
@@ -274,6 +286,25 @@ export const Default: Story = {
 
 export const GeneralSettings: Story = {
   args: { initialPath: '/settings/general' },
+};
+
+// Show the notice immediately for visual review without changing real preferences.
+export const GitHubStarPrompt: Story = {
+  args: { initialPath: '/settings/general' },
+  parameters: { githubStarPreview: true },
+  render: () => {
+    const [visible, setVisible] = useState(true);
+    return (
+      <>
+        <SettingsLayout />
+        {visible && (
+          <div className="settings-shell">
+            <GitHubStarNotice onDismiss={() => setVisible(false)} />
+          </div>
+        )}
+      </>
+    );
+  },
 };
 
 export const FuelRoute: Story = {

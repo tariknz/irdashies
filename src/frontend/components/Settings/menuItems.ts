@@ -10,12 +10,14 @@ import {
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { WIDGET_MANIFESTS } from '@irdashies/types';
+import type { WidgetCategory } from '@irdashies/types';
 
 export interface MenuItem {
   to: string;
   path: string;
   label: string;
   widgetType?: string;
+  category?: WidgetCategory;
   /** Widgets that share this item's page; it shows On while any of them is. */
   groupTypes?: string[];
   icon?: Icon;
@@ -57,11 +59,12 @@ export const generalItems: MenuItem[] = [
 ];
 
 export const widgetItems: MenuItem[] = WIDGET_MANIFESTS.map(
-  ({ id, name, menuLabel, hideInMenu, groupTypes }) => ({
+  ({ id, name, menuLabel, category, hideInMenu, groupTypes }) => ({
     to: `/settings/${id}`,
     path: `/${id}`,
     label: menuLabel ?? name,
     widgetType: id,
+    category,
     ...(groupTypes && { groupTypes }),
     ...(hideInMenu && { hideInMenu }),
   })

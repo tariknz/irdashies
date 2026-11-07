@@ -181,6 +181,17 @@ layer(base);
 /* Opt-in text, number and select fields; never applied to overlay inputs. */
 @utility settings-field {
   @apply min-h-9 min-w-0 rounded-md border border-settings-boundary bg-settings-control px-3 py-1.5 text-sm font-normal text-slate-200 transition-colors;
+  &:is(select):not([multiple]) {
+    @apply appearance-none pr-9;
+    /* Phosphor's regular CaretDown, inset to match the field's text padding. */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%23c5cdd7'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1rem;
+    @media (forced-colors: active) {
+      @apply appearance-auto bg-none;
+    }
+  }
   &::placeholder {
     color: var(--color-slate-400);
     opacity: 1;

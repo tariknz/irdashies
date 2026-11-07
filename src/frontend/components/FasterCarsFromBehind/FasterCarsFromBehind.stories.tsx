@@ -1,6 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useState } from 'react';
-import { useGeneralSettings } from '@irdashies/context';
+import { DashboardProvider, useGeneralSettings } from '@irdashies/context';
+import { getWidgetManifest } from '@irdashies/types';
 import type { GeneralSettingsType } from '@irdashies/types';
 import {
   FasterCarsFromBehind,
@@ -10,7 +11,18 @@ import {
   CaptureChannelDecorator,
   TelemetryDecorator,
   TelemetryDecoratorWithConfig,
+  mockDashboardBridge,
 } from '@irdashies/storybook';
+
+const demoBridge = {
+  ...mockDashboardBridge,
+  onDemoModeChanged: (callback: (enabled: boolean) => void) => {
+    callback(true);
+    return () => {
+      // No-op cleanup for the demo state.
+    };
+  },
+};
 
 const mockSettings = {
   showOnlyWhenOnTrack: true,
@@ -61,6 +73,25 @@ type Story = StoryObj<typeof FasterCarsFromBehindDisplay>;
 
 export const Primary: Story = {
   render: () => <FasterCarsFromBehind />,
+  decorators: [
+    TelemetryDecorator('/test-data/1747384033336'),
+    CaptureChannelDecorator('/test-data/1747384033336'),
+  ],
+};
+
+export const DemoMode: Story = {
+  render: () => {
+    const manifest = getWidgetManifest('fastercarsfrombehind');
+    if (!manifest) return <></>;
+    const { width, height } = manifest.layout;
+    return (
+      <DashboardProvider bridge={demoBridge}>
+        <div style={{ width, height }}>
+          <FasterCarsFromBehind />
+        </div>
+      </DashboardProvider>
+    );
+  },
   decorators: [
     TelemetryDecorator('/test-data/1747384033336'),
     CaptureChannelDecorator('/test-data/1747384033336'),

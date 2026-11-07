@@ -11,7 +11,7 @@ import {
   useDashboard,
   useSimWidgetSupport,
 } from '@irdashies/context';
-import { widgetDisabledMessage } from '@irdashies/types';
+import { WIDGET_CATEGORIES, widgetDisabledMessage } from '@irdashies/types';
 import {
   generalItems,
   widgetItems,
@@ -130,9 +130,13 @@ const MenuLink = ({
 export const SettingsMenu = ({
   appTo = '/settings/general',
   returnTo = '/settings/relative',
+  previewMode = false,
+  excludedWidgetTypes,
 }: {
   appTo?: string;
   returnTo?: string;
+  previewMode?: boolean;
+  excludedWidgetTypes?: ReadonlySet<string>;
 }) => {
   const { status: releaseNotesStatus } = useReleaseNotesStatus();
   const { pathname } = useLocation();
@@ -190,15 +194,25 @@ export const SettingsMenu = ({
     !!item.widgetType &&
     (item.groupTypes ?? [item.widgetType]).some(isWidgetEnabled);
 
-  const menuItems = widgetItems.filter((item) => !item.hideInMenu);
+  const menuItems = widgetItems.filter(
+    (item) =>
+      !item.hideInMenu && !excludedWidgetTypes?.has(item.widgetType ?? '')
+  );
   const unsupported = (item: MenuItem) =>
     widgetDisabledMessage(supportConfig, item.widgetType, simulator);
   // Widgets the running sim cannot support are left out unless asked for.
   const supportedItems = menuItems.filter((item) => !unsupported(item));
   const hiddenCount = menuItems.length - supportedItems.length;
+  const searchQuery = query.trim().toLowerCase();
   const visibleItems = (showHidden ? menuItems : supportedItems).filter(
-    (item) => item.label.toLowerCase().includes(query.trim().toLowerCase())
+    (item) =>
+      item.label.toLowerCase().includes(searchQuery) ||
+      item.category?.toLowerCase().includes(searchQuery)
   );
+  const categories = WIDGET_CATEGORIES.map((category) => ({
+    category,
+    items: visibleItems.filter((item) => item.category === category),
+  })).filter(({ items }) => items.length > 0);
 
   return (
     <nav
@@ -222,14 +236,16 @@ export const SettingsMenu = ({
               App settings
             </h2>
             <ul className="space-y-0.5">
-              {generalItems.map((item) => (
-                <MenuLink
-                  key={item.path}
-                  item={item}
-                  pathname={pathname}
-                  showIcon
-                />
-              ))}
+              {generalItems
+                .filter((item) => !previewMode || item.path === '/general')
+                .map((item) => (
+                  <MenuLink
+                    key={item.path}
+                    item={item}
+                    pathname={pathname}
+                    showIcon
+                  />
+                ))}
             </ul>
           </section>
         </>
@@ -280,22 +296,33 @@ export const SettingsMenu = ({
               </button>
             </div>
           )}
-          <ul className="flex flex-col gap-0.5 pb-3">
-            {visibleItems.map((item) => (
-              <MenuLink
-                key={item.path}
-                item={item}
-                pathname={appPage ? overlayPath.current : pathname}
-                isEnabled={item.widgetType ? isItemEnabled(item) : undefined}
-                disabledReason={unsupported(item) ?? undefined}
-                onToggle={
-                  canToggle(item) && item.widgetType && !unsupported(item)
-                    ? setWidgetEnabled.bind(null, item.widgetType)
-                    : undefined
-                }
-              />
+          <div className="space-y-4 pb-3">
+            {categories.map(({ category, items }) => (
+              <section key={category} aria-label={category}>
+                <h3 className="px-2 pt-2 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  {category}
+                </h3>
+                <ul className="flex flex-col gap-0.5">
+                  {items.map((item) => (
+                    <MenuLink
+                      key={item.path}
+                      item={item}
+                      pathname={appPage ? overlayPath.current : pathname}
+                      isEnabled={
+                        item.widgetType ? isItemEnabled(item) : undefined
+                      }
+                      disabledReason={unsupported(item) ?? undefined}
+                      onToggle={
+                        canToggle(item) && item.widgetType && !unsupported(item)
+                          ? setWidgetEnabled.bind(null, item.widgetType)
+                          : undefined
+                      }
+                    />
+                  ))}
+                </ul>
+              </section>
             ))}
-          </ul>
+          </div>
           {visibleItems.length === 0 && (
             <p role="status" className="px-2 py-4 text-sm text-slate-400">
               No overlays match “{query}”.
@@ -314,7 +341,7 @@ export const SettingsMenu = ({
           </Link>
         </div>
       )}
-      {appPage && (
+      {appPage && !previewMode && (
         <ul className="mt-2 flex shrink-0 flex-col gap-0.5 border-t border-slate-700 pt-2">
           {bottomItems.map((item) => (
             <MenuLink

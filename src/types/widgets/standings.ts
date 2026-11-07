@@ -13,6 +13,7 @@ const timeFormatOptions = [
 export default defineWidgetManifest({
   id: 'standings',
   name: 'Standings',
+  category: 'Standings',
   enabled: true,
   layout: {
     x: 6,

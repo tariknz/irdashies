@@ -3,6 +3,21 @@ import type { WidgetConfigMap } from '../widgetConfigs';
 import type { WidgetId } from '../widgetId';
 import type { PropertySpecsOf } from './properties';
 
+/** Display order of categories in the overlay settings menu. */
+export const WIDGET_CATEGORIES = [
+  'Standings',
+  'Car & Controls',
+  'Lap Timing',
+  'Track & Navigation',
+  'Fuel',
+  'Spotter & Safety',
+  'Session & Weather',
+  'Broadcast & Streaming',
+  'Driver Health',
+] as const;
+
+export type WidgetCategory = (typeof WIDGET_CATEGORIES)[number];
+
 /**
  * Main-safe, pure-data description of a widget. One file per widget in
  * `src/types/widgets/<id>.ts`, auto-discovered by `./index.ts`.
@@ -15,6 +30,8 @@ export interface WidgetManifest<
   name: string;
   /** Settings-menu label when it differs from `name`. */
   menuLabel?: string;
+  /** Category in the overlay settings menu. */
+  category: WidgetCategory;
   /**
    * Not drawn in the settings widget menu; its settings are reached elsewhere
    * (a tab on another item's page, or the Advanced page). It still gets a

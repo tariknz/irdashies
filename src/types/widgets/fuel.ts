@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'fuel',
   name: 'Fuel Calculator',
+  category: 'Fuel',
   enabled: false,
   layout: {
     x: 1102,
