@@ -1,3 +1,4 @@
+import { getSettingsLanguage } from '../Settings/i18n/language';
 import { MIN_TEXT_PX } from './radarDrawShared';
 
 const NOTICE_COLOR = '#f8fafc';
@@ -10,7 +11,14 @@ export const drawPoleSideNotice = (
   side: 'left' | 'right'
 ) => {
   const fontSize = Math.max(MIN_TEXT_PX + 2, Math.round(size / 14));
-  const text = side === 'left' ? 'POLE LEFT' : 'POLE RIGHT';
+  const text =
+    getSettingsLanguage() === 'ru'
+      ? side === 'left'
+        ? 'СТОЙКА СЛЕВА'
+        : 'СТОЙКА СПРАВА'
+      : side === 'left'
+        ? 'POLE LEFT'
+        : 'POLE RIGHT';
   ctx.save();
   ctx.font = `bold ${fontSize}px Lato, sans-serif`;
   ctx.textAlign = 'center';

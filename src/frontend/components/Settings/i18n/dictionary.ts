@@ -1,0 +1,52 @@
+import {
+  createTranslator,
+  normalizeText,
+  type Translator,
+} from './domTranslator';
+import common from './ru/common';
+import dialogs from './ru/dialogs';
+import manifests from './ru/manifests';
+import menu from './ru/menu';
+import { createRuPatterns } from './ru/patterns';
+import sections from './ru/sections';
+import runtime from './ru/runtime';
+
+// Relative imports only: tools/ scripts load this file via tsx without
+// path-alias or import.meta.glob support.
+
+export const buildDictionary = (
+  sources: Record<string, Readonly<Record<string, string>>>
+): Map<string, string> => {
+  const dict = new Map<string, string>();
+  const origin = new Map<string, string>();
+  for (const [source, entries] of Object.entries(sources)) {
+    for (const [rawKey, value] of Object.entries(entries)) {
+      const key = normalizeText(rawKey);
+      const existing = dict.get(key);
+      if (existing !== undefined && existing !== value) {
+        throw new Error(
+          `i18n: conflicting translations for "${key}" in ${origin.get(key)} and ${source}`
+        );
+      }
+      if (existing === undefined) {
+        dict.set(key, value);
+        origin.set(key, source);
+      }
+    }
+  }
+  return dict;
+};
+
+export const ruDictionary: ReadonlyMap<string, string> = buildDictionary({
+  common,
+  menu,
+  manifests,
+  sections,
+  dialogs,
+  runtime,
+});
+
+export const ruTranslator: Translator = createTranslator(
+  ruDictionary,
+  createRuPatterns((text) => ruDictionary.get(normalizeText(text)))
+);

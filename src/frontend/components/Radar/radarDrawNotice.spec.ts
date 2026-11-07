@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { LANGUAGE_STORAGE_KEY } from '../Settings/i18n/language';
 import { drawPoleSideNotice } from './radarDrawNotice';
 
 const fakeContext = () => {
@@ -19,13 +20,20 @@ const fakeContext = () => {
 
 describe('drawPoleSideNotice', () => {
   it.each([
-    ['left', 'POLE LEFT'],
-    ['right', 'POLE RIGHT'],
+    ['left', 'СТОЙКА СЛЕВА'],
+    ['right', 'СТОЙКА СПРАВА'],
   ] as const)('names the %s side', (side, label) => {
     const { ctx, texts } = fakeContext();
     drawPoleSideNotice(ctx, 300, side);
     expect(texts).toEqual([label]);
     expect(ctx.fillRect).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the English label when English is selected', () => {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, 'en');
+    const { ctx, texts } = fakeContext();
+    drawPoleSideNotice(ctx, 300, 'left');
+    expect(texts).toEqual(['POLE LEFT']);
   });
 
   it('restores the canvas state it changed', () => {

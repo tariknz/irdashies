@@ -4,6 +4,7 @@ import { useAvailableSimulators, useDashboard } from '@irdashies/context';
 import { SIMULATOR_IDS, SIMULATOR_LABELS } from '@irdashies/types';
 import type { GeneralSettingsType } from '@irdashies/types';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { LanguageSelect } from '../i18n/LanguageSelect';
 
 const FONT_PRESETS = {
   lato: 'Lato',
@@ -348,6 +349,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
       </header>
 
       <div className="min-h-0 flex-1 space-y-6 overflow-y-auto pt-5 pr-1 [scrollbar-gutter:stable]">
+        <LanguageSelect />
         <section className="space-y-5 rounded-lg border border-slate-700 bg-slate-800/40 p-4">
           <div>
             <h3 className="text-lg font-semibold text-slate-200">
