@@ -28,6 +28,7 @@ import {
 import type { LmuRestCell, LmuRestCells } from './rest/state';
 import type { LmuLivePenaltyChannels } from './liveStandings/penalties';
 import { isLmuRaceSession } from './mapSession';
+import { lmuInCar, lmuInSession, type LmuGameState } from './gameState';
 import {
   createLmuClassPositionState,
   updateLmuClassPositions,
@@ -270,7 +271,16 @@ export function mapLmuTelemetry(
    * finished cells down. Omitted -- as every spec does -- the channels are
    * absent and the player's badge falls back to the stop estimate.
    */
-  livePenalties?: LmuLivePenaltyChannels
+  livePenalties?: LmuLivePenaltyChannels,
+  /**
+   * Where the player is, from LMU's GetGameState, polled once a second. When
+   * known it decides IsOnTrack and LmuDataStale outright, and `dataFrozen`
+   * and the realtime and ignition flags are not consulted. Omitted -- no REST
+   * API, a tape that never recorded it, or as every spec does -- those
+   * inferences from shared memory stand, as they did before. See
+   * gameState.ts.
+   */
+  gameState?: LmuGameState
 ): Telemetry {
   // Boundary note: a handful of generated Telemetry keys (e.g. SessionTime) are
   // typed with an `undefined[]` value shape although the iRacing native layer
@@ -788,19 +798,26 @@ export function mapLmuTelemetry(
   t.dcPitSpeedLimiterToggle = bool(raw.speedLimiter);
   t.PitstopActive = bool(false);
   t.OnPitRoad = bool(playerIdx >= 0 ? raw.vehInPits[playerIdx] === 1 : false);
-  // Three conditions, matching TinyPedal's own test for LMU: the data is
-  // flowing, the player has a slot, and either the sim says realtime or the
-  // ignition is on. The first is the one that was missing -- a frozen snapshot
-  // keeps reporting realtime forever, which is why ending a session left every
-  // widget gated on this one on screen. Ignition is the second half of
-  // TinyPedal's OR: a driver sitting in the car before realtime begins is
-  // still in the car.
+  // The sim's own answer when there is one: in the car while driving or
+  // paused, in the session at the monitor too.
+  //
+  // Without it, three conditions, matching TinyPedal's own test for LMU: the
+  // data is flowing, the player has a slot, and either the sim says realtime
+  // or the ignition is on. The first is the one that was missing -- a frozen
+  // snapshot keeps reporting realtime forever, which is why ending a session
+  // left every widget gated on this one on screen. Ignition is the second
+  // half of TinyPedal's OR: a driver sitting in the car before realtime
+  // begins is still in the car.
   const inCar =
-    !dataFrozen &&
-    playerIdx >= 0 &&
-    (raw.inRealtime || (raw.ignitionStarter ?? 0) > 0);
+    gameState !== undefined
+      ? playerIdx >= 0 && lmuInCar(gameState)
+      : !dataFrozen &&
+        playerIdx >= 0 &&
+        (raw.inRealtime || (raw.ignitionStarter ?? 0) > 0);
   t.IsOnTrack = bool(inCar);
-  t.LmuDataStale = bool(dataFrozen ?? false);
+  t.LmuDataStale = bool(
+    gameState !== undefined ? !lmuInSession(gameState) : (dataFrozen ?? false)
+  );
   // Reported as the snapshot has them, frozen or not. Falsifying these while
   // frozen was a mistake: isDriving reads them as `!isInGarage`, so clearing
   // them removed the one term that would have excluded a parked player.

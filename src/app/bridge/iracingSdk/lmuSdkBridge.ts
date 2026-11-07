@@ -22,6 +22,11 @@ import {
 import { createRosterGate } from '../../lmu/rosterSettle';
 import { createLmuSessionIdentity } from '../../lmu/sessionIdentity';
 import { createLmuDataFreeze } from '../../lmu/dataFreeze';
+import { describeLmuGameState, type LmuGameState } from '../../lmu/gameState';
+import {
+  createLmuNationalityWatch,
+  NATIONALITY_JOIN_DELAY_MS,
+} from '../../lmu/nationalityWatch';
 import {
   LMU_DISCONNECT_GRACE_MS,
   shouldHoldLmuRunningState,
@@ -40,6 +45,7 @@ import { lmuRestOrigin } from '../../lmu/rest/constants';
 import { createLmuRestTransport } from '../../lmu/rest/httpJson';
 import { createLmuRestPoller } from '../../lmu/rest/poller';
 import { createLmuRestData } from '../../lmu/rest/state';
+import { LMU_TEAMS_TASK_ID } from '../../lmu/rest/tasks';
 import { createLmuTapeRestTransport } from '../../lmu/rest/tapeTransport';
 import { createLmuLiveStandings } from '../../lmu/liveStandings/client';
 import { lmuLivePenaltyChannels } from '../../lmu/liveStandings/penalties';
@@ -306,10 +312,20 @@ export async function publishLmuSDKEvents(
   /**
    * Whether the sim has stopped writing shared memory.
    *
-   * Ending a session leaves the block readable and stale, so without this the
-   * last snapshot was taken at face value forever. See dataFreeze.ts.
+   * Two jobs. It slows the loop while there is nothing new to read. And it is
+   * the fallback for in-session and in-car while GetGameState has not
+   * answered: ending a session leaves the block readable and stale, so without
+   * this the last snapshot was taken at face value forever. See dataFreeze.ts
+   * and gameState.ts.
    */
   const dataFreeze = createLmuDataFreeze();
+  /** The game state last logged, so each change is one line. */
+  let lastGameState: LmuGameState | undefined;
+  /**
+   * Which drivers an online grid has shown, so a burst of teams polls starts
+   * only when one arrives. See nationalityWatch.ts.
+   */
+  const nationalityWatch = createLmuNationalityWatch();
   let activeTrackName = '';
   let trackMap: LmuTrackMap | null = null;
   let lastBlindSpotDataIssue: string | null | undefined;
@@ -476,6 +492,9 @@ export async function publishLmuSDKEvents(
           rosterGate.reset();
           sessionIdentity.reset();
           dataFreeze.reset();
+          nationalityWatch.reset();
+          // Cleared with the REST data below, so its going is not news.
+          lastGameState = undefined;
           restPoller.setActive(false);
           liveStandings?.setActive(false);
           // The token was bought with a ticket this sim run minted, and a
@@ -522,6 +541,8 @@ export async function publishLmuSDKEvents(
         // Session settings and the forecast are fetched once per activation,
         // and a new track means a new session.
         restPoller.invalidateOnce();
+        // A new event, so its grid's flags are asked for afresh.
+        nationalityWatch.reset();
         resetLmuLapDistanceState(lapDistanceState);
         resetLmuOpponentLapDistanceState(opponentLapDistanceState);
         lastSessionSignature = null;
@@ -578,6 +599,16 @@ export async function publishLmuSDKEvents(
         sessionStartEvents: raw.sessionStartEvents,
         sessionEndEvents: raw.sessionEndEvents,
       });
+      // Where the player is, as the sim says, polled once a second. When it
+      // is known it alone decides in-car and in-session in the frame below;
+      // the freeze watch only paces the loop.
+      const gameState = restData.gameState;
+      if (gameState !== lastGameState) {
+        lastGameState = gameState;
+        logger.info(
+          `[lmuSdkBridge] Game state: ${describeLmuGameState(gameState)}`
+        );
+      }
       const frozen = dataFreeze.observe(
         { scoringUpdates: raw.scoringUpdates, currentET: raw.currentET },
         tickTime
@@ -585,8 +616,10 @@ export async function publishLmuSDKEvents(
       if (dataFreeze.justChanged()) {
         logger.info(
           frozen
-            ? '[lmuSdkBridge] Shared memory stopped updating; treating the ' +
-                'player as out of the car'
+            ? '[lmuSdkBridge] Shared memory stopped updating' +
+                (gameState === undefined
+                  ? '; treating the player as out of the car'
+                  : '')
             : '[lmuSdkBridge] Shared memory updating again'
         );
       }
@@ -621,6 +654,16 @@ export async function publishLmuSDKEvents(
         // nothing else about the grid moved, and an id already resolved,
         // remembered as a miss or in flight costs one set lookup to skip.
         ratingClient.request(gridUsernames(rawSession));
+        // Flags for an online grid: a burst of teams polls a second after a
+        // driver arrives, until every driver on it has one or the burst runs
+        // out. Offline, the watch never calls for one.
+        if (nationalityWatch.observe(rawSession)) {
+          restPoller.burst(LMU_TEAMS_TASK_ID, {
+            delayMs: NATIONALITY_JOIN_DELAY_MS,
+            isComplete: () =>
+              nationalityWatch.complete(restData.session.nationalities),
+          });
+        }
         const signature = lmuSessionSignature(rawSession);
         // Only the roster is gated. Anything else that moves -- a position, a
         // lap time, the weather -- rebuilds at once as it always did, because
@@ -728,7 +771,8 @@ export async function publishLmuSDKEvents(
         restData.cells,
         sessionIdentity,
         frozen,
-        penaltyChannels
+        penaltyChannels,
+        gameState
       );
       lifecycle?._onTelemetry(telemetry);
       perfMetrics.markEnd('lifecycleTelemetry');

@@ -1,12 +1,12 @@
 /**
- * Normalises whatever the rating service calls a nationality into the ISO
- * 3166-1 alpha-2 code the flag renderer wants.
+ * Normalises whatever a source calls a nationality into the ISO 3166-1
+ * alpha-2 code the flag renderer wants.
  *
- * The service is not consistent about this -- profiles carry alpha-2 in some
- * records and alpha-3 in others, and LMU's own `/rest/multiplayer/teams`
- * answers with alpha-3 -- so rather than guess at the source, both are
- * accepted and anything unrecognised is dropped. A wrong flag is worse than
- * no flag.
+ * The sources do not agree. LMU's own `/rest/multiplayer/teams` answers with
+ * alpha-2 ("GB", "DE") -- every online recording so far does -- while the
+ * rating service's profiles carry alpha-2 in some records and alpha-3 in
+ * others. So rather than guess at the source, both are accepted and anything
+ * unrecognised is dropped. A wrong flag is worse than no flag.
  *
  * Pure and dependency-free so it can be tested without a network or a sim.
  */
@@ -138,6 +138,23 @@ export interface TeamNationalities {
 }
 
 /**
+ * The server's administrator account, which the payload lists beside the
+ * drivers.
+ *
+ * Roles `["Admin"]`, no team, never connected, and no nationality -- in
+ * every online recording so far, the one entry without a flag. It drives no
+ * car, so it is neither a flag nor a missing one. Drivers carry
+ * `["Driver","Owner"]` or `null`, so an admin who also drives keeps their
+ * entry.
+ */
+const isAdminEntry = (entry: Record<string, unknown>): boolean => {
+  const roles = entry.roles;
+  return (
+    Array.isArray(roles) && roles.includes('Admin') && !roles.includes('Driver')
+  );
+};
+
+/**
  * Nationalities from LMU's own `/rest/multiplayer/teams`, keyed by driver
  * name, with the drivers it could not place.
  *
@@ -145,7 +162,9 @@ export interface TeamNationalities {
  * a flag can be shown with no external service involved at all. Keyed by name
  * because that endpoint carries neither a car index nor a Steam ID.
  *
- * Shape: `{ "drivers": { "<name>": { "nationality": "FRA" } } }`
+ * Shape: `{ "drivers": { "<name>": { "nationality": "FR", "roles": [...] } } }`
+ *
+ * The server's admin entry is skipped; see `isAdminEntry`.
  *
  * Never throws, per the parser contract in `lmu/rest/tasks.ts`: an
  * unrecognised payload yields empty results and the caller keeps what it had.
@@ -158,7 +177,9 @@ export function readTeamNationalities(payload: unknown): TeamNationalities {
   if (!drivers || typeof drivers !== 'object') return { found, unknown };
   for (const [name, entry] of Object.entries(drivers)) {
     if (!entry || typeof entry !== 'object') continue;
-    const raw = (entry as Record<string, unknown>).nationality;
+    const record = entry as Record<string, unknown>;
+    if (isAdminEntry(record)) continue;
+    const raw = record.nationality;
     const code = normaliseNationality(raw);
     if (code) found.set(name, code);
     else {

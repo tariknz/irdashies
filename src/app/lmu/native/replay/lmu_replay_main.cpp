@@ -217,6 +217,11 @@ const char* kRestPaths[] = {
     // field, so without this a replay of a spectated session shows the
     // viewer's own empty slot rather than the car being watched.
     "/rest/watch/focus",
+    // Where the player is -- driving, paused, at the monitor, out of any
+    // session -- which decides in-car and in-session. Outside a game it
+    // answers 404, which records nothing, so a replay holds the last state
+    // the sim reported; a tape without it falls back to shared memory.
+    "/rest/sessions/GetGameState",
 };
 
 struct PendingRest {

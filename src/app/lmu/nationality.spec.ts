@@ -11,7 +11,7 @@ describe('normaliseNationality', () => {
     expect(normaliseNationality('GB')).toBe('GB');
   });
 
-  it('converts the alpha-3 codes LMU reports', () => {
+  it('converts alpha-3 codes, which the rating service sends', () => {
     expect(normaliseNationality('FRA')).toBe('FR');
     expect(normaliseNationality('DEU')).toBe('DE');
     expect(normaliseNationality('USA')).toBe('US');
@@ -111,5 +111,22 @@ describe('readTeamNationalities', () => {
       { name: 'Missing', nationality: '' },
       { name: 'NotAString', nationality: '' },
     ]);
+  });
+
+  it("skips the server's admin entry, which drives no car", () => {
+    // As recorded online: the admin is listed with the drivers, without a
+    // team or a nationality. Drivers carry ["Driver","Owner"] or null.
+    const { found, unknown } = readTeamNationalities({
+      drivers: {
+        Admin: { roles: ['Admin'], isConnected: false, nationality: '' },
+        Host: { roles: ['Admin', 'Driver'], nationality: '' },
+        Driver: { roles: ['Driver', 'Owner'], nationality: 'GB' },
+        Unroled: { roles: null, nationality: 'DE' },
+      },
+    });
+
+    expect(Object.fromEntries(found)).toEqual({ Driver: 'GB', Unroled: 'DE' });
+    // An admin who also drives is a driver, and their missing flag is real.
+    expect(unknown).toEqual([{ name: 'Host', nationality: '' }]);
   });
 });

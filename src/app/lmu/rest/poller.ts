@@ -60,7 +60,14 @@ export type LmuRestFailure =
 
 export type LmuRestResponse =
   | { readonly ok: true; readonly body: string }
-  | { readonly ok: false; readonly reason: LmuRestFailure };
+  | {
+      readonly ok: false;
+      readonly reason: LmuRestFailure;
+      /** The HTTP status, for a `status` failure. */
+      readonly status?: number;
+      /** What came with it, for a `status` failure. */
+      readonly body?: string;
+    };
 
 /** Injected so specs drive the poller with no server and no sockets. */
 export type LmuRestTransport = (path: string) => Promise<LmuRestResponse>;
@@ -82,7 +89,29 @@ export interface LmuRestPoller {
   setActive: (active: boolean) => void;
   /** Re-runs the one-shot tasks, for a track or session change. */
   invalidateOnce: () => void;
+  /**
+   * Starts a `burst` task polling, or starts it over.
+   *
+   * The first poll goes out after `delayMs`, and the task then polls at its
+   * base interval until `isComplete` -- asked after every answer -- returns
+   * true, or until its `burstMs` has passed since that first poll. A call
+   * while a burst is waiting or running replaces it, delay and all, so a
+   * stream of calls less than `delayMs` apart waits for them to stop.
+   */
+  burst: (
+    taskId: string,
+    options: { delayMs: number; isComplete: () => boolean }
+  ) => void;
   stop: () => void;
+}
+
+interface BurstState {
+  isComplete: () => boolean;
+  /** When the first poll was due, by Date.now(). */
+  startsAt: number;
+  /** No poll is sent that would land after this. */
+  endsAt: number;
+  polls: number;
 }
 
 interface TaskState {
@@ -101,6 +130,13 @@ interface TaskState {
   reportedAbsent: boolean;
   /** A one-shot task that has already landed. */
   satisfied: boolean;
+  /** The burst a `burst` task is in, or undefined when it is idle. */
+  burst: BurstState | undefined;
+  /**
+   * What each output last parsed this activation, by output id, for a
+   * `report` that has to say what is new rather than everything it sees.
+   */
+  lastParsed: Map<string, unknown>;
   inFlight: boolean;
   timer: ReturnType<typeof setTimeout> | undefined;
 }
@@ -121,6 +157,8 @@ export function createLmuRestPoller({
         missing: false,
         reportedAbsent: false,
         satisfied: false,
+        burst: undefined,
+        lastParsed: new Map(),
         inFlight: false,
         timer: undefined,
       },
@@ -207,7 +245,8 @@ export function createLmuRestPoller({
       if (value === undefined) continue;
       // Before the unchanged check: what a parser has to say about a body is
       // worth saying even when there is nothing new to write.
-      const report = output.report?.(value);
+      const report = output.report?.(value, state.lastParsed.get(output.id));
+      state.lastParsed.set(output.id, value);
       if (report) logger?.info(report);
       // An output may recognise a value as the one it already holds. Only a
       // session target really cares: those bump `revision`, which costs a
@@ -229,9 +268,42 @@ export function createLmuRestPoller({
       task.maxIntervalMs ?? REST_MAX_INTERVAL_MS
     );
 
+  /**
+   * After a poll in a burst: ends it once the caller's check passes on an
+   * answer, or once another poll would land past its end; otherwise polls
+   * again at the base interval.
+   *
+   * Asked on every answer, changed body or not. The check reads what the
+   * caller sees -- the grid on screen, not this response -- so an unchanged
+   * body can still be the one that completes it.
+   */
+  const continueBurst = (task: LmuRestTask, answered: boolean) => {
+    const state = stateOf(task);
+    const burst = state.burst;
+    if (!burst) return;
+    burst.polls += 1;
+    const elapsed = () =>
+      `${burst.polls} polls, ${((Date.now() - burst.startsAt) / 1000).toFixed(1)}s`;
+    if (answered && burst.isComplete()) {
+      state.burst = undefined;
+      logger?.info(`[lmuRest] ${task.path}: complete after ${elapsed()}`);
+      return;
+    }
+    if (Date.now() + task.baseIntervalMs > burst.endsAt) {
+      state.burst = undefined;
+      logger?.info(
+        `[lmuRest] ${task.path}: stopped incomplete after ${elapsed()}`
+      );
+      return;
+    }
+    schedule(task, task.baseIntervalMs);
+  };
+
   const run = async (task: LmuRestTask) => {
     const state = stateOf(task);
     if (stopped || !active || state.missing || absent || state.inFlight) return;
+    // A burst task asks only while a burst the caller started is running.
+    if (task.mode === 'burst' && !state.burst) return;
     state.inFlight = true;
     const startedIn = generation;
 
@@ -261,8 +333,9 @@ export function createLmuRestPoller({
 
     if (!response.ok) {
       // Not an error: the source has nothing for this path yet. Try again at
-      // the base rate without spending a retry.
-      if (response.reason === 'pending') {
+      // the base rate without spending a retry -- except inside a burst,
+      // whose own end bounds the waiting.
+      if (response.reason === 'pending' && task.mode !== 'burst') {
         schedule(task, task.baseIntervalMs);
         return;
       }
@@ -281,6 +354,30 @@ export function createLmuRestPoller({
           );
         }
         scheduleAbsentProbe();
+        return;
+      }
+
+      // A failure this path uses to say something: GetGameState answers 404
+      // outside a game. Handled as an answer -- no retry spent, no absence
+      // reported -- and the hash is dropped, so the body that follows is read
+      // even if it is the one from before.
+      if (task.answerFailure?.(data, response)) {
+        state.failures = 0;
+        state.hash = undefined;
+        if (state.reportedAbsent) {
+          state.reportedAbsent = false;
+          logger?.info(`[lmuRest] ${task.path} is answering`);
+        }
+        state.intervalMs = task.baseIntervalMs;
+        schedule(task, state.intervalMs);
+        return;
+      }
+
+      // A burst ends on its own clock, so a failure inside one is just a poll
+      // that learned nothing. It never latches the task off: the next burst
+      // is the next driver joining, and a task given up on would miss it.
+      if (task.mode === 'burst') {
+        continueBurst(task, false);
         return;
       }
 
@@ -331,6 +428,11 @@ export function createLmuRestPoller({
     }
     const changed = applyBody(task, response.body);
 
+    if (task.mode === 'burst') {
+      continueBurst(task, true);
+      return;
+    }
+
     if (task.mode === 'once') {
       state.satisfied = true;
       return;
@@ -345,6 +447,12 @@ export function createLmuRestPoller({
   const startAll = () => {
     tasks.forEach((task) => {
       const state = stateOf(task);
+      // A burst task runs only when asked, but one that was asked and then
+      // stalled behind the absent latch picks up where it was.
+      if (task.mode === 'burst') {
+        if (state.burst) schedule(task, 0);
+        return;
+      }
       if (state.missing || (task.mode === 'once' && state.satisfied)) return;
       // First request immediately: waiting a full interval for a pit-stop
       // estimate that is already available is a visible delay.
@@ -372,6 +480,8 @@ export function createLmuRestPoller({
           state.failures = 0;
           state.missing = false;
           state.satisfied = false;
+          state.burst = undefined;
+          state.lastParsed.clear();
         });
         tasks.forEach((task) => {
           stateOf(task).intervalMs = task.baseIntervalMs;
@@ -390,6 +500,21 @@ export function createLmuRestPoller({
         state.hash = undefined;
         if (active) schedule(task, 0);
       });
+    },
+
+    burst: (taskId, { delayMs, isComplete }) => {
+      const task = tasks.find((candidate) => candidate.id === taskId);
+      if (stopped || !active || !task || task.mode !== 'burst') return;
+      const startsAt = Date.now() + delayMs;
+      stateOf(task).burst = {
+        isComplete,
+        startsAt,
+        endsAt: startsAt + (task.burstMs ?? 0),
+        polls: 0,
+      };
+      // Replaces whatever was waiting, which is what makes a new call start
+      // the burst over.
+      schedule(task, delayMs);
     },
 
     stop: () => {
