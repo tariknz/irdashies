@@ -20,6 +20,18 @@ export default defineWidgetManifest({
     width: 280,
     height: 900,
   },
+  properties: {
+    showLastLap: {
+      type: 'boolean',
+      label: 'Last Lap',
+      description: "Show the focus car's last lap time in its card.",
+    },
+    showBestLap: {
+      type: 'boolean',
+      label: 'Best Lap',
+      description: "Show the focus car's best lap time in its card.",
+    },
+  },
   config: {
     theme: 'imsa',
     logo: '',

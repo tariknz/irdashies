@@ -5,6 +5,7 @@ import { changeMarker } from '../components/ChangedMark';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingToggleRow } from '../components/SettingToggleRow';
+import { SettingProps, settingPropFor } from '../components/SettingProp';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { DriverNamePreview } from '../components/DriverNamePreview';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
@@ -21,6 +22,7 @@ import type {
 } from '@irdashies/types';
 
 const SETTING_ID = 'broadcast';
+const SettingProp = settingPropFor(SETTING_ID);
 
 const defaultConfig = getWidgetDefaultConfig('broadcast');
 
@@ -355,26 +357,14 @@ export const BroadcastSettings = () => {
                 />
               )}
               {config.showFocusCard && (
-                <>
-                  {mark(
-                    ['showLastLap'],
-                    <SettingToggleRow
-                      title="Last Lap"
-                      description="Show the focus car's last lap time in its card."
-                      enabled={config.showLastLap !== false}
-                      onToggle={(v) => handleConfigChange({ showLastLap: v })}
-                    />
-                  )}
-                  {mark(
-                    ['showBestLap'],
-                    <SettingToggleRow
-                      title="Best Lap"
-                      description="Show the focus car's best lap time in its card."
-                      enabled={config.showBestLap !== false}
-                      onToggle={(v) => handleConfigChange({ showBestLap: v })}
-                    />
-                  )}
-                </>
+                <SettingProps
+                  widget={SETTING_ID}
+                  config={config}
+                  onChange={handleConfigChange}
+                >
+                  {mark(['showLastLap'], <SettingProp path="showLastLap" />)}
+                  {mark(['showBestLap'], <SettingProp path="showBestLap" />)}
+                </SettingProps>
               )}
               {mark(
                 ['phaseScreens'],

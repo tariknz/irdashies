@@ -36,8 +36,9 @@ interface PageConfig {
 }
 
 /**
- * The tower pages: the one static page, or the rotation the user picked,
- * minus pages with nothing to show yet. Never empty: names is the fallback.
+ * Static mode always keeps the selected page, even before its data arrives.
+ * Rotation skips pages with nothing to show yet; names is the fallback when
+ * no enabled page has data.
  */
 export const buildPages = (config: PageConfig = {}, data: PageData): Page[] => {
   if (config.pageMode === 'static') {
