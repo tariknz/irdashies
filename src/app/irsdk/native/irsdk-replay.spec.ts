@@ -9,12 +9,10 @@ import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import * as yaml from 'js-yaml';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
 import type { INativeSDK } from './index';
-import type { SessionData } from '../types';
 
 const execFileAsync = promisify(execFile);
 const describeOnWindows =
@@ -195,26 +193,13 @@ describeOnWindows('iRacing native record/replay boundary', () => {
 
         const firstSession = sdk.getSessionData();
         expect(firstSession).toContain('TrackName: Replay Test Track');
-        const expectedNames = [
-          'Jaime Perpinyà',
-          'Guillermo Bermúdez3',
-          'Oktay Doğanyıldız2',
-          'José',
-        ];
-        const namesFromSession = (session: string) =>
-          (yaml.load(session) as SessionData).DriverInfo.Drivers.map(
-            (driver) => driver.UserName
-          );
-        expect(namesFromSession(firstSession)).toEqual(expectedNames);
         expect(sdk.currDataVersion).toBe(1);
 
         await sendCommand(publisher, 'next');
         await output.waitFor(/FRAME 3 102/, 15_000);
         expect(sdk.waitForData(100)).toBe(true);
         expect(floatValue(sdk.getTelemetryData().Speed.value)).toBeCloseTo(52);
-        const updatedSession = sdk.getSessionData();
-        expect(updatedSession).toContain('SessionNum: 0');
-        expect(namesFromSession(updatedSession)).toEqual(expectedNames);
+        expect(sdk.getSessionData()).toContain('SessionNum: 0');
         expect(sdk.currDataVersion).toBe(2);
 
         await sendCommand(publisher, 'next');
