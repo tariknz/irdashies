@@ -4,6 +4,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'fastercarsfrombehind',
   name: 'Faster Cars From Behind',
+  category: 'Spotter & Safety',
   menuLabel: 'Faster Cars Behind',
   enabled: false,
   layout: {

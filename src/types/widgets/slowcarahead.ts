@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'slowcarahead',
   name: 'Slow Car Ahead',
+  category: 'Spotter & Safety',
   enabled: false,
   layout: {
     x: 300,

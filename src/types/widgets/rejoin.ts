@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'rejoin',
   name: 'Rejoin Indicator',
+  category: 'Spotter & Safety',
   enabled: false,
   layout: {
     x: 378,

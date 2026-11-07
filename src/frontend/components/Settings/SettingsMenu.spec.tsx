@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import {
   assert,
   afterEach,
@@ -54,18 +54,21 @@ vi.mock('./menuItems', () => ({
       path: '/standings',
       label: 'Standings',
       widgetType: 'standings',
+      category: 'Standings',
     },
     {
       to: '/settings/wind',
       path: '/wind',
       label: 'Wind',
       widgetType: 'wind',
+      category: 'Session & Weather',
     },
     {
       to: '/settings/twitchchat',
       path: '/twitchchat',
       label: 'Twitch Chat',
       widgetType: 'twitchchat',
+      category: 'Broadcast & Streaming',
     },
   ],
 }));
@@ -170,7 +173,7 @@ describe('SettingsMenu', () => {
     expect(state.onDashboardUpdated).not.toHaveBeenCalled();
   });
 
-  it('lists supported widgets without groups or redundant live labels', () => {
+  it('lists supported widgets in categories without redundant live labels', () => {
     assert(state.dashboard);
     state.dashboard.generalSettings = {};
     renderMenu();
@@ -184,6 +187,23 @@ describe('SettingsMenu', () => {
       screen.queryByRole('button', { name: '+ New group' })
     ).not.toBeInTheDocument();
     expect(screen.getByText('(1 hidden)')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('region', { name: 'Standings' })).getByRole(
+        'link',
+        { name: 'Standings' }
+      )
+    ).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole('region', { name: 'Broadcast & Streaming' })
+      ).getByRole('link', { name: 'Twitch Chat' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('heading', { level: 3 }).map((el) => el.textContent)
+    ).toEqual(['Standings', 'Broadcast & Streaming']);
+    expect(
+      screen.queryByRole('heading', { name: 'Session & Weather' })
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('link', { name: /Wind/ })
     ).not.toBeInTheDocument();
@@ -296,8 +316,38 @@ describe('SettingsMenu', () => {
     fireEvent.click(screen.getByText('(1 hidden)'));
     expect(screen.getByRole('link', { name: /Wind/ })).toBeInTheDocument();
     expect(
+      within(
+        screen.getByRole('region', { name: 'Session & Weather' })
+      ).getByRole('link', { name: /Wind/ })
+    ).toBeInTheDocument();
+    expect(
       screen.queryByRole('switch', { name: 'Enable Wind' })
     ).not.toBeInTheDocument();
+  });
+
+  it('searches category names and omits categories with no visible matches', () => {
+    renderMenu();
+    const search = screen.getByRole('searchbox');
+    fireEvent.change(search, { target: { value: '  BROADCAST  ' } });
+    expect(
+      screen.getByRole('link', { name: 'Twitch Chat' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('heading', { level: 3 }).map((el) => el.textContent)
+    ).toEqual(['Broadcast & Streaming']);
+
+    fireEvent.change(search, { target: { value: 'session & weather' } });
+    expect(screen.getByText(/No overlays match/)).toHaveAttribute(
+      'role',
+      'status'
+    );
+    expect(screen.queryByRole('heading', { level: 3 })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('(1 hidden)'));
+    expect(screen.getByRole('link', { name: /Wind/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent(
+      'Session & Weather'
+    );
+    expect(state.onDashboardUpdated).not.toHaveBeenCalled();
   });
 
   it('filters overlays while keeping app access available without changing saved settings', () => {

@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'flatmap',
   name: 'Flat Track Map',
+  category: 'Track & Navigation',
   enabled: false,
   layout: {
     x: 622,

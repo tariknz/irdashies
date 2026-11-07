@@ -4,6 +4,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'gantry',
   name: 'The Gantry',
+  category: 'Broadcast & Streaming',
   menuLabel: 'Gantry',
   enabled: false,
   layout: {
