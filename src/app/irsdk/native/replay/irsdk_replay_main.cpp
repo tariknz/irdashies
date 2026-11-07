@@ -1122,12 +1122,16 @@ int createFixture(const std::vector<std::wstring>& arguments) {
       "WeekendInfo:\n"
       "  TrackName: Replay Test Track\n"
       "DriverInfo:\n"
-      "  DriverCarIdx: 1\n";
-  const std::string secondSession =
-      "WeekendInfo:\n"
-      "  TrackName: Replay Test Track\n"
-      "DriverInfo:\n"
       "  DriverCarIdx: 1\n"
+      // UTF-8 names from the November 2026 F7 captures, followed by legacy
+      // Windows-1252 text in the same shared-memory session payload.
+      "  Drivers:\n"
+      "    - UserName: Jaime Perpiny\xC3\xA0\n"
+      "    - UserName: Guillermo Berm\xC3\xBA" "dez3\n"
+      "    - UserName: Oktay Do\xC4\x9F" "any\xC4\xB1" "ld\xC4\xB1" "z2\n"
+      "    - UserName: Jos\xE9\n";
+  const std::string secondSession =
+      firstSession +
       "SessionInfo:\n"
       "  Sessions:\n"
       "    - SessionNum: 0\n";
