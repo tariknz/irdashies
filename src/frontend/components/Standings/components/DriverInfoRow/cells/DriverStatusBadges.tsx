@@ -1,5 +1,4 @@
 import { memo, type ReactNode } from 'react';
-import { FlagCheckeredIcon } from '@phosphor-icons/react';
 import {
   lmuPenaltyBadgeText,
   type LmuFinishState,
@@ -45,6 +44,36 @@ const StatusBadge = ({
 
 // Shared classes for penalty / slowdown / meatball — matches original penalty badge dimensions
 const flagBadgeClasses = 'bg-black/80 inline-block min-w-6';
+
+/** The black squares of a 5 x 4 checkered flag, one unit each. */
+const CHECKERED_SQUARES = Array.from({ length: 20 }, (_, i) => ({
+  x: i % 5,
+  y: Math.floor(i / 5),
+})).filter(({ x, y }) => (x + y) % 2 === 0);
+
+/**
+ * The finished car's checkered flag, as a badge of its own.
+ *
+ * As tall as a DT or SG badge beside it, whose colour fills its 2px border
+ * too: StatusBadge's line height plus that border. So the flag matches the
+ * badges and the row keeps its height.
+ */
+const CheckeredFlagBadge = () => (
+  <span className="inline-flex text-xs leading-tight">
+    <svg
+      viewBox="0 0 5 4"
+      className="h-[calc(1.25em+4px)] w-auto"
+      role="img"
+      aria-label="Finished"
+      data-testid="finish-flag"
+    >
+      <rect width="5" height="4" fill="white" />
+      {CHECKERED_SQUARES.map(({ x, y }) => (
+        <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" fill="black" />
+      ))}
+    </svg>
+  </span>
+);
 
 interface DriverStatusBadgesProps {
   /**
@@ -154,20 +183,7 @@ export const DriverStatusBadges = memo(
       >
         {/* First, so the reversed row draws it rightmost and a penalty
             badge keeps its own place beside it. */}
-        {finishState === 'FINISHED' && (
-          <StatusBadge
-            textColor="text-white"
-            borderColorClass="border-transparent"
-            additionalClasses="inline-flex items-center justify-center min-w-6 bg-black/80 py-px"
-          >
-            <FlagCheckeredIcon
-              size="1.1em"
-              weight="fill"
-              aria-label="Finished"
-              data-testid="finish-flag"
-            />
-          </StatusBadge>
-        )}
+        {finishState === 'FINISHED' && <CheckeredFlagBadge />}
         {retired ? (
           <StatusBadge
             textColor="text-white"
