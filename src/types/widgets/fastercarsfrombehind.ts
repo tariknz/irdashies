@@ -11,7 +11,7 @@ export default defineWidgetManifest({
     x: 588,
     y: 44,
     width: 405,
-    height: 43,
+    height: 120,
   },
   config: {
     distanceThreshold: -1.5,
