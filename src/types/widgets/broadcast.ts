@@ -31,6 +31,8 @@ export default defineWidgetManifest({
     pages: {
       names: true,
       gaps: true,
+      lastLap: true,
+      bestLap: true,
       gained: true,
       pits: true,
       tyres: true,
@@ -40,6 +42,8 @@ export default defineWidgetManifest({
     headerClock: 'session',
     pageTransition: 'random',
     showFocusCard: true,
+    showLastLap: true,
+    showBestLap: true,
     phaseScreens: true,
     driverNameFormat: 'surname',
     sessionVisibility: {

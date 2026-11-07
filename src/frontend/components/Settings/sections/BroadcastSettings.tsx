@@ -57,6 +57,16 @@ const PAGE_OPTIONS: {
     description: 'One page per class, with the closest battle under it.',
   },
   {
+    label: 'Last Lap',
+    value: 'lastLap',
+    description: 'Last lap time for each driver.',
+  },
+  {
+    label: 'Best Lap',
+    value: 'bestLap',
+    description: 'Personal best lap time for each driver.',
+  },
+  {
     label: '+/- Start',
     value: 'gained',
     description: 'Places gained since the start. Races only.',
@@ -93,7 +103,11 @@ export const BroadcastSettings = () => {
 
   const [settings, setSettings] = useState<BroadcastWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config: { ...defaultConfig, ...savedSettings?.config },
+    config: {
+      ...defaultConfig,
+      ...savedSettings?.config,
+      pages: { ...defaultConfig.pages, ...savedSettings?.config?.pages },
+    },
   });
   const [logoError, setLogoError] = useState('');
 
@@ -339,6 +353,28 @@ export const BroadcastSettings = () => {
                   enabled={config.showFocusCard}
                   onToggle={(v) => handleConfigChange({ showFocusCard: v })}
                 />
+              )}
+              {config.showFocusCard && (
+                <>
+                  {mark(
+                    ['showLastLap'],
+                    <SettingToggleRow
+                      title="Last Lap"
+                      description="Show the focus car's last lap time in its card."
+                      enabled={config.showLastLap !== false}
+                      onToggle={(v) => handleConfigChange({ showLastLap: v })}
+                    />
+                  )}
+                  {mark(
+                    ['showBestLap'],
+                    <SettingToggleRow
+                      title="Best Lap"
+                      description="Show the focus car's best lap time in its card."
+                      enabled={config.showBestLap !== false}
+                      onToggle={(v) => handleConfigChange({ showBestLap: v })}
+                    />
+                  )}
+                </>
               )}
               {mark(
                 ['phaseScreens'],

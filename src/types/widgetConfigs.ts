@@ -1358,7 +1358,8 @@ export type BroadcastTransition =
   | 'checker';
 
 /** What the right-hand column of the tower can show. */
-export type BroadcastPage = 'names' | 'gaps' | 'gained' | 'pits' | 'tyres';
+export type BroadcastPage =
+  'names' | 'gaps' | 'lastLap' | 'bestLap' | 'gained' | 'pits' | 'tyres';
 
 /**
  * The tower clock: the session clock alone, with the time of day at the
@@ -1395,6 +1396,10 @@ export interface BroadcastConfig {
   pageTransition: BroadcastTransition;
   /** Lower-third card for the car the camera is on. */
   showFocusCard: boolean;
+  /** Show the focus car's last lap time in the lower-third card. */
+  showLastLap: boolean;
+  /** Show the focus car's best lap time in the lower-third card. */
+  showBestLap: boolean;
   /** Starting grid before the green flag (the podium is its own widget). */
   phaseScreens: boolean;
   driverNameFormat: NameFormat;
