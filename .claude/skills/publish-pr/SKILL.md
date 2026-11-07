@@ -60,6 +60,21 @@ Keep the title concise, concrete, and understandable without reading the diff. P
 - Every visual change must be shown to the user with a screenshot in the final response and have actual screenshots uploaded as GitHub attachments in the PR body. Include Before / After images for changes to existing UI, and at least an After image for new UI. Prose descriptions, Storybook links, and local image paths are not substitutes.
 - Keep review screenshots and recordings outside the repository worktree, such as in a temporary directory. Do not commit them to `docs/assets/pr-reviews/` or any other repository path. This does not prevent adding product assets that the user explicitly requested as part of the implementation.
 - Before uploading, check the selected subcommand's `--help` for `--attach` (for example, `gh pr comment --help`). If the installed CLI lacks it, check the current official release and use an updated CLI before declaring upload unavailable. A checksum-verified portable release outside the worktree can use existing authentication without changing the installed CLI. Do not run the examples below unless the selected command advertises the flag.
+- Check the CLI that will actually perform the upload:
+
+  ```bash
+  gh --version
+  gh pr edit --help
+  ```
+
+  If the installed CLI needs upgrading on Windows and that upgrade is authorized, use:
+
+  ```powershell
+  winget upgrade --id GitHub.cli --exact --silent --disable-interactivity
+  ```
+
+  Windows may request administrator approval. Leave that prompt for the user; do not automate it or report the upgrade complete before it finishes. Re-run `gh --version` and check the attachment flag afterward. If using a portable release instead, run these checks against that executable's full path.
+
 - When supported, upload directly with `gh pr create`, `gh pr edit`, or `gh pr comment` and `--attach`. If the flag is absent, try an authenticated GitHub browser upload instead. If uploads remain blocked, keep the visual PR in draft, report the exact blocker, and continue recovery where possible. Do not claim publication is complete until screenshots are attached; do not commit review assets as a workaround.
 - For a comment attachment when `--attach` is supported:
 
@@ -77,7 +92,7 @@ Keep the title concise, concrete, and understandable without reading the diff. P
 
   Use `![Screenshot](/tmp/screenshot.png)` for an image and `![](/tmp/replay.mp4)` in its own paragraph for a video player. `gh` replaces the local references with uploaded attachment URLs. Repeat `--attach` for additional files.
 
-- Read back the PR body and verify that the uploaded attachments render and no local paths or repository-hosted review media links remain. If an upload partially fails, inspect the saved body before retrying to avoid duplicates.
+- Read back the PR body and verify that the uploaded attachments render and no local paths or repository-hosted review media links remain. A normal GET of each image URL can also verify delivery; do not treat a failed HEAD request alone as proof the attachment is broken. If an upload partially fails, inspect the saved body before retrying to avoid duplicates.
 
 ## Publication Guardrail
 
