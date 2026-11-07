@@ -97,13 +97,12 @@ function SettingsContent({ onClose }: SettingsContentProps) {
   }, [onClose]);
 
   useEffect(() => {
-    const resize = () =>
-      setBounds((previous) =>
-        fitPanel(
-          previous,
-          minimized ? panelRef.current?.getBoundingClientRect() : undefined
-        )
-      );
+    const resize = () => {
+      const renderedSize = minimized
+        ? panelRef.current?.getBoundingClientRect()
+        : undefined;
+      setBounds((previous) => fitPanel(previous, renderedSize));
+    };
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);
   }, [minimized]);
