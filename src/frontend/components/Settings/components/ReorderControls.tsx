@@ -31,7 +31,7 @@ export const ReorderControls = ({
   }, [onMoveUp, onMoveDown]);
 
   return (
-    <div className="flex shrink-0 items-center gap-1">
+    <div className="relative flex shrink-0 items-center gap-1">
       <button
         ref={upRef}
         type="button"

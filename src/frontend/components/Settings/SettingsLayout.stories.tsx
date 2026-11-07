@@ -260,10 +260,7 @@ const meta: Meta<typeof SettingsLayout> = {
                 <Route
                   path="/settings/*"
                   element={
-                    <div
-                      className="overlay-window overlay-theme-xs overlay-theme-font-face-lato overlay-theme-font-weight-normal fixed inset-0 overflow-hidden"
-                      style={{ height: '100vh' }}
-                    >
+                    <div className="overlay-window overlay-theme-xs overlay-theme-font-face-lato overlay-theme-font-weight-normal h-screen">
                       <Story />
                     </div>
                   }
