@@ -6,9 +6,10 @@ import {
   useCallback,
   useEffect,
 } from 'react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { PreviewSettingsMenu } from './PreviewSettingsMenu';
 import { GearSix, X } from '@phosphor-icons/react';
+import logo from '@irdashies/frontend/assets/icons/logo.svg';
 
 const SettingsLoader = lazy(() =>
   import('@irdashies/frontend/components/Settings/SettingsLoader').then(
@@ -18,15 +19,12 @@ const SettingsLoader = lazy(() =>
 
 interface SettingsContentProps {
   onClose: () => void;
-  activeWidgets: Set<string>;
-  onToggleWidget: (id: string) => void;
 }
 
-function SettingsContent({
-  onClose,
-  activeWidgets,
-  onToggleWidget,
-}: SettingsContentProps) {
+function SettingsContent({ onClose }: SettingsContentProps) {
+  const { pathname } = useLocation();
+  const mainRef = useRef<HTMLElement>(null);
+  const previousPath = useRef(pathname);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [centered, setCentered] = useState(true);
   const dragRef = useRef<{
@@ -35,13 +33,26 @@ function SettingsContent({
     startPosX: number;
     startPosY: number;
   } | null>(null);
+  const modalRef = useRef<HTMLDialogElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (previousPath.current !== pathname) mainRef.current?.focus();
+    previousPath.current = pathname;
+  }, [pathname]);
+
+  useEffect(() => {
     const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    const modal = modalRef.current;
+    document.body.style.overflow = 'hidden';
+    modal?.showModal();
     panelRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
     return () => {
-      if (previousFocus instanceof HTMLElement) previousFocus.focus();
+      modal?.close();
+      document.body.style.overflow = previousOverflow;
+      if (previousFocus instanceof HTMLElement)
+        previousFocus.focus({ preventScroll: true });
     };
   }, []);
 
@@ -105,76 +116,91 @@ function SettingsContent({
     };
   }, []);
 
-  const panelStyle = centered
-    ? {
-        width: 900,
-        height: 620,
-        maxWidth: '95vw',
-        maxHeight: '85vh',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-      }
-    : {
-        width: 900,
-        height: 620,
-        maxWidth: '95vw',
-        maxHeight: '85vh',
-        top: position.y,
-        left: position.x,
-      };
-
   return (
-    <div
-      ref={panelRef}
-      role="dialog"
+    // Fixed popovers use viewport coordinates. Keep this portal host free of
+    // transforms, and centre the dialog with grid instead.
+    <dialog
+      ref={modalRef}
       aria-label="Preview settings"
-      className="fixed z-50 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl flex flex-col"
-      style={panelStyle}
+      aria-modal="true"
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+      className="settings-shell fixed inset-0 m-0 hidden h-dvh max-h-none w-screen max-w-none place-items-center overflow-hidden overscroll-contain border-0 bg-transparent p-0 text-slate-200 open:grid backdrop:bg-black/60"
     >
-      {/* Header — drag handle */}
       <div
-        className="flex items-center justify-between px-4 py-3 border-b border-slate-700 flex-none cursor-move select-none"
-        onMouseDown={handleMouseDown}
+        ref={panelRef}
+        className="flex h-[min(800px,85vh)] w-[min(1280px,95vw)] flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-950 shadow-2xl"
+        style={
+          centered
+            ? undefined
+            : { position: 'absolute', top: position.y, left: position.x }
+        }
       >
-        <h3 className="text-sm font-bold uppercase tracking-wide text-slate-300">
-          Settings
-        </h3>
-        <button
-          onClick={onClose}
-          aria-label="Close settings"
-          className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+        {/* Header — drag handle */}
+        <div
+          className="flex min-h-20 shrink-0 items-center justify-between gap-4 border-b border-slate-700 px-5 py-3 cursor-move select-none"
+          onMouseDown={handleMouseDown}
         >
-          <X size={18} />
-        </button>
-      </div>
+          <div className="flex min-w-0 items-center gap-3">
+            <img src={logo} alt="" className="h-10 w-10 shrink-0" />
+            <div>
+              <div className="flex flex-wrap items-baseline gap-x-3">
+                <span className="text-[24px] font-semibold leading-7 tracking-[-0.04em] text-white">
+                  ir<span className="text-red-600">Dashies</span>
+                </span>
+                <h1 className="text-sm font-medium text-slate-400">
+                  {pathname === '/settings/general'
+                    ? 'App settings'
+                    : 'Overlay Settings'}
+                </h1>
+              </div>
+              <p className="text-xs text-slate-400">
+                Live preview · Sample data
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close settings"
+            className="flex min-h-9 min-w-9 items-center justify-center rounded-md border border-settings-boundary bg-settings-control text-slate-300 transition-colors hover:bg-settings-hover hover:text-white"
+          >
+            <X size={18} />
+          </button>
+        </div>
 
-      {/* Menu + Content */}
-      <div className="flex flex-1 min-h-0 p-3 gap-3 text-sm">
-        <PreviewSettingsMenu
-          activeWidgets={activeWidgets}
-          onToggleWidget={onToggleWidget}
-        />
-        <div className="flex-1 overflow-y-auto min-h-0">
-          <Suspense fallback={<p role="status">Loading settings...</p>}>
-            <SettingsLoader previewMode />
-          </Suspense>
+        {/* Menu + Content */}
+        <div className="flex min-h-0 flex-1">
+          <PreviewSettingsMenu />
+          <main
+            ref={mainRef}
+            tabIndex={-1}
+            aria-label={
+              pathname === '/settings/general'
+                ? 'App settings page'
+                : 'Overlay settings page'
+            }
+            className="min-w-0 flex-1 bg-slate-900 p-4 focus:outline-none lg:p-7"
+          >
+            <div className="mx-auto flex h-full max-w-[960px] flex-col overflow-hidden">
+              <Suspense fallback={<p role="status">Loading settings...</p>}>
+                <SettingsLoader previewMode />
+              </Suspense>
+            </div>
+          </main>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }
 
 interface PreviewSettingsButtonProps {
-  activeWidgets: Set<string>;
-  onToggleWidget: (id: string) => void;
   openToWidget?: string | null;
   onClose?: () => void;
 }
 
 export function PreviewSettingsButton({
-  activeWidgets,
-  onToggleWidget,
   openToWidget,
   onClose,
 }: PreviewSettingsButtonProps) {
@@ -203,13 +229,7 @@ export function PreviewSettingsButton({
           <Routes>
             <Route
               path="/settings/:widgetId"
-              element={
-                <SettingsContent
-                  onClose={handleClose}
-                  activeWidgets={activeWidgets}
-                  onToggleWidget={onToggleWidget}
-                />
-              }
+              element={<SettingsContent onClose={handleClose} />}
             />
           </Routes>
         </MemoryRouter>
