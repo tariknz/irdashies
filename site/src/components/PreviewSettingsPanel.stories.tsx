@@ -22,9 +22,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Standings: Story = {
-  args: { openToWidget: 'standings' },
+  args: { openRequest: { widgetId: 'standings' } },
 };
 
 export const General: Story = {
-  args: { openToWidget: 'general' },
+  args: { openRequest: { widgetId: 'general' } },
 };

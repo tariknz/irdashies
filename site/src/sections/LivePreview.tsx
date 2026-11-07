@@ -21,7 +21,10 @@ import { ReferenceStoreProvider } from '@irdashies/context';
 import { defaultDashboard, type WidgetId } from '@irdashies/types';
 import { EXCLUDED_WIDGETS } from '../utils/previewWidgets';
 import { DashboardReady } from '../components/DashboardReady';
-import { PreviewSettingsButton } from '../components/PreviewSettingsPanel';
+import {
+  PreviewSettingsButton,
+  type PreviewSettingsRequest,
+} from '../components/PreviewSettingsPanel';
 import { WidgetErrorBoundary } from '../components/WidgetErrorBoundary';
 import { LivePreviewProvider } from '../utils/mockSetup';
 import { ActiveWidgetSync } from './ActiveWidgetSync';
@@ -110,9 +113,8 @@ export function LivePreview() {
     buildDefaultPositions(1200, 620)
   );
   const [selectedWidget, setSelectedWidget] = useState<string | null>(null);
-  const [settingsOpenWidget, setSettingsOpenWidget] = useState<string | null>(
-    null
-  );
+  const [settingsRequest, setSettingsRequest] =
+    useState<PreviewSettingsRequest | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const menuRef = useRef<HTMLDetailsElement>(null);
@@ -217,7 +219,7 @@ export function LivePreview() {
       )
     );
     setSelectedWidget(null);
-    setSettingsOpenWidget(null);
+    setSettingsRequest(null);
   };
 
   const handlePositionChange = useCallback(
@@ -236,7 +238,7 @@ export function LivePreview() {
     setSelectedWidget(null);
   }, []);
   const handleOpenSettings = useCallback(
-    (id: string) => setSettingsOpenWidget(id),
+    (id: string) => setSettingsRequest({ widgetId: id }),
     []
   );
 
@@ -377,8 +379,14 @@ export function LivePreview() {
                   </div>
                 </details>
                 <PreviewSettingsButton
-                  openToWidget={settingsOpenWidget}
-                  onClose={() => setSettingsOpenWidget(null)}
+                  defaultWidget={
+                    selectedWidget ??
+                    (activeWidgets.has('relative')
+                      ? 'relative'
+                      : activeWidgets.values().next().value)
+                  }
+                  openRequest={settingsRequest}
+                  onClose={() => setSettingsRequest(null)}
                 />
               </>
             )}

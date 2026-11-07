@@ -1,44 +1,131 @@
 import '@testing-library/jest-dom/vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { FormatSelect } from '@irdashies/frontend/components/Settings/components/FormatSelect';
-import { PreviewSettingsButton } from './PreviewSettingsPanel';
+import {
+  PreviewSettingsButton,
+  type PreviewSettingsRequest,
+} from './PreviewSettingsPanel';
 
 vi.mock('./PreviewSettingsMenu', () => ({
-  PreviewSettingsMenu: () => null,
+  PreviewSettingsMenu: () => (
+    <nav>
+      <Link to="/settings/input">Input</Link>
+    </nav>
+  ),
 }));
 vi.mock('@irdashies/frontend/components/Settings/SettingsLoader', () => ({
   SettingsLoader: function SettingsLoader() {
     const [value, setValue] = useState('full');
+    const { widgetId } = useParams();
     return (
-      <FormatSelect
-        label="iRacing"
-        value={value}
-        options={['full', 'short']}
-        onChange={setValue}
-        renderOption={(option) => option}
-      />
+      <>
+        <h2>{widgetId}</h2>
+        <FormatSelect
+          label="iRacing"
+          value={value}
+          options={['full', 'short']}
+          onChange={setValue}
+          renderOption={(option) => option}
+        />
+      </>
     );
   },
 }));
 
-describe('preview settings modal', () => {
-  beforeEach(() => {
-    // jsdom lacks native modal behavior; browser checks cover inertness and focus.
-    HTMLDialogElement.prototype.showModal = vi.fn(function (
-      this: HTMLDialogElement
-    ) {
-      this.setAttribute('open', '');
-    });
-    HTMLDialogElement.prototype.close = vi.fn(function (
-      this: HTMLDialogElement
-    ) {
-      this.removeAttribute('open');
-    });
+describe('preview settings panel', () => {
+  it('handles repeated gear requests and restores a minimized panel without resetting its geometry', async () => {
+    function PreviewWithGears() {
+      const [request, setRequest] = useState<PreviewSettingsRequest | null>(
+        null
+      );
+      return (
+        <>
+          <button onClick={() => setRequest({ widgetId: 'relative' })}>
+            Relative gear
+          </button>
+          <button onClick={() => setRequest({ widgetId: 'input' })}>
+            Input gear
+          </button>
+          <PreviewSettingsButton
+            openRequest={request}
+            defaultWidget="map"
+            onClose={() => setRequest(null)}
+          />
+        </>
+      );
+    }
+    render(<PreviewWithGears />);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Relative gear' })
+    );
+    await screen.findByRole('heading', { name: 'relative' });
+    const resize = screen.getByRole('button', { name: 'Resize settings' });
+    const panel = resize.parentElement;
+    if (!panel) throw new Error('Missing settings panel');
+    fireEvent.keyDown(resize, { key: 'ArrowLeft' });
+    const width = panel.style.width;
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Choose widget' })
+    );
+    await userEvent.click(screen.getByRole('link', { name: 'Input' }));
+    await screen.findByRole('heading', { name: 'input' });
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Relative gear' })
+    );
+    await screen.findByRole('heading', { name: 'relative' });
+    expect(
+      screen.getByRole('button', { name: 'Resize settings' }).parentElement
+    ).toBe(panel);
+    expect(panel.style.width).toBe(width);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Minimize settings' })
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Relative gear' })
+    );
+    await screen.findByRole('heading', { name: 'relative' });
+    expect(
+      screen.queryByRole('button', { name: 'Restore settings' })
+    ).toBeNull();
+    expect(panel.style.width).toBe(width);
+    await userEvent.click(screen.getByRole('button', { name: 'Input gear' }));
+    await screen.findByRole('heading', { name: 'input' });
+    expect(panel.style.width).toBe(width);
+    await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    await screen.findByRole('heading', { name: 'map' });
   });
-  afterEach(() => vi.restoreAllMocks());
+
+  it('navigates back to the configured widget on every Configure click', async () => {
+    render(<PreviewSettingsButton defaultWidget="relative" />);
+    await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    await screen.findByRole('heading', { name: 'relative' });
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Choose widget' })
+    );
+    await userEvent.click(screen.getByRole('link', { name: 'Input' }));
+    await screen.findByRole('heading', { name: 'input' });
+    await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    await screen.findByRole('heading', { name: 'relative' });
+  });
+
+  it('opens the current preview widget and keeps its page until reopened', async () => {
+    const { rerender } = render(
+      <PreviewSettingsButton defaultWidget="input" />
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    await screen.findByRole('heading', { name: 'input' });
+    rerender(<PreviewSettingsButton defaultWidget="relative" />);
+    expect(screen.getByRole('heading', { name: 'input' })).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Close settings' })
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    await screen.findByRole('heading', { name: 'relative' });
+  });
 
   it('consumes Escape before it reaches the fullscreen handler', async () => {
     render(<PreviewSettingsButton />);
@@ -85,7 +172,7 @@ describe('preview settings modal', () => {
   });
 
   it.each(['', 'hidden'])(
-    'restores the previous scroll lock (%j) on close',
+    'leaves the existing page scroll state (%j) unchanged',
     async (overflow) => {
       document.body.style.overflow = overflow;
       try {
@@ -93,19 +180,205 @@ describe('preview settings modal', () => {
         await userEvent.click(
           screen.getByRole('button', { name: 'Configure' })
         );
-        expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledOnce();
         expect(screen.getByRole('dialog')).toHaveAttribute(
           'aria-modal',
-          'true'
+          'false'
         );
-        expect(document.body.style.overflow).toBe('hidden');
+        expect(document.body.style.overflow).toBe(overflow);
         await userEvent.click(
           screen.getByRole('button', { name: 'Close settings' })
         );
         expect(document.body.style.overflow).toBe(overflow);
-        expect(HTMLDialogElement.prototype.close).toHaveBeenCalledOnce();
       } finally {
         document.body.style.overflow = '';
+      }
+    }
+  );
+
+  it('keeps the current settings mounted when minimized', async () => {
+    render(<PreviewSettingsButton />);
+    await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    const trigger = await screen.findByRole('button', {
+      name: 'iRacing rating format',
+    });
+    await userEvent.click(trigger);
+    await userEvent.click(screen.getByRole('option', { name: 'short' }));
+    const main = screen.getByRole('main');
+    main.scrollTop = 140;
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Minimize settings' })
+    );
+    expect(screen.queryByRole('main')).toBeNull();
+    expect(trigger).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Restore settings' })
+    );
+    expect(screen.getByRole('main')).toBe(main);
+    expect(main.scrollTop).toBe(140);
+    expect(trigger).toHaveTextContent('short');
+  });
+
+  it('supports keyboard resizing and stays inside a smaller viewport', async () => {
+    render(<PreviewSettingsButton />);
+    await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    const handle = screen.getByRole('button', { name: 'Resize settings' });
+    const panel = handle.parentElement;
+    if (!panel) throw new Error('Resize handle must be inside the panel');
+    const originalWidth = parseFloat(panel.style.width);
+    fireEvent.keyDown(handle, { key: 'ArrowLeft' });
+    expect(parseFloat(panel.style.width)).toBe(originalWidth - 20);
+    const originalHeight = parseFloat(panel.style.height);
+    fireEvent.keyDown(handle, { key: 'ArrowUp' });
+    expect(parseFloat(panel.style.height)).toBe(originalHeight - 20);
+
+    const { innerWidth, innerHeight } = window;
+    try {
+      Object.defineProperty(window, 'innerWidth', {
+        configurable: true,
+        value: 390,
+      });
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: 240,
+      });
+      fireEvent(window, new Event('resize'));
+      expect(parseFloat(panel.style.width)).toBe(374);
+      expect(parseFloat(panel.style.height)).toBe(224);
+      expect(panel.style.left).toBe('8px');
+      expect(panel.style.top).toBe('8px');
+    } finally {
+      Object.defineProperty(window, 'innerWidth', {
+        configurable: true,
+        value: innerWidth,
+      });
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: innerHeight,
+      });
+    }
+  });
+
+  it('drags the minimized bar to the viewport edges and restores the full panel in view', async () => {
+    render(<PreviewSettingsButton />);
+    await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    const panel = screen.getByRole('button', {
+      name: 'Resize settings',
+    }).parentElement;
+    if (!panel) throw new Error('Missing settings panel');
+    const header = panel.firstElementChild;
+    if (!(header instanceof HTMLElement))
+      throw new Error('Missing drag handle');
+    const width = parseFloat(panel.style.width);
+    const height = parseFloat(panel.style.height);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Minimize settings' })
+    );
+    header.setPointerCapture = vi.fn();
+    const rect = vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue({
+      ...new DOMRect(),
+      width: 320,
+      height: 56,
+    });
+    try {
+      fireEvent.pointerDown(header, {
+        pointerId: 1,
+        button: 0,
+        clientX: 400,
+        clientY: 120,
+      });
+      fireEvent.pointerMove(header, {
+        pointerId: 1,
+        clientX: 2000,
+        clientY: 2000,
+      });
+      fireEvent.pointerUp(header, { pointerId: 1 });
+      expect(parseFloat(panel.style.left)).toBe(window.innerWidth - 320 - 8);
+      expect(parseFloat(panel.style.top)).toBe(window.innerHeight - 56 - 8);
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Restore settings' })
+      );
+      expect(parseFloat(panel.style.width)).toBe(width);
+      expect(parseFloat(panel.style.height)).toBe(height);
+      expect(parseFloat(panel.style.left)).toBe(window.innerWidth - width - 8);
+      expect(parseFloat(panel.style.top)).toBe(window.innerHeight - height - 8);
+    } finally {
+      rect.mockRestore();
+    }
+  });
+
+  it.each([false, true])(
+    'preserves the expanded size across minimized viewport changes (drag: %s)',
+    async (drag) => {
+      render(<PreviewSettingsButton />);
+      await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
+      const panel = screen.getByRole('button', {
+        name: 'Resize settings',
+      }).parentElement;
+      if (!panel) throw new Error('Missing settings panel');
+      const header = panel.firstElementChild;
+      if (!(header instanceof HTMLElement))
+        throw new Error('Missing drag handle');
+      const width = panel.style.width;
+      const height = panel.style.height;
+      const { innerWidth, innerHeight } = window;
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Minimize settings' })
+      );
+      const rect = vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue({
+        ...new DOMRect(),
+        width: 320,
+        height: 56,
+      });
+      try {
+        Object.defineProperty(window, 'innerWidth', {
+          configurable: true,
+          value: 390,
+        });
+        Object.defineProperty(window, 'innerHeight', {
+          configurable: true,
+          value: 240,
+        });
+        fireEvent(window, new Event('resize'));
+        if (drag) {
+          header.setPointerCapture = vi.fn();
+          fireEvent.pointerDown(header, {
+            pointerId: 1,
+            button: 0,
+            clientX: 20,
+            clientY: 20,
+          });
+          fireEvent.pointerMove(header, {
+            pointerId: 1,
+            clientX: 800,
+            clientY: 800,
+          });
+          fireEvent.pointerUp(header, { pointerId: 1 });
+        }
+        Object.defineProperty(window, 'innerWidth', {
+          configurable: true,
+          value: innerWidth,
+        });
+        Object.defineProperty(window, 'innerHeight', {
+          configurable: true,
+          value: innerHeight,
+        });
+        fireEvent(window, new Event('resize'));
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Restore settings' })
+        );
+        expect(panel.style.width).toBe(width);
+        expect(panel.style.height).toBe(height);
+      } finally {
+        Object.defineProperty(window, 'innerWidth', {
+          configurable: true,
+          value: innerWidth,
+        });
+        Object.defineProperty(window, 'innerHeight', {
+          configurable: true,
+          value: innerHeight,
+        });
+        rect.mockRestore();
       }
     }
   );

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { DEFAULT_KEYBINDINGS, KEYBINDING_MESSAGES } from '@irdashies/types';
 import type { KeybindingsBridge } from '@irdashies/types';
@@ -59,7 +60,7 @@ it.each([
 ])('preserves the saved shortcut after rejection: %s', async (message) => {
   vi.mocked(bridge.updateKeybinding).mockResolvedValue({ error: message });
   renderRow();
-  fireEvent.click(
+  await userEvent.click(
     screen.getByRole('button', { name: 'Change shortcut for Hide / Show UI' })
   );
   await screen.findByText('Press keys...');
@@ -81,7 +82,7 @@ it('refreshes startup feedback after recording and a successful edit', async () 
   });
   renderRow();
   await screen.findByRole('status');
-  fireEvent.click(
+  await userEvent.click(
     screen.getByRole('button', { name: 'Change shortcut for Hide / Show UI' })
   );
   await screen.findByText('Press keys...');
