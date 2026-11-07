@@ -39,7 +39,7 @@ export const Disqualified: Story = {
   args: { finishState: 'DQ' },
 };
 
-/** A finish status replaces a penalty the car was still carrying. */
+/** The checkered flag beside a penalty the car still carries. */
 export const FinishedWithPenalty: Story = {
   args: { finishState: 'FINISHED', penaltyKind: 'SG' },
 };

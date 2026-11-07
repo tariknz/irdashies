@@ -64,8 +64,9 @@ interface DriverStatusBadgesProps {
   penaltySeconds?: number;
   /**
    * LMU's finish status. A finished car gets a checkered flag, as iRacing
-   * shows one; DNF and DQ are written out in the penalty badge's style. Takes
-   * the penalty badge's place: a penalty means nothing once the car is done.
+   * shows one, beside any penalty badge it still carries. DNF and DQ are
+   * written out in the penalty badge's style and take its place: once a car
+   * is out, a penalty has nothing left to say.
    */
   finishState?: LmuFinishState;
   repair?: boolean;
@@ -109,6 +110,7 @@ export const DriverStatusBadges = memo(
     isMinimal = false,
   }: DriverStatusBadgesProps) => {
     const muted = 'border-transparent';
+    const retired = finishState === 'DNF' || finishState === 'DQ';
     const hasStatus =
       finishState ||
       penaltyKind ||
@@ -150,7 +152,9 @@ export const DriverStatusBadges = memo(
       <div
         className={`flex flex-row-reverse items-center gap-0.5 ${className}`}
       >
-        {finishState === 'FINISHED' ? (
+        {/* First, so the reversed row draws it rightmost and a penalty
+            badge keeps its own place beside it. */}
+        {finishState === 'FINISHED' && (
           <StatusBadge
             textColor="text-white"
             borderColorClass="border-transparent"
@@ -163,7 +167,8 @@ export const DriverStatusBadges = memo(
               data-testid="finish-flag"
             />
           </StatusBadge>
-        ) : finishState ? (
+        )}
+        {retired ? (
           <StatusBadge
             textColor="text-white"
             borderColorClass="border-transparent"

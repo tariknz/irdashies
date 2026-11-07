@@ -1543,6 +1543,80 @@ export const AllFlagCombinationsStory: Story = {
   render: () => <AllFlagCombinations />,
 };
 
+/**
+ * LMU's finish badges beside a penalty, in a narrow table with a long name:
+ * the extra badge has to come out of the name, never out of the columns
+ * either side of it, which must stay where they are on every row.
+ */
+const LmuFinishBadges = () => {
+  const rows: {
+    label: string;
+    penaltyKind?: 'DT' | 'SG' | 'TIME';
+    finishState?: 'FINISHED' | 'DNF' | 'DQ';
+  }[] = [
+    { label: 'Running' },
+    { label: 'Drive-through', penaltyKind: 'DT' },
+    { label: 'Finished', finishState: 'FINISHED' },
+    {
+      label: 'Finished, drive-through',
+      finishState: 'FINISHED',
+      penaltyKind: 'DT',
+    },
+    { label: 'Finished, stop-go', finishState: 'FINISHED', penaltyKind: 'SG' },
+    { label: 'Did not finish', finishState: 'DNF', penaltyKind: 'DT' },
+    { label: 'Disqualified', finishState: 'DQ' },
+  ];
+
+  return (
+    <div className="w-[420px]">
+      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+        <tbody>
+          {rows.map((row, index) => (
+            <DriverInfoRow
+              key={row.label}
+              carIdx={index + 1}
+              carNumber={`${index + 10}`}
+              name={`${row.label} Maximilian Featherstonehaugh`}
+              isPlayer={false}
+              hasFastestTime={false}
+              delta={0.1}
+              position={index + 1}
+              lap={12}
+              classColor={16777215}
+              fastestTime={111.111}
+              lastTime={112.225}
+              onPitRoad={false}
+              onTrack={true}
+              radioActive={false}
+              isMultiClass={false}
+              carId={122}
+              currentSessionType="Race"
+              penaltyKind={row.penaltyKind}
+              finishState={row.finishState}
+              dnf={false}
+              repair={false}
+              penalty={false}
+              slowdown={false}
+              config={
+                {
+                  ...Primary.args?.config,
+                  badge: { enabled: false },
+                  countryFlags: { enabled: false },
+                } as StandingsWidgetSettings['config']
+              }
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export const LmuFinishBadgesStory: Story = {
+  name: 'LMU finish badges',
+  render: () => <LmuFinishBadges />,
+};
+
 const AllCarsComponent = () => {
   const carEntries = Object.entries(CAR_ID_TO_CAR_MANUFACTURER)
     .map(([id, data]) => ({ id: Number(id), ...data }))

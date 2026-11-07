@@ -207,7 +207,7 @@ describe('DriverStatusBadges penalty kind', () => {
       }
     });
 
-    it('takes the place of the penalty badge', () => {
+    it('replaces the penalty badge for a car that is out', () => {
       const dq = render(
         <DriverStatusBadges finishState="DQ" penaltyKind="DT" />
       );
@@ -215,15 +215,20 @@ describe('DriverStatusBadges penalty kind', () => {
       expect(
         dq.container.querySelector('[data-testid="finish-flag"]')
       ).toBeNull();
-      dq.unmount();
+    });
 
-      const finished = render(
+    it('draws the checkered flag beside a penalty still carried', () => {
+      const { container } = render(
         <DriverStatusBadges finishState="FINISHED" penaltyKind="SG" />
       );
-      expect(finished.container.textContent).not.toContain('SG');
-      expect(
-        finished.container.querySelector('[data-testid="finish-flag"]')
-      ).not.toBeNull();
+      const row = container.firstElementChild;
+      const flag = container.querySelector('[data-testid="finish-flag"]');
+      expect(flag).not.toBeNull();
+      expect(container.textContent).toBe('SG');
+      // First in a reversed row, so rightmost: the penalty badge keeps the
+      // place it had before the car finished.
+      expect(row?.firstElementChild?.contains(flag)).toBe(true);
+      expect(row?.children[1]?.textContent).toBe('SG');
     });
 
     it('leaves the penalty badge alone for a car still running', () => {
