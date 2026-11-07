@@ -113,7 +113,11 @@ function SettingsContent({ onClose }: SettingsContentProps) {
     mode: 'move' | 'resize'
   ) => {
     if (event.button !== 0) return;
-    if (mode === 'move' && (event.target as HTMLElement).closest('button'))
+    if (
+      mode === 'move' &&
+      event.target instanceof Element &&
+      event.target.closest('button')
+    )
       return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -270,7 +274,10 @@ function SettingsContent({ onClose }: SettingsContentProps) {
                   : 'hidden'
               }
               onClick={(event) => {
-                if ((event.target as HTMLElement).closest('a'))
+                if (
+                  event.target instanceof Element &&
+                  event.target.closest('a')
+                )
                   setMenuOpen(false);
               }}
             >
