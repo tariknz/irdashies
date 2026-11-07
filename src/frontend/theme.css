@@ -188,6 +188,9 @@ layer(base);
     background-position: right 0.75rem center;
     background-repeat: no-repeat;
     background-size: 1rem;
+    @media (forced-colors: active) {
+      @apply appearance-auto bg-none;
+    }
   }
   &::placeholder {
     color: var(--color-slate-400);
