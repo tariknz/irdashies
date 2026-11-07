@@ -274,6 +274,9 @@ export class LmuTrackMapRecorder {
     if (this.lapStartET === null) {
       this.lapStartET = frame.lapStartET;
       this.recording = progress <= 0.02;
+    } else if (frame.lapStartET < this.lapStartET) {
+      this.reset(frame.trackName);
+      return null;
     } else if (frame.lapStartET > this.lapStartET) {
       const completed = this.finishLap(
         frame.lapDist,

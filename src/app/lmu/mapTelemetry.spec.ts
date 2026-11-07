@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { CarLeftRight, TIMED_SESSION_LAPS } from '@irdashies/types';
+import {
+  CarLeftRight,
+  EngineWarnings,
+  TIMED_SESSION_LAPS,
+} from '@irdashies/types';
 import type { LmuRawTelemetry } from './native';
 import { mapLmuSectorTimes, mapLmuTelemetry } from './mapTelemetry';
 import { fixture } from './rawFixture';
@@ -56,6 +60,10 @@ describe('mapLmuTelemetry', () => {
     expect(t.Gear.value[0]).toBe(5);
     expect(t.RPM.value[0]).toBe(8200);
     expect(t.LapCurrentLapTime.value[0]).toBeCloseTo(50.4);
+    expect(t.LapDeltaToSessionBestLap.value[0]).toBeCloseTo(0.2);
+    expect(t.LapDeltaToSessionBestLap_OK.value[0]).toBe(true);
+    expect(t.LapDeltaToBestLap.value[0]).toBeCloseTo(0.2);
+    expect(t.LapDeltaToBestLap_OK.value[0]).toBe(true);
     expect(t.Throttle.value[0]).toBeCloseTo(0.79);
     expect(t.Brake.value[0]).toBe(0);
     expect(t.Clutch.value[0]).toBe(1);
@@ -77,6 +85,17 @@ describe('mapLmuTelemetry', () => {
     expect(t.RRshockDefl.value[0]).toBe(0.07);
   });
 
+  it('clears best-lap delta when the player has no best lap', () => {
+    const t = mapLmuTelemetry({
+      ...fixture(),
+      deltaBest: 0.5,
+      vehBestLapTime: new Float64Array([134.5, 0, 137.1]),
+    });
+    expect(t.LapDeltaToSessionBestLap.value[0]).toBe(0);
+    expect(t.LapDeltaToSessionBestLap_OK.value[0]).toBe(false);
+    expect(t.LapDeltaToBestLap_OK.value[0]).toBe(false);
+  });
+
   it('maps the LMU pit limiter switch, not only active intervention', () => {
     const t = mapLmuTelemetry({
       ...fixture(),
@@ -85,6 +104,32 @@ describe('mapLmuTelemetry', () => {
     });
 
     expect(t.dcPitSpeedLimiterToggle.value[0]).toBe(true);
+    expect(t.EngineWarnings.value[0] & EngineWarnings.PitSpeedLimiter).toBe(
+      EngineWarnings.PitSpeedLimiter
+    );
+  });
+
+  it('sets PitSpeedLimiter on EngineWarnings when the cut is active', () => {
+    const t = mapLmuTelemetry({
+      ...fixture(),
+      speedLimiter: 0,
+      speedLimiterActive: true,
+    });
+
+    expect(t.dcPitSpeedLimiterToggle.value[0]).toBe(false);
+    expect(t.EngineWarnings.value[0] & EngineWarnings.PitSpeedLimiter).toBe(
+      EngineWarnings.PitSpeedLimiter
+    );
+  });
+
+  it('clears PitSpeedLimiter when the limiter is off', () => {
+    const t = mapLmuTelemetry({
+      ...fixture(),
+      speedLimiter: 0,
+      speedLimiterActive: false,
+    });
+
+    expect(t.EngineWarnings.value[0] & EngineWarnings.PitSpeedLimiter).toBe(0);
   });
 
   it('handles the no-player case', () => {
@@ -998,6 +1043,28 @@ describe('mapLmuTelemetry adjustable dials', () => {
 
     expect(dial(t, 'dcTractionControl')).toBeUndefined();
     expect(dial(t, 'dcTractionControl2')).toBeUndefined();
+  });
+});
+
+describe('LmuDentSeverity', () => {
+  it('publishes LMU dent order and wheel flags from the fixture', () => {
+    // Fixture dentSeverity: FC=0, FL=1, CL=0, RL=0, RC=0, RR=0, CR=2, FR=0
+    const t = mapLmuTelemetry(fixture());
+    expect(t.LmuDentSeverity?.value).toEqual([0, 1, 0, 0, 0, 0, 2, 0]);
+    expect(t.LmuWheelDetached?.value).toEqual([false, false, false, false]);
+    expect(t.LmuBodyDetached?.value[0]).toBe(false);
+    expect(t.LmuLastImpactET?.value[0]).toBe(240.1);
+    expect(t.LmuLastImpactPos?.value).toEqual([0.4, 0, -1.2]);
+  });
+
+  it('does not force rear-center when the body is detached', () => {
+    const t = mapLmuTelemetry({
+      ...fixture(),
+      dentSeverity: new Uint8Array([0, 0, 0, 0, 1, 0, 0, 0]),
+      bodyDetached: true,
+    });
+    expect(t.LmuDentSeverity?.value?.[4]).toBe(1);
+    expect(t.LmuBodyDetached?.value[0]).toBe(true);
   });
 });
 
