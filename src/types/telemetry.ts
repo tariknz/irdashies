@@ -61,6 +61,11 @@ export type Telemetry = {
    */
   LmuCarIdxPenaltyKind?: TelemetryVar<number[]>;
   /**
+   * Each car's `mFinishStatus`: 0 none, 1 finished, 2 DNF, 3 DQ, as
+   * LMU_FINISH_STATUS. From scoring, so it is there for every car.
+   */
+  LmuCarIdxFinishStatus?: TelemetryVar<number[]>;
+  /**
    * Seconds a time penalty will add to each car's race time. 0 for a clean
    * car and for the two kinds that are served on track rather than paid in
    * time. From the same websocket as the kind above.
@@ -84,6 +89,13 @@ export type Telemetry = {
    * made it worse, because that is the term isDriving negates.
    */
   LmuDataStale?: TelemetryVar<boolean[]>;
+  /**
+   * True while LMU's GetGameState answers `{"status":"unavailable"}`: the sim
+   * is running and in no session. Widgets read it as Offline Testing for their
+   * session visibility, so only those allowed there stay on screen. False
+   * whenever the game state is anything else or unknown.
+   */
+  LmuNotInSession?: TelemetryVar<boolean[]>;
   /**
    * The points a drive-through is served at, 0 when the session has not said.
    *

@@ -183,4 +183,52 @@ describe('DriverStatusBadges penalty kind', () => {
     expect(span.className).toContain('text-white');
     expect(span.style.backgroundColor).toBe('rgb(255, 0, 0)');
   });
+
+  describe("LMU's finish status", () => {
+    it('draws a checkered flag for a finished car', () => {
+      const { getByTestId, getByLabelText } = render(
+        <DriverStatusBadges finishState="FINISHED" />
+      );
+
+      expect(getByTestId('finish-flag')).toBeTruthy();
+      expect(getByLabelText('Finished')).toBeTruthy();
+    });
+
+    it('writes DNF and DQ out, in the penalty badge style', () => {
+      for (const state of ['DNF', 'DQ'] as const) {
+        const { container, unmount } = render(
+          <DriverStatusBadges finishState={state} />
+        );
+        const badge = container.querySelector('span');
+        expect(badge?.textContent).toBe(state);
+        // The same exact red as the DT / SG badge.
+        expect(badge?.getAttribute('style')).toContain('rgb(255, 0, 0)');
+        unmount();
+      }
+    });
+
+    it('takes the place of the penalty badge', () => {
+      const dq = render(
+        <DriverStatusBadges finishState="DQ" penaltyKind="DT" />
+      );
+      expect(dq.container.textContent).toBe('DQ');
+      expect(
+        dq.container.querySelector('[data-testid="finish-flag"]')
+      ).toBeNull();
+      dq.unmount();
+
+      const finished = render(
+        <DriverStatusBadges finishState="FINISHED" penaltyKind="SG" />
+      );
+      expect(finished.container.textContent).not.toContain('SG');
+      expect(
+        finished.container.querySelector('[data-testid="finish-flag"]')
+      ).not.toBeNull();
+    });
+
+    it('leaves the penalty badge alone for a car still running', () => {
+      const { container } = render(<DriverStatusBadges penaltyKind="SG" />);
+      expect(container.textContent).toBe('SG');
+    });
+  });
 });

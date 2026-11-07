@@ -1490,3 +1490,92 @@ describe('createDriverStandings and the penalty fallback', () => {
     expect(rows.find((r) => r.carIdx === 0)?.penaltyKind).toBe('SG');
   });
 });
+
+/**
+ * LMU's per-car finish status: drawn where the penalty badge is, and LMU's DQ
+ * must not also come out as DNF in the pit column.
+ */
+describe('createDriverStandings and the LMU finish status', () => {
+  const driver = (carIdx: number) => ({
+    CarIdx: carIdx,
+    UserName: `Driver ${carIdx}`,
+    CarNumber: String(carIdx),
+    CarClassID: 1,
+    CarClassShortName: 'Hypercar',
+    CarClassRelSpeed: 1.0,
+    IRating: 0,
+    LicString: '',
+    CarIsPaceCar: 0,
+    IsSpectator: 0,
+  });
+  const DISQUALIFY = 0x00020000;
+
+  const build = (
+    telemetry: Parameters<typeof createDriverStandings>[1],
+    withResults: boolean
+  ) =>
+    createDriverStandings(
+      {
+        playerIdx: 0,
+        drivers: [
+          driver(0),
+          driver(1),
+          driver(2),
+          driver(3),
+        ] as unknown as Driver[],
+      },
+      telemetry,
+      {
+        resultsPositions: withResults
+          ? ([0, 1, 2, 3].map((carIdx) => ({
+              CarIdx: carIdx,
+              ClassPosition: carIdx,
+              Position: carIdx + 1,
+              FastestTime: 100,
+              LastTime: 100,
+            })) as unknown as SessionResults[])
+          : [],
+        resultsFastestLap: [],
+        sessionType: 'Race',
+      },
+      [],
+      [],
+      []
+    );
+
+  it.each([true, false])(
+    'reads finished, DNF and DQ per car (results: %s)',
+    (withResults) => {
+      const rows = build(
+        { carIdxFinishStatusValue: [0, 1, 2, 3] },
+        withResults
+      );
+      const state = (carIdx: number) =>
+        rows.find((r) => r.carIdx === carIdx)?.finishState;
+
+      expect(state(0)).toBeUndefined();
+      expect(state(1)).toBe('FINISHED');
+      expect(state(2)).toBe('DNF');
+      expect(state(3)).toBe('DQ');
+    }
+  );
+
+  it('does not repeat an LMU DQ as DNF', () => {
+    const rows = build(
+      {
+        carIdxFinishStatusValue: [0, 0, 0, 3],
+        carIdxSessionFlags: [DISQUALIFY, 0, 0, DISQUALIFY],
+      },
+      true
+    );
+
+    expect(rows.find((r) => r.carIdx === 3)?.dnf).toBe(false);
+    // Without a finish status -- iRacing -- the flag still says DNF.
+    expect(rows.find((r) => r.carIdx === 0)?.dnf).toBe(true);
+  });
+
+  it('is absent on a sim that reports none', () => {
+    const rows = build({}, true);
+    expect(rows.every((r) => r.finishState === undefined)).toBe(true);
+  });
+});

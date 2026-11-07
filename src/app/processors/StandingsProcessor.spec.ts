@@ -182,4 +182,18 @@ describe('StandingsProcessor', () => {
       carIdxLap: [],
     });
   });
+
+  it("carries LMU's per-car finish status, and drops it on disconnect", () => {
+    const processor = new StandingsProcessor();
+    processor.init(session);
+    processor.onFrame(frame(10));
+    // Absent under iRacing, so the copy leaves it empty.
+    expect(processor.snapshot().carIdxFinishStatus).toEqual([]);
+
+    processor.onFrame(frame(11, { LmuCarIdxFinishStatus: { value: [1, 3] } }));
+    expect(processor.snapshot().carIdxFinishStatus).toEqual([1, 3]);
+
+    processor.onLifecycle({ type: 'disconnect' });
+    expect(processor.snapshot().carIdxFinishStatus).toEqual([]);
+  });
 });

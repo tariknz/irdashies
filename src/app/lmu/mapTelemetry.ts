@@ -521,6 +521,8 @@ export function mapLmuTelemetry(
   // so the choice is made per car here rather than once for the grid.
   // Count only: scoring has no field for which penalty it is.
   t.LmuCarIdxPenalties = numArr(raw.vehNumPenalties);
+  // The sim's own per-car finish status, which names the flag outright.
+  t.LmuCarIdxFinishStatus = numArr(raw.vehFinishStatus);
   t.LmuCarIdxEnergyRemaining = numArr(
     lmuEnergyChannel(raw.vehFuelFraction, raw.vehVirtualEnergy)
   );
@@ -818,6 +820,9 @@ export function mapLmuTelemetry(
   t.LmuDataStale = bool(
     gameState !== undefined ? !lmuInSession(gameState) : (dataFrozen ?? false)
   );
+  // Only the sim's own "unavailable", not an inference: this hides widgets,
+  // and a guess from a frozen block is not enough to do that on.
+  t.LmuNotInSession = bool(gameState === 'notInSession');
   // Reported as the snapshot has them, frozen or not. Falsifying these while
   // frozen was a mistake: isDriving reads them as `!isInGarage`, so clearing
   // them removed the one term that would have excluded a parked player.

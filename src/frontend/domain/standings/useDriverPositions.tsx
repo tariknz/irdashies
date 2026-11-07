@@ -22,7 +22,11 @@ import {
 } from './createStandings';
 import { GlobalFlags, SessionState } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
-import { lmuPenaltyBadge, lmuPenaltyKindFromCode } from '@irdashies/types';
+import {
+  lmuFinishStateFromCode,
+  lmuPenaltyBadge,
+  lmuPenaltyKindFromCode,
+} from '@irdashies/types';
 import { measureStandingsRebuild } from './standingsCost';
 import { useRelativeSettings } from './useRelativeSettings';
 import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
@@ -170,6 +174,7 @@ export const useCarState = () => {
   const carIdxPenalties = snapshot?.carIdxPenalties ?? EMPTY_NUMBERS;
   const carIdxPenaltyKind = snapshot?.carIdxPenaltyKind ?? EMPTY_NUMBERS;
   const carIdxPenaltySeconds = snapshot?.carIdxPenaltySeconds ?? EMPTY_NUMBERS;
+  const carIdxFinishStatus = snapshot?.carIdxFinishStatus ?? EMPTY_NUMBERS;
   const carIdxSessionFlags = snapshot?.carIdxSessionFlags ?? EMPTY_NUMBERS;
 
   return useMemo(() => {
@@ -185,7 +190,12 @@ export const useCarState = () => {
         penalties: carIdxPenalties[index] ?? 0,
         penaltyKind: lmuPenaltyKindFromCode(carIdxPenaltyKind[index]),
         penaltySeconds: carIdxPenaltySeconds[index],
-        dnf: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Disqualify),
+        finishState: lmuFinishStateFromCode(carIdxFinishStatus[index]),
+        // LMU's DQ raises Disqualify too, and the finish badge already says
+        // so; without this the pit column repeats it as DNF.
+        dnf:
+          lmuFinishStateFromCode(carIdxFinishStatus[index]) === undefined &&
+          !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Disqualify),
         repair: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Repair),
         penalty: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Black),
         slowdown: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Furled),
@@ -201,6 +211,7 @@ export const useCarState = () => {
     carIdxPenalties,
     carIdxPenaltyKind,
     carIdxPenaltySeconds,
+    carIdxFinishStatus,
     carIdxSessionFlags,
   ]);
 };
@@ -367,6 +378,7 @@ export const useDriverStandings = () => {
                 penaltySeconds
               ),
             penaltySeconds: carState?.penaltySeconds,
+            finishState: carState?.finishState,
             carClass: driver.carClass,
             radioActive: radioActiveCarIdxs.includes(driverPos.carIdx),
             carId: driver.carId,

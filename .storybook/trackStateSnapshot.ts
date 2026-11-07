@@ -9,6 +9,7 @@ export const trackStateStorySnapshot = {
   carLeftRight: 0,
   isOnTrack: true,
   dataStale: false,
+  notInSession: false,
   playerCarInPitStall: false,
   playerTrackSurface: 3,
   onPitRoad: false,

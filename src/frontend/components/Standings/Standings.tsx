@@ -461,6 +461,7 @@ export const Standings = () => {
                           }
                           penaltyKind={result.penaltyKind}
                           penaltySeconds={result.penaltySeconds}
+                          finishState={result.finishState}
                           trackLimitsPoints={result.trackLimitsPoints}
                           trackLimitsMax={trackLimitsMax}
                           lmuVirtualEnergy={result.energyRemaining}

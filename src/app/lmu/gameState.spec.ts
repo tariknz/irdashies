@@ -161,6 +161,23 @@ describe('mapLmuTelemetry with a game state', () => {
     expect(map(raw, 'driving').IsOnTrack.value[0]).toBe(false);
   });
 
+  it('flags out of a session only on the sim saying so', () => {
+    expect(map(fixture(), 'notInSession').LmuNotInSession?.value[0]).toBe(true);
+    for (const state of [
+      'driving',
+      'paused',
+      'monitor',
+      'notInGame',
+      undefined,
+    ] as const) {
+      expect(map(fixture(), state).LmuNotInSession?.value[0]).toBe(false);
+    }
+    // A frozen block is a guess, and not enough to hide widgets on.
+    expect(map(fixture(), undefined, true).LmuNotInSession?.value[0]).toBe(
+      false
+    );
+  });
+
   it('falls back to shared memory when the sim has not said', () => {
     const raw = fixture();
     expect(map(raw, undefined).IsOnTrack.value[0]).toBe(true);

@@ -1,5 +1,10 @@
 import { memo, type ReactNode } from 'react';
-import { lmuPenaltyBadgeText, type LmuPenaltyKind } from '@irdashies/types';
+import { FlagCheckeredIcon } from '@phosphor-icons/react';
+import {
+  lmuPenaltyBadgeText,
+  type LmuFinishState,
+  type LmuPenaltyKind,
+} from '@irdashies/types';
 import { formatTime } from '@irdashies/utils/time';
 
 interface StatusBadgeProps {
@@ -57,6 +62,12 @@ interface DriverStatusBadgesProps {
    * other two, which are served on track rather than paid in time.
    */
   penaltySeconds?: number;
+  /**
+   * LMU's finish status. A finished car gets a checkered flag, as iRacing
+   * shows one; DNF and DQ are written out in the penalty badge's style. Takes
+   * the penalty badge's place: a penalty means nothing once the car is done.
+   */
+  finishState?: LmuFinishState;
   repair?: boolean;
   penalty?: boolean;
   slowdown?: boolean;
@@ -79,6 +90,7 @@ export const DriverStatusBadges = memo(
   ({
     penaltyKind,
     penaltySeconds,
+    finishState,
     repair,
     penalty,
     slowdown,
@@ -98,6 +110,7 @@ export const DriverStatusBadges = memo(
   }: DriverStatusBadgesProps) => {
     const muted = 'border-transparent';
     const hasStatus =
+      finishState ||
       penaltyKind ||
       penalty ||
       slowdown ||
@@ -137,15 +150,39 @@ export const DriverStatusBadges = memo(
       <div
         className={`flex flex-row-reverse items-center gap-0.5 ${className}`}
       >
-        {penaltyKind && (
+        {finishState === 'FINISHED' ? (
+          <StatusBadge
+            textColor="text-white"
+            borderColorClass="border-transparent"
+            additionalClasses="inline-flex items-center justify-center min-w-6 bg-black/80 py-px"
+          >
+            <FlagCheckeredIcon
+              size="1.1em"
+              weight="fill"
+              aria-label="Finished"
+              data-testid="finish-flag"
+            />
+          </StatusBadge>
+        ) : finishState ? (
           <StatusBadge
             textColor="text-white"
             borderColorClass="border-transparent"
             additionalClasses="inline-block min-w-6 font-bold"
             backgroundColor="#FF0000"
           >
-            {lmuPenaltyBadgeText(penaltyKind, penaltySeconds)}
+            {finishState}
           </StatusBadge>
+        ) : (
+          penaltyKind && (
+            <StatusBadge
+              textColor="text-white"
+              borderColorClass="border-transparent"
+              additionalClasses="inline-block min-w-6 font-bold"
+              backgroundColor="#FF0000"
+            >
+              {lmuPenaltyBadgeText(penaltyKind, penaltySeconds)}
+            </StatusBadge>
+          )
         )}
         {penalty && (
           <StatusBadge

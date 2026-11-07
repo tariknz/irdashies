@@ -1046,6 +1046,23 @@ describe('mapLmuTelemetry penalty kinds', () => {
   });
 });
 
+describe('mapLmuTelemetry finish status', () => {
+  it("publishes each car's mFinishStatus as it stands", () => {
+    // 0 none, 1 finished, 2 DNF, 3 DQ: the codes go out unchanged and the
+    // renderer names them.
+    const raw = { ...fixture(), vehFinishStatus: Int32Array.from([1, 2, 3]) };
+    expect(mapLmuTelemetry(raw).LmuCarIdxFinishStatus?.value).toEqual([
+      1, 2, 3,
+    ]);
+  });
+
+  it('still raises Disqualify for a DQ, which race control reads', () => {
+    const raw = { ...fixture(), vehFinishStatus: Int32Array.from([0, 0, 3]) };
+    const flags = mapLmuTelemetry(raw).CarIdxSessionFlags.value as number[];
+    expect(flags[2] & 0x00020000).toBe(0x00020000);
+  });
+});
+
 describe('mapLmuTelemetry spectator focus', () => {
   const cells = (focus?: number) =>
     focus === undefined ? {} : { focusCarIdx: { value: [focus] } };

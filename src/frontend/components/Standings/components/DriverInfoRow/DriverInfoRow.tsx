@@ -7,6 +7,7 @@ import { useStandingsInteraction } from '@irdashies/domain';
 import type { Gap, LastTimeState } from '@irdashies/domain';
 import type {
   LmuDriverRating,
+  LmuFinishState,
   LmuPenaltyKind,
   RelativeWidgetSettings,
   StandingsWidgetSettings,
@@ -69,6 +70,8 @@ interface DriverRowInfoProps {
   /** LMU's penalty kind: DT for a drive-through, SG for a stop-go. */
   penaltyKind?: LmuPenaltyKind;
   penaltySeconds?: number;
+  /** LMU's finish status, drawn where the penalty badge is. */
+  finishState?: LmuFinishState;
   /** LMU's track-limits penalty points. Undefined where unknown. */
   trackLimitsPoints?: number;
   /** Points at which a drive-through is served. */
@@ -245,6 +248,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     wheelCompounds,
     penaltyKind,
     penaltySeconds,
+    finishState,
     trackLimitsPoints,
     trackLimitsMax,
     lmuVirtualEnergy,
@@ -423,6 +427,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             repair={repair}
             penaltyKind={penaltyKind}
             penaltySeconds={penaltySeconds}
+            finishState={finishState}
             penalty={penalty}
             slowdown={slowdown}
             showStatusBadges={config?.driverName?.showStatusBadges ?? true}
@@ -844,6 +849,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     wheelCompounds,
     penaltyKind,
     penaltySeconds,
+    finishState,
     trackLimitsPoints,
     trackLimitsMax,
     lmuVirtualEnergy,

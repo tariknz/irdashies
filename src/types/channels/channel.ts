@@ -59,6 +59,11 @@ export interface TrackStateSnapshot {
    * reading. Nothing about where the player is can be trusted while it is set.
    */
   dataStale: boolean;
+  /**
+   * True while LMU says it is running and in no session. Session visibility
+   * treats it as Offline Testing. Always false under iRacing.
+   */
+  notInSession: boolean;
   playerCarInPitStall: boolean;
   playerTrackSurface: number;
   onPitRoad: boolean;
@@ -509,6 +514,11 @@ export interface StandingsSnapshot {
    * `lmuPenaltyKindFromCode` turns an entry into something to draw.
    */
   carIdxPenaltyKind: number[];
+  /**
+   * Each car's finish status, as an LMU_FINISH_STATUS. Empty under iRacing.
+   * `lmuFinishStateFromCode` turns an entry into something to draw.
+   */
+  carIdxFinishStatus: number[];
   /**
    * Seconds a time penalty will add, per car. 0 for a clean car and for the
    * two kinds served on track. Empty wherever `carIdxPenaltyKind` is.

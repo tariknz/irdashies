@@ -187,6 +187,12 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       'LmuCarIdxPenaltySeconds',
       this.latest.carIdxPenaltySeconds
     );
+    // LMU only: the sim's per-car finished / DNF / DQ.
+    copyNumberArray(
+      frame,
+      'LmuCarIdxFinishStatus',
+      this.latest.carIdxFinishStatus
+    );
     this.latest.penaltySeconds =
       numberValue(frame, 'LmuPenaltySeconds') ?? undefined;
     copyBooleanArray(frame, 'CarIdxP2P_Status', this.latest.carIdxP2PStatus);
@@ -288,6 +294,7 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     this.latest.carIdxPenalties.length = 0;
     this.latest.carIdxPenaltyKind.length = 0;
     this.latest.carIdxPenaltySeconds.length = 0;
+    this.latest.carIdxFinishStatus.length = 0;
     this.latest.penaltySeconds = undefined;
     this.latest.trackLimitsPointsMax = 0;
     this.latest.carIdxP2PStatus.length = 0;
@@ -323,6 +330,7 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       carIdxPenalties: [],
       carIdxPenaltyKind: [],
       carIdxPenaltySeconds: [],
+      carIdxFinishStatus: [],
       penaltySeconds: undefined,
       trackLimitsPointsMax: 0,
       carIdxP2PStatus: [],
