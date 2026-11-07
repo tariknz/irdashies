@@ -22,6 +22,7 @@ import { HeaderProfilePicker } from './components/HeaderProfilePicker';
 import { generalItems, bottomItems } from './menuItems';
 import { ReleaseNotesStatusProvider } from './ReleaseNotes/ReleaseNotesStatusContext';
 import { ReleaseNotesAnnouncement } from './ReleaseNotes/ReleaseNotesAnnouncement';
+import { GitHubStarPrompt } from './GitHubStarPrompt/GitHubStarPrompt';
 
 export const SettingsLayout = () => {
   const { bridge, isDemoMode, toggleDemoMode, currentDashboard } =
@@ -98,6 +99,7 @@ export const SettingsLayout = () => {
           </Link>
         )}
         <ReleaseNotesAnnouncement />
+        <GitHubStarPrompt />
         {/* The window has no native title bar: this row is the drag handle, and
           the side padding keeps clear of the OS window controls. Their
           width comes from the window-controls-overlay env() values, so it

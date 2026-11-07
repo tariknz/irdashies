@@ -46,6 +46,19 @@ git cherry-pick -n <hash>           # Partial: then reset/checkout unwanted file
 
 When opening a PR, follow `.github/pull_request_template.md` exactly. Fill in the **Description** and **Screenshots** (Before / After) sections, tick the matching **Type of Change** box, and only check **Checklist** items you've actually done — don't tick iRacing testing if you only verified in Storybook.
 
+**Every visual change requires screenshots.** Show the updated UI to the user in
+the final response and upload actual screenshots as GitHub attachments in the PR
+body. Include Before / After images when changing existing UI, and at least an
+After image for new UI. A prose description, Storybook link, or local file path
+does not satisfy this requirement. Verify the uploaded images render in the PR.
+
+Keep review media outside the repository and never commit screenshots just to
+host them. If the installed GitHub CLI lacks `--attach`, check the current
+official release and use an updated CLI (a verified portable release is fine)
+before falling back to an authenticated browser upload. If uploads remain
+blocked, keep the visual PR in draft, report the exact blocker, and do not claim
+publication is complete until screenshots are attached.
+
 ---
 
 ## Project Structure
