@@ -377,6 +377,12 @@ export function LivePreview() {
                   </div>
                 </details>
                 <PreviewSettingsButton
+                  defaultWidget={
+                    selectedWidget ??
+                    (activeWidgets.has('relative')
+                      ? 'relative'
+                      : activeWidgets.values().next().value)
+                  }
                   openToWidget={settingsOpenWidget}
                   onClose={() => setSettingsOpenWidget(null)}
                 />
