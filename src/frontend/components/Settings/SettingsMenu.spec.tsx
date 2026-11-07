@@ -44,6 +44,7 @@ vi.mock('./ReleaseNotes/ReleaseNotesStatusContext', () => ({
 vi.mock('./menuItems', () => ({
   generalItems: [
     { to: '/settings/general', path: '/general', label: 'General' },
+    { to: '/settings/profiles', path: '/profiles', label: 'Profiles' },
   ],
   bottomItems: [{ to: '/settings/about', path: '/about', label: 'About' }],
   menuHasToggle: (widgetType: string, ids: string[]) =>
@@ -378,5 +379,41 @@ describe('SettingsMenu', () => {
       screen.getByRole('link', { name: 'Twitch Chat' })
     ).toBeInTheDocument();
     expect(state.onDashboardUpdated).not.toHaveBeenCalled();
+  });
+
+  it('keeps preview exclusions hidden even when revealing unsupported widgets', () => {
+    render(
+      <MemoryRouter initialEntries={['/settings/standings']}>
+        <SettingsMenu
+          previewMode
+          excludedWidgetTypes={new Set(['twitchchat'])}
+        />
+      </MemoryRouter>
+    );
+    fireEvent.click(screen.getByText('(1 hidden)'));
+    expect(screen.getByRole('link', { name: /Wind/ })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Twitch Chat' })).toBeNull();
+    expect(
+      screen.getByRole('switch', { name: 'Enable Standings' })
+    ).toBeChecked();
+  });
+
+  it('limits preview app pages to General while retaining the return route', () => {
+    render(
+      <MemoryRouter initialEntries={['/settings/general']}>
+        <SettingsMenu previewMode returnTo="/settings/standings" />
+        <CurrentPath />
+      </MemoryRouter>
+    );
+    expect(screen.getByRole('link', { name: 'General' })).toHaveAttribute(
+      'aria-current',
+      'page'
+    );
+    expect(screen.queryByRole('link', { name: 'Profiles' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'About' })).toBeNull();
+    fireEvent.click(screen.getByRole('link', { name: 'Back to overlays' }));
+    expect(screen.getByTestId('current-path')).toHaveTextContent(
+      '/settings/standings'
+    );
   });
 });

@@ -377,8 +377,6 @@ export function LivePreview() {
                   </div>
                 </details>
                 <PreviewSettingsButton
-                  activeWidgets={activeWidgets}
-                  onToggleWidget={toggleWidget}
                   openToWidget={settingsOpenWidget}
                   onClose={() => setSettingsOpenWidget(null)}
                 />

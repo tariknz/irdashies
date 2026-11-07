@@ -130,9 +130,13 @@ const MenuLink = ({
 export const SettingsMenu = ({
   appTo = '/settings/general',
   returnTo = '/settings/relative',
+  previewMode = false,
+  excludedWidgetTypes,
 }: {
   appTo?: string;
   returnTo?: string;
+  previewMode?: boolean;
+  excludedWidgetTypes?: ReadonlySet<string>;
 }) => {
   const { status: releaseNotesStatus } = useReleaseNotesStatus();
   const { pathname } = useLocation();
@@ -190,7 +194,10 @@ export const SettingsMenu = ({
     !!item.widgetType &&
     (item.groupTypes ?? [item.widgetType]).some(isWidgetEnabled);
 
-  const menuItems = widgetItems.filter((item) => !item.hideInMenu);
+  const menuItems = widgetItems.filter(
+    (item) =>
+      !item.hideInMenu && !excludedWidgetTypes?.has(item.widgetType ?? '')
+  );
   const unsupported = (item: MenuItem) =>
     widgetDisabledMessage(supportConfig, item.widgetType, simulator);
   // Widgets the running sim cannot support are left out unless asked for.
@@ -229,14 +236,16 @@ export const SettingsMenu = ({
               App settings
             </h2>
             <ul className="space-y-0.5">
-              {generalItems.map((item) => (
-                <MenuLink
-                  key={item.path}
-                  item={item}
-                  pathname={pathname}
-                  showIcon
-                />
-              ))}
+              {generalItems
+                .filter((item) => !previewMode || item.path === '/general')
+                .map((item) => (
+                  <MenuLink
+                    key={item.path}
+                    item={item}
+                    pathname={pathname}
+                    showIcon
+                  />
+                ))}
             </ul>
           </section>
         </>
@@ -332,7 +341,7 @@ export const SettingsMenu = ({
           </Link>
         </div>
       )}
-      {appPage && (
+      {appPage && !previewMode && (
         <ul className="mt-2 flex shrink-0 flex-col gap-0.5 border-t border-slate-700 pt-2">
           {bottomItems.map((item) => (
             <MenuLink
