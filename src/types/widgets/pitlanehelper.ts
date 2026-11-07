@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'pitlanehelper',
   name: 'Pitlane Helper',
+  category: 'Car & Controls',
   enabled: false,
   layout: {
     x: 100,

@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'deltaspeed',
   name: 'Delta Speed',
+  category: 'Lap Timing',
   enabled: false,
   layout: {
     x: 6,

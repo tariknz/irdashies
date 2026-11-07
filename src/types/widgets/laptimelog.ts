@@ -4,6 +4,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'laptimelog',
   name: 'Lap Timer',
+  category: 'Lap Timing',
   enabled: false,
   layout: {
     x: 300,

@@ -4,6 +4,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'relative',
   name: 'Relative',
+  category: 'Standings',
   enabled: true,
   layout: {
     x: 7,

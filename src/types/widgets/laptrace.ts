@@ -8,6 +8,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'laptrace',
   name: 'Lap Trace',
+  category: 'Lap Timing',
   enabled: false,
   layout: {
     x: 622,

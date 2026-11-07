@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'shiftlight',
   name: 'Shift Light',
+  category: 'Car & Controls',
   enabled: false,
   layout: {
     x: 422,
