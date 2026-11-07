@@ -224,4 +224,80 @@ describe('preview settings panel', () => {
       rect.mockRestore();
     }
   });
+
+  it.each([false, true])(
+    'preserves the expanded size across minimized viewport changes (drag: %s)',
+    async (drag) => {
+      render(<PreviewSettingsButton />);
+      await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
+      const panel = screen.getByRole('button', {
+        name: 'Resize settings',
+      }).parentElement;
+      if (!panel) throw new Error('Missing settings panel');
+      const header = panel.firstElementChild;
+      if (!(header instanceof HTMLElement))
+        throw new Error('Missing drag handle');
+      const width = panel.style.width;
+      const height = panel.style.height;
+      const { innerWidth, innerHeight } = window;
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Minimize settings' })
+      );
+      const rect = vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue({
+        ...new DOMRect(),
+        width: 320,
+        height: 56,
+      });
+      try {
+        Object.defineProperty(window, 'innerWidth', {
+          configurable: true,
+          value: 390,
+        });
+        Object.defineProperty(window, 'innerHeight', {
+          configurable: true,
+          value: 240,
+        });
+        fireEvent(window, new Event('resize'));
+        if (drag) {
+          header.setPointerCapture = vi.fn();
+          fireEvent.pointerDown(header, {
+            pointerId: 1,
+            button: 0,
+            clientX: 20,
+            clientY: 20,
+          });
+          fireEvent.pointerMove(header, {
+            pointerId: 1,
+            clientX: 800,
+            clientY: 800,
+          });
+          fireEvent.pointerUp(header, { pointerId: 1 });
+        }
+        Object.defineProperty(window, 'innerWidth', {
+          configurable: true,
+          value: innerWidth,
+        });
+        Object.defineProperty(window, 'innerHeight', {
+          configurable: true,
+          value: innerHeight,
+        });
+        fireEvent(window, new Event('resize'));
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Restore settings' })
+        );
+        expect(panel.style.width).toBe(width);
+        expect(panel.style.height).toBe(height);
+      } finally {
+        Object.defineProperty(window, 'innerWidth', {
+          configurable: true,
+          value: innerWidth,
+        });
+        Object.defineProperty(window, 'innerHeight', {
+          configurable: true,
+          value: innerHeight,
+        });
+        rect.mockRestore();
+      }
+    }
+  );
 });

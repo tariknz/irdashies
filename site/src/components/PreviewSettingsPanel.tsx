@@ -31,14 +31,21 @@ function fitPanel(
   bounds: PanelBounds,
   renderedSize?: Pick<PanelBounds, 'width' | 'height'>
 ): PanelBounds {
-  const width = Math.min(Math.max(440, bounds.width), window.innerWidth - 16);
-  const height = Math.min(
-    Math.max(280, bounds.height),
-    window.innerHeight - 16
-  );
+  const width = renderedSize
+    ? bounds.width
+    : Math.min(Math.max(440, bounds.width), window.innerWidth - 16);
+  const height = renderedSize
+    ? bounds.height
+    : Math.min(Math.max(280, bounds.height), window.innerHeight - 16);
   // Keep the expanded size for restoration, but constrain only the visible bar.
-  const visibleWidth = Math.min(width, renderedSize?.width ?? width);
-  const visibleHeight = Math.min(height, renderedSize?.height ?? height);
+  const visibleWidth = Math.min(
+    window.innerWidth - 16,
+    renderedSize?.width ?? width
+  );
+  const visibleHeight = Math.min(
+    window.innerHeight - 16,
+    renderedSize?.height ?? height
+  );
   return {
     width,
     height,
@@ -177,7 +184,7 @@ function SettingsContent({ onClose }: SettingsContentProps) {
     >
       <div
         ref={panelRef}
-        className="absolute flex flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-950 shadow-2xl"
+        className="absolute flex max-w-[calc(100vw-16px)] flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-950 shadow-2xl"
         style={{
           top: bounds.y,
           left: bounds.x,
