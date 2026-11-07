@@ -27,17 +27,23 @@ interface PanelBounds {
   height: number;
 }
 
-function fitPanel(bounds: PanelBounds): PanelBounds {
+function fitPanel(
+  bounds: PanelBounds,
+  renderedSize?: Pick<PanelBounds, 'width' | 'height'>
+): PanelBounds {
   const width = Math.min(Math.max(440, bounds.width), window.innerWidth - 16);
   const height = Math.min(
     Math.max(280, bounds.height),
     window.innerHeight - 16
   );
+  // Keep the expanded size for restoration, but constrain only the visible bar.
+  const visibleWidth = Math.min(width, renderedSize?.width ?? width);
+  const visibleHeight = Math.min(height, renderedSize?.height ?? height);
   return {
     width,
     height,
-    x: Math.max(8, Math.min(bounds.x, window.innerWidth - width - 8)),
-    y: Math.max(8, Math.min(bounds.y, window.innerHeight - height - 8)),
+    x: Math.max(8, Math.min(bounds.x, window.innerWidth - visibleWidth - 8)),
+    y: Math.max(8, Math.min(bounds.y, window.innerHeight - visibleHeight - 8)),
   };
 }
 
@@ -55,6 +61,7 @@ function SettingsContent({ onClose }: SettingsContentProps) {
     startX: number;
     startY: number;
     bounds: PanelBounds;
+    renderedSize?: Pick<PanelBounds, 'width' | 'height'>;
   } | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -90,10 +97,16 @@ function SettingsContent({ onClose }: SettingsContentProps) {
   }, [onClose]);
 
   useEffect(() => {
-    const resize = () => setBounds((previous) => fitPanel(previous));
+    const resize = () =>
+      setBounds((previous) =>
+        fitPanel(
+          previous,
+          minimized ? panelRef.current?.getBoundingClientRect() : undefined
+        )
+      );
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);
-  }, []);
+  }, [minimized]);
 
   const startInteraction = (
     event: React.PointerEvent<HTMLElement>,
@@ -109,6 +122,9 @@ function SettingsContent({ onClose }: SettingsContentProps) {
       startX: event.clientX,
       startY: event.clientY,
       bounds,
+      renderedSize: minimized
+        ? panelRef.current?.getBoundingClientRect()
+        : undefined,
     };
   };
 
@@ -132,7 +148,8 @@ function SettingsContent({ onClose }: SettingsContentProps) {
                 start.height + dy,
                 window.innerHeight - start.y - 8
               ),
-            }
+            },
+        interaction.mode === 'move' ? interaction.renderedSize : undefined
       )
     );
   };
@@ -203,7 +220,10 @@ function SettingsContent({ onClose }: SettingsContentProps) {
           </div>
           <div className="flex shrink-0 gap-1">
             <button
-              onClick={() => setMinimized((previous) => !previous)}
+              onClick={() => {
+                if (minimized) setBounds((previous) => fitPanel(previous));
+                setMinimized((previous) => !previous);
+              }}
               aria-label={minimized ? 'Restore settings' : 'Minimize settings'}
               title={
                 minimized

@@ -176,4 +176,52 @@ describe('preview settings panel', () => {
       });
     }
   });
+
+  it('drags the minimized bar to the viewport edges and restores the full panel in view', async () => {
+    render(<PreviewSettingsButton />);
+    await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    const panel = screen.getByRole('button', {
+      name: 'Resize settings',
+    }).parentElement;
+    if (!panel) throw new Error('Missing settings panel');
+    const header = panel.firstElementChild;
+    if (!(header instanceof HTMLElement))
+      throw new Error('Missing drag handle');
+    const width = parseFloat(panel.style.width);
+    const height = parseFloat(panel.style.height);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Minimize settings' })
+    );
+    header.setPointerCapture = vi.fn();
+    const rect = vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue({
+      ...new DOMRect(),
+      width: 320,
+      height: 56,
+    });
+    try {
+      fireEvent.pointerDown(header, {
+        pointerId: 1,
+        button: 0,
+        clientX: 400,
+        clientY: 120,
+      });
+      fireEvent.pointerMove(header, {
+        pointerId: 1,
+        clientX: 2000,
+        clientY: 2000,
+      });
+      fireEvent.pointerUp(header, { pointerId: 1 });
+      expect(parseFloat(panel.style.left)).toBe(window.innerWidth - 320 - 8);
+      expect(parseFloat(panel.style.top)).toBe(window.innerHeight - 56 - 8);
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Restore settings' })
+      );
+      expect(parseFloat(panel.style.width)).toBe(width);
+      expect(parseFloat(panel.style.height)).toBe(height);
+      expect(parseFloat(panel.style.left)).toBe(window.innerWidth - width - 8);
+      expect(parseFloat(panel.style.top)).toBe(window.innerHeight - height - 8);
+    } finally {
+      rect.mockRestore();
+    }
+  });
 });
