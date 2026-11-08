@@ -106,72 +106,68 @@ export const SettingsLayout = () => {
           the side padding keeps clear of the OS window controls. Their
           width comes from the window-controls-overlay env() values, so it
           follows DPI scaling; without an overlay it resolves to 0. */}
-        <div
-          className="flex min-h-20 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-slate-700 px-5 py-3 [-webkit-app-region:drag]"
+        <header
+          className="grid min-h-12 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 border-b border-slate-700 px-4 py-1 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] [-webkit-app-region:drag]"
           style={{
-            paddingLeft: 'max(1.25rem, env(titlebar-area-x, 0px))',
+            paddingLeft: 'calc(env(titlebar-area-x, 0px) + 1rem)',
             paddingRight:
-              'max(1.25rem, calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw)))',
+              'calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + 1rem)',
           }}
         >
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <img src={logo} alt="" className="h-10 w-10 shrink-0" />
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-baseline gap-x-3">
-                <span className="text-[24px] leading-7 font-semibold tracking-[-0.04em] text-white">
-                  ir<span className="text-red-600">Dashies</span>
-                </span>
-                <h1
-                  className={
-                    appPage ? 'text-sm font-medium text-slate-400' : 'sr-only'
-                  }
-                >
-                  {appPage ? 'App settings' : 'Overlay Settings'}
-                </h1>
-                {simulatorName && (
-                  <span className="text-xs text-slate-400">
-                    {simulatorName}
-                  </span>
-                )}
-              </div>
-              <HeaderProfilePicker
-                onManage={() => {
-                  if (pathname === '/settings/profiles')
-                    mainRef.current?.focus();
-                }}
-              />
-            </div>
+          <h1 className="sr-only">
+            {appPage ? 'App settings' : 'Overlay Settings'}
+          </h1>
+          <div className="flex min-w-0 items-center gap-3">
+            <img src={logo} alt="" className="h-7 w-7 shrink-0" />
+            <span className="hidden shrink-0 text-lg font-semibold tracking-[-0.04em] text-white md:inline">
+              ir<span className="text-red-600">Dashies</span>
+            </span>
+            <HeaderProfilePicker
+              onManage={() => {
+                if (pathname === '/settings/profiles') mainRef.current?.focus();
+              }}
+            />
           </div>
-          <div className="flex shrink-0 flex-row gap-2 [-webkit-app-region:no-drag]">
+          <div className="hidden min-w-0 items-center justify-self-center gap-2 text-xs text-slate-400 sm:flex">
+            {simulatorName && (
+              <>
+                <span
+                  className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400"
+                  aria-hidden="true"
+                />
+                <span className="truncate">{simulatorName} connected</span>
+              </>
+            )}
+          </div>
+          <div className="flex shrink-0 items-center justify-self-end gap-2 [-webkit-app-region:no-drag]">
             <button
+              type="button"
               onClick={toggleDemoMode}
+              aria-label={isDemoMode ? 'Exit Demo' : 'Demo Mode'}
+              title={isDemoMode ? 'Exit Demo' : 'Demo Mode'}
               aria-pressed={isDemoMode}
-              className="flex min-h-9 items-center gap-2 rounded-md border border-settings-boundary bg-slate-800 px-3 py-2 text-sm font-semibold transition-colors hover:border-accent-400 aria-pressed:border-accent-400 aria-pressed:text-accent-300"
+              className="flex min-h-8 items-center gap-2 rounded-md border border-settings-boundary bg-slate-800 px-2 py-1 text-sm font-semibold transition-colors hover:border-accent-400 lg:px-3 aria-pressed:border-accent-400 aria-pressed:text-accent-300"
             >
-              {isDemoMode ? (
-                <>
-                  <PresentationChartIcon size={20} weight="bold" />
-                  <span>Exit Demo</span>
-                </>
-              ) : (
-                <>
-                  <PresentationChartIcon size={20} weight="bold" />
-                  <span>Demo Mode</span>
-                </>
-              )}
+              <PresentationChartIcon size={16} weight="bold" />
+              <span className="hidden lg:inline">
+                {isDemoMode ? 'Exit Demo' : 'Demo Mode'}
+              </span>
             </button>
             <button
+              type="button"
               onClick={handleToggleLock}
-              className="flex min-h-9 items-center gap-2 rounded-md border border-settings-boundary bg-slate-800 px-3 py-2 text-sm font-semibold transition-colors hover:border-accent-400"
+              aria-label="Edit Layout"
+              title={`Edit Layout (${editModeAccelerator})`}
+              className="flex min-h-8 items-center gap-2 rounded-md border border-settings-boundary bg-slate-800 px-2 py-1 text-sm font-semibold transition-colors hover:border-accent-400 lg:px-3"
             >
-              <LockIcon size={20} weight="bold" />
-              <span>Edit Layout</span>
-              <kbd className="ml-1 text-xs bg-black/20 px-1 rounded">
+              <LockIcon size={16} weight="bold" />
+              <span className="hidden lg:inline">Edit Layout</span>
+              <kbd className="ml-1 hidden rounded bg-black/20 px-1 text-xs lg:inline">
                 {editModeAccelerator}
               </kbd>
             </button>
           </div>
-        </div>
+        </header>
         <StorageStatusNotice />
         <div className="flex min-h-0 flex-1">
           {/* Left Column - Widget Menu */}
