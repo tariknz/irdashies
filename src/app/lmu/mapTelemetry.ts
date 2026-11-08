@@ -825,10 +825,8 @@ export function mapLmuTelemetry(
   t.IsOnTrack = bool(inCar);
   // In the car, the sim's word stands over a frozen block: a pause stops the
   // writes and ends nothing. Out of any session, the frame describes nothing.
-  // At the monitor the freeze watch still decides, as it did before the sim
-  // was asked: a session that ended with the player's car in the pit lane
-  // freezes with `onPitRoad` set, which the driving gate would otherwise read
-  // as driving at the monitor for as long as the player sat there.
+  // At the monitor the freeze watch still decides whether the frame is
+  // current. Where the player is comes from LmuOutOfCar below.
   t.LmuDataStale = bool(
     gameState === undefined
       ? (dataFrozen ?? false)
@@ -841,6 +839,12 @@ export function mapLmuTelemetry(
   t.LmuNotInSession = bool(
     gameState === 'notInSession' || gameState === 'notInGame'
   );
+  // The sim's word that the player is not in the car. IsOnTrack already says
+  // so, but the driving gate ORs in the pit flags, and a car left in the pit
+  // lane or stall keeps those set, live, while the player sits at the monitor.
+  // Falsifying the pit flags instead would misreport the car to everything
+  // else that reads them.
+  t.LmuOutOfCar = bool(gameState !== undefined && !lmuInCar(gameState));
   // Reported as the snapshot has them, frozen or not. Falsifying these while
   // frozen was a mistake: isDriving reads them as `!isInGarage`, so clearing
   // them removed the one term that would have excluded a parked player.

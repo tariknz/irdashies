@@ -65,6 +65,12 @@ export interface TrackStateSnapshot {
    * iRacing.
    */
   notInSession: boolean;
+  /**
+   * True while LMU says the player is out of the car: at the monitor, or in no
+   * session or game. The driving gate reads false while it is set, whatever
+   * the pit flags say. Always false under iRacing.
+   */
+  outOfCar: boolean;
   playerCarInPitStall: boolean;
   playerTrackSurface: number;
   onPitRoad: boolean;

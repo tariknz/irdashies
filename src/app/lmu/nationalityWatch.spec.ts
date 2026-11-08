@@ -27,6 +27,15 @@ describe('createLmuNationalityWatch', () => {
     expect(watch.observe(grid(['A', 'C']))).toBe(false);
   });
 
+  it('calls for a burst when a driver who left comes back', () => {
+    // B's flag may still have been missing when the last burst ran out; B
+    // rejoining is the next chance to find it.
+    const watch = createLmuNationalityWatch();
+    expect(watch.observe(grid(['A', 'B']))).toBe(true);
+    expect(watch.observe(grid(['A']))).toBe(false);
+    expect(watch.observe(grid(['A', 'B']))).toBe(true);
+  });
+
   it('never calls for one offline', () => {
     const watch = createLmuNationalityWatch();
     expect(watch.observe(grid(['A', 'B'], { gameMode: 0 }))).toBe(false);

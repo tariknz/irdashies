@@ -158,6 +158,28 @@ describe('mapLmuTelemetry with a game state', () => {
     expect(telemetry.LmuDataStale?.value[0]).toBe(false);
   });
 
+  it('says the player is out of the car whenever the sim does', () => {
+    // The live case: at the monitor, the car left in the pit lane, shared
+    // memory still updating. The pit flags stay as reported, and the
+    // out-of-car flag is what keeps the driving gate off.
+    const raw = fixture();
+    raw.vehInPits[raw.playerVehicleIdx] = 1;
+    const monitor = map(raw, 'monitor', false);
+    expect(monitor.LmuOutOfCar?.value[0]).toBe(true);
+    expect(monitor.LmuDataStale?.value[0]).toBe(false);
+    expect(monitor.OnPitRoad.value[0]).toBe(true);
+
+    for (const state of ['notInSession', 'notInGame'] as const) {
+      expect(map(fixture(), state).LmuOutOfCar?.value[0]).toBe(true);
+    }
+    for (const state of ['driving', 'paused'] as const) {
+      expect(map(fixture(), state).LmuOutOfCar?.value[0]).toBe(false);
+    }
+    // Unknown is not out: shared memory decides then, frozen or not.
+    expect(map(fixture(), undefined).LmuOutOfCar?.value[0]).toBe(false);
+    expect(map(fixture(), undefined, true).LmuOutOfCar?.value[0]).toBe(false);
+  });
+
   it('lets a frozen block mark the frame stale at the monitor', () => {
     // A session that ended with the player's car in the pit lane: the last
     // frame keeps `OnPitRoad`, which the driving gate reads as driving unless

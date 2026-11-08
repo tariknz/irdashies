@@ -38,8 +38,8 @@ export interface LmuNationalityGrid {
 
 export interface LmuNationalityWatch {
   /**
-   * Takes a session poll's grid, and returns true when it holds a driver the
-   * watch has not seen before -- the cue to start a burst. Always false
+   * Takes a session poll's grid, and returns true when it holds a driver who
+   * was not on the last one -- the cue to start a burst. Always false
    * offline.
    */
   observe(grid: LmuNationalityGrid): boolean;
@@ -50,19 +50,21 @@ export interface LmuNationalityWatch {
 }
 
 export const createLmuNationalityWatch = (): LmuNationalityWatch => {
-  const seen = new Set<string>();
   let names: string[] = [];
 
   return {
-    /** True when the grid names a driver not seen before; false offline. */
+    /** True when the grid names a driver the last one did not; false offline. */
     observe(grid) {
       if ((grid.gameMode ?? 0) === 0) {
         // Leaving multiplayer forgets the grid, so joining another server
         // asks again even if the same people are on it.
-        seen.clear();
         names = [];
         return false;
       }
+      // Against the last grid, not every driver ever seen: a driver whose
+      // flag was still missing when a burst ran out, and who then left, would
+      // otherwise never be asked about again on coming back.
+      const previous = new Set(names);
       const ownSlot = lmuPlayerSlot(grid);
       names = grid.drivers
         .filter(
@@ -76,13 +78,7 @@ export const createLmuNationalityWatch = (): LmuNationalityWatch => {
             })
         )
         .map((driver) => driver.name);
-      let arrived = false;
-      for (const name of names) {
-        if (seen.has(name)) continue;
-        seen.add(name);
-        arrived = true;
-      }
-      return arrived;
+      return names.some((name) => !previous.has(name));
     },
 
     /** Whether every driver on the last online grid has a flag. */
@@ -93,7 +89,6 @@ export const createLmuNationalityWatch = (): LmuNationalityWatch => {
     },
 
     reset() {
-      seen.clear();
       names = [];
     },
   };

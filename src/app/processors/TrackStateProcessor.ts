@@ -79,6 +79,7 @@ export class TrackStateProcessor implements TelemetryProcessor<TrackStateSnapsho
     isOnTrack: false,
     dataStale: false,
     notInSession: false,
+    outOfCar: false,
     playerCarInPitStall: false,
     playerTrackSurface: 0,
     onPitRoad: false,
@@ -138,6 +139,8 @@ export class TrackStateProcessor implements TelemetryProcessor<TrackStateSnapsho
     changed =
       this.set('notInSession', booleanValue(frame, 'LmuNotInSession')) ||
       changed;
+    changed =
+      this.set('outOfCar', booleanValue(frame, 'LmuOutOfCar')) || changed;
     changed =
       this.set(
         'playerCarInPitStall',
@@ -204,6 +207,7 @@ export class TrackStateProcessor implements TelemetryProcessor<TrackStateSnapsho
     this.latest.isOnTrack = false;
     this.latest.dataStale = false;
     this.latest.notInSession = false;
+    this.latest.outOfCar = false;
     this.latest.playerCarInPitStall = false;
     this.latest.playerTrackSurface = 0;
     this.latest.onPitRoad = false;

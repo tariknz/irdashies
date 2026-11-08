@@ -98,6 +98,14 @@ export type Telemetry = {
    */
   LmuNotInSession?: TelemetryVar<boolean[]>;
   /**
+   * True while LMU's GetGameState says the player is not in the car: at the
+   * monitor, or out of any session or game. The driving gate reads it before
+   * the pit terms, which stay true for a car left in the pit lane or stall
+   * while the player sits at the monitor. False whenever the game state is
+   * unknown, so shared memory decides then.
+   */
+  LmuOutOfCar?: TelemetryVar<boolean[]>;
+  /**
    * The points a drive-through is served at, 0 when the session has not said.
    *
    * A session constant, carried beside the per-car figure because neither is
