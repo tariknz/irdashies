@@ -4,6 +4,8 @@ import { getWidgetDefaultConfig, type DashboardLayout } from '@irdashies/types';
 import { GarageCoverSettings } from './GarageCoverSettings';
 import { TelemetryInspectorSettings } from './TelemetryInspectorSettings';
 
+vi.mock('../components/WidgetPreview', () => ({ WidgetPreview: () => null }));
+
 const mocks = vi.hoisted(() => ({
   dashboard: undefined as DashboardLayout | undefined,
   update: vi.fn(),
@@ -18,6 +20,7 @@ vi.mock('@irdashies/context', async () => {
       bridge: {},
     }),
     useActiveSimulator: () => null,
+    useElementSize: () => ({ width: 800, height: 240 }),
     useSimWidgetSupport: () => DEFAULT_SIM_WIDGET_SUPPORT,
   };
 });

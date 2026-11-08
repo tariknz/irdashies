@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useContext, useState } from 'react';
 import { menuHasToggle } from '../menuItems';
 import { ToggleSwitch } from './ToggleSwitch';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -12,6 +12,9 @@ import {
   widgetDisabledMessage,
   widgetIncompatibleLabel,
 } from '@irdashies/types';
+import { SettingsPreviewContext } from '@irdashies/domain/widgetPreview/settingsPreviewContext';
+import { WidgetPreview } from './WidgetPreview';
+import { SettingsPreviewLayout } from './SettingsPreviewLayout';
 
 interface BaseSettingsSectionProps<T> {
   title: string;
@@ -27,6 +30,8 @@ interface BaseSettingsSectionProps<T> {
   disableInternalScroll?: boolean;
   /** For widgets that never appear on the overlay, so have no position. */
   hidePositionReset?: boolean;
+  /** Embedded widgets, such as the inspector, can opt into the same layout. */
+  previewWidgetId?: string;
 }
 
 export const BaseSettingsSection = <T,>({
@@ -40,7 +45,12 @@ export const BaseSettingsSection = <T,>({
   onConfigChange,
   disableInternalScroll = false,
   hidePositionReset = false,
+  previewWidgetId: explicitPreviewWidgetId,
 }: BaseSettingsSectionProps<T>) => {
+  const selectedWidgetId = useContext(SettingsPreviewContext);
+  const previewWidgetId =
+    explicitPreviewWidgetId ??
+    (Heading === 'h2' ? selectedWidgetId : undefined);
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const simulator = useActiveSimulator();
   const supportConfig = useSimWidgetSupport();
@@ -184,6 +194,9 @@ export const BaseSettingsSection = <T,>({
           <h3 className="text-lg font-semibold text-slate-200">{title}</h3>
           <p className="text-sm text-slate-400">{description}</p>
         </div>
+        {previewWidgetId && (
+          <WidgetPreview key={previewWidgetId} widgetId={previewWidgetId} />
+        )}
         {children &&
           (typeof children === 'function'
             ? children(() => undefined)
@@ -191,6 +204,37 @@ export const BaseSettingsSection = <T,>({
       </section>
     );
   }
+
+  const content = (
+    <>
+      {children && (
+        <div className="space-y-4">
+          {typeof children === 'function'
+            ? children(handleConfigChange)
+            : children}
+        </div>
+      )}
+      {!hidePositionReset && (
+        <div className="flex justify-center p-4 pt-2 mt-2">
+          <button
+            type="button"
+            onClick={handleResetPosition}
+            className="min-h-9 rounded-md border border-settings-boundary bg-slate-800 px-3 py-1.5 text-sm text-slate-200 transition-colors hover:border-accent-400"
+          >
+            Reset Position
+          </button>
+        </div>
+      )}
+      <ConfirmDialog
+        isOpen={showResetConfirm}
+        title="Reset Position"
+        message="This will reset the position for both the on-screen overlay and the browser/URL source version."
+        confirmText="Reset Position"
+        onConfirm={confirmResetPosition}
+        onCancel={() => setShowResetConfirm(false)}
+      />
+    </>
+  );
 
   return (
     <div
@@ -234,38 +278,20 @@ export const BaseSettingsSection = <T,>({
         </div>
       </header>
 
-      <div
-        className={`${disableInternalScroll ? '' : 'flex-1 overflow-y-auto min-h-0 [scrollbar-gutter:stable]'} pt-5 pr-1`}
-      >
-        {children && (
-          <div className="space-y-4">
-            {typeof children === 'function'
-              ? children(handleConfigChange)
-              : children}
-          </div>
-        )}
-
-        {!hidePositionReset && (
-          <div className="flex justify-center p-4 pt-2 mt-2">
-            <button
-              type="button"
-              onClick={handleResetPosition}
-              className="min-h-9 rounded-md border border-settings-boundary bg-slate-800 px-3 py-1.5 text-sm text-slate-200 transition-colors hover:border-accent-400"
-            >
-              Reset Position
-            </button>
-          </div>
-        )}
-
-        <ConfirmDialog
-          isOpen={showResetConfirm}
-          title="Reset Position"
-          message="This will reset the position for both the on-screen overlay and the browser/URL source version."
-          confirmText="Reset Position"
-          onConfirm={confirmResetPosition}
-          onCancel={() => setShowResetConfirm(false)}
-        />
-      </div>
+      {previewWidgetId ? (
+        <SettingsPreviewLayout
+          widgetId={previewWidgetId}
+          scroll={!disableInternalScroll}
+        >
+          {content}
+        </SettingsPreviewLayout>
+      ) : (
+        <div
+          className={`${disableInternalScroll ? '' : 'flex-1 overflow-y-auto min-h-0 [scrollbar-gutter:stable]'} pt-5 pr-1`}
+        >
+          {content}
+        </div>
+      )}
     </div>
   );
 };

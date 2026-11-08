@@ -6,7 +6,11 @@ import {
   snapLayoutResizeToViewportGrid,
 } from './snapToViewportGrid';
 
-export type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
+import {
+  resizeWidgetLayout,
+  type ResizeDirection,
+} from '@irdashies/domain/widgetPresentation/resizeWidget';
+export type { ResizeDirection } from '@irdashies/domain/widgetPresentation/resizeWidget';
 
 interface UseResizeWidgetOptions {
   layout: WidgetLayout;
@@ -79,29 +83,14 @@ export function useResizeWidget({
       const deltaX = e.clientX - startX;
       const deltaY = e.clientY - startY;
 
-      const newLayout = { ...startLayout };
-
-      // Handle horizontal resize
-      if (direction.includes('e')) {
-        newLayout.width = Math.max(minWidth, startLayout.width + deltaX);
-      }
-      if (direction.includes('w')) {
-        const newWidth = Math.max(minWidth, startLayout.width - deltaX);
-        const widthDiff = startLayout.width - newWidth;
-        newLayout.x = startLayout.x + widthDiff;
-        newLayout.width = newWidth;
-      }
-
-      // Handle vertical resize
-      if (direction.includes('s')) {
-        newLayout.height = Math.max(minHeight, startLayout.height + deltaY);
-      }
-      if (direction.includes('n')) {
-        const newHeight = Math.max(minHeight, startLayout.height - deltaY);
-        const heightDiff = startLayout.height - newHeight;
-        newLayout.y = startLayout.y + heightDiff;
-        newLayout.height = newHeight;
-      }
+      const newLayout = resizeWidgetLayout(
+        startLayout,
+        direction,
+        deltaX,
+        deltaY,
+        minWidth,
+        minHeight
+      );
 
       const snapped = snapLayoutResizeToViewportGrid(
         newLayout,

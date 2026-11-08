@@ -31,8 +31,10 @@ const DEFAULT_TREE_FUEL = DEFAULT_FUEL_LAYOUT_TREE;
 
 export const SingleFuelWidgetSettings = ({
   widgetId,
+  disableInternalScroll = true,
 }: {
   widgetId: string;
+  disableInternalScroll?: boolean;
 }) => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const navigate = useNavigate();
@@ -137,7 +139,7 @@ export const SingleFuelWidgetSettings = ({
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={widgetId}
-      disableInternalScroll={true}
+      disableInternalScroll={disableInternalScroll}
       hidePositionReset={isGantryOnly || activeTab === 'history'}
     >
       {(handleConfigChange) => {

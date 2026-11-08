@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { useDashboard, useSessionStore } from '@irdashies/context';
@@ -19,6 +19,7 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { ARC_STYLES } from './RadarSettings/ArcControls';
 import { RadarPreview } from './RadarSettings/RadarPreview';
+import { SettingsPreviewContext } from '@irdashies/domain/widgetPreview/settingsPreviewContext';
 import { RadarPoleSideKey } from './RadarSettings/RadarPoleSideKey';
 import {
   RADAR_PRESETS,
@@ -243,12 +244,13 @@ const SectionView = ({
 };
 
 export const RadarSettings = () => {
+  const sharedPreview = useContext(SettingsPreviewContext);
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as RadarWidgetSettings | undefined;
   const layout = currentDashboard?.widgets.find(
-    (w) => w.id === SETTING_ID
+    (widget) => widget.id === SETTING_ID
   )?.layout;
   const widgetSize = layout && Math.min(layout.width, layout.height);
   const [settings, setSettings] = useState<RadarWidgetSettings>({
@@ -408,7 +410,6 @@ export const RadarSettings = () => {
                   />
                 </div>
               </div>
-
               <div className="space-y-1">
                 <div className="text-xs uppercase tracking-wider text-slate-500">
                   Preset
@@ -551,14 +552,15 @@ export const RadarSettings = () => {
                   />
                 ))}
               </div>
-
-              <div className="w-50 shrink-0 sticky top-2">
-                <RadarPreview
-                  config={view}
-                  scene={search ? null : open.id}
-                  widgetSize={widgetSize}
-                />
-              </div>
+              {!sharedPreview && (
+                <div className="w-50 shrink-0 sticky top-2">
+                  <RadarPreview
+                    config={view}
+                    scene={search ? null : open.id}
+                    widgetSize={widgetSize}
+                  />
+                </div>
+              )}
             </div>
           </div>
         );

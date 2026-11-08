@@ -8,7 +8,8 @@ import {
 } from '@irdashies/storybook';
 import { useFuelStore } from './FuelStore';
 import { defaultFuelCalculatorSettings } from './defaults';
-import type { FuelCalculation, FuelLapData } from './types';
+import type { FuelLapData } from './types';
+import { previewFuelData } from './previewData';
 import type { LayoutNode } from '@irdashies/types';
 
 const OverlayFrame = ({
@@ -78,44 +79,6 @@ const baselineArgs = {
   showOnlyWhenOnTrack: false,
   layoutTree: strategyLayout,
   showFuelStatusBorder: false,
-};
-
-const previewFuelData: FuelCalculation = {
-  fuelLevel: 32.6,
-  lastLapUsage: 2.4,
-  currentLapUsage: 1.3,
-  projectedLapUsage: 2.35,
-  avgLaps: 2.34,
-  avg10Laps: 2.36,
-  avgAllGreenLaps: 2.34,
-  minLapUsage: 2.28,
-  maxLapUsage: 2.48,
-  lapsWithFuel: 13.9,
-  lapsRemaining: 32,
-  totalLaps: 35,
-  currentLap: 3,
-  fuelToFinish: 74.9,
-  fuelToAdd: 42.3,
-  pitWindowOpen: 15,
-  pitWindowClose: 16.9,
-  canFinish: false,
-  targetConsumption: 1.02,
-  confidence: 'high',
-  fuelAtFinish: -42.3,
-  avgLapTime: 90,
-  stopsRemaining: 1,
-  lapsPerStint: 25.6,
-  targetScenarios: [
-    { laps: 11, fuelPerLap: 2.34, isCurrentTarget: false },
-    { laps: 12, fuelPerLap: 2.34, isCurrentTarget: true },
-    { laps: 13, fuelPerLap: 2.34, isCurrentTarget: false },
-  ],
-  earliestPitLap: 15,
-  fuelTankCapacity: 60,
-  lastFinishedLap: 2,
-  fuelStatus: 'safe',
-  lapsRange: [31, 34],
-  maxQualify: null,
 };
 
 const previewProjection = {

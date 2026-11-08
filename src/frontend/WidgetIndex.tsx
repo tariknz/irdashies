@@ -9,19 +9,28 @@ const discoveredWidgets = import.meta.glob<{
 }>('./components/*/widget.ts', { eager: true });
 
 const order = new Map(WIDGET_MANIFESTS.map((m, index) => [m.id, index]));
+const modules = Object.values(discoveredWidgets)
+  .flatMap(({ default: m }) => (Array.isArray(m) ? m : [m]))
+  .sort(
+    (a, b) => (order.get(a.id) ?? order.size) - (order.get(b.id) ?? order.size)
+  );
 
 // Completeness (every WidgetId has a component) is checked by
 // widgetRegistry.spec.ts, not by the type: the map is built from a glob.
 // Keys follow the manifest order, which lists such as the site preview use.
 export const WIDGET_MAP = Object.fromEntries(
-  Object.values(discoveredWidgets)
-    .flatMap(({ default: m }) => (Array.isArray(m) ? m : [m]))
-    .sort(
-      (a, b) =>
-        (order.get(a.id) ?? order.size) - (order.get(b.id) ?? order.size)
-    )
-    .map((m: WidgetModule) => [m.id, m.component])
+  modules.map((m: WidgetModule) => [m.id, m.component])
 ) as Record<WidgetId, ElementType>;
+
+const PREVIEW_MAP = Object.fromEntries(
+  modules.map((module: WidgetModule) => [
+    module.id,
+    module.preview ?? module.component,
+  ])
+) as Record<WidgetId, ElementType>;
+
+export const getWidgetPreview = (id: string) =>
+  Object.hasOwn(PREVIEW_MAP, id) ? PREVIEW_MAP[id as WidgetId] : undefined;
 
 /**
  * Looks up a widget component by id. Accepts a raw string because dashboard

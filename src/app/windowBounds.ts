@@ -51,11 +51,11 @@ export const isValidRect = (rect: unknown): rect is Rect =>
 export const defaultSettingsWindowBounds = (primaryWorkArea: Rect): Rect => {
   const width = Math.max(
     1,
-    Math.min(1280, Math.floor(primaryWorkArea.width * 0.9))
+    Math.min(1600, Math.floor(primaryWorkArea.width * 0.9))
   );
   const height = Math.max(
     1,
-    Math.min(800, Math.floor(primaryWorkArea.height * 0.9))
+    Math.min(900, Math.floor(primaryWorkArea.height * 0.9))
   );
   return {
     width,

@@ -160,10 +160,14 @@ const DemoChatMessages = ({
   showPlatformIcons,
   twitch,
   youtube,
+  seed = false,
+  fontSize = 16,
 }: {
   background: { opacity: number };
   autoHide?: { enabled: boolean; intervalSeconds: number };
   showPlatformIcons: boolean;
+  seed?: boolean;
+  fontSize?: number;
 } & DemoPlatforms) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const indexRef = useRef(0);
@@ -173,7 +177,18 @@ const DemoChatMessages = ({
   );
 
   useEffect(() => {
-    setMessages([]);
+    setMessages(
+      seed
+        ? demoMessages
+            .slice(0, 3)
+            .map((message) => ({
+              ...message,
+              id: crypto.randomUUID(),
+              channel: '',
+              timestamp: Date.now(),
+            }))
+        : []
+    );
     indexRef.current = 0;
     if (!demoMessages.length) return;
     const interval = setInterval(() => {
@@ -191,15 +206,33 @@ const DemoChatMessages = ({
     }, DEMO_MESSAGE_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [demoMessages]);
+  }, [demoMessages, seed]);
 
   return (
     <ChatMessageList
       messages={messages}
-      fontSize={16}
+      fontSize={fontSize}
       background={background}
       autoHide={autoHide}
       showPlatformIcons={showPlatformIcons}
+    />
+  );
+};
+
+/** Useful before accounts are connected; still uses the real message renderer. */
+export const StreamChatPreview = () => {
+  const { config } = useStreamChatSettings();
+  const twitch = !!config.twitch?.channel?.trim();
+  const youtube = !!config.youtube?.channel?.trim();
+  return (
+    <DemoChatMessages
+      background={config.display.background}
+      autoHide={config.display.autoHide}
+      showPlatformIcons={config.display.showPlatformIcons ?? true}
+      fontSize={config.display.fontSize}
+      twitch={twitch || !youtube}
+      youtube={youtube || !twitch}
+      seed
     />
   );
 };

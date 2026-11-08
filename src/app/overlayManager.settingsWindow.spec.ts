@@ -149,12 +149,16 @@ describe('settings BrowserWindow construction and persistence', () => {
     await currentStore().load();
     new OverlayManager().createSettingsWindow();
     expect(windows[0].rectangle).toEqual({
-      x: 640,
-      y: 340,
-      width: 1280,
-      height: 800,
+      x: 480,
+      y: 290,
+      width: 1600,
+      height: 900,
     });
-    expect(windows[0].options).toMatchObject({ frame: true, show: false });
+    expect(windows[0].options).toMatchObject({
+      frame: true,
+      show: false,
+      backgroundColor: '#141a21',
+    });
     expect(windows[0].options).not.toHaveProperty('minWidth');
     expect(windows[0].options).not.toHaveProperty('minHeight');
     windows[0].emit('ready-to-show');
@@ -172,7 +176,7 @@ describe('settings BrowserWindow construction and persistence', () => {
     await currentStore().load();
     new OverlayManager().createSettingsWindow();
     const first = windows[0];
-    expect(first.rectangle).toMatchObject({ width: 1280, height: 800 });
+    expect(first.rectangle).toMatchObject({ width: 1600, height: 900 });
     const custom = { x: 230, y: 90, width: 1800, height: 1100 };
     first.rectangle = custom;
     first.emit('resized');
@@ -190,9 +194,10 @@ describe('settings BrowserWindow construction and persistence', () => {
   it.each([
     [0, 32, 1366, 728, 1, 1229, 655],
     [-1600, -900, 1280, 680, 1.5, 1152, 612],
-    [500, 100, 1536, 824, 2, 1280, 741],
-    [0, 0, 3440, 1400, 1, 1280, 800],
-    [40, -1500, 900, 1560, 1.25, 810, 800],
+    [500, 100, 1536, 824, 2, 1382, 741],
+    [0, 0, 1920, 1040, 1, 1600, 900],
+    [0, 0, 3440, 1400, 1, 1600, 900],
+    [40, -1500, 900, 1560, 1.25, 810, 900],
     [0, 0, 100, 60, 2, 90, 54],
   ])(
     'uses logical workArea (%i,%i %ix%i, scale %f)',
@@ -238,10 +243,10 @@ describe('settings BrowserWindow construction and persistence', () => {
       await currentStore().load();
       new OverlayManager().createSettingsWindow();
       expect(windows[0].rectangle).toEqual({
-        x: 640,
-        y: 340,
-        width: 1280,
-        height: 800,
+        x: 480,
+        y: 290,
+        width: 1600,
+        height: 900,
       });
     }
   );
@@ -317,6 +322,6 @@ describe('settings BrowserWindow construction and persistence', () => {
     // Drain the whenReady continuation that awaited the same initialization.
     await new Promise<void>((resolve) => setImmediate(resolve));
     expect(windows).toHaveLength(1);
-    expect(windows[0].rectangle).toMatchObject({ width: 1280, height: 800 });
+    expect(windows[0].rectangle).toMatchObject({ width: 1600, height: 900 });
   });
 });
