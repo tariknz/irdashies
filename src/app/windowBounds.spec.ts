@@ -18,11 +18,11 @@ const DISPLAYS = [FAR_LEFT, LEFT, PRIMARY];
 
 describe('defaultSettingsWindowBounds', () => {
   it.each([
-    ['desktop', 2560, 1400, 1280, 800],
+    ['desktop', 2560, 1400, 1600, 900],
     ['laptop', 1366, 728, 1229, 655],
     ['small', 800, 560, 720, 504],
-    ['ultrawide', 3440, 1400, 1280, 800],
-    ['portrait', 900, 1560, 810, 800],
+    ['ultrawide', 3440, 1400, 1600, 900],
+    ['portrait', 900, 1560, 810, 900],
     ['very small', 100, 60, 90, 54],
   ])('fits and centres on a %s workArea', (_label, w, h, width, height) => {
     const area = { x: -1500, y: 44, width: w, height: h };

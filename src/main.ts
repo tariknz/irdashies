@@ -1,4 +1,5 @@
 import { setupStorageStatusBridge } from './app/bridge/storageStatusBridge';
+import { setupWidgetPreviewBridge } from './app/bridge/widgetPreviewBridge';
 import { app, autoUpdater, BrowserWindow, ipcMain } from 'electron';
 import { setupReleaseNotesBridge } from './app/bridge/releaseNotesBridge';
 import log from './app/logger';
@@ -465,6 +466,8 @@ void app.whenReady().then(async () => {
   // Setup IPC bridges
   setupLogBridge();
   setupStorageStatusBridge();
+  const disposeWidgetPreviews = setupWidgetPreviewBridge(runtimePerfMetrics);
+  app.once('will-quit', disposeWidgetPreviews);
   fuelDatabase = setupFuelCalculatorBridge();
   const pitLaneBridge = setupPitLaneBridge(overlayManager, channelBus);
   setupPersonalBestLapTimesBridge();

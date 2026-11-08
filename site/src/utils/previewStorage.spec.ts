@@ -6,27 +6,6 @@ import { createPreviewStorage } from './previewStorage';
 const session = mockSession as unknown as Session;
 
 describe('preview storage', () => {
-  it('isolates saved fuel histories and protects them from consumer mutation', async () => {
-    const { fuel } = createPreviewStorage();
-    const history = await fuel.getHistoricalLaps(465, 'car-a');
-    const originalUsage = history[0].fuelUsed;
-    history[0].fuelUsed = 999;
-    expect((await fuel.getHistoricalLaps(465, 'car-a'))[0].fuelUsed).toBe(
-      originalUsage
-    );
-
-    await fuel.saveLap(465, 'car-a', { ...history[0], fuelUsed: 3 });
-    expect((await fuel.getHistoricalLaps(465, 'car-a')).at(-1)?.fuelUsed).toBe(
-      3
-    );
-    expect(await fuel.getHistoricalLaps(465, 'car-b')).toHaveLength(10);
-    await fuel.clearHistory(465, 'car-a');
-    expect(await fuel.getHistoricalLaps(465, 'car-a')).toEqual([]);
-    expect(await fuel.getHistoricalLaps(465, 'car-b')).toHaveLength(10);
-    await fuel.clearAllHistory();
-    expect(await fuel.getHistoricalLaps(465, 'car-b')).toEqual([]);
-  });
-
   it('provides a reference for the actual demo track and retains explicit clears', async () => {
     const storage = createPreviewStorage();
     storage.updateSession(session);

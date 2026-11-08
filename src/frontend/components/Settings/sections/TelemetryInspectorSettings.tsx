@@ -120,6 +120,7 @@ export const TelemetryInspectorSettings = ({
       settings={settings}
       onSettingsChange={(s) => setSettings(s)}
       widgetId={SETTING_ID}
+      previewWidgetId={SETTING_ID}
     >
       {(handleConfigChange) => {
         const properties = settings.config.properties ?? [];

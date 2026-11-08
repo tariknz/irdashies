@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboard } from '@irdashies/context';
 import { PlusIcon } from '@phosphor-icons/react';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { SingleFuelWidgetSettings } from './SingleFuelWidgetSettings';
 import { generateId } from './utils';
+import { SettingsPreviewContext } from '@irdashies/domain/widgetPreview/settingsPreviewContext';
 
 const widgetType = 'fuel';
 const defaultConfig = getWidgetDefaultConfig('fuel');
@@ -14,6 +15,7 @@ interface FuelSettingsProps {
 }
 
 export const FuelSettings = ({ widgetId }: FuelSettingsProps) => {
+  const sharedPreview = useContext(SettingsPreviewContext);
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const navigate = useNavigate();
 
@@ -84,10 +86,20 @@ export const FuelSettings = ({ widgetId }: FuelSettingsProps) => {
   }
 
   return (
-    <div className="space-y-4 h-full overflow-y-auto p-1">
+    <div
+      className={
+        sharedPreview
+          ? 'h-full min-h-0 p-1'
+          : 'space-y-4 h-full overflow-y-auto p-1'
+      }
+    >
       {/* Render settings for selected ID */}
       {selectedId && (
-        <SingleFuelWidgetSettings key={selectedId} widgetId={selectedId} />
+        <SingleFuelWidgetSettings
+          key={selectedId}
+          widgetId={selectedId}
+          disableInternalScroll={!sharedPreview}
+        />
       )}
     </div>
   );

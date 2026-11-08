@@ -11,12 +11,16 @@ import {
   useSessionStore,
 } from '@irdashies/context';
 
-// Only useGeneralSettings is faked; it reads through DashboardContext, which
+// Dashboard hooks are faked; they read through DashboardContext, which
 // these tests do not mount. The channel and reference-lap paths stay real so
 // the widget is still exercised through its actual data path.
 vi.mock('@irdashies/context', async () => {
   const actual = await vi.importActual('@irdashies/context');
-  return { ...actual, useGeneralSettings: vi.fn() };
+  return {
+    ...actual,
+    useGeneralSettings: vi.fn(),
+    useDashboard: () => ({ isDemoMode: false }),
+  };
 });
 import { DeltaSpeed } from './DeltaSpeed';
 import { buildMockSpeedLap, mockSpeedAt } from './mockSpeedLap';
@@ -109,6 +113,26 @@ describe('DeltaSpeed', () => {
     render(<DeltaSpeed {...baseConfig} />);
     expect(screen.getByText('+4.2')).toBeInTheDocument();
     expect(screen.getByText('km/h')).toBeInTheDocument();
+  });
+
+  it('ignores imported delta overrides and keeps using live telemetry', () => {
+    seedAll({ speed: speedForDelta(3), lapDistPct: REF_PCT, isOnTrack: true });
+    const importedConfig = {
+      ...baseConfig,
+      previewDeltaKph: 20,
+      deltaKph: 21,
+    };
+    render(<DeltaSpeed {...importedConfig} />);
+    expect(screen.getByText('+3.0')).toBeInTheDocument();
+    expect(screen.queryByText('+20.0')).not.toBeInTheDocument();
+    expect(screen.queryByText('+21.0')).not.toBeInTheDocument();
+  });
+
+  it('keeps the no-clean-lap state when imported config contains a demo value', () => {
+    seedAll({ speed: 50, lapDistPct: REF_PCT, isOnTrack: true }, false);
+    const importedConfig = { ...baseConfig, previewDeltaKph: 20, deltaKph: 21 };
+    render(<DeltaSpeed {...importedConfig} />);
+    expect(screen.getByText('No clean lap')).toBeInTheDocument();
   });
 
   it('shows a negative delta when slower', () => {

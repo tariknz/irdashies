@@ -1519,6 +1519,7 @@ export class OverlayManager {
     const defaultOptions: BrowserWindowConstructorOptions = {
       title: `irDashies - Settings`,
       frame: true,
+      backgroundColor: '#141a21',
       // The renderer draws the header and drag region on every platform.
       // The overlay exposes the native controls' safe area to the renderer,
       // including the traffic lights on the left on macOS.

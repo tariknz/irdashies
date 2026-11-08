@@ -23,8 +23,10 @@ import { generalItems, bottomItems } from './menuItems';
 import { ReleaseNotesStatusProvider } from './ReleaseNotes/ReleaseNotesStatusContext';
 import { ReleaseNotesAnnouncement } from './ReleaseNotes/ReleaseNotesAnnouncement';
 import { GitHubStarPrompt } from './GitHubStarPrompt/GitHubStarPrompt';
+import { SettingsPreviewPanelContext } from '@irdashies/domain/widgetPreview/settingsPreviewContext';
 
 export const SettingsLayout = () => {
+  const previewPanelWidth = useState(420);
   const { bridge, isDemoMode, toggleDemoMode, currentDashboard } =
     useDashboard();
   const { pathname } = useLocation();
@@ -182,14 +184,18 @@ export const SettingsLayout = () => {
             aria-label={appPage ? 'App settings page' : 'Overlay settings page'}
             className="min-w-0 flex-1 bg-slate-900 p-4 focus:outline-none lg:p-7"
           >
-            <div className="mx-auto flex h-full max-w-[960px] flex-col overflow-hidden">
-              <Routes>
-                <Route
-                  path="/"
-                  element={<Navigate to="/settings/relative" replace />}
-                />
-                <Route path="/:widgetId" element={<SettingsLoader />} />
-              </Routes>
+            <div
+              className={`mx-auto flex h-full flex-col overflow-hidden ${appPage ? 'max-w-[960px]' : 'max-w-[1440px]'}`}
+            >
+              <SettingsPreviewPanelContext value={previewPanelWidth}>
+                <Routes>
+                  <Route
+                    path="/"
+                    element={<Navigate to="/settings/relative" replace />}
+                  />
+                  <Route path="/:widgetId" element={<SettingsLoader />} />
+                </Routes>
+              </SettingsPreviewPanelContext>
             </div>
           </main>
         </div>
