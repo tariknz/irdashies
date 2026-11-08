@@ -13,16 +13,19 @@ vi.mock('@irdashies/context', () => ({
   }),
   useElementSize: () => ({ width: 800, height: 240 }),
 }));
-const connect = vi.fn(
-  async () => ({ DriverInfo: { Drivers: [] } }) as unknown as Session
-);
+const session = { DriverInfo: { Drivers: [] } } as unknown as Session;
+const connect = vi.fn(async () => session);
 const disconnect = vi.fn(async () => undefined);
 const stop = vi.fn();
 const subscribe = vi.fn(() => stop);
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
+  connect.mockResolvedValue(session);
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn(() => ({ matches: false }))
+  );
   window.widgetPreviewBridge = {
     connect,
     disconnect,
@@ -32,7 +35,9 @@ beforeEach(() => {
 });
 afterEach(() => {
   delete window.widgetPreviewBridge;
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe('settings widget preview', () => {
@@ -150,6 +155,99 @@ describe('settings widget preview', () => {
     expect(disconnect).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole('button', { name: 'Play preview' }));
     expect(screen.getByTitle('Input Traces demo')).toBeInTheDocument();
+  });
+
+  it('hides each replacement iframe until its own load event after visibility resumes', () => {
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    render(<WidgetPreview widgetId="input" />);
+    const original = screen.getByTitle('Input Traces demo');
+    fireEvent.load(original);
+    expect(original).not.toHaveClass('invisible');
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    fireEvent(document, new Event('visibilitychange'));
+    expect(screen.queryByTitle('Input Traces demo')).toBeNull();
+    expect(disconnect).toHaveBeenCalledOnce();
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    fireEvent(document, new Event('visibilitychange'));
+    const resumed = screen.getByTitle('Input Traces demo');
+    expect(resumed).not.toBe(original);
+    expect(resumed).toHaveClass('invisible');
+    fireEvent.load(resumed);
+    expect(resumed).not.toHaveClass('invisible');
+  });
+
+  it('stops a timed-out attempt and ignores its late result after a successful retry', async () => {
+    vi.useFakeTimers();
+    let resolveSession!: (value: Session) => void;
+    connect.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSession = resolve;
+      })
+    );
+    const { unmount } = render(<WidgetPreview widgetId="input" />);
+    const frame = screen.getByTitle('Input Traces demo') as HTMLIFrameElement;
+    act(() =>
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: { type: 'preview:ready' },
+          source: frame.contentWindow,
+        })
+      )
+    );
+    expect(connect).toHaveBeenCalledOnce();
+    act(() => vi.advanceTimersByTime(15001));
+    expect(screen.queryByTitle('Input Traces demo')).toBeNull();
+    expect(disconnect).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    const retry = screen.getByTitle('Input Traces demo') as HTMLIFrameElement;
+    expect(retry).not.toBe(frame);
+    expect(retry).toHaveClass('invisible');
+    await act(async () =>
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: { type: 'preview:ready' },
+          source: retry.contentWindow,
+        })
+      )
+    );
+    fireEvent.load(retry);
+    expect(connect).toHaveBeenCalledTimes(2);
+    await act(async () => resolveSession(session));
+    expect(disconnect).toHaveBeenCalledOnce();
+    expect(screen.getByTitle('Input Traces demo')).toBe(retry);
+    expect(screen.queryByText('Loading preview…')).toBeNull();
+    unmount();
+    expect(disconnect).toHaveBeenCalledTimes(2);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('times out a stalled iframe reload and releases its previous subscriptions', async () => {
+    vi.useFakeTimers();
+    render(<WidgetPreview widgetId="input" />);
+    const frame = screen.getByTitle('Input Traces demo') as HTMLIFrameElement;
+    const request = (data: unknown) =>
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data,
+          source: frame.contentWindow,
+        })
+      );
+    await act(async () => request({ type: 'preview:ready' }));
+    act(() =>
+      request({
+        type: 'preview:subscribe',
+        channel: 'driver-controls.snapshot',
+      })
+    );
+    connect.mockReturnValueOnce(new Promise(() => undefined));
+    act(() => request({ type: 'preview:ready' }));
+    expect(stop).toHaveBeenCalledOnce();
+    act(() => vi.advanceTimersByTime(15001));
+    expect(
+      screen.getByText('The preview could not load. Try again.')
+    ).toBeInTheDocument();
+    expect(disconnect).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('reconnects after the iframe reloads instead of leaving a blank preview', async () => {

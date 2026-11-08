@@ -1,12 +1,18 @@
 import type { DashboardBridge, DashboardLayout } from '@irdashies/types';
 
+interface PreviewDashboardOptions {
+  readAsset?: (
+    kind: 'garageCover' | 'playerIcon',
+    filename: string
+  ) => Promise<string | null>;
+  /** Only editable hosts opt in; the settings frame stays read-only. */
+  onSave?: (dashboard: DashboardLayout) => void;
+}
+
 /** All mutations remain inside the preview, never reaching Electron or the sim. */
 export function createPreviewDashboardBridge(
   initial: DashboardLayout,
-  readAsset: (
-    kind: 'garageCover' | 'playerIcon',
-    filename: string
-  ) => Promise<string | null> = async () => null
+  { readAsset = async () => null, onSave }: PreviewDashboardOptions = {}
 ) {
   let dashboard = initial;
   const callbacks = new Set<(value: DashboardLayout) => void>();
@@ -18,6 +24,10 @@ export function createPreviewDashboardBridge(
   };
   const noop = () => undefined;
   const done = async () => undefined;
+  const update = (value: DashboardLayout) => {
+    dashboard = value;
+    callbacks.forEach((callback) => callback(value));
+  };
   const bridge: DashboardBridge = {
     dashboardUpdated: (callback) => {
       callbacks.add(callback);
@@ -25,7 +35,11 @@ export function createPreviewDashboardBridge(
       return () => callbacks.delete(callback);
     },
     reloadDashboard: noop,
-    saveDashboard: noop,
+    saveDashboard: (value) => {
+      if (!onSave) return;
+      update(value);
+      onSave(value);
+    },
     resetDashboard: async () => dashboard,
     onEditModeToggled: (callback) => {
       callback(false);
@@ -65,11 +79,5 @@ export function createPreviewDashboardBridge(
     stop: noop,
     setAutoStart: done,
   };
-  return {
-    bridge,
-    update: (value: DashboardLayout) => {
-      dashboard = value;
-      callbacks.forEach((callback) => callback(value));
-    },
-  };
+  return { bridge, update };
 }

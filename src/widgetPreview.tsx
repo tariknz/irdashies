@@ -123,7 +123,7 @@ function renderPreview(config: WidgetPreviewConfig, session?: Session) {
   currentType = type;
   const value = previewDashboard(config.dashboard, widget);
   if (!dashboard) {
-    dashboard = createPreviewDashboardBridge(value, readAsset);
+    dashboard = createPreviewDashboardBridge(value, { readAsset });
     window.dashboardBridge = dashboard.bridge;
   } else dashboard.update(value);
   if (session) {

@@ -7,16 +7,14 @@ import {
   ArrowCounterClockwiseIcon,
 } from '@phosphor-icons/react';
 import { useDashboard, useElementSize } from '@irdashies/context';
-import { getWidgetManifest, type ChannelName } from '@irdashies/types';
-import type { WidgetPreviewMessage } from '@irdashies/types';
-import { parsePreviewRequest } from '@irdashies/domain/widgetPreview/protocol';
+import { getWidgetManifest } from '@irdashies/types';
 import {
   previewFitScale,
   resolvePreviewWidget,
 } from '@irdashies/domain/widgetPreview/presentation';
-import logger from '@irdashies/utils/logger';
 import { usePreviewViewport } from './usePreviewViewport';
 import { usePreviewResize } from './usePreviewResize';
+import { useWidgetPreviewSession } from './useWidgetPreviewSession';
 import { ResizeHandles } from '@irdashies/domain/widgetPresentation/ResizeHandle';
 
 export const WidgetPreview = ({
@@ -28,7 +26,7 @@ export const WidgetPreview = ({
   adaptive?: boolean;
   fillHeight?: boolean;
 }) => {
-  const { currentDashboard, bridge: dashboardBridge } = useDashboard();
+  const { currentDashboard } = useDashboard();
   const widget = useMemo(
     () => currentDashboard && resolvePreviewWidget(currentDashboard, widgetId),
     [currentDashboard, widgetId]
@@ -50,20 +48,12 @@ export const WidgetPreview = ({
       ],
     };
   }, [currentDashboard, widget, frameSize]);
-  const frame = useRef<HTMLIFrameElement>(null);
+  const preview = useWidgetPreviewSession(widgetId, previewConfigDashboard);
   const stage = useRef<HTMLDivElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const modal = useRef(false);
   const size = useElementSize(stage);
   const [expanded, setExpanded] = useState(false);
-  const [playing, setPlaying] = useState(true);
-  const [visible, setVisible] = useState(
-    () => document.visibilityState !== 'hidden'
-  );
-  const [revision, setRevision] = useState(0);
-  const [ready, setReady] = useState(false);
-  const [frameLoaded, setFrameLoaded] = useState(false);
-  const [error, setError] = useState('');
   const [light, setLight] = useState(false);
   const [panning, setPanning] = useState(false);
   const [resizeHovered, setResizeHovered] = useState(false);
@@ -74,22 +64,18 @@ export const WidgetPreview = ({
     y: number;
     origin: { x: number; y: number };
   } | null>(null);
-  const latest = useRef({ widgetId, dashboard: previewConfigDashboard });
-  latest.current = { widgetId, dashboard: previewConfigDashboard };
-  const active = playing && visible;
-  const bridge = window.widgetPreviewBridge;
   const fit = widget
     ? previewFitScale(width, height, size.width - 32, size.height - 32)
     : 1;
   const { zoom, scale, pan, setPan, setZoom, freeze } = usePreviewViewport(
     stage,
     fit,
-    active && !!bridge && !error
+    preview.renderFrame
   );
   const { resizing, getResizeHandleProps } = usePreviewResize({
     width,
     height,
-    enabled: active && !!bridge && !error,
+    enabled: preview.renderFrame,
     freeze,
     setPan,
     onSizeChange: setFrameSize,
@@ -97,13 +83,6 @@ export const WidgetPreview = ({
   useEffect(() => {
     setFrameSize(null);
   }, [widgetId, widget?.layout.width, widget?.layout.height]);
-
-  useEffect(() => {
-    const onVisibility = () =>
-      setVisible(document.visibilityState !== 'hidden');
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, []);
 
   useEffect(() => {
     const element = dialog.current;
@@ -118,163 +97,6 @@ export const WidgetPreview = ({
       modal.current = false;
     } else if (!element.open) element.show();
   }, [expanded]);
-
-  useEffect(() => {
-    if (!active || !bridge) return;
-    let disposed = false;
-    let connecting = false;
-    let connected = false;
-    let telemetryTimer: ReturnType<typeof setInterval> | undefined;
-    const subscriptions = new Map<
-      ChannelName,
-      { unsubscribe(): void; rate?: number }
-    >();
-    setReady(false);
-    setError('');
-    const send = (message: WidgetPreviewMessage) =>
-      frame.current?.contentWindow?.postMessage(message, '*');
-    const timeout = setTimeout(
-      () => setError('The preview could not load. Try again.'),
-      15000
-    );
-    const receive = (event: MessageEvent<unknown>) => {
-      if (event.source !== frame.current?.contentWindow) return;
-      const request = parsePreviewRequest(event.data);
-      if (!request) return;
-      if (request.type === 'preview:ready') {
-        if (connecting) return;
-        connecting = true;
-        connected = false;
-        if (telemetryTimer) clearInterval(telemetryTimer);
-        for (const subscription of subscriptions.values())
-          subscription.unsubscribe();
-        subscriptions.clear();
-        void bridge
-          .connect()
-          .then((session) => {
-            if (disposed || !latest.current.dashboard) return;
-            connected = true;
-            connecting = false;
-            clearTimeout(timeout);
-            send({
-              type: 'preview:init',
-              session,
-              config: {
-                widgetId: latest.current.widgetId,
-                dashboard: latest.current.dashboard,
-              },
-            });
-            const selected = resolvePreviewWidget(
-              latest.current.dashboard,
-              latest.current.widgetId
-            );
-            if (selected?.type === 'telemetryinspector') {
-              const poll = () => {
-                void bridge
-                  .getTelemetry()
-                  .then((telemetry) => {
-                    if (!disposed && telemetry)
-                      send({ type: 'preview:telemetry', telemetry });
-                  })
-                  .catch((reason: unknown) =>
-                    logger.warn(
-                      'Could not read demo inspector telemetry',
-                      reason
-                    )
-                  );
-              };
-              poll();
-              telemetryTimer = setInterval(poll, 1000);
-            }
-            setReady(true);
-          })
-          .catch((reason: unknown) => {
-            if (disposed) return;
-            connecting = false;
-            clearTimeout(timeout);
-            logger.error('Could not start widget preview', reason);
-            setError('The demo could not start. Try again.');
-          });
-      } else if (request.type === 'preview:asset') {
-        if (!connected) return;
-        const config =
-          latest.current.dashboard &&
-          resolvePreviewWidget(
-            latest.current.dashboard,
-            latest.current.widgetId
-          )?.config;
-        const playerIcon = config?.playerIcon as
-          { fileName?: unknown } | undefined;
-        const expected =
-          request.kind === 'garageCover'
-            ? config?.imageFilename
-            : playerIcon?.fileName;
-        const read =
-          request.kind === 'garageCover'
-            ? dashboardBridge?.getGarageCoverImageAsDataUrl
-            : dashboardBridge?.getPlayerIconImageAsDataUrl;
-        void (
-          expected === request.filename && read
-            ? read(request.filename)
-            : Promise.resolve(null)
-        )
-          .catch(() => null)
-          .then((dataUrl) => {
-            if (!disposed)
-              send({
-                type: 'preview:asset',
-                requestId: request.requestId,
-                dataUrl,
-              });
-          });
-      } else if (connected) {
-        const previous = subscriptions.get(request.channel);
-        if (request.type === 'preview:unsubscribe') {
-          previous?.unsubscribe();
-          subscriptions.delete(request.channel);
-        } else if (!previous || previous.rate !== request.rate) {
-          const unsubscribe = bridge.subscribe(
-            request.channel,
-            (payload) =>
-              send({
-                type: 'preview:snapshot',
-                channel: request.channel,
-                payload,
-              }),
-            request.rate
-          );
-          previous?.unsubscribe();
-          subscriptions.set(request.channel, {
-            unsubscribe,
-            rate: request.rate,
-          });
-        }
-      }
-    };
-    window.addEventListener('message', receive);
-    return () => {
-      disposed = true;
-      clearTimeout(timeout);
-      if (telemetryTimer) clearInterval(telemetryTimer);
-      window.removeEventListener('message', receive);
-      for (const subscription of subscriptions.values())
-        subscription.unsubscribe();
-      void bridge
-        .disconnect()
-        .catch((reason: unknown) =>
-          logger.warn('Could not stop widget preview', reason)
-        );
-    };
-  }, [active, bridge, dashboardBridge, revision]);
-
-  useEffect(() => {
-    if (!ready || !previewConfigDashboard) return;
-    const message: WidgetPreviewMessage = {
-      type: 'preview:config',
-      config: { widgetId, dashboard: previewConfigDashboard },
-    };
-    frame.current?.contentWindow?.postMessage(message, '*');
-  }, [previewConfigDashboard, widgetId, ready]);
 
   if (!widget) return null;
   const name = getWidgetManifest(widget.type ?? widget.id)?.name ?? widget.id;
@@ -317,10 +139,7 @@ export const WidgetPreview = ({
             className={button}
             aria-pressed={zoom === 'fit'}
             title="Fit and center preview"
-            onClick={() => {
-              setZoom('fit');
-              setPan({ x: 0, y: 0 });
-            }}
+            onClick={() => setZoom('fit')}
           >
             Fit
           </button>
@@ -328,10 +147,7 @@ export const WidgetPreview = ({
             type="button"
             className={button}
             aria-pressed={zoom === 'actual'}
-            onClick={() => {
-              setZoom('actual');
-              setPan({ x: 0, y: 0 });
-            }}
+            onClick={() => setZoom('actual')}
           >
             100%
           </button>
@@ -347,13 +163,10 @@ export const WidgetPreview = ({
           <button
             type="button"
             className={button}
-            aria-label={playing ? 'Pause preview' : 'Play preview'}
-            onClick={() => {
-              setFrameLoaded(false);
-              setPlaying(!playing);
-            }}
+            aria-label={preview.playing ? 'Pause preview' : 'Play preview'}
+            onClick={preview.togglePlaying}
           >
-            {playing ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
+            {preview.playing ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
           </button>
           <button
             type="button"
@@ -381,9 +194,7 @@ export const WidgetPreview = ({
             event.button !== 0 ||
             drag.current ||
             resizing ||
-            !active ||
-            !bridge ||
-            error
+            !preview.renderFrame
           )
             return;
           event.preventDefault();
@@ -441,7 +252,7 @@ export const WidgetPreview = ({
         }}
         className={`relative touch-none select-none overflow-hidden outline-offset-[-2px] focus-visible:outline-2 focus-visible:outline-accent-400 ${panning ? 'cursor-grabbing' : 'cursor-grab'} ${stageLayout} ${light ? 'bg-slate-300' : 'bg-slate-950'}`}
       >
-        {active && bridge && !error ? (
+        {preview.renderFrame ? (
           <div className="pointer-events-none absolute inset-0 grid grid-cols-1 grid-rows-1 place-items-center">
             <div
               className="pointer-events-auto relative shrink-0"
@@ -464,10 +275,9 @@ export const WidgetPreview = ({
               }}
             >
               <iframe
-                key={revision}
-                ref={frame}
+                ref={preview.ref}
                 title={`${name} demo`}
-                onLoad={() => setFrameLoaded(true)}
+                onLoad={preview.onLoad}
                 src={
                   new URL('index-widget-preview.html', window.location.href)
                     .href
@@ -475,7 +285,7 @@ export const WidgetPreview = ({
                 sandbox="allow-scripts allow-same-origin"
                 tabIndex={-1}
                 inert
-                className={`absolute left-0 top-0 origin-top-left border-0 bg-transparent ${frameLoaded ? '' : 'invisible'}`}
+                className={`absolute left-0 top-0 origin-top-left border-0 bg-transparent ${preview.loaded ? '' : 'invisible'}`}
                 style={{
                   width,
                   height,
@@ -497,25 +307,18 @@ export const WidgetPreview = ({
             className="flex h-full items-center justify-center gap-3 p-6 text-center text-sm text-slate-400"
             role="status"
           >
-            {error ||
-              (!bridge
+            {preview.error ||
+              (!preview.available
                 ? 'Preview is available in the desktop app.'
                 : 'Preview paused.')}
-            {error && (
-              <button
-                type="button"
-                className={button}
-                onClick={() => {
-                  setFrameLoaded(false);
-                  setRevision(revision + 1);
-                }}
-              >
+            {preview.error && (
+              <button type="button" className={button} onClick={preview.retry}>
                 Try again
               </button>
             )}
           </div>
         )}
-        {active && bridge && (!ready || !frameLoaded) && !error && (
+        {preview.loading && (
           <div
             className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-slate-400"
             role="status"

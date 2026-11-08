@@ -1,7 +1,6 @@
 import {
   IncidentType,
   type FuelCalculatorBridge,
-  type FuelLapData,
   type Incident,
   type LapTraceBridge,
   type LapTraceRecord,
@@ -13,44 +12,18 @@ import { makeSyntheticLapTrace } from '../lapTrace/syntheticLap';
 /** Browser-only sample storage. Nothing is written to disk or sent to the sim. */
 export function createPreviewStorage() {
   let session: Session | null = null;
-  const laps = new Map<string, FuelLapData[]>();
   const traces = new Map<string, LapTraceRecord | null>();
   const referenceCallbacks = new Set<() => void>();
   const clearCallbacks = new Set<() => void>();
   let incidentsCleared = false;
 
+  // Fuel demos render their widget-owned fixture and never run the recorder.
   const fuel: FuelCalculatorBridge = {
-    getHistoricalLaps: async (trackId, carName) => {
-      const key = `${trackId}:${carName}`;
-      if (!laps.has(key)) {
-        laps.set(
-          key,
-          Array.from({ length: 10 }, (_, i) => ({
-            lapNumber: i + 1,
-            fuelUsed: 2.2 + (i % 3) * 0.08,
-            lapTime: 114 + (i % 3) * 0.4,
-            isGreenFlag: true,
-            isValidForCalc: true,
-            isOutLap: false,
-            isHistorical: true,
-            timestamp: i * 114000,
-          }))
-        );
-      }
-      return structuredClone(laps.get(key) ?? []);
-    },
-    saveLap: async (trackId, carName, lap) => {
-      const key = `${trackId}:${carName}`;
-      const history = laps.get(key) ?? [];
-      laps.set(key, [...history, structuredClone(lap)].slice(-20));
-    },
-    clearHistory: async (trackId, carName) => {
-      laps.set(`${trackId}:${carName}`, []);
-    },
-    clearAllHistory: async () => {
-      for (const key of laps.keys()) laps.set(key, []);
-    },
-    getQualifyMax: async () => 2.4,
+    getHistoricalLaps: async () => [],
+    saveLap: async () => undefined,
+    clearHistory: async () => undefined,
+    clearAllHistory: async () => undefined,
+    getQualifyMax: async () => null,
     saveQualifyMax: async () => undefined,
     startNewLog: async () => undefined,
     logData: async () => undefined,

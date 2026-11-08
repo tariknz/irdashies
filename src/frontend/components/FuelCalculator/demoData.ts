@@ -1,15 +1,51 @@
-import type { FuelCalculation } from './types';
+import type { FuelCalculation, FuelLapData } from './types';
+
+const DEMO_FUEL_USAGE = [
+  2.28, 2.48, 2.3, 2.28, 2.36, 2.4, 2.28, 2.3, 2.32, 2.4,
+];
+const average = (values: number[]) =>
+  values.reduce((sum, value) => sum + value, 0) / values.length;
+
+/** Newest first, matching the history table. No sample enters the live store. */
+export const demoFuelHistory = (
+  count: number,
+  sessionNum: number
+): FuelLapData[] =>
+  Array.from({ length: count }, (_, index) => ({
+    lapNumber: count - index,
+    sessionNum,
+    timestamp: (count - index) * 90000,
+    fuelUsed:
+      DEMO_FUEL_USAGE[
+        DEMO_FUEL_USAGE.length - 1 - (index % DEMO_FUEL_USAGE.length)
+      ],
+    lapTime: 90,
+    isGreenFlag: true,
+    isValidForCalc: true,
+    isOutLap: false,
+    isHistorical: true,
+  }));
+
+const laps = demoFuelHistory(30, -1).reverse();
+const fuelValues = laps.map((lap) => lap.fuelUsed);
+export const demoFuelGraph = {
+  laps,
+  fuelValues,
+  avgFuel: average(fuelValues),
+  minFuel: Math.min(...fuelValues),
+  maxFuel: Math.max(...fuelValues),
+};
 
 export const demoFuelData: FuelCalculation = {
   fuelLevel: 32.6,
-  lastLapUsage: 2.4,
+  lastLapUsage: fuelValues[fuelValues.length - 1],
   currentLapUsage: 1.3,
   projectedLapUsage: 2.35,
-  avgLaps: 2.34,
-  avg10Laps: 2.36,
-  avgAllGreenLaps: 2.34,
-  minLapUsage: 2.28,
-  maxLapUsage: 2.48,
+  avgLaps: average(fuelValues.slice(-5)),
+  avg10Laps: average(fuelValues.slice(-10)),
+  avgAllGreenLaps: demoFuelGraph.avgFuel,
+  minLapUsage: demoFuelGraph.minFuel,
+  maxLapUsage: demoFuelGraph.maxFuel,
   lapsWithFuel: 13.9,
   lapsRemaining: 32,
   totalLaps: 35,
@@ -37,11 +73,3 @@ export const demoFuelData: FuelCalculation = {
   lapsRange: [31, 34],
   maxQualify: null,
 };
-
-export const demoFuelHistory = (count: number, sessionNum: number) =>
-  Array.from({ length: count }, (_, index) => ({
-    lapNumber: count - index,
-    sessionNum,
-    timestamp: 0,
-    fuelUsed: [3.9, 3.85, 3.92, 3.88, 3.91][index % 5],
-  }));
