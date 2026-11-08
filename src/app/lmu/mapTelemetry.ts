@@ -28,6 +28,7 @@ import {
 import type { LmuRestCell, LmuRestCells } from './rest/state';
 import type { LmuLivePenaltyChannels } from './liveStandings/penalties';
 import { isLmuRaceSession } from './mapSession';
+import { lmuInCar, lmuInSession, type LmuGameState } from './gameState';
 import {
   createLmuClassPositionState,
   updateLmuClassPositions,
@@ -229,6 +230,11 @@ const focusCarIdx = (
   return typeof focus === 'number' && focus >= 0 ? focus : playerIdx;
 };
 
+/**
+ * One LMU shared-memory snapshot as an iRacing-shaped telemetry frame, with
+ * the REST answers and the game state folded in. A value LMU has no
+ * equivalent for is published empty or neutral rather than left out.
+ */
 export function mapLmuTelemetry(
   raw: Raw,
   /**
@@ -270,7 +276,17 @@ export function mapLmuTelemetry(
    * finished cells down. Omitted -- as every spec does -- the channels are
    * absent and the player's badge falls back to the stop estimate.
    */
-  livePenalties?: LmuLivePenaltyChannels
+  livePenalties?: LmuLivePenaltyChannels,
+  /**
+   * Where the player is, from LMU's GetGameState, polled once a second. When
+   * known it decides IsOnTrack outright, and LmuDataStale except at the
+   * monitor, where `dataFrozen` still has its say; the realtime and ignition
+   * flags are not consulted. Omitted -- no REST
+   * API, a tape that never recorded it, or as every spec does -- those
+   * inferences from shared memory stand, as they did before. See
+   * gameState.ts.
+   */
+  gameState?: LmuGameState
 ): Telemetry {
   // Boundary note: a handful of generated Telemetry keys (e.g. SessionTime) are
   // typed with an `undefined[]` value shape although the iRacing native layer
@@ -511,6 +527,8 @@ export function mapLmuTelemetry(
   // so the choice is made per car here rather than once for the grid.
   // Count only: scoring has no field for which penalty it is.
   t.LmuCarIdxPenalties = numArr(raw.vehNumPenalties);
+  // The sim's own per-car finish status, which names the flag outright.
+  t.LmuCarIdxFinishStatus = numArr(raw.vehFinishStatus);
   t.LmuCarIdxEnergyRemaining = numArr(
     lmuEnergyChannel(raw.vehFuelFraction, raw.vehVirtualEnergy)
   );
@@ -788,19 +806,45 @@ export function mapLmuTelemetry(
   t.dcPitSpeedLimiterToggle = bool(raw.speedLimiter);
   t.PitstopActive = bool(false);
   t.OnPitRoad = bool(playerIdx >= 0 ? raw.vehInPits[playerIdx] === 1 : false);
-  // Three conditions, matching TinyPedal's own test for LMU: the data is
-  // flowing, the player has a slot, and either the sim says realtime or the
-  // ignition is on. The first is the one that was missing -- a frozen snapshot
-  // keeps reporting realtime forever, which is why ending a session left every
-  // widget gated on this one on screen. Ignition is the second half of
-  // TinyPedal's OR: a driver sitting in the car before realtime begins is
-  // still in the car.
+  // The sim's own answer when there is one: in the car while driving or
+  // paused, in the session at the monitor too.
+  //
+  // Without it, three conditions, matching TinyPedal's own test for LMU: the
+  // data is flowing, the player has a slot, and either the sim says realtime
+  // or the ignition is on. The first is the one that was missing -- a frozen
+  // snapshot keeps reporting realtime forever, which is why ending a session
+  // left every widget gated on this one on screen. Ignition is the second
+  // half of TinyPedal's OR: a driver sitting in the car before realtime
+  // begins is still in the car.
   const inCar =
-    !dataFrozen &&
-    playerIdx >= 0 &&
-    (raw.inRealtime || (raw.ignitionStarter ?? 0) > 0);
+    gameState !== undefined
+      ? playerIdx >= 0 && lmuInCar(gameState)
+      : !dataFrozen &&
+        playerIdx >= 0 &&
+        (raw.inRealtime || (raw.ignitionStarter ?? 0) > 0);
   t.IsOnTrack = bool(inCar);
-  t.LmuDataStale = bool(dataFrozen ?? false);
+  // In the car, the sim's word stands over a frozen block: a pause stops the
+  // writes and ends nothing. Out of any session, the frame describes nothing.
+  // At the monitor the freeze watch still decides whether the frame is
+  // current. Where the player is comes from LmuOutOfCar below.
+  t.LmuDataStale = bool(
+    gameState === undefined
+      ? (dataFrozen ?? false)
+      : !lmuInCar(gameState) &&
+          (!lmuInSession(gameState) || (dataFrozen ?? false))
+  );
+  // Only the sim's own word, not an inference: this hides widgets, and a
+  // guess from a frozen block is not enough to do that on. Outside a game is
+  // further out of a session still.
+  t.LmuNotInSession = bool(
+    gameState === 'notInSession' || gameState === 'notInGame'
+  );
+  // The sim's word that the player is not in the car. IsOnTrack already says
+  // so, but the driving gate ORs in the pit flags, and a car left in the pit
+  // lane or stall keeps those set, live, while the player sits at the monitor.
+  // Falsifying the pit flags instead would misreport the car to everything
+  // else that reads them.
+  t.LmuOutOfCar = bool(gameState !== undefined && !lmuInCar(gameState));
   // Reported as the snapshot has them, frozen or not. Falsifying these while
   // frozen was a mistake: isDriving reads them as `!isInGarage`, so clearing
   // them removed the one term that would have excluded a parked player.

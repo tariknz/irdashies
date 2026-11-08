@@ -202,6 +202,7 @@ export default {
 
 - Emojis are not allowed in any JSX, component text, labels, buttons, tooltips, or user-facing strings
 - For icons, use the **Phosphor icon pack** included in the project
+  - Exception: the finished-car checkered flag in `DriverStatusBadges.tsx` is a hand-drawn SVG, because Phosphor's `FlagCheckered` is not visible enough at badge size
 - Only use emojis in code comments, commit messages, or documentation if explicitly requested by the user
 
 ### Using Phosphor Icons

@@ -1,4 +1,5 @@
 import type { LmuRestSession } from '@irdashies/types';
+import type { LmuGameState } from '../gameState';
 
 /**
  * What the REST poller has learned, in the shape the mappers want it.
@@ -58,6 +59,13 @@ export interface LmuRestData {
   revision: number;
   cells: LmuRestCells;
   session: LmuRestSession;
+  /**
+   * Where the player is, from `/rest/sessions/GetGameState`. Read by the
+   * bridge on every frame to decide in-car and in-session; undefined until the
+   * endpoint has answered and whenever it stops, which is when the bridge falls
+   * back to reading those from shared memory. See ../gameState.ts.
+   */
+  gameState?: LmuGameState;
 }
 
 export const createLmuRestData = (): LmuRestData => ({
@@ -76,5 +84,6 @@ export const createLmuRestData = (): LmuRestData => ({
 export const resetLmuRestData = (data: LmuRestData): void => {
   data.cells = {};
   data.session = {};
+  data.gameState = undefined;
   data.revision += 1;
 };

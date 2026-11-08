@@ -8,6 +8,10 @@ const selectIsDriving = (snapshot: TrackStateSnapshot): boolean => {
   // the last frame, and that alone kept every widget gated on this on screen
   // after the session was over.
   if (snapshot.dataStale) return false;
+  // Nor while the sim says the player is out of the car. A car left in the
+  // pit lane or stall keeps the pit terms below true while the player sits at
+  // LMU's monitor, and IsOnTrack being false does not stop an OR.
+  if (snapshot.outOfCar) return false;
 
   const focusCarIdx = snapshot.focusCarIdx ?? -1;
   const onPitRoad = snapshot.carIdxOnPitRoad[focusCarIdx] ?? false;

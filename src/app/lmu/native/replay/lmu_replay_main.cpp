@@ -217,7 +217,90 @@ const char* kRestPaths[] = {
     // field, so without this a replay of a spectated session shows the
     // viewer's own empty slot rather than the car being watched.
     "/rest/watch/focus",
+    // Where the player is -- driving, paused, at the monitor, out of any
+    // session -- which decides in-car and in-session. Its errors are answers
+    // too, so they are recorded as well; see restFailureBody. A tape without
+    // it falls back to shared memory.
+    "/rest/sessions/GetGameState",
 };
+
+/** The one path whose errors are answers, and whose body moves every poll. */
+const char* const kGameStatePath = "/rest/sessions/GetGameState";
+
+/**
+ * The key a recorded GetGameState failure is wrapped in. Must match
+ * TAPE_REST_FAILURE_KEY in src/app/lmu/rest/tapeTransport.ts, which unwraps
+ * it; rest/recorderParity.spec.ts checks that the two agree.
+ */
+const char* const kRestFailureKey = "irdashiesRestFailure";
+
+std::string jsonEncoded(
+    const std::string& text,
+    bool escapeNonAscii,
+    bool upperHex);
+
+/**
+ * A failed GetGameState request, as a tape body.
+ *
+ * Its failures say where the player is -- 404 outside a game, an
+ * `unavailable` body outside a session -- and a tape keeping only successes
+ * held the last in-session state for ever once the session ended, so a replay
+ * kept the player in the car. A tape stores bodies and no statuses, so the
+ * failure goes in a body of its own that the replay's transport hands the
+ * poller as the failure it was.
+ */
+std::string restFailureBody(
+    const char* reason,
+    int status,
+    const std::string& body) {
+  std::string out = std::string("{\"") + kRestFailureKey + "\":{\"reason\":\"" +
+                    reason + "\"";
+  if (status != 0) out += ",\"status\":" + std::to_string(status);
+  out += ",\"body\":\"" + jsonEncoded(body, false, false) + "\"}}";
+  return out;
+}
+
+/**
+ * A top-level string field, or empty if there is none.
+ *
+ * Enough for the one field it is used for, without a JSON parser: the
+ * recorder only needs to tell one GetGameState from the next.
+ */
+std::string jsonStringField(const std::string& body, const char* field) {
+  const std::string key = std::string("\"") + field + "\"";
+  auto at = body.find(key);
+  if (at == std::string::npos) return {};
+  at += key.size();
+  const auto skipSpace = [&]() {
+    while (at < body.size() &&
+           (body[at] == ' ' || body[at] == '\t' || body[at] == '\r' ||
+            body[at] == '\n')) {
+      ++at;
+    }
+  };
+  skipSpace();
+  if (at >= body.size() || body[at] != ':') return {};
+  ++at;
+  skipSpace();
+  if (at >= body.size() || body[at] != '"') return {};
+  const auto end = body.find('"', at + 1);
+  if (end == std::string::npos) return {};
+  return body.substr(at + 1, end - at - 1);
+}
+
+/**
+ * What decides whether a body is worth a record: the body itself, except for
+ * GetGameState.
+ *
+ * That one carries the time of day, so it differs on every poll, and recorded
+ * whole a two-hour tape held 36,000 copies of the same few states. Its state
+ * is all the app reads from it, so a change of state is what earns a record.
+ */
+std::string restRecordKey(const char* path, const std::string& body) {
+  if (std::strcmp(path, kGameStatePath) != 0) return body;
+  const std::string state = jsonStringField(body, "MultiStintState");
+  return state.empty() ? body : "MultiStintState:" + state;
+}
 
 struct PendingRest {
   std::string path;
@@ -242,6 +325,7 @@ std::vector<PendingRest> gRestQueue;
  * Unchanged bodies are dropped here rather than written and deduplicated
  * later: at a 200 ms poll over a four-path set, most responses are identical
  * to the one before, and storing them all would bloat a tape for nothing.
+ * "Changed" is by restRecordKey, which for GetGameState is its state.
  */
 void restCaptureLoop(
     const std::string& host,
@@ -255,9 +339,24 @@ void restCaptureLoop(
     return;
   }
 
-  std::map<std::string, std::string> lastBody;
+  std::map<std::string, std::string> lastKey;
   bool announced = false;
   bool reportedAbsent = false;
+
+  // Queues a body unless it says nothing the last one for its path did not.
+  const auto record = [&](const char* path, const std::string& body) {
+    auto& previous = lastKey[path];
+    std::string key = restRecordKey(path, body);
+    if (previous == key) return;
+    previous = std::move(key);
+
+    if (!announced) {
+      announced = true;
+      std::cout << "REST API found; recording its responses too.\n";
+    }
+    std::lock_guard<std::mutex> guard(gRestMutex);
+    gRestQueue.push_back({path, body, nowMicros() - startedAt});
+  };
   /**
    * How long to wait before probing again once nothing is serving the API.
    *
@@ -280,8 +379,9 @@ void restCaptureLoop(
     for (const char* path : kRestPaths) {
       if (gStopRequested) break;
       std::string body;
-      const HttpResult result =
-          irdashies::lmu_replay::httpGet(host, port, path, timeoutMs, body);
+      int status = 0;
+      const HttpResult result = irdashies::lmu_replay::httpGet(
+          host, port, path, timeoutMs, body, &status);
 
       if (result == HttpResult::Refused) {
         // Nothing is serving the API yet. Said once, then retried on a
@@ -294,21 +394,23 @@ void restCaptureLoop(
         refused = true;
         break;
       }
-      if (result != HttpResult::Ok) continue;
-
-      auto& previous = lastBody[path];
-      if (previous == body) continue;
-      previous = body;
-
-      if (!announced) {
-        announced = true;
-        std::cout << "REST API found; recording its responses too.\n";
+      if (result == HttpResult::Ok) {
+        record(path, body);
+      } else if (
+          result == HttpResult::Status &&
+          std::strcmp(path, kGameStatePath) == 0) {
+        record(path, restFailureBody("status", status, body));
       }
-      std::lock_guard<std::mutex> guard(gRestMutex);
-      gRestQueue.push_back({path, body, nowMicros() - startedAt});
     }
     if (gStopRequested) break;
     if (refused) {
+      // An API that answered and has gone is the sim closing, and the app
+      // stops trusting GetGameState's last answer when that happens; so does
+      // a replay, given the refusal. Not before it ever answered: a refusal
+      // first thing is the app's cue that there is no API at all.
+      if (announced) {
+        record(kGameStatePath, restFailureBody("refused", 0, ""));
+      }
       // Slept in slices so a stop request is still acted on promptly.
       for (int waited = 0; waited < absentRetryMs && !gStopRequested;
            waited += 100) {

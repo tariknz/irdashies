@@ -34,6 +34,7 @@ import { FlagContour } from '@irdashies/utils/FlagContour';
 import { getFlag } from '@irdashies/utils/getFlag';
 import { getFlagColor } from '@irdashies/utils/getFlagColor';
 
+/** The relative widget: the cars just ahead of and behind the focus car. */
 export const Relative = () => {
   const settings = useRelativeSettings();
   const generalSettings = useGeneralSettings();
@@ -293,6 +294,7 @@ export const Relative = () => {
           }
           penaltyKind={result.penaltyKind}
           penaltySeconds={result.penaltySeconds}
+          finishState={result.finishState}
           trackLimitsPoints={result.trackLimitsPoints}
           trackLimitsMax={trackLimitsMax}
           lmuVirtualEnergy={result.energyRemaining}

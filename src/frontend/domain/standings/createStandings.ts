@@ -1,6 +1,11 @@
 import { SessionResults, Driver, TrackLocation } from '@irdashies/types';
 import type { LmuDriverRating } from '@irdashies/types';
-import { lmuPenaltyBadge, type LmuPenaltyKind } from '@irdashies/types';
+import {
+  lmuFinishStateFromCode,
+  lmuPenaltyBadge,
+  type LmuFinishState,
+  type LmuPenaltyKind,
+} from '@irdashies/types';
 import {
   calculateIRatingGain,
   RaceResult,
@@ -77,6 +82,11 @@ export interface Standings {
    * other car has a count and no more. See types/lmu/penalty.ts.
    */
   penaltyKind?: LmuPenaltyKind;
+  /**
+   * LMU's finish status: a checkered flag once the car has finished, DNF or
+   * DQ otherwise. Drawn where the penalty badge is, and in its place.
+   */
+  finishState?: LmuFinishState;
   /** Seconds a time penalty will add, for the `TIME` kind. */
   penaltySeconds?: number;
   onTrack: boolean;
@@ -232,6 +242,8 @@ export const createDriverStandings = (
     carIdxPenaltyKindValue?: number[];
     /** Seconds a time penalty will add, per car. Same source as the kind. */
     carIdxPenaltySecondsValue?: number[];
+    /** Each car's finish status, as LMU_FINISH_STATUS. Empty under iRacing. */
+    carIdxFinishStatusValue?: number[];
     /** Seconds the player's next stop spends serving penalties. */
     penaltySeconds?: number;
     isOnTrack?: boolean;
@@ -381,6 +393,9 @@ export const createDriverStandings = (
           telemetry?.penaltySeconds
         ),
         penaltySeconds: telemetry?.carIdxPenaltySecondsValue?.[result.CarIdx],
+        finishState: lmuFinishStateFromCode(
+          telemetry?.carIdxFinishStatusValue?.[result.CarIdx]
+        ),
         carClass: {
           id: driver.CarClassID,
           color: driver.CarClassColor,
@@ -499,6 +514,9 @@ export const createDriverStandings = (
           telemetry?.penaltySeconds
         ),
         penaltySeconds: telemetry?.carIdxPenaltySecondsValue?.[driver.CarIdx],
+        finishState: lmuFinishStateFromCode(
+          telemetry?.carIdxFinishStatusValue?.[driver.CarIdx]
+        ),
         carClass: {
           id: driver.CarClassID,
           color: driver.CarClassColor,
