@@ -4,7 +4,11 @@ import type {
   SessionLifecycleEvent,
   Telemetry,
 } from '@irdashies/types';
+import { GlobalFlags } from '../irsdk/types/enums';
 import type { TelemetryProcessor } from './TelemetryProcessor';
+
+const FULL_COURSE_CAUTION_FLAGS =
+  GlobalFlags.Caution | GlobalFlags.CautionWaving;
 
 const numberValue = (frame: Telemetry, key: keyof Telemetry): number => {
   const value = frame[key]?.value?.[0];
@@ -21,12 +25,33 @@ export class LapLogProcessor implements TelemetryProcessor<LapLogSnapshot> {
   readonly tickRateHz = 25;
   private readonly bestLaps: number[] = [];
   private readonly latest = this.empty();
+  private currentLapUnderCaution = false;
 
   init(session: Session): void {
     void session;
   }
 
   onFrame(frame: Telemetry): void {
+    const lapCompleted = numberValue(frame, 'LapCompleted');
+    const sessionNum = numberValue(frame, 'SessionNum');
+    const sessionTime = numberValue(frame, 'SessionTime');
+    if (
+      sessionNum !== this.latest.sessionNum ||
+      sessionTime < this.latest.sessionTime - 5 ||
+      lapCompleted < this.latest.lapCompleted
+    ) {
+      // A new session or replay rewind must not inherit the old lap's latch.
+      this.currentLapUnderCaution = false;
+      this.latest.lastLapUnderCaution = false;
+    } else if (lapCompleted > this.latest.lapCompleted) {
+      // Retain this result until the next completed lap: LapLastLapTime may
+      // arrive after LapCompleted, and the renderer can miss individual ticks.
+      this.latest.lastLapUnderCaution = this.currentLapUnderCaution;
+      this.currentLapUnderCaution = false;
+    }
+    this.currentLapUnderCaution ||=
+      (numberValue(frame, 'SessionFlags') & FULL_COURSE_CAUTION_FLAGS) !== 0;
+
     const source = frame.CarIdxBestLapTime?.value;
     this.bestLaps.length = Array.isArray(source) ? source.length : 0;
     for (let index = 0; index < this.bestLaps.length; index += 1) {
@@ -35,12 +60,12 @@ export class LapLogProcessor implements TelemetryProcessor<LapLogSnapshot> {
         typeof value === 'number' && Number.isFinite(value) ? value : 0;
     }
     Object.assign(this.latest, {
-      lapCompleted: numberValue(frame, 'LapCompleted'),
+      lapCompleted,
       currentLapTime: numberValue(frame, 'LapCurrentLapTime'),
       lastLapTime: numberValue(frame, 'LapLastLapTime'),
       bestLapTime: numberValue(frame, 'LapBestLapTime'),
-      sessionNum: numberValue(frame, 'SessionNum'),
-      sessionTime: numberValue(frame, 'SessionTime'),
+      sessionNum,
+      sessionTime,
       playerTrackSurface: numberValue(frame, 'PlayerTrackSurface'),
       incidentCount: numberValue(frame, 'PlayerCarMyIncidentCount'),
       lapDistPct: numberValue(frame, 'LapDistPct'),
@@ -62,6 +87,7 @@ export class LapLogProcessor implements TelemetryProcessor<LapLogSnapshot> {
 
   onLifecycle(event: SessionLifecycleEvent): void {
     if (event.type === 'enter') return;
+    this.currentLapUnderCaution = false;
     Object.assign(this.latest, this.empty(), {
       version: this.latest.version + 1,
     });
@@ -89,6 +115,7 @@ export class LapLogProcessor implements TelemetryProcessor<LapLogSnapshot> {
       deltaToSessionBestLap: 0,
       deltaToSessionBestLapOk: false,
       lapInvalidated: false,
+      lastLapUnderCaution: false,
       version: 0,
     };
   }

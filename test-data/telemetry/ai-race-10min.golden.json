@@ -11323,9 +11323,9 @@
     },
     {
       "name": "lap-log-state",
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "frameCount": 36000,
-      "rollingHash": "585979fe5b402cbbee4b715deaf9f8cbee145408220b36e06b4f8acec75fee3d",
+      "rollingHash": "6cbd6de0ae63ad657953073d74220e1eece33e38201c55fb9870bddb47f2e4d2",
       "checkpoints": {
         "firstFrame": {
           "lapCompleted": -1,
@@ -11415,6 +11415,8 @@
           "deltaToSessionLastLapOk": false,
           "deltaToSessionBestLap": 0,
           "deltaToSessionBestLapOk": false,
+          "lapInvalidated": false,
+          "lastLapUnderCaution": false,
           "version": 1
         },
         "lastFrame": {
@@ -11505,6 +11507,8 @@
           "deltaToSessionLastLapOk": true,
           "deltaToSessionBestLap": 2.7909295558929443,
           "deltaToSessionBestLapOk": true,
+          "lapInvalidated": false,
+          "lastLapUnderCaution": false,
           "version": 15000
         },
         "session:0": {

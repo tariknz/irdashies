@@ -101,15 +101,22 @@ export const LapTimeLogDisplay = ({
   // sort laps
   const sortedHistory = useMemo(() => {
     if (!history) return [];
-    // Filtered before the slice, so hiding pit laps still shows the configured
+    // Filtered before the slice, so hiding laps still shows the configured
     // number of laps rather than silently shortening the list.
-    const laps = settings.history.hidePittedLaps
-      ? history.filter((entry) => !entry.pitted)
-      : history;
+    const laps = history.filter(
+      (entry) =>
+        !(settings.history.hidePittedLaps && entry.pitted) &&
+        !(settings.history.hideCautionLaps && entry.caution)
+    );
     return [...laps]
       .sort((a, b) => b.lap - a.lap)
       .slice(0, settings.history.count);
-  }, [history, settings.history.count, settings.history.hidePittedLaps]);
+  }, [
+    history,
+    settings.history.count,
+    settings.history.hidePittedLaps,
+    settings.history.hideCautionLaps,
+  ]);
 
   // predicted lap time
   const predicted =

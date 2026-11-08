@@ -114,6 +114,7 @@ export const LapTimeLogSettings = () => {
                         <SettingProp path="history.count" />
 
                         <SettingProp path="history.hidePittedLaps" />
+                        <SettingProp path="history.hideCautionLaps" />
                       </SettingsSection>
                     )}
                   </SettingsSection>
