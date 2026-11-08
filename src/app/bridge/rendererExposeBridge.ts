@@ -53,6 +53,7 @@ export function exposeBridge() {
   defineBridge<ReleaseNotesBridge>('releaseNotesBridge', {
     getStatus: () => ipcRenderer.invoke('releaseNotes:status'),
     getRelease: (version) => ipcRenderer.invoke('releaseNotes:get', version),
+    getReleases: (page) => ipcRenderer.invoke('releaseNotes:list', page),
     dismiss: (version) => ipcRenderer.invoke('releaseNotes:dismiss', version),
     setAutoShow: (enabled) =>
       ipcRenderer.invoke('releaseNotes:autoShow', enabled),

@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { releaseNotesFixture } from '@irdashies/types';
 import { useReleaseNotesStatus } from './ReleaseNotesStatusContext';
 import { ReleaseNotesPanel } from './ReleaseNotesPanel';
-import { ReleaseNotesDialog } from './ReleaseNotesDialog';
 import { useReleaseNotes } from './useReleaseNotes';
+import { ReleaseNotesVersions } from './ReleaseNotesVersions';
 
 export const ReleaseNotesSettings = () => {
   const {
@@ -15,7 +14,6 @@ export const ReleaseNotesSettings = () => {
   } = useReleaseNotesStatus();
   const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
-  const [preview, setPreview] = useState(false);
   const version = selected ?? status?.currentVersion ?? null;
   const { state, retry } = useReleaseNotes(version);
   const loadedVersion = state.status === 'ready' ? state.release.version : null;
@@ -35,8 +33,8 @@ export const ReleaseNotesSettings = () => {
     setSaving(false);
   };
   return (
-    <div className="h-full overflow-y-auto">
-      <h2 className="mb-5 border-b border-slate-700 pb-5 pt-1 text-xl font-semibold tracking-tight text-white">
+    <div className="flex h-full min-h-0 flex-col">
+      <h2 className="mb-5 shrink-0 border-b border-slate-700 pb-5 pt-1 text-xl font-semibold tracking-tight text-white">
         Release notes
       </h2>
       {error && (
@@ -49,7 +47,7 @@ export const ReleaseNotesSettings = () => {
       )}
       {status ? (
         <>
-          <label className="mb-6 flex items-center gap-3 text-slate-300">
+          <label className="mb-6 flex shrink-0 items-center gap-3 text-slate-300">
             <input
               type="checkbox"
               checked={status.autoShow}
@@ -65,59 +63,31 @@ export const ReleaseNotesSettings = () => {
               are saved separately.
             </p>
           )}
-          {status.availableVersion && (
-            <label className="mb-4 flex items-center gap-3 text-slate-300">
-              Version
-              <select
-                value={version ?? ''}
-                onChange={(event) => setSelected(event.target.value)}
-                className="settings-field"
-              >
-                <option value={status.currentVersion}>
-                  Installed: {status.currentVersion}
-                </option>
-                <option value={status.availableVersion}>
-                  Downloaded update: {status.availableVersion}
-                </option>
-              </select>
-            </label>
-          )}
           {version && (
-            <ReleaseNotesPanel
-              version={version}
-              state={state}
-              onRetry={retry}
-            />
-          )}
-          {status.development && (
-            <div className="mt-8 border-t border-settings-boundary pt-4">
-              <button
-                onClick={() => setPreview(true)}
-                className="rounded bg-slate-700 px-3 py-2 hover:bg-settings-hover"
+            <div className="flex min-h-0 flex-1 gap-4 sm:gap-6">
+              <ReleaseNotesVersions
+                currentVersion={status.currentVersion}
+                availableVersion={status.availableVersion}
+                selectedVersion={version}
+                onSelect={setSelected}
+              />
+              <div
+                key={version}
+                className="min-w-0 flex-1 overflow-y-auto pr-1"
+                role="region"
+                aria-label={`Release notes for v${version}`}
               >
-                Preview update dialog
-              </button>
-              <p className="mt-2 text-xs text-slate-400">
-                Development only. Uses sample notes and does not change
-                dismissal state.
-              </p>
+                <ReleaseNotesPanel
+                  version={version}
+                  state={state}
+                  onRetry={retry}
+                />
+              </div>
             </div>
           )}
         </>
       ) : (
         !error && <p role="status">Loading release notes…</p>
-      )}
-      {preview && (
-        <ReleaseNotesDialog
-          preview
-          version="2.1.0"
-          state={{
-            status: 'ready',
-            release: releaseNotesFixture(),
-            cached: false,
-          }}
-          onClose={() => setPreview(false)}
-        />
       )}
     </div>
   );

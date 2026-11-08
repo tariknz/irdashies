@@ -397,9 +397,22 @@ const withReleaseNotesBadge = () => {
   };
   const bridge: ReleaseNotesBridge = {
     getStatus: async () => ({ ...status }),
-    getRelease: async () => ({
+    getReleases: async (page) => ({
       status: 'ready',
-      release: releaseNotesFixture(),
+      releases: (page === 1
+        ? ['2.1.0', '2.0.0', '1.9.0', '1.8.2', '1.8.1', '1.8.0', '1.7.0']
+        : ['1.6.0', '1.5.0']
+      ).map((version, index) => ({
+        version,
+        title: `irDashies ${version}`,
+        publishedAt: new Date(Date.UTC(2026, 9 - index, 18)).toISOString(),
+      })),
+      hasMore: page === 1,
+      cached: false,
+    }),
+    getRelease: async (version) => ({
+      status: 'ready',
+      release: releaseNotesFixture(version),
       cached: false,
     }),
     dismiss: async () => {

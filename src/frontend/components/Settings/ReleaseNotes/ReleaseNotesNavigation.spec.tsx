@@ -48,6 +48,12 @@ beforeEach(() => {
   };
   bridge = {
     getStatus: vi.fn(async () => ({ ...status })),
+    getReleases: vi.fn(async () => ({
+      status: 'ready' as const,
+      releases: [releaseNotesFixture(), releaseNotesFixture('2.0.0')],
+      hasMore: false,
+      cached: false,
+    })),
     getRelease: vi.fn(async () => ({
       status: 'ready' as const,
       release: releaseNotesFixture(),
@@ -87,6 +93,135 @@ function renderNavigation() {
 }
 
 describe('Release notes menu and unread badge', () => {
+  it('shows five versions initially and reveals five more per click before fetching another page', async () => {
+    const releases = [
+      releaseNotesFixture(),
+      ...Array.from({ length: 11 }, (_, index) =>
+        releaseNotesFixture(`1.${11 - index}.0`)
+      ),
+    ];
+    vi.mocked(bridge.getReleases).mockResolvedValue({
+      status: 'ready',
+      releases,
+      hasMore: false,
+      cached: false,
+    });
+    renderNavigation();
+    fireEvent.click(
+      await screen.findByRole('link', { name: /Release notes.*New/ })
+    );
+    const versions = await screen.findByRole('navigation', {
+      name: 'Release versions',
+    });
+    await within(versions).findByRole('button', { name: /^v1.8.0/ });
+    expect(within(versions).getAllByRole('listitem')).toHaveLength(5);
+    expect(
+      within(versions).queryByRole('button', { name: /^v1.7.0/ })
+    ).toBeNull();
+    fireEvent.click(
+      within(versions).getByRole('button', { name: 'Load older versions' })
+    );
+    expect(within(versions).getAllByRole('listitem')).toHaveLength(10);
+    expect(bridge.getReleases).toHaveBeenCalledTimes(1);
+    fireEvent.click(
+      within(versions).getByRole('button', { name: 'Load older versions' })
+    );
+    expect(within(versions).getAllByRole('listitem')).toHaveLength(12);
+    expect(
+      within(versions).queryByRole('button', { name: 'Load older versions' })
+    ).toBeNull();
+  });
+  it('browses older releases without acknowledging unread installed notes', async () => {
+    vi.mocked(bridge.getRelease).mockImplementation((version) =>
+      version === '2.1.0'
+        ? new Promise(() => undefined)
+        : Promise.resolve({
+            status: 'ready',
+            release: releaseNotesFixture(version),
+            cached: false,
+          })
+    );
+    renderNavigation();
+    fireEvent.click(
+      await screen.findByRole('link', { name: /Release notes.*New/ })
+    );
+    const versions = await screen.findByRole('navigation', {
+      name: 'Release versions',
+    });
+    const older = await within(versions).findByRole('button', {
+      name: /^v2.0.0/,
+    });
+    fireEvent.click(older);
+    await screen.findByRole('heading', { name: 'irDashies 2.0.0' });
+    expect(older).toHaveAttribute('aria-current', 'true');
+    expect(
+      within(versions).getByRole('button', { name: 'v2.1.0 Installed' })
+    ).not.toHaveAttribute('aria-current');
+    expect(bridge.getRelease).toHaveBeenCalledWith('2.0.0');
+    expect(
+      screen.getByRole('link', { name: 'View on GitHub' })
+    ).toHaveAttribute(
+      'href',
+      'https://github.com/tariknz/irdashies/releases/tag/v2.0.0'
+    );
+    expect(bridge.dismiss).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('link', { name: /Release notes.*New/ })
+    ).toBeInTheDocument();
+  });
+  it('appends older pages without duplicate versions and retries a failed page', async () => {
+    vi.mocked(bridge.getReleases)
+      .mockResolvedValueOnce({
+        status: 'ready',
+        releases: [releaseNotesFixture()],
+        hasMore: true,
+        cached: false,
+      })
+      .mockResolvedValueOnce({ status: 'unavailable', reason: 'offline' })
+      .mockResolvedValue({
+        status: 'ready',
+        releases: [releaseNotesFixture(), releaseNotesFixture('1.9.0')],
+        hasMore: false,
+        cached: false,
+      });
+    renderNavigation();
+    fireEvent.click(
+      await screen.findByRole('link', { name: /Release notes.*New/ })
+    );
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Load older versions' })
+    );
+    await screen.findByText('Could not load older versions.');
+    expect(
+      screen.getByRole('heading', { name: 'irDashies 2.1.0' })
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry version list' }));
+    await screen.findByRole('button', { name: /^v1.9.0/ });
+    expect(
+      screen.getAllByRole('button', { name: 'v2.1.0 Installed' })
+    ).toHaveLength(1);
+    expect(vi.mocked(bridge.getReleases).mock.calls).toEqual([[1], [2], [2]]);
+    expect(
+      screen.queryByRole('button', { name: 'Load older versions' })
+    ).toBeNull();
+  });
+  it('keeps installed notes available if the history fails and recovers on retry', async () => {
+    vi.mocked(bridge.getReleases).mockRejectedValueOnce(new Error('offline'));
+    renderNavigation();
+    fireEvent.click(
+      await screen.findByRole('link', { name: /Release notes.*New/ })
+    );
+    await screen.findByText('Could not load older versions.');
+    expect(
+      screen.getByRole('heading', { name: 'irDashies 2.1.0' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'v2.1.0 Installed' })
+    ).toHaveAttribute('aria-current', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Retry version list' }));
+    await screen.findByRole('button', { name: /^v2.0.0/ });
+    expect(screen.queryByText('Could not load older versions.')).toBeNull();
+  });
   it('shows the permanent menu item directly before About and New only for unread updates', async () => {
     const { container } = renderNavigation();
     const link = await screen.findByRole('link', {
@@ -166,14 +301,12 @@ describe('Release notes menu and unread badge', () => {
     fireEvent.click(
       await screen.findByRole('link', { name: /Release notes.*New/ })
     );
-    fireEvent.change(await screen.findByRole('combobox', { name: 'Version' }), {
-      target: { value: '2.2.0' },
-    });
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'v2.2.0 Downloaded update' })
+    );
     await screen.findByRole('heading', { name: 'irDashies 2.2.0' });
     expect(bridge.dismiss).not.toHaveBeenCalled();
-    fireEvent.change(screen.getByRole('combobox', { name: 'Version' }), {
-      target: { value: '2.1.0' },
-    });
+    fireEvent.click(screen.getByRole('button', { name: 'v2.1.0 Installed' }));
     await screen.findByText('Loading release notes…');
     expect(bridge.dismiss).not.toHaveBeenCalled();
     expect(
