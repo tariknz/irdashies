@@ -52,12 +52,34 @@ vi.mock('./storage/analytics', () => ({
   getAnalyticsOptOut: vi.fn().mockReturnValue(true),
 }));
 
+// One real store per userData folder: each test's temp folder starts empty,
+// as an installation would.
+vi.mock('./storage/simulatorUsage', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('./storage/simulatorUsage')>();
+  const stores = new Map<string, SimulatorUsageStore>();
+  return {
+    ...actual,
+    getSimulatorUsageStore: () => {
+      const store =
+        stores.get(userDataPath.value) ??
+        actual.createSimulatorUsageStore(userDataPath.value);
+      stores.set(userDataPath.value, store);
+      return store;
+    },
+  };
+});
+
 import { Analytics, type AnalyticsProvider } from './analytics';
 import logger from './logger';
 import { getAnalyticsOptOut } from './storage/analytics';
 import { readData, writeData } from './storage/storage';
 import { app } from 'electron';
 import type { PitLaneAnalyticsCheckpoint } from './storage/pitLaneAnalyticsCheckpoint';
+import {
+  getSimulatorUsageStore,
+  type SimulatorUsageStore,
+} from './storage/simulatorUsage';
 
 const makeProvider = () => ({
   capture: vi.fn<(event: EventMessage) => void>(),
@@ -109,8 +131,23 @@ describe('Analytics.setupLogTransport', () => {
         level: 'warn',
         message: 'something went wrong',
         data: ['something went wrong'],
+        simulator: null,
       },
     });
+  });
+
+  it('names the simulator irdashies is attached to, as of each message', () => {
+    delete logger.transports.posthog;
+    let simulator: 'iracing' | 'lmu' | undefined = 'lmu';
+    new Analytics(provider).setupLogTransport('2.0.0+test', () => simulator);
+    emit('warn', 'lmu warning');
+    simulator = undefined;
+    emit('warn', 'probing warning');
+    simulator = 'iracing';
+    emit('warn', 'iracing warning');
+    expect(
+      provider.capture.mock.calls.map(([event]) => event.properties?.simulator)
+    ).toEqual(['lmu', null, 'iracing']);
   });
 
   it('suppresses identical messages within the dedup window', () => {
@@ -150,6 +187,7 @@ describe('Analytics.setupLogTransport', () => {
         level: 'warn',
         message: 'context: {"code":42}',
         data: ['context:', { code: 42 }],
+        simulator: null,
       },
     });
   });
@@ -869,5 +907,156 @@ describe('Analytics startup pit lane calibration', () => {
     expect(loggerStub.warn).toHaveBeenCalledWith(
       '[Analytics] Could not publish pit lane calibration'
     );
+  });
+});
+
+describe('Analytics simulator usage', () => {
+  let provider: ReturnType<typeof makeProvider>;
+  const usageEvents = () =>
+    provider.captureConfirmed.mock.calls
+      .map(([event]) => event)
+      .filter((event) => event.event === '$set');
+  const usageFile = () => path.join(userDataPath.value, 'simulator-usage.json');
+  const storedUsage = async () => {
+    await getSimulatorUsageStore().flush();
+    return JSON.parse(await fs.readFile(usageFile(), 'utf8'));
+  };
+
+  const start = async (analytics: Analytics): Promise<void> => {
+    await analytics.init('2.0.0', { widgets: [] });
+    await analytics.waitForSimulatorUsageReport();
+    await analytics.waitForCalibrationUpload();
+    await analytics.waitForRadarPoleSideUpload();
+  };
+
+  beforeEach(async () => {
+    userDataPath.value = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'irdashies-simulators-')
+    );
+    vi.mocked(readData).mockReturnValue('test-installation');
+    vi.mocked(getAnalyticsOptOut).mockReturnValue(false);
+    loggerStub.warn.mockClear();
+    provider = makeProvider();
+  });
+
+  afterEach(async () => {
+    await getSimulatorUsageStore().flush();
+    vi.restoreAllMocks();
+    vi.mocked(readData).mockReset();
+    vi.mocked(getAnalyticsOptOut).mockReturnValue(true);
+    await fs.rm(userDataPath.value, { recursive: true, force: true });
+  });
+
+  it('stores a connect for the next startup instead of sending it', async () => {
+    new Analytics(provider).recordSimulatorConnected('lmu');
+    expect(provider.capture).not.toHaveBeenCalled();
+    expect(provider.captureConfirmed).not.toHaveBeenCalled();
+    expect(Object.keys(await storedUsage())).toEqual(['lmu']);
+  });
+
+  it('reports the simulators used at startup as person properties, then clears them', async () => {
+    await fs.writeFile(
+      usageFile(),
+      JSON.stringify({ iracing: 1000, lmu: 2000 })
+    );
+    await start(new Analytics(provider));
+    expect(usageEvents()).toEqual([
+      {
+        distinctId: 'test-installation',
+        event: '$set',
+        uuid: expect.any(String),
+        properties: {
+          $set: { last_simulator: 'lmu', used_iracing: true, used_lmu: true },
+          $set_once: { first_simulator: 'iracing' },
+        },
+      },
+    ]);
+    expect(await storedUsage()).toEqual({});
+  });
+
+  it('sends nothing and creates no file when no simulator connected', async () => {
+    await start(new Analytics(provider));
+    expect(usageEvents()).toEqual([]);
+    await getSimulatorUsageStore().flush();
+    await expect(fs.access(usageFile())).rejects.toThrow();
+  });
+
+  it('reports a simulator that connected before the startup data went out', async () => {
+    // Already running as irdashies started: its bridge came up before init.
+    const analytics = new Analytics(provider);
+    analytics.recordSimulatorConnected('lmu');
+    await start(analytics);
+    expect(usageEvents()[0].properties).toEqual({
+      $set: { last_simulator: 'lmu', used_lmu: true },
+      $set_once: { first_simulator: 'lmu' },
+    });
+    expect(await storedUsage()).toEqual({});
+  });
+
+  it('keeps a connect that comes in while the report is in flight', async () => {
+    await fs.writeFile(usageFile(), JSON.stringify({ iracing: 1000 }));
+    let acknowledge: (() => void) | undefined;
+    provider.captureConfirmed.mockImplementation((event) =>
+      event.event === '$set'
+        ? new Promise<void>((resolve) => {
+            acknowledge = resolve;
+          })
+        : Promise.resolve()
+    );
+    const analytics = new Analytics(provider);
+    const started = start(analytics);
+    await vi.waitFor(() => expect(acknowledge).toBeDefined());
+
+    analytics.recordSimulatorConnected('iracing');
+    analytics.recordSimulatorConnected('lmu');
+    acknowledge?.();
+    await started;
+
+    expect(usageEvents()[0].properties).toEqual({
+      $set: { last_simulator: 'iracing', used_iracing: true },
+      $set_once: { first_simulator: 'iracing' },
+    });
+    // Both connects stay for the next startup, iRacing's included even though
+    // the report named it.
+    const left = await storedUsage();
+    expect(Object.keys(left).sort()).toEqual(['iracing', 'lmu']);
+    expect(left.iracing).toBeGreaterThan(1000);
+
+    provider.captureConfirmed.mockResolvedValue(undefined);
+    await start(new Analytics(provider));
+    expect(usageEvents()[1].properties?.$set).toEqual({
+      last_simulator: 'lmu',
+      used_iracing: true,
+      used_lmu: true,
+    });
+    expect(await storedUsage()).toEqual({});
+  });
+
+  it('keeps the list for the next startup when PostHog does not acknowledge it', async () => {
+    await fs.writeFile(usageFile(), JSON.stringify({ lmu: 1000 }));
+    provider.captureConfirmed.mockRejectedValue(new Error('offline'));
+    await expect(start(new Analytics(provider))).resolves.toBeUndefined();
+    expect(await getSimulatorUsageStore().read()).toEqual({ lmu: 1000 });
+    expect(loggerStub.warn).toHaveBeenCalledWith(
+      '[Analytics] Could not publish the simulators used'
+    );
+  });
+
+  it('neither stores nor reports while opted out', async () => {
+    vi.mocked(getAnalyticsOptOut).mockReturnValue(true);
+    await fs.writeFile(usageFile(), JSON.stringify({ lmu: 1000 }));
+    const analytics = new Analytics(provider);
+    analytics.recordSimulatorConnected('iracing');
+    await start(analytics);
+    expect(usageEvents()).toEqual([]);
+    expect(await storedUsage()).toEqual({ lmu: 1000 });
+  });
+
+  it('stores nothing without a provider', async () => {
+    const analytics = new Analytics(provider);
+    (analytics as unknown as { provider: AnalyticsProvider | null }).provider =
+      null;
+    analytics.recordSimulatorConnected('iracing');
+    expect(await getSimulatorUsageStore().read()).toEqual({});
   });
 });

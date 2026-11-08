@@ -5,10 +5,12 @@ import { setupReleaseNotesBridge } from './app/bridge/releaseNotesBridge';
 import log from './app/logger';
 import {
   iRacingSDKSetup,
+  getActiveSimulator,
   getCurrentBridge,
   getIsDemoMode,
   getSessionLifecycle,
   onBridgeChanged,
+  onSimulatorConnected,
 } from './app/bridge/iracingSdk/setup';
 import {
   applyDefaultsToAllProfiles,
@@ -59,6 +61,7 @@ import {
   initializeSettingsWindowBounds,
   flushSettingsWindowBoundsOnShutdown,
 } from './app/storage/settingsWindowBounds';
+import { flushSimulatorUsageOnShutdown } from './app/storage/simulatorUsage';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { getHiddenWidgets } from './app/widgetVisibility';
 import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
@@ -150,7 +153,12 @@ if (app.getName() === 'irdashies') {
 const overlayManager = new OverlayManager();
 const analytics = new Analytics();
 const perfRun = getPerfRunConfig();
-analytics.setupLogTransport(overlayManager.getVersion());
+analytics.setupLogTransport(overlayManager.getVersion(), getActiveSimulator);
+// Before any bridge exists, so the first connect is heard even when the sim
+// was already running as irdashies started.
+onSimulatorConnected((simulator) =>
+  analytics.recordSimulatorConnected(simulator)
+);
 
 overlayManager.setupChromiumFlags();
 overlayManager.setupHardwareAcceleration();
@@ -707,6 +715,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
       flushGarage61SearchSessionOnShutdown(),
       flushStorageWritesOnShutdown(),
       flushSettingsWindowBoundsOnShutdown(),
+      flushSimulatorUsageOnShutdown(),
     ]);
   },
   quit: () => app.quit(),

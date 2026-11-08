@@ -3,7 +3,7 @@ import type { EventMessage, IdentifyMessage } from 'posthog-node';
 import { app, screen } from 'electron';
 import os from 'node:os';
 import crypto from 'node:crypto';
-import type { DashboardLayout } from '@irdashies/types';
+import type { ActiveSimulator, DashboardLayout } from '@irdashies/types';
 import { readData, writeData } from './storage/storage';
 import {
   readRadarPoleSideReportHash,
@@ -28,6 +28,8 @@ import {
   readPitLaneAnalyticsCheckpoint,
   writePitLaneAnalyticsCheckpoint,
 } from './storage/pitLaneAnalyticsCheckpoint';
+import { getSimulatorUsageStore } from './storage/simulatorUsage';
+import { buildSimulatorUsageProperties } from './analytics/simulatorUsageReport';
 
 declare const POSTHOG_KEY: string;
 
@@ -103,6 +105,7 @@ export class Analytics {
   private pitLaneCalibrationAttempted = false;
   private pitLaneCalibrationTask: Promise<void> | undefined;
   private radarPoleSideTask: Promise<void> | undefined;
+  private simulatorUsageTask: Promise<void> | undefined;
   private poleSideEvent: { hash: string; uuid: string } | undefined;
   private radarPoleSideTimer: ReturnType<typeof setTimeout> | undefined;
   private watchingRadarPoleSides = false;
@@ -173,7 +176,15 @@ export class Analytics {
     return userId;
   }
 
-  setupLogTransport(version: string): void {
+  /**
+   * Forwards warnings and errors to PostHog. `getSimulator` names the
+   * simulator irdashies is attached to, read for each message, so an error
+   * can be told apart by sim; none while auto-detect probes or in demo mode.
+   */
+  setupLogTransport(
+    version: string,
+    getSimulator: () => ActiveSimulator | undefined = () => undefined
+  ): void {
     if (!this.provider || getAnalyticsOptOut()) return;
 
     // Resolve identity before installing the transport: storage diagnostics
@@ -223,6 +234,7 @@ export class Analytics {
             level: message.level,
             message: text,
             data,
+            simulator: getSimulator() ?? null,
           },
         });
       } catch {
@@ -266,6 +278,10 @@ export class Analytics {
       event: 'app_started',
     });
 
+    // Beside the reports below rather than queued behind them: it is the part
+    // of the startup data that names the simulators, and it is small.
+    this.simulatorUsageTask ??= this.reportSimulatorUsage(userId);
+
     // Startup must not wait for optional filesystem or network work. Keep the
     // caught task available to callers that explicitly need it to settle.
     this.pitLaneCalibrationTask ??= this.capturePitLaneCalibration(
@@ -305,6 +321,50 @@ export class Analytics {
 
   waitForRadarPoleSideUpload(): Promise<void> {
     return this.radarPoleSideTask ?? Promise.resolve();
+  }
+
+  /**
+   * Notes that a simulator connected, for the next startup to report. Stored
+   * rather than sent, so a sim that reconnects all evening costs nothing on
+   * the wire.
+   */
+  recordSimulatorConnected(simulator: ActiveSimulator): void {
+    if (!this.provider || getAnalyticsOptOut()) return;
+    getSimulatorUsageStore().add(simulator);
+  }
+
+  waitForSimulatorUsageReport(): Promise<void> {
+    return this.simulatorUsageTask ?? Promise.resolve();
+  }
+
+  /**
+   * Sends the simulators that connected since the last acknowledged report,
+   * as properties of this installation's person in PostHog, then clears them.
+   * A failed send keeps them for the next startup, and sending them twice does
+   * no harm: the same properties are set again.
+   */
+  private async reportSimulatorUsage(userId: string): Promise<void> {
+    try {
+      if (!this.provider) return;
+      const store = getSimulatorUsageStore();
+      const usage = await store.read();
+      const properties = buildSimulatorUsageProperties(usage);
+      // Consent is checked only when there is something to send, and after
+      // the read: the player may have opted out while the file loaded.
+      if (!properties || getAnalyticsOptOut()) return;
+      await this.provider.captureConfirmed({
+        distinctId: userId,
+        event: '$set',
+        uuid: crypto.randomUUID(),
+        properties,
+      });
+      // Only what was sent. A sim that connected while this was in flight,
+      // such as one already running as irdashies started, moved its time on
+      // and stays for the next report.
+      store.removeReported(usage);
+    } catch {
+      logger.warn('[Analytics] Could not publish the simulators used');
+    }
   }
 
   /**
