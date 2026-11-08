@@ -20,6 +20,18 @@ export default defineWidgetManifest({
     width: 280,
     height: 900,
   },
+  properties: {
+    showLastLap: {
+      type: 'boolean',
+      label: 'Last Lap',
+      description: "Show the focus car's last lap time in its card.",
+    },
+    showBestLap: {
+      type: 'boolean',
+      label: 'Best Lap',
+      description: "Show the focus car's best lap time in its card.",
+    },
+  },
   config: {
     theme: 'imsa',
     logo: '',
@@ -31,6 +43,8 @@ export default defineWidgetManifest({
     pages: {
       names: true,
       gaps: true,
+      lastLap: true,
+      bestLap: true,
       gained: true,
       pits: true,
       tyres: true,
@@ -40,6 +54,8 @@ export default defineWidgetManifest({
     headerClock: 'session',
     pageTransition: 'random',
     showFocusCard: true,
+    showLastLap: true,
+    showBestLap: true,
     phaseScreens: true,
     driverNameFormat: 'surname',
     sessionVisibility: {

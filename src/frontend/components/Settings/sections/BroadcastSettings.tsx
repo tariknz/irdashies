@@ -5,6 +5,7 @@ import { changeMarker } from '../components/ChangedMark';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingToggleRow } from '../components/SettingToggleRow';
+import { SettingProps, settingPropFor } from '../components/SettingProp';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { DriverNamePreview } from '../components/DriverNamePreview';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
@@ -21,6 +22,7 @@ import type {
 } from '@irdashies/types';
 
 const SETTING_ID = 'broadcast';
+const SettingProp = settingPropFor(SETTING_ID);
 
 const defaultConfig = getWidgetDefaultConfig('broadcast');
 
@@ -55,6 +57,16 @@ const PAGE_OPTIONS: {
     label: 'Intervals',
     value: 'gaps',
     description: 'One page per class, with the closest battle under it.',
+  },
+  {
+    label: 'Last Lap',
+    value: 'lastLap',
+    description: 'Last lap time for each driver.',
+  },
+  {
+    label: 'Best Lap',
+    value: 'bestLap',
+    description: 'Personal best lap time for each driver.',
   },
   {
     label: '+/- Start',
@@ -93,7 +105,11 @@ export const BroadcastSettings = () => {
 
   const [settings, setSettings] = useState<BroadcastWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config: { ...defaultConfig, ...savedSettings?.config },
+    config: {
+      ...defaultConfig,
+      ...savedSettings?.config,
+      pages: { ...defaultConfig.pages, ...savedSettings?.config?.pages },
+    },
   });
   const [logoError, setLogoError] = useState('');
 
@@ -339,6 +355,16 @@ export const BroadcastSettings = () => {
                   enabled={config.showFocusCard}
                   onToggle={(v) => handleConfigChange({ showFocusCard: v })}
                 />
+              )}
+              {config.showFocusCard && (
+                <SettingProps
+                  widget={SETTING_ID}
+                  config={config}
+                  onChange={handleConfigChange}
+                >
+                  {mark(['showLastLap'], <SettingProp path="showLastLap" />)}
+                  {mark(['showBestLap'], <SettingProp path="showBestLap" />)}
+                </SettingProps>
               )}
               {mark(
                 ['phaseScreens'],
