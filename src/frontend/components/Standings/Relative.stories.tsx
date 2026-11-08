@@ -6,6 +6,8 @@ import {
   TelemetryDecoratorWithConfig,
   CaptureChannelDecorator,
   CaptureChannels,
+  ChannelSnapshotDecorator,
+  buildCaptureSnapshots,
 } from '@irdashies/storybook';
 import {
   DashboardProvider,
@@ -340,6 +342,56 @@ export default {
 } as Meta<typeof Relative>;
 
 type Story = StoryObj<typeof Relative>;
+
+const averageLapHistory = Array.from({ length: 72 }, (_, idx) => {
+  const pace = 90 + idx * 0.15;
+  return [pace, pace + 0.3, pace - 0.2, pace + 30, pace + 0.1];
+});
+
+export const AverageLapTime: Story = {
+  loaders: [async () => ({ capture: await buildCaptureSnapshots() })],
+  args: { lapsToAverage: 3, excludePitLaps: false },
+  argTypes: {
+    lapsToAverage: { control: { type: 'number', min: 1, max: 100, step: 1 } },
+    excludePitLaps: { control: 'boolean' },
+  },
+  decorators: [
+    (Story, context) =>
+      ChannelSnapshotDecorator({
+        ...context.loaded.capture,
+        'lap-times.snapshot': {
+          lapTimes: averageLapHistory.map((history) => history[0]),
+          lapTimeHistory: averageLapHistory,
+          cleanLapTimeHistory: averageLapHistory.map((history) =>
+            history.filter((_, i) => i !== 3)
+          ),
+          sessionNum: 2,
+          version: 1,
+        },
+      })(Story, context),
+    (Story, context) =>
+      TelemetryDecoratorWithConfig(undefined, {
+        relative: {
+          avgLapTime: {
+            enabled: true,
+            numLaps: (context.args as { lapsToAverage: number }).lapsToAverage,
+            excludePitLaps: (context.args as { excludePitLaps: boolean })
+              .excludePitLaps,
+            timeFormat: 'mixed',
+          },
+          displayOrder: [
+            'position',
+            'carNumber',
+            'driverName',
+            'delta',
+            'avgLapTime',
+          ],
+          headerBar: { enabled: false },
+          footerBar: { enabled: false },
+        },
+      })(Story, context),
+  ],
+};
 
 export const Primary: Story = {
   decorators: [

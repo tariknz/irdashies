@@ -2,6 +2,30 @@ import { describe, it, expect } from 'vitest';
 import { deepMergeConfig, getWidgetDefaultConfig } from './defaultDashboard';
 import { DEFAULT_LAP_TRACE_COLORS, DEFAULT_LAP_TRACE_SOUND } from './lapTrace';
 
+describe('average lap time defaults', () => {
+  it.each(['relative', 'standings'] as const)(
+    'backfills %s without enabling the column or losing the saved order',
+    (widget) => {
+      const defaults = getWidgetDefaultConfig(widget);
+    const merged = deepMergeConfig({ ...defaults }, {
+        displayOrder: ['driverName', 'position'],
+      });
+      expect(merged.avgLapTime).toEqual({
+        enabled: false,
+        numLaps: 5,
+        timeFormat: 'mixed',
+        excludePitLaps: false,
+      });
+      expect(merged.displayOrder).toEqual(
+        expect.arrayContaining(['driverName', 'position', 'avgLapTime'])
+      );
+      expect(
+        (merged.displayOrder as string[]).indexOf('driverName')
+      ).toBeLessThan((merged.displayOrder as string[]).indexOf('position'));
+    }
+  );
+});
+
 describe('deepMergeConfig', () => {
   describe('invalid savedCfg', () => {
     it('returns a copy of defaultCfg when savedCfg is null', () => {

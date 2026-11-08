@@ -1,14 +1,5 @@
-import { numberOptions } from './properties';
+import { numberOptions, timeFormatOptions } from './properties';
 import { defineWidgetManifest } from './types';
-
-const timeFormatOptions = [
-  { value: 'full', label: '1:42.123' },
-  { value: 'mixed', label: '1:42.1' },
-  { value: 'minutes', label: '1:42' },
-  { value: 'seconds-full', label: '42.123' },
-  { value: 'seconds-mixed', label: '42.1' },
-  { value: 'seconds', label: '42' },
-] as const;
 
 export default defineWidgetManifest({
   id: 'standings',
@@ -112,6 +103,7 @@ export default defineWidgetManifest({
       enabled: false,
       numLaps: 5,
       timeFormat: 'mixed',
+      excludePitLaps: false,
     },
     lapCount: {
       enabled: false,
@@ -485,9 +477,20 @@ export default defineWidgetManifest({
       options: numberOptions(1, 3),
     },
     'avgLapTime.numLaps': {
-      type: 'enum',
-      label: 'Rolling Laps',
-      options: numberOptions(3, 10),
+      type: 'number',
+      control: 'input',
+      label: 'Laps to Average',
+      description:
+        'Uses the available laps until the selected count is recorded.',
+      min: 1,
+      max: 100,
+      step: 1,
+    },
+    'avgLapTime.excludePitLaps': {
+      type: 'boolean',
+      label: 'Exclude in-laps and out-laps',
+      description:
+        'Average the most recent eligible laps, skipping laps that include pit road. Opponent incident invalidations are not available in iRacing.',
     },
     'avgLapTime.timeFormat': {
       type: 'enum',

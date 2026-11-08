@@ -117,7 +117,7 @@ const sortableSettings: SortableSetting[] = [
   },
   {
     id: 'avgLapTime',
-    label: 'Avg Lap Time',
+    label: 'Average Lap Time',
     configKey: 'avgLapTime',
     hasSubSetting: true,
   },
@@ -209,6 +209,10 @@ const DisplaySettingsList = ({
                 <>
                   <SettingProp path="avgLapTime.numLaps" variant="compact" />
                   <SettingProp path="avgLapTime.timeFormat" variant="compact" />
+                  <SettingProp
+                    path="avgLapTime.excludePitLaps"
+                    variant="compact"
+                  />
                 </>
               )}
             {setting.hasSubSetting &&
