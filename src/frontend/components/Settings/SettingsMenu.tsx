@@ -151,6 +151,7 @@ export const SettingsMenu = ({
   );
   const overlayPath = useRef(pathname);
   const overlayScroll = useRef<HTMLDivElement>(null);
+  const appScroll = useRef<HTMLElement>(null);
   const overlayScrollPosition = useRef(0);
   const wasAppPage = useRef(appPage);
   useEffect(() => {
@@ -220,53 +221,74 @@ export const SettingsMenu = ({
     }))
     .filter(({ items }) => items.length > 0);
 
+  useLayoutEffect(() => {
+    const scroller = appPage ? appScroll.current : overlayScroll.current;
+    if (!scroller) return;
+    // Fade only the edges with more content, including after filtering or resize.
+    const updateFade = () => {
+      const remaining =
+        scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop;
+      scroller.style.setProperty(
+        '--scroll-fade-top',
+        `${Math.min(12, Math.max(0, scroller.scrollTop))}px`
+      );
+      scroller.style.setProperty(
+        '--scroll-fade-bottom',
+        `${Math.min(12, Math.max(0, remaining))}px`
+      );
+    };
+    updateFade();
+    scroller.addEventListener('scroll', updateFade, { passive: true });
+    const observer =
+      typeof ResizeObserver === 'undefined'
+        ? undefined
+        : new ResizeObserver(updateFade);
+    observer?.observe(scroller);
+    for (const child of scroller.children) observer?.observe(child);
+    return () => {
+      scroller.removeEventListener('scroll', updateFade);
+      observer?.disconnect();
+    };
+  }, [appPage, query, showHidden, visibleItems.length]);
+
   return (
     <nav
       aria-label={appPage ? 'App settings pages' : 'Overlay settings'}
       className="flex w-[232px] shrink-0 flex-col border-r border-slate-700 bg-slate-950 p-3 xl:w-[252px]"
     >
       {appPage && (
-        <>
-          <Link
-            to={returnTo}
-            className="mb-3 flex min-h-9 shrink-0 items-center gap-2 border-b border-slate-700 px-2 pb-3 text-sm text-slate-300 hover:text-white"
-          >
-            <ArrowLeftIcon size={16} aria-hidden="true" />
-            Back to overlays
-          </Link>
-          <section
-            aria-label="App pages"
-            className="min-h-0 flex-1 overflow-y-auto pb-3"
-          >
-            <h2 className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-              App settings
-            </h2>
-            <ul className="space-y-0.5">
-              {generalItems
-                .filter((item) => !previewMode || item.path === '/general')
-                .map((item) => (
-                  <MenuLink
-                    key={item.path}
-                    item={item}
-                    pathname={pathname}
-                    showIcon
-                  />
-                ))}
-            </ul>
-          </section>
-        </>
+        <section
+          ref={appScroll}
+          aria-label="App pages"
+          className="settings-menu-scroll min-h-0 flex-1 overflow-y-auto pb-3"
+        >
+          <h2 className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+            App settings
+          </h2>
+          <ul className="space-y-0.5">
+            {[...generalItems, ...bottomItems]
+              .filter((item) => !previewMode || item.path === '/general')
+              .map((item) => (
+                <MenuLink
+                  key={item.path}
+                  item={item}
+                  pathname={pathname}
+                  showIcon
+                  isNew={
+                    item.path === '/release-notes' &&
+                    !!releaseNotesStatus?.unreadVersion
+                  }
+                />
+              ))}
+          </ul>
+        </section>
       )}
       <div
         hidden={appPage}
         className={appPage ? 'hidden' : 'flex min-h-0 flex-1 flex-col'}
         data-overlay-area
       >
-        <div className="shrink-0 space-y-2 bg-slate-950 px-1 pb-3 pt-3">
-          <div className="flex items-center justify-between px-1">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-              Overlays
-            </h2>
-          </div>
+        <div className="shrink-0 bg-slate-950 px-1 pb-3 pt-3">
           <label className="flex min-h-9 items-center gap-2 rounded-md border border-settings-boundary bg-slate-900 px-2 text-slate-400 focus-within:outline-2 focus-within:outline-offset-3 focus-within:outline-accent-400">
             <MagnifyingGlassIcon size={16} className="shrink-0" />
             <input
@@ -287,7 +309,7 @@ export const SettingsMenu = ({
               overlayScrollPosition.current = event.currentTarget.scrollTop;
           }}
           data-overlay-scroll
-          className="min-h-0 flex-1 overflow-y-auto pr-1 [scrollbar-gutter:stable]"
+          className="settings-menu-scroll min-h-0 flex-1 overflow-y-auto"
         >
           {hiddenCount > 0 && (
             <div className="px-2 pt-2 pb-1">
@@ -337,33 +359,19 @@ export const SettingsMenu = ({
           )}
         </div>
       </div>
-      {!appPage && (
-        <div className="mt-2 shrink-0 border-t border-slate-700 pt-3">
-          <Link
-            to={appTo}
-            className="flex min-h-11 items-center gap-3 rounded-md border border-settings-boundary bg-settings-control px-3 py-2 text-sm font-medium text-slate-200 hover:bg-settings-hover"
-          >
-            <GearIcon size={20} aria-hidden="true" />
-            App settings
-          </Link>
-        </div>
-      )}
-      {appPage && !previewMode && (
-        <ul className="mt-2 flex shrink-0 flex-col gap-0.5 border-t border-slate-700 pt-2">
-          {bottomItems.map((item) => (
-            <MenuLink
-              key={item.path}
-              item={item}
-              pathname={pathname}
-              showIcon
-              isNew={
-                item.path === '/release-notes' &&
-                !!releaseNotesStatus?.unreadVersion
-              }
-            />
-          ))}
-        </ul>
-      )}
+      <div className="shrink-0 pt-1">
+        <Link
+          to={appPage ? returnTo : appTo}
+          className="flex min-h-9 items-center gap-2 rounded-md border-l-2 border-transparent px-2 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white"
+        >
+          {appPage ? (
+            <ArrowLeftIcon size={14} aria-hidden="true" />
+          ) : (
+            <GearIcon size={14} aria-hidden="true" />
+          )}
+          {appPage ? 'Back to overlays' : 'App settings'}
+        </Link>
+      </div>
     </nav>
   );
 };
