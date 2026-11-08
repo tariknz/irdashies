@@ -215,11 +215,10 @@ describe('getWidgetDefaultConfig', () => {
     expect(config.enableLogging).toBe(false);
   });
 
-  it('returns the weather config with layout and humidity fields', () => {
+  it('returns the weather config with the forecast enabled', () => {
     const config = getWidgetDefaultConfig('weather');
-    expect(config.layout).toBe('vertical');
-    expect(config.horizontalMode).toBe('compact');
-    expect(config.humidity.enabled).toBe(true);
+    expect(config.units).toBe('auto');
+    expect(config.forecast.enabled).toBe(true);
   });
 
   it('returns the wind config', () => {
