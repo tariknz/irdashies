@@ -9,9 +9,7 @@ import { resolveSpeedUnit } from '@irdashies/utils/units';
 import { useDeltaSpeed } from './hooks/useDeltaSpeed';
 import { DeltaSpeedBox } from './components/DeltaSpeedBox';
 
-type DeltaSpeedProps = DeltaSpeedConfig & { previewDeltaKph?: number };
-
-export const DeltaSpeed = ({
+export const DeltaSpeedDisplay = ({
   background,
   unit = 'km/h',
   scaleKph = 15,
@@ -23,10 +21,8 @@ export const DeltaSpeed = ({
   showNumber = true,
   showOnlyWhenOnTrack,
   sessionVisibility,
-  previewDeltaKph,
-}: DeltaSpeedProps) => {
-  const measuredDeltaKph = useDeltaSpeed();
-  const deltaKph = previewDeltaKph ?? measuredDeltaKph;
+  deltaKph,
+}: DeltaSpeedConfig & { deltaKph: number | null }) => {
   const isOnTrack = useTrackStateSelector(trackStateSelectors.isOnTrack);
   // 0 = imperial, 1 = metric
   const displayUnits = useTrackStateSelector(trackStateSelectors.displayUnits);
@@ -79,4 +75,9 @@ export const DeltaSpeed = ({
       )}
     </div>
   );
+};
+
+export const DeltaSpeed = (config: DeltaSpeedConfig) => {
+  const deltaKph = useDeltaSpeed();
+  return <DeltaSpeedDisplay {...config} deltaKph={deltaKph} />;
 };

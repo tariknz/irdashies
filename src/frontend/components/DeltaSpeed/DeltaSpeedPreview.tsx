@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { DeltaSpeedConfig } from '@irdashies/types';
-import { DeltaSpeed } from './DeltaSpeed';
+import { DeltaSpeedDisplay } from './DeltaSpeed';
 
 export const DeltaSpeedPreview = (config: DeltaSpeedConfig) => {
   const [delta, setDelta] = useState(4.2);
@@ -12,5 +12,5 @@ export const DeltaSpeedPreview = (config: DeltaSpeedConfig) => {
     }, 100);
     return () => clearInterval(timer);
   }, []);
-  return <DeltaSpeed {...config} previewDeltaKph={delta} />;
+  return <DeltaSpeedDisplay {...config} deltaKph={delta} />;
 };

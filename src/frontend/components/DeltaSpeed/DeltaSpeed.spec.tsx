@@ -111,6 +111,26 @@ describe('DeltaSpeed', () => {
     expect(screen.getByText('km/h')).toBeInTheDocument();
   });
 
+  it('ignores imported delta overrides and keeps using live telemetry', () => {
+    seedAll({ speed: speedForDelta(3), lapDistPct: REF_PCT, isOnTrack: true });
+    const importedConfig = {
+      ...baseConfig,
+      previewDeltaKph: 20,
+      deltaKph: 21,
+    };
+    render(<DeltaSpeed {...importedConfig} />);
+    expect(screen.getByText('+3.0')).toBeInTheDocument();
+    expect(screen.queryByText('+20.0')).not.toBeInTheDocument();
+    expect(screen.queryByText('+21.0')).not.toBeInTheDocument();
+  });
+
+  it('keeps the no-clean-lap state when imported config contains a demo value', () => {
+    seedAll({ speed: 50, lapDistPct: REF_PCT, isOnTrack: true }, false);
+    const importedConfig = { ...baseConfig, previewDeltaKph: 20, deltaKph: 21 };
+    render(<DeltaSpeed {...importedConfig} />);
+    expect(screen.getByText('No clean lap')).toBeInTheDocument();
+  });
+
   it('shows a negative delta when slower', () => {
     seedAll({
       speed: speedForDelta(-6.5),
