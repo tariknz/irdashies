@@ -8,7 +8,6 @@ export interface ReleaseNotesDialogProps {
   state: ReleaseNotesPanelState;
   onClose: () => void;
   onRetry?: () => void;
-  preview?: boolean;
 }
 
 export const ReleaseNotesDialog = ({
@@ -16,7 +15,6 @@ export const ReleaseNotesDialog = ({
   state,
   onClose,
   onRetry,
-  preview,
 }: ReleaseNotesDialogProps) => {
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -41,7 +39,7 @@ export const ReleaseNotesDialog = ({
     >
       <div className="flex items-center justify-between gap-4 border-b border-settings-boundary px-6 py-4">
         <h2 id="release-notes-title" className="text-xl font-bold">
-          {preview ? 'Release notes preview' : `What's new in v${version}`}
+          {`What's new in v${version}`}
         </h2>
         <button
           autoFocus

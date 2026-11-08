@@ -50,6 +50,12 @@ beforeEach(() => {
       simulation: false,
     }),
     getRelease: vi.fn().mockResolvedValue(ready),
+    getReleases: vi.fn().mockResolvedValue({
+      status: 'ready',
+      releases: [releaseNotesFixture(), releaseNotesFixture('2.0.0')],
+      hasMore: false,
+      cached: false,
+    }),
     dismiss: vi.fn().mockResolvedValue(undefined),
     setAutoShow: vi.fn().mockResolvedValue(undefined),
   };
@@ -211,7 +217,7 @@ describe('Settings-only upgrade announcement', () => {
     expect(screen.queryByText("What's new in v2.1.0")).toBeNull();
     expect(bridge.getRelease).not.toHaveBeenCalled();
   });
-  it('keeps preview available in development without acknowledging the installed release', async () => {
+  it('updates the auto-show preference without acknowledging already-read notes', async () => {
     vi.mocked(bridge.getStatus).mockResolvedValue({
       currentVersion: '2.1.0',
       availableVersion: null,
@@ -223,15 +229,12 @@ describe('Settings-only upgrade announcement', () => {
     });
     render(<ReleaseNotesSettings />);
     fireEvent.click(
-      await screen.findByRole('button', { name: 'Preview update dialog' })
-    );
-    expect(screen.getByText('Release notes preview')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
-    expect(bridge.dismiss).not.toHaveBeenCalled();
-    fireEvent.click(
-      screen.getByRole('checkbox', { name: 'Show release notes after updates' })
+      await screen.findByRole('checkbox', {
+        name: 'Show release notes after updates',
+      })
     );
     await waitFor(() => expect(bridge.setAutoShow).toHaveBeenCalledWith(false));
+    expect(bridge.dismiss).not.toHaveBeenCalled();
   });
 });
 
