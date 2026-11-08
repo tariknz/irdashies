@@ -912,10 +912,7 @@ describe('Analytics startup pit lane calibration', () => {
 
 describe('Analytics simulator usage', () => {
   let provider: ReturnType<typeof makeProvider>;
-  const usageEvents = () =>
-    provider.captureConfirmed.mock.calls
-      .map(([event]) => event)
-      .filter((event) => event.event === '$set');
+  const identified = () => provider.identify.mock.calls[0]?.[0].properties;
   const usageFile = () => path.join(userDataPath.value, 'simulator-usage.json');
   const storedUsage = async () => {
     await getSimulatorUsageStore().flush();
@@ -924,7 +921,6 @@ describe('Analytics simulator usage', () => {
 
   const start = async (analytics: Analytics): Promise<void> => {
     await analytics.init('2.0.0', { widgets: [] });
-    await analytics.waitForSimulatorUsageReport();
     await analytics.waitForCalibrationUpload();
     await analytics.waitForRadarPoleSideUpload();
   };
@@ -947,84 +943,87 @@ describe('Analytics simulator usage', () => {
     await fs.rm(userDataPath.value, { recursive: true, force: true });
   });
 
-  it('stores a connect for the next startup instead of sending it', async () => {
+  it('stores a connect for the next launch instead of sending it', async () => {
     new Analytics(provider).recordSimulatorConnected('lmu');
     expect(provider.capture).not.toHaveBeenCalled();
-    expect(provider.captureConfirmed).not.toHaveBeenCalled();
+    expect(provider.identify).not.toHaveBeenCalled();
     expect(Object.keys(await storedUsage())).toEqual(['lmu']);
   });
 
-  it('reports the simulators used at startup as person properties, then clears them', async () => {
+  it('sends the simulators used with the startup identify, then clears them', async () => {
     await fs.writeFile(
       usageFile(),
       JSON.stringify({ iracing: 1000, lmu: 2000 })
     );
     await start(new Analytics(provider));
-    expect(usageEvents()).toEqual([
-      {
-        distinctId: 'test-installation',
-        event: '$set',
-        uuid: expect.any(String),
-        properties: {
-          $set: { last_simulator: 'lmu', used_iracing: true, used_lmu: true },
-          $set_once: { first_simulator: 'iracing' },
-        },
-      },
-    ]);
+    expect(provider.identify).toHaveBeenCalledExactlyOnceWith({
+      distinctId: 'test-installation',
+      disableGeoip: false,
+      properties: expect.objectContaining({
+        version: '2.0.0',
+        dashboard: { widgets: [] },
+        last_simulator: 'lmu',
+        used_iracing: true,
+        used_lmu: true,
+        $set_once: { first_simulator: 'iracing' },
+      }),
+    });
     expect(await storedUsage()).toEqual({});
   });
 
-  it('sends nothing and creates no file when no simulator connected', async () => {
+  it('identifies as before, and creates no file, when no simulator connected', async () => {
     await start(new Analytics(provider));
-    expect(usageEvents()).toEqual([]);
+    const properties = identified();
+    expect(properties).toMatchObject({ version: '2.0.0' });
+    expect(properties).not.toHaveProperty('last_simulator');
+    expect(properties).not.toHaveProperty('$set_once');
     await getSimulatorUsageStore().flush();
     await expect(fs.access(usageFile())).rejects.toThrow();
   });
 
-  it('reports a simulator that connected before the startup data went out', async () => {
-    // Already running as irdashies started: its bridge came up before init.
+  it('sends a simulator that connected while the stored list was loading', async () => {
+    // Already running as irdashies started: its bridge reports it before the
+    // file has been read.
+    await fs.writeFile(usageFile(), JSON.stringify({ iracing: 1000 }));
     const analytics = new Analytics(provider);
     analytics.recordSimulatorConnected('lmu');
     await start(analytics);
-    expect(usageEvents()[0].properties).toEqual({
-      $set: { last_simulator: 'lmu', used_lmu: true },
-      $set_once: { first_simulator: 'lmu' },
+    expect(identified()).toMatchObject({
+      last_simulator: 'lmu',
+      used_iracing: true,
+      used_lmu: true,
+      $set_once: { first_simulator: 'iracing' },
     });
     expect(await storedUsage()).toEqual({});
   });
 
-  it('keeps a connect that comes in while the report is in flight', async () => {
+  it('keeps a connect that lands after the list was read', async () => {
     await fs.writeFile(usageFile(), JSON.stringify({ iracing: 1000 }));
-    let acknowledge: (() => void) | undefined;
-    provider.captureConfirmed.mockImplementation((event) =>
-      event.event === '$set'
-        ? new Promise<void>((resolve) => {
-            acknowledge = resolve;
-          })
-        : Promise.resolve()
-    );
-    const analytics = new Analytics(provider);
-    const started = start(analytics);
-    await vi.waitFor(() => expect(acknowledge).toBeDefined());
-
-    analytics.recordSimulatorConnected('iracing');
-    analytics.recordSimulatorConnected('lmu');
-    acknowledge?.();
-    await started;
-
-    expect(usageEvents()[0].properties).toEqual({
-      $set: { last_simulator: 'iracing', used_iracing: true },
-      $set_once: { first_simulator: 'iracing' },
+    const store = getSimulatorUsageStore();
+    const read = store.read.bind(store);
+    vi.spyOn(store, 'read').mockImplementationOnce(async () => {
+      const usage = await read();
+      // Between the read and the identify going out.
+      store.add('iracing');
+      store.add('lmu');
+      return usage;
     });
-    // Both connects stay for the next startup, iRacing's included even though
-    // the report named it.
+    await start(new Analytics(provider));
+
+    expect(identified()).toMatchObject({
+      last_simulator: 'iracing',
+      used_iracing: true,
+    });
+    expect(identified()).not.toHaveProperty('used_lmu');
+    // Both stay for the next launch, iRacing's included even though this
+    // identify named it.
     const left = await storedUsage();
     expect(Object.keys(left).sort()).toEqual(['iracing', 'lmu']);
     expect(left.iracing).toBeGreaterThan(1000);
 
-    provider.captureConfirmed.mockResolvedValue(undefined);
+    provider.identify.mockClear();
     await start(new Analytics(provider));
-    expect(usageEvents()[1].properties?.$set).toEqual({
+    expect(identified()).toMatchObject({
       last_simulator: 'lmu',
       used_iracing: true,
       used_lmu: true,
@@ -1032,23 +1031,13 @@ describe('Analytics simulator usage', () => {
     expect(await storedUsage()).toEqual({});
   });
 
-  it('keeps the list for the next startup when PostHog does not acknowledge it', async () => {
-    await fs.writeFile(usageFile(), JSON.stringify({ lmu: 1000 }));
-    provider.captureConfirmed.mockRejectedValue(new Error('offline'));
-    await expect(start(new Analytics(provider))).resolves.toBeUndefined();
-    expect(await getSimulatorUsageStore().read()).toEqual({ lmu: 1000 });
-    expect(loggerStub.warn).toHaveBeenCalledWith(
-      '[Analytics] Could not publish the simulators used'
-    );
-  });
-
-  it('neither stores nor reports while opted out', async () => {
+  it('neither stores nor sends while opted out', async () => {
     vi.mocked(getAnalyticsOptOut).mockReturnValue(true);
     await fs.writeFile(usageFile(), JSON.stringify({ lmu: 1000 }));
     const analytics = new Analytics(provider);
     analytics.recordSimulatorConnected('iracing');
     await start(analytics);
-    expect(usageEvents()).toEqual([]);
+    expect(identified()).not.toHaveProperty('used_lmu');
     expect(await storedUsage()).toEqual({ lmu: 1000 });
   });
 

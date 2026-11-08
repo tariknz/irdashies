@@ -28,8 +28,14 @@ import {
   readPitLaneAnalyticsCheckpoint,
   writePitLaneAnalyticsCheckpoint,
 } from './storage/pitLaneAnalyticsCheckpoint';
-import { getSimulatorUsageStore } from './storage/simulatorUsage';
-import { buildSimulatorUsageProperties } from './analytics/simulatorUsageReport';
+import {
+  getSimulatorUsageStore,
+  type SimulatorUsage,
+} from './storage/simulatorUsage';
+import {
+  buildSimulatorUsageProperties,
+  type SimulatorUsageProperties,
+} from './analytics/simulatorUsageReport';
 
 declare const POSTHOG_KEY: string;
 
@@ -105,7 +111,6 @@ export class Analytics {
   private pitLaneCalibrationAttempted = false;
   private pitLaneCalibrationTask: Promise<void> | undefined;
   private radarPoleSideTask: Promise<void> | undefined;
-  private simulatorUsageTask: Promise<void> | undefined;
   private poleSideEvent: { hash: string; uuid: string } | undefined;
   private radarPoleSideTimer: ReturnType<typeof setTimeout> | undefined;
   private watchingRadarPoleSides = false;
@@ -255,6 +260,7 @@ export class Analytics {
     const cpus = os.cpus();
     const cpuName = cpus.length > 0 ? cpus[0].model : undefined;
     const userId = this.getOrCreateUserId();
+    const simulatorUsage = await this.readSimulatorUsage();
 
     this.identify({
       distinctId: userId,
@@ -271,16 +277,21 @@ export class Analytics {
         cpu: cpuName,
         version,
         dashboard,
+        ...simulatorUsage?.properties.$set,
+        ...(simulatorUsage && {
+          $set_once: simulatorUsage.properties.$set_once,
+        }),
       },
     });
+    // Not acknowledged, so cleared as soon as it is queued: only what was
+    // read, so a sim that connected since then stays for the next launch.
+    if (simulatorUsage) {
+      getSimulatorUsageStore().removeReported(simulatorUsage.usage);
+    }
 
     this.capture({
       event: 'app_started',
     });
-
-    // Beside the reports below rather than queued behind them: it is the part
-    // of the startup data that names the simulators, and it is small.
-    this.simulatorUsageTask ??= this.reportSimulatorUsage(userId);
 
     // Startup must not wait for optional filesystem or network work. Keep the
     // caught task available to callers that explicitly need it to settle.
@@ -333,37 +344,27 @@ export class Analytics {
     getSimulatorUsageStore().add(simulator);
   }
 
-  waitForSimulatorUsageReport(): Promise<void> {
-    return this.simulatorUsageTask ?? Promise.resolve();
-  }
-
   /**
-   * Sends the simulators that connected since the last acknowledged report,
-   * as properties of this installation's person in PostHog, then clears them.
-   * A failed send keeps them for the next startup, and sending them twice does
-   * no harm: the same properties are set again.
+   * The simulators that connected since the last launch, as person
+   * properties for the startup identify, with the list they came from so it
+   * can be cleared. Undefined when there is nothing to send.
    */
-  private async reportSimulatorUsage(userId: string): Promise<void> {
+  private async readSimulatorUsage(): Promise<
+    { usage: SimulatorUsage; properties: SimulatorUsageProperties } | undefined
+  > {
+    if (!this.provider) return undefined;
     try {
-      if (!this.provider) return;
-      const store = getSimulatorUsageStore();
-      const usage = await store.read();
+      // Waits for the stored list to load. A connect noted meanwhile, such as
+      // the sim already running as irdashies started, is merged into it.
+      const usage = await getSimulatorUsageStore().read();
       const properties = buildSimulatorUsageProperties(usage);
       // Consent is checked only when there is something to send, and after
       // the read: the player may have opted out while the file loaded.
-      if (!properties || getAnalyticsOptOut()) return;
-      await this.provider.captureConfirmed({
-        distinctId: userId,
-        event: '$set',
-        uuid: crypto.randomUUID(),
-        properties,
-      });
-      // Only what was sent. A sim that connected while this was in flight,
-      // such as one already running as irdashies started, moved its time on
-      // and stays for the next report.
-      store.removeReported(usage);
+      if (!properties || getAnalyticsOptOut()) return undefined;
+      return { usage, properties };
     } catch {
-      logger.warn('[Analytics] Could not publish the simulators used');
+      logger.warn('[Analytics] Could not read the simulators used');
+      return undefined;
     }
   }
 
