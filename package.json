@@ -54,9 +54,7 @@
   },
   "devDependencies": {
     "@electron-forge/cli": "^8.0.1",
-    "@electron-forge/maker-deb": "^8.0.1",
     "@electron-forge/maker-dmg": "^8.0.1",
-    "@electron-forge/maker-rpm": "^8.0.1",
     "@electron-forge/maker-squirrel": "^8.0.1",
     "@electron-forge/maker-zip": "^8.0.1",
     "@electron-forge/plugin-auto-unpack-natives": "^8.0.1",
@@ -137,6 +135,8 @@
   },
   "overrides": {
     "yauzl": "^3.3.1",
-    "@electron/rebuild": "^4"
+    "@electron/rebuild": "^4",
+    "glob@>=9 <14.0.2": "^14.0.4",
+    "minimatch@>=7 <11.0.1": "^11.0.5"
   }
 }
