@@ -1,7 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import { startTransition, Suspense, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defaultDashboard, type Session } from '@irdashies/types';
 import { WidgetPreview } from './WidgetPreview';
+import { useWidgetPreviewSession } from './useWidgetPreviewSession';
 
 const save = vi.fn();
 const toggleDemo = vi.fn();
@@ -41,6 +43,61 @@ afterEach(() => {
 });
 
 describe('settings widget preview', () => {
+  it('initializes from committed configuration when a newer render suspends', async () => {
+    let resolveSession!: (value: Session) => void;
+    connect.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSession = resolve;
+      })
+    );
+    const pending = new Promise<never>(() => undefined);
+    function Preview({ suspended }: { suspended: boolean }) {
+      const preview = useWidgetPreviewSession(
+        'input',
+        suspended ? { ...defaultDashboard, widgets: [] } : defaultDashboard
+      );
+      if (suspended) throw pending;
+      return <iframe title="Committed preview" ref={preview.ref} />;
+    }
+    function Host() {
+      const [suspended, setSuspended] = useState(false);
+      return (
+        <>
+          <button onClick={() => startTransition(() => setSuspended(true))}>
+            Suspend update
+          </button>
+          <Suspense fallback={<p>Suspended</p>}>
+            <Preview suspended={suspended} />
+          </Suspense>
+        </>
+      );
+    }
+    const { unmount } = render(<Host />);
+    const frame = screen.getByTitle('Committed preview') as HTMLIFrameElement;
+    const contentWindow = frame.contentWindow;
+    if (!contentWindow) throw new Error('Expected a preview frame window');
+    const post = vi.spyOn(contentWindow, 'postMessage');
+    act(() =>
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: { type: 'preview:ready' },
+          source: frame.contentWindow,
+        })
+      )
+    );
+    await act(async () => fireEvent.click(screen.getByText('Suspend update')));
+    expect(screen.queryByText('Suspended')).toBeNull();
+    await act(async () => resolveSession(session));
+    const init = post.mock.calls
+      .map(([message]) => message)
+      .find((message) => message.type === 'preview:init');
+    expect(
+      init?.config.dashboard === defaultDashboard,
+      'preview:init must use the committed dashboard'
+    ).toBe(true);
+    unmount();
+  });
+
   it('keeps the initial iframe paint hidden until its document styles have loaded', () => {
     render(<WidgetPreview widgetId="input" />);
     const frame = screen.getByTitle('Input Traces demo');

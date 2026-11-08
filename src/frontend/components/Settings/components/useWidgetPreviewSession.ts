@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useDashboard } from '@irdashies/context';
 import type {
   ChannelName,
@@ -26,7 +32,9 @@ export function useWidgetPreviewSession(
   const [error, setError] = useState('');
   const renderFrame = playing && visible && !!bridge && !error;
   const latest = useRef({ widgetId, dashboard, dashboardBridge });
-  latest.current = { widgetId, dashboard, dashboardBridge };
+  useLayoutEffect(() => {
+    latest.current = { widgetId, dashboard, dashboardBridge };
+  }, [widgetId, dashboard, dashboardBridge]);
   const ref = useCallback((element: HTMLIFrameElement | null) => {
     setLoaded(false);
     setReady(false);
