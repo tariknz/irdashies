@@ -79,7 +79,7 @@ const overlayManager = {
 
 const realPlatform = process.platform;
 
-describe('onSimulatorConnected', () => {
+describe('onConnectedSimulatorChanged', () => {
   beforeEach(() => {
     Object.defineProperty(process, 'platform', { value: 'win32' });
     vi.resetModules();
@@ -97,17 +97,19 @@ describe('onSimulatorConnected', () => {
 
   it('reports a simulator that was already running as irdashies started', async () => {
     bridges.running.iracing = true;
-    const { iRacingSDKSetup, onSimulatorConnected } = await import('./setup');
+    const { iRacingSDKSetup, onConnectedSimulatorChanged } =
+      await import('./setup');
     const connected = vi.fn();
-    onSimulatorConnected(connected);
+    onConnectedSimulatorChanged(connected);
     await iRacingSDKSetup(overlayManager);
     expect(connected.mock.calls).toEqual([['iracing']]);
   });
 
-  it('reports each connect once, however often the state repeats', async () => {
-    const { iRacingSDKSetup, onSimulatorConnected } = await import('./setup');
+  it('reports each connect and disconnect once, however often the state repeats', async () => {
+    const { iRacingSDKSetup, onConnectedSimulatorChanged } =
+      await import('./setup');
     const connected = vi.fn();
-    onSimulatorConnected(connected);
+    onConnectedSimulatorChanged(connected);
     await iRacingSDKSetup(overlayManager);
     expect(connected).not.toHaveBeenCalled();
 
@@ -115,60 +117,68 @@ describe('onSimulatorConnected', () => {
     setRunning('iracing', true);
     setRunning('iracing', false);
     setRunning('iracing', true);
-    expect(connected.mock.calls).toEqual([['iracing'], ['iracing']]);
+    expect(connected.mock.calls).toEqual([
+      ['iracing'],
+      [undefined],
+      ['iracing'],
+    ]);
   });
 
   it('tells a late subscriber about a simulator that is connected now', async () => {
     bridges.running.iracing = true;
-    const { iRacingSDKSetup, onSimulatorConnected } = await import('./setup');
+    const { iRacingSDKSetup, onConnectedSimulatorChanged } =
+      await import('./setup');
     await iRacingSDKSetup(overlayManager);
 
     const late = vi.fn();
-    onSimulatorConnected(late);
+    onConnectedSimulatorChanged(late);
     expect(late.mock.calls).toEqual([['iracing']]);
 
     setRunning('iracing', false);
     const afterDisconnect = vi.fn();
-    onSimulatorConnected(afterDisconnect);
+    onConnectedSimulatorChanged(afterDisconnect);
     expect(afterDisconnect).not.toHaveBeenCalled();
   });
 
   it('follows the new source when a profile moves it, and lets go of the old one', async () => {
     bridges.running = { iracing: true, lmu: true };
-    const { iRacingSDKSetup, onSimulatorConnected } = await import('./setup');
+    const { iRacingSDKSetup, onConnectedSimulatorChanged } =
+      await import('./setup');
     const { emitDashboardUpdated } =
       await import('../../storage/dashboardEvents');
     const connected = vi.fn();
-    onSimulatorConnected(connected);
+    onConnectedSimulatorChanged(connected);
     await iRacingSDKSetup(overlayManager);
 
     storage.profileId = 'b';
     emitDashboardUpdated({} as never);
     await vi.waitFor(() =>
-      expect(connected.mock.calls).toEqual([['iracing'], ['lmu']])
+      expect(connected.mock.calls).toEqual([['iracing'], [undefined], ['lmu']])
     );
 
-    // The replaced bridge reconnecting is not LMU connecting again.
+    // The replaced bridge stopping and starting again says nothing about LMU.
     setRunning('iracing', false);
     setRunning('iracing', true);
-    expect(connected.mock.calls).toEqual([['iracing'], ['lmu']]);
+    expect(connected.mock.calls).toEqual([['iracing'], [undefined], ['lmu']]);
   });
 
   it('never counts a tape', async () => {
     vi.stubEnv('IRDASHIES_LMU_REPLAY', 'session.lmudt');
     bridges.running.lmu = true;
-    const { iRacingSDKSetup, onSimulatorConnected } = await import('./setup');
+    const { iRacingSDKSetup, onConnectedSimulatorChanged } =
+      await import('./setup');
     const connected = vi.fn();
-    onSimulatorConnected(connected);
+    onConnectedSimulatorChanged(connected);
     await iRacingSDKSetup(overlayManager);
     expect(connected).not.toHaveBeenCalled();
   });
 
-  it('never counts demo mode, and forgets the sim it replaced', async () => {
+  it('never counts demo mode, and ends the connection it replaced', async () => {
     bridges.running = { iracing: true, demo: true };
-    const { iRacingSDKSetup, onSimulatorConnected } = await import('./setup');
+    const { iRacingSDKSetup, onConnectedSimulatorChanged } =
+      await import('./setup');
     const connected = vi.fn();
-    onSimulatorConnected(connected);
+    onConnectedSimulatorChanged(connected);
     await iRacingSDKSetup(overlayManager);
 
     const toggleDemoMode = ipcMain.on.mock.calls.find(
@@ -177,8 +187,8 @@ describe('onSimulatorConnected', () => {
     await toggleDemoMode({}, true);
 
     const late = vi.fn();
-    onSimulatorConnected(late);
+    onConnectedSimulatorChanged(late);
     expect(late).not.toHaveBeenCalled();
-    expect(connected.mock.calls).toEqual([['iracing']]);
+    expect(connected.mock.calls).toEqual([['iracing'], [undefined]]);
   });
 });

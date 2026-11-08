@@ -125,9 +125,9 @@ export const AboutSettings = () => {
                   <strong className="text-slate-300">Simulators used</strong>
                   <br />
                   Which simulators irDashies connects to, such as iRacing or Le
-                  Mans Ultimate, are sent at the next startup, and the simulator
-                  in use is included with error reports. This helps us
-                  prioritise work and fixes for each simulator.
+                  Mans Ultimate, and for how long, are sent at the next startup,
+                  and the simulator in use is included with error reports. This
+                  helps us prioritise work and fixes for each simulator.
                 </li>
                 <li>
                   <strong className="text-slate-300">System information</strong>

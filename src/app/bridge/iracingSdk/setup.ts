@@ -44,8 +44,8 @@ const onSimulatorChangedCallbacks = new Set<
 let connectedSimulator: ActiveSimulator | undefined;
 /** Stops following the current bridge's running state. */
 let unwatchConnection: (() => void) | undefined;
-const onSimulatorConnectedCallbacks = new Set<
-  (simulator: ActiveSimulator) => void
+const onConnectedSimulatorCallbacks = new Set<
+  (simulator: ActiveSimulator | undefined) => void
 >();
 
 // Singleton lifecycle — created once; survives bridge restarts so subscribers
@@ -108,58 +108,63 @@ export function onActiveSimulatorChanged(
 }
 
 /**
- * Subscribes to simulators connecting: each time the attached simulator's
- * bridge goes from not running to running. Demo mode and tapes never count. A
- * simulator already running when this is called is reported at once, so a
- * late subscriber still hears about a sim that was up before irdashies.
+ * Subscribes to the connected simulator: called with it each time the
+ * attached simulator's bridge starts running, and with undefined when that
+ * connection ends -- the sim stops, or the bridge is replaced. Demo mode and
+ * tapes never count. A simulator already connected when this is called is
+ * reported at once, so a late subscriber still hears about a sim that was up
+ * before irdashies.
  */
-export function onSimulatorConnected(
-  callback: (simulator: ActiveSimulator) => void
+export function onConnectedSimulatorChanged(
+  callback: (simulator: ActiveSimulator | undefined) => void
 ) {
-  onSimulatorConnectedCallbacks.add(callback);
+  onConnectedSimulatorCallbacks.add(callback);
   if (connectedSimulator) {
-    notifySimulatorConnected(callback, connectedSimulator);
+    notifyConnectedSimulator(callback, connectedSimulator);
   }
-  return () => onSimulatorConnectedCallbacks.delete(callback);
+  return () => onConnectedSimulatorCallbacks.delete(callback);
 }
 
-function notifySimulatorConnected(
-  callback: (simulator: ActiveSimulator) => void,
-  simulator: ActiveSimulator
+function notifyConnectedSimulator(
+  callback: (simulator: ActiveSimulator | undefined) => void,
+  simulator: ActiveSimulator | undefined
 ) {
   try {
     callback(simulator);
   } catch (err) {
-    logger.error('Error in simulator connected callback:', err);
+    logger.error('Error in connected simulator callback:', err);
   }
 }
 
+function setConnectedSimulator(simulator: ActiveSimulator | undefined) {
+  if (simulator === connectedSimulator) return;
+  connectedSimulator = simulator;
+  onConnectedSimulatorCallbacks.forEach((callback) =>
+    notifyConnectedSimulator(callback, simulator)
+  );
+}
+
 /**
- * Follows a new bridge's running state for onSimulatorConnected. Every bridge
- * replays its current state to a new subscriber, so a sim that was already
- * running before the bridge was handed over still counts.
+ * Follows a new bridge's running state for onConnectedSimulatorChanged.
+ * Every bridge replays its current state to a new subscriber, so a sim that
+ * was already running before the bridge was handed over still counts.
  */
 function watchConnection(bridge: IrSdkSourceBridge, isRealSimulator: boolean) {
   unwatchCurrentConnection();
   if (!isRealSimulator) return;
-  const unsubscribe = bridge.onRunningState((running) => {
+  const unsubscribe = bridge.onRunningState((running) =>
     // Read at each change: auto-detect can hand over to another sim, which is
     // named before its bridge reports running.
-    const simulator = running ? activeSimulator : undefined;
-    if (simulator === connectedSimulator) return;
-    connectedSimulator = simulator;
-    if (!simulator) return;
-    onSimulatorConnectedCallbacks.forEach((callback) =>
-      notifySimulatorConnected(callback, simulator)
-    );
-  });
+    setConnectedSimulator(running ? activeSimulator : undefined)
+  );
   unwatchConnection = () => unsubscribe?.();
 }
 
+/** Lets go of the current bridge, ending any connection it reported. */
 function unwatchCurrentConnection() {
   unwatchConnection?.();
   unwatchConnection = undefined;
-  connectedSimulator = undefined;
+  setConnectedSimulator(undefined);
 }
 
 export function onBridgeChanged(callback: (bridge: IrSdkSourceBridge) => void) {

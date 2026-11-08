@@ -335,13 +335,16 @@ export class Analytics {
   }
 
   /**
-   * Notes that a simulator connected, for the next startup to report. Stored
-   * rather than sent, so a sim that reconnects all evening costs nothing on
-   * the wire.
+   * Notes the simulator connected now, or none, for the next startup to
+   * report which sims were used and for how long. Stored rather than sent, so
+   * a sim that reconnects all evening costs nothing on the wire.
    */
-  recordSimulatorConnected(simulator: ActiveSimulator): void {
-    if (!this.provider || getAnalyticsOptOut()) return;
-    getSimulatorUsageStore().add(simulator);
+  setConnectedSimulator(simulator: ActiveSimulator | undefined): void {
+    if (!this.provider) return;
+    // While opted out a connection only ends, so its clock stops; none starts.
+    getSimulatorUsageStore().setConnected(
+      getAnalyticsOptOut() ? undefined : simulator
+    );
   }
 
   /**

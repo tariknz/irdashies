@@ -10,7 +10,7 @@ import {
   getIsDemoMode,
   getSessionLifecycle,
   onBridgeChanged,
-  onSimulatorConnected,
+  onConnectedSimulatorChanged,
 } from './app/bridge/iracingSdk/setup';
 import {
   applyDefaultsToAllProfiles,
@@ -156,8 +156,8 @@ const perfRun = getPerfRunConfig();
 analytics.setupLogTransport(overlayManager.getVersion(), getActiveSimulator);
 // Before any bridge exists, so the first connect is heard even when the sim
 // was already running as irdashies started.
-onSimulatorConnected((simulator) =>
-  analytics.recordSimulatorConnected(simulator)
+onConnectedSimulatorChanged((simulator) =>
+  analytics.setConnectedSimulator(simulator)
 );
 
 overlayManager.setupChromiumFlags();

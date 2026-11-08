@@ -914,6 +914,8 @@ describe('Analytics simulator usage', () => {
   let provider: ReturnType<typeof makeProvider>;
   const identified = () => provider.identify.mock.calls[0]?.[0].properties;
   const usageFile = () => path.join(userDataPath.value, 'simulator-usage.json');
+  const writeUsage = (value: unknown) =>
+    fs.writeFile(usageFile(), JSON.stringify(value));
   const storedUsage = async () => {
     await getSimulatorUsageStore().flush();
     return JSON.parse(await fs.readFile(usageFile(), 'utf8'));
@@ -936,6 +938,7 @@ describe('Analytics simulator usage', () => {
   });
 
   afterEach(async () => {
+    getSimulatorUsageStore().setConnected(undefined);
     await getSimulatorUsageStore().flush();
     vi.restoreAllMocks();
     vi.mocked(readData).mockReset();
@@ -943,18 +946,22 @@ describe('Analytics simulator usage', () => {
     await fs.rm(userDataPath.value, { recursive: true, force: true });
   });
 
-  it('stores a connect for the next launch instead of sending it', async () => {
-    new Analytics(provider).recordSimulatorConnected('lmu');
+  it('stores a connection for the next launch instead of sending it', async () => {
+    const analytics = new Analytics(provider);
+    analytics.setConnectedSimulator('lmu');
+    analytics.setConnectedSimulator(undefined);
     expect(provider.capture).not.toHaveBeenCalled();
     expect(provider.identify).not.toHaveBeenCalled();
-    expect(Object.keys(await storedUsage())).toEqual(['lmu']);
+    const stored = await storedUsage();
+    expect(Object.keys(stored)).toEqual(['lmu']);
+    expect(stored.lmu.ms).toBeGreaterThanOrEqual(0);
   });
 
-  it('sends the simulators used with the startup identify, then clears them', async () => {
-    await fs.writeFile(
-      usageFile(),
-      JSON.stringify({ iracing: 1000, lmu: 2000 })
-    );
+  it('sends the simulators used and for how long with the startup identify, then clears them', async () => {
+    await writeUsage({
+      iracing: { at: 1000, ms: 5_400_000 },
+      lmu: { at: 2000, ms: 90_400 },
+    });
     await start(new Analytics(provider));
     expect(provider.identify).toHaveBeenCalledExactlyOnceWith({
       distinctId: 'test-installation',
@@ -965,13 +972,15 @@ describe('Analytics simulator usage', () => {
         last_simulator: 'lmu',
         used_iracing: true,
         used_lmu: true,
+        iracing_connected_seconds: 5400,
+        lmu_connected_seconds: 90,
         $set_once: { first_simulator: 'iracing' },
       }),
     });
     expect(await storedUsage()).toEqual({});
   });
 
-  it('identifies as before, and creates no file, when no simulator connected', async () => {
+  it('identifies as before, and creates no file, when no simulator was used', async () => {
     await start(new Analytics(provider));
     const properties = identified();
     expect(properties).toMatchObject({ version: '2.0.0' });
@@ -981,31 +990,34 @@ describe('Analytics simulator usage', () => {
     await expect(fs.access(usageFile())).rejects.toThrow();
   });
 
-  it('sends a simulator that connected while the stored list was loading', async () => {
-    // Already running as irdashies started: its bridge reports it before the
-    // file has been read.
-    await fs.writeFile(usageFile(), JSON.stringify({ iracing: 1000 }));
+  it('sends a simulator already running at startup, and keeps counting it', async () => {
+    // Its bridge reports it before the file has been read.
+    await writeUsage({ iracing: { at: 1000, ms: 60_000 } });
     const analytics = new Analytics(provider);
-    analytics.recordSimulatorConnected('lmu');
+    analytics.setConnectedSimulator('lmu');
     await start(analytics);
     expect(identified()).toMatchObject({
       last_simulator: 'lmu',
       used_iracing: true,
       used_lmu: true,
+      iracing_connected_seconds: 60,
+      lmu_connected_seconds: 0,
       $set_once: { first_simulator: 'iracing' },
     });
-    expect(await storedUsage()).toEqual({});
+    // Still connected: LMU stays, to carry the rest of this connection.
+    expect(Object.keys(await storedUsage())).toEqual(['lmu']);
   });
 
-  it('keeps a connect that lands after the list was read', async () => {
-    await fs.writeFile(usageFile(), JSON.stringify({ iracing: 1000 }));
+  it('keeps what lands after the list was read', async () => {
+    await writeUsage({ iracing: { at: 1000, ms: 60_000 } });
     const store = getSimulatorUsageStore();
     const read = store.read.bind(store);
-    vi.spyOn(store, 'read').mockImplementationOnce(async () => {
-      const usage = await read();
+    vi.spyOn(store, 'read').mockImplementationOnce(async (now) => {
+      const usage = await read(now);
       // Between the read and the identify going out.
-      store.add('iracing');
-      store.add('lmu');
+      store.setConnected('iracing');
+      store.setConnected('lmu');
+      store.setConnected(undefined);
       return usage;
     });
     await start(new Analytics(provider));
@@ -1013,13 +1025,14 @@ describe('Analytics simulator usage', () => {
     expect(identified()).toMatchObject({
       last_simulator: 'iracing',
       used_iracing: true,
+      iracing_connected_seconds: 60,
     });
     expect(identified()).not.toHaveProperty('used_lmu');
     // Both stay for the next launch, iRacing's included even though this
     // identify named it.
     const left = await storedUsage();
     expect(Object.keys(left).sort()).toEqual(['iracing', 'lmu']);
-    expect(left.iracing).toBeGreaterThan(1000);
+    expect(left.iracing.at).toBeGreaterThan(1000);
 
     provider.identify.mockClear();
     await start(new Analytics(provider));
@@ -1031,21 +1044,27 @@ describe('Analytics simulator usage', () => {
     expect(await storedUsage()).toEqual({});
   });
 
-  it('neither stores nor sends while opted out', async () => {
-    vi.mocked(getAnalyticsOptOut).mockReturnValue(true);
-    await fs.writeFile(usageFile(), JSON.stringify({ lmu: 1000 }));
+  it('neither stores nor sends while opted out, and ends a running connection', async () => {
+    await writeUsage({ lmu: { at: 1000, ms: 60_000 } });
     const analytics = new Analytics(provider);
-    analytics.recordSimulatorConnected('iracing');
+    analytics.setConnectedSimulator('lmu');
+    vi.mocked(getAnalyticsOptOut).mockReturnValue(true);
+    analytics.setConnectedSimulator('iracing');
     await start(analytics);
     expect(identified()).not.toHaveProperty('used_lmu');
-    expect(await storedUsage()).toEqual({ lmu: 1000 });
+    const stored = await storedUsage();
+    expect(Object.keys(stored)).toEqual(['lmu']);
+    // The LMU connection ended at the opt-out; iRacing never started one.
+    const ms = stored.lmu.ms;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect((await storedUsage()).lmu.ms).toBe(ms);
   });
 
   it('stores nothing without a provider', async () => {
     const analytics = new Analytics(provider);
     (analytics as unknown as { provider: AnalyticsProvider | null }).provider =
       null;
-    analytics.recordSimulatorConnected('iracing');
+    analytics.setConnectedSimulator('iracing');
     expect(await getSimulatorUsageStore().read()).toEqual({});
   });
 });
