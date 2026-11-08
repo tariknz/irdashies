@@ -56,6 +56,7 @@ vi.mock('../../logger', () => ({
 }));
 
 import logger from '../../logger';
+import { createSessionLifecycle } from '../../sessionLifecycle';
 import { publishIRacingSDKEvents } from './iracingSdkBridge';
 
 describe('publishIRacingSDKEvents session polling', () => {
@@ -122,6 +123,89 @@ describe('publishIRacingSDKEvents session polling', () => {
     bridge.stop();
 
     expect(offOverlayReady).toHaveBeenCalledOnce();
+  });
+
+  it('synchronously resets the shared lifecycle once when stopped', async () => {
+    mockGetTelemetry.mockReturnValue({
+      SessionNum: { value: [0] },
+      IsOnTrack: { value: [true] },
+    } as Telemetry);
+    mockGetSessionData.mockReturnValue({
+      SessionInfo: { Sessions: [{ SessionNum: 0, SessionType: 'Practice' }] },
+    } as Session);
+    const lifecycle = createSessionLifecycle();
+    const disconnected = vi.fn();
+    lifecycle.onDisconnect(disconnected);
+    const bridge = await publishIRacingSDKEvents(
+      createOverlayManager() as never,
+      lifecycle
+    );
+    expect(lifecycle.getCurrentState()).toEqual({
+      sessionType: 'Practice',
+      isDriving: true,
+    });
+
+    bridge.stop();
+
+    expect(disconnected).toHaveBeenCalledOnce();
+    expect(lifecycle.getCurrentState()).toEqual({
+      sessionType: undefined,
+      isDriving: undefined,
+    });
+    bridge.stop();
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(disconnected).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('does not disconnect again when stopped during a reconnect delay', async () => {
+    const lifecycle = createSessionLifecycle();
+    const disconnected = vi.fn();
+    lifecycle.onDisconnect(disconnected);
+    const bridge = await publishIRacingSDKEvents(
+      createOverlayManager() as never,
+      lifecycle
+    );
+    mockSdkState.sessionStatusOK = false;
+    mockWaitForData.mockReturnValue(false);
+    await vi.advanceTimersByTimeAsync(40);
+    expect(disconnected).toHaveBeenCalledOnce();
+
+    bridge.stop();
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    expect(disconnected).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('keeps the source disconnected across failures before the first frame', async () => {
+    mockWaitForData.mockImplementation(() => {
+      throw new Error('native failed');
+    });
+    const lifecycle = createSessionLifecycle();
+    const disconnected = vi.fn();
+    lifecycle.onDisconnect(disconnected);
+    const overlayManager = {
+      ...createOverlayManager(),
+      clearLatestSessionData: vi.fn(),
+    };
+    const bridge = await publishIRacingSDKEvents(
+      overlayManager as never,
+      lifecycle
+    );
+    const running = vi.fn();
+    bridge.onRunningState(running);
+
+    // Cross the running-state interval while sessionStatusOK still reads true.
+    await vi.advanceTimersByTimeAsync(6_000);
+
+    expect(mockWaitForData.mock.calls.length).toBeGreaterThan(1);
+    expect(running.mock.calls).toEqual([[false]]);
+    expect(disconnected).not.toHaveBeenCalled();
+    bridge.stop();
+    expect(disconnected).not.toHaveBeenCalled();
+    expect(overlayManager.clearLatestSessionData).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('replays the running state to a subscriber that attaches after the seed', async () => {
