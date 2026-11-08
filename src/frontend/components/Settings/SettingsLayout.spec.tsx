@@ -59,7 +59,7 @@ describe('SettingsLayout navigation', () => {
     });
     fireEvent.click(screen.getByRole('link', { name: 'Weather' }));
     fireEvent.click(screen.getByRole('link', { name: 'App settings' }));
-    fireEvent.click(screen.getByRole('link', { name: 'Profiles' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Key Bindings' }));
     expect(screen.getByRole('main')).toHaveFocus();
     fireEvent.click(screen.getByRole('link', { name: 'Back to overlays' }));
     expect(
@@ -68,7 +68,7 @@ describe('SettingsLayout navigation', () => {
     expect(screen.getByRole('searchbox')).toHaveValue('Weather');
     fireEvent.click(screen.getByRole('link', { name: 'App settings' }));
     expect(
-      screen.getByRole('heading', { name: 'profiles' })
+      screen.getByRole('heading', { name: 'keybindings' })
     ).toBeInTheDocument();
   });
 
@@ -106,6 +106,13 @@ describe('SettingsLayout navigation', () => {
     expect(
       screen.getByRole('heading', { name: 'profiles' })
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole('navigation', { name: 'Overlay settings' })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Profiles' })).toHaveAttribute(
+      'aria-current',
+      'page'
+    );
     expect(screen.getByRole('main')).toHaveFocus();
     expect(
       screen.getByRole('button', { name: /Choose profile/ })

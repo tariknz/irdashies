@@ -14,6 +14,7 @@ import {
 import { WIDGET_CATEGORIES, widgetDisabledMessage } from '@irdashies/types';
 import {
   generalItems,
+  toolItems,
   widgetItems,
   bottomItems,
   menuHasToggle,
@@ -194,10 +195,13 @@ export const SettingsMenu = ({
     !!item.widgetType &&
     (item.groupTypes ?? [item.widgetType]).some(isWidgetEnabled);
 
-  const menuItems = widgetItems.filter(
-    (item) =>
-      !item.hideInMenu && !excludedWidgetTypes?.has(item.widgetType ?? '')
-  );
+  const menuItems = [
+    ...widgetItems.filter(
+      (item) =>
+        !item.hideInMenu && !excludedWidgetTypes?.has(item.widgetType ?? '')
+    ),
+    ...(previewMode ? [] : toolItems),
+  ];
   const unsupported = (item: MenuItem) =>
     widgetDisabledMessage(supportConfig, item.widgetType, simulator);
   // Widgets the running sim cannot support are left out unless asked for.
@@ -209,10 +213,12 @@ export const SettingsMenu = ({
       item.label.toLowerCase().includes(searchQuery) ||
       item.category?.toLowerCase().includes(searchQuery)
   );
-  const categories = WIDGET_CATEGORIES.map((category) => ({
-    category,
-    items: visibleItems.filter((item) => item.category === category),
-  })).filter(({ items }) => items.length > 0);
+  const categories = [...WIDGET_CATEGORIES, 'Tools']
+    .map((category) => ({
+      category,
+      items: visibleItems.filter((item) => item.category === category),
+    }))
+    .filter(({ items }) => items.length > 0);
 
   return (
     <nav
@@ -255,7 +261,7 @@ export const SettingsMenu = ({
         className={appPage ? 'hidden' : 'flex min-h-0 flex-1 flex-col'}
         data-overlay-area
       >
-        <div className="shrink-0 space-y-2 border-t border-slate-700 bg-slate-950 px-1 pb-3 pt-3">
+        <div className="shrink-0 space-y-2 bg-slate-950 px-1 pb-3 pt-3">
           <div className="flex items-center justify-between px-1">
             <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
               Overlays
@@ -308,6 +314,7 @@ export const SettingsMenu = ({
                       key={item.path}
                       item={item}
                       pathname={appPage ? overlayPath.current : pathname}
+                      showIcon={item.category === 'Tools'}
                       isEnabled={
                         item.widgetType ? isItemEnabled(item) : undefined
                       }

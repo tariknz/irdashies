@@ -354,6 +354,11 @@ export const ProfilesRoute: Story = {
 export const DriverTagsRoute: Story = {
   args: { initialPath: '/settings/driver-tags' },
 };
+
+export const SetupComparisonRoute: Story = {
+  args: { initialPath: '/settings/car-setup' },
+};
+
 export const CalibrationRoute: Story = {
   args: { initialPath: '/settings/pitlanehelper' },
 };
