@@ -90,6 +90,10 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
         : null;
   }
 
+  /**
+   * Copies one frame's per-car standings data into the snapshot, starting over
+   * first when the session changes or restarts, or its clock runs backwards.
+   */
   onFrame(frame: Telemetry): void {
     if (!this.enabled) return;
     const sessionTime = numberValue(frame, 'SessionTime');

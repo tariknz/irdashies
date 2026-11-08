@@ -197,6 +197,11 @@ const gridUsernames = (raw: {
   );
 };
 
+/**
+ * Starts the Le Mans Ultimate bridge: reads shared memory and the REST API,
+ * maps both into iRacing-shaped telemetry and session data, and publishes
+ * them to the overlays. Resolves to the bridge the app drives, as for iRacing.
+ */
 export async function publishLmuSDKEvents(
   overlayManager: OverlayManager,
   lifecycle?: SessionLifecycle,

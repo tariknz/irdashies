@@ -54,6 +54,7 @@ export const createLmuNationalityWatch = (): LmuNationalityWatch => {
   let names: string[] = [];
 
   return {
+    /** True when the grid names a driver not seen before; false offline. */
     observe(grid) {
       if ((grid.gameMode ?? 0) === 0) {
         // Leaving multiplayer forgets the grid, so joining another server
@@ -84,6 +85,7 @@ export const createLmuNationalityWatch = (): LmuNationalityWatch => {
       return arrived;
     },
 
+    /** Whether every driver on the last online grid has a flag. */
     complete(codes) {
       return (
         names.length > 0 && names.every((name) => codes?.[name] !== undefined)

@@ -230,6 +230,11 @@ const focusCarIdx = (
   return typeof focus === 'number' && focus >= 0 ? focus : playerIdx;
 };
 
+/**
+ * One LMU shared-memory snapshot as an iRacing-shaped telemetry frame, with
+ * the REST answers and the game state folded in. A value LMU has no
+ * equivalent for is published empty or neutral rather than left out.
+ */
 export function mapLmuTelemetry(
   raw: Raw,
   /**

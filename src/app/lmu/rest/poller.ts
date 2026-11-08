@@ -231,6 +231,11 @@ export function createLmuRestPoller({
     }, delayMs);
   };
 
+  /**
+   * Hands a body to the task's outputs unless it is the body seen last time.
+   * False for a repeat, true otherwise -- a body that is not JSON included,
+   * which the outputs see as `undefined`.
+   */
   const applyBody = (task: LmuRestTask, body: string): boolean => {
     const state = stateOf(task);
     const hash = fnv1a32(body);
@@ -309,6 +314,11 @@ export function createLmuRestPoller({
     schedule(task, task.baseIntervalMs);
   };
 
+  /**
+   * One request for a task, then what its answer calls for: apply it, back
+   * off, clear the task's outputs, or mark the API absent -- and the next poll
+   * scheduled to match.
+   */
   const run = async (task: LmuRestTask) => {
     const state = stateOf(task);
     if (stopped || !active || state.missing || absent || state.inFlight) return;
@@ -485,6 +495,10 @@ export function createLmuRestPoller({
   };
 
   return {
+    /**
+     * Starts every task when LMU starts. When it stops, cancels the timers and
+     * resets the tasks and the data, so the next session starts fresh.
+     */
     setActive: (next: boolean) => {
       if (stopped || next === active) return;
       active = next;
@@ -516,6 +530,7 @@ export function createLmuRestPoller({
       startAll();
     },
 
+    /** Re-runs the one-shot tasks, for a track or session change. */
     invalidateOnce: () => {
       if (stopped) return;
       tasks.forEach((task) => {
@@ -527,6 +542,7 @@ export function createLmuRestPoller({
       });
     },
 
+    /** Starts a burst or starts it over; see LmuRestPoller.burst. */
     burst: (taskId, { delayMs, isComplete }) => {
       const task = tasks.find((candidate) => candidate.id === taskId);
       if (stopped || !active || !task || task.mode !== 'burst') return;

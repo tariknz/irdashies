@@ -104,6 +104,7 @@ export class TrackStateProcessor implements TelemetryProcessor<TrackStateSnapsho
     void session;
   }
 
+  /** Copies one frame's track state in, bumping the version on a change. */
   onFrame(frame: Telemetry): void {
     let changed = false;
     changed =
@@ -188,6 +189,10 @@ export class TrackStateProcessor implements TelemetryProcessor<TrackStateSnapsho
     if (changed) this.latest.version += 1;
   }
 
+  /**
+   * Clears the snapshot on any lifecycle event but entering a session, so no
+   * widget reads the previous session's cars.
+   */
   onLifecycle(event: SessionLifecycleEvent): void {
     if (event.type === 'enter') return;
     (this.latest.carIdxLapDistPct as number[]).length = 0;

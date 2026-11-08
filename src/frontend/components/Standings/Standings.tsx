@@ -140,6 +140,7 @@ const isEmptyMap = (value: ReadonlyMap<unknown, unknown>) => value.size === 0;
 const isUnset = (value: unknown) => value == null;
 const isFalse = (value: boolean | undefined) => !value;
 
+/** The standings widget: the field in position order, by class. */
 export const Standings = () => {
   const settings = useStandingsSettings();
   const { holding } = useSessionHold();

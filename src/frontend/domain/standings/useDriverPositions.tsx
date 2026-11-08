@@ -161,6 +161,10 @@ const trackLimitsFor = (
   return typeof value === 'number' && value >= 0 ? value : undefined;
 };
 
+/**
+ * Each car's state from the standings snapshot -- pit road, tyres, penalties,
+ * finish status and session flags -- one entry per car slot.
+ */
 export const useCarState = () => {
   const snapshot = useStandingsSnapshot();
   const carIdxTrackSurface = snapshot?.carIdxTrackSurface ?? EMPTY_NUMBERS;
@@ -212,8 +216,13 @@ export const useCarState = () => {
   ]);
 };
 
-// TODO: this should eventually replace the useDriverStandings hook
-// currently there's still a few bugs to handle but is only used in relative right now
+/**
+ * Relative's rows: each driver with position, live position when enabled,
+ * and car state.
+ *
+ * TODO: this should eventually replace the useDriverStandings hook
+ * currently there's still a few bugs to handle but is only used in relative right now
+ */
 export const useDriverStandings = () => {
   const driverPositions = useDriverPositions();
   const relativeSettings = useRelativeSettings();

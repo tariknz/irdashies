@@ -340,15 +340,18 @@ const sameCodes = (
 const nationalities: LmuRestOutput = {
   id: 'nationalities',
   target: 'session',
+  /** The flags found and the drivers without one; nothing if neither. */
   parse: (payload): ParsedNationalities | undefined => {
     const { found, unknown } = readTeamNationalities(payload);
     if (found.size === 0 && unknown.length === 0) return undefined;
     return { codes: Object.fromEntries(found), unknown };
   },
-  // The body moves on nearly every poll -- each driver's isConnected flips
-  // constantly -- while the flags move only when the grid does. Republishing
-  // on the body would rebuild and broadcast the whole session every poll of a
-  // burst; this republishes only when a flag is gained, lost or changed.
+  /**
+   * The body moves on nearly every poll -- each driver's isConnected flips
+   * constantly -- while the flags move only when the grid does. Republishing
+   * on the body would rebuild and broadcast the whole session every poll of a
+   * burst; this republishes only when a flag is gained, lost or changed.
+   */
   unchanged: (data, value) => {
     const { codes } = value as ParsedNationalities;
     return (
@@ -359,8 +362,10 @@ const nationalities: LmuRestOutput = {
   apply: (data, value) => {
     data.session.nationalities = (value as ParsedNationalities).codes;
   },
-  // Only the drivers who were not already without a flag in the last body, so
-  // a burst names each one once rather than on every poll.
+  /**
+   * Only the drivers who were not already without a flag in the last body, so
+   * a burst names each one once rather than on every poll.
+   */
   report: (value, previous) => {
     const { codes, unknown } = value as ParsedNationalities;
     const already = new Set(
@@ -402,6 +407,7 @@ const gameState: LmuRestOutput = {
   clear: (data) => {
     data.gameState = undefined;
   },
+  /** Logs an unrecognised answer when it first appears, not every poll. */
   report: (value, previous) => {
     const { unrecognised } = value as ParsedLmuGameState;
     if (
@@ -741,6 +747,7 @@ export const LMU_REST_TASKS: readonly LmuRestTask[] = [
     // memory for it would flicker a paused player out of the car -- the
     // frozen block reads as out. Three in a row, about three seconds.
     clearAfterFailures: 3,
+    /** A 404 or an `unavailable` body still says where the player is. */
     answerFailure: (data, failure) => {
       const parsed = readLmuGameStateFailure(failure);
       if (!parsed) return false;

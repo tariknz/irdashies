@@ -46,6 +46,10 @@ export const shouldCalculateIRatingChange = (
     sessionType === 'Practice' &&
     estimateInPractice);
 
+/**
+ * The Standings widget's rows: every driver with position, gaps, lap times
+ * and car state, grouped by class and trimmed to the widget's settings.
+ */
 export const useDriverStandings = (
   settings?: StandingsWidgetSettings['config'],
   options?: { showAll?: boolean; livePositions?: boolean }
