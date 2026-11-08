@@ -48,7 +48,7 @@ export const HeaderProfilePicker = ({
   return (
     <div
       ref={container}
-      className="relative [-webkit-app-region:no-drag]"
+      className="relative min-w-0 [-webkit-app-region:no-drag]"
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
       }}
@@ -67,7 +67,7 @@ export const HeaderProfilePicker = ({
         aria-expanded={open}
         aria-controls="settings-header-profiles"
         onClick={() => setOpen((value) => !value)}
-        className="-ml-2 flex min-h-7 max-w-full items-center gap-1.5 rounded-md px-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white"
+        className="flex min-h-7 max-w-full items-center gap-1.5 rounded-md px-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white"
       >
         <span className="truncate">
           {currentProfile?.name ?? 'Loading'} Profile

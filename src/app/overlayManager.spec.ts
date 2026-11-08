@@ -587,7 +587,7 @@ describe('settings window title bar', () => {
           titleBarOverlay: {
             color: '#141a21',
             symbolColor: '#cad5e2',
-            height: 40,
+            height: 47,
           },
         });
       } finally {

@@ -3,6 +3,7 @@ import { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { DashboardProvider, RunningStateProvider } from '@irdashies/context';
 import type {
+  ActiveSimulator,
   DashboardBridge,
   DriverTagSettings,
   PitLaneBridge,
@@ -28,6 +29,8 @@ interface StoryProps {
   };
 
   profileChoices?: boolean;
+  profileName?: string;
+  simulator?: ActiveSimulator;
 }
 
 // The header reads the running state to decide whether to name a simulator.
@@ -169,16 +172,21 @@ const meta: Meta<typeof SettingsLayout> = {
         emptyFuel,
         scaleInstances,
         profileChoices,
+        profileName,
+        simulator,
       } = context.args as StoryProps;
-      const choices = ['Default', 'Endurance'].map((name, index) => ({
-        id: index === 0 ? 'default' : 'endurance',
-        name,
-        createdAt: '2026-11-06T00:00:00.000Z',
-        lastModified: '2026-11-06T00:00:00.000Z',
-      }));
+      const choices = [profileName ?? 'Default', 'Endurance'].map(
+        (name, index) => ({
+          id: index === 0 ? 'default' : 'endurance',
+          name,
+          createdAt: '2026-11-06T00:00:00.000Z',
+          lastModified: '2026-11-06T00:00:00.000Z',
+        })
+      );
       let activeProfile = 'default';
       const previewBridge: DashboardBridge = {
         ...settingsPreviewBridge,
+        ...(simulator && { getActiveSimulator: async () => simulator }),
         ...(profileChoices && {
           listProfiles: async () => structuredClone(choices),
           getCurrentProfile: async () =>
@@ -467,4 +475,19 @@ export const StorageFull: Story = {
 
 export const ProfilePicker: Story = {
   args: { initialPath: '/settings/relative', profileChoices: true },
+};
+
+export const CompactHeader: Story = {
+  args: {
+    initialPath: '/settings/relative',
+    profileChoices: true,
+    simulator: 'iracing',
+  },
+};
+
+export const LongProfileName: Story = {
+  args: {
+    ...CompactHeader.args,
+    profileName: 'Weekend endurance championship setup',
+  },
 };
