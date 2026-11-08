@@ -114,14 +114,18 @@ export const SettingsLayout = () => {
               'max(1.25rem, calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw)))',
           }}
         >
-          <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <img src={logo} alt="" className="h-10 w-10 shrink-0" />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-baseline gap-x-3">
                 <span className="text-[24px] leading-7 font-semibold tracking-[-0.04em] text-white">
                   ir<span className="text-red-600">Dashies</span>
                 </span>
-                <h1 className="text-sm font-medium text-slate-400">
+                <h1
+                  className={
+                    appPage ? 'text-sm font-medium text-slate-400' : 'sr-only'
+                  }
+                >
                   {appPage ? 'App settings' : 'Overlay Settings'}
                 </h1>
                 {simulatorName && (
@@ -182,7 +186,7 @@ export const SettingsLayout = () => {
             ref={mainRef}
             tabIndex={-1}
             aria-label={appPage ? 'App settings page' : 'Overlay settings page'}
-            className="min-w-0 flex-1 bg-slate-900 p-4 focus:outline-none lg:p-7"
+            className="min-w-0 flex-1 bg-slate-900 px-4 pt-4 pb-3 focus:outline-none lg:px-7 lg:pt-7"
           >
             <div
               className={`mx-auto flex h-full flex-col overflow-hidden ${appPage ? 'max-w-[960px]' : 'max-w-[1440px]'}`}

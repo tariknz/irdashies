@@ -256,6 +256,44 @@ html {
   outline-offset: 3px;
 }
 
+/* Settings use the same slim, transparent-track scrollbar as T3 Code. */
+.settings-shell ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.settings-shell ::-webkit-scrollbar-track,
+.settings-shell ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.settings-shell ::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgb(255 255 255 / 12%);
+}
+
+.settings-shell ::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 24%);
+}
+
+@utility settings-menu-scroll {
+  scrollbar-width: none;
+  scroll-padding-block: 12px;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black var(--scroll-fade-top, 0px),
+    black calc(100% - var(--scroll-fade-bottom, 0px)),
+    transparent
+  );
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  &:has(:focus-visible) {
+    mask-image: none;
+  }
+}
+
 .overlay-window.overlay-theme-font-face-lato {
   font-family: 'Lato', sans-serif;
 }

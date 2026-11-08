@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
@@ -33,6 +39,30 @@ function renderLayout(path = '/settings/relative') {
 }
 
 describe('SettingsLayout navigation', () => {
+  it('keeps app utilities in the menu and returns to the selected overlay from each page', () => {
+    renderLayout('/settings/weather');
+    fireEvent.click(screen.getByRole('link', { name: 'App settings' }));
+    const appPages = within(screen.getByRole('region', { name: 'App pages' }));
+    for (const name of ['Advanced', 'Release notes', 'About']) {
+      fireEvent.click(appPages.getByRole('link', { name }));
+      expect(appPages.getByRole('link', { name })).toHaveAttribute(
+        'aria-current',
+        'page'
+      );
+      expect(
+        screen.getByRole('link', { name: 'Back to overlays' })
+      ).toHaveAttribute('href', '/settings/weather');
+    }
+    fireEvent.click(screen.getByRole('link', { name: 'Back to overlays' }));
+    expect(
+      screen.getByRole('heading', { name: 'weather' })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'App settings' })).toHaveAttribute(
+      'href',
+      '/settings/about'
+    );
+  });
+
   it('keeps the first keyboard skip and focuses main only when changing routes', async () => {
     const user = userEvent.setup();
     renderLayout();
