@@ -277,6 +277,8 @@ export async function publishIRacingSDKEvents(
     // interval tick 5s later — this is what made exiting demo mode feel slow.
     const initialRunningState = sdk.sessionStatusOK;
     lastRunningState = initialRunningState;
+    let isLifecycleEntered = false;
+    let pollingFailed = false;
     overlayManager.publishMessage('runningState', initialRunningState);
     runningStateCallbacks.forEach((callback) =>
       notify(callback, initialRunningState)
@@ -302,7 +304,9 @@ export async function publishIRacingSDKEvents(
 
     const runningStateInterval = setInterval(() => {
       try {
-        publishRunningState(sdk.sessionStatusOK);
+        // A polling error owns the disconnected state until a frame proves
+        // that telemetry delivery has recovered.
+        if (!pollingFailed) publishRunningState(sdk.sessionStatusOK);
       } catch (error) {
         logger.error('[iracingSdkBridge] Running-state poll failed', error);
       }
@@ -337,7 +341,7 @@ export async function publishIRacingSDKEvents(
         let lastInspectorTelemetryPublishTime = Number.NEGATIVE_INFINITY;
         // Negative infinity makes the first tick fetch and publish immediately.
         let lastSessionPollTime = Number.NEGATIVE_INFINITY;
-        let wasRunning = false;
+        let hadLifecycleEntry = false;
 
         try {
           while (!shouldStop) {
@@ -370,9 +374,11 @@ export async function publishIRacingSDKEvents(
             }
             // This frame already satisfies pending subscriber demand.
             replayRefreshPending = false;
-            if (!wasRunning) {
+            if (!hadLifecycleEntry) {
               logger.info(`[iracingSdkBridge] ${sourceName} is running`);
-              wasRunning = true;
+              hadLifecycleEntry = true;
+              isLifecycleEntered = true;
+              pollingFailed = false;
               // sessionStatusOK can still read false when the bridge seeds it, so
               // the arrival of real data is the earliest reliable proof the sim is
               // up. Without this the overlays wait out the 5s poll before showing
@@ -460,12 +466,14 @@ export async function publishIRacingSDKEvents(
             '[iracingSdkBridge] Telemetry poll failed; retrying',
             error
           );
+          pollingFailed = true;
           // A read can fail before the first frame, while the seeded state is up.
-          wasRunning = true;
+          publishRunningState(false);
         }
 
         if (shouldStop) break;
-        if (wasRunning) {
+        if (hadLifecycleEntry) {
+          isLifecycleEntered = false;
           publishRunningState(false);
           logger.info(
             `[iracingSdkBridge] ${sourceName} is no longer publishing telemetry`
