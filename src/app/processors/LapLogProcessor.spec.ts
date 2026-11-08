@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { GlobalFlags, type Telemetry } from '@irdashies/types';
 import { LapLogProcessor } from './LapLogProcessor';
+import { mapLmuTelemetry } from '../lmu/mapTelemetry';
+import { fixture as lmuFixture } from '../lmu/rawFixture';
 
 const frame = (values: Record<string, unknown[]>): Telemetry =>
   Object.fromEntries(
@@ -20,6 +22,39 @@ describe('LapLogProcessor', () => {
       SessionNum: [sessionNum],
       SessionTime: [sessionTime],
     });
+
+  it.each([
+    { gamePhase: 6, yellowFlagState: 0, caution: true },
+    { gamePhase: 5, yellowFlagState: 3, caution: true },
+    { gamePhase: 5, yellowFlagState: 0, caution: false },
+  ])('records the normalized LMU caution state %j', (state) => {
+    const processor = new LapLogProcessor();
+    const raw = lmuFixture();
+    const drive = (
+      lapCompleted: number,
+      elapsedTime: number,
+      underYellow = false
+    ) =>
+      processor.onFrame(
+        mapLmuTelemetry({
+          ...raw,
+          gamePhase: underYellow ? state.gamePhase : 5,
+          yellowFlagState: underYellow ? state.yellowFlagState : 0,
+          // A sector yellow alone must remain visible in lap history.
+          sectorFlags: new Uint8Array(underYellow ? [0, 1, 0] : [0, 0, 0]),
+          vehTotalLaps: new Int32Array([2, lapCompleted, 1]),
+          elapsedTime,
+        })
+      );
+
+    drive(0, 0);
+    drive(0, 30, true);
+    drive(0, 60);
+    drive(1, 90);
+    expect(processor.snapshot().lastLapUnderCaution).toBe(state.caution);
+    drive(2, 180);
+    expect(processor.snapshot().lastLapUnderCaution).toBe(false);
+  });
 
   it.each([GlobalFlags.Caution, GlobalFlags.CautionWaving])(
     'remembers full-course caution flag %i even when it clears before scoring',
