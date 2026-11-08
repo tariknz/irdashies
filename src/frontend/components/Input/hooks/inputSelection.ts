@@ -21,6 +21,7 @@ export interface InputValues {
 
 export const EMPTY_INPUTS: InputValues = {};
 
+/** Select only visible controls, retaining the source clock for trace sampling. */
 export function createInputSelector(config: InputConfig) {
   const elements = new Set<string>();
   const visit = (node: LayoutNode) => {
@@ -44,7 +45,7 @@ export function createInputSelector(config: InputConfig) {
     elements.has('abs') ||
     (trace && config.trace.includeBrake && config.trace.includeAbs) ||
     (bar && config.bar.includeBrake && config.bar.includeAbs);
-  const steerWanted = steer || (trace && config.trace.includeSteer);
+  const steerWanted = steer || (trace && (config.trace.includeSteer ?? true));
   const gearWanted = gear || !!config.gearFlash?.enabled;
   const speedWanted = gear && config.gear.showspeed;
   let previous: InputValues | undefined;

@@ -140,6 +140,7 @@ const SESSION_POLL_INTERVAL = 500;
 
 // Subscribers run synchronously; a faulty consumer must not stop SDK delivery.
 // Report a persistent failure once, and report again if it recurs after recovery.
+/** Isolate subscriber failures and log each failing callback once until recovery. */
 function createSubscriberNotifier() {
   const failed = new WeakSet<object>();
   return <T>(callback: (value: T) => void, value: T): void => {
@@ -155,6 +156,10 @@ function createSubscriberNotifier() {
   };
 }
 
+// Keep entry ownership across bridge replacement without retaining lifecycles.
+const enteredLifecycles = new WeakSet<SessionLifecycle>();
+
+/** Publish SDK frames, recover native poll failures, and own bridge resources. */
 export async function publishIRacingSDKEvents(
   overlayManager: OverlayManager,
   lifecycle?: SessionLifecycle,
@@ -378,6 +383,7 @@ export async function publishIRacingSDKEvents(
               // up. Without this the overlays wait out the 5s poll before showing
               // anything.
               publishRunningState(true);
+              if (lifecycle) enteredLifecycles.add(lifecycle);
               lifecycle?._onEnter({ replay: isTapeReplay });
             }
             perfMetrics.markStart('processTelemetry');
@@ -476,7 +482,9 @@ export async function publishIRacingSDKEvents(
           // They get repopulated on the next successful waitForData tick.
           latestSession = null;
           overlayManager.clearLatestSessionData?.();
-          lifecycle?._onDisconnect();
+          if (lifecycle && enteredLifecycles.delete(lifecycle)) {
+            lifecycle._onDisconnect();
+          }
         }
 
         await delay(isTapeReplay ? 75 : RETRY_INTERVAL);

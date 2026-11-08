@@ -32,6 +32,22 @@ const gearConfig = () => {
 };
 
 describe('Input selection', () => {
+  it.each([undefined, false, true])(
+    'defaults trace steering when includeSteer is %s',
+    (includeSteer) => {
+      const settings = config();
+      settings.layoutTree = {
+        id: 'trace',
+        type: 'box',
+        direction: 'row',
+        widgets: ['trace'],
+      };
+      settings.trace.includeSteer = includeSteer;
+      const selected = createInputSelector(settings)(frame());
+      expect(selected.steer).toBe(includeSteer === false ? undefined : 0.1);
+    }
+  );
+
   it('ignores RPM, unused pedals and version changes for a gear-only layout', () => {
     const select = createInputSelector(gearConfig());
     const first = select(frame());

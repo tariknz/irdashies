@@ -99,6 +99,7 @@ export class InputTraceDrawing {
     this.configure();
   }
 
+  /** Apply defaults and reset every channel together when history capacity changes. */
   configure(settings: Partial<InputTraceSettings> = DEFAULT_SETTINGS): void {
     const current = this.settings;
     current.includeClutch = settings.includeClutch ?? true;
@@ -142,6 +143,7 @@ export class InputTraceDrawing {
     this.writeIndex = (index + 1) % this.indices.length;
   }
 
+  /** Draw one chronological curve using the shared generators and current width. */
   private stroke(values: number[], color: string, centered = false): void {
     this.values = values;
     this.ctx.beginPath();
@@ -180,9 +182,12 @@ export class InputTraceDrawing {
     ctx.setLineDash(SOLID_DASH);
 
     if (settings.includeSteer) this.stroke(this.steer, STEER_COLOR, true);
-    ctx.lineWidth = settings.strokeWidth;
-    if (settings.includeClutch) this.stroke(this.clutch, CLUTCH_COLOR);
-    if (settings.includeThrottle) this.stroke(this.throttle, THROTTLE_COLOR);
+    const visibleStroke = settings.strokeWidth > 0;
+    if (visibleStroke) ctx.lineWidth = settings.strokeWidth;
+    if (visibleStroke && settings.includeClutch)
+      this.stroke(this.clutch, CLUTCH_COLOR);
+    if (visibleStroke && settings.includeThrottle)
+      this.stroke(this.throttle, THROTTLE_COLOR);
     if (settings.includeBrake) {
       if (settings.includeAbs && settings.absStyle === 'bar') {
         ctx.beginPath();
@@ -192,8 +197,8 @@ export class InputTraceDrawing {
         ctx.fill();
         ctx.globalAlpha = 1;
       }
-      this.stroke(this.brake, BRAKE_COLOR);
-      if (settings.includeAbs) {
+      if (visibleStroke) this.stroke(this.brake, BRAKE_COLOR);
+      if (visibleStroke && settings.includeAbs) {
         ctx.beginPath();
         this.absLine(this.indices);
         ctx.strokeStyle = ABS_COLOR;

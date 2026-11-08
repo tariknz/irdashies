@@ -36,6 +36,7 @@ export function recordChannelCallback(durationMs: number): void {
   channelCallbackTimes?.add(durationMs);
 }
 
+/** Record an enabled named measure and mark it as exercised in this interval. */
 export function recordRendererMeasure(
   name: RendererPerfMeasureName,
   durationMs: number

@@ -254,6 +254,26 @@ describe('InputTrace Canvas', () => {
     );
   });
 
+  it.each(['bar', 'overlay'] as const)(
+    'hides zero-width pedal strokes in ABS %s mode',
+    (absStyle) => {
+      const view = render(
+        <InputTrace
+          input={activeInput}
+          settings={{ ...settings, strokeWidth: 0, absStyle }}
+        />
+      );
+      drawFrame();
+      const drawn = paths(view.container);
+      expect(
+        drawn.filter(({ kind }) => kind === 'stroke').map(({ color }) => color)
+      ).toEqual(['#666', 'slate']);
+      expect(drawn.filter(({ kind }) => kind === 'fill')).toHaveLength(
+        absStyle === 'bar' ? 1 : 0
+      );
+    }
+  );
+
   it('renders overlay ABS with its thicker line and clears disabled channels', () => {
     const view = render(
       <InputTrace
