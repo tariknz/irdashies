@@ -120,6 +120,9 @@ export function useSortableList<T>({
             e.dataTransfer.dropEffect = 'move';
             const currentDraggedId = draggedIdRef.current;
             if (currentDraggedId && currentDraggedId !== id) {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const pointerY = e.clientY;
+              const midpointY = rect.top + rect.height / 2;
               setOverId(id);
               setPreviewItems((prev) => {
                 if (!prev) return prev;
@@ -132,6 +135,11 @@ export function useSortableList<T>({
                   toIndex !== -1 &&
                   fromIndex !== toIndex
                 ) {
+                  // Reordering moves the target under the pointer. Wait until
+                  // its midpoint is crossed in the direction of travel so
+                  // repeated drag-over events cannot swap the rows back.
+                  if (fromIndex < toIndex && pointerY <= midpointY) return prev;
+                  if (fromIndex > toIndex && pointerY >= midpointY) return prev;
                   return arrayMove(prev, fromIndex, toIndex);
                 }
                 return prev;
