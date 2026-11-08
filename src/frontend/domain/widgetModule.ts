@@ -9,6 +9,4 @@ import type { WidgetId } from '@irdashies/types';
 export interface WidgetModule {
   id: WidgetId;
   component: ElementType;
-  /** Optional offline adapter, e.g. for a widget normally hosted externally. */
-  preview?: ElementType;
 }

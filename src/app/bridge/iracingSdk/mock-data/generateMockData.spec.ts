@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Session } from '@irdashies/types';
+import {
+  GlobalFlags,
+  SessionState,
+  type Session,
+  type Telemetry,
+} from '@irdashies/types';
+import recordedTelemetry from '../../../irsdk/node/utils/mock-data/telemetry.json';
+import recordedSession from '../../../irsdk/node/utils/mock-data/session.json';
 import { generateMockData } from './generateMockData';
 
 describe('generateMockData', () => {
@@ -9,6 +16,43 @@ describe('generateMockData', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('supplies the same active race fields to every demo consumer without changing the recording', () => {
+    const bridge = generateMockData();
+    const frames: Telemetry[] = [];
+    const originalState = recordedTelemetry.SessionState.value[0];
+    bridge.onTelemetry((frame) => frames.push(frame));
+    vi.advanceTimersByTime(100);
+    expect(frames.length).toBeGreaterThan(0);
+    for (const frame of frames) {
+      expect(frame.SessionState.value[0]).toBe(SessionState.Racing);
+      expect(frame.SessionFlags.value[0]).toBe(GlobalFlags.Green);
+      expect(frame.SessionLapsRemainEx.value).toEqual(
+        frame.SessionLapsRemain.value
+      );
+    }
+    expect(recordedTelemetry.SessionState.value[0]).toBe(originalState);
+    bridge.stop();
+  });
+
+  it('preserves explicit recording state instead of applying demo defaults', () => {
+    const telemetry = structuredClone(
+      recordedTelemetry
+    ) as unknown as Telemetry;
+    telemetry.SessionState.value[0] = SessionState.Checkered;
+    const bridge = generateMockData({
+      telemetry,
+      sessionInfo: recordedSession as unknown as Session,
+    });
+    const receive = vi.fn();
+    bridge.onTelemetry(receive);
+    vi.advanceTimersByTime(100);
+    expect(receive).toHaveBeenCalled();
+    expect(receive.mock.calls[0][0].SessionState.value[0]).toBe(
+      SessionState.Checkered
+    );
+    bridge.stop();
   });
 
   it('resumes telemetry for subscribers added after stop()', () => {

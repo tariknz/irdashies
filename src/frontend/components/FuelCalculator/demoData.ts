@@ -1,6 +1,6 @@
 import type { FuelCalculation } from './types';
 
-export const previewFuelData: FuelCalculation = {
+export const demoFuelData: FuelCalculation = {
   fuelLevel: 32.6,
   lastLapUsage: 2.4,
   currentLapUsage: 1.3,
@@ -37,3 +37,11 @@ export const previewFuelData: FuelCalculation = {
   lapsRange: [31, 34],
   maxQualify: null,
 };
+
+export const demoFuelHistory = (count: number, sessionNum: number) =>
+  Array.from({ length: count }, (_, index) => ({
+    lapNumber: count - index,
+    sessionNum,
+    timestamp: 0,
+    fuelUsed: [3.9, 3.85, 3.92, 3.88, 3.91][index % 5],
+  }));

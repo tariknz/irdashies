@@ -30,7 +30,7 @@ import {
   previewDashboard,
   resolvePreviewWidget,
 } from '@irdashies/domain/widgetPreview/presentation';
-import { getWidgetPreview } from './frontend/WidgetIndex';
+import { getWidget } from './frontend/WidgetIndex';
 import { WidgetRuntimeProvider } from './frontend/widgetRuntime';
 import { WidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import { ThemeManager } from './frontend/components/ThemeManager/ThemeManager';
@@ -118,7 +118,7 @@ function renderPreview(config: WidgetPreviewConfig, session?: Session) {
   const widget = resolvePreviewWidget(config.dashboard, config.widgetId);
   if (!widget) return;
   const type = widget.type ?? widget.id;
-  const Widget = getWidgetPreview(type);
+  const Widget = getWidget(type);
   if (!Widget) return;
   currentType = type;
   const value = previewDashboard(config.dashboard, widget);

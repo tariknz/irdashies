@@ -160,13 +160,11 @@ const DemoChatMessages = ({
   showPlatformIcons,
   twitch,
   youtube,
-  seed = false,
   fontSize = 16,
 }: {
   background: { opacity: number };
   autoHide?: { enabled: boolean; intervalSeconds: number };
   showPlatformIcons: boolean;
-  seed?: boolean;
   fontSize?: number;
 } & DemoPlatforms) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -178,18 +176,14 @@ const DemoChatMessages = ({
 
   useEffect(() => {
     setMessages(
-      seed
-        ? demoMessages
-            .slice(0, 3)
-            .map((message) => ({
-              ...message,
-              id: crypto.randomUUID(),
-              channel: '',
-              timestamp: Date.now(),
-            }))
-        : []
+      demoMessages.slice(0, 3).map((message) => ({
+        ...message,
+        id: crypto.randomUUID(),
+        channel: '',
+        timestamp: Date.now(),
+      }))
     );
-    indexRef.current = 0;
+    indexRef.current = 3;
     if (!demoMessages.length) return;
     const interval = setInterval(() => {
       const template = demoMessages[indexRef.current % demoMessages.length];
@@ -206,7 +200,7 @@ const DemoChatMessages = ({
     }, DEMO_MESSAGE_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [demoMessages, seed]);
+  }, [demoMessages]);
 
   return (
     <ChatMessageList
@@ -220,31 +214,31 @@ const DemoChatMessages = ({
 };
 
 /** Useful before accounts are connected; still uses the real message renderer. */
-export const StreamChatPreview = () => {
+export const StreamChatPreview = ({
+  background: backgroundProp,
+}: StreamChatDisplayProps) => {
   const { config } = useStreamChatSettings();
   const twitch = !!config.twitch?.channel?.trim();
   const youtube = !!config.youtube?.channel?.trim();
   return (
     <DemoChatMessages
-      background={config.display.background}
+      background={backgroundProp ?? config.display.background}
       autoHide={config.display.autoHide}
       showPlatformIcons={config.display.showPlatformIcons ?? true}
       fontSize={config.display.fontSize}
       twitch={twitch || !youtube}
       youtube={youtube || !twitch}
-      seed
     />
   );
 };
 
-export const StreamChat = ({
+const LiveStreamChat = ({
   background: backgroundProp,
 }: StreamChatDisplayProps) => {
-  const { isDemoMode } = useDashboard();
   const settings = useStreamChatSettings();
   const background = backgroundProp ??
     settings?.config.display.background ?? { opacity: 30 };
-  const active = !isDemoMode && (settings?.enabled ?? false);
+  const active = settings?.enabled ?? false;
   const snapshot = useStreamChatMessagesSnapshot(active);
   const emoteSets = useStreamChatEmotes(active);
   // The service follows every profile's channels, so this widget keeps only
@@ -273,18 +267,6 @@ export const StreamChat = ({
     [emoteSets, channels.twitch]
   );
 
-  if (isDemoMode) {
-    return (
-      <DemoChatMessages
-        background={background}
-        autoHide={settings?.config.display.autoHide}
-        showPlatformIcons={settings?.config.display.showPlatformIcons ?? true}
-        twitch={!!settings?.config.twitch?.channel?.trim()}
-        youtube={!!settings?.config.youtube?.channel?.trim()}
-      />
-    );
-  }
-
   if (!settings) return null;
   if (!settings.enabled) return null;
 
@@ -297,5 +279,14 @@ export const StreamChat = ({
       thirdPartyEmotes={thirdPartyEmotes}
       showPlatformIcons={settings.config.display.showPlatformIcons}
     />
+  );
+};
+
+export const StreamChat = (props: StreamChatDisplayProps) => {
+  const { isDemoMode } = useDashboard();
+  return isDemoMode ? (
+    <StreamChatPreview {...props} />
+  ) : (
+    <LiveStreamChat {...props} />
   );
 };

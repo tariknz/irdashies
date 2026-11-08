@@ -1,15 +1,16 @@
 import { HeartIcon } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
+import { DEMO_HEART_RATE_INTERVAL_MS, demoHeartRate } from './demoData';
 
 /** HypeRate is externally hosted, so offline settings never load the real embed. */
 export const HeartRatePreview = () => {
-  const [bpm, setBpm] = useState(126);
+  const [bpm, setBpm] = useState(() => demoHeartRate(0));
   useEffect(() => {
     let tick = 0;
     const timer = setInterval(() => {
       tick++;
-      setBpm(126 + Math.round(Math.sin(tick / 3) * 6));
-    }, 1000);
+      setBpm(demoHeartRate(tick));
+    }, DEMO_HEART_RATE_INTERVAL_MS);
     return () => clearInterval(timer);
   }, []);
   return (

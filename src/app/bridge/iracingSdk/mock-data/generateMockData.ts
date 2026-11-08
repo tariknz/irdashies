@@ -1,4 +1,5 @@
 import type { IrSdkSourceBridge, Session, Telemetry } from '@irdashies/types';
+import { GlobalFlags, SessionState } from '@irdashies/types';
 import mockSessionInfo from '../../../irsdk/node/utils/mock-data/session.json';
 import mockTelemetry from '../../../irsdk/node/utils/mock-data/telemetry.json';
 
@@ -252,6 +253,16 @@ export function generateMockData(sessionData?: {
 
             t = {
               ...prevTelemetry,
+              // All demo hosts simulate an active race. Recorded input above
+              // retains its original state, including checkered/replay frames.
+              SessionState: {
+                ...prevTelemetry.SessionState,
+                value: [SessionState.Racing],
+              },
+              SessionFlags: {
+                ...prevTelemetry.SessionFlags,
+                value: [GlobalFlags.Green],
+              },
               Brake: {
                 ...prevTelemetry.Brake,
                 value: [jitteredBrakeValue],
@@ -306,6 +317,10 @@ export function generateMockData(sessionData?: {
               },
               SessionLapsRemain: {
                 ...prevTelemetry.SessionLapsRemain,
+                value: [state.sessionLapsRemain],
+              },
+              SessionLapsRemainEx: {
+                ...prevTelemetry.SessionLapsRemainEx,
                 value: [state.sessionLapsRemain],
               },
               SessionTimeRemain: {

@@ -4,7 +4,7 @@ import {
   WIDGET_ORDER,
   getWidgetManifest,
 } from '@irdashies/types';
-import { WIDGET_MAP, getWidget, getWidgetPreview } from './WidgetIndex';
+import { WIDGET_MAP, getWidget } from './WidgetIndex';
 import { WIDGET_SETTINGS } from './components/Settings/SettingsLoader';
 
 const runtimeModules = import.meta.glob<{ default: { id: string } }>(
@@ -94,13 +94,13 @@ describe('widget registry', () => {
   it('ignores prototype keys', () => {
     expect(getWidgetManifest('__proto__')).toBeUndefined();
     expect(getWidget('toString')).toBeUndefined();
-    expect(getWidgetPreview('toString')).toBeUndefined();
   });
 
-  it('provides an automatically registered preview for every widget', () => {
+  it('uses one registered component for live and demo hosts', () => {
     for (const manifest of WIDGET_MANIFESTS)
-      expect(getWidgetPreview(manifest.id), manifest.id).toBeDefined();
-    expect(getWidgetPreview('input')).toBe(getWidget('input'));
-    expect(getWidgetPreview('heartrate')).not.toBe(getWidget('heartrate'));
+      expect(getWidget(manifest.id), manifest.id).toBeDefined();
+    for (const { default: module } of Object.values(widgetModules))
+      for (const widget of Array.isArray(module) ? module : [module])
+        expect(widget).not.toHaveProperty('preview');
   });
 });

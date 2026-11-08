@@ -15,7 +15,6 @@ import {
   type PreviewChannelRuntime,
 } from './previewChannelRuntime';
 import { createPreviewStorage } from './previewStorage';
-import { previewRaceTelemetry } from './previewRaceTelemetry';
 
 /**
  * The mock SDK source and the channel runtime built on it are page-lifetime
@@ -40,11 +39,7 @@ function getPreviewSource(): IrSdkSourceBridge {
     window.raceControlBridge = storage.raceControl;
     rawSource = generateMockData();
     const source = rawSource;
-    previewSource = shieldSourceFromStop({
-      ...source,
-      onTelemetry: (callback) =>
-        source.onTelemetry((frame) => callback(previewRaceTelemetry(frame))),
-    });
+    previewSource = shieldSourceFromStop(source);
     stopStorageSession = previewSource.onSessionData(storage.updateSession);
     previewRuntime = createPreviewChannelRuntime(previewSource);
     window.channelBridge = previewRuntime.bridge;

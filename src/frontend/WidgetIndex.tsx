@@ -22,16 +22,6 @@ export const WIDGET_MAP = Object.fromEntries(
   modules.map((m: WidgetModule) => [m.id, m.component])
 ) as Record<WidgetId, ElementType>;
 
-const PREVIEW_MAP = Object.fromEntries(
-  modules.map((module: WidgetModule) => [
-    module.id,
-    module.preview ?? module.component,
-  ])
-) as Record<WidgetId, ElementType>;
-
-export const getWidgetPreview = (id: string) =>
-  Object.hasOwn(PREVIEW_MAP, id) ? PREVIEW_MAP[id as WidgetId] : undefined;
-
 /**
  * Looks up a widget component by id. Accepts a raw string because dashboard
  * config is user-supplied and may contain unknown ids; returns undefined
