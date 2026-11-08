@@ -4,7 +4,7 @@ import {
   LiveChannelBridgeDecorator,
   TelemetryDecorator,
 } from '@irdashies/storybook';
-import type { LapTraceSampleSnapshot } from '@irdashies/types';
+import type { LapTraceSampleSnapshot, LayoutNode } from '@irdashies/types';
 import { useLapTraceStore } from '@irdashies/context';
 import { hydrateLapTrace } from '../../domain/lapTrace/hydrateLapTrace';
 import { parseGarage61Csv } from '../../domain/lapTrace/garage61CsvImport';
@@ -400,8 +400,10 @@ export const LastCornerPanelOnTheSide: Story = {
  * countdown bars and the last-corner panel — so the pieces can be checked for
  * space against each other rather than one at a time.
  *
- * Use the `lastCornerPosition` and `brakeCueBarSide` controls to move the
- * panels around, and the widget-size stories below for the tight cases.
+ * These place the panels with the settings from before the layout editor,
+ * which still build the starting layout of a config saved without one. The
+ * layout stories further down set a tree directly; the widget-size stories
+ * below cover the tight cases.
  */
 const everythingOn = {
   carDistanceMOverride: 340,
@@ -468,6 +470,70 @@ export const EverythingShort: Story = {
  */
 export const EverythingWide: Story = {
   args: { ...everythingOn, lastCornerPosition: 'right' },
+  decorators: [
+    (Story) => (
+      <div className="w-[640px] h-[160px]">
+        <Story />
+      </div>
+    ),
+  ],
+  loaders: [async () => (seedReference(), {})],
+};
+
+const layoutBox = (widget: string): LayoutNode => ({
+  id: `box-${widget}`,
+  type: 'box',
+  direction: 'col',
+  widgets: [widget],
+});
+
+/**
+ * A layout from the editor: the last-corner panel across the top, the
+ * countdown bars beside the trace beneath it.
+ */
+export const LayoutPanelAboveBarsBeside: Story = {
+  args: {
+    ...everythingOn,
+    layoutTree: {
+      id: 'root',
+      type: 'split',
+      direction: 'col',
+      children: [
+        layoutBox('corners'),
+        {
+          id: 'trace-row',
+          type: 'split',
+          direction: 'row',
+          children: [layoutBox('plot'), layoutBox('brakeCue')],
+        },
+      ],
+    },
+  },
+  loaders: [async () => (seedReference(), {})],
+};
+
+/**
+ * A layout from the editor: the panel and the countdown strip stacked
+ * together beside the trace, so the strip runs across the panel's width.
+ */
+export const LayoutPanelAndBarsStacked: Story = {
+  args: {
+    ...everythingOn,
+    layoutTree: {
+      id: 'root',
+      type: 'split',
+      direction: 'row',
+      children: [
+        layoutBox('plot'),
+        {
+          id: 'side-column',
+          type: 'split',
+          direction: 'col',
+          children: [layoutBox('corners'), layoutBox('brakeCue')],
+        },
+      ],
+    },
+  },
   decorators: [
     (Story) => (
       <div className="w-[640px] h-[160px]">

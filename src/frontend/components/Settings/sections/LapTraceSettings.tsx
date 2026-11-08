@@ -3,6 +3,7 @@ import { ArrowSquareOutIcon, UploadSimpleIcon } from '@phosphor-icons/react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   LapTraceWidgetSettings,
+  LayoutNode,
   SettingsTabType,
   getWidgetDefaultConfig,
   DEFAULT_AUDIO_OUTPUT_DEVICE_ID,
@@ -27,7 +28,6 @@ import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
-import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingActionButton } from '../components/SettingActionButton';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
@@ -40,6 +40,18 @@ import { useAudioOutputDevices } from '../hooks/useAudioOutputDevices';
 import { SortableList } from '../../SortableList';
 import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import { SettingProps, settingPropFor } from '../components/SettingProp';
+import { LayoutVisualizer } from './LayoutVisualizer';
+import {
+  LAP_TRACE_ELEMENTS,
+  buildDefaultLapTraceTree,
+  getLapTraceLayoutTree,
+  lapTraceElementSide,
+} from '../../LapTrace/layoutTree';
+import {
+  hasLayoutTree,
+  isEmptyLayoutTree,
+  layoutTreeHas,
+} from '@irdashies/domain/layoutTree';
 
 const SETTING_ID = 'laptrace';
 const SettingProp = settingPropFor(SETTING_ID);
@@ -94,6 +106,25 @@ const formatLapTime = (seconds: number): string => {
 };
 
 const defaultConfig = getWidgetDefaultConfig('laptrace');
+
+const TABS: SettingsTabType[] = [
+  'layout',
+  'trace',
+  'corner',
+  'braking',
+  'styling',
+  'visibility',
+  'help',
+];
+
+// Configs saved before the layout editor have no tree. Seed one from the old
+// panel and countdown settings so the editor shows what the overlay draws.
+const withLayoutTree = (
+  config: LapTraceWidgetSettings['config']
+): LapTraceWidgetSettings['config'] => {
+  if (hasLayoutTree(config.layoutTree)) return config;
+  return { ...config, layoutTree: buildDefaultLapTraceTree(config) };
+};
 
 const LAST_CORNER_DISPLAY_ORDER = [
   'corner',
@@ -195,14 +226,24 @@ export const LapTraceSettings = () => {
 
   const [settings, setSettings] = useState<LapTraceWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config:
+    config: withLayoutTree(
       (savedSettings?.config as LapTraceWidgetSettings['config']) ??
-      defaultConfig,
+        defaultConfig
+    ),
   });
 
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('lapTraceTab') as SettingsTabType) || 'trace'
+  const currentTree = useMemo(
+    () => getLapTraceLayoutTree(settings.config),
+    [settings.config]
   );
+  const cornersInLayout = layoutTreeHas(currentTree, 'corners');
+  const barsInLayout = layoutTreeHas(currentTree, 'brakeCue');
+  const barSide = lapTraceElementSide(currentTree, 'brakeCue') ?? 'right';
+
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(() => {
+    const saved = localStorage.getItem('lapTraceTab') as SettingsTabType | null;
+    return saved && TABS.includes(saved) ? saved : 'layout';
+  });
 
   useEffect(() => {
     localStorage.setItem('lapTraceTab', activeTab);
@@ -266,11 +307,12 @@ export const LapTraceSettings = () => {
     setBrakeCueOutputDevice(selectedAudioDeviceId);
   }, [selectedAudioDeviceId]);
 
-  // Top and bottom place the panel across the width, where it is only as tall
-  // as its own lines and so can never show more than the corner just finished.
+  // Above or below the plot the panel runs across the width, where it is only
+  // as tall as its own lines and so can never show more than the corner just
+  // finished.
+  const lastCornerSide = lapTraceElementSide(currentTree, 'corners') ?? 'right';
   const isLastCornerHorizontal =
-    (settings.config.lastCornerPosition ?? 'left') === 'top' ||
-    (settings.config.lastCornerPosition ?? 'left') === 'bottom';
+    lastCornerSide === 'top' || lastCornerSide === 'bottom';
 
   const audioDeviceOptions = useMemo(() => {
     const options = [
@@ -427,6 +469,13 @@ export const LapTraceSettings = () => {
           <div className="space-y-4">
             <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
               <TabButton
+                id="layout"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Layout
+              </TabButton>
+              <TabButton
                 id="trace"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
@@ -471,6 +520,40 @@ export const LapTraceSettings = () => {
             </div>
 
             <div>
+              {activeTab === 'layout' && (
+                <SettingsSection title="Layout Editor">
+                  <p className="text-xs text-slate-400">
+                    Drag the trace, the last-corner panel and the countdown bars
+                    to place them. Leave an element out of the layout to hide
+                    it. Beside the trace the panel and the bars run full height;
+                    above or below it they run across.
+                  </p>
+                  {isEmptyLayoutTree(currentTree) ? (
+                    <div className="h-[450px] flex items-center justify-center bg-slate-900 border border-slate-700 rounded text-sm text-slate-400">
+                      This layout shows no elements. Use Reset to Default Layout
+                      to start editing.
+                    </div>
+                  ) : (
+                    <LayoutVisualizer
+                      tree={currentTree}
+                      onChange={(layoutTree: LayoutNode) =>
+                        handleConfigChange({ layoutTree })
+                      }
+                      availableWidgets={LAP_TRACE_ELEMENTS}
+                    />
+                  )}
+
+                  <SettingActionButton
+                    label="Reset to Default Layout"
+                    onClick={() =>
+                      handleConfigChange({
+                        layoutTree: buildDefaultLapTraceTree(defaultConfig),
+                      })
+                    }
+                  />
+                </SettingsSection>
+              )}
+
               {activeTab === 'trace' && (
                 <SettingsSection title="Reference Lap">
                   <SettingProp path="referenceSource" />
@@ -708,9 +791,16 @@ export const LapTraceSettings = () => {
 
               {activeTab === 'corner' && (
                 <SettingsSection title="Last Corner">
-                  <SettingProp path="showLastCorner" />
+                  {!cornersInLayout && (
+                    <p className="text-xs text-slate-400">
+                      Add Last Corner to the layout on the Layout tab to show
+                      how the corners you just finished compared with the
+                      reference lap. Needs the bundled track data for the
+                      circuit.
+                    </p>
+                  )}
 
-                  {settings.config.showLastCorner && (
+                  {cornersInLayout && (
                     <>
                       <div className="mt-4">
                         <h3 className="text-sm font-medium text-slate-200">
@@ -775,8 +865,6 @@ export const LapTraceSettings = () => {
 
                       <SettingProp path="lastCornerSpeedUnit" />
 
-                      <SettingProp path="lastCornerPosition" />
-
                       {/* Above or below the trace the panel is only as tall as
                         its own lines, so there is never room for history —
                         only the corner just finished shows, whatever this is
@@ -811,35 +899,19 @@ export const LapTraceSettings = () => {
                     }
                   />
 
-                  <SettingProp path="brakeCueBars" />
-
-                  {settings.config.brakeCueBars &&
-                    (() => {
-                      const barSide =
-                        settings.config.brakeCueBarSide ?? 'right';
-                      const isVertical =
-                        barSide === 'left' || barSide === 'right';
-                      return (
-                        <>
-                          <SettingButtonGroupRow
-                            title="Bar Position"
-                            description="Left/Right run a full-height column of 4 bars beside the trace that drain 3, 2 and 1 second before your reference lap braked. Top/Bottom run a single continuous bar across the width instead."
-                            value={barSide}
-                            options={[
-                              { label: 'Left', value: 'left' },
-                              { label: 'Right', value: 'right' },
-                              { label: 'Top', value: 'top' },
-                              { label: 'Bottom', value: 'bottom' },
-                            ]}
-                            onChange={(v) =>
-                              handleConfigChange({ brakeCueBarSide: v })
-                            }
-                          />
-
-                          {isVertical && <SettingProp path="brakeCueLastBar" />}
-                        </>
-                      );
-                    })()}
+                  {/* Shown and placed from the Layout tab. Beside the trace
+                    it is a column of 4 bars, so only then does the end the
+                    final bar sits at mean anything. */}
+                  {barsInLayout ? (
+                    (barSide === 'left' || barSide === 'right') && (
+                      <SettingProp path="brakeCueLastBar" />
+                    )
+                  ) : (
+                    <p className="text-xs text-slate-400">
+                      Add Countdown Bars to the layout on the Layout tab to see
+                      bars drain before your reference lap braked.
+                    </p>
+                  )}
 
                   <SettingProp path="brakeCueAudio" />
 
@@ -1066,7 +1138,7 @@ export const LapTraceSettings = () => {
                       </div>
                     </div>
 
-                    {settings.config.brakeCueBars && (
+                    {barsInLayout && (
                       <div className="space-y-2 border-t border-slate-700/50 pt-3">
                         <div className="flex items-center justify-between">
                           <span className="text-md font-semibold text-slate-300">
@@ -1157,7 +1229,7 @@ export const LapTraceSettings = () => {
                       </div>
                     )}
 
-                    {settings.config.showLastCorner && (
+                    {cornersInLayout && (
                       <>
                         <SettingProp path="lastCornerFontSize" />
 

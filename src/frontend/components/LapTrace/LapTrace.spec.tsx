@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type {
   ChannelBridge,
   LapTraceSampleSnapshot,
+  LayoutNode,
   TrackStateSnapshot,
 } from '@irdashies/types';
 import { useLapTraceStore, useSessionStore } from '@irdashies/context';
@@ -388,14 +389,120 @@ describe('LapTrace', () => {
     const strip = screen.getByTestId('brake-cue-bars');
     const panel = screen.getByTestId('last-corner-panel');
     const svg = document.querySelector('svg');
-    const plotColumn = strip.parentElement;
+    // The innermost container the strip shares with the plot.
+    let plotColumn = strip.parentElement;
+    while (plotColumn && !plotColumn.contains(svg)) {
+      plotColumn = plotColumn.parentElement;
+    }
 
     // The horizontal strip shares the plot's column, so it spans only the
     // trace width — and that column excludes the side history panel, which
     // takes its own width from the row alongside the column.
     expect(svg).toBeTruthy();
-    expect(plotColumn?.contains(svg ?? null)).toBe(true);
+    expect(plotColumn?.className).toContain('flex-col');
     expect(plotColumn?.contains(panel)).toBe(false);
+  });
+
+  describe('with a layout from the editor', () => {
+    const box = (widget: string): LayoutNode => ({
+      id: `box-${widget}`,
+      type: 'box',
+      direction: 'col',
+      widgets: [widget],
+    });
+    const split = (
+      direction: 'row' | 'col',
+      children: LayoutNode[]
+    ): LayoutNode => ({
+      id: `split-${direction}-${children.map((c) => c.id).join('-')}`,
+      type: 'split',
+      direction,
+      children,
+    });
+
+    it('shows what the layout holds, whatever the old settings say', () => {
+      seedReference();
+
+      const { unmount } = render(
+        <LapTrace
+          {...baseProps}
+          showLastCorner={false}
+          brakeCueBars={false}
+          layoutTree={split('row', [
+            box('plot'),
+            box('brakeCue'),
+            box('corners'),
+          ])}
+        />
+      );
+      expect(screen.getByTestId('last-corner-panel')).toBeTruthy();
+      expect(screen.getByTestId('brake-cue-bars')).toBeTruthy();
+      unmount();
+
+      render(
+        <LapTrace
+          {...baseProps}
+          showLastCorner
+          brakeCueBars
+          layoutTree={split('col', [box('plot')])}
+        />
+      );
+      expect(screen.queryByTestId('last-corner-panel')).toBeNull();
+      expect(screen.queryByTestId('brake-cue-bars')).toBeNull();
+      expect(document.querySelector('svg')).toBeTruthy();
+    });
+
+    it('runs the panel and the strip full height beside the trace, across it above or below', () => {
+      seedReference();
+
+      const { unmount } = render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('row', [
+            box('corners'),
+            box('plot'),
+            box('brakeCue'),
+          ])}
+        />
+      );
+      expect(screen.getByTestId('last-corner-panel').dataset.placement).toBe(
+        'left'
+      );
+      expect(screen.getByTestId('brake-cue-bars').dataset.side).toBe('right');
+      unmount();
+
+      render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('col', [
+            box('brakeCue'),
+            box('plot'),
+            box('corners'),
+          ])}
+        />
+      );
+      expect(screen.getByTestId('last-corner-panel').dataset.placement).toBe(
+        'bottom'
+      );
+      const strip = screen.getByTestId('brake-cue-bars');
+      expect(strip.dataset.side).toBe('top');
+      expect(strip.className).toContain('w-full');
+    });
+
+    it('gives the free room to the branch holding the trace', () => {
+      seedReference();
+
+      render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('row', [box('plot'), box('corners')])}
+        />
+      );
+      const panelBox = screen.getByTestId('last-corner-panel').parentElement;
+      const plotBox = document.querySelector('svg')?.closest('.flex-1');
+      expect(panelBox?.className).toContain('flex-none');
+      expect(plotBox).toBeTruthy();
+    });
   });
 
   it('caps a long imported lap name at half the header', () => {

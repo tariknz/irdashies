@@ -163,12 +163,6 @@ export default defineWidgetManifest({
       description:
         'Draw the reference throttle and brake as filled bars down to the axis instead of a line',
     },
-    showLastCorner: {
-      type: 'boolean',
-      label: 'Last Corner Panel',
-      description:
-        'Shows how the corners you just finished compared with the reference lap. Each result appears as you exit the corner and stays while the next few are driven, so a sequence of corners is still readable afterwards. The corner you are in holds an empty slot until you exit it. Needs the bundled track data for the circuit.',
-    },
     lastCornerLabelStyle: {
       type: 'enum',
       label: 'Corner Label',
@@ -190,19 +184,6 @@ export default defineWidgetManifest({
       ],
       control: 'select',
     },
-    lastCornerPosition: {
-      type: 'enum',
-      label: 'Panel Position',
-      description:
-        'Which edge of the graph the panel sits on. Left and right stack the corners in a column and take width from the trace, so they suit a wider widget.',
-      options: [
-        { value: 'bottom', label: 'Bottom' },
-        { value: 'top', label: 'Top' },
-        { value: 'left', label: 'Left' },
-        { value: 'right', label: 'Right' },
-      ],
-      control: 'select',
-    },
     lastCornerCount: {
       type: 'number',
       label: 'Corners Shown',
@@ -211,12 +192,6 @@ export default defineWidgetManifest({
       min: 1,
       max: 5,
       step: 1,
-    },
-    brakeCueBars: {
-      type: 'boolean',
-      label: 'Countdown Bar(s)',
-      description:
-        "Display bar(s) that drain before your reference lap braked. Turning red at the brake point itself. Follows the reference lap's brake points; light dabs of the brake are ignored.",
     },
     brakeCueLastBar: {
       type: 'enum',
