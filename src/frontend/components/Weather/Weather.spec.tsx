@@ -6,6 +6,7 @@ import { Weather } from './Weather';
 const mocks = vi.hoisted(() => ({
   simulator: null as ActiveSimulator | null,
   isDemoMode: false,
+  windYaw: 0,
   weatherSettings: null as {
     units?: 'auto' | 'Metric' | 'Imperial';
     forecast?: { enabled: boolean };
@@ -34,7 +35,7 @@ vi.mock('@irdashies/context', () => ({
   useSessionVisibility: () => true,
   useThrottledWeather: () => ({
     trackMoisture: 1,
-    windYaw: 0,
+    windYaw: mocks.windYaw,
     windDirection: 0,
     windVelocity: 0,
     humidity: undefined,
@@ -60,6 +61,7 @@ describe('Weather', () => {
   beforeEach(() => {
     mocks.simulator = null;
     mocks.isDemoMode = false;
+    mocks.windYaw = 0;
     mocks.weatherSettings = null;
   });
 
@@ -97,10 +99,18 @@ describe('Weather', () => {
     expect(screen.getByText('DRY')).toBeInTheDocument();
   });
 
+  it('keeps demo wind direction independent of telemetry yaw', () => {
+    mocks.isDemoMode = true;
+    mocks.windYaw = Math.PI / 2;
+    const { container } = render(<Weather />);
+
+    expect(container.querySelector('svg')?.style.rotate).toBe('180deg');
+  });
+
   it('shows the rain warning in demo mode', () => {
     mocks.isDemoMode = true;
     render(<Weather />);
 
-    expect(screen.getByText('RAIN IN ~2H')).toBeInTheDocument();
+    expect(screen.getByText(/RAIN IN ~\s*2H/)).toBeInTheDocument();
   });
 });

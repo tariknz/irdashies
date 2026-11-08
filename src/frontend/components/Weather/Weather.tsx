@@ -17,8 +17,9 @@ import { getWindIntensityClass } from '../../domain/weather/wind';
 import { useWeatherSettings } from './hooks/useWeatherSettings';
 import { useWeatherForecast } from './hooks/useWeatherForecast';
 import {
-  rainAlertIn,
   DEMO_FORECAST,
+  formatRainAlertLead,
+  rainAlertIn,
   rainTileClass,
   surfaceStatus,
   tempTrend,
@@ -55,12 +56,19 @@ export const Weather = memo(() => {
   const showForecast = settings?.forecast?.enabled !== false;
   const liveForecast = useWeatherForecast(showForecast);
   const forecast = isDemoMode ? DEMO_FORECAST : liveForecast;
+  const currentTimeOfDay = useSessionBarSelector((s) =>
+    s.sessionTimeOfDay === undefined
+      ? undefined
+      : Math.floor(s.sessionTimeOfDay / 60) * 60
+  );
 
   const demoWind = useWindDemoData(isDemoMode, isMetric);
   const windMs = demoWind?.speedMs ?? weather.windVelocity;
-  const windDir = demoWind?.direction ?? weather.windDirection;
   const windRelative =
-    windDir === undefined ? undefined : windDir - (weather.windYaw ?? 0);
+    demoWind?.direction ??
+    (weather.windDirection === undefined
+      ? undefined
+      : weather.windDirection - (weather.windYaw ?? 0));
   const windSpeed =
     windMs === undefined
       ? undefined
@@ -69,7 +77,9 @@ export const Weather = memo(() => {
   const [airTemp, trackTemp] = temps ?? [];
   const surface = surfaceStatus(weather.trackMoisture);
   const trend = tempTrend(airTemp, forecast);
-  const alertIn = showForecast ? rainAlertIn(forecast) : undefined;
+  const alertIn = showForecast
+    ? rainAlertIn(forecast, isDemoMode ? undefined : currentTimeOfDay)
+    : undefined;
 
   if (settings?.showOnlyWhenOnTrack && !isOnTrack) return null;
   if (!isSessionVisible) return <></>;
@@ -85,7 +95,7 @@ export const Weather = memo(() => {
       >
         {alertIn !== undefined && (
           <div className="absolute -top-2.5 right-3 rounded-full bg-blue-600 px-2.5 py-0.5 text-xs font-bold tracking-wider">
-            RAIN IN ~{alertIn}H
+            RAIN IN ~{formatRainAlertLead(alertIn)}
           </div>
         )}
         <div className="flex items-center gap-3">

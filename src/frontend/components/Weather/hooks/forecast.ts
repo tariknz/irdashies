@@ -7,8 +7,12 @@ export interface WeatherSample {
 }
 
 export interface ForecastHour {
-  /** Sim time of day at the top of the hour, 0..23. */
+  /** Sim time at the top of the hour, 0..23. */
   hour: number;
+  /** Sim time of the forecast point, undefined for relative demo forecasts. */
+  timeOfDay?: number;
+  /** Lead time from the newest sample to this forecast point, in hours. */
+  hoursAhead: number;
   airTemp: number;
   /** 0..100 */
   precipitationPct: number;
@@ -19,7 +23,7 @@ const HOUR = 3600;
 // Below this much sim time a slope is noise, so the forecast stays flat.
 const MIN_SPAN = 600;
 // A short window keeps the estimate close to what is happening now.
-export const MAX_SPAN = 2 * HOUR;
+const MAX_SPAN = 2 * HOUR;
 const MAX_TEMP_SWING_PER_HOUR = 6;
 
 /** Seconds from `from` to `to` going forwards over midnight. */
@@ -34,9 +38,15 @@ export const appendSample = (
   // A clock that jumped back is a new session or a replay seek.
   const restarted = last && forward(last.timeOfDay, sample.timeOfDay) > DAY / 2;
   const kept = restarted ? [] : history;
-  return [...kept, sample].filter(
+  const recent = kept.filter(
     (s) => forward(s.timeOfDay, sample.timeOfDay) <= MAX_SPAN
   );
+  const lastRecent = recent[recent.length - 1];
+  if (lastRecent?.timeOfDay === sample.timeOfDay) {
+    recent[recent.length - 1] = sample;
+    return recent;
+  }
+  return [...recent, sample];
 };
 
 /**
@@ -68,6 +78,8 @@ export const forecastFromTrend = (
     const rain = Math.max(0, Math.min(1, now.precipitation + rainSlope * h));
     return {
       hour: (nextHour + i) % 24,
+      timeOfDay: ((nextHour + i) % 24) * HOUR,
+      hoursAhead: h,
       airTemp: now.airTemp + tempSlope * h,
       precipitationPct: Math.round(rain * 100),
     };

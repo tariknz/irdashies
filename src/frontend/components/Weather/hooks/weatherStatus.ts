@@ -34,19 +34,34 @@ export const tempTrend = (
 
 export const RAIN_ALERT_PCT = 30;
 
-/** Whole hours until the first forecast tile where rain is likely, if any. */
+const DAY = 24 * 60 * 60;
+const HOUR = 60 * 60;
+
+/** Hours until the first forecast point at which rain is likely, if any. */
 export const rainAlertIn = (
-  forecast: readonly ForecastHour[]
+  forecast: readonly ForecastHour[],
+  nowTimeOfDay?: number
 ): number | undefined => {
-  const i = forecast.findIndex((h) => h.precipitationPct >= RAIN_ALERT_PCT);
-  return i < 0 ? undefined : i + 1;
+  const firstRain = forecast.find((h) => h.precipitationPct >= RAIN_ALERT_PCT);
+  if (!firstRain) return undefined;
+  if (nowTimeOfDay === undefined || firstRain.timeOfDay === undefined) {
+    return firstRain.hoursAhead;
+  }
+  return ((firstRain.timeOfDay - nowTimeOfDay + DAY) % DAY) / HOUR;
+};
+
+/** A short approximate lead time for the rain badge. */
+export const formatRainAlertLead = (hours: number): string => {
+  if (hours < 1) return `${Math.max(1, Math.round(hours * 60))}M`;
+  const roundedHours = Math.round(hours * 10) / 10;
+  return `${Number.isInteger(roundedHours) ? roundedHours : roundedHours.toFixed(1)}H`;
 };
 
 /** Shown in demo mode, where no telemetry history exists to extrapolate. */
 export const DEMO_FORECAST: readonly ForecastHour[] = [
-  { hour: 1, airTemp: 22, precipitationPct: 20 },
-  { hour: 2, airTemp: 20, precipitationPct: 60 },
-  { hour: 3, airTemp: 18, precipitationPct: 85 },
+  { hour: 1, hoursAhead: 1, airTemp: 22, precipitationPct: 20 },
+  { hour: 2, hoursAhead: 2, airTemp: 20, precipitationPct: 60 },
+  { hour: 3, hoursAhead: 3, airTemp: 18, precipitationPct: 85 },
 ];
 
 /** Forecast tile colours: the bluer, the more likely rain. */

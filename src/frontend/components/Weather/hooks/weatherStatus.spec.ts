@@ -1,16 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import {
   rainAlertIn,
+  formatRainAlertLead,
   rainTileClass,
   surfaceStatus,
   tempTrend,
 } from './weatherStatus';
 
-const h = (hour: number, airTemp: number, precipitationPct: number) => ({
-  hour,
-  airTemp,
-  precipitationPct,
-});
+const h = (
+  hour: number,
+  airTemp: number,
+  precipitationPct: number,
+  hoursAhead = hour,
+  timeOfDay = hour * 3600
+) => ({ hour, timeOfDay, hoursAhead, airTemp, precipitationPct });
 
 describe('surfaceStatus', () => {
   it('maps iRacing wetness to dry, damp and wet', () => {
@@ -45,6 +48,19 @@ describe('tempTrend', () => {
 describe('rainAlertIn', () => {
   it('is the hours until the first tile at or above the threshold', () => {
     expect(rainAlertIn([h(1, 20, 10), h(2, 20, 30), h(3, 20, 90)])).toBe(2);
+  });
+  it('returns the lead time to the first likely-rain forecast point', () => {
+    expect(rainAlertIn([h(15, 20, 30, 1 / 60)])).toBeCloseTo(1 / 60);
+  });
+  it('calculates lead time from the current sim time to the forecast point', () => {
+    const now = 14 * 3600 + 59 * 60;
+    expect(rainAlertIn([h(15, 20, 30)], now)).toBeCloseTo(1 / 60);
+  });
+
+  it('formats sub-hour and fractional-hour lead times', () => {
+    expect(formatRainAlertLead(1 / 60)).toBe('1M');
+    expect(formatRainAlertLead(1)).toBe('1H');
+    expect(formatRainAlertLead(1.5)).toBe('1.5H');
   });
 
   it('is undefined when it stays dry', () => {

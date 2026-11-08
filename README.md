@@ -327,7 +327,7 @@ A compact card for current track and weather conditions, with a short trend esti
 **Features:**
 
 - Track surface status, current sky, air and track temperatures, and wind direction/speed
-- A three-hour temperature and precipitation trend with a rain warning when precipitation is likely
+- A three-hour temperature and precipitation trend with a rain warning showing its approximate lead time
 - The trend is extrapolated from recent session telemetry; it is not a simulator-provided forecast
 - Temperature units: Auto (based on iRacing settings), Metric (°C), or Imperial (°F)
 - Adjustable background opacity and widget scale

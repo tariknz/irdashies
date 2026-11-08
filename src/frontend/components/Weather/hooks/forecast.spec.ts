@@ -34,6 +34,10 @@ describe('forecastFromTrend', () => {
     const f = forecastFromTrend([s(22.5, 20), s(23.5, 20)]);
     expect(f.map((x) => x.hour)).toEqual([0, 1, 2]);
   });
+  it('records the lead time to a partial-hour forecast point', () => {
+    const forecast = forecastFromTrend([s(14 + 59 / 60, 20)]);
+    expect(forecast[0]).toMatchObject({ hour: 15, hoursAhead: 1 / 60 });
+  });
 });
 
 describe('appendSample', () => {
@@ -43,6 +47,15 @@ describe('appendSample', () => {
   });
 
   it('starts over when the sim clock jumps back', () => {
-    expect(appendSample([s(20, 20)], s(6, 20))).toEqual([s(6, 20)]);
+    let history = appendSample([], s(9.5, 20));
+    history = appendSample(history, s(10.5, 21));
+    history = appendSample(history, s(11, 22));
+
+    expect(appendSample(history, s(10, 18))).toEqual([s(10, 18)]);
+  });
+  it('replaces the current bucket sample instead of retaining duplicates', () => {
+    expect(appendSample([s(12, 20, 0.1)], s(12, 22, 0.2))).toEqual([
+      s(12, 22, 0.2),
+    ]);
   });
 });
