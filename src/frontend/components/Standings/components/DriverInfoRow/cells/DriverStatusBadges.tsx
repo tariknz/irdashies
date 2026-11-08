@@ -12,12 +12,6 @@ interface StatusBadgeProps {
   animate?: boolean;
   children: ReactNode;
   additionalClasses?: string;
-  /**
-   * An exact background, for a badge whose colour is specified rather than
-   * chosen. Inline because it is a fixed hex, not a palette step: Tailwind's
-   * red-500 is #ef4444 and the penalty badge is specified as #FF0000.
-   */
-  backgroundColor?: string;
 }
 
 const StatusBadge = ({
@@ -26,7 +20,6 @@ const StatusBadge = ({
   animate,
   children,
   additionalClasses = '',
-  backgroundColor,
 }: StatusBadgeProps) => {
   const baseClasses =
     'text-xs border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight';
@@ -35,7 +28,6 @@ const StatusBadge = ({
   return (
     <span
       className={`${textColor} ${baseClasses} ${borderColorClass} ${animationClass} ${additionalClasses}`}
-      style={backgroundColor ? { backgroundColor } : undefined}
     >
       {children}
     </span>
@@ -196,8 +188,9 @@ export const DriverStatusBadges = memo(
           <StatusBadge
             textColor="text-white"
             borderColorClass="border-transparent"
-            additionalClasses="inline-block min-w-6 font-bold"
-            backgroundColor="#FF0000"
+            // An exact red, as specified for the penalty badge: Tailwind's
+            // red-500 is #ef4444.
+            additionalClasses="inline-block min-w-6 font-bold bg-[#FF0000]"
           >
             {redBadgeText}
           </StatusBadge>

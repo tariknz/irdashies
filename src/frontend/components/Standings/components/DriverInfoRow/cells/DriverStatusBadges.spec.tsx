@@ -135,7 +135,8 @@ describe('DriverStatusBadges penalty kind', () => {
       'span'
     ) as HTMLElement;
     expect(span.className).toContain('text-white');
-    expect(span.style.backgroundColor).toBe('rgb(255, 0, 0)');
+    expect(span.className).toContain('bg-[#FF0000]');
+    expect(span.getAttribute('style')).toBeNull();
   });
 
   it('shows up on its own, without another status to carry it', () => {
@@ -181,7 +182,7 @@ describe('DriverStatusBadges penalty kind', () => {
       penaltySeconds: 10,
     }).querySelector('span') as HTMLElement;
     expect(span.className).toContain('text-white');
-    expect(span.style.backgroundColor).toBe('rgb(255, 0, 0)');
+    expect(span.className).toContain('bg-[#FF0000]');
   });
 
   describe("LMU's finish status", () => {
@@ -202,7 +203,7 @@ describe('DriverStatusBadges penalty kind', () => {
         const badge = container.querySelector('span');
         expect(badge?.textContent).toBe(state);
         // The same exact red as the DT / SG badge.
-        expect(badge?.getAttribute('style')).toContain('rgb(255, 0, 0)');
+        expect(badge?.className).toContain('bg-[#FF0000]');
         unmount();
       }
     });

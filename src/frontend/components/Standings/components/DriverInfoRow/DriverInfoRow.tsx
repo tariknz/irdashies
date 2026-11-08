@@ -322,12 +322,14 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
   // LMU's DQ also raises Disqualify, so the pit column would repeat as DNF
   // what the name cell already writes out -- but only there: with the name
   // cell's badges off or the column hidden, the pit column is the only sign.
+  // An LMU retirement raises no flag at all, so the pit column takes it from
+  // the finish status, or it would show nowhere.
   const nameShowsRetirement =
     (finishState === 'DNF' || finishState === 'DQ') &&
     (displayOrder ? displayOrder.includes('driverName') : true) &&
     (config?.driverName?.enabled ?? true) &&
     (config?.driverName?.showStatusBadges ?? true);
-  const pitStatusDnf = dnf && !nameShowsRetirement;
+  const pitStatusDnf = (dnf || finishState === 'DNF') && !nameShowsRetirement;
   const positionBackground =
     config?.stylingOptions?.driverPosition?.background ?? true;
   const numberBackground =
