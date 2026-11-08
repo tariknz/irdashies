@@ -44,7 +44,26 @@ vi.mock('./ReleaseNotes/ReleaseNotesStatusContext', () => ({
 vi.mock('./menuItems', () => ({
   generalItems: [
     { to: '/settings/general', path: '/general', label: 'General' },
-    { to: '/settings/profiles', path: '/profiles', label: 'Profiles' },
+  ],
+  toolItems: [
+    {
+      to: '/settings/profiles',
+      path: '/profiles',
+      label: 'Profiles',
+      category: 'Tools',
+    },
+    {
+      to: '/settings/driver-tags',
+      path: '/driver-tags',
+      label: 'Driver Tags',
+      category: 'Tools',
+    },
+    {
+      to: '/settings/car-setup',
+      path: '/car-setup',
+      label: 'Setup Comparison',
+      category: 'Tools',
+    },
   ],
   bottomItems: [{ to: '/settings/about', path: '/about', label: 'About' }],
   menuHasToggle: (widgetType: string, ids: string[]) =>
@@ -143,6 +162,9 @@ describe('SettingsMenu', () => {
     );
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
     expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Driver Tags' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Setup Comparison' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Profiles' })).toBeNull();
     fireEvent.click(screen.getByRole('link', { name: 'Back to overlays' }));
     expect(screen.getByTestId('current-path')).toHaveTextContent(
       '/settings/standings'
@@ -201,7 +223,14 @@ describe('SettingsMenu', () => {
     ).toBeInTheDocument();
     expect(
       screen.getAllByRole('heading', { level: 3 }).map((el) => el.textContent)
-    ).toEqual(['Standings', 'Broadcast & Streaming']);
+    ).toEqual(['Standings', 'Broadcast & Streaming', 'Tools']);
+    const tools = within(screen.getByRole('region', { name: 'Tools' }));
+    expect(tools.getAllByRole('link').map((link) => link.textContent)).toEqual([
+      'Profiles',
+      'Driver Tags',
+      'Setup Comparison',
+    ]);
+    expect(tools.queryByRole('switch')).not.toBeInTheDocument();
     expect(
       screen.queryByRole('heading', { name: 'Session & Weather' })
     ).not.toBeInTheDocument();
@@ -393,6 +422,7 @@ describe('SettingsMenu', () => {
     fireEvent.click(screen.getByText('(1 hidden)'));
     expect(screen.getByRole('link', { name: /Wind/ })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Twitch Chat' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Tools' })).toBeNull();
     expect(
       screen.getByRole('switch', { name: 'Enable Standings' })
     ).toBeChecked();

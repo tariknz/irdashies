@@ -17,7 +17,7 @@ export interface MenuItem {
   path: string;
   label: string;
   widgetType?: string;
-  category?: WidgetCategory;
+  category?: WidgetCategory | 'Tools';
   /** Widgets that share this item's page; it shows On while any of them is. */
   groupTypes?: string[];
   icon?: Icon;
@@ -33,28 +33,34 @@ export const generalItems: MenuItem[] = [
     icon: SlidersHorizontalIcon,
   },
   {
-    to: '/settings/profiles',
-    path: '/profiles',
-    label: 'Profiles',
-    icon: UsersIcon,
-  },
-  {
     to: '/settings/keybindings',
     path: '/keybindings',
     label: 'Key Bindings',
     icon: KeyboardIcon,
+  },
+];
+
+export const toolItems: MenuItem[] = [
+  {
+    to: '/settings/profiles',
+    path: '/profiles',
+    label: 'Profiles',
+    icon: UsersIcon,
+    category: 'Tools',
   },
   {
     to: '/settings/driver-tags',
     path: '/driver-tags',
     label: 'Driver Tags',
     icon: TagIcon,
+    category: 'Tools',
   },
   {
     to: '/settings/car-setup',
     path: '/car-setup',
     label: 'Setup Comparison',
     icon: ScalesIcon,
+    category: 'Tools',
   },
 ];
 
