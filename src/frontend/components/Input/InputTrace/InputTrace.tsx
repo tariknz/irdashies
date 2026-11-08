@@ -1,5 +1,6 @@
 import * as d3 from 'd3';
-import { useEffect, useRef, useMemo } from 'react';
+import { memo, useEffect, useRef, useMemo } from 'react';
+import { perfMetrics } from '@irdashies/utils/perfMetrics';
 import { getColor } from '@irdashies/utils/colors';
 
 const BRAKE_COLOR = getColor('red');
@@ -37,16 +38,7 @@ interface InputTraceHistory {
   writeIndex: number;
 }
 
-// Pre-allocated indices array (reused across renders)
-let cachedIndices: number[] = [];
-function getIndices(bufferSize: number): number[] {
-  if (cachedIndices.length !== bufferSize) {
-    cachedIndices = Array.from({ length: bufferSize }, (_, i) => i);
-  }
-  return cachedIndices;
-}
-
-export const InputTrace = ({ input, settings }: InputTraceProps) => {
+export const InputTrace = memo(({ input, settings }: InputTraceProps) => {
   const {
     includeClutch = true,
     includeThrottle = true,
@@ -93,12 +85,70 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
     [yScale]
   );
 
+  const {
+    generatePathD,
+    generateCenteredPathD,
+    generateAbsLineD,
+    generateAbsAreaD,
+  } = useMemo(() => {
+    const indices = Array.from({ length: bufferSize }, (_, index) => index);
+    let values: number[] = [];
+    const sampleIndex = (index: number) =>
+      ((historyRef.current?.writeIndex ?? 0) + index) % bufferSize;
+    const line = d3
+      .line<number>()
+      .x((index) => xScale(index))
+      .y((index) =>
+        yScale(Math.max(0, Math.min(1, values[sampleIndex(index)])))
+      )
+      .curve(d3.curveBasis);
+    const centered = d3
+      .line<number>()
+      .x((index) => xScale(index))
+      .y((index) => height / 2 - (values[sampleIndex(index)] - 0.5) * height)
+      .curve(d3.curveBasis);
+    const absActive = (index: number) =>
+      historyRef.current?.brakeAbs[sampleIndex(index)] ?? false;
+    const brakeY = (index: number) =>
+      yScale(
+        Math.max(
+          0,
+          Math.min(1, historyRef.current?.brake[sampleIndex(index)] ?? 0)
+        )
+      );
+    const absLine = d3
+      .line<number>()
+      .x((index) => xScale(index))
+      .y(brakeY)
+      .defined(absActive)
+      .curve(d3.curveBasis);
+    const absArea = d3
+      .area<number>()
+      .x((index) => xScale(index))
+      .y0(yScale(0))
+      .y1(brakeY)
+      .defined(absActive)
+      .curve(d3.curveBasis);
+    return {
+      generatePathD: (next: number[]) => {
+        values = next;
+        return line(indices) ?? '';
+      },
+      generateCenteredPathD: (next: number[]) => {
+        values = next;
+        return centered(indices) ?? '';
+      },
+      generateAbsLineD: () => absLine(indices) ?? '',
+      generateAbsAreaD: () => absArea(indices) ?? '',
+    };
+  }, [bufferSize, xScale, yScale, height]);
+
   useEffect(() => {
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
     }
 
-    rafRef.current = requestAnimationFrame(() => {
+    const drawFrame = () => {
       // Allocate only on the first sample or a capacity change. Reset every
       // trace together when resizing so no old samples use the new time axis.
       if (
@@ -141,71 +191,6 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
 
       // Move write index forward (circular)
       history.writeIndex = (idx + 1) % bufferSize;
-      const wi = history.writeIndex;
-      const indices = getIndices(bufferSize);
-
-      // Helper to generate path d string for a standard line
-      const generatePathD = (values: number[]) => {
-        const line = d3
-          .line<number>()
-          .x((i) => xScale(i))
-          .y((i) => {
-            const pi = (wi + i) % bufferSize;
-            return yScale(Math.max(0, Math.min(1, values[pi])));
-          })
-          .curve(d3.curveBasis);
-        return line(indices) ?? '';
-      };
-
-      // Helper for centered line (steering)
-      const generateCenteredPathD = (values: number[]) => {
-        const centerY = height / 2;
-        const line = d3
-          .line<number>()
-          .x((i) => xScale(i))
-          .y((i) => {
-            const pi = (wi + i) % bufferSize;
-            const d = values[pi];
-            return centerY - (d - 0.5) * height;
-          })
-          .curve(d3.curveBasis);
-        return line(indices) ?? '';
-      };
-
-      // Helper to generate the ABS-active line path (same curve, gated by ABS history)
-      const generateAbsLineD = () => {
-        const line = d3
-          .line<number>()
-          .x((i) => xScale(i))
-          .y((i) => {
-            const pi = (wi + i) % bufferSize;
-            return yScale(Math.max(0, Math.min(1, history.brake[pi])));
-          })
-          .defined((i) => {
-            const pi = (wi + i) % bufferSize;
-            return history.brakeAbs[pi];
-          })
-          .curve(d3.curveBasis);
-        return line(indices) ?? '';
-      };
-
-      // Helper to generate the ABS area fill (brake curve → y=0, gated by ABS history)
-      const generateAbsAreaD = () => {
-        const area = d3
-          .area<number>()
-          .x((i) => xScale(i))
-          .y0(yScale(0))
-          .y1((i) => {
-            const pi = (wi + i) % bufferSize;
-            return yScale(Math.max(0, Math.min(1, history.brake[pi])));
-          })
-          .defined((i) => {
-            const pi = (wi + i) % bufferSize;
-            return history.brakeAbs[pi];
-          })
-          .curve(d3.curveBasis);
-        return area(indices) ?? '';
-      };
 
       // Update path d attributes directly on persistent DOM elements
       if (includeSteer && steerPathRef.current) {
@@ -236,7 +221,10 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
           }
         }
       }
-    });
+    };
+    rafRef.current = requestAnimationFrame(() =>
+      perfMetrics.measure('inputTraceFrame', drawFrame)
+    );
 
     return () => {
       if (rafRef.current) {
@@ -245,6 +233,10 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
     };
   }, [
     input,
+    generatePathD,
+    generateCenteredPathD,
+    generateAbsLineD,
+    generateAbsAreaD,
     includeThrottle,
     includeBrake,
     includeAbs,
@@ -335,4 +327,5 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
       )}
     </svg>
   );
-};
+});
+InputTrace.displayName = 'InputTrace';

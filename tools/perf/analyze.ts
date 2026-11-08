@@ -175,6 +175,12 @@ export interface PerfSummary {
     trackMapAnimationFrameRateHz: number;
     trackMapAnimationFrameP99MeanMs: number;
     trackMapAnimationFrameP99WorstMs: number;
+    inputTraceFrameRateHz: number;
+    inputTraceFrameP99MeanMs: number;
+    inputTraceFrameP99WorstMs: number;
+    radarFrameRateHz: number;
+    radarFrameP99MeanMs: number;
+    radarFrameP99WorstMs: number;
     lapTraceFrameRateHz: number;
     lapTraceFrameP99MeanMs: number;
     lapTraceFrameP99WorstMs: number;
@@ -237,6 +243,10 @@ export interface PerfComparison {
     eventLoopP99Ms: number;
     trackMapAnimationFrameRateHz: number;
     trackMapAnimationFrameP99Ms: number;
+    inputTraceFrameRateHz: number;
+    inputTraceFrameP99Ms: number;
+    radarFrameRateHz: number;
+    radarFrameP99Ms: number;
     lapTraceFrameRateHz: number;
     lapTraceFrameP99Ms: number;
     lapTraceBrakeCueRateHz: number;
@@ -572,6 +582,14 @@ export function summarizeCapture(
     renderer
       .filter((sample) => sample.trackMapAnimationFrameMs !== undefined)
       .reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
+  const inputTraceFrame = summarizeRendererMeasure(
+    renderer,
+    (sample) => sample.inputTraceFrameMs
+  );
+  const radarFrame = summarizeRendererMeasure(
+    renderer,
+    (sample) => sample.radarFrameMs
+  );
   const lapTraceFrame = summarizeRendererMeasure(
     renderer,
     (sample) => sample.lapTraceFrameMs
@@ -1165,6 +1183,12 @@ export function summarizeCapture(
       trackMapAnimationFrameP99WorstMs: maximum(
         trackMapAnimationFrames.map((stats) => stats.p99)
       ),
+      inputTraceFrameRateHz: inputTraceFrame.rateHz,
+      inputTraceFrameP99MeanMs: inputTraceFrame.p99MeanMs,
+      inputTraceFrameP99WorstMs: inputTraceFrame.p99WorstMs,
+      radarFrameRateHz: radarFrame.rateHz,
+      radarFrameP99MeanMs: radarFrame.p99MeanMs,
+      radarFrameP99WorstMs: radarFrame.p99WorstMs,
       lapTraceFrameRateHz: lapTraceFrame.rateHz,
       lapTraceFrameP99MeanMs: lapTraceFrame.p99MeanMs,
       lapTraceFrameP99WorstMs: lapTraceFrame.p99WorstMs,
@@ -1256,6 +1280,18 @@ export function compareSummaries(
       trackMapAnimationFrameP99Ms:
         candidate.renderer.trackMapAnimationFrameP99MeanMs -
         baseline.renderer.trackMapAnimationFrameP99MeanMs,
+      inputTraceFrameRateHz:
+        candidate.renderer.inputTraceFrameRateHz -
+        baseline.renderer.inputTraceFrameRateHz,
+      inputTraceFrameP99Ms:
+        candidate.renderer.inputTraceFrameP99MeanMs -
+        baseline.renderer.inputTraceFrameP99MeanMs,
+      radarFrameRateHz:
+        candidate.renderer.radarFrameRateHz -
+        baseline.renderer.radarFrameRateHz,
+      radarFrameP99Ms:
+        candidate.renderer.radarFrameP99MeanMs -
+        baseline.renderer.radarFrameP99MeanMs,
       lapTraceFrameRateHz:
         candidate.renderer.lapTraceFrameRateHz -
         baseline.renderer.lapTraceFrameRateHz,
@@ -1399,6 +1435,10 @@ export function summaryMarkdown(summary: PerfSummary): string {
 | Renderer frame-time p99 mean | ${format(summary.renderer.frameTimeP99MeanMs)} ms |
 | Renderer telemetry callbacks / second | ${format(summary.renderer.telemetryCallbackRateHz)} |
 | Renderer telemetry callback p99, mean / worst interval | ${format(summary.renderer.telemetryCallbackP99MeanMs, 3)} / ${format(summary.renderer.telemetryCallbackP99WorstMs, 3)} ms |
+| Input trace frames / second | ${format(summary.renderer.inputTraceFrameRateHz)} |
+| Input trace frame p99, mean / worst interval | ${format(summary.renderer.inputTraceFrameP99MeanMs, 3)} / ${format(summary.renderer.inputTraceFrameP99WorstMs, 3)} ms |
+| Radar frames / second | ${format(summary.renderer.radarFrameRateHz)} |
+| Radar frame p99, mean / worst interval | ${format(summary.renderer.radarFrameP99MeanMs, 3)} / ${format(summary.renderer.radarFrameP99WorstMs, 3)} ms |
 | Track-map animation frames / second | ${format(summary.renderer.trackMapAnimationFrameRateHz)} |
 | Track-map animation-frame p99, mean / worst interval | ${format(summary.renderer.trackMapAnimationFrameP99MeanMs, 3)} / ${format(summary.renderer.trackMapAnimationFrameP99WorstMs, 3)} ms |
 | Lap Trace plot frames / second | ${format(summary.renderer.lapTraceFrameRateHz)} |
@@ -1473,6 +1513,10 @@ export function comparisonMarkdown(comparison: PerfComparison): string {
 | irDashies peak memory | ${format(delta.peakMemoryMB)} MB |
 | processTelemetry p99 mean | ${format(delta.processTelemetryP99Ms)} ms |
 | Main event-loop p99 mean | ${format(delta.eventLoopP99Ms)} ms |
+| Input trace frames / second | ${format(delta.inputTraceFrameRateHz)} Hz |
+| Input trace frame p99 mean | ${format(delta.inputTraceFrameP99Ms, 3)} ms |
+| Radar frames / second | ${format(delta.radarFrameRateHz)} Hz |
+| Radar frame p99 mean | ${format(delta.radarFrameP99Ms, 3)} ms |
 | Track-map animation frames / second | ${format(delta.trackMapAnimationFrameRateHz)} Hz |
 | Track-map animation-frame p99 mean | ${format(delta.trackMapAnimationFrameP99Ms, 3)} ms |
 | Lap Trace plot frames / second | ${format(delta.lapTraceFrameRateHz)} Hz |

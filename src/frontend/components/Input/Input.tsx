@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { InputContainer } from './InputContainer/InputContainer';
 import { isInputConfig, useInputSettings } from './hooks/useInputSettings';
 import { useGearFlash } from './hooks/useGearFlash';
@@ -12,39 +13,46 @@ export const Input = (props: InputWidgetProps) => {
   // Each instance gets its own config as props. Storybook passes none.
   const dashboardSettings = useInputSettings();
   const settings = isInputConfig(props) ? props : dashboardSettings;
-  const inputs = useInputs(settings?.useRawValues ?? false);
   const { isDriving } = useDrivingState();
-  const shiftFlash = settings?.shiftFlash;
-  const flashActive = useShiftFlashActive(
-    !!shiftFlash?.enabled,
-    shiftFlash?.source ?? 'redline'
-  );
-  const flashOn = useBlink(flashActive);
-  const gearFlash = settings?.gearFlash;
-  const gearFlashColor = useGearFlash(
-    inputs.gear,
-    !!gearFlash?.enabled,
-    gearFlash?.upColor ?? '#22c55e',
-    gearFlash?.downColor ?? '#ef4444'
-  );
-
-  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
-
-  if (!settings) return <></>;
-
-  // Show only when on track setting
-  if (settings.showOnlyWhenOnTrack && !isDriving) {
-    return <></>;
-  }
-
-  return (
-    <div className="h-full flex flex-col">
-      <InputContainer
-        {...inputs}
-        settings={settings}
-        flashColor={flashOn ? shiftFlash?.color : undefined}
-        gearFlashColor={gearFlashColor}
-      />
-    </div>
-  );
+  const sessionVisible = useSessionVisibility(settings?.sessionVisibility);
+  if (
+    !settings ||
+    !sessionVisible ||
+    (settings.showOnlyWhenOnTrack && !isDriving)
+  )
+    return null;
+  return <VisibleInput settings={settings} />;
 };
+
+// Mount high-frequency consumers only while content is visible. The parent
+// keeps its lightweight track/session subscriptions so it can show us again.
+const VisibleInput = memo(
+  ({ settings }: { settings: InputWidgetSettings['config'] }) => {
+    const inputs = useInputs(settings);
+    const shiftFlash = settings?.shiftFlash;
+    const flashActive = useShiftFlashActive(
+      !!shiftFlash?.enabled,
+      shiftFlash?.source ?? 'redline'
+    );
+    const flashOn = useBlink(flashActive);
+    const gearFlash = settings?.gearFlash;
+    const gearFlashColor = useGearFlash(
+      inputs.gear,
+      !!gearFlash?.enabled,
+      gearFlash?.upColor ?? '#22c55e',
+      gearFlash?.downColor ?? '#ef4444'
+    );
+
+    return (
+      <div className="h-full flex flex-col">
+        <InputContainer
+          {...inputs}
+          settings={settings}
+          flashColor={flashOn ? shiftFlash?.color : undefined}
+          gearFlashColor={gearFlashColor}
+        />
+      </div>
+    );
+  }
+);
+VisibleInput.displayName = 'VisibleInput';

@@ -1,18 +1,11 @@
-import { useDriverControlsSnapshot } from '@irdashies/context';
+import { useMemo } from 'react';
+import { useChannelSelector } from '@irdashies/context';
+import type { InputConfig } from '@irdashies/types';
+import { createInputSelector, EMPTY_INPUTS } from './inputSelection';
 
-export const useInputs = (useRawValues: boolean) => {
-  const snapshot = useDriverControlsSnapshot();
-  const brake = useRawValues ? snapshot?.brakeRaw : snapshot?.brake;
-  const throttle = useRawValues ? snapshot?.throttleRaw : snapshot?.throttle;
-  const clutchRaw = useRawValues ? snapshot?.clutchRaw : snapshot?.clutch;
-  const gear = snapshot?.gear;
-  const speed = snapshot?.speed;
-  const unit = snapshot?.displayUnits;
-  const steer = snapshot?.steeringWheelAngle;
-  const brakeAbsActive = snapshot?.brakeAbsActive;
-
-  // 0=disengaged (pedal pressed) to 1=fully engaged (pedal not pressed) so we need to invert it
-  const clutch = clutchRaw !== undefined ? 1 - clutchRaw : undefined;
-
-  return { brake, throttle, clutch, gear, speed, unit, steer, brakeAbsActive };
+export const useInputs = (settings: InputConfig) => {
+  const selector = useMemo(() => createInputSelector(settings), [settings]);
+  return (
+    useChannelSelector('driver-controls.snapshot', selector) ?? EMPTY_INPUTS
+  );
 };

@@ -51,6 +51,19 @@ describe('renderer perf samples', () => {
   // The analyzer takes a measure's rate over the windows that report it. A
   // window that never runs the loop reporting a count of 0 added its whole
   // interval to the time, dividing the rate by the number of windows.
+  it('reports Input trace and Radar draw costs through the named measures', async () => {
+    const { recordRendererMeasure, startRendererPerfMetrics } =
+      await import('./rendererPerfMetrics');
+    startRendererPerfMetrics();
+    frame();
+    frame();
+    recordRendererMeasure('inputTraceFrame', 0.4);
+    recordRendererMeasure('radarFrame', 0.6);
+    vi.advanceTimersByTime(1000);
+    expect(reported()[0].inputTraceFrameMs?.count).toBe(1);
+    expect(reported()[0].radarFrameMs?.avg).toBeCloseTo(0.6);
+  });
+
   it('reports a measure only from a window that has run it', async () => {
     const { recordRendererMeasure, startRendererPerfMetrics } =
       await import('./rendererPerfMetrics');
