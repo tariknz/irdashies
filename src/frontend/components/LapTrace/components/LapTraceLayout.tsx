@@ -15,8 +15,9 @@ interface Container {
  * Beside the plot, room runs short in a small widget: a side panel sized for a
  * long corner name is most of the default 396px, and three rows above or below
  * the trace are most of its 120px. The countdown strip never gives way, since
- * a squeezed meter stops reading as a countdown. The plot keeps a third of the
- * container, and the panel takes what is left, clipping inside its own box.
+ * a squeezed meter stops reading as a countdown. The plot keeps 40% of the
+ * container, and the panel takes what is left, drawing only the columns that
+ * fit it.
  */
 const entrySizing = (
   holds: (element: string) => boolean,
@@ -27,8 +28,8 @@ const entrySizing = (
   }
   if (holds('plot')) {
     return parent.direction === 'row'
-      ? 'flex-1 min-w-[33%] min-h-0'
-      : 'flex-1 min-h-[33%] min-w-0';
+      ? 'flex-1 min-w-[40%] min-h-0'
+      : 'flex-1 min-h-[40%] min-w-0';
   }
   if (holds('corners')) return 'flex-initial min-h-0 min-w-0';
   return 'flex-none min-h-0 min-w-0';

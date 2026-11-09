@@ -210,12 +210,41 @@ const visibleColumnsFor = (
       (column === 'apexSpeedDelta' && showApexSpeed)
   );
 
-/** Total width in em of the columns being drawn. */
+/** Space between columns, in em. Matches the row's `gap-[0.3em]`. */
+const COLUMN_GAP_EM = 0.3;
+
+/**
+ * Total width in em of the columns being drawn, gaps included: without them
+ * the widest row overran its own panel and clipped the last unit.
+ */
 const sideWidthEmFor = (
   columns: LastCornerDisplayColumn[],
   labelEm: number
 ): number =>
-  columns.reduce((total, column) => total + columnWidthEm(column, labelEm), 0);
+  columns.reduce((total, column) => total + columnWidthEm(column, labelEm), 0) +
+  COLUMN_GAP_EM * Math.max(0, columns.length - 1);
+
+/**
+ * The columns that fit a width at a text size. Metrics go
+ * from the end of the configured order first, so what is left still reads as
+ * configured and no column is drawn half hidden. The name always stays, and
+ * truncates if even it does not fit.
+ */
+const fittingColumnsFor = (
+  columns: LastCornerDisplayColumn[],
+  labelEm: number,
+  widthPx: number,
+  fontSize: number
+): LastCornerDisplayColumn[] => {
+  const kept = [...columns];
+  while (sideWidthEmFor(kept, labelEm) * fontSize > widthPx) {
+    let last = kept.length - 1;
+    while (last >= 0 && kept[last] === 'corner') last -= 1;
+    if (last < 0) break;
+    kept.splice(last, 1);
+  }
+  return kept;
+};
 
 interface LastCornerChipProps {
   column: Exclude<LastCornerDisplayColumn, 'corner'>;
@@ -406,6 +435,9 @@ export const LastCornerPanel = ({
   const container = useRef<HTMLDivElement>(null);
   const requested = Math.max(1, count);
   const [visible, setVisible] = useState(requested);
+  // The width the panel is actually given, once measured. A layout can hand
+  // it less than its columns need; then it draws fewer of them.
+  const [givenWidth, setGivenWidth] = useState<number | null>(null);
   const latestFontSize = fontSize * latestScale;
   const displayOrder = normalizeDisplayOrder(configuredDisplayOrder);
   const columns = visibleColumnsFor(
@@ -423,6 +455,23 @@ export const LastCornerPanel = ({
       ? cornerLabels
       : entries.map((entry) => entry.label).filter(Boolean)
   );
+  // In the width the panel is given, every row shows the columns that fit at
+  // the history's size. The newest row then gives up its extra size, down to
+  // the history's, before it would lose a column the rows beneath it show.
+  const drawnColumns =
+    givenWidth === null
+      ? columns
+      : fittingColumnsFor(columns, labelEm, givenWidth, fontSize);
+  const heroFontSize =
+    givenWidth === null
+      ? latestFontSize
+      : Math.max(
+          fontSize,
+          Math.min(
+            latestFontSize,
+            givenWidth / sideWidthEmFor(drawnColumns, labelEm)
+          )
+        );
 
   // The hero holds the newest corner for HERO_HOLD_MS, then everything shifts
   // down a slot and the hero blanks. Keyed on the newest corner's own clock, so
@@ -462,12 +511,14 @@ export const LastCornerPanel = ({
     }
 
     const measure = () => {
+      // Zero is no layout at all (a hidden window, or a test), not no room.
+      setGivenWidth(el.clientWidth > 0 ? el.clientWidth : null);
       const available = el.clientHeight;
       const labelAt = (slot: number) => entries[slot - heroOffset]?.label;
       // One row like any other, just at the hero's larger size — plus its own
       // trailing gap, matching how the compact rows below are counted.
       const heroH =
-        rowHeightFor(latestFontSize, labelLinesFor(labelAt(0), labelEm)) +
+        rowHeightFor(heroFontSize, labelLinesFor(labelAt(0), labelEm)) +
         ROW_GAP_PX;
       // At least one line always shows: a panel that has been switched on but
       // renders nothing reads as broken rather than as short of room.
@@ -490,7 +541,7 @@ export const LastCornerPanel = ({
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [entries, requested, fontSize, latestFontSize, heroOffset, labelEm]);
+  }, [entries, requested, fontSize, heroFontSize, heroOffset, labelEm]);
 
   const onSide = placement === 'left' || placement === 'right';
   // With a single slot the hero *is* the history, so retiring it would leave
@@ -522,11 +573,17 @@ export const LastCornerPanel = ({
         // drawn, and the name column is pinned to this track's widest corner
         // name, so a numbered circuit is not padded out to fit "Variante
         // Tamburello A". Keyed to the hero's larger font, the widest row.
+        //
+        // Never wider than its box, though: beside the trace in a small widget
+        // the layout gives it less, and it measures that to drop columns. The
+        // width itself stays sized for every column, so dropping them does not
+        // shrink the box it is measured against.
         ...(onSide
           ? {
               width: `${Math.round(
                 latestFontSize * sideWidthEmFor(columns, labelEm)
               )}px`,
+              maxWidth: '100%',
             }
           : {}),
       }}
@@ -539,9 +596,9 @@ export const LastCornerPanel = ({
           key={`slot-${i}`}
           entry={entry}
           speedUnit={speedUnit}
-          columns={columns}
+          columns={drawnColumns}
           labelEm={labelEm}
-          fontSize={i === 0 ? latestFontSize : fontSize}
+          fontSize={i === 0 ? heroFontSize : fontSize}
           hero={i === 0}
         />
       ))}

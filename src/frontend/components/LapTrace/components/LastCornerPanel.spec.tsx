@@ -390,6 +390,95 @@ describe('LastCornerPanel', () => {
     }
   });
 
+  describe('in less width than its columns need', () => {
+    // jsdom lays nothing out, so drive the measurement: a ResizeObserver that
+    // only lets the panel measure once, and the width a layout gave it.
+    const measured = (width: number, panel: React.ReactElement) => {
+      class FakeResizeObserver {
+        observe() {
+          /* measurement is driven by the size stubs below */
+        }
+        disconnect() {
+          /* no teardown needed for the stub */
+        }
+      }
+      vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+      const clientWidth = vi
+        .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+        .mockReturnValue(width);
+      const clientHeight = vi
+        .spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+        .mockReturnValue(500);
+      try {
+        render(panel);
+      } finally {
+        clientWidth.mockRestore();
+        clientHeight.mockRestore();
+        vi.unstubAllGlobals();
+      }
+    };
+    // 'T5' takes the 3.5em minimum name column. At the 10px history size the
+    // name and the time delta need 3.5 + 0.3 + 4.7 = 8.5em, 85px; adding the
+    // brake delta needs 133px.
+    const props = {
+      ...defaultProps,
+      placement: 'right' as const,
+      fontSize: 10,
+      latestScale: 1.4,
+    };
+
+    it('draws the columns that fit, dropping from the end of the order', () => {
+      measured(100, <LastCornerPanel {...props} />);
+      expect(screen.getByText('-0.14')).toBeTruthy();
+      // Gone whole, not drawn half hidden behind the trace.
+      expect(screen.queryByText('-7')).toBeNull();
+      expect(screen.queryByText('+2.4')).toBeNull();
+    });
+
+    it('follows the configured order when it drops a column', () => {
+      // Apex speed first: name and apex need 3.5 + 0.3 + 6.2 = 10em, which
+      // fits 100px exactly, and the time delta behind it goes.
+      measured(
+        100,
+        <LastCornerPanel
+          {...props}
+          displayOrder={[
+            'corner',
+            'apexSpeedDelta',
+            'cornerTimeDelta',
+            'brakePointDelta',
+          ]}
+        />
+      );
+      expect(screen.getByText('+2.4')).toBeTruthy();
+      expect(screen.queryByText('-0.14')).toBeNull();
+    });
+
+    it('draws the newest corner smaller before it loses a column', () => {
+      measured(100, <LastCornerPanel {...props} />);
+      // 14px would need 119px for name and time; it gives up its extra size
+      // to fit 100px, and keeps the time delta the history shows.
+      const heroSize = parseFloat(rowOf('T5').style.fontSize);
+      expect(heroSize).toBeLessThan(14);
+      expect(heroSize).toBeGreaterThanOrEqual(10);
+    });
+
+    it('always keeps the corner name', () => {
+      measured(20, <LastCornerPanel {...props} />);
+      expect(screen.getByText('T5')).toBeTruthy();
+      expect(screen.queryByText('-0.14')).toBeNull();
+      // Never below the history size.
+      expect(parseFloat(rowOf('T5').style.fontSize)).toBe(10);
+    });
+
+    it('keeps its width sized for every column, so the box it measures stays put', () => {
+      measured(100, <LastCornerPanel {...props} />);
+      // 19.8em at the 14px newest-row size, whatever is drawn inside.
+      expect(panel().style.width).toBe(`${Math.round(14 * 19.8)}px`);
+      expect(panel().style.maxWidth).toBe('100%');
+    });
+  });
+
   it('scales the text to the configured size', () => {
     const { rerender } = render(
       <LastCornerPanel {...defaultProps} fontSize={10} />

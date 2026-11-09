@@ -504,7 +504,7 @@ describe('LapTrace', () => {
       expect(plotBox?.contains(panelBox ?? null)).toBe(false);
     });
 
-    it('keeps a third for the trace, gives the panel the rest, and never squeezes the countdown', () => {
+    it('keeps 40% for the trace, gives the panel the rest, and never squeezes the countdown', () => {
       seedReference();
       // Whether the layout entry holding the plot keeps this much room.
       const plotKeeps = (minimum: string) => {
@@ -528,7 +528,7 @@ describe('LapTrace', () => {
           ])}
         />
       );
-      expect(plotKeeps('min-w-[33%]')).toBe(true);
+      expect(plotKeeps('min-w-[40%]')).toBe(true);
       // Each sits straight in its box, which the row stretches to full
       // height: the panel and the bars take their height from it.
       const panelBox = screen.getByTestId('last-corner-panel').parentElement;
@@ -546,7 +546,7 @@ describe('LapTrace', () => {
           layoutTree={split('col', [box('plot'), box('corners')])}
         />
       );
-      expect(plotKeeps('min-h-[33%]')).toBe(true);
+      expect(plotKeeps('min-h-[40%]')).toBe(true);
       unmountStacked();
 
       // Without the trace there is nothing to keep room for.
