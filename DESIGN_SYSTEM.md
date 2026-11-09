@@ -25,6 +25,7 @@ Neutral/accent aliases are scoped to `.settings-shell`. Settings-prefixed semant
 | Raised control/panel                     | `--color-slate-800`         | `#242c36` |
 | Quiet grouping rule / off switch track   | `--color-slate-700`         | `#343d49` |
 | Legacy neutral stop (not a control fill) | `--color-slate-600`         | `#768394` |
+| Page behind overlay content (Gantry)     | `--color-settings-page`     | `#1b222b` |
 | Neutral filled control                   | `--color-settings-control`  | `#242c36` |
 | Neutral hover fill                       | `--color-settings-hover`    | `#343d49` |
 | Interactive boundary                     | `--color-settings-boundary` | `#8794a6` |

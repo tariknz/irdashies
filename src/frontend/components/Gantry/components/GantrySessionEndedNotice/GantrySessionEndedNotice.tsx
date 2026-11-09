@@ -10,7 +10,7 @@ export const GantrySessionEndedBanner = memo(
   ({ onDismiss }: GantrySessionEndedBannerProps) => (
     <div
       role="status"
-      className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 border-b border-slate-700/50 text-xs text-slate-300 flex-shrink-0"
+      className="settings-shell flex items-center gap-2 px-4 py-1.5 bg-slate-800 border-b border-slate-700 text-sm text-slate-300 shrink-0"
     >
       <FlagCheckered size={16} className="text-amber-400 shrink-0" />
       <span className="flex-1 min-w-0">
@@ -21,7 +21,7 @@ export const GantrySessionEndedBanner = memo(
         type="button"
         aria-label="Dismiss session ended message"
         onClick={onDismiss}
-        className="p-0.5 rounded text-slate-400 hover:text-slate-100 hover:bg-slate-700 focus:outline-none focus:ring-1 focus:ring-sky-400"
+        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-200"
       >
         <X size={14} />
       </button>

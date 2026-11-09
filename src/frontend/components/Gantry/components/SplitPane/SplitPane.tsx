@@ -182,7 +182,10 @@ export const SplitPane = memo(
         ].join(' ')}
       >
         <div
-          className="overflow-hidden shrink-0 grow-0"
+          className={[
+            'overflow-hidden shrink-0 grow-0',
+            vertical ? 'pb-1.5' : 'pr-1.5',
+          ].join(' ')}
           style={{ flexBasis: `${percent}%` }}
         >
           {left}
@@ -206,17 +209,25 @@ export const SplitPane = memo(
           // Taken out of flex flow so the panes split exactly percent /
           // (100 - percent) of the container, not of container-minus-divider.
           className={[
-            'absolute z-10 touch-none select-none bg-slate-700/50 hover:bg-sky-500/70 focus:outline-none focus:bg-sky-500/70',
+            'settings-shell group absolute z-10 flex items-center justify-center rounded-sm touch-none select-none outline-none focus-visible:outline-2 focus-visible:outline-accent-400',
             vertical
-              ? 'left-0 right-0 h-1.5 -translate-y-1/2 cursor-row-resize'
-              : 'top-0 bottom-0 w-1.5 -translate-x-1/2 cursor-col-resize',
+              ? 'left-0 right-0 h-3 -translate-y-1/2 cursor-row-resize'
+              : 'top-0 bottom-0 w-3 -translate-x-1/2 cursor-col-resize',
           ].join(' ')}
           style={vertical ? { top: `${percent}%` } : { left: `${percent}%` }}
-        />
+        >
+          <span
+            aria-hidden="true"
+            className={[
+              'rounded-full bg-slate-600 transition-colors group-hover:bg-accent-400 group-focus-visible:bg-accent-400',
+              vertical ? 'h-0.5 w-10' : 'h-10 w-0.5',
+            ].join(' ')}
+          />
+        </div>
         <div
           className={[
             'flex-1 overflow-hidden',
-            vertical ? 'min-h-0' : 'min-w-0',
+            vertical ? 'min-h-0 pt-1.5' : 'min-w-0 pl-1.5',
           ].join(' ')}
         >
           {right}

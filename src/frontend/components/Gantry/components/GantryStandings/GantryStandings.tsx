@@ -11,6 +11,7 @@ import { type Gap, useFocusDriver, useHighlightColor } from '@irdashies/domain';
 import { useActiveSimulator } from '@irdashies/context';
 import { simulatorHasDriverRatings } from '@irdashies/types';
 import { Tooltip } from '../Tooltip/Tooltip';
+import { GantryPanel } from '../GantryPanel/GantryPanel';
 import { useGantrySettings } from '../../hooks/useGantrySettings';
 import {
   useGantrySessionData,
@@ -41,41 +42,32 @@ const HeaderCell = memo(
     <Tooltip content={tip} placement="bottom">
       <span
         tabIndex={0}
-        className={`${className} cursor-help focus:outline-none focus:ring-1 focus:ring-sky-400`}
+        className={`${className} cursor-help focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent-400`}
       >
-        <span className="text-[10px]">{label}</span>
+        {label}
       </span>
     </Tooltip>
   )
 );
 HeaderCell.displayName = 'HeaderCell';
 
-/**
- * Widths for every column, shared by the header and the rows so the two cannot
- * drift apart. Sized in ch rather than px because the overlay theme scales the
- * font: a fixed pixel column clips the moment a user picks a larger size.
- *
- * Two rules keep the header over its values. shrink-0 stops a narrow window
- * squeezing a cell but not its header. And a ch resolves against the element's
- * own font size, so the header row must carry the same text-xs as the driver
- * rows — the smaller label type is set on the label span inside each cell.
- */
+/** Column widths shared by the header and the rows so they cannot drift. */
 const COL = {
-  position: 'w-6 shrink-0 text-center',
-  carNumber: 'w-12 shrink-0 text-center border-l-2 px-1',
-  name: 'flex-1 min-w-[8ch] truncate px-1',
-  compound: 'w-5 shrink-0',
-  rating: 'w-16 shrink-0',
-  pit: 'w-5 shrink-0 text-center',
-  gap: 'w-[6ch] shrink-0 px-1',
-  interval: 'w-[6ch] shrink-0 px-1',
-  best: 'w-[9ch] shrink-0 px-1',
-  last: 'w-[9ch] shrink-0 px-1',
-  delta: 'w-[6ch] shrink-0 px-1',
+  position: 'w-7 shrink-0 text-center',
+  carNumber: 'w-[52px] shrink-0 text-center border-l-2',
+  name: 'flex-1 min-w-[120px] truncate pl-1.5',
+  compound: 'w-6 shrink-0',
+  rating: 'w-14 shrink-0',
+  pit: 'w-[34px] shrink-0 text-center',
+  gap: 'w-14 shrink-0',
+  interval: 'w-14 shrink-0',
+  best: 'w-[76px] shrink-0',
+  last: 'w-[76px] shrink-0',
+  delta: 'w-11 shrink-0',
 } as const;
 
 const StandingsHeader = memo(() => (
-  <div className="sticky top-0 z-20 flex items-center px-1 py-0.5 text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-900 border-b border-slate-700/50">
+  <div className="sticky top-0 z-20 flex h-[26px] items-center border-y border-slate-700 bg-slate-900 px-2 text-xs text-slate-400">
     <HeaderCell
       label="P"
       tip="Running order within the car class. Rows are grouped by class, leader first."
@@ -183,10 +175,10 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
   const isMultiClass = standingsByClass.length > 1;
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <GantryPanel title="Standings">
       {/* One scroller for the header and the rows. A narrow window scrolls both
           together instead of shrinking the columns out of line. */}
-      <div className="flex-1 min-h-0 overflow-auto scroll-pt-6">
+      <div className="flex-1 min-h-0 overflow-auto scroll-pt-[26px]">
         <div className="min-w-min">
           <StandingsHeader />
           {standingsByClass.map(([classId, classDrivers]) => {
@@ -200,7 +192,7 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
               <div key={classId}>
                 {/* Class header */}
                 <div
-                  className="flex items-center gap-2 bg-slate-900 px-2 py-0.5 border-y border-slate-700/30"
+                  className="flex h-[26px] items-center gap-2 border-b border-slate-700 bg-slate-900 px-2"
                   style={{
                     borderLeftColor: classColorHex,
                     borderLeftWidth: 2,
@@ -212,7 +204,7 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
                   >
                     <span
                       tabIndex={0}
-                      className="text-xs font-extrabold uppercase tracking-widest cursor-help focus:outline-none focus:ring-1 focus:ring-sky-400"
+                      className="cursor-help text-xs font-semibold uppercase tracking-[0.06em] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent-400"
                       style={{ color: classColorHex }}
                     >
                       {carClass?.name}
@@ -220,11 +212,10 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
                   </Tooltip>
                 </div>
                 {/* Driver rows */}
-                {classDrivers.map((driver, idx) => (
+                {classDrivers.map((driver) => (
                   <GantryDriverRow
                     key={driver.carIdx}
                     driver={driver}
-                    idx={idx}
                     followedCarIdx={followedCarIdx}
                     followedRef={followedRef}
                     isMultiClass={isMultiClass}
@@ -239,14 +230,13 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
           })}
         </div>
       </div>
-    </div>
+    </GantryPanel>
   );
 });
 GantryStandings.displayName = 'GantryStandings';
 
 interface GantryDriverRowProps {
   driver: GantrySessionData['standingsByClass'][number][1][number];
-  idx: number;
   followedCarIdx: number | null;
   followedRef: React.RefObject<HTMLDivElement | null>;
   isMultiClass: boolean;
@@ -260,7 +250,6 @@ interface GantryDriverRowProps {
 const GantryDriverRow = memo(
   ({
     driver,
-    idx,
     followedCarIdx,
     followedRef,
     isMultiClass,
@@ -315,10 +304,11 @@ const GantryDriverRow = memo(
             : undefined
         }
         className={[
-          'flex items-center px-1 py-px text-xs border-b border-white/5 transition-opacity duration-150',
-          'cursor-pointer hover:bg-sky-500/20 focus:outline-none focus:ring-1 focus:ring-sky-400',
-          idx % 2 === 0 ? 'bg-slate-800/70' : 'bg-slate-900/70',
-          isPlayer ? 'bg-yellow-500/20 text-amber-300' : '',
+          'flex h-6 items-center border-b border-slate-700/55 px-2 text-sm tabular-nums transition-opacity duration-150',
+          'cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent-400',
+          isPlayer
+            ? 'bg-yellow-500/20 text-amber-300 hover:bg-yellow-500/30'
+            : 'hover:bg-slate-800',
           isFollowed ? 'ring-1 relative z-10' : '',
           followedCarIdx !== null && !isFollowed ? 'opacity-40' : '',
           followedCarIdx === null && !driver.onTrack ? 'opacity-60' : '',
@@ -328,13 +318,13 @@ const GantryDriverRow = memo(
       >
         {/* P */}
         <span
-          className={`${COL.position} font-bold ${tailwindStyles.classHeader} ${isPlayer ? 'text-amber-300' : 'text-white'}`}
+          className={`${COL.position} font-semibold ${isPlayer ? 'text-amber-300' : 'text-white'}`}
         >
           {driver.classPosition ?? driver.position}
         </span>
         {/* # */}
         <span
-          className={`${COL.carNumber} tabular-nums ${tailwindStyles.driverIcon} text-white`}
+          className={`${COL.carNumber} flex items-center justify-center self-stretch ${tailwindStyles.driverIcon} text-white`}
         >
           #{driver.driver.carNum}
         </span>
@@ -348,7 +338,9 @@ const GantryDriverRow = memo(
         </span>
         {/* iR -- empty under a sim with no rating system; the column keeps
             its width so the rows below stay aligned. */}
-        <span className={`${COL.rating} flex items-center justify-end`}>
+        <span
+          className={`${COL.rating} flex items-center justify-end text-xs text-slate-300`}
+        >
           {showRatings && (
             <DriverRatingBadge
               license={driver.driver.license}
@@ -358,25 +350,19 @@ const GantryDriverRow = memo(
           )}
         </span>
         {/* Pit */}
-        <span className={`${COL.pit} text-xs`}>
+        <span className={`${COL.pit} text-xs font-semibold`}>
           {pitLabel && (
-            <span
-              className={
-                driver.dnf
-                  ? 'text-red-400 font-bold'
-                  : 'text-yellow-400 font-bold'
-              }
-            >
+            <span className={driver.dnf ? 'text-red-400' : 'text-yellow-400'}>
               {pitLabel}
             </span>
           )}
         </span>
         {/* Gap */}
-        <span className={`${COL.gap} text-right tabular-nums`}>
+        <span className={`${COL.gap} text-right`}>
           {formatGap(driver.gap, driver.classPosition ?? driver.position)}
         </span>
         {/* Interval */}
-        <span className={`${COL.interval} text-right tabular-nums`}>
+        <span className={`${COL.interval} text-right`}>
           {formatInterval(
             driver.interval,
             driver.classPosition ?? driver.position

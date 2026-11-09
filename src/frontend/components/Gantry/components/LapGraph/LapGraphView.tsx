@@ -22,6 +22,7 @@ import { LapGraphCanvas } from './LapGraphCanvas';
 import type { LapGraphSeries } from './LapGraphCanvas';
 import { LapGraphDriverList } from './components/LapGraphDriverList/LapGraphDriverList';
 import type { DriverListEntry } from './components/LapGraphDriverList/LapGraphDriverList';
+import { GantryPanel } from '../GantryPanel/GantryPanel';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { useGantrySettings } from '../../hooks/useGantrySettings';
 import {
@@ -58,6 +59,22 @@ interface Props {
 
 const CLASS_FILTER_TOOLTIP =
   "Chooses which car class the graph plots. Everything is measured against that class's leader, so only one class is shown at a time.";
+
+const PANEL_TITLES: Record<LapGraphMode, string> = {
+  trace: 'Race trace',
+  position: 'Class position',
+  gap: 'Gap to class leader',
+};
+
+const GROUP_LABEL_CLASS = 'text-sm text-slate-400';
+
+const toggleClass = (isActive: boolean): string =>
+  [
+    'min-h-9 rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors',
+    isActive
+      ? 'border-accent-500 bg-accent-500 text-on-accent'
+      : 'border-settings-boundary bg-transparent text-slate-300 hover:border-slate-400',
+  ].join(' ');
 
 const MODE_OPTIONS: {
   mode: LapGraphMode;
@@ -103,10 +120,10 @@ const AXIS_FIT_OPTIONS: {
   },
 ];
 
-/** One driver in the active class, with everything the chart needs to draw. */
 /** Stable identity for "nothing pinned", so the canvas prop never churns. */
 const EMPTY_PINS: readonly number[] = [];
 
+/** One driver in the active class, with everything the chart needs to draw. */
 interface ClassMember {
   carIdx: number;
   carNumber: string;
@@ -443,135 +460,110 @@ export const LapGraphView = memo(
     ]);
 
     return (
-      <div className="flex flex-col h-full overflow-hidden">
-        <div className="flex items-center gap-4 px-3 py-1.5 border-b border-slate-700/50 shrink-0">
+      <GantryPanel label="Lap graph">
+        <div className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-2 border-b border-slate-700 px-4 py-2.5">
+          <h2 className="mr-auto text-lg leading-snug font-semibold text-slate-200">
+            {PANEL_TITLES[mode]}
+          </h2>
           {isMultiClass && (
             <div className="flex items-center gap-2">
               <Tooltip placement="bottom" content={CLASS_FILTER_TOOLTIP}>
                 <span
                   tabIndex={0}
-                  className="text-xs text-slate-500 font-bold uppercase tracking-wider cursor-help focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+                  className={`${GROUP_LABEL_CLASS} cursor-help rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400`}
                 >
                   Class
                 </span>
               </Tooltip>
               <div
-                className="flex items-center gap-1"
+                className="flex items-center gap-1.5"
                 role="group"
                 aria-label="Lap graph car class"
               >
-                {classes.map((cls) => {
-                  const isActive = cls.classId === activeClassId;
-                  return (
-                    <button
-                      key={cls.classId}
-                      type="button"
-                      aria-pressed={isActive}
-                      onClick={() => onClassChange(cls.classId)}
-                      className={[
-                        'flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold uppercase tracking-wider transition-colors',
-                        isActive
-                          ? 'bg-amber-500 text-slate-900'
-                          : 'bg-slate-800 text-slate-400 hover:text-slate-200',
-                      ].join(' ')}
-                    >
-                      <span
-                        className="w-2 h-2 rounded-full shrink-0"
-                        style={{
-                          backgroundColor: getTailwindStyle(
-                            cls.color,
-                            undefined,
-                            isMultiClass
-                          ).canvasFill,
-                        }}
-                      />
-                      {cls.name}
-                    </button>
-                  );
-                })}
+                {classes.map((cls) => (
+                  <button
+                    key={cls.classId}
+                    type="button"
+                    aria-pressed={cls.classId === activeClassId}
+                    onClick={() => onClassChange(cls.classId)}
+                    className={`${toggleClass(cls.classId === activeClassId)} flex items-center gap-1.5`}
+                  >
+                    <span
+                      className="size-2 shrink-0 rounded-full"
+                      style={{
+                        backgroundColor: getTailwindStyle(
+                          cls.color,
+                          undefined,
+                          isMultiClass
+                        ).canvasFill,
+                      }}
+                    />
+                    {cls.name}
+                  </button>
+                ))}
               </div>
             </div>
           )}
 
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">
-              Y axis
-            </span>
+            <span className={GROUP_LABEL_CLASS}>Y axis</span>
             <div
-              className="flex items-center gap-1"
+              className="flex items-center gap-1.5"
               role="group"
               aria-label="Lap graph y axis mode"
             >
-              {MODE_OPTIONS.map((option) => {
-                const isActive = option.mode === mode;
-                return (
-                  <Tooltip
-                    key={option.mode}
-                    placement="bottom"
-                    content={option.tooltip}
+              {MODE_OPTIONS.map((option) => (
+                <Tooltip
+                  key={option.mode}
+                  placement="bottom"
+                  content={option.tooltip}
+                >
+                  <button
+                    type="button"
+                    aria-pressed={option.mode === mode}
+                    onClick={() => onModeChange(option.mode)}
+                    className={toggleClass(option.mode === mode)}
                   >
-                    <button
-                      type="button"
-                      aria-pressed={isActive}
-                      onClick={() => onModeChange(option.mode)}
-                      className={[
-                        'px-3 py-1 rounded text-xs font-bold uppercase tracking-wider transition-colors',
-                        isActive
-                          ? 'bg-amber-500 text-slate-900'
-                          : 'bg-slate-800 text-slate-400 hover:text-slate-200',
-                      ].join(' ')}
-                    >
-                      {option.label}
-                    </button>
-                  </Tooltip>
-                );
-              })}
+                    {option.label}
+                  </button>
+                </Tooltip>
+              ))}
             </div>
           </div>
 
           {mode !== 'position' && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">
-                Range
-              </span>
+              <span className={GROUP_LABEL_CLASS}>Range</span>
               <div
-                className="flex items-center gap-1"
+                className="flex items-center gap-1.5"
                 role="group"
                 aria-label="Lap graph y axis range"
               >
-                {AXIS_FIT_OPTIONS.map((option) => {
-                  const isActive = option.axisFit === axisFit;
-                  return (
-                    <Tooltip
-                      key={option.axisFit}
-                      placement="bottom"
-                      content={option.tooltip}
+                {AXIS_FIT_OPTIONS.map((option) => (
+                  <Tooltip
+                    key={option.axisFit}
+                    placement="bottom"
+                    content={option.tooltip}
+                  >
+                    <button
+                      type="button"
+                      aria-pressed={option.axisFit === axisFit}
+                      onClick={() => onAxisFitChange(option.axisFit)}
+                      className={toggleClass(option.axisFit === axisFit)}
                     >
-                      <button
-                        type="button"
-                        aria-pressed={isActive}
-                        onClick={() => onAxisFitChange(option.axisFit)}
-                        className={[
-                          'px-3 py-1 rounded text-xs font-bold uppercase tracking-wider transition-colors',
-                          isActive
-                            ? 'bg-amber-500 text-slate-900'
-                            : 'bg-slate-800 text-slate-400 hover:text-slate-200',
-                        ].join(' ')}
-                      >
-                        {option.label}
-                      </button>
-                    </Tooltip>
-                  );
-                })}
+                      {option.label}
+                    </button>
+                  </Tooltip>
+                ))}
               </div>
             </div>
           )}
         </div>
 
-        <div className="flex-1 min-h-0 flex gap-2 p-3 text-xs">
-          <div className="flex-1 min-w-0">
+        <div className="flex min-h-0 flex-1">
+          <div className="min-w-0 flex-1 p-3">
             {built.series.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-slate-600 text-sm text-center px-4">
+              <div className="flex h-full items-center justify-center px-4 text-center text-sm text-slate-400">
                 {emptyMessage}
               </div>
             ) : (
@@ -588,17 +580,25 @@ export const LapGraphView = memo(
               />
             )}
           </div>
-          <LapGraphDriverList
-            drivers={roster}
-            classColorValue={classColorValue}
-            isMultiClass={isMultiClass}
-            shownCarIdxs={pinnedCarIdxs}
-            focusedCarIdx={focusedCarIdx}
-            onToggle={togglePin}
-            onHover={setHoveredCarIdx}
-          />
+          <aside
+            aria-label="Drivers"
+            className="flex w-72 max-w-[40%] shrink-0 flex-col overflow-hidden border-l border-slate-700"
+          >
+            <div className="shrink-0 px-4 pt-3 pb-1.5 text-xs font-semibold tracking-[0.06em] text-slate-300 uppercase">
+              Drivers
+            </div>
+            <LapGraphDriverList
+              drivers={roster}
+              classColorValue={classColorValue}
+              isMultiClass={isMultiClass}
+              shownCarIdxs={pinnedCarIdxs}
+              focusedCarIdx={focusedCarIdx}
+              onToggle={togglePin}
+              onHover={setHoveredCarIdx}
+            />
+          </aside>
         </div>
-      </div>
+      </GantryPanel>
     );
   }
 );

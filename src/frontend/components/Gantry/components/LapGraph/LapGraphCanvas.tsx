@@ -705,10 +705,10 @@ export const LapGraphCanvas = memo(
               aria-pressed={follow}
               onClick={() => setFollow(true)}
               className={[
-                'flex items-center gap-1 px-2 py-0.5 rounded font-bold uppercase tracking-wider transition-colors',
+                'flex items-center gap-1 rounded-md border px-2 py-0.5 text-sm font-semibold transition-colors',
                 follow
-                  ? 'bg-amber-500 text-slate-900'
-                  : 'bg-slate-800 text-slate-400 hover:text-slate-200',
+                  ? 'border-accent-500 bg-accent-500 text-on-accent'
+                  : 'border-settings-boundary bg-transparent text-slate-300 hover:border-slate-400',
               ].join(' ')}
             >
               <Play size={12} weight="fill" />
@@ -736,7 +736,7 @@ export const LapGraphCanvas = memo(
             ref={plotRef}
             tabIndex={0}
             aria-label="Lap graph plot"
-            className="relative flex-1 min-h-0 text-slate-400 touch-none cursor-crosshair focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-sm"
+            className="relative flex-1 min-h-0 text-slate-400 touch-none cursor-crosshair rounded-sm focus-visible:outline-2 focus-visible:outline-accent-400"
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
