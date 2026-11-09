@@ -1,5 +1,5 @@
 import { useMemo, type ReactNode } from 'react';
-import type { LapTraceConfig, LayoutNode } from '@irdashies/types';
+import type { LapTraceConfig } from '@irdashies/types';
 import {
   DEFAULT_AUDIO_OUTPUT_DEVICE_ID,
   DEFAULT_LAP_TRACE_COLORS,
@@ -22,6 +22,7 @@ import {
 } from '../../domain/lapTrace/brakeCuePoints';
 import { LapTracePlot } from './LapTracePlot';
 import { BrakeCue } from './components/BrakeCue';
+import { LapTraceLayout } from './components/LapTraceLayout';
 import {
   LastCornerPanel,
   LAST_CORNER_DEFAULT_FONT_SIZE,
@@ -63,92 +64,6 @@ const RecordingProgress = () => {
         Recording {percent}%
       </span>
     </>
-  );
-};
-
-interface LayoutNodeViewProps {
-  node: LayoutNode;
-  /** The container this node sits in: how it lays out, and whether it holds the plot. */
-  parent: { direction: 'row' | 'col'; holdsPlot: boolean };
-  renderElement: (id: string) => ReactNode;
-}
-
-/**
- * Sizing for one entry of a container. What holds the plot takes the free
- * room; everything else keeps its own size, since the panel and the countdown
- * strip size themselves and the editor sets no weights.
- *
- * Beside the plot, the plot keeps at least half the container and the rest
- * shrinks into the other half, clipping inside its own box. A side panel
- * sized for a long corner name is most of a 396px widget, and three rows above
- * or below the trace are most of a 120px one: left to their own size they took
- * all the room, and the plot showed nothing.
- */
-const entrySizing = (
-  holdsPlot: boolean,
-  parent: LayoutNodeViewProps['parent']
-): string => {
-  if (!parent.holdsPlot) {
-    return `${holdsPlot ? 'flex-1' : 'flex-none'} min-h-0 min-w-0`;
-  }
-  if (holdsPlot) {
-    return parent.direction === 'row'
-      ? 'flex-1 min-w-[50%] min-h-0'
-      : 'flex-1 min-h-[50%] min-w-0';
-  }
-  return 'flex-initial min-h-0 min-w-0';
-};
-
-/** The widget itself stacks the header and the layout in a column. */
-const WIDGET_ROOT = { direction: 'col', holdsPlot: false } as const;
-
-/**
- * One node of the layout tree. Declared at module level so its identity is
- * stable. A component declared inside render would remount the plot and the
- * panels every frame.
- */
-const LayoutNodeView = ({
-  node,
-  parent,
-  renderElement,
-}: LayoutNodeViewProps) => {
-  const holdsPlot = layoutTreeHas(node, 'plot');
-  const self = { direction: node.direction, holdsPlot };
-  const className = [
-    'flex overflow-hidden',
-    node.direction === 'row' ? 'flex-row gap-1.5' : 'flex-col gap-1',
-    entrySizing(holdsPlot, parent),
-  ].join(' ');
-
-  if (node.type === 'box') {
-    return (
-      <div className={className}>
-        {[...new Set(node.widgets)].map((id) => (
-          <div
-            key={id}
-            className={`flex flex-col overflow-hidden ${entrySizing(
-              id === 'plot',
-              self
-            )}`}
-          >
-            {renderElement(id)}
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div className={className}>
-      {node.children.map((child) => (
-        <LayoutNodeView
-          key={child.id}
-          node={child}
-          parent={self}
-          renderElement={renderElement}
-        />
-      ))}
-    </div>
   );
 };
 
@@ -347,11 +262,7 @@ export const LapTrace = (props: LapTraceProps) => {
 
       {referenceLap ? (
         <>
-          <LayoutNodeView
-            node={tree}
-            parent={WIDGET_ROOT}
-            renderElement={renderElement}
-          />
+          <LapTraceLayout tree={tree} renderElement={renderElement} />
           {!showBars && brakeCue}
         </>
       ) : (

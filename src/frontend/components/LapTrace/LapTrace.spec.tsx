@@ -504,7 +504,7 @@ describe('LapTrace', () => {
       expect(plotBox?.contains(panelBox ?? null)).toBe(false);
     });
 
-    it('keeps at least half the room for the trace, whatever sits beside it', () => {
+    it('keeps a third for the trace, gives the panel the rest, and never squeezes the countdown', () => {
       seedReference();
       // Whether the layout entry holding the plot keeps this much room.
       const plotKeeps = (minimum: string) => {
@@ -515,26 +515,28 @@ describe('LapTrace', () => {
         return !!node;
       };
 
-      // A side panel sized for a long corner name is most of the default
-      // 396px widget: left to its own size, it left the trace no room at all.
-      // The panel and the bars shrink into the other half instead.
+      // Three columns in the default 396px widget: a side panel sized for a
+      // long corner name is most of it by itself. Shrinking the countdown
+      // with it cut the meter in half, so the panel alone gives way.
       const { unmount } = render(
         <LapTrace
           {...baseProps}
           layoutTree={split('row', [
+            box('corners'),
             box('plot'),
             box('brakeCue'),
-            box('corners'),
           ])}
         />
       );
-      expect(plotKeeps('min-w-[50%]')).toBe(true);
-      for (const id of ['last-corner-panel', 'brake-cue-bars']) {
-        // Its box: the entry the row lays out beside the plot's.
-        const entry = screen.getByTestId(id).parentElement?.parentElement;
-        expect(entry?.className).toContain('flex-initial');
-        expect(entry?.className).toContain('min-w-0');
-      }
+      expect(plotKeeps('min-w-[33%]')).toBe(true);
+      // Each sits straight in its box, which the row stretches to full
+      // height: the panel and the bars take their height from it.
+      const panelBox = screen.getByTestId('last-corner-panel').parentElement;
+      expect(panelBox?.className).toContain('flex-initial');
+      expect(panelBox?.className).toContain('min-w-0');
+      const barsBox = screen.getByTestId('brake-cue-bars').parentElement;
+      expect(barsBox?.className).toContain('flex-none');
+      expect(barsBox?.className).not.toContain('flex-initial');
       unmount();
 
       // Above or below, on height.
@@ -544,7 +546,7 @@ describe('LapTrace', () => {
           layoutTree={split('col', [box('plot'), box('corners')])}
         />
       );
-      expect(plotKeeps('min-h-[50%]')).toBe(true);
+      expect(plotKeeps('min-h-[33%]')).toBe(true);
       unmountStacked();
 
       // Without the trace there is nothing to keep room for.
