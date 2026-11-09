@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { LayoutNode } from '@irdashies/types';
+import { getWidgetDefaultConfig, type LayoutNode } from '@irdashies/types';
 import { layoutTreeHas } from '@irdashies/domain/layoutTree';
 import {
   buildDefaultLapTraceTree,
@@ -30,6 +30,23 @@ const split = (
 const SIDES = ['top', 'bottom', 'left', 'right'] as const;
 
 describe('buildDefaultLapTraceTree', () => {
+  it('starts a new widget with the panel, the trace and the countdown in three columns', () => {
+    const tree = buildDefaultLapTraceTree(getWidgetDefaultConfig('laptrace'));
+    expect(tree).toMatchObject({
+      type: 'split',
+      children: [
+        {
+          direction: 'row',
+          children: [
+            { widgets: ['corners'] },
+            { widgets: ['plot'] },
+            { widgets: ['brakeCue'] },
+          ],
+        },
+      ],
+    });
+  });
+
   it('holds only the trace with the panel and the countdown off', () => {
     const tree = buildDefaultLapTraceTree({});
     expect(layoutTreeHas(tree, 'plot')).toBe(true);

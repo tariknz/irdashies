@@ -109,6 +109,10 @@ export default {
     strokeWidth: 3,
     showOnlyWhenOnTrack: false,
     background: { opacity: 0.7 },
+    // On by default, off here: most stories are about the trace. The ones
+    // about the panel or the countdown switch them back on.
+    showLastCorner: false,
+    brakeCueBars: false,
   },
   decorators: [
     (Story) => (

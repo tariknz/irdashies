@@ -37,7 +37,12 @@ export default defineWidgetManifest({
     strokeWidth: 3,
     carLineColor: '#ffffff',
     colors: DEFAULT_LAP_TRACE_COLORS,
-    showLastCorner: false,
+    // With lastCornerPosition, brakeCueBars and brakeCueBarSide below, this
+    // builds the layout a new widget starts from and Reset to Default Layout
+    // restores: the panel, the trace and the countdown in three columns.
+    // Every saved config already stores all four, so changing them leaves
+    // existing setups as they were.
+    showLastCorner: true,
     showLastCornerTime: true,
     showLastCornerBrakeDelta: true,
     showLastCornerApexSpeed: true,
@@ -52,14 +57,14 @@ export default defineWidgetManifest({
     lastCornerFontSize: 10,
     lastCornerLatestScale: 1.4,
     lastCornerCount: 3,
-    lastCornerPosition: 'bottom',
+    lastCornerPosition: 'left',
     brakeCueAudio: false,
     brakeCueOutputDeviceId: DEFAULT_AUDIO_OUTPUT_DEVICE_ID,
     brakeCueVolume: 0.6,
     brakeCueLeadSec: 0,
     brakeCueMinPeak: 0.12,
     sound: DEFAULT_LAP_TRACE_SOUND,
-    brakeCueBars: false,
+    brakeCueBars: true,
     brakeCueBarSide: 'right',
     brakeCueLastBar: 'top',
     background: { opacity: 0.7 },

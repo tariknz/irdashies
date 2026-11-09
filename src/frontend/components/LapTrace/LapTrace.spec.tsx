@@ -300,7 +300,8 @@ describe('LapTrace', () => {
   it('leaves the countdown out entirely when both cue outputs are off', () => {
     seedReference();
 
-    render(<LapTrace {...baseProps} />);
+    // The bars are on by default; the audio is not.
+    render(<LapTrace {...baseProps} brakeCueBars={false} />);
 
     expect(screen.queryByTestId('brake-cue-bars')).toBeNull();
   });
