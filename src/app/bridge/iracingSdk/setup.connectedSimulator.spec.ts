@@ -58,15 +58,28 @@ const setRunning = (id: string, running: boolean) => {
   bridges.listeners[id]?.forEach((callback) => callback(running));
 };
 
-vi.mock('./sims/registry', () => ({
-  getAvailableSimulators: (): ActiveSimulator[] => ['iracing', 'lmu'],
-  getSimDefinition: (id: ActiveSimulator) => ({
+/** Which simulators auto-detect's probes find running. */
+const probes = vi.hoisted(() => ({
+  active: {} as Record<string, boolean | undefined>,
+}));
+
+vi.mock('./sims/registry', () => {
+  const definition = (id: ActiveSimulator) => ({
     id,
     priority: 0,
-    createProbe: vi.fn(),
+    createProbe: async () => ({
+      start: () => undefined,
+      isActive: () => Boolean(probes.active[id]),
+      stop: () => undefined,
+    }),
     loadBridge: () => Promise.resolve(async () => fakeBridge(id)),
-  }),
-}));
+  });
+  return {
+    getAvailableSimulators: (): ActiveSimulator[] => ['iracing', 'lmu'],
+    getSimDefinition: definition,
+    getSimDefinitions: () => [definition('iracing'), definition('lmu')],
+  };
+});
 
 vi.mock('./mock-data/mockSdkBridge', () => ({
   publishIRacingSDKEvents: async () => fakeBridge('demo'),
@@ -88,6 +101,7 @@ describe('onConnectedSimulatorChanged', () => {
     storage.simulatorFor = { a: 'iracing', b: 'lmu' };
     bridges.running = {};
     bridges.listeners = {};
+    probes.active = {};
   });
 
   afterEach(() => {
@@ -160,6 +174,63 @@ describe('onConnectedSimulatorChanged', () => {
     setRunning('iracing', false);
     setRunning('iracing', true);
     expect(connected.mock.calls).toEqual([['iracing'], [undefined], ['lmu']]);
+  });
+
+  describe('with auto-detect', () => {
+    beforeEach(() => {
+      // No profile pins a simulator, so the façade probes for one.
+      storage.simulatorFor = {};
+    });
+
+    it('reports the simulator it attaches to, already running at startup', async () => {
+      // The façade names the sim before its bridge replays "running".
+      probes.active.lmu = true;
+      bridges.running.lmu = true;
+      const { iRacingSDKSetup, onConnectedSimulatorChanged } =
+        await import('./setup');
+      const connected = vi.fn();
+      onConnectedSimulatorChanged(connected);
+      await iRacingSDKSetup(overlayManager);
+      await vi.waitFor(() => expect(connected.mock.calls).toEqual([['lmu']]));
+    });
+
+    it('reports the simulator it attached to when that one starts running', async () => {
+      probes.active.iracing = true;
+      const { iRacingSDKSetup, onConnectedSimulatorChanged } =
+        await import('./setup');
+      const connected = vi.fn();
+      onConnectedSimulatorChanged(connected);
+      await iRacingSDKSetup(overlayManager);
+      await vi.waitFor(() => expect(bridges.listeners.iracing?.size).toBe(1));
+      expect(connected).not.toHaveBeenCalled();
+      setRunning('iracing', true);
+      expect(connected.mock.calls).toEqual([['iracing']]);
+    });
+
+    it('reports the new simulator when another takes over', async () => {
+      probes.active.iracing = true;
+      bridges.running.iracing = true;
+      const { iRacingSDKSetup, onConnectedSimulatorChanged } =
+        await import('./setup');
+      const connected = vi.fn();
+      onConnectedSimulatorChanged(connected);
+      await iRacingSDKSetup(overlayManager);
+      await vi.waitFor(() =>
+        expect(connected.mock.calls).toEqual([['iracing']])
+      );
+
+      // iRacing closes with LMU already up: the watchdog hands over to it.
+      probes.active.lmu = true;
+      bridges.running.lmu = true;
+      setRunning('iracing', false);
+      await vi.waitFor(() =>
+        expect(connected.mock.calls).toEqual([
+          ['iracing'],
+          [undefined],
+          ['lmu'],
+        ])
+      );
+    });
   });
 
   it('never counts a tape', async () => {
