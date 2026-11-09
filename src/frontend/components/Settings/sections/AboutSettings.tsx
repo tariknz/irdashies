@@ -78,7 +78,7 @@ export const AboutSettings = () => {
         <div className="flex flex-col gap-4 mb-2">
           <div>
             <h3 className="text-lg font-semibold">Privacy Policy</h3>
-            <p className="text-sm text-slate-400">Last updated October 2026</p>
+            <p className="text-sm text-slate-400">Last updated November 2026</p>
           </div>
 
           <div className="text-sm text-slate-400">
@@ -126,8 +126,9 @@ export const AboutSettings = () => {
                   <br />
                   Which simulators irDashies connects to, such as iRacing or Le
                   Mans Ultimate, and for how long, are sent at the next startup,
-                  and the simulator in use is included with error reports. This
-                  helps us prioritise work and fixes for each simulator.
+                  and the simulator connected at the time is included with error
+                  reports. Nothing is recorded while analytics is turned off.
+                  This helps us prioritise work and fixes for each simulator.
                 </li>
                 <li>
                   <strong className="text-slate-300">System information</strong>
