@@ -5,7 +5,6 @@ import { setupReleaseNotesBridge } from './app/bridge/releaseNotesBridge';
 import log from './app/logger';
 import {
   iRacingSDKSetup,
-  getActiveSimulator,
   getCurrentBridge,
   getIsDemoMode,
   getSessionLifecycle,
@@ -154,7 +153,7 @@ if (app.getName() === 'irdashies') {
 const overlayManager = new OverlayManager();
 const analytics = new Analytics();
 const perfRun = getPerfRunConfig();
-analytics.setupLogTransport(overlayManager.getVersion(), getActiveSimulator);
+analytics.setupLogTransport(overlayManager.getVersion());
 // Before any bridge exists, so the first connect is heard even when the sim
 // was already running as irdashies started.
 onConnectedSimulatorChanged((simulator) =>

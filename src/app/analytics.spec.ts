@@ -70,7 +70,11 @@ vi.mock('./storage/simulatorUsage', async (importOriginal) => {
   };
 });
 
-import { Analytics, type AnalyticsProvider } from './analytics';
+import {
+  Analytics,
+  withSimulatorOnException,
+  type AnalyticsProvider,
+} from './analytics';
 import logger from './logger';
 import { getAnalyticsOptOut } from './storage/analytics';
 import { readData, writeData } from './storage/storage';
@@ -136,18 +140,36 @@ describe('Analytics.setupLogTransport', () => {
     });
   });
 
-  it('names the simulator irdashies is attached to, as of each message', () => {
-    delete logger.transports.posthog;
-    let simulator: 'iracing' | 'lmu' | undefined = 'lmu';
-    new Analytics(provider).setupLogTransport('2.0.0+test', () => simulator);
+  it('names the simulator connected as each message is logged, and none after it disconnects', () => {
+    vi.spyOn(getSimulatorUsageStore(), 'setConnected').mockImplementation(
+      () => undefined
+    );
+    analytics.setConnectedSimulator('lmu');
     emit('warn', 'lmu warning');
-    simulator = undefined;
-    emit('warn', 'probing warning');
-    simulator = 'iracing';
+    analytics.setConnectedSimulator(undefined);
+    emit('warn', 'warning after lmu closed');
+    analytics.setConnectedSimulator('iracing');
     emit('warn', 'iracing warning');
     expect(
       provider.capture.mock.calls.map(([event]) => event.properties?.simulator)
     ).toEqual(['lmu', null, 'iracing']);
+  });
+
+  it('names the connected simulator on exceptions PostHog captures itself, and only those', () => {
+    const exception = {
+      event: '$exception',
+      distinctId: 'test-installation',
+      properties: { $exception_list: [] },
+    };
+    expect(withSimulatorOnException(exception, 'lmu')).toEqual({
+      ...exception,
+      properties: { $exception_list: [], simulator: 'lmu' },
+    });
+    expect(
+      withSimulatorOnException(exception, undefined).properties?.simulator
+    ).toBeNull();
+    const other = { event: 'app_started' };
+    expect(withSimulatorOnException(other, 'lmu')).toBe(other);
   });
 
   it('suppresses identical messages within the dedup window', () => {

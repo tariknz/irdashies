@@ -47,6 +47,22 @@ const DEDUP_KEY_LENGTH = 30;
 const DEDUP_MAX_ENTRIES = 5000;
 const MAX_CALIBRATION_PROPERTIES_BYTES = 512 * 1024;
 
+/**
+ * Names the connected simulator on an exception PostHog captured by itself,
+ * as warnings and errors forwarded from the log are. Other events pass as
+ * they are.
+ */
+export const withSimulatorOnException = (
+  event: EventMessage,
+  simulator: ActiveSimulator | undefined
+): EventMessage =>
+  event.event === '$exception'
+    ? {
+        ...event,
+        properties: { ...event.properties, simulator: simulator ?? null },
+      }
+    : event;
+
 export interface AnalyticsProvider {
   capture(event: EventMessage): void;
   captureConfirmed(event: EventMessage): Promise<void>;
@@ -148,6 +164,8 @@ export class Analytics {
       host: 'https://eu.i.posthog.com',
       disableGeoip: false,
       enableExceptionAutocapture: true,
+      before_send: (event) =>
+        withSimulatorOnException(event, this.connectedSimulator),
     });
 
     this.provider = new PostHogProvider(posthog);
@@ -188,14 +206,11 @@ export class Analytics {
   }
 
   /**
-   * Forwards warnings and errors to PostHog. `getSimulator` names the
-   * simulator irdashies is attached to, read for each message, so an error
-   * can be told apart by sim; none while auto-detect probes or in demo mode.
+   * Forwards warnings and errors to PostHog, each with the simulator
+   * connected as it was logged, so an error can be told apart by sim: none
+   * between sessions, in demo mode or on a tape.
    */
-  setupLogTransport(
-    version: string,
-    getSimulator: () => ActiveSimulator | undefined = () => undefined
-  ): void {
+  setupLogTransport(version: string): void {
     if (!this.provider || getAnalyticsOptOut()) return;
 
     // Resolve identity before installing the transport: storage diagnostics
@@ -245,7 +260,7 @@ export class Analytics {
             level: message.level,
             message: text,
             data,
-            simulator: getSimulator() ?? null,
+            simulator: this.connectedSimulator ?? null,
           },
         });
       } catch {
