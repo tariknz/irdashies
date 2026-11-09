@@ -1,5 +1,5 @@
 import type { InputConfig, LayoutNode } from '@irdashies/types';
-import { hasLayoutTree } from '@irdashies/domain/layoutTree';
+import { resolveLayoutTree } from '@irdashies/domain/layoutTree';
 
 export { hasLayoutTree, isEmptyLayoutTree } from '@irdashies/domain/layoutTree';
 
@@ -68,9 +68,8 @@ export const buildDefaultInputTree = (
   };
 };
 
+/** The saved tree, or one built from the enabled flags when there is none. */
 export const getInputLayoutTree = (
   config: LegacyLayoutConfig & { layoutTree?: LayoutNode }
 ): LayoutNode =>
-  hasLayoutTree(config.layoutTree)
-    ? config.layoutTree
-    : buildDefaultInputTree(config);
+  resolveLayoutTree(config.layoutTree, () => buildDefaultInputTree(config));

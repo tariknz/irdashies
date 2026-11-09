@@ -3,6 +3,7 @@ import {
   DEFAULT_LAP_TRACE_COLORS,
   DEFAULT_LAP_TRACE_SOUND,
 } from '../lapTrace';
+import { DEFAULT_LAP_TRACE_LAYOUT_TREE } from '../lapTraceLayout';
 import { defineWidgetManifest } from './types';
 
 export default defineWidgetManifest({
@@ -37,12 +38,6 @@ export default defineWidgetManifest({
     strokeWidth: 3,
     carLineColor: '#ffffff',
     colors: DEFAULT_LAP_TRACE_COLORS,
-    // With lastCornerPosition, brakeCueBars and brakeCueBarSide below, this
-    // builds the layout a new widget starts from and Reset to Default Layout
-    // restores: the panel, the trace and the countdown in three columns.
-    // Every saved config already stores all four, so changing them leaves
-    // existing setups as they were.
-    showLastCorner: true,
     showLastCornerTime: true,
     showLastCornerBrakeDelta: true,
     showLastCornerApexSpeed: true,
@@ -57,18 +52,21 @@ export default defineWidgetManifest({
     lastCornerFontSize: 10,
     lastCornerLatestScale: 1.4,
     lastCornerCount: 3,
-    lastCornerPosition: 'left',
     brakeCueAudio: false,
     brakeCueOutputDeviceId: DEFAULT_AUDIO_OUTPUT_DEVICE_ID,
     brakeCueVolume: 0.6,
     brakeCueLeadSec: 0,
-    // BRAKE_CUE_MIN_PEAK_DEFAULT. Saved configs store their own, so this
-    // only reaches a new widget.
+    // BRAKE_CUE_MIN_PEAK_DEFAULT. Low, so a car that logs little pressure
+    // keeps its brake points; a light stabilising brush that slows the car
+    // can count too, and 10-15% keeps those out. Saved configs store their
+    // own, so this only reaches a new widget.
     brakeCueMinPeak: 0.05,
     sound: DEFAULT_LAP_TRACE_SOUND,
-    brakeCueBars: true,
-    brakeCueBarSide: 'right',
     brakeCueLastBar: 'top',
+    // Configs saved before the layout editor get theirs from the
+    // dashboard-load migration, built from their old settings, before this
+    // default is merged in.
+    layoutTree: DEFAULT_LAP_TRACE_LAYOUT_TREE,
     background: { opacity: 0.7 },
     showOnlyWhenOnTrack: true,
     sessionVisibility: {

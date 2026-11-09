@@ -1,1 +1,6 @@
-export { hasLayoutTree, isEmptyLayoutTree, layoutTreeHas } from './layoutTree';
+export {
+  hasLayoutTree,
+  isEmptyLayoutTree,
+  layoutTreeHas,
+  resolveLayoutTree,
+} from './layoutTree';

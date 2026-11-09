@@ -29,7 +29,7 @@ import {
 } from './components/LastCornerPanel';
 import { invalidLapMessage } from './invalidLapMessage';
 import { useLapTraceSettings } from './hooks/useLapTraceSettings';
-import { getLapTraceLayoutTree, lapTraceElementSide } from './layoutTree';
+import { lapTraceElementSide, resolveLapTraceLayoutTree } from './layoutTree';
 import { layoutTreeHas } from '@irdashies/domain/layoutTree';
 import {
   useLastCornerComparison,
@@ -77,24 +77,11 @@ export const LapTrace = (props: LapTraceProps) => {
   const settings = useLapTraceSettings();
   const config = { ...settings, ...props };
 
-  // Which elements show, and where, comes from the layout tree. A config saved
-  // before the layout editor gets one built from its old settings.
+  // Which elements show, and where, comes from the layout tree. Configs saved
+  // before the layout editor got theirs from the dashboard-load migration.
   const tree = useMemo(
-    () =>
-      getLapTraceLayoutTree({
-        layoutTree: config.layoutTree,
-        showLastCorner: config.showLastCorner,
-        lastCornerPosition: config.lastCornerPosition,
-        brakeCueBars: config.brakeCueBars,
-        brakeCueBarSide: config.brakeCueBarSide,
-      }),
-    [
-      config.layoutTree,
-      config.showLastCorner,
-      config.lastCornerPosition,
-      config.brakeCueBars,
-      config.brakeCueBarSide,
-    ]
+    () => resolveLapTraceLayoutTree(config.layoutTree),
+    [config.layoutTree]
   );
   const showCorners = layoutTreeHas(tree, 'corners');
   const showBars = layoutTreeHas(tree, 'brakeCue');

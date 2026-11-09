@@ -4,7 +4,11 @@ import {
   LiveChannelBridgeDecorator,
   TelemetryDecorator,
 } from '@irdashies/storybook';
-import type { LapTraceSampleSnapshot, LayoutNode } from '@irdashies/types';
+import {
+  lapTraceTreeFromLegacy,
+  type LapTraceSampleSnapshot,
+  type LayoutNode,
+} from '@irdashies/types';
 import { useLapTraceStore } from '@irdashies/context';
 import { hydrateLapTrace } from '../../domain/lapTrace/hydrateLapTrace';
 import { parseGarage61Csv } from '../../domain/lapTrace/garage61CsvImport';
@@ -109,10 +113,10 @@ export default {
     strokeWidth: 3,
     showOnlyWhenOnTrack: false,
     background: { opacity: 0.7 },
-    // On by default, off here: most stories are about the trace. The ones
-    // about the panel or the countdown switch them back on.
-    showLastCorner: false,
-    brakeCueBars: false,
+    // The default layout holds the panel and the countdown too. Most stories
+    // are about the trace, so they draw it alone; the ones about the panel
+    // or the countdown set a layout with them.
+    layoutTree: lapTraceTreeFromLegacy({}),
   },
   decorators: [
     (Story) => (
@@ -377,9 +381,11 @@ export const DrivingGhost: Story = {
 export const WithLastCornerPanel: Story = {
   args: {
     carDistanceMOverride: 340,
-    showLastCorner: true,
     lastCornerCount: 3,
-    lastCornerPosition: 'bottom',
+    layoutTree: lapTraceTreeFromLegacy({
+      showLastCorner: true,
+      lastCornerPosition: 'bottom',
+    }),
   },
   loaders: [async () => (seedReference(), {})],
 };
@@ -392,9 +398,11 @@ export const WithLastCornerPanel: Story = {
 export const LastCornerPanelOnTheSide: Story = {
   args: {
     carDistanceMOverride: 340,
-    showLastCorner: true,
     lastCornerCount: 3,
-    lastCornerPosition: 'right',
+    layoutTree: lapTraceTreeFromLegacy({
+      showLastCorner: true,
+      lastCornerPosition: 'right',
+    }),
   },
   loaders: [async () => (seedReference(), {})],
 };
@@ -404,10 +412,10 @@ export const LastCornerPanelOnTheSide: Story = {
  * countdown bars and the last-corner panel — so the pieces can be checked for
  * space against each other rather than one at a time.
  *
- * These place the panels with the settings from before the layout editor,
- * which still build the starting layout of a config saved without one. The
- * layout stories further down set a tree directly; the widget-size stories
- * below cover the tight cases.
+ * These place the panels as the settings from before the layout editor did,
+ * through the tree the dashboard-load migration builds from them. The layout
+ * stories further down set a tree directly; the widget-size stories below
+ * cover the tight cases.
  */
 const everythingOn = {
   carDistanceMOverride: 340,
@@ -419,25 +427,35 @@ const everythingOn = {
   showThrottlePointMarkers: true,
   showGhost: true,
   referenceFilled: true,
-  showLastCorner: true,
   lastCornerCount: 3,
-  brakeCueBars: true,
-  brakeCueBarSide: 'right' as const,
 };
 
+/** Everything on, the panel on one edge and the countdown bars on the right. */
+const everythingWith = (
+  lastCornerPosition: 'top' | 'bottom' | 'left' | 'right'
+) => ({
+  ...everythingOn,
+  layoutTree: lapTraceTreeFromLegacy({
+    showLastCorner: true,
+    lastCornerPosition,
+    brakeCueBars: true,
+    brakeCueBarSide: 'right',
+  }),
+});
+
 export const EverythingBottom: Story = {
-  args: { ...everythingOn, lastCornerPosition: 'bottom' },
+  args: everythingWith('bottom'),
   loaders: [async () => (seedReference(), {})],
 };
 
 export const EverythingTop: Story = {
-  args: { ...everythingOn, lastCornerPosition: 'top' },
+  args: everythingWith('top'),
   loaders: [async () => (seedReference(), {})],
 };
 
 /** Panel on the left, countdown bars still on the right. */
 export const EverythingLeft: Story = {
-  args: { ...everythingOn, lastCornerPosition: 'left' },
+  args: everythingWith('left'),
   loaders: [async () => (seedReference(), {})],
 };
 
@@ -446,7 +464,7 @@ export const EverythingLeft: Story = {
  * trace they are cueing.
  */
 export const EverythingRight: Story = {
-  args: { ...everythingOn, lastCornerPosition: 'right' },
+  args: everythingWith('right'),
   loaders: [async () => (seedReference(), {})],
 };
 
@@ -457,7 +475,7 @@ export const EverythingRight: Story = {
  * should escape the box.
  */
 export const EverythingShort: Story = {
-  args: { ...everythingOn, lastCornerPosition: 'bottom' },
+  args: everythingWith('bottom'),
   decorators: [
     (Story) => (
       <div className="w-[420px] h-[70px] outline outline-1 outline-fuchsia-500/60">
@@ -473,7 +491,7 @@ export const EverythingShort: Story = {
  * time and speed on one line.
  */
 export const EverythingWide: Story = {
-  args: { ...everythingOn, lastCornerPosition: 'right' },
+  args: everythingWith('right'),
   decorators: [
     (Story) => (
       <div className="w-[640px] h-[160px]">
@@ -554,7 +572,10 @@ export const LayoutPanelAndBarsStacked: Story = {
  * the reference lap's brake points, which needs live track position.
  */
 export const WithBrakeCueBars: Story = {
-  args: { carDistanceMOverride: 340, brakeCueBars: true },
+  args: {
+    carDistanceMOverride: 340,
+    layoutTree: lapTraceTreeFromLegacy({ brakeCueBars: true }),
+  },
   loaders: [async () => (seedReference(), {})],
 };
 

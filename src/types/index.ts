@@ -17,6 +17,8 @@ export * from './defaultDashboard';
 export * from './widgetPreview';
 export * from './cornerName';
 export * from './lapTrace';
+export * from './lapTraceLayout';
+export * from './layoutTree';
 export * from './lmu';
 export * from './logBridge';
 export * from './logSerialization';

@@ -9,6 +9,7 @@ import type {
 } from '@irdashies/types';
 import { useLapTraceStore, useSessionStore } from '@irdashies/context';
 import { hydrateLapTrace } from '../../domain/lapTrace/hydrateLapTrace';
+import { lapTraceTreeFromLegacy } from '@irdashies/types';
 import { LapTrace } from './LapTrace';
 import { makeSyntheticLapTrace } from './fixtures/syntheticLap';
 
@@ -287,7 +288,13 @@ describe('LapTrace', () => {
     seedReference();
 
     const { container } = render(
-      <LapTrace {...baseProps} brakeCueBars brakeCueBarSide="right" />
+      <LapTrace
+        {...baseProps}
+        layoutTree={lapTraceTreeFromLegacy({
+          brakeCueBars: true,
+          brakeCueBarSide: 'right',
+        })}
+      />
     );
 
     const strip = screen.getByTestId('brake-cue-bars');
@@ -300,8 +307,8 @@ describe('LapTrace', () => {
   it('leaves the countdown out entirely when both cue outputs are off', () => {
     seedReference();
 
-    // The bars are on by default; the audio is not.
-    render(<LapTrace {...baseProps} brakeCueBars={false} />);
+    // The default layout holds the bars; the audio is off by default.
+    render(<LapTrace {...baseProps} layoutTree={lapTraceTreeFromLegacy({})} />);
 
     expect(screen.queryByTestId('brake-cue-bars')).toBeNull();
   });
@@ -314,8 +321,10 @@ describe('LapTrace', () => {
       render(
         <LapTrace
           {...baseProps}
-          showLastCorner
-          lastCornerPosition={position}
+          layoutTree={lapTraceTreeFromLegacy({
+            showLastCorner: true,
+            lastCornerPosition: position,
+          })}
           lastCornerCount={3}
         />
       );
@@ -358,10 +367,12 @@ describe('LapTrace', () => {
     const { container } = render(
       <LapTrace
         {...baseProps}
-        showLastCorner
-        lastCornerPosition="right"
-        brakeCueBars
-        brakeCueBarSide="right"
+        layoutTree={lapTraceTreeFromLegacy({
+          showLastCorner: true,
+          lastCornerPosition: 'right',
+          brakeCueBars: true,
+          brakeCueBarSide: 'right',
+        })}
       />
     );
 
@@ -380,10 +391,12 @@ describe('LapTrace', () => {
     render(
       <LapTrace
         {...baseProps}
-        showLastCorner
-        lastCornerPosition="right"
-        brakeCueBars
-        brakeCueBarSide="bottom"
+        layoutTree={lapTraceTreeFromLegacy({
+          showLastCorner: true,
+          lastCornerPosition: 'right',
+          brakeCueBars: true,
+          brakeCueBarSide: 'bottom',
+        })}
       />
     );
 
@@ -421,14 +434,12 @@ describe('LapTrace', () => {
       children,
     });
 
-    it('shows what the layout holds, whatever the old settings say', () => {
+    it('shows what the layout holds, and only that', () => {
       seedReference();
 
       const { unmount } = render(
         <LapTrace
           {...baseProps}
-          showLastCorner={false}
-          brakeCueBars={false}
           layoutTree={split('row', [
             box('plot'),
             box('brakeCue'),
@@ -441,12 +452,7 @@ describe('LapTrace', () => {
       unmount();
 
       render(
-        <LapTrace
-          {...baseProps}
-          showLastCorner
-          brakeCueBars
-          layoutTree={split('col', [box('plot')])}
-        />
+        <LapTrace {...baseProps} layoutTree={split('col', [box('plot')])} />
       );
       expect(screen.queryByTestId('last-corner-panel')).toBeNull();
       expect(screen.queryByTestId('brake-cue-bars')).toBeNull();

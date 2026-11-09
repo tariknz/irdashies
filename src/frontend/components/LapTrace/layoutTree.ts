@@ -1,7 +1,11 @@
-import type { LapTraceConfig, LayoutNode } from '@irdashies/types';
-import { hasLayoutTree, layoutTreeHas } from '@irdashies/domain/layoutTree';
+import {
+  DEFAULT_LAP_TRACE_LAYOUT_TREE,
+  type LapTraceElementId,
+  type LayoutNode,
+} from '@irdashies/types';
+import { layoutTreeHas, resolveLayoutTree } from '@irdashies/domain/layoutTree';
 
-export type LapTraceElementId = 'plot' | 'corners' | 'brakeCue';
+export type { LapTraceElementId } from '@irdashies/types';
 
 export const LAP_TRACE_ELEMENTS: { id: LapTraceElementId; label: string }[] = [
   { id: 'plot', label: 'Trace' },
@@ -12,82 +16,14 @@ export const LAP_TRACE_ELEMENTS: { id: LapTraceElementId; label: string }[] = [
 /** Which side of what it shares room with an element sits on. */
 export type LapTraceElementSide = 'left' | 'right' | 'top' | 'bottom';
 
-type LegacyLayoutConfig = Partial<
-  Pick<
-    LapTraceConfig,
-    'showLastCorner' | 'lastCornerPosition' | 'brakeCueBars' | 'brakeCueBarSide'
-  >
->;
-
-const box = (element: LapTraceElementId): LayoutNode => ({
-  id: `laptrace-box-${element}`,
-  type: 'box',
-  direction: 'col',
-  widgets: [element],
-});
-
-/** A split, or its only child when there is just one. */
-const split = (
-  id: string,
-  direction: 'row' | 'col',
-  children: (LayoutNode | false)[]
-): LayoutNode => {
-  const present = children.filter((child) => child !== false);
-  return present.length === 1
-    ? present[0]
-    : { id, type: 'split', direction, children: present };
-};
+const defaultTree = () => DEFAULT_LAP_TRACE_LAYOUT_TREE;
 
 /**
- * Builds a tree that matches the layout from before the layout editor: the
- * countdown strip beside or across the plot, and the last-corner panel
- * outside both, on the edges the old settings named.
+ * The saved tree, or the default one when it is missing or damaged. Configs
+ * saved before the layout editor get theirs from the dashboard-load migration.
  */
-export const buildDefaultLapTraceTree = (
-  config: LegacyLayoutConfig
-): LayoutNode => {
-  const corners = config.showLastCorner
-    ? (config.lastCornerPosition ?? 'bottom')
-    : undefined;
-  const bars = config.brakeCueBars
-    ? (config.brakeCueBarSide ?? 'right')
-    : undefined;
-
-  // A top or bottom strip shares the plot's column, so it spans only the
-  // trace and not a side panel.
-  const plotColumn = split('laptrace-plot-column', 'col', [
-    bars === 'top' && box('brakeCue'),
-    box('plot'),
-    bars === 'bottom' && box('brakeCue'),
-  ]);
-  // A side panel sits outside side bars: the bars are a live cue tied to the
-  // trace, the panel is history.
-  const middle = split('laptrace-middle', 'row', [
-    corners === 'left' && box('corners'),
-    bars === 'left' && box('brakeCue'),
-    plotColumn,
-    bars === 'right' && box('brakeCue'),
-    corners === 'right' && box('corners'),
-  ]);
-  return {
-    id: 'laptrace-root',
-    type: 'split',
-    direction: 'col',
-    children: [
-      ...(corners === 'top' ? [box('corners')] : []),
-      middle,
-      ...(corners === 'bottom' ? [box('corners')] : []),
-    ],
-  };
-};
-
-/** The saved tree, or one built from the old settings when there is none. */
-export const getLapTraceLayoutTree = (
-  config: LegacyLayoutConfig & { layoutTree?: LayoutNode }
-): LayoutNode =>
-  hasLayoutTree(config.layoutTree)
-    ? config.layoutTree
-    : buildDefaultLapTraceTree(config);
+export const resolveLapTraceLayoutTree = (saved: unknown): LayoutNode =>
+  resolveLayoutTree(saved, defaultTree);
 
 /** One container's entries, as subtrees or as an element of a box. */
 const entriesOf = (node: LayoutNode): (LayoutNode | string)[] =>

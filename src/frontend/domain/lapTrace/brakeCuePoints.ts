@@ -30,9 +30,11 @@
  * peaked under 12%. Pressure is car-dependent (brake bias, pedal travel, and
  * some cars log force rather than travel), which is why it is a user setting,
  * from 0 to 25%. The default is a low 5%, so a real brake point on a car that
- * logs little pressure is not missed; raising it to 10-15%, which behaved
- * identically across those laps, keeps the brushes out. At 0 only the speed
- * floor below decides.
+ * logs little pressure is not missed. The cost is that it sits inside the
+ * range those brushes reached: at 5%, a brush that also scrubs the speed floor
+ * below counts as a braking zone, earns a countdown and can take the corner's
+ * brake-point delta. Raising it to 10-15%, which behaved identically across
+ * those laps, keeps the brushes out. At 0 only the speed floor decides.
  *
  * **Speed scrubbed** stays on as a floor, with a narrower job than it used to
  * have: rejecting the hard stab that does not actually slow the car.
@@ -52,7 +54,8 @@ export const BRAKE_CUE_MIN_SPEED_DROP_MS = 2.0;
 /**
  * Peak brake pressure (0-1) a reference application must reach to earn a
  * countdown, when the caller does not supply the user's setting. The same as
- * the widget's default setting.
+ * the widget's default setting, and low enough to count a light brush that
+ * slows the car (see the header above): 10-15% keeps those out.
  */
 export const BRAKE_CUE_MIN_PEAK_DEFAULT = 0.05;
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { LayoutNode } from '@irdashies/types';
-import { layoutTreeHas } from './layoutTree';
+import { layoutTreeHas, resolveLayoutTree } from './layoutTree';
 
 const box = (id: string, widgets: string[]): LayoutNode => ({
   id,
@@ -38,5 +38,31 @@ describe('layoutTreeHas', () => {
         'plot'
       )
     ).toBe(false);
+  });
+});
+
+describe('resolveLayoutTree', () => {
+  const fallback = box('default', ['plot']);
+
+  it('keeps a valid saved tree and never builds the default', () => {
+    const saved = box('saved', ['corners']);
+    let built = 0;
+    const buildDefault = () => {
+      built += 1;
+      return fallback;
+    };
+    expect(resolveLayoutTree(saved, buildDefault)).toBe(saved);
+    expect(built).toBe(0);
+  });
+
+  it('falls back to the default for a missing or damaged tree', () => {
+    for (const saved of [
+      undefined,
+      null,
+      { id: 'x' },
+      { id: 'x', type: 'box', direction: 'col', widgets: [3] },
+    ]) {
+      expect(resolveLayoutTree(saved, () => fallback)).toBe(fallback);
+    }
   });
 });

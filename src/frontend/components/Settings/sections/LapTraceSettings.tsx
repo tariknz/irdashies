@@ -7,6 +7,7 @@ import {
   SettingsTabType,
   getWidgetDefaultConfig,
   DEFAULT_AUDIO_OUTPUT_DEVICE_ID,
+  DEFAULT_LAP_TRACE_LAYOUT_TREE,
   DEFAULT_LAP_TRACE_COLORS,
   DEFAULT_LAP_TRACE_SOUND,
 } from '@irdashies/types';
@@ -43,15 +44,10 @@ import { SettingProps, settingPropFor } from '../components/SettingProp';
 import { LayoutVisualizer } from './LayoutVisualizer';
 import {
   LAP_TRACE_ELEMENTS,
-  buildDefaultLapTraceTree,
-  getLapTraceLayoutTree,
   lapTraceElementSide,
+  resolveLapTraceLayoutTree,
 } from '../../LapTrace/layoutTree';
-import {
-  hasLayoutTree,
-  isEmptyLayoutTree,
-  layoutTreeHas,
-} from '@irdashies/domain/layoutTree';
+import { isEmptyLayoutTree, layoutTreeHas } from '@irdashies/domain/layoutTree';
 
 const SETTING_ID = 'laptrace';
 const SettingProp = settingPropFor(SETTING_ID);
@@ -116,15 +112,6 @@ const TABS: SettingsTabType[] = [
   'visibility',
   'help',
 ];
-
-// Configs saved before the layout editor have no tree. Seed one from the old
-// panel and countdown settings so the editor shows what the overlay draws.
-const withLayoutTree = (
-  config: LapTraceWidgetSettings['config']
-): LapTraceWidgetSettings['config'] => {
-  if (hasLayoutTree(config.layoutTree)) return config;
-  return { ...config, layoutTree: buildDefaultLapTraceTree(config) };
-};
 
 const LAST_CORNER_DISPLAY_ORDER = [
   'corner',
@@ -224,17 +211,18 @@ export const LapTraceSettings = () => {
     (w) => w.id === SETTING_ID
   ) as LapTraceWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<LapTraceWidgetSettings>({
+  const [settings, setSettings] = useState<LapTraceWidgetSettings>(() => ({
     enabled: savedSettings?.enabled ?? false,
-    config: withLayoutTree(
+    config:
       (savedSettings?.config as LapTraceWidgetSettings['config']) ??
-        defaultConfig
-    ),
-  });
+      defaultConfig,
+  }));
 
+  // The same tree the overlay draws. Configs saved before the layout editor
+  // got theirs from the dashboard-load migration.
   const currentTree = useMemo(
-    () => getLapTraceLayoutTree(settings.config),
-    [settings.config]
+    () => resolveLapTraceLayoutTree(settings.config.layoutTree),
+    [settings.config.layoutTree]
   );
   const cornersInLayout = layoutTreeHas(currentTree, 'corners');
   const barsInLayout = layoutTreeHas(currentTree, 'brakeCue');
@@ -547,7 +535,7 @@ export const LapTraceSettings = () => {
                     label="Reset to Default Layout"
                     onClick={() =>
                       handleConfigChange({
-                        layoutTree: buildDefaultLapTraceTree(defaultConfig),
+                        layoutTree: DEFAULT_LAP_TRACE_LAYOUT_TREE,
                       })
                     }
                   />
@@ -885,7 +873,7 @@ export const LapTraceSettings = () => {
                     Last Corner brake-distance delta. */}
                   <SettingSliderRow
                     title="Minimum brake pressure"
-                    description="How hard the reference lap had to press for a brake application to count as a braking zone, and so earn a countdown and a brake-distance delta. Raise it if light stabilising brushes inside fast corners are being counted; lower it if a real corner brake point is being missed. At 0% every application that slows the car counts. Depends on the car, since brake bias and pedal travel differ."
+                    description="How hard the reference lap had to press for a brake application to count as a braking zone, and so earn a countdown and a brake-distance delta. Raise it, to 10-15% on most cars, if light stabilising brushes inside fast corners are being counted; lower it if a real corner brake point is being missed. At 0% every application that slows the car counts. Depends on the car, since brake bias and pedal travel differ."
                     value={Math.round(
                       (settings.config.brakeCueMinPeak ??
                         BRAKE_CUE_MIN_PEAK_DEFAULT) * 100

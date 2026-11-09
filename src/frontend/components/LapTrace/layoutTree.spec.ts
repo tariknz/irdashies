@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { getWidgetDefaultConfig, type LayoutNode } from '@irdashies/types';
-import { layoutTreeHas } from '@irdashies/domain/layoutTree';
 import {
-  buildDefaultLapTraceTree,
-  getLapTraceLayoutTree,
-  lapTraceElementSide,
-} from './layoutTree';
+  DEFAULT_LAP_TRACE_LAYOUT_TREE,
+  getWidgetDefaultConfig,
+  lapTraceTreeFromLegacy,
+  type LayoutNode,
+} from '@irdashies/types';
+import { layoutTreeHas } from '@irdashies/domain/layoutTree';
+import { lapTraceElementSide, resolveLapTraceLayoutTree } from './layoutTree';
 
 const box = (
   widgets: string[],
@@ -29,9 +30,10 @@ const split = (
 
 const SIDES = ['top', 'bottom', 'left', 'right'] as const;
 
-describe('buildDefaultLapTraceTree', () => {
+describe('lapTraceTreeFromLegacy', () => {
   it('starts a new widget with the panel, the trace and the countdown in three columns', () => {
-    const tree = buildDefaultLapTraceTree(getWidgetDefaultConfig('laptrace'));
+    const tree = getWidgetDefaultConfig('laptrace').layoutTree;
+    expect(tree).toBe(DEFAULT_LAP_TRACE_LAYOUT_TREE);
     expect(tree).toMatchObject({
       type: 'split',
       children: [
@@ -48,7 +50,7 @@ describe('buildDefaultLapTraceTree', () => {
   });
 
   it('holds only the trace with the panel and the countdown off', () => {
-    const tree = buildDefaultLapTraceTree({});
+    const tree = lapTraceTreeFromLegacy({});
     expect(layoutTreeHas(tree, 'plot')).toBe(true);
     expect(layoutTreeHas(tree, 'corners')).toBe(false);
     expect(layoutTreeHas(tree, 'brakeCue')).toBe(false);
@@ -59,7 +61,7 @@ describe('buildDefaultLapTraceTree', () => {
   it.each(SIDES.flatMap((corners) => SIDES.map((bars) => [corners, bars])))(
     'puts a %s panel and %s bars where the old settings did',
     (corners, bars) => {
-      const tree = buildDefaultLapTraceTree({
+      const tree = lapTraceTreeFromLegacy({
         showLastCorner: true,
         lastCornerPosition: corners,
         brakeCueBars: true,
@@ -71,7 +73,7 @@ describe('buildDefaultLapTraceTree', () => {
   );
 
   it('keeps a side panel outside side bars on the same edge', () => {
-    const tree = buildDefaultLapTraceTree({
+    const tree = lapTraceTreeFromLegacy({
       showLastCorner: true,
       lastCornerPosition: 'right',
       brakeCueBars: true,
@@ -93,7 +95,7 @@ describe('buildDefaultLapTraceTree', () => {
   });
 
   it('keeps a top or bottom strip in the trace column, beside a side panel', () => {
-    const tree = buildDefaultLapTraceTree({
+    const tree = lapTraceTreeFromLegacy({
       showLastCorner: true,
       lastCornerPosition: 'left',
       brakeCueBars: true,
@@ -116,25 +118,17 @@ describe('buildDefaultLapTraceTree', () => {
   });
 });
 
-describe('getLapTraceLayoutTree', () => {
-  it('uses a saved tree over the old settings', () => {
+describe('resolveLapTraceLayoutTree', () => {
+  it('uses a saved tree', () => {
     const saved = split('row', [box(['corners']), box(['plot'])]);
-    expect(
-      getLapTraceLayoutTree({ layoutTree: saved, showLastCorner: false })
-    ).toBe(saved);
+    expect(resolveLapTraceLayoutTree(saved)).toBe(saved);
   });
 
-  it('falls back to the old settings without a valid tree', () => {
-    for (const layoutTree of [
-      undefined,
-      { id: 'x' } as unknown as LayoutNode,
-    ]) {
-      const tree = getLapTraceLayoutTree({
-        layoutTree,
-        showLastCorner: true,
-        lastCornerPosition: 'top',
-      });
-      expect(lapTraceElementSide(tree, 'corners')).toBe('top');
+  it('falls back to the default layout without a valid tree', () => {
+    for (const saved of [undefined, { id: 'x' }]) {
+      expect(resolveLapTraceLayoutTree(saved)).toBe(
+        DEFAULT_LAP_TRACE_LAYOUT_TREE
+      );
     }
   });
 });
