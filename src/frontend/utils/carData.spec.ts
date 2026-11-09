@@ -25,7 +25,7 @@ describe('carData', () => {
     it('loads car data synchronously from bundle', () => {
       // Ferrari 296 GT3 should be in the bundle
       const result = loadCarData('ferrari296gt3');
-      
+
       expect(result).not.toBeNull();
       if (result) {
         expect(result.carId).toBe('ferrari296gt3');
@@ -40,7 +40,7 @@ describe('carData', () => {
       const result1 = loadCarData('ferrari296gt3');
       const result2 = loadCarData('Ferrari296GT3');
       const result3 = loadCarData('FERRARI296GT3');
-      
+
       expect(result1).not.toBeNull();
       expect(result2).toEqual(result1);
       expect(result3).toEqual(result1);
@@ -50,7 +50,7 @@ describe('carData', () => {
       // Try loading with a normalized version
       const result1 = loadCarData('ferrari296gt3');
       const result2 = loadCarData('ferrari 296 gt3');
-      
+
       expect(result1).not.toBeNull();
       if (result1) {
         expect(result2).toEqual(result1);
@@ -66,14 +66,14 @@ describe('carData', () => {
       const result1 = loadCarData('ferrari296gt3', 'iracing');
       const result2 = loadCarData('ferrari296gt3', 'assettocorsa');
       const result3 = loadCarData('ferrari296gt3', 'automobilista2');
-      
+
       expect(result1).toEqual(result2);
       expect(result2).toEqual(result3);
     });
 
     it('returns car data with expected structure', () => {
       const result = loadCarData('ferrari296gt3');
-      
+
       if (result) {
         expect(result).toHaveProperty('carName');
         expect(result).toHaveProperty('carId');
@@ -82,7 +82,7 @@ describe('carData', () => {
         expect(result).toHaveProperty('redlineBlinkInterval');
         expect(result).toHaveProperty('ledColor');
         expect(result).toHaveProperty('ledRpm');
-        
+
         expect(typeof result.carName).toBe('string');
         expect(typeof result.carId).toBe('string');
         expect(typeof result.ledNumber).toBe('number');
@@ -93,15 +93,15 @@ describe('carData', () => {
   describe('getAvailableCars', () => {
     it('returns array of available cars', () => {
       const cars = getAvailableCars();
-      
+
       expect(Array.isArray(cars)).toBe(true);
       expect(cars.length).toBeGreaterThan(0);
     });
 
     it('returns cars with carId and carName', () => {
       const cars = getAvailableCars();
-      
-      cars.forEach(car => {
+
+      cars.forEach((car) => {
         expect(car).toHaveProperty('carId');
         expect(car).toHaveProperty('carName');
         expect(typeof car.carId).toBe('string');
@@ -111,8 +111,8 @@ describe('carData', () => {
 
     it('includes expected cars in the bundle', () => {
       const cars = getAvailableCars();
-      const carIds = cars.map(c => c.carId);
-      
+      const carIds = cars.map((c) => c.carId);
+
       // These cars should be in the bundle
       expect(carIds).toContain('ferrari296gt3');
     });
