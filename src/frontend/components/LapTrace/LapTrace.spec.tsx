@@ -500,8 +500,61 @@ describe('LapTrace', () => {
       );
       const panelBox = screen.getByTestId('last-corner-panel').parentElement;
       const plotBox = document.querySelector('svg')?.closest('.flex-1');
-      expect(panelBox?.className).toContain('flex-none');
-      expect(plotBox).toBeTruthy();
+      expect(panelBox?.className).not.toContain('flex-1');
+      expect(plotBox?.contains(panelBox ?? null)).toBe(false);
+    });
+
+    it('keeps at least half the room for the trace, whatever sits beside it', () => {
+      seedReference();
+      // Whether the layout entry holding the plot keeps this much room.
+      const plotKeeps = (minimum: string) => {
+        let node = document.querySelector('svg')?.parentElement;
+        while (node && !node.classList.contains(minimum)) {
+          node = node.parentElement;
+        }
+        return !!node;
+      };
+
+      // A side panel sized for a long corner name is most of the default
+      // 396px widget: left to its own size, it left the trace no room at all.
+      // The panel and the bars shrink into the other half instead.
+      const { unmount } = render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('row', [
+            box('plot'),
+            box('brakeCue'),
+            box('corners'),
+          ])}
+        />
+      );
+      expect(plotKeeps('min-w-[50%]')).toBe(true);
+      for (const id of ['last-corner-panel', 'brake-cue-bars']) {
+        // Its box: the entry the row lays out beside the plot's.
+        const entry = screen.getByTestId(id).parentElement?.parentElement;
+        expect(entry?.className).toContain('flex-initial');
+        expect(entry?.className).toContain('min-w-0');
+      }
+      unmount();
+
+      // Above or below, on height.
+      const { unmount: unmountStacked } = render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('col', [box('plot'), box('corners')])}
+        />
+      );
+      expect(plotKeeps('min-h-[50%]')).toBe(true);
+      unmountStacked();
+
+      // Without the trace there is nothing to keep room for.
+      const { container } = render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('row', [box('corners'), box('brakeCue')])}
+        />
+      );
+      expect(container.querySelector('.flex-initial')).toBeNull();
     });
   });
 
