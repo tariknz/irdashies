@@ -25,7 +25,10 @@ import {
   type RebaselineResult,
 } from './racePlanRebaseline';
 
-vi.mock('./racePlanRebaseline', () => ({ rebaselinePlan: vi.fn() }));
+vi.mock('./racePlanRebaseline', () => ({
+  UNPLANNED_WINDOW_LAPS: 3,
+  rebaselinePlan: vi.fn(),
+}));
 
 const [DRIVER_A, DRIVER_B] = FIXTURE_DRIVER_IDS;
 const TEAM_ID = 5001;

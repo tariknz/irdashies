@@ -80,6 +80,12 @@ export const MAX_PROJECTED_STINTS = 200;
 /** A lap is only counted on fuel if it leaves at least this many laps spare. */
 export const FUEL_MARGIN_LAPS = 0.3;
 
+/**
+ * A stop within this many laps of the box lap counts as planned, so fuel never
+ * moves the box further than this past the plan.
+ */
+export const UNPLANNED_WINDOW_LAPS = 3;
+
 const DEFAULT_LAP_SEC = 120;
 const DEFAULT_STINT_LAPS = 30;
 const EPS = 1e-6;
@@ -209,15 +215,50 @@ const lapSecFor = (
 };
 
 /** Never assumes the wet uses less fuel: falls back to dry figures. */
+const plannedFuelPerLap = (
+  ctx: Context,
+  stint: RacePlanStint | undefined,
+  driverId: number | null
+): number | null =>
+  driverFuelPerLap(ctx, driverId, ctx.conditions) ??
+  (stint && stint.laps > 0 ? positive((stint.fuel ?? 0) / stint.laps) : null) ??
+  driverFuelPerLap(ctx, driverId, 'dry');
+
 const fuelPerLapFor = (
   ctx: Context,
   stint: RacePlanStint | undefined,
   driverId: number | null
 ): number | null =>
-  ctx.measuredFuelPerLap ??
-  driverFuelPerLap(ctx, driverId, ctx.conditions) ??
-  (stint && stint.laps > 0 ? positive((stint.fuel ?? 0) / stint.laps) : null) ??
-  driverFuelPerLap(ctx, driverId, 'dry');
+  ctx.measuredFuelPerLap ?? plannedFuelPerLap(ctx, stint, driverId);
+
+/**
+ * The box lap once the fuel in the car is beating the plan. Only a stint the
+ * plan ran to about a full tank stretches: a shorter one stops for another
+ * reason, such as a driver swap.
+ */
+const stretchedBox = (
+  ctx: Context,
+  planned: RacePlanStint | undefined,
+  driverId: number | null,
+  plannedBox: number,
+  fuelBox: number
+): number => {
+  const measured = ctx.measuredFuelPerLap;
+  const planRate = plannedFuelPerLap(ctx, planned, driverId);
+  if (
+    measured === null ||
+    planRate === null ||
+    ctx.capacity === null ||
+    !planned ||
+    measured >= planRate ||
+    (planned.laps + UNPLANNED_WINDOW_LAPS) * planRate < ctx.capacity
+  )
+    return plannedBox;
+  return Math.max(
+    plannedBox,
+    Math.min(fuelBox, plannedBox + UNPLANNED_WINDOW_LAPS)
+  );
+};
 
 /**
  * Laps in a full stint at plan index `index`: the plan's laps while they
@@ -436,10 +477,13 @@ export function rebaselinePlan(input: RebaselineInput): RebaselineResult {
 
     let box = Math.max(teamLaps, plannedBox);
     if (fuel !== null && fuelPerLap !== null) {
+      const fuelBox = teamLaps + lapsOnFuel(fuel, fuelPerLap);
       const reachesPlan =
         plannedBox >= teamLaps &&
         (plannedBox - teamLaps) * fuelPerLap <= fuel + EPS;
-      box = reachesPlan ? plannedBox : teamLaps + lapsOnFuel(fuel, fuelPerLap);
+      box = reachesPlan
+        ? stretchedBox(ctx, currentPlanned, driverId, plannedBox, fuelBox)
+        : fuelBox;
     }
 
     let lapsLeft = box - teamLaps;

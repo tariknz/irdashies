@@ -9,6 +9,7 @@ import { normalizeRacePlanning } from '../services/racePlanNormalize';
 import {
   FUEL_MARGIN_LAPS,
   MAX_PROJECTED_STINTS,
+  UNPLANNED_WINDOW_LAPS,
   lapsOnFuel,
   plannedElapsedAtLap,
   rebaselinePlan,
@@ -457,6 +458,62 @@ describe('rebaselinePlan after a partial fill', () => {
       startLap: 51,
       laps: 34,
     });
+  });
+});
+
+describe('rebaselinePlan when the fuel beats the plan', () => {
+  const midStint = (overrides: Partial<RebaselineInput> = {}) => {
+    const elapsedSec = CYCLE_SEC + 17 * LAP_SEC;
+    return makeInput({
+      actual: onPlanHistory(1),
+      teamLaps: 50,
+      elapsedSec,
+      remainingSec: PLAN_END - elapsedSec,
+      fuelLevel: 36 - 17 * 1.0,
+      fuelPerLap: 1.0,
+      lapTimeSec: LAP_SEC,
+      ...overrides,
+    });
+  };
+
+  it('moves the box lap to where the fuel runs out', () => {
+    const result = rebaselinePlan(midStint());
+
+    expect(result.boxLap).toBe(68);
+    expect(result.stints[1]).toMatchObject({ laps: 35, rebuilt: true });
+    expect(result.stints[2]).toMatchObject({ startLap: 68, driverId: 102 });
+  });
+
+  it('never stretches further than a stop on the planned lap stays planned', () => {
+    const result = rebaselinePlan(
+      midStint({ fuelLevel: 36 - 17 * 0.9, fuelPerLap: 0.9 })
+    );
+
+    expect(result.boxLap).toBe(67 + UNPLANNED_WINDOW_LAPS);
+  });
+
+  it('keeps a stint the plan ended well short of a full tank', () => {
+    const strategy = structuredClone(STRATEGY);
+    strategy.stints[1].laps = 20;
+    const result = rebaselinePlan(
+      midStint({ strategy, teamLaps: 40, fuelLevel: 29 })
+    );
+
+    expect(result.boxLap).toBe(53);
+  });
+
+  it('keeps the plan until the fuel use has been measured', () => {
+    const result = rebaselinePlan(
+      midStint({ fuelLevel: 30, fuelPerLap: null })
+    );
+
+    expect(result.boxLap).toBe(67);
+  });
+
+  it('keeps the plan when the fuel cannot be seen', () => {
+    const result = rebaselinePlan(midStint({ fuelLevel: null }));
+
+    expect(result.boxLap).toBe(67);
   });
 });
 

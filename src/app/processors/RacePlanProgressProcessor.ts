@@ -19,7 +19,11 @@ import type {
   RacePlanHistoryStint,
 } from '../storage/racePlanHistory';
 import type { TelemetryProcessor } from './TelemetryProcessor';
-import { rebaselinePlan, type RebaselineResult } from './racePlanRebaseline';
+import {
+  UNPLANNED_WINDOW_LAPS,
+  rebaselinePlan,
+  type RebaselineResult,
+} from './racePlanRebaseline';
 
 /** Litres the level must rise in the stall to count as a fuel stop. */
 const FUEL_ADDED_MIN = 0.5;
@@ -27,8 +31,6 @@ const FUEL_ADDED_MIN = 0.5;
 export const ASSUMED_FILL_MIN_STOP_SEC = 20;
 /** Session info can lag the stall exit; changes this soon after belong to it. */
 export const POST_STOP_GRACE_SEC = 60;
-/** A stop more than this many laps before the box lap is unplanned. */
-const UNPLANNED_WINDOW_LAPS = 3;
 const MIN_MEASURED_LAPS = 3;
 const MEASURED_WINDOW_LAPS = 5;
 export const MAX_RACE_PLAN_STOPS = 64;
