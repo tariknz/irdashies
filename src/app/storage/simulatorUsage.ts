@@ -7,16 +7,6 @@ import { createDebouncedAtomicWriter } from './debouncedAtomicWriter';
 
 const FILE_NAME = 'simulator-usage.json';
 /**
- * How often a running connection's time is saved, so a crash or a forced
- * shutdown loses at most this much of it.
- */
-const CHECKPOINT_INTERVAL_MS = 60 * 1000;
-/**
- * The most one settle can add. Time is settled at least every checkpoint, so
- * a longer gap is the machine asleep or the process frozen, not a sim in use.
- */
-const MAX_SETTLE_MS = CHECKPOINT_INTERVAL_MS + 5 * 1000;
-/**
  * The most a simulator can carry into one report: a month. Anything above it
  * in the file is damage, not use.
  */
@@ -32,7 +22,7 @@ export interface SimulatorUsageEntry {
   first: number;
   /** Place in connection order of its latest connect. */
   last: number;
-  /** How long it has been connected since the last report, in milliseconds. */
+  /** How long it has been in use since the last report, in milliseconds. */
   ms: number;
 }
 
@@ -97,6 +87,10 @@ const mergeNoted = (
  * read: until then nothing is written, so an early connect cannot overwrite
  * what the file holds. A read that fails is tried again at the next save.
  *
+ * Nothing runs while a simulator is in use: no timer, no polling. Its time is
+ * counted when the use ends, at a report, and at quit, so a crash loses the
+ * use running at the time.
+ *
  * Durations come from `clock`, a monotonic clock, so a change of the wall
  * clock does not count as use.
  */
@@ -106,9 +100,8 @@ export function createSimulatorUsageStore(
 ) {
   const filePath = path.join(storageDir, FILE_NAME);
   let usage: SimulatorUsage = {};
-  /** The connection running now, in this process only. */
+  /** The use running now, in this process only. */
   let open: { simulator: ActiveSimulator; since: number } | undefined;
-  let checkpointTimer: ReturnType<typeof setInterval> | undefined;
   let loaded = false;
   let loading: Promise<boolean> | undefined;
   /** Counts clears, so a save queued before one cannot write after it. */
@@ -173,13 +166,13 @@ export function createSimulatorUsageStore(
     });
   };
 
-  /** Moves the running connection's time so far into its entry. */
+  /** Moves the running use's time so far into its entry. */
   const settleOpen = (): boolean => {
     if (!open) return false;
     const now = clock();
     const entry = usage[open.simulator];
     if (entry) {
-      const elapsed = Math.min(MAX_SETTLE_MS, Math.max(0, now - open.since));
+      const elapsed = Math.max(0, now - open.since);
       usage = {
         ...usage,
         [open.simulator]: {
@@ -192,11 +185,6 @@ export function createSimulatorUsageStore(
     return true;
   };
 
-  const stopCheckpoints = (): void => {
-    clearInterval(checkpointTimer);
-    checkpointTimer = undefined;
-  };
-
   return {
     /**
      * Waits for the stored list to be read. False when it could not be, for
@@ -205,8 +193,8 @@ export function createSimulatorUsageStore(
     ready: load,
     /**
      * Hands over the list for a report and starts a new one, once the file
-     * has been read; undefined before that. The running connection is
-     * counted up to now, and stays, with nothing counted yet.
+     * has been read; undefined before that. The running use is counted up to
+     * now, and stays, with nothing counted yet.
      */
     takeForReport(): SimulatorUsage | undefined {
       if (!loaded) return undefined;
@@ -217,14 +205,13 @@ export function createSimulatorUsageStore(
       return taken;
     },
     /**
-     * Notes the simulator connected now, or none. A change ends the running
-     * connection, and a new simulator starts one, next in connection order.
+     * Notes the simulator in use now, or none. A change ends the running use,
+     * and a new simulator starts one, next in connection order.
      */
     setConnected(simulator: ActiveSimulator | undefined): void {
       if (open?.simulator === simulator) return;
       settleOpen();
       open = undefined;
-      stopCheckpoints();
       if (simulator) {
         const place = latestPlace(usage) + 1;
         const entry = usage[simulator];
@@ -237,20 +224,15 @@ export function createSimulatorUsageStore(
           },
         };
         open = { simulator, since: clock() };
-        checkpointTimer = setInterval(() => {
-          if (settleOpen()) save();
-        }, CHECKPOINT_INTERVAL_MS);
-        checkpointTimer.unref?.();
       }
       save();
     },
     /**
-     * Forgets everything, the running connection included, and deletes the
-     * file: for an opt-out, after which nothing is noted.
+     * Forgets everything, the running use included, and deletes the file:
+     * for an opt-out, after which nothing is noted.
      */
     async clear(): Promise<void> {
       open = undefined;
-      stopCheckpoints();
       usage = {};
       loaded = true;
       clears += 1;
@@ -268,7 +250,7 @@ export function createSimulatorUsageStore(
         );
       }
     },
-    /** Saves now, the running connection's time included. */
+    /** Saves now, the running use's time included. */
     async flush(): Promise<void> {
       const noted = open !== undefined || Object.keys(usage).length > 0;
       if (!loaded && !noted) return;

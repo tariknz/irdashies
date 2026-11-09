@@ -159,6 +159,9 @@ analytics.setupLogTransport(overlayManager.getVersion());
 onConnectedSimulatorChanged((simulator) =>
   analytics.setConnectedSimulator(simulator)
 );
+getSessionLifecycle().onWatchingStateChange((watching) =>
+  analytics.setWatchingTrack(watching)
+);
 onAnalyticsOptOutChanged((optOut) => void analytics.setOptOut(optOut));
 
 overlayManager.setupChromiumFlags();

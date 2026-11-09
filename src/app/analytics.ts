@@ -134,6 +134,11 @@ export class Analytics {
    * already up.
    */
   private connectedSimulator: ActiveSimulator | undefined;
+  /**
+   * Whether the sim shows the track: in the car, a replay, spectating or
+   * LMU's monitor. Only that time counts as use, not menus or the garage.
+   */
+  private watchingTrack = false;
 
   constructor(provider?: AnalyticsProvider) {
     if (provider) {
@@ -359,23 +364,33 @@ export class Analytics {
    */
   setConnectedSimulator(simulator: ActiveSimulator | undefined): void {
     this.connectedSimulator = simulator;
+    this.noteSimulatorInUse();
+  }
+
+  /** Notes whether the sim shows the track; only then is its time counted. */
+  setWatchingTrack(watching: boolean): void {
+    this.watchingTrack = watching;
+    this.noteSimulatorInUse();
+  }
+
+  private noteSimulatorInUse(): void {
     if (!this.provider || getAnalyticsOptOut()) return;
-    getSimulatorUsageStore().setConnected(simulator);
+    getSimulatorUsageStore().setConnected(
+      this.watchingTrack ? this.connectedSimulator : undefined
+    );
   }
 
   /**
    * Applies a change of the opt-out at once. Opting out stops the clock of
-   * the connection running now and deletes what was noted; opting back in
-   * starts counting the sim connected now, from that moment.
+   * the use running now and deletes what was noted; opting back in starts
+   * counting the sim in use now, from that moment.
    */
   async setOptOut(optOut: boolean): Promise<void> {
     if (optOut) {
       await getSimulatorUsageStore().clear();
       return;
     }
-    if (this.provider) {
-      getSimulatorUsageStore().setConnected(this.connectedSimulator);
-    }
+    this.noteSimulatorInUse();
   }
 
   /** The startup identify, once the simulators used are known. */

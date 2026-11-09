@@ -133,26 +133,18 @@ describe('simulator usage store', () => {
     expect(await take()).toEqual({ lmu: { first: 1, last: 1, ms: 10_000 } });
   });
 
-  it("saves a running connection's time every minute", async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+  it('runs no timer while a simulator is in use', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval'] });
     store.setConnected('lmu');
-    now += 60_000;
-    vi.advanceTimersByTime(60_000);
-    // Without a flush or a disconnect: what a crash would leave behind.
-    await afterWriteDelay();
-    expect(await stored()).toEqual({ lmu: { first: 1, last: 1, ms: 60_000 } });
+    expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('counts a gap longer than a checkpoint, such as sleep, as one checkpoint at most', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+  it('counts a long use in full when it ends', async () => {
     store.setConnected('lmu');
-    // Asleep for five hours: the minute timer fires once on waking.
     now += 5 * 60 * 60_000;
-    vi.advanceTimersByTime(60_000);
-    now += 30_000;
     store.setConnected(undefined);
     expect(await take()).toEqual({
-      lmu: { first: 1, last: 1, ms: 65_000 + 30_000 },
+      lmu: { first: 1, last: 1, ms: 5 * 60 * 60_000 },
     });
   });
 
@@ -318,7 +310,6 @@ describe('simulator usage store', () => {
   });
 
   it('forgets everything on clear, stops the clock, and deletes the file', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     await writeStored({ iracing: { first: 1, last: 1, ms: 5000 } });
     store.setConnected('lmu');
     now += 1000;
@@ -328,7 +319,6 @@ describe('simulator usage store', () => {
     await store.clear();
     await expect(fsp.access(filePath)).rejects.toThrow();
     now += 60_000;
-    vi.advanceTimersByTime(60_000);
     await store.flush();
     await expect(fsp.access(filePath)).rejects.toThrow();
     expect(store.takeForReport()).toEqual({});

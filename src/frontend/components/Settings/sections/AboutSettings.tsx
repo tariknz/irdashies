@@ -124,9 +124,10 @@ export const AboutSettings = () => {
                 <li>
                   <strong className="text-slate-300">Simulators used</strong>
                   <br />
-                  Which simulators irDashies connects to, such as iRacing or Le
-                  Mans Ultimate, and for how long, are sent at the next startup,
-                  and the simulator connected at the time is included with error
+                  Which simulators you use with irDashies, such as iRacing or Le
+                  Mans Ultimate, and for how long you drive, watch a replay or
+                  spectate in each, are sent at the next startup, and the
+                  simulator connected at the time is included with error
                   reports. Nothing is recorded while analytics is turned off.
                   This helps us prioritise work and fixes for each simulator.
                 </li>

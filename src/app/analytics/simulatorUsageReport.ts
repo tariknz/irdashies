@@ -4,13 +4,17 @@ import type { SimulatorUsage } from '../storage/simulatorUsage';
 /** Person properties in PostHog, set from the simulators used. */
 export interface SimulatorUsageProperties {
   $set: {
-    /** The simulator that connected most recently. */
+    /** The simulator used most recently. */
     last_simulator: ActiveSimulator;
   } & Partial<Record<`used_${ActiveSimulator}`, true>> &
-    /** How long each was connected since the previous report, in seconds. */
+    /**
+     * How long each showed the track since the previous report, in seconds:
+     * in the car, a replay, spectating or LMU's monitor. Menus and the garage
+     * do not count.
+     */
     Partial<Record<`${ActiveSimulator}_connected_seconds`, number>>;
   /**
-   * The simulator that connected first in the period reported. PostHog keeps
+   * The simulator used first in the period reported. PostHog keeps
    * the first value it receives, so it names the first simulator used since
    * this installation started reporting them.
    */
