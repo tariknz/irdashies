@@ -72,6 +72,24 @@ export function getActiveSimulator(): ActiveSimulator | undefined {
 }
 
 /**
+ * Calls each listener with a value, so one that throws is logged and the
+ * rest still hear it.
+ */
+function notifyEach<T>(
+  callbacks: Iterable<(value: T) => void>,
+  value: T,
+  name: string
+) {
+  for (const callback of callbacks) {
+    try {
+      callback(value);
+    } catch (err) {
+      logger.error(`Error in ${name} callback:`, err);
+    }
+  }
+}
+
+/**
  * Records the running simulator and tells the renderer. Auto-detection calls
  * this once it has probed; the pinned paths call it up front.
  */
@@ -84,13 +102,11 @@ export function setActiveSimulator(
   // The manager publishes the change and rebuilds the overlays: the set of
   // widgets this sim supports has changed, so windows have to be recreated.
   overlayManager.setActiveSimulator(simulator ?? null);
-  onSimulatorChangedCallbacks.forEach((callback) => {
-    try {
-      callback(simulator ?? null);
-    } catch (err) {
-      logger.error('Error in simulator changed callback:', err);
-    }
-  });
+  notifyEach(
+    onSimulatorChangedCallbacks,
+    simulator ?? null,
+    'simulator changed'
+  );
 }
 
 /**
@@ -120,28 +136,15 @@ export function onConnectedSimulatorChanged(
 ) {
   onConnectedSimulatorCallbacks.add(callback);
   if (connectedSimulator) {
-    notifyConnectedSimulator(callback, connectedSimulator);
+    notifyEach([callback], connectedSimulator, 'connected simulator');
   }
   return () => onConnectedSimulatorCallbacks.delete(callback);
-}
-
-function notifyConnectedSimulator(
-  callback: (simulator: ActiveSimulator | undefined) => void,
-  simulator: ActiveSimulator | undefined
-) {
-  try {
-    callback(simulator);
-  } catch (err) {
-    logger.error('Error in connected simulator callback:', err);
-  }
 }
 
 function setConnectedSimulator(simulator: ActiveSimulator | undefined) {
   if (simulator === connectedSimulator) return;
   connectedSimulator = simulator;
-  onConnectedSimulatorCallbacks.forEach((callback) =>
-    notifyConnectedSimulator(callback, simulator)
-  );
+  notifyEach(onConnectedSimulatorCallbacks, simulator, 'connected simulator');
 }
 
 /**
