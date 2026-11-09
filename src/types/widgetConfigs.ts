@@ -1223,9 +1223,10 @@ export interface LapTraceConfig {
   brakeCueLeadSec: number;
   /**
    * Peak brake pressure a reference application must reach to count as a braking
-   * zone, 0.05..0.25. Anything softer is treated as a stabilising brush and gets
-   * neither a countdown nor a brake-distance delta. Car-dependent (brake bias,
-   * pedal travel, and some cars log force rather than travel), hence a setting.
+   * zone, 0..0.25. Anything softer is treated as a stabilising brush and gets
+   * neither a countdown nor a brake-distance delta. At 0 every application that
+   * slows the car counts. Car-dependent (brake bias, pedal travel, and some cars
+   * log force rather than travel), hence a setting.
    */
   brakeCueMinPeak: number;
   /** Per-cue synthesis of the countdown tones (frequency/type/duration/peak). */

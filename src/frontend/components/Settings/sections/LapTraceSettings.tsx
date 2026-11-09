@@ -885,13 +885,13 @@ export const LapTraceSettings = () => {
                     Last Corner brake-distance delta. */}
                   <SettingSliderRow
                     title="Minimum brake pressure"
-                    description="How hard the reference lap had to press for a brake application to count as a braking zone, and so earn a countdown and a brake-distance delta. Raise it if light stabilising brushes inside fast corners are being counted; lower it if a real corner brake point is being missed. Depends on the car, since brake bias and pedal travel differ."
+                    description="How hard the reference lap had to press for a brake application to count as a braking zone, and so earn a countdown and a brake-distance delta. Raise it if light stabilising brushes inside fast corners are being counted; lower it if a real corner brake point is being missed. At 0% every application that slows the car counts. Depends on the car, since brake bias and pedal travel differ."
                     value={Math.round(
                       (settings.config.brakeCueMinPeak ??
                         BRAKE_CUE_MIN_PEAK_DEFAULT) * 100
                     )}
                     units="%"
-                    min={5}
+                    min={0}
                     max={25}
                     step={1}
                     onChange={(v) =>

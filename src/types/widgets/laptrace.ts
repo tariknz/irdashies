@@ -62,7 +62,9 @@ export default defineWidgetManifest({
     brakeCueOutputDeviceId: DEFAULT_AUDIO_OUTPUT_DEVICE_ID,
     brakeCueVolume: 0.6,
     brakeCueLeadSec: 0,
-    brakeCueMinPeak: 0.12,
+    // BRAKE_CUE_MIN_PEAK_DEFAULT. Saved configs store their own, so this
+    // only reaches a new widget.
+    brakeCueMinPeak: 0.05,
     sound: DEFAULT_LAP_TRACE_SOUND,
     brakeCueBars: true,
     brakeCueBarSide: 'right',
