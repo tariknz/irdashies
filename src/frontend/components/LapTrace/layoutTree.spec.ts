@@ -148,19 +148,43 @@ describe('lapTraceElementSide', () => {
     expect(lapTraceElementSide(tree, 'corners')).toBe('left');
   });
 
-  it('places by order where the trace is not alongside', () => {
-    const tree = split('row', [
+  it('reads the side off the trace, however deep the element sits', () => {
+    // Stacked with each other beside the trace: both are beside it, so both
+    // run full height, whichever is on top.
+    const beside = split('row', [
       box(['plot']),
       split('col', [box(['corners']), box(['brakeCue'])]),
     ]);
-    // Stacked with each other beside the trace: the first is above.
-    expect(lapTraceElementSide(tree, 'corners')).toBe('top');
-    expect(lapTraceElementSide(tree, 'brakeCue')).toBe('bottom');
+    expect(lapTraceElementSide(beside, 'corners')).toBe('right');
+    expect(lapTraceElementSide(beside, 'brakeCue')).toBe('right');
+
+    // Side by side above the trace: both are above it, so both run across.
+    const above = split('col', [
+      split('row', [box(['corners']), box(['brakeCue'])]),
+      box(['plot']),
+    ]);
+    expect(lapTraceElementSide(above, 'corners')).toBe('top');
+    expect(lapTraceElementSide(above, 'brakeCue')).toBe('top');
   });
 
-  it('has no side for an element alone or missing', () => {
+  it('reads the first copy of an element the tree holds twice', () => {
+    const tree = split('row', [
+      box(['brakeCue']),
+      box(['plot']),
+      box(['brakeCue']),
+    ]);
+    expect(lapTraceElementSide(tree, 'brakeCue')).toBe('left');
+  });
+
+  it('has no side without the trace, or without the element', () => {
     expect(
       lapTraceElementSide(split('col', [box(['corners'])]), 'corners')
+    ).toBeUndefined();
+    expect(
+      lapTraceElementSide(
+        split('row', [box(['corners']), box(['brakeCue'])]),
+        'brakeCue'
+      )
     ).toBeUndefined();
     expect(
       lapTraceElementSide(split('col', [box(['plot'])]), 'corners')

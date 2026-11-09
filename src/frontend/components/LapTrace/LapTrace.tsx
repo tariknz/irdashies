@@ -22,6 +22,7 @@ import {
 } from '../../domain/lapTrace/brakeCuePoints';
 import { LapTracePlot } from './LapTracePlot';
 import { BrakeCue } from './components/BrakeCue';
+import { isBrakeCueHorizontal } from './components/BrakeCueBars';
 import { LapTraceLayout } from './components/LapTraceLayout';
 import {
   LastCornerPanel,
@@ -86,7 +87,7 @@ export const LapTrace = (props: LapTraceProps) => {
   const showCorners = layoutTreeHas(tree, 'corners');
   const showBars = layoutTreeHas(tree, 'brakeCue');
   // Beside the plot the panel and the strip run full height, above or below
-  // it they run across. Alone in the layout, they take the full height.
+  // it they run across. Without the trace in the layout, they run full height.
   const lastCornerPosition = lapTraceElementSide(tree, 'corners') ?? 'right';
   const barSide = lapTraceElementSide(tree, 'brakeCue') ?? 'right';
 
@@ -249,7 +250,11 @@ export const LapTrace = (props: LapTraceProps) => {
 
       {referenceLap ? (
         <>
-          <LapTraceLayout tree={tree} renderElement={renderElement} />
+          <LapTraceLayout
+            tree={tree}
+            barsVertical={!isBrakeCueHorizontal(barSide)}
+            renderElement={renderElement}
+          />
           {!showBars && brakeCue}
         </>
       ) : (

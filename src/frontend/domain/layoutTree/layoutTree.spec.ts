@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { LayoutNode } from '@irdashies/types';
-import { layoutTreeHas, resolveLayoutTree } from './layoutTree';
+import {
+  layoutTreeHas,
+  resolveLayoutTree,
+  withoutRepeatedElements,
+} from './layoutTree';
 
 const box = (id: string, widgets: string[]): LayoutNode => ({
   id,
@@ -64,5 +68,50 @@ describe('resolveLayoutTree', () => {
     ]) {
       expect(resolveLayoutTree(saved, () => fallback)).toBe(fallback);
     }
+  });
+});
+
+describe('withoutRepeatedElements', () => {
+  it('returns the tree itself when nothing repeats', () => {
+    const tree: LayoutNode = {
+      id: 'root',
+      type: 'split',
+      direction: 'row',
+      children: [box('a', ['plot']), box('b', ['corners', 'brakeCue'])],
+    };
+    expect(withoutRepeatedElements(tree)).toBe(tree);
+  });
+
+  it('keeps each element where it first appears and drops emptied boxes', () => {
+    const tree: LayoutNode = {
+      id: 'root',
+      type: 'split',
+      direction: 'row',
+      children: [
+        box('a', ['brakeCue', 'brakeCue']),
+        box('b', ['plot']),
+        {
+          id: 'inner',
+          type: 'split',
+          direction: 'col',
+          children: [box('c', ['brakeCue']), box('d', ['corners', 'plot'])],
+        },
+      ],
+    };
+    expect(withoutRepeatedElements(tree)).toEqual({
+      id: 'root',
+      type: 'split',
+      direction: 'row',
+      children: [
+        box('a', ['brakeCue']),
+        box('b', ['plot']),
+        {
+          id: 'inner',
+          type: 'split',
+          direction: 'col',
+          children: [box('d', ['corners'])],
+        },
+      ],
+    });
   });
 });

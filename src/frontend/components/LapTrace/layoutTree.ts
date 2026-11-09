@@ -13,7 +13,7 @@ export const LAP_TRACE_ELEMENTS: { id: LapTraceElementId; label: string }[] = [
   { id: 'brakeCue', label: 'Countdown Bars' },
 ];
 
-/** Which side of what it shares room with an element sits on. */
+/** Which side of the trace an element sits on. */
 export type LapTraceElementSide = 'left' | 'right' | 'top' | 'bottom';
 
 const defaultTree = () => DEFAULT_LAP_TRACE_LAYOUT_TREE;
@@ -41,11 +41,11 @@ const pathTo = (node: LayoutNode, element: string): LayoutNode[] => {
 };
 
 /**
- * Which side an element sits on, read off the innermost container where it
- * shares room with something else: a row puts it left or right, a column
- * above or below. Left or above when it comes before the plot, or first when
- * the plot is not in that container. Undefined when the element is not in the
- * tree or has it to itself.
+ * Which side of the trace an element sits on, read off the innermost
+ * container that holds both: a row puts it left or right of the trace, a
+ * column above or below it. That holds however deep the element sits inside
+ * its own branch, so a panel stacked with the bars beside the trace is still
+ * beside it. Undefined when the tree has no trace, or not the element.
  *
  * The panel and the countdown strip take their orientation from this: beside
  * the plot they run full height, above or below it they run across.
@@ -54,18 +54,17 @@ export const lapTraceElementSide = (
   tree: LayoutNode,
   element: LapTraceElementId
 ): LapTraceElementSide | undefined => {
+  if (element === 'plot' || !layoutTreeHas(tree, 'plot')) return undefined;
   const path = pathTo(tree, element);
   for (let depth = path.length - 1; depth >= 0; depth -= 1) {
     const container = path[depth];
+    if (!layoutTreeHas(container, 'plot')) continue;
     const entries = entriesOf(container);
-    if (entries.length < 2) continue;
     const index = entries.findIndex((entry) => entryHas(entry, element));
-    const plotIndex = entries.findIndex(
-      (entry, i) => i !== index && entryHas(entry, 'plot')
-    );
-    const leading = plotIndex >= 0 ? index < plotIndex : index === 0;
-    if (container.direction === 'row') return leading ? 'left' : 'right';
-    return leading ? 'top' : 'bottom';
+    const plotIndex = entries.findIndex((entry) => entryHas(entry, 'plot'));
+    const before = index < plotIndex;
+    if (container.direction === 'row') return before ? 'left' : 'right';
+    return before ? 'top' : 'bottom';
   }
   return undefined;
 };

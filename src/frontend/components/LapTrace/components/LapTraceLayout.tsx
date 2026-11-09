@@ -1,43 +1,96 @@
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import type { LayoutNode } from '@irdashies/types';
-import { layoutTreeHas } from '@irdashies/domain/layoutTree';
+import {
+  layoutTreeHas,
+  withoutRepeatedElements,
+} from '@irdashies/domain/layoutTree';
 
 interface Container {
   direction: 'row' | 'col';
-  holdsPlot: boolean;
+  /** The element whose entry takes the container's free room. */
+  filler: string;
+  /** Whether the countdown strip runs along this container's direction. */
+  barsAlong: boolean;
 }
 
 /**
- * Sizing for one entry of a container. What holds the plot takes the free
- * room; everything else keeps its own size, since the panel and the countdown
- * strip size themselves and the editor sets no weights.
+ * The container a node lays its entries out in.
  *
- * Beside the plot, room runs short in a small widget: a side panel sized for a
- * long corner name is most of the default 396px, and three rows above or below
- * the trace are most of its 120px. The countdown strip never gives way, since
- * a squeezed meter stops reading as a countdown. The plot keeps 40% of the
- * container, and the panel takes what is left, drawing only the columns that
- * fit it.
+ * Its free room goes to the plot when it holds it. Without the plot, it goes
+ * to the countdown strip when the strip runs along the container (the bars
+ * of a column stacked under the panel beside the trace), and otherwise to the
+ * corner panel, so a layout with no trace still fills the widget.
+ */
+const containerOf = (node: LayoutNode, barsVertical: boolean): Container => {
+  const barsAlong = barsVertical
+    ? node.direction === 'col'
+    : node.direction === 'row';
+  const filler = layoutTreeHas(node, 'plot')
+    ? 'plot'
+    : barsAlong && layoutTreeHas(node, 'brakeCue')
+      ? 'brakeCue'
+      : layoutTreeHas(node, 'corners')
+        ? 'corners'
+        : 'brakeCue';
+  return { direction: node.direction, filler, barsAlong };
+};
+
+/**
+ * Sizing for one entry of a container. The editor sets no weights, so this
+ * is the whole rule:
+ *
+ * - The entry holding the container's filler takes the free room. The plot,
+ *   or a strip filling its container, keeps 40% of a row whatever sits
+ *   beside it, and 60% of a column: there each carries a part that does not
+ *   shrink (the plot's gear and distance labels, the strip's readout), and
+ *   at 40% of the default 120px the trace itself was left a few pixels tall.
+ *   The panel's rows are short, so it still shows the newest corner.
+ * - The corner panel gives way: its entry starts at the panel's natural size
+ *   and shrinks, and the panel drops columns or rows to fit what is left.
+ * - The countdown strip never does, since a squeezed meter stops reading as a
+ *   countdown. Alone in its entry it keeps its size. Sharing an entry with
+ *   the panel, that entry never shrinks below the strip's thickness: 64px for
+ *   the bars' column (BrakeCueBars' w-16), 20px for the bar across (h-5).
+ *
+ * Only the root, which the widget gives everything under its header, fills
+ * regardless.
  */
 const entrySizing = (
   holds: (element: string) => boolean,
-  parent: Container
+  parent: Container | null
 ): string => {
-  if (!parent.holdsPlot) {
-    return `${holds('plot') ? 'flex-1' : 'flex-none'} min-h-0 min-w-0`;
+  if (!parent) return 'flex-1 min-h-0 min-w-0';
+  const row = parent.direction === 'row';
+  const cross = row ? 'min-h-0' : 'min-w-0';
+  if (holds(parent.filler)) {
+    const keeps =
+      parent.filler === 'plot' ||
+      (parent.filler === 'brakeCue' && parent.barsAlong);
+    const main = keeps
+      ? row
+        ? 'min-w-[40%]'
+        : 'min-h-[60%]'
+      : row
+        ? 'min-w-0'
+        : 'min-h-0';
+    return `flex-1 ${main} ${cross}`;
   }
-  if (holds('plot')) {
-    return parent.direction === 'row'
-      ? 'flex-1 min-w-[40%] min-h-0'
-      : 'flex-1 min-h-[40%] min-w-0';
-  }
-  if (holds('corners')) return 'flex-initial min-h-0 min-w-0';
-  return 'flex-none min-h-0 min-w-0';
+  const keepsBars = holds('brakeCue') && !parent.barsAlong;
+  const main = keepsBars
+    ? row
+      ? 'min-w-16'
+      : 'min-h-5'
+    : row
+      ? 'min-w-0'
+      : 'min-h-0';
+  const grow = holds('corners') ? 'flex-initial' : 'flex-none';
+  return `${grow} ${main} ${cross}`;
 };
 
 interface LayoutNodeViewProps {
   node: LayoutNode;
-  parent: Container;
+  parent: Container | null;
+  barsVertical: boolean;
   renderElement: (id: string) => ReactNode;
 }
 
@@ -49,12 +102,10 @@ interface LayoutNodeViewProps {
 const LayoutNodeView = ({
   node,
   parent,
+  barsVertical,
   renderElement,
 }: LayoutNodeViewProps) => {
-  const self: Container = {
-    direction: node.direction,
-    holdsPlot: layoutTreeHas(node, 'plot'),
-  };
+  const self = containerOf(node, barsVertical);
   const className = [
     'flex overflow-hidden',
     node.direction === 'row' ? 'flex-row gap-1.5' : 'flex-col gap-1',
@@ -95,6 +146,7 @@ const LayoutNodeView = ({
           key={child.id}
           node={child}
           parent={self}
+          barsVertical={barsVertical}
           renderElement={renderElement}
         />
       ))}
@@ -102,23 +154,34 @@ const LayoutNodeView = ({
   );
 };
 
-/** The widget itself stacks the header and the layout in a column. */
-const WIDGET_ROOT: Container = { direction: 'col', holdsPlot: false };
-
 export interface LapTraceLayoutProps {
   tree: LayoutNode;
+  /**
+   * Whether the countdown strip runs as a column of bars (beside the trace)
+   * or one bar across (above or below it).
+   */
+  barsVertical: boolean;
   /** The plot ('plot'), the corner panel ('corners') or the strip ('brakeCue'). */
   renderElement: (id: string) => ReactNode;
 }
 
-/** Lays the lap trace's elements out as the layout tree says. */
+/**
+ * Lays the lap trace's elements out as the layout tree says. An element the
+ * tree holds twice is drawn where it first appears only: two countdowns would
+ * each run their own telemetry loop and play every tone twice.
+ */
 export const LapTraceLayout = ({
   tree,
+  barsVertical,
   renderElement,
-}: LapTraceLayoutProps) => (
-  <LayoutNodeView
-    node={tree}
-    parent={WIDGET_ROOT}
-    renderElement={renderElement}
-  />
-);
+}: LapTraceLayoutProps) => {
+  const drawn = useMemo(() => withoutRepeatedElements(tree), [tree]);
+  return (
+    <LayoutNodeView
+      node={drawn}
+      parent={null}
+      barsVertical={barsVertical}
+      renderElement={renderElement}
+    />
+  );
+};

@@ -4,7 +4,11 @@ import {
   LiveChannelBridgeDecorator,
   TelemetryDecorator,
 } from '@irdashies/storybook';
-import { DEFAULT_LAP_TRACE_COLORS, type LayoutNode } from '@irdashies/types';
+import {
+  DEFAULT_LAP_TRACE_COLORS,
+  lapTraceTreeFromLegacy,
+  type LayoutNode,
+} from '@irdashies/types';
 import { useLapTraceStore } from '@irdashies/context';
 import { hydrateLapTrace } from '../../../domain/lapTrace/hydrateLapTrace';
 import { makeSyntheticLapTrace } from '../fixtures/syntheticLap';
@@ -105,6 +109,7 @@ const LitBars = ({ side }: { side: BrakeCueBarSide }) => {
 
 /** The widget's own frame: padding, background and the reference header. */
 const LayoutPreview = ({ tree }: { tree: LayoutNode }) => {
+  const barSide = lapTraceElementSide(tree, 'brakeCue') ?? 'right';
   const renderElement = (id: string): ReactNode => {
     switch (id) {
       case 'plot':
@@ -143,9 +148,7 @@ const LayoutPreview = ({ tree }: { tree: LayoutNode }) => {
           />
         );
       case 'brakeCue':
-        return (
-          <LitBars side={lapTraceElementSide(tree, 'brakeCue') ?? 'right'} />
-        );
+        return <LitBars side={barSide} />;
       default:
         return null;
     }
@@ -164,16 +167,20 @@ const LayoutPreview = ({ tree }: { tree: LayoutNode }) => {
           1:45.432
         </span>
       </div>
-      <LapTraceLayout tree={tree} renderElement={renderElement} />
+      <LapTraceLayout
+        tree={tree}
+        barsVertical={!isBrakeCueHorizontal(barSide)}
+        renderElement={renderElement}
+      />
     </div>
   );
 };
 
-const box = (widget: string): LayoutNode => ({
-  id: `box-${widget}`,
+const box = (...widgets: string[]): LayoutNode => ({
+  id: `box-${widgets.join('-')}`,
   type: 'box',
   direction: 'col',
-  widgets: [widget],
+  widgets,
 });
 
 const split = (
@@ -243,7 +250,11 @@ export const PanelBelow: Story = {
   },
 };
 
-/** The panel and a countdown strip stacked together beside the trace. */
+/**
+ * The panel and the countdown stacked together beside the trace. Both are
+ * beside it, so the bars run as a column under the panel and keep their
+ * width when the panel narrows.
+ */
 export const StackedBeside: Story = {
   args: {
     tree: split('root', 'row', [
@@ -251,4 +262,53 @@ export const StackedBeside: Story = {
       split('side', 'col', [box('corners'), box('brakeCue')]),
     ]),
   },
+};
+
+/** The panel and the countdown in one box beside the trace. */
+export const SharedBoxBeside: Story = {
+  args: {
+    tree: split('root', 'row', [box('plot'), box('corners', 'brakeCue')]),
+  },
+};
+
+/**
+ * The panel and the countdown side by side above the trace. Both are above
+ * it, so the countdown runs across.
+ */
+export const BothAbove: Story = {
+  args: {
+    tree: split('root', 'col', [
+      split('top', 'row', [box('corners'), box('brakeCue')]),
+      box('plot'),
+    ]),
+  },
+};
+
+/**
+ * A layout from before the editor: the panel below the trace with three
+ * corners, in the default size. Short of room, it drops the oldest corner
+ * whole rather than cutting through it.
+ */
+export const LegacyPanelBelow: Story = {
+  args: {
+    tree: lapTraceTreeFromLegacy({
+      showLastCorner: true,
+      lastCornerPosition: 'bottom',
+    }),
+  },
+};
+
+/** The countdown alone, without the trace: it takes the full height. */
+export const BarsOnly: Story = {
+  args: { tree: split('root', 'col', [box('brakeCue')]) },
+};
+
+/** The corner panel alone, without the trace: it fills the widget. */
+export const PanelOnly: Story = {
+  args: { tree: split('root', 'col', [box('corners')]) },
+};
+
+/** The panel and the countdown without the trace. */
+export const PanelAndBars: Story = {
+  args: { tree: split('root', 'row', [box('corners'), box('brakeCue')]) },
 };

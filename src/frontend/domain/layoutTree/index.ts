@@ -3,4 +3,5 @@ export {
   isEmptyLayoutTree,
   layoutTreeHas,
   resolveLayoutTree,
+  withoutRepeatedElements,
 } from './layoutTree';

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { GaugeIcon, RulerIcon, TimerIcon } from '@phosphor-icons/react';
 import { formatDelta } from '@irdashies/utils/time';
 import type { SpeedUnit } from '@irdashies/utils/units';
@@ -225,6 +225,14 @@ const sideWidthEmFor = (
   COLUMN_GAP_EM * Math.max(0, columns.length - 1);
 
 /**
+ * Slack when fitting columns to a measured width, in px. A layout reports
+ * whole pixels and the em budget is a float, so a panel given exactly its own
+ * width must not lose a column to rounding (257.4 against 257) or to float
+ * error (277.19999 against 277).
+ */
+const FIT_TOLERANCE_PX = 0.5;
+
+/**
  * The columns that fit a width at a text size. Metrics go
  * from the end of the configured order first, so what is left still reads as
  * configured and no column is drawn half hidden. The name always stays, and
@@ -237,13 +245,68 @@ const fittingColumnsFor = (
   fontSize: number
 ): LastCornerDisplayColumn[] => {
   const kept = [...columns];
-  while (sideWidthEmFor(kept, labelEm) * fontSize > widthPx) {
+  while (
+    sideWidthEmFor(kept, labelEm) * fontSize >
+    widthPx + FIT_TOLERANCE_PX
+  ) {
     let last = kept.length - 1;
     while (last >= 0 && kept[last] === 'corner') last -= 1;
     if (last < 0) break;
     kept.splice(last, 1);
   }
   return kept;
+};
+
+/**
+ * What the rows draw in the width the panel is given: the columns that fit
+ * at the history's size, and the newest row's size, which gives up its extra
+ * emphasis, down to the history's, before it would lose a column the rows
+ * beneath it show. Unmeasured, everything at full size.
+ */
+const fitFor = (
+  columns: LastCornerDisplayColumn[],
+  labelEm: number,
+  givenWidth: number | null,
+  fontSize: number,
+  latestFontSize: number
+): { drawnColumns: LastCornerDisplayColumn[]; heroFontSize: number } => {
+  if (givenWidth === null) {
+    return { drawnColumns: columns, heroFontSize: latestFontSize };
+  }
+  const drawnColumns = fittingColumnsFor(
+    columns,
+    labelEm,
+    givenWidth,
+    fontSize
+  );
+  const heroFontSize = Math.max(
+    fontSize,
+    Math.min(latestFontSize, givenWidth / sideWidthEmFor(drawnColumns, labelEm))
+  );
+  return { drawnColumns, heroFontSize };
+};
+
+/**
+ * Height in px of the first `rows` slots, the newest at `heroFontSize`, each
+ * with the gap after it. Counted the same way to size the panel and to fit
+ * rows into the room it is given.
+ */
+const heightOfRows = (
+  rows: number,
+  heroFontSize: number,
+  fontSize: number,
+  labelAt: (slot: number) => string | undefined,
+  labelEm: number
+): number => {
+  let height = 0;
+  for (let i = 0; i < rows; i += 1) {
+    height +=
+      rowHeightFor(
+        i === 0 ? heroFontSize : fontSize,
+        labelLinesFor(labelAt(i), labelEm)
+      ) + ROW_GAP_PX;
+  }
+  return height;
 };
 
 interface LastCornerChipProps {
@@ -384,6 +447,10 @@ export interface LastCornerPanelProps {
   entries: LastCornerPanelEntry[];
   /** Lines to show, space permitting. */
   count: number;
+  /**
+   * Which side of the trace the panel sits on, recorded as `data-placement`.
+   * Its size does not depend on it: it pins its own and fits its box.
+   */
   placement: LastCornerPlacement;
   speedUnit: SpeedUnit;
   showTime: boolean;
@@ -439,12 +506,17 @@ export const LastCornerPanel = ({
   // it less than its columns need; then it draws fewer of them.
   const [givenWidth, setGivenWidth] = useState<number | null>(null);
   const latestFontSize = fontSize * latestScale;
-  const displayOrder = normalizeDisplayOrder(configuredDisplayOrder);
-  const columns = visibleColumnsFor(
-    displayOrder,
+  // Keyed on its content: a new array every render would restart the
+  // measurement below on every render.
+  const columnsKey = visibleColumnsFor(
+    normalizeDisplayOrder(configuredDisplayOrder),
     showTime,
     showBrakeDelta,
     showApexSpeed
+  ).join(' ');
+  const columns = useMemo(
+    () => columnsKey.split(' ') as LastCornerDisplayColumn[],
+    [columnsKey]
   );
   // Sized off the track's own corner names so the width holds for the whole
   // session. Entries are the fallback only when no track labels were passed;
@@ -455,23 +527,13 @@ export const LastCornerPanel = ({
       ? cornerLabels
       : entries.map((entry) => entry.label).filter(Boolean)
   );
-  // In the width the panel is given, every row shows the columns that fit at
-  // the history's size. The newest row then gives up its extra size, down to
-  // the history's, before it would lose a column the rows beneath it show.
-  const drawnColumns =
-    givenWidth === null
-      ? columns
-      : fittingColumnsFor(columns, labelEm, givenWidth, fontSize);
-  const heroFontSize =
-    givenWidth === null
-      ? latestFontSize
-      : Math.max(
-          fontSize,
-          Math.min(
-            latestFontSize,
-            givenWidth / sideWidthEmFor(drawnColumns, labelEm)
-          )
-        );
+  const { drawnColumns, heroFontSize } = fitFor(
+    columns,
+    labelEm,
+    givenWidth,
+    fontSize,
+    latestFontSize
+  );
 
   // The hero holds the newest corner for HERO_HOLD_MS, then everything shifts
   // down a slot and the hero blanks. Keyed on the newest corner's own clock, so
@@ -512,26 +574,27 @@ export const LastCornerPanel = ({
 
     const measure = () => {
       // Zero is no layout at all (a hidden window, or a test), not no room.
-      setGivenWidth(el.clientWidth > 0 ? el.clientWidth : null);
+      const width = el.clientWidth > 0 ? el.clientWidth : null;
+      setGivenWidth(width);
+      // The hero's size in this width, worked out here rather than read from
+      // render: depending on it would restart this effect, and its observer,
+      // every time a new width changed it.
+      const hero = fitFor(
+        columns,
+        labelEm,
+        width,
+        fontSize,
+        latestFontSize
+      ).heroFontSize;
       const available = el.clientHeight;
       const labelAt = (slot: number) => entries[slot - heroOffset]?.label;
-      // One row like any other, just at the hero's larger size — plus its own
-      // trailing gap, matching how the compact rows below are counted.
-      const heroH =
-        rowHeightFor(heroFontSize, labelLinesFor(labelAt(0), labelEm)) +
-        ROW_GAP_PX;
       // At least one line always shows: a panel that has been switched on but
       // renders nothing reads as broken rather than as short of room.
-      if (available < heroH) {
-        setVisible(1);
-        return;
-      }
-      let used = heroH;
       let fitting = 1;
-      for (let i = 1; i < requested; i += 1) {
-        used += rowHeightFor(fontSize, labelLinesFor(labelAt(i), labelEm));
-        used += ROW_GAP_PX;
-        if (used > available) break;
+      while (
+        fitting < requested &&
+        heightOfRows(fitting + 1, hero, fontSize, labelAt, labelEm) <= available
+      ) {
         fitting += 1;
       }
       setVisible(fitting);
@@ -541,9 +604,16 @@ export const LastCornerPanel = ({
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [entries, requested, fontSize, heroFontSize, heroOffset, labelEm]);
+  }, [
+    entries,
+    requested,
+    columns,
+    fontSize,
+    latestFontSize,
+    heroOffset,
+    labelEm,
+  ]);
 
-  const onSide = placement === 'left' || placement === 'right';
   // With a single slot the hero *is* the history, so retiring it would leave
   // the panel showing nothing at all — which reads as broken rather than as
   // "that corner was a while ago".
@@ -553,39 +623,39 @@ export const LastCornerPanel = ({
     (_, i) => entries[i - (demoted ? 1 : 0)] ?? null
   );
 
+  // The panel's own size: every requested row and every column, at full
+  // size, whatever is drawn. Sizing to content would nudge the trace whenever
+  // a delta or a name changed length, and would shrink the box the panel
+  // measures as it dropped rows and columns, so they never came back when the
+  // widget grew. The em budget covers only the metrics switched on, and the
+  // name column is pinned to this track's widest corner name, so a numbered
+  // circuit is not padded out to fit "Variante Tamburello A". Rounded up, so
+  // the width measured back always fits every column.
+  const naturalWidth = Math.ceil(
+    latestFontSize * sideWidthEmFor(columns, labelEm)
+  );
+  const naturalHeight = heightOfRows(
+    requested,
+    latestFontSize,
+    fontSize,
+    (slot) => entries[slot - heroOffset]?.label,
+    labelEm
+  );
+
   return (
     <div
       ref={container}
       data-testid="last-corner-panel"
       data-placement={placement}
-      className={[
-        'flex flex-col gap-0.5 overflow-hidden leading-none tabular-nums',
-        // Beside the plot the column runs the full height; above or below it
-        // takes only what its lines need, capped so it can never crowd out the
-        // trace entirely.
-        onSide ? 'h-full flex-none' : 'flex-none',
-      ].join(' ')}
+      className="flex flex-none flex-col gap-0.5 overflow-hidden leading-none tabular-nums"
       style={{
         fontSize: `${fontSize}px`,
-        // A fixed width beside the plot: sizing to content would nudge the
-        // trace sideways whenever a delta or a name changed length. The em
-        // budget scales with the font and covers only the columns actually
-        // drawn, and the name column is pinned to this track's widest corner
-        // name, so a numbered circuit is not padded out to fit "Variante
-        // Tamburello A". Keyed to the hero's larger font, the widest row.
-        //
-        // Never wider than its box, though: beside the trace in a small widget
-        // the layout gives it less, and it measures that to drop columns. The
-        // width itself stays sized for every column, so dropping them does not
-        // shrink the box it is measured against.
-        ...(onSide
-          ? {
-              width: `${Math.round(
-                latestFontSize * sideWidthEmFor(columns, labelEm)
-              )}px`,
-              maxWidth: '100%',
-            }
-          : {}),
+        width: `${naturalWidth}px`,
+        height: `${naturalHeight}px`,
+        // Never bigger than its box: in a small widget the layout gives it
+        // less, and it measures that to draw fewer columns and rows.
+        maxWidth: '100%',
+        maxHeight: '100%',
       }}
     >
       {/* Keyed by slot, not by section: the same corner legitimately appears
