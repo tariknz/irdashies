@@ -28,10 +28,7 @@ import {
   readPitLaneAnalyticsCheckpoint,
   writePitLaneAnalyticsCheckpoint,
 } from './storage/pitLaneAnalyticsCheckpoint';
-import {
-  getSimulatorUsageStore,
-  type SimulatorUsage,
-} from './storage/simulatorUsage';
+import { getSimulatorUsageStore } from './storage/simulatorUsage';
 import {
   buildSimulatorUsageProperties,
   type SimulatorUsageProperties,
@@ -114,6 +111,13 @@ export class Analytics {
   private poleSideEvent: { hash: string; uuid: string } | undefined;
   private radarPoleSideTimer: ReturnType<typeof setTimeout> | undefined;
   private watchingRadarPoleSides = false;
+  private startupIdentifyTask: Promise<void> | undefined;
+  /**
+   * The simulator whose bridge reports it running, or none. Followed even
+   * while opted out, so opting back in can start counting a sim that is
+   * already up.
+   */
+  private connectedSimulator: ActiveSimulator | undefined;
 
   constructor(provider?: AnalyticsProvider) {
     if (provider) {
@@ -129,6 +133,8 @@ export class Analytics {
       logger.warn(
         '[Analytics] Analytics opt-out is enabled, skipping initialization'
       );
+      // Normally deleted at the opt-out; this catches a delete that failed.
+      void getSimulatorUsageStore().clear();
       return;
     }
     // POSTHOG_KEY is defined at build time via Vite's define option
@@ -260,34 +266,26 @@ export class Analytics {
     const cpus = os.cpus();
     const cpuName = cpus.length > 0 ? cpus[0].model : undefined;
     const userId = this.getOrCreateUserId();
-    const simulatorUsage = await this.readSimulatorUsage();
 
-    this.identify({
-      distinctId: userId,
-      disableGeoip: false,
-      properties: {
-        $os: os.platform(),
-        $os_version: os.release(),
-        os_arch: os.arch(),
-        cpu_count: os.cpus().length,
-        total_memory: os.totalmem(),
-        $screen_width: primaryDisplay.size.width,
-        $screen_height: primaryDisplay.size.height,
-        number_of_screens: displays.length,
-        cpu: cpuName,
-        version,
-        dashboard,
-        ...simulatorUsage?.properties.$set,
-        ...(simulatorUsage && {
-          $set_once: simulatorUsage.properties.$set_once,
-        }),
-      },
+    // Only the identify waits, for the simulators used, which are read from
+    // a file. Nothing depends on it going first: app_started is anonymous,
+    // and the reports below and log messages are tied to the installation
+    // by distinctId, as startup log messages always were.
+    this.startupIdentifyTask = this.identifyAtStartup(userId, {
+      $os: os.platform(),
+      $os_version: os.release(),
+      os_arch: os.arch(),
+      cpu_count: os.cpus().length,
+      total_memory: os.totalmem(),
+      $screen_width: primaryDisplay.size.width,
+      $screen_height: primaryDisplay.size.height,
+      number_of_screens: displays.length,
+      cpu: cpuName,
+      version,
+      dashboard,
+    }).catch(() => {
+      logger.warn('[Analytics] Could not identify the installation');
     });
-    // Not acknowledged, so cleared as soon as it is queued: only what was
-    // read, so a sim that connected since then stays for the next launch.
-    if (simulatorUsage) {
-      getSimulatorUsageStore().removeReported(simulatorUsage.usage);
-    }
 
     this.capture({
       event: 'app_started',
@@ -334,37 +332,77 @@ export class Analytics {
     return this.radarPoleSideTask ?? Promise.resolve();
   }
 
+  waitForStartupIdentify(): Promise<void> {
+    return this.startupIdentifyTask ?? Promise.resolve();
+  }
+
   /**
    * Notes the simulator connected now, or none, for the next startup to
    * report which sims were used and for how long. Stored rather than sent, so
-   * a sim that reconnects all evening costs nothing on the wire.
+   * a sim that reconnects all evening costs nothing on the wire. Nothing is
+   * noted while opted out.
    */
   setConnectedSimulator(simulator: ActiveSimulator | undefined): void {
-    if (!this.provider) return;
-    // While opted out a connection only ends, so its clock stops; none starts.
-    getSimulatorUsageStore().setConnected(
-      getAnalyticsOptOut() ? undefined : simulator
-    );
+    this.connectedSimulator = simulator;
+    if (!this.provider || getAnalyticsOptOut()) return;
+    getSimulatorUsageStore().setConnected(simulator);
+  }
+
+  /**
+   * Applies a change of the opt-out at once. Opting out stops the clock of
+   * the connection running now and deletes what was noted; opting back in
+   * starts counting the sim connected now, from that moment.
+   */
+  async setOptOut(optOut: boolean): Promise<void> {
+    if (optOut) {
+      await getSimulatorUsageStore().clear();
+      return;
+    }
+    if (this.provider) {
+      getSimulatorUsageStore().setConnected(this.connectedSimulator);
+    }
+  }
+
+  /** The startup identify, once the simulators used are known. */
+  private async identifyAtStartup(
+    userId: string,
+    properties: Record<string, unknown>
+  ): Promise<void> {
+    const simulatorUsage = await this.takeSimulatorUsage();
+    this.identify({
+      distinctId: userId,
+      disableGeoip: false,
+      properties: {
+        ...properties,
+        ...simulatorUsage?.$set,
+        ...(simulatorUsage && { $set_once: simulatorUsage.$set_once }),
+      },
+    });
   }
 
   /**
    * The simulators that connected since the last launch, as person
-   * properties for the startup identify, with the list they came from so it
-   * can be cleared. Undefined when there is nothing to send.
+   * properties for the startup identify, taken off the list: not
+   * acknowledged, so cleared as soon as it is queued. Undefined when there is
+   * nothing to send, or when the list cannot be read yet, in which case it
+   * stays for a later launch.
    */
-  private async readSimulatorUsage(): Promise<
-    { usage: SimulatorUsage; properties: SimulatorUsageProperties } | undefined
+  private async takeSimulatorUsage(): Promise<
+    SimulatorUsageProperties | undefined
   > {
     if (!this.provider) return undefined;
     try {
       // Waits for the stored list to load. A connect noted meanwhile, such as
       // the sim already running as irdashies started, is merged into it.
-      const usage = await getSimulatorUsageStore().read();
-      const properties = buildSimulatorUsageProperties(usage);
-      // Consent is checked only when there is something to send, and after
-      // the read: the player may have opted out while the file loaded.
+      const store = getSimulatorUsageStore();
+      if (!(await store.ready())) return undefined;
+      const properties = buildSimulatorUsageProperties(
+        store.takeForReport() ?? {}
+      );
+      // After the wait: the player may have opted out while the file loaded,
+      // which deletes the list anyway.
       if (!properties || getAnalyticsOptOut()) return undefined;
-      return { usage, properties };
+      return properties;
     } catch {
       logger.warn('[Analytics] Could not read the simulators used');
       return undefined;

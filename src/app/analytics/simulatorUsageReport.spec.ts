@@ -9,8 +9,8 @@ describe('buildSimulatorUsageProperties', () => {
   it('marks each simulator used with its time, and names the last and first', () => {
     expect(
       buildSimulatorUsageProperties({
-        lmu: { at: 3000, ms: 5_400_000 },
-        iracing: { at: 1000, ms: 1_200_000 },
+        lmu: { first: 2, last: 2, ms: 5_400_000 },
+        iracing: { first: 1, last: 1, ms: 1_200_000 },
       })
     ).toEqual({
       $set: {
@@ -22,17 +22,34 @@ describe('buildSimulatorUsageProperties', () => {
       },
       $set_once: { first_simulator: 'iracing' },
     });
+  });
+
+  it('names the simulator connected first, even when it connected again last', () => {
+    // iRacing, then LMU, then iRacing again.
     expect(
       buildSimulatorUsageProperties({
-        lmu: { at: 1000, ms: 0 },
-        iracing: { at: 3000, ms: 0 },
-      })?.$set.last_simulator
-    ).toBe('iracing');
+        iracing: { first: 1, last: 3, ms: 0 },
+        lmu: { first: 2, last: 2, ms: 0 },
+      })
+    ).toMatchObject({
+      $set: { last_simulator: 'iracing' },
+      $set_once: { first_simulator: 'iracing' },
+    });
+    // LMU, then iRacing, then LMU again.
+    expect(
+      buildSimulatorUsageProperties({
+        iracing: { first: 2, last: 2, ms: 0 },
+        lmu: { first: 1, last: 3, ms: 0 },
+      })
+    ).toMatchObject({
+      $set: { last_simulator: 'lmu' },
+      $set_once: { first_simulator: 'lmu' },
+    });
   });
 
   it('rounds the time to the second', () => {
     expect(
-      buildSimulatorUsageProperties({ lmu: { at: 1000, ms: 90_499 } })
+      buildSimulatorUsageProperties({ lmu: { first: 1, last: 1, ms: 90_499 } })
     ).toEqual({
       $set: {
         last_simulator: 'lmu',
@@ -42,8 +59,8 @@ describe('buildSimulatorUsageProperties', () => {
       $set_once: { first_simulator: 'lmu' },
     });
     expect(
-      buildSimulatorUsageProperties({ lmu: { at: 1000, ms: 500 } })?.$set
-        .lmu_connected_seconds
+      buildSimulatorUsageProperties({ lmu: { first: 1, last: 1, ms: 500 } })
+        ?.$set.lmu_connected_seconds
     ).toBe(1);
   });
 });

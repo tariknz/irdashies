@@ -9,7 +9,11 @@ export interface SimulatorUsageProperties {
   } & Partial<Record<`used_${ActiveSimulator}`, true>> &
     /** How long each was connected since the previous report, in seconds. */
     Partial<Record<`${ActiveSimulator}_connected_seconds`, number>>;
-  /** Kept from the first report, so it names the first simulator ever used. */
+  /**
+   * The simulator that connected first in the period reported. PostHog keeps
+   * the first value it receives, so it names the first simulator used since
+   * this installation started reporting them.
+   */
   $set_once: { first_simulator: ActiveSimulator };
 }
 
@@ -21,15 +25,21 @@ export interface SimulatorUsageProperties {
 export const buildSimulatorUsageProperties = (
   usage: SimulatorUsage
 ): SimulatorUsageProperties | undefined => {
-  const simulators = (Object.keys(usage) as ActiveSimulator[]).sort(
-    (a, b) => (usage[a]?.at ?? 0) - (usage[b]?.at ?? 0)
-  );
+  const simulators = Object.keys(usage) as ActiveSimulator[];
   if (simulators.length === 0) return undefined;
+  const place = (simulator: ActiveSimulator, key: 'first' | 'last') =>
+    usage[simulator]?.[key] ?? 0;
+  const byFirst = [...simulators].sort(
+    (a, b) => place(a, 'first') - place(b, 'first')
+  );
+  const byLast = [...simulators].sort(
+    (a, b) => place(a, 'last') - place(b, 'last')
+  );
   const properties: SimulatorUsageProperties = {
-    $set: { last_simulator: simulators[simulators.length - 1] },
-    $set_once: { first_simulator: simulators[0] },
+    $set: { last_simulator: byLast[byLast.length - 1] },
+    $set_once: { first_simulator: byFirst[0] },
   };
-  for (const simulator of simulators) {
+  for (const simulator of byFirst) {
     properties.$set[`used_${simulator}`] = true;
     properties.$set[`${simulator}_connected_seconds`] = Math.round(
       (usage[simulator]?.ms ?? 0) / 1000

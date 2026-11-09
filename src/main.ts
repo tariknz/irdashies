@@ -39,6 +39,7 @@ import { updateElectronApp } from 'update-electron-app';
 // @ts-expect-error no types for squirrel
 import started from 'electron-squirrel-startup';
 import { Analytics } from './app/analytics';
+import { onAnalyticsOptOutChanged } from './app/storage/analytics';
 import { setupKeybindingsBridge } from './app/bridge/keybindingsBridge';
 import { setupLogBridge } from './app/bridge/logBridge';
 import { setupPersonalBestLapTimesBridge } from './app/bridge/personalBestLapTimesBridge';
@@ -159,6 +160,7 @@ analytics.setupLogTransport(overlayManager.getVersion(), getActiveSimulator);
 onConnectedSimulatorChanged((simulator) =>
   analytics.setConnectedSimulator(simulator)
 );
+onAnalyticsOptOutChanged((optOut) => void analytics.setOptOut(optOut));
 
 overlayManager.setupChromiumFlags();
 overlayManager.setupHardwareAcceleration();

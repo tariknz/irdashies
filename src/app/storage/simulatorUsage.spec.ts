@@ -13,21 +13,31 @@ vi.mock('electron', () => ({ app: {} }));
 vi.mock('../logger', () => ({ default: { warn: vi.fn() } }));
 
 const FILE = 'simulator-usage.json';
+const DAY_MS = 24 * 60 * 60 * 1000;
 let directory: string;
 let filePath: string;
+/** The store's monotonic clock, moved by hand. */
+let now: number;
 let store: SimulatorUsageStore;
+const createStore = () => createSimulatorUsageStore(directory, () => now);
 const stored = async () => JSON.parse(await fsp.readFile(filePath, 'utf8'));
 const writeStored = (value: unknown) =>
   fsp.writeFile(filePath, JSON.stringify(value));
 const afterWriteDelay = () =>
   new Promise((resolve) => setTimeout(resolve, 400));
+const take = async (target = store) => {
+  await target.ready();
+  return target.takeForReport();
+};
+const busy = () => Object.assign(new Error('busy'), { code: 'EBUSY' });
 
 beforeEach(async () => {
   directory = await fsp.mkdtemp(
     path.join(os.tmpdir(), 'irdashies-simulator-usage-')
   );
   filePath = path.join(directory, FILE);
-  store = createSimulatorUsageStore(directory);
+  now = 1000;
+  store = createStore();
   vi.mocked(logger.warn).mockClear();
 });
 
@@ -47,110 +57,143 @@ describe('parseSimulatorUsage', () => {
     }
     expect(
       parseSimulatorUsage({
-        iracing: { at: 1000, ms: 5000 },
+        iracing: { first: 1, last: 2, ms: 5000 },
         lmu: 2000,
-        rf2: { at: 1000, ms: 5000 },
+        rf2: { first: 1, last: 1, ms: 5000 },
       })
-    ).toEqual({ iracing: { at: 1000, ms: 5000 } });
+    ).toEqual({ iracing: { first: 1, last: 2, ms: 5000 } });
     expect(
       parseSimulatorUsage({
-        iracing: { at: 0, ms: 5000 },
-        lmu: { at: 1000, ms: -1 },
+        iracing: { first: 0, last: 1, ms: 5000 },
+        lmu: { first: 1, last: 1.5, ms: 5000 },
       })
     ).toEqual({});
-    expect(parseSimulatorUsage({ lmu: { at: 1000 } })).toEqual({});
-    expect(parseSimulatorUsage({ lmu: { at: 1000, ms: Number.NaN } })).toEqual(
+    expect(parseSimulatorUsage({ lmu: { first: 1, last: 1 } })).toEqual({});
+    expect(parseSimulatorUsage({ lmu: { first: 1, last: 1, ms: -1 } })).toEqual(
       {}
     );
+    expect(
+      parseSimulatorUsage({ lmu: { first: 1, last: 1, ms: Number.NaN } })
+    ).toEqual({});
+    // The wall-clock format this replaced.
+    expect(parseSimulatorUsage({ lmu: { at: 1000, ms: 5000 } })).toEqual({});
+  });
+
+  it('caps an absurd duration at a month', () => {
+    expect(
+      parseSimulatorUsage({ lmu: { first: 1, last: 1, ms: 1e15 } })
+    ).toEqual({ lmu: { first: 1, last: 1, ms: 31 * DAY_MS } });
   });
 });
 
 describe('simulator usage store', () => {
   it('starts empty without a file, and writes none', async () => {
-    expect(await store.read()).toEqual({});
+    expect(await take()).toEqual({});
     await store.flush();
     await expect(fsp.access(filePath)).rejects.toThrow();
   });
 
   it('counts how long each simulator is connected, and saves it', async () => {
-    store.setConnected('iracing', 1000);
-    store.setConnected(undefined, 61_000);
-    store.setConnected('lmu', 70_000);
+    store.setConnected('iracing');
+    now += 60_000;
+    store.setConnected(undefined);
+    now += 10_000;
+    store.setConnected('lmu');
+    now += 30_000;
     // Straight to another sim: LMU's connection ends there.
-    store.setConnected('iracing', 100_000);
-    store.setConnected(undefined, 110_000);
+    store.setConnected('iracing');
+    now += 10_000;
+    store.setConnected(undefined);
     const expected = {
-      iracing: { at: 100_000, ms: 70_000 },
-      lmu: { at: 70_000, ms: 30_000 },
+      iracing: { first: 1, last: 3, ms: 70_000 },
+      lmu: { first: 2, last: 2, ms: 30_000 },
     };
-    expect(await store.read()).toEqual(expected);
     await store.flush();
     expect(await stored()).toEqual(expected);
-    expect(await createSimulatorUsageStore(directory).read()).toEqual(expected);
+    expect(await take(createStore())).toEqual(expected);
   });
 
-  it('counts a running connection up to the read, and keeps counting', async () => {
-    store.setConnected('lmu', 1000);
-    expect(await store.read(11_000)).toEqual({ lmu: { at: 1000, ms: 10_000 } });
-    store.setConnected(undefined, 21_000);
-    expect(await store.read()).toEqual({ lmu: { at: 1000, ms: 20_000 } });
+  it('keeps the first connect in place when a simulator reconnects', async () => {
+    store.setConnected('iracing');
+    store.setConnected('lmu');
+    store.setConnected('iracing');
+    store.setConnected(undefined);
+    expect(await take()).toEqual({
+      iracing: { first: 1, last: 3, ms: 0 },
+      lmu: { first: 2, last: 2, ms: 0 },
+    });
   });
 
   it('ignores a repeat of the connection already running', async () => {
-    store.setConnected('lmu', 1000);
-    store.setConnected('lmu', 5000);
-    store.setConnected(undefined, 11_000);
-    expect(await store.read()).toEqual({ lmu: { at: 1000, ms: 10_000 } });
+    store.setConnected('lmu');
+    now += 4000;
+    store.setConnected('lmu');
+    now += 6000;
+    store.setConnected(undefined);
+    expect(await take()).toEqual({ lmu: { first: 1, last: 1, ms: 10_000 } });
   });
 
   it("saves a running connection's time every minute", async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
-    vi.setSystemTime(1_000_000);
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     store.setConnected('lmu');
+    now += 60_000;
     vi.advanceTimersByTime(60_000);
     // Without a flush or a disconnect: what a crash would leave behind.
     await afterWriteDelay();
-    expect(await stored()).toEqual({ lmu: { at: 1_000_000, ms: 60_000 } });
+    expect(await stored()).toEqual({ lmu: { first: 1, last: 1, ms: 60_000 } });
+  });
+
+  it('counts a gap longer than a checkpoint, such as sleep, as one checkpoint at most', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    store.setConnected('lmu');
+    // Asleep for five hours: the minute timer fires once on waking.
+    now += 5 * 60 * 60_000;
+    vi.advanceTimersByTime(60_000);
+    now += 30_000;
+    store.setConnected(undefined);
+    expect(await take()).toEqual({
+      lmu: { first: 1, last: 1, ms: 65_000 + 30_000 },
+    });
   });
 
   it('saves a running connection on flush, as on quit', async () => {
-    store.setConnected('lmu', 1000);
-    await store.flush(31_000);
-    expect(await stored()).toEqual({ lmu: { at: 1000, ms: 30_000 } });
+    store.setConnected('lmu');
+    now += 30_000;
+    await store.flush();
+    expect(await stored()).toEqual({ lmu: { first: 1, last: 1, ms: 30_000 } });
   });
 
-  it('keeps every connect time unique while the clock stands still or goes back', async () => {
-    store.setConnected('iracing', 5000);
-    store.setConnected(undefined, 5000);
-    store.setConnected('iracing', 5000);
-    store.setConnected('lmu', 4000);
-    store.setConnected(undefined, 4000);
-    expect(await store.read()).toEqual({
-      iracing: { at: 5001, ms: 0 },
-      lmu: { at: 5002, ms: 0 },
-    });
-  });
-
-  it('adds to what the file held what was noted while it loaded', async () => {
+  it('ranks what was noted while the file loaded after everything it held', async () => {
     // The sim already running as irdashies started: its bridge reports it
     // before anything has read the file.
     await writeStored({
-      iracing: { at: 1000, ms: 5000 },
-      lmu: { at: 2000, ms: 7000 },
+      iracing: { first: 1, last: 4, ms: 5000 },
+      lmu: { first: 2, last: 3, ms: 7000 },
     });
-    store.setConnected('lmu', 9000);
-    store.setConnected(undefined, 10_000);
+    store.setConnected('lmu');
+    now += 1000;
+    store.setConnected(undefined);
     const expected = {
-      iracing: { at: 1000, ms: 5000 },
-      lmu: { at: 9000, ms: 8000 },
+      iracing: { first: 1, last: 4, ms: 5000 },
+      lmu: { first: 2, last: 5, ms: 8000 },
     };
-    expect(await store.read()).toEqual(expected);
     await store.flush();
     expect(await stored()).toEqual(expected);
+    expect(await take()).toEqual(expected);
+  });
+
+  it('gives a simulator first seen while the file loaded a place after the file', async () => {
+    await writeStored({ iracing: { first: 1, last: 2, ms: 5000 } });
+    store.setConnected('lmu');
+    store.setConnected(undefined);
+    expect(await take()).toEqual({
+      iracing: { first: 1, last: 2, ms: 5000 },
+      lmu: { first: 3, last: 3, ms: 0 },
+    });
   });
 
   it('does not save over the file before it has loaded', async () => {
-    await writeStored({ iracing: { at: 1000, ms: 5000 } });
+    await writeStored({ iracing: { first: 1, last: 1, ms: 5000 } });
     const readFile = fsp.readFile.bind(fsp);
     let finishLoading: (() => void) | undefined;
     vi.spyOn(fsp, 'readFile').mockImplementationOnce((async (
@@ -162,93 +205,98 @@ describe('simulator usage store', () => {
       return readFile(...args);
     }) as typeof fsp.readFile);
 
-    store.setConnected('lmu', 9000);
-    store.setConnected(undefined, 10_000);
+    store.setConnected('lmu');
+    now += 1000;
+    store.setConnected(undefined);
     // Well past the write delay, with the file still loading.
     await afterWriteDelay();
-    expect(await stored()).toEqual({ iracing: { at: 1000, ms: 5000 } });
+    expect(store.takeForReport()).toBeUndefined();
+    expect(await stored()).toEqual({
+      iracing: { first: 1, last: 1, ms: 5000 },
+    });
 
     finishLoading?.();
     await store.flush();
     expect(await stored()).toEqual({
-      iracing: { at: 1000, ms: 5000 },
-      lmu: { at: 9000, ms: 1000 },
+      iracing: { first: 1, last: 1, ms: 5000 },
+      lmu: { first: 2, last: 2, ms: 1000 },
     });
   });
 
-  it('removes what a report sent', async () => {
-    store.setConnected('iracing', 1000);
-    store.setConnected('lmu', 2000);
-    store.setConnected(undefined, 3000);
-    store.removeReported(await store.read());
-    expect(await store.read()).toEqual({});
+  it('hands over the list for a report and starts a new one', async () => {
+    store.setConnected('iracing');
+    store.setConnected('lmu');
+    now += 2000;
+    store.setConnected(undefined);
+    expect(await take()).toEqual({
+      iracing: { first: 1, last: 1, ms: 0 },
+      lmu: { first: 2, last: 2, ms: 2000 },
+    });
+    expect(store.takeForReport()).toEqual({});
     await store.flush();
     expect(await stored()).toEqual({});
   });
 
-  it('keeps what came in while the report was in flight', async () => {
-    store.setConnected('iracing', 1000);
-    store.setConnected(undefined, 2000);
-    const reported = await store.read();
-    // While the report is out: iRacing connects again, LMU for the first time.
-    store.setConnected('iracing', 3000);
-    store.setConnected(undefined, 4000);
-    store.setConnected('lmu', 5000);
-    store.setConnected(undefined, 6000);
-    store.removeReported(reported);
-    expect(await store.read()).toEqual({
-      iracing: { at: 3000, ms: 1000 },
-      lmu: { at: 5000, ms: 1000 },
-    });
-  });
-
   it('keeps counting a connection still running after the report', async () => {
-    store.setConnected('lmu', 1000);
-    store.removeReported(await store.read(11_000));
-    expect(await store.read(11_000)).toEqual({ lmu: { at: 1000, ms: 0 } });
-    store.setConnected(undefined, 31_000);
-    expect(await store.read()).toEqual({ lmu: { at: 1000, ms: 20_000 } });
+    store.setConnected('lmu');
+    now += 10_000;
+    expect(await take()).toEqual({ lmu: { first: 1, last: 1, ms: 10_000 } });
+    now += 20_000;
+    store.setConnected(undefined);
     // The next report takes the rest.
-    store.removeReported(await store.read());
-    expect(await store.read()).toEqual({});
-  });
-
-  it('keeps the time counted after the report read it', async () => {
-    store.setConnected('lmu', 1000);
-    const reported = await store.read(11_000);
-    store.setConnected(undefined, 15_000);
-    store.removeReported(reported);
-    expect(await store.read()).toEqual({ lmu: { at: 1000, ms: 4000 } });
-  });
-
-  it('does not write when the report carried nothing still stored', async () => {
-    await writeStored({ iracing: { at: 1000, ms: 0 } });
-    await store.read();
-    store.removeReported({ iracing: { at: 999, ms: 0 } });
-    store.removeReported({});
-    await store.flush();
-    expect(await fsp.readFile(filePath, 'utf8')).toBe(
-      '{"iracing":{"at":1000,"ms":0}}'
-    );
+    expect(store.takeForReport()).toEqual({
+      lmu: { first: 1, last: 1, ms: 20_000 },
+    });
+    expect(store.takeForReport()).toEqual({});
   });
 
   it('starts over from a file that is not JSON', async () => {
     await fsp.writeFile(filePath, '{not json');
-    store.setConnected('lmu', 1000);
-    await store.flush(2000);
-    expect(await stored()).toEqual({ lmu: { at: 1000, ms: 1000 } });
+    store.setConnected('lmu');
+    now += 1000;
+    await store.flush();
+    expect(await stored()).toEqual({ lmu: { first: 1, last: 1, ms: 1000 } });
     expect(logger.warn).toHaveBeenCalledWith(
       '[SimulatorUsage] Invalid JSON',
       FILE
     );
   });
 
-  it('leaves a file it cannot read alone', async () => {
-    // A directory in its place fails the read with something other than
-    // "missing"; it may hold sims this session never saw.
+  it('tries a failed read again, and keeps what it noted meanwhile', async () => {
+    // A scanner holding the file at startup.
+    await writeStored({ iracing: { first: 1, last: 1, ms: 5000 } });
+    vi.spyOn(fsp, 'readFile').mockRejectedValueOnce(busy());
+    store.setConnected('lmu');
+    now += 1000;
+    store.setConnected(undefined);
+    await afterWriteDelay();
+    expect(await stored()).toEqual({
+      iracing: { first: 1, last: 1, ms: 5000 },
+    });
+    expect(logger.warn).toHaveBeenCalledWith(
+      '[SimulatorUsage] Failed to read',
+      FILE,
+      'EBUSY'
+    );
+
+    // The next save reads it again, and this time it works.
+    store.setConnected('lmu');
+    store.setConnected(undefined);
+    await store.flush();
+    expect(await stored()).toEqual({
+      iracing: { first: 1, last: 1, ms: 5000 },
+      lmu: { first: 2, last: 3, ms: 1000 },
+    });
+  });
+
+  it('leaves a file it cannot read alone, and says what was not saved', async () => {
+    // A directory in its place never reads; it may hold sims this session
+    // never saw.
     await fsp.mkdir(filePath);
-    store.setConnected('lmu', 1000);
-    expect(await store.read(2000)).toEqual({ lmu: { at: 1000, ms: 1000 } });
+    store.setConnected('lmu');
+    now += 1000;
+    expect(await store.ready()).toBe(false);
+    expect(store.takeForReport()).toBeUndefined();
     await store.flush();
     expect((await fsp.stat(filePath)).isDirectory()).toBe(true);
     expect(logger.warn).toHaveBeenCalledWith(
@@ -256,5 +304,42 @@ describe('simulator usage store', () => {
       FILE,
       expect.any(String)
     );
+    expect(logger.warn).toHaveBeenCalledWith(
+      '[SimulatorUsage] Not saved: could not read',
+      FILE
+    );
+    // Logged once, however often it is tried.
+    await store.ready();
+    expect(
+      vi
+        .mocked(logger.warn)
+        .mock.calls.filter(([message]) => message.includes('Failed to read'))
+    ).toHaveLength(1);
+  });
+
+  it('forgets everything on clear, stops the clock, and deletes the file', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    await writeStored({ iracing: { first: 1, last: 1, ms: 5000 } });
+    store.setConnected('lmu');
+    now += 1000;
+    await store.flush();
+    expect(Object.keys(await stored()).sort()).toEqual(['iracing', 'lmu']);
+
+    await store.clear();
+    await expect(fsp.access(filePath)).rejects.toThrow();
+    now += 60_000;
+    vi.advanceTimersByTime(60_000);
+    await store.flush();
+    await expect(fsp.access(filePath)).rejects.toThrow();
+    expect(store.takeForReport()).toEqual({});
+  });
+
+  it('drops what the file held when cleared while it loads', async () => {
+    await writeStored({ iracing: { first: 1, last: 1, ms: 5000 } });
+    store.setConnected('lmu');
+    await store.clear();
+    expect(await take()).toEqual({});
+    await store.flush();
+    await expect(fsp.access(filePath)).rejects.toThrow();
   });
 });
