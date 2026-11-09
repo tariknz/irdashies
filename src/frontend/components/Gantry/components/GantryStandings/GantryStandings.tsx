@@ -54,16 +54,16 @@ HeaderCell.displayName = 'HeaderCell';
 /** Column widths shared by the header and the rows so they cannot drift. */
 const COL = {
   position: 'w-7 shrink-0 text-center',
-  carNumber: 'w-[52px] shrink-0 text-center border-l-2',
+  carNumber: 'w-11 shrink-0 text-center border-l-2',
   name: 'flex-1 min-w-[120px] truncate pl-1.5',
   compound: 'w-6 shrink-0',
-  rating: 'w-14 shrink-0',
-  pit: 'w-[34px] shrink-0 text-center',
-  gap: 'w-14 shrink-0',
-  interval: 'w-14 shrink-0',
-  best: 'w-[76px] shrink-0',
-  last: 'w-[76px] shrink-0',
-  delta: 'w-11 shrink-0',
+  rating: 'w-[52px] shrink-0',
+  pit: 'w-8 shrink-0 text-center',
+  gap: 'w-12 shrink-0',
+  interval: 'w-11 shrink-0',
+  best: 'w-16 shrink-0',
+  last: 'w-16 shrink-0',
+  delta: 'w-10 shrink-0',
 } as const;
 
 const StandingsHeader = memo(() => (

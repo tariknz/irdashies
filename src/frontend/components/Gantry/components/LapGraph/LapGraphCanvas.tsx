@@ -690,7 +690,7 @@ export const LapGraphCanvas = memo(
     return (
       <div className="flex flex-col h-full min-h-0 select-none text-xs">
         <div className="flex items-center justify-between gap-2 pb-1 shrink-0">
-          <span className="text-slate-400 truncate">{axisCaption}</span>
+          <span className="min-w-0 text-slate-400">{axisCaption}</span>
           <div className="flex items-center gap-2 shrink-0">
             {geometry.offScaleCount > 0 && (
               <span className="text-slate-500 tabular-nums">

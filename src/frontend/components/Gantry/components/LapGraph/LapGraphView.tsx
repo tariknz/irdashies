@@ -582,7 +582,7 @@ export const LapGraphView = memo(
           </div>
           <aside
             aria-label="Drivers"
-            className="flex w-72 max-w-[40%] shrink-0 flex-col overflow-hidden border-l border-slate-700"
+            className="flex w-[260px] max-w-[40%] shrink-0 flex-col overflow-hidden border-l border-slate-700"
           >
             <div className="shrink-0 px-4 pt-3 pb-1.5 text-xs font-semibold tracking-[0.06em] text-slate-300 uppercase">
               Drivers
