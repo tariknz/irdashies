@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo } from 'react';
 import { CloudRainIcon } from '@phosphor-icons/react';
 
@@ -20,7 +21,7 @@ export const WeatherPrecipitation = memo(
       return (
         <div
           className="bg-slate-800/70 px-2 py-1 rounded-sm min-w-0"
-          title="Precipitation"
+          title={t('Precipitation')}
         >
           <div className="flex items-center gap-x-1.5">
             <CloudRainIcon size={12} className="flex-none text-white/50" />
@@ -36,7 +37,7 @@ export const WeatherPrecipitation = memo(
           <div className="flex items-center gap-x-1.5 text-sm">
             <CloudRainIcon size={12} className="flex-none text-white/50" />
             <span className="truncate min-w-0 text-white/60">
-              Precipitation
+              {t('Precipitation')}
             </span>
             <div className="flex-none whitespace-nowrap text-right font-medium">
               {value}
@@ -51,7 +52,7 @@ export const WeatherPrecipitation = memo(
         <div className="flex flex-row gap-x-2 items-center text-sm">
           <CloudRainIcon className="flex-none" />
           <span className="truncate min-w-0 flex-1 @max-[120px]:hidden">
-            Precipitation
+            {t('Precipitation')}
           </span>
           <div className="flex-none whitespace-nowrap text-right">{value}</div>
         </div>

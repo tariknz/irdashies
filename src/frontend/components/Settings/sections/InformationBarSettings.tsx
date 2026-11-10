@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
@@ -45,13 +46,15 @@ export const InformationBarSettings = () => {
   }, [activeTab]);
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   return (
     <BaseSettingsSection
-      title="Information Bar"
-      description="A standalone bar displaying session and timing information."
+      title={t('Information Bar')}
+      description={t(
+        'A standalone bar displaying session and timing information.'
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId="infobar"
@@ -69,33 +72,33 @@ export const InformationBarSettings = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Display
+                {t('Display')}
               </TabButton>
               <TabButton
                 id="styling"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Styling
+                {t('Styling')}
               </TabButton>
               <TabButton
                 id="visibility"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Visibility
+                {t('Visibility')}
               </TabButton>
             </div>
 
             <div className="pt-4 space-y-4">
               {activeTab === 'display' && (
                 <>
-                  <SettingsSection title="Display" scaleWidgetId="infobar">
+                  <SettingsSection title={t('Display')} scaleWidgetId="infobar">
                     <h4 className="text-md font-medium text-slate-200">
-                      Display Order
+                      {t('Display Order')}
                     </h4>
                     <p className="text-xs text-slate-400 px-4 mb-4">
-                      Enable and reorder items for the information bar.
+                      {t('Enable and reorder items for the information bar.')}
                     </p>
                     <SessionBarItemsList
                       items={settings.config.displayOrder}
@@ -133,7 +136,7 @@ export const InformationBarSettings = () => {
                     />
                     <div className="mt-4">
                       <SettingActionButton
-                        label="Reset to Default Order"
+                        label={t('Reset to Default Order')}
                         onClick={() =>
                           handleConfigChange({
                             displayOrder: [
@@ -148,14 +151,14 @@ export const InformationBarSettings = () => {
               )}
 
               {activeTab === 'styling' && (
-                <SettingsSection title="Background">
+                <SettingsSection title={t('Background')}>
                   <SettingProp path="background.opacity" />
                   <SettingProp path="foreground.opacity" />
                 </SettingsSection>
               )}
 
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
+                <SettingsSection title={t('Session Visibility')}>
                   <SessionVisibility
                     sessionVisibility={settings.config.sessionVisibility}
                     handleConfigChange={handleConfigChange}

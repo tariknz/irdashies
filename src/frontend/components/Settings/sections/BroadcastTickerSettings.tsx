@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { changeMarker } from '../components/ChangedMark';
@@ -25,7 +26,7 @@ export const BroadcastTickerSettings = () => {
   });
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   const { config } = settings;
@@ -34,8 +35,10 @@ export const BroadcastTickerSettings = () => {
     <BaseSettingsSection
       disableInternalScroll
       headingLevel="h3"
-      title="Broadcast Ticker"
-      description="Scrolling bottom-of-screen ticker. After each full loop it moves on: standings, fastest laps, then the best car of each manufacturer."
+      title={t('Broadcast Ticker')}
+      description={t(
+        'Scrolling bottom-of-screen ticker. After each full loop it moves on: standings, fastest laps, then the best car of each manufacturer.'
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -50,11 +53,14 @@ export const BroadcastTickerSettings = () => {
         );
         return (
           <div className="space-y-4">
-            <SettingsSection title="Widget options" scaleWidgetId={SETTING_ID}>
+            <SettingsSection
+              title={t('Widget options')}
+              scaleWidgetId={SETTING_ID}
+            >
               {mark(
                 ['background'],
                 <SettingSliderRow
-                  title="Background Opacity"
+                  title={t('Background Opacity')}
                   value={config.background.opacity}
                   units="%"
                   min={0}
@@ -68,8 +74,10 @@ export const BroadcastTickerSettings = () => {
               {markFade(
                 ['enabled'],
                 <SettingToggleRow
-                  title="Translucent"
-                  description="Fade the whole widget, text included, so it hides less of the stream."
+                  title={t('Translucent')}
+                  description={t(
+                    'Fade the whole widget, text included, so it hides less of the stream.'
+                  )}
                   enabled={config.translucent.enabled}
                   onToggle={(v) =>
                     handleConfigChange({
@@ -82,7 +90,7 @@ export const BroadcastTickerSettings = () => {
                 markFade(
                   ['opacity'],
                   <SettingSliderRow
-                    title="Widget Opacity"
+                    title={t('Widget Opacity')}
                     value={config.translucent.opacity}
                     units="%"
                     min={20}
@@ -98,7 +106,7 @@ export const BroadcastTickerSettings = () => {
               {mark(
                 ['secondsPerEntry'],
                 <SettingSliderRow
-                  title="Seconds Per Car"
+                  title={t('Seconds Per Car')}
                   value={config.secondsPerEntry}
                   units="s"
                   min={1}
@@ -109,7 +117,7 @@ export const BroadcastTickerSettings = () => {
               )}
             </SettingsSection>
 
-            <SettingsSection title="Visibility">
+            <SettingsSection title={t('Visibility')}>
               {mark(
                 ['sessionVisibility'],
                 <SessionVisibility

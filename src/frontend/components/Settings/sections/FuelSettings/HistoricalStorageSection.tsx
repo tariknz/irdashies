@@ -1,4 +1,5 @@
-﻿import { useState } from 'react';
+﻿import { t } from '@irdashies/frontend/i18n';
+import { useState } from 'react';
 import { useFuelStore } from '../../../FuelCalculator/FuelStore';
 import { SettingsSection } from '../../components/SettingSection';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
@@ -33,15 +34,17 @@ export const HistoricalStorageSection = () => {
     }
   };
   return (
-    <SettingsSection title="Historical Storage">
+    <SettingsSection title={t('Historical Storage')}>
       <SettingProp path="enableStorage" />
       <SettingProp path="enableLogging" />
       <div className="space-y-3 border-t border-slate-700 pt-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex-1">
-            <span className="text-sm text-slate-300">Clear Data Storage</span>
+            <span className="text-sm text-slate-300">
+              {t('Clear Data Storage')}
+            </span>
             <p className="text-sm text-slate-400">
-              Wipe all saved fuel consumption history from the database.
+              {t('Wipe all saved fuel consumption history from the database.')}
             </p>
           </div>
           <button
@@ -50,7 +53,7 @@ export const HistoricalStorageSection = () => {
             onClick={() => setConfirmOpen(true)}
             className="settings-button-danger"
           >
-            {pending ? 'Clearing…' : 'Clear All History'}
+            {pending ? t('Clearing…') : t('Clear All History')}
           </button>
         </div>
         {result && (
@@ -60,15 +63,17 @@ export const HistoricalStorageSection = () => {
               result.error ? 'text-sm text-red-300' : 'text-sm text-slate-300'
             }
           >
-            {result.text}
+            {t(result.text)}
           </p>
         )}
       </div>
       <ConfirmDialog
         isOpen={confirmOpen}
-        title="Clear all fuel history?"
-        message="This deletes all saved fuel consumption history. This cannot be undone."
-        confirmText="Clear All History"
+        title={t('Clear all fuel history?')}
+        message={t(
+          'This deletes all saved fuel consumption history. This cannot be undone.'
+        )}
+        confirmText={t('Clear All History')}
         onConfirm={() => void clearHistory()}
         onCancel={() => setConfirmOpen(false)}
       />

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import type { ResolvedDriverTag } from '../../../hooks/useDriverTagMap';
@@ -80,7 +81,7 @@ export const DriverTagCell = memo(function DriverTagCell({
     return (
       <span
         role="img"
-        aria-label={`Driver tagged as ${name}`}
+        aria-label={t('Driver tagged as {name}', { name })}
         style={tagStyle}
       />
     );
@@ -92,7 +93,7 @@ export const DriverTagCell = memo(function DriverTagCell({
   return (
     <span
       role="img"
-      aria-label={`Driver tagged as ${name}`}
+      aria-label={t('Driver tagged as {name}', { name })}
       style={containerStyle}
     >
       {renderDriverIcon(

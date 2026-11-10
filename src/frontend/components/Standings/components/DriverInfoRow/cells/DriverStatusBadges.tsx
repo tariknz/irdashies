@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, type ReactNode } from 'react';
 import {
   lmuPenaltyBadgeText,
@@ -59,7 +60,7 @@ const CheckeredFlagBadge = () => (
       viewBox="0 0 5 4"
       className="h-[calc(1.25em+4px)] w-auto"
       role="img"
-      aria-label="Finished"
+      aria-label={t('Finished')}
       data-testid="finish-flag"
     >
       <rect width="5" height="4" fill="white" />
@@ -192,7 +193,7 @@ export const DriverStatusBadges = memo(
             // red-500 is #ef4444.
             additionalClasses="inline-block min-w-6 font-bold bg-[#FF0000]"
           >
-            {redBadgeText}
+            {t(redBadgeText)}
           </StatusBadge>
         )}
         {penalty && (
@@ -229,7 +230,7 @@ export const DriverStatusBadges = memo(
         )}
         {dnf && (
           <StatusBadge borderColorClass={isMinimal ? muted : 'border-red-500'}>
-            DNF
+            {t('DNF')}
           </StatusBadge>
         )}
         {tow && (
@@ -237,14 +238,14 @@ export const DriverStatusBadges = memo(
             borderColorClass={isMinimal ? muted : 'border-orange-500'}
             animate
           >
-            TOW
+            {t('TOW')}
           </StatusBadge>
         )}
         {out && (
           <StatusBadge
             borderColorClass={isMinimal ? muted : 'border-green-700'}
           >
-            OUT {pitDuration}
+            {t('OUT')} {pitDuration}
           </StatusBadge>
         )}
         {pit && (
@@ -252,7 +253,7 @@ export const DriverStatusBadges = memo(
             borderColorClass={isMinimal ? muted : 'border-yellow-500'}
             animate
           >
-            PIT
+            {t('PIT')}
           </StatusBadge>
         )}
         {lastPit && !out && (

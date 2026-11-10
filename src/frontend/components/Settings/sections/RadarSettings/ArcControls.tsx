@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useEffect, useRef } from 'react';
 import type { RadarArcStyle } from '@irdashies/types';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
@@ -130,25 +131,29 @@ export const ArcEventCard = ({
     <div className="rounded-lg border border-slate-700 p-3 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h4 className="text-md font-medium text-slate-300">{title}</h4>
+          <h4 className="text-md font-medium text-slate-300">{t(title)}</h4>
           <p className="text-sm text-slate-500">
             {moduleOff
-              ? `${moduleName} is off, so this arc never shows.`
-              : description}
+              ? t('{moduleName} is off, so this arc never shows.', {
+                  moduleName: t(moduleName),
+                })
+              : t(description)}
           </p>
         </div>
         <ToggleSwitch
           enabled={enabled}
           onToggle={onToggle}
           disabled={moduleOff}
-          disabledReason={`Turn ${moduleName} on first`}
+          disabledReason={t('Turn {moduleName} on first', {
+            moduleName: t(moduleName),
+          })}
         />
       </div>
       {enabled && !moduleOff && (
         <>
           <div
             role="radiogroup"
-            aria-label={`${title} style`}
+            aria-label={t('{title} style', { title: t(title) })}
             className="grid grid-cols-2 sm:grid-cols-4 gap-2"
           >
             {ARC_STYLES.map((option, index) => (
@@ -191,12 +196,12 @@ export const ArcEventCard = ({
                   bearing={bearing}
                   thickness={thickness}
                 />
-                {option.label}
+                {t(option.label)}
               </button>
             ))}
           </div>
           {picked && (
-            <p className="text-sm text-slate-500">{picked.description}</p>
+            <p className="text-sm text-slate-500">{t(picked.description)}</p>
           )}
         </>
       )}

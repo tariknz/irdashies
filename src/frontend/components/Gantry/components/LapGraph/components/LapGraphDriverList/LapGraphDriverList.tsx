@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, useMemo } from 'react';
 import { Check } from '@phosphor-icons/react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
@@ -65,7 +66,7 @@ export const LapGraphDriverList = memo(
         <div className="min-h-0 flex-1 overflow-y-auto">
           {drivers.length === 0 && (
             <div className="px-4 py-3 text-sm text-slate-400">
-              Waiting for the grid.
+              {t('Waiting for the grid.')}
             </div>
           )}
           {drivers.map((entry) => {
@@ -108,9 +109,11 @@ export const LapGraphDriverList = memo(
                 onBlur={() => onHover(null)}
                 title={
                   !entry.hasLine
-                    ? `${entry.displayName} has no completed laps yet`
+                    ? t('{displayName} has no completed laps yet', {
+                        displayName: entry.displayName,
+                      })
                     : entry.isPlayer
-                      ? 'Your own line is always drawn'
+                      ? t('Your own line is always drawn')
                       : `${isShown ? 'Hide' : 'Show'} ${entry.displayName}`
                 }
                 className={[

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useMemo, useState, useEffect } from 'react';
 import { useDashboard, useFuelProjectionSnapshot } from '@irdashies/context';
 import {
@@ -202,7 +203,8 @@ export const FuelCalculatorDisplay = ({
   const hasSettings = !!settings;
 
   // Safety fallback
-  if (!hasSettings) return <div className="text-red-500">Missing Settings</div>;
+  if (!hasSettings)
+    return <div className="text-red-500">{t('Missing Settings')}</div>;
 
   if (!editMode && settings?.showOnlyWhenOnTrack && !isOnTrack) return null;
   if (!editMode && !isSessionVisible) return <></>;
@@ -346,7 +348,7 @@ export const FuelCalculatorDisplay = ({
       {layoutTree ? (
         <RecursiveWidgetRenderer node={layoutTree} />
       ) : (
-        <div className="text-red-500">Layout Error</div>
+        <div className="text-red-500">{t('Layout Error')}</div>
       )}
     </div>
   );

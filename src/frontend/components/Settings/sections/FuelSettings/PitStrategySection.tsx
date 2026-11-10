@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { FuelWidgetSettings } from '@irdashies/types';
 import { SettingsSection } from '../../components/SettingSection';
 import { SettingNumberRow } from '../../components/SettingNumberRow';
@@ -16,14 +17,16 @@ export const PitStrategySection = ({
   onChange,
 }: PitStrategySectionProps) => {
   return (
-    <SettingsSection title="Pit Strategy">
+    <SettingsSection title={t('Pit Strategy')}>
       <SettingProp path="enableTargetPitLap" />
 
       {settings.config.enableTargetPitLap && (
         <SettingsSection>
           <SettingNumberRow
-            title="Target Pit Lap"
-            description="Scenarios will include this lap as a 4th row. Target message will show fuel required."
+            title={t('Target Pit Lap')}
+            description={t(
+              'Scenarios will include this lap as a 4th row. Target message will show fuel required.'
+            )}
             value={settings.config.targetPitLap ?? 15}
             min={1}
             max={200}
@@ -32,8 +35,8 @@ export const PitStrategySection = ({
           />
 
           <SettingSelectRow<'avg' | 'avg10' | 'last' | 'max' | 'min' | 'qual'>
-            title="Calculated From"
-            description="Lap or laps to base the caluclation on."
+            title={t('Calculated From')}
+            description={t('Lap or laps to base the caluclation on.')}
             value={settings.config.targetPitLapBasis ?? 'avg'}
             options={[
               {

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo } from 'react';
 import {
   useSessionVisibility,
@@ -86,7 +87,7 @@ export const FasterCarsFromBehind = () => {
   return (
     <div
       role="list"
-      aria-label="Faster cars behind"
+      aria-label={t('Faster cars behind')}
       className={`flex h-full flex-col ${density.spacing} ${containerAlignment}`}
     >
       {orderedCars.map((car) => (
@@ -147,8 +148,8 @@ export const FasterCarsFromBehindDisplay = memo(
         <div className={`flex min-w-0 items-center ${density.row}`}>
           <span
             role="group"
-            aria-label={classDescription}
-            title={classDescription}
+            aria-label={t(classDescription)}
+            title={t(classDescription)}
             className={`relative isolate flex shrink-0 self-stretch flex-col items-center justify-center overflow-hidden text-[11px] font-semibold ${density.classBlock}`}
             style={{ color: classStyle.canvasFill }}
           >
@@ -185,8 +186,10 @@ export const FasterCarsFromBehindDisplay = memo(
             <span
               aria-label={
                 validDistance
-                  ? `${Math.abs(distance).toFixed(1)} seconds behind`
-                  : 'Gap unavailable'
+                  ? t('{value} seconds behind', {
+                      value: Math.abs(distance).toFixed(1),
+                    })
+                  : t('Gap unavailable')
               }
               className={`min-w-[5ch] shrink-0 text-right leading-none font-semibold tabular-nums ${density.countdown} ${urgent ? 'text-red-300' : ''}`}
             >

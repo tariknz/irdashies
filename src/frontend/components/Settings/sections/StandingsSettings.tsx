@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
@@ -171,7 +172,7 @@ const DisplaySettingsList = ({
         return (
           <DraggableSettingItem
             key={setting.id}
-            label={setting.label}
+            label={t(setting.label)}
             enabled={isEnabled}
             onToggle={(enabled) => {
               const cv = settings.config[setting.configKey] as {
@@ -239,9 +240,9 @@ const DisplaySettingsList = ({
                 <SettingProp path="gap.reference" variant="compact" />
                 {settings.config.gap.reference === 'player' && (
                   <p className="pl-8 mt-2 text-sm text-slate-500">
-                    Negative ahead, positive behind, across all classes. Uses
-                    track position in races and best laps in practice and
-                    qualifying. Follows the camera car when spectating.
+                    {t(
+                      'Negative ahead, positive behind, across all classes. Uses track position in races and best laps in practice and qualifying. Follows the camera car when spectating.'
+                    )}
                   </p>
                 )}
               </>
@@ -291,10 +292,12 @@ const DisplaySettingsList = ({
             {setting.configKey === 'driverName' &&
               (configValue as { enabled: boolean }).enabled && (
                 <div className="mt-3">
-                  <p className="mb-2 text-sm text-slate-400">Name format</p>
+                  <p className="mb-2 text-sm text-slate-400">
+                    {t('Name format')}
+                  </p>
                   <div
                     role="group"
-                    aria-label="Driver name format"
+                    aria-label={t('Driver name format')}
                     className="grid grid-cols-2 gap-2 xl:grid-cols-3"
                   >
                     {(
@@ -458,13 +461,17 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
     isGantryOnly && activeTab === 'visibility' ? 'display' : activeTab;
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   return (
     <BaseSettingsSection
-      title={isGantryOnly ? `Standings - ${widgetId}` : 'Standings'}
-      description="Configure how the standings widget appears and behaves."
+      title={
+        isGantryOnly
+          ? t('Standings - {widgetId}', { widgetId })
+          : t('Standings')
+      }
+      description={t('Configure how the standings widget appears and behaves.')}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={widgetId}
@@ -487,9 +494,9 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                 <div className="flex flex-wrap items-center gap-3">
                   <span
                     className="px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider rounded bg-amber-500/20 text-amber-300 border border-amber-500/40"
-                    title="Only shown in the Gantry, never on the overlay."
+                    title={t('Only shown in the Gantry, never on the overlay.')}
                   >
-                    Gantry
+                    {t('Gantry')}
                   </span>
                   <button
                     type="button"
@@ -499,10 +506,12 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                         copyOverlayToGantryStandings(currentDashboard, widgetId)
                       )
                     }
-                    title="Replace this layout with the overlay Standings settings"
+                    title={t(
+                      'Replace this layout with the overlay Standings settings'
+                    )}
                     className="px-3 py-1 text-xs rounded border transition-colors bg-slate-700 hover:bg-settings-hover text-slate-200 border-settings-boundary"
                   >
-                    Copy settings from overlay
+                    {t('Copy settings from overlay')}
                   </button>
                 </div>
               )}
@@ -513,35 +522,35 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Display
+                  {t('Display')}
                 </TabButton>
                 <TabButton
                   id="options"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Options
+                  {t('Options')}
                 </TabButton>
                 <TabButton
                   id="header"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Header
+                  {t('Header')}
                 </TabButton>
                 <TabButton
                   id="footer"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Footer
+                  {t('Footer')}
                 </TabButton>
                 <TabButton
                   id="styling"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Styling
+                  {t('Styling')}
                 </TabButton>
                 {!isGantryOnly && (
                   <TabButton
@@ -549,7 +558,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                     activeTab={activeTab}
                     setActiveTab={setActiveTab}
                   >
-                    Visibility
+                    {t('Visibility')}
                   </TabButton>
                 )}
               </div>
@@ -558,9 +567,12 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                 {/* DISPLAY TAB */}
                 {shownTab === 'display' && (
                   <>
-                    <SettingsSection title="Display" scaleWidgetId={widgetId}>
+                    <SettingsSection
+                      title={t('Display')}
+                      scaleWidgetId={widgetId}
+                    >
                       <h4 className="text-md font-medium text-slate-200">
-                        Display Order
+                        {t('Display Order')}
                       </h4>
                       <DisplaySettingsList
                         itemsOrder={itemsOrder}
@@ -570,7 +582,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                       />
 
                       <SettingActionButton
-                        label="Reset to Default Order"
+                        label={t('Reset to Default Order')}
                         onClick={() => {
                           const defaultOrder = sortableSettings.map(
                             (s) => s.id
@@ -586,13 +598,13 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                 {/* OPTIONS TAB */}
                 {shownTab === 'options' && (
                   <>
-                    <SettingsSection title="Multiclass Standings">
+                    <SettingsSection title={t('Multiclass Standings')}>
                       <SettingProp path="customClassOrdering" />
                     </SettingsSection>
 
                     <SettingDivider />
 
-                    <SettingsSection title="Driver Standings">
+                    <SettingsSection title={t('Driver Standings')}>
                       <SettingProp path="driverStandings.buffer" />
                       <SettingProp path="driverStandings.numNonClassDrivers" />
                       <SettingProp path="driverStandings.minPlayerClassDrivers" />
@@ -611,7 +623,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
 
                     <SettingDivider />
 
-                    <SettingsSection title="Title Bar">
+                    <SettingsSection title={t('Title Bar')}>
                       <SettingProp path="titleBar.enabled" />
 
                       {settings.config.titleBar.enabled && (
@@ -623,7 +635,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
 
                     <SettingDivider />
 
-                    <SettingsSection title="Background">
+                    <SettingsSection title={t('Background')}>
                       <SettingProp path="background.opacity" />
                       <SettingProp path="foreground.opacity" />
                       <SettingProp path="driverRow.opacity" />
@@ -633,7 +645,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
 
                 {/* HEADER TAB */}
                 {shownTab === 'header' && (
-                  <SettingsSection title="Header Bar">
+                  <SettingsSection title={t('Header Bar')}>
                     <SettingProp path="headerBar.enabled" />
 
                     {settings.config.headerBar.enabled && (
@@ -686,7 +698,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                         />
 
                         <SettingActionButton
-                          label="Reset to Default Order"
+                          label={t('Reset to Default Order')}
                           onClick={() => {
                             handleConfigChange({
                               headerBar: {
@@ -705,7 +717,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
 
                 {/* FOOTER TAB */}
                 {shownTab === 'footer' && (
-                  <SettingsSection title="Footer Bar">
+                  <SettingsSection title={t('Footer Bar')}>
                     <SettingProp path="footerBar.enabled" />
 
                     {settings.config.footerBar.enabled && (
@@ -758,7 +770,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                         />
 
                         <SettingActionButton
-                          label="Reset to Default Order"
+                          label={t('Reset to Default Order')}
                           onClick={() => {
                             handleConfigChange({
                               footerBar: {
@@ -778,10 +790,12 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                 {/* STYLING TAB */}
                 {shownTab === 'styling' && (
                   <div className="space-y-5">
-                    <SettingsSection title="Class Header">
+                    <SettingsSection title={t('Class Header')}>
                       <SettingToggleRow
-                        title="Class Name Background"
-                        description="Show a colored background on the class name badge"
+                        title={t('Class Name Background')}
+                        description={t(
+                          'Show a colored background on the class name badge'
+                        )}
                         enabled={
                           settings.config.classHeaderStyle?.className
                             ?.colorBackground ?? true
@@ -796,8 +810,10 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                         }
                       />
                       <SettingToggleRow
-                        title="Class Info Background"
-                        description="Show a colored background on the SOF and driver count badges"
+                        title={t('Class Info Background')}
+                        description={t(
+                          'Show a colored background on the SOF and driver count badges'
+                        )}
                         enabled={
                           settings.config.classHeaderStyle?.classInfo
                             ?.colorBackground ?? true
@@ -812,8 +828,10 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                         }
                       />
                       <SettingToggleRow
-                        title="Bottom Border"
-                        description="Show a colored bottom border beneath the class header row"
+                        title={t('Bottom Border')}
+                        description={t(
+                          'Show a colored bottom border beneath the class header row'
+                        )}
                         enabled={
                           settings.config.classHeaderStyle?.classDivider
                             ?.bottomBorder ?? false
@@ -828,8 +846,10 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                         }
                       />
                       <SettingToggleRow
-                        title="Compact SoF Formatting"
-                        description='Display SoF as a compact value (e.g. "2.4k" instead of "2432")'
+                        title={t('Compact SoF Formatting')}
+                        description={t(
+                          'Display SoF as a compact value (e.g. "2.4k" instead of "2432")'
+                        )}
                         enabled={
                           settings.config.classHeaderStyle?.compactSof ?? false
                         }
@@ -843,8 +863,10 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                         }
                       />
                       <SettingToggleRow
-                        title="Show Manufacturer Counts"
-                        description="Show manufacturer icons with driver counts in the class header (multi-make classes only)"
+                        title={t('Show Manufacturer Counts')}
+                        description={t(
+                          'Show manufacturer icons with driver counts in the class header (multi-make classes only)'
+                        )}
                         enabled={
                           settings.config.classHeaderStyle?.manufacturerStats
                             ?.enabled ?? false
@@ -872,7 +894,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                         false) && (
                         <>
                           <SettingSelectRow
-                            title="Max manufacturers to show"
+                            title={t('Max manufacturers to show')}
                             value={
                               settings.config.classHeaderStyle?.manufacturerStats?.cap?.toString() ??
                               'all'
@@ -901,8 +923,10 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                             }
                           />
                           <SettingToggleRow
-                            title="Always show your manufacturer"
-                            description="If your manufacturer is outside the cap, it replaces the last shown entry"
+                            title={t('Always show your manufacturer')}
+                            description={t(
+                              'If your manufacturer is outside the cap, it replaces the last shown entry'
+                            )}
                             enabled={
                               settings.config.classHeaderStyle
                                 ?.manufacturerStats?.showPlayerManufacturer ??
@@ -937,10 +961,12 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                       </div>
                     </SettingsSection>
 
-                    <SettingsSection title="Columns">
+                    <SettingsSection title={t('Columns')}>
                       <SettingToggleRow
-                        title="Show Column Headers"
-                        description="Show each enabled column header above its values"
+                        title={t('Show Column Headers')}
+                        description={t(
+                          'Show each enabled column header above its values'
+                        )}
                         enabled={
                           settings.config.stylingOptions?.columnHeaders
                             ?.enabled ?? false
@@ -956,10 +982,12 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                       />
                     </SettingsSection>
 
-                    <SettingsSection title="Driver Position">
+                    <SettingsSection title={t('Driver Position')}>
                       <SettingToggleRow
-                        title="Position Background"
-                        description="Highlight the player's position cell with a colored background"
+                        title={t('Position Background')}
+                        description={t(
+                          "Highlight the player's position cell with a colored background"
+                        )}
                         enabled={
                           settings.config.stylingOptions?.driverPosition
                             ?.background ?? true
@@ -975,10 +1003,12 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                       />
                     </SettingsSection>
 
-                    <SettingsSection title="Car Number">
+                    <SettingsSection title={t('Car Number')}>
                       <SettingToggleRow
-                        title="Number Background"
-                        description="Show a colored background on the car number cell"
+                        title={t('Number Background')}
+                        description={t(
+                          'Show a colored background on the car number cell'
+                        )}
                         enabled={
                           settings.config.stylingOptions?.driverNumber
                             ?.background ?? true
@@ -996,8 +1026,10 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                         }
                       />
                       <SettingToggleRow
-                        title="Number Left Border"
-                        description="Show a colored left border on the car number cell"
+                        title={t('Number Left Border')}
+                        description={t(
+                          'Show a colored left border on the car number cell'
+                        )}
                         enabled={
                           settings.config.stylingOptions?.driverNumber
                             ?.border ?? true
@@ -1016,10 +1048,12 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                       />
                     </SettingsSection>
 
-                    <SettingsSection title="Badges">
+                    <SettingsSection title={t('Badges')}>
                       <SettingToggleRow
-                        title="Minimal License Badge"
-                        description="Use desaturated colors for the iRating/license badge"
+                        title={t('Minimal License Badge')}
+                        description={t(
+                          'Use desaturated colors for the iRating/license badge'
+                        )}
                         enabled={settings.config.stylingOptions?.badge ?? false}
                         onToggle={(newValue) =>
                           handleConfigChange({
@@ -1031,8 +1065,10 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                         }
                       />
                       <SettingToggleRow
-                        title="Minimal Status Badges"
-                        description="Use muted borders for PIT, OUT, DNF and other status badges"
+                        title={t('Minimal Status Badges')}
+                        description={t(
+                          'Use muted borders for PIT, OUT, DNF and other status badges'
+                        )}
                         enabled={
                           settings.config.stylingOptions?.statusBadges ?? false
                         }
@@ -1046,8 +1082,10 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                         }
                       />
                       <SettingToggleRow
-                        title="Minimal Lap Count Badge"
-                        description="Remove the border from the lap count badge"
+                        title={t('Minimal Lap Count Badge')}
+                        description={t(
+                          'Remove the border from the lap count badge'
+                        )}
                         enabled={
                           settings.config.stylingOptions?.lapCount?.minimal ??
                           false
@@ -1067,7 +1105,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
 
                 {/* VISIBILITY TAB */}
                 {shownTab === 'visibility' && (
-                  <SettingsSection title="Session Visibility">
+                  <SettingsSection title={t('Session Visibility')}>
                     <SessionVisibility
                       sessionVisibility={settings.config.sessionVisibility}
                       handleConfigChange={handleConfigChange}

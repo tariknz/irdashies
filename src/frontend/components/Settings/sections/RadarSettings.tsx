@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
@@ -101,7 +102,7 @@ const Segmented = <T extends string | number>({
             : 'text-slate-400 hover:text-slate-200'
         }`}
       >
-        {option.label}
+        {t(option.label)}
       </button>
     ))}
   </div>
@@ -116,7 +117,7 @@ const LevelBadge = ({ level }: { level: SettingsLevel }) =>
           : 'text-amber-300 border-amber-300/60'
       }`}
     >
-      {level === 1 ? 'Adv' : 'Dev'}
+      {level === 1 ? t('Adv') : t('Dev')}
     </span>
   );
 
@@ -144,11 +145,11 @@ const SectionView = ({
   const master = section.master;
   const off = master !== undefined && !view[master];
   return (
-    <section aria-label={section.title} className="space-y-4">
+    <section aria-label={t(section.title)} className="space-y-4">
       <div className="space-y-1 pb-3 border-b border-slate-700/50">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-lg font-medium text-slate-200 flex items-center gap-2">
-            {section.title}
+            {t(section.title)}
             {section.dev && <LevelBadge level={2} />}
           </h3>
           <div className="flex items-center gap-4">
@@ -158,20 +159,20 @@ const SectionView = ({
                 className="text-xs text-accent-400 hover:text-accent-300"
                 onClick={() => onReset(changed)}
               >
-                Reset section
+                {t('Reset section')}
               </button>
             )}
             {master && (
               <ToggleSwitch
                 enabled={view[master]}
                 onToggle={(value) => ctx.set({ [master]: value })}
-                label={off ? 'Off' : 'On'}
+                label={off ? t('Off') : t('On')}
               />
             )}
           </div>
         </div>
         {section.summary && (
-          <p className="text-sm text-slate-500">{section.summary}</p>
+          <p className="text-sm text-slate-500">{t(section.summary)}</p>
         )}
       </div>
       {showScale && (
@@ -182,38 +183,41 @@ const SectionView = ({
       )}
       {section.dev && level === 2 && section.id === 'processing' && (
         <p className="text-sm rounded-md border border-amber-500/40 bg-amber-500/10 text-amber-200 px-3 py-2">
-          Internals the radar was tuned on. Odd values break lanes and warnings;
-          Reset section puts them back.
+          {t(
+            'Internals the radar was tuned on. Odd values break lanes and warnings; Reset section puts them back.'
+          )}
         </p>
       )}
       {off && (
         <p className="text-sm text-slate-400">
-          Off. Turn it on to see its settings.
+          {t('Off. Turn it on to see its settings.')}
         </p>
       )}
       {!off && section.arc && (
         <div className="flex items-center justify-between gap-3 text-sm">
-          <span className="text-slate-300">Rim Arc</span>
+          <span className="text-slate-300">{t('Rim Arc')}</span>
           <button
             type="button"
             className="text-accent-400 hover:text-accent-300"
             onClick={() => onOpen('arcs')}
           >
             {view[section.arc.on]
-              ? `${
-                  ARC_STYLES.find(
-                    (option) =>
-                      option.value ===
-                      view[section.arc?.style ?? 'warningArcStyle']
-                  )?.label ?? 'Arc'
-                }, set in Arcs`
-              : 'Off, set in Arcs'}
+              ? t('{style}, set in Arcs', {
+                  style: t(
+                    ARC_STYLES.find(
+                      (option) =>
+                        option.value ===
+                        view[section.arc?.style ?? 'warningArcStyle']
+                    )?.label ?? 'Arc'
+                  ),
+                })
+              : t('Off, set in Arcs')}
           </button>
         </div>
       )}
       {!off && !section.arc && items.length === 0 && !showScale && (
         <p className="text-sm text-slate-400">
-          Nothing here at this level. Advanced shows more.
+          {t('Nothing here at this level. Advanced shows more.')}
         </p>
       )}
       <div className="space-y-4">
@@ -229,8 +233,8 @@ const SectionView = ({
             {isChanged(item, view) && (
               <button
                 type="button"
-                title="Changed: click to reset"
-                aria-label={`Reset ${item.title}`}
+                title={t('Changed: click to reset')}
+                aria-label={t('Reset {title}', { title: t(item.title) })}
                 className="absolute -left-3 top-2 w-2 h-2 rounded-full bg-accent-400 hover:bg-accent-300"
                 onClick={() => onReset([item])}
               />
@@ -302,7 +306,7 @@ export const RadarSettings = () => {
   const view = useMemo(() => profileView(config, profile), [config, profile]);
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   const search = query.trim().toLowerCase();
@@ -317,8 +321,10 @@ export const RadarSettings = () => {
 
   return (
     <BaseSettingsSection
-      title="Radar"
-      description="A close-range radar centred on your car. The road turns with you, so the cars around you sit where they are on track."
+      title={t('Radar')}
+      description={t(
+        'A close-range radar centred on your car. The road turns with you, so the cars around you sit where they are on track.'
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -380,7 +386,7 @@ export const RadarSettings = () => {
               <div className="flex flex-wrap gap-x-6 gap-y-3 items-start">
                 <div className="space-y-1">
                   <div className="text-xs uppercase tracking-wider text-slate-500">
-                    Profile
+                    {t('Profile')}
                   </div>
                   <Segmented
                     value={profile}
@@ -393,15 +399,18 @@ export const RadarSettings = () => {
                 </div>
                 <div className="flex-1 min-w-56">
                   <SettingToggleRow
-                    title="Pick by Track"
+                    title={t('Pick by Track')}
                     description={
                       trackType
-                        ? `Now: ${trackName ?? 'this track'} (${trackType}), ${
+                        ? t(
                             config.autoProfile && isOvalTrack(trackType)
-                              ? 'oval'
-                              : 'road'
-                          } profile. Look, distances and warnings are kept per profile.`
-                        : 'Use the oval profile on ovals. Look, distances and warnings are kept per profile.'
+                              ? 'Now: {track} ({trackType}), oval profile. Look, distances and warnings are kept per profile.'
+                              : 'Now: {track} ({trackType}), road profile. Look, distances and warnings are kept per profile.',
+                            { track: trackName ?? t('this track'), trackType }
+                          )
+                        : t(
+                            'Use the oval profile on ovals. Look, distances and warnings are kept per profile.'
+                          )
                     }
                     enabled={config.autoProfile}
                     onToggle={(autoProfile) =>
@@ -412,7 +421,7 @@ export const RadarSettings = () => {
               </div>
               <div className="space-y-1">
                 <div className="text-xs uppercase tracking-wider text-slate-500">
-                  Preset
+                  {t('Preset')}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {RADAR_PRESETS.map((option) => (
@@ -427,15 +436,15 @@ export const RadarSettings = () => {
                           : 'border-transparent bg-slate-700 text-slate-200 hover:border-slate-500'
                       }`}
                     >
-                      {option.title}
+                      {t(option.title)}
                       <span className="ml-1 text-xs text-slate-400">
-                        {option.description}
+                        {t(option.description)}
                       </span>
                     </button>
                   ))}
                   {!preset && (
                     <span className="px-3 py-1 rounded-full text-sm border border-dashed border-settings-boundary text-slate-400">
-                      Custom
+                      {t('Custom')}
                     </span>
                   )}
                 </div>
@@ -453,8 +462,8 @@ export const RadarSettings = () => {
                 />
                 <input
                   type="search"
-                  aria-label="Find a setting"
-                  placeholder="Find a setting…"
+                  aria-label={t('Find a setting')}
+                  placeholder={t('Find a setting…')}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   className="settings-field flex-1 min-w-40"
@@ -464,7 +473,7 @@ export const RadarSettings = () => {
 
             <div className="flex flex-wrap gap-4 px-4 items-start">
               <nav
-                aria-label="Radar settings sections"
+                aria-label={t('Radar settings sections')}
                 className="w-44 shrink-0 space-y-0.5"
               >
                 {GROUPS.map(({ group, label }) => {
@@ -475,7 +484,7 @@ export const RadarSettings = () => {
                   return (
                     <div key={group} className="pb-2">
                       <div className="px-2 pt-1 pb-0.5 text-[10.5px] uppercase tracking-wider text-slate-500">
-                        {label}
+                        {t(label)}
                       </div>
                       {inGroup.map((section) => {
                         const current = !search && section.id === open.id;
@@ -505,16 +514,16 @@ export const RadarSettings = () => {
                               title={
                                 section.master
                                   ? view[section.master]
-                                    ? 'On'
-                                    : 'Off'
+                                    ? t('On')
+                                    : t('Off')
                                   : undefined
                               }
                             />
-                            <span className="flex-1">{section.title}</span>
+                            <span className="flex-1">{t(section.title)}</span>
                             {changedIn(section).length > 0 && (
                               <span
                                 className="w-1.5 h-1.5 rounded-full bg-accent-400 shrink-0"
-                                title="Changed"
+                                title={t('Changed')}
                               />
                             )}
                           </button>
@@ -528,8 +537,9 @@ export const RadarSettings = () => {
               <div className="flex-1 min-w-64 space-y-6">
                 {search && found.length === 0 && (
                   <p className="text-sm text-slate-400">
-                    No setting matches. The search looks through every level,
-                    Dev included.
+                    {t(
+                      'No setting matches. The search looks through every level, Dev included.'
+                    )}
                   </p>
                 )}
                 {shown.map(({ section, items }) => (

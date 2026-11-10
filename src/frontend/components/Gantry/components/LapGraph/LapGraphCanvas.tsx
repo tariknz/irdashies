@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import {
   memo,
   useCallback,
@@ -225,7 +226,7 @@ const LapGraphReadout = memo(({ handle, mode, bounds }: ReadoutProps) => {
       style={anchor}
     >
       <div className="text-slate-500 font-bold uppercase tracking-wider mb-1">
-        Lap {state.lap}
+        {t('Lap')} {state.lap}
       </div>
       <table>
         <tbody>
@@ -690,15 +691,20 @@ export const LapGraphCanvas = memo(
     return (
       <div className="flex flex-col h-full min-h-0 select-none text-xs">
         <div className="flex items-center justify-between gap-2 pb-1 shrink-0">
-          <span className="min-w-0 text-slate-400">{axisCaption}</span>
+          <span className="min-w-0 text-slate-400">{t(axisCaption)}</span>
           <div className="flex items-center gap-2 shrink-0">
             {geometry.offScaleCount > 0 && (
               <span className="text-slate-500 tabular-nums">
-                {`${geometry.offScaleCount} off scale`}
+                {t('{offScaleCount} off scale', {
+                  offScaleCount: geometry.offScaleCount,
+                })}
               </span>
             )}
             <span className="text-slate-500 tabular-nums">
-              {`Laps ${Math.ceil(geometry.window.start)}-${Math.floor(geometry.window.end)}`}
+              {t('Laps {value}-{value2}', {
+                value: Math.ceil(geometry.window.start),
+                value2: Math.floor(geometry.window.end),
+              })}
             </span>
             <button
               type="button"
@@ -712,7 +718,7 @@ export const LapGraphCanvas = memo(
               ].join(' ')}
             >
               <Play size={12} weight="fill" />
-              Follow live
+              {t('Follow live')}
             </button>
           </div>
         </div>
@@ -735,7 +741,7 @@ export const LapGraphCanvas = memo(
           <div
             ref={plotRef}
             tabIndex={0}
-            aria-label="Lap graph plot"
+            aria-label={t('Lap graph plot')}
             className="relative flex-1 min-h-0 text-slate-400 touch-none cursor-crosshair rounded-sm focus-visible:outline-2 focus-visible:outline-accent-400"
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
@@ -773,7 +779,7 @@ export const LapGraphCanvas = memo(
             />
             {!hasData && (
               <div className="absolute inset-0 flex items-center justify-center text-slate-500">
-                Waiting for lap data.
+                {t('Waiting for lap data.')}
               </div>
             )}
             <LapGraphReadout
@@ -801,11 +807,11 @@ export const LapGraphCanvas = memo(
 
         <div className="flex h-10 shrink-0 pt-1">
           <div className="w-14 shrink-0 flex items-start justify-end pr-1.5 text-slate-500">
-            Race
+            {t('Race')}
           </div>
           <div
             ref={brushRef}
-            aria-label="Lap window overview"
+            aria-label={t('Lap window overview')}
             className="relative flex-1 rounded-sm bg-slate-900/40 touch-none cursor-ew-resize"
             onPointerDown={handleBrushDown}
             onPointerMove={handleBrushMove}

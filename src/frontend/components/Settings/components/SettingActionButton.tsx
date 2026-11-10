@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 interface SettingActionButtonProps {
   label: string;
   onClick: () => void;
@@ -17,7 +18,7 @@ export function SettingActionButton({
       onClick={onClick}
       className="min-h-9 px-3 py-1.5 text-sm font-semibold border border-settings-boundary bg-slate-800 hover:border-accent-400 text-slate-200 rounded-md transition-colors"
     >
-      {label}
+      {t(label)}
     </button>
   );
 
@@ -29,10 +30,10 @@ export function SettingActionButton({
     <div className="flex min-h-9 flex-wrap items-center justify-between gap-4">
       <div className="min-w-0 flex-1 basis-40">
         {title && (
-          <h4 className="text-md font-medium text-slate-300">{title}</h4>
+          <h4 className="text-md font-medium text-slate-300">{t(title)}</h4>
         )}
         {description && (
-          <p className="text-sm text-slate-500 mt-1">{description}</p>
+          <p className="text-sm text-slate-500 mt-1">{t(description)}</p>
         )}
       </div>
       {button}

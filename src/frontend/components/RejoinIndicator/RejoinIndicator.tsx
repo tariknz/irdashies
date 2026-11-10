@@ -4,6 +4,7 @@
  * Hidden until player is at a user defined speed (Default 30) and not in the pit lane. The gap thresholds are user configured as well
  */
 
+import { t } from '@irdashies/frontend/i18n';
 import {
   useTrackStateSnapshot,
   useFocusCarIdx,
@@ -127,8 +128,8 @@ export const RejoinIndicator = () => {
     <div
       className={`w-full flex justify-between rounded-sm p-2 font-bold text-white ${statusBg}`}
     >
-      <div className="text-lg">{gapLabel}s</div>
-      <div className="text-lg">{status.label}</div>
+      <div className="text-lg">{t(gapLabel)}s</div>
+      <div className="text-lg">{t(status.label)}</div>
     </div>
   );
 };
@@ -154,7 +155,7 @@ export const RejoinIndicatorDisplay = ({
       className={`w-full flex justify-between rounded-sm p-2 font-bold text-white ${statusBg}`}
     >
       <div className="text-lg">{gapLabel}</div>
-      <div className="text-lg">{status}</div>
+      <div className="text-lg">{t(status)}</div>
     </div>
   );
 };

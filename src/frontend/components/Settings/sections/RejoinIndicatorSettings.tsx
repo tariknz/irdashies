@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
@@ -38,13 +39,15 @@ export const RejoinIndicatorSettings = () => {
   }, [activeTab]);
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   return (
     <BaseSettingsSection
-      title="Rejoin Indicator"
-      description="Configure settings for the Rejoin Indicator. Note: The widget automatically hides while you're in the garage, in a pit stall, or on pit road."
+      title={t('Rejoin Indicator')}
+      description={t(
+        "Configure settings for the Rejoin Indicator. Note: The widget automatically hides while you're in the garage, in a pit stall, or on pit road."
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -63,14 +66,14 @@ export const RejoinIndicatorSettings = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Options
+                {t('Options')}
               </TabButton>
               <TabButton
                 id="visibility"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Visibility
+                {t('Visibility')}
               </TabButton>
             </div>
 
@@ -79,7 +82,7 @@ export const RejoinIndicatorSettings = () => {
               {activeTab === 'options' && (
                 <>
                   <SettingsSection
-                    title="Widget options"
+                    title={t('Widget options')}
                     scaleWidgetId={SETTING_ID}
                   >
                     <SettingProp path="showAtSpeed" />
@@ -91,7 +94,7 @@ export const RejoinIndicatorSettings = () => {
 
               {/* VISIBILITY TAB */}
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
+                <SettingsSection title={t('Session Visibility')}>
                   <SessionVisibility
                     sessionVisibility={settings.config.sessionVisibility}
                     handleConfigChange={handleConfigChange}

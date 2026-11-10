@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, useRef, useLayoutEffect } from 'react';
 import type { LmuFinishState, LmuPenaltyKind } from '@irdashies/types';
 import { SpeakerHighIcon } from '@phosphor-icons/react';
@@ -198,7 +199,7 @@ export const DriverNameCell = memo(
                   ref={spanSecondaryRef}
                   className="absolute inset-0 flex items-center whitespace-nowrap"
                 >
-                  {label}
+                  {t(label)}
                 </span>
               </div>
             ) : (

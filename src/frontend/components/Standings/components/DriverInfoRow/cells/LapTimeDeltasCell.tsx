@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, Fragment } from 'react';
 import { buildDeltaPlaceholder } from './deltaPlaceholder';
 
@@ -47,7 +48,7 @@ export const LapTimeDeltasCell = memo(
                 data-column="lapTimeDelta"
                 className={`w-auto ${pxClass} text-center whitespace-nowrap text-white/40`}
               >
-                {placeholderText}
+                {t(placeholderText)}
               </td>
             );
           }

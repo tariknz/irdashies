@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { changeMarker } from '../components/ChangedMark';
@@ -24,7 +25,7 @@ export const BroadcastWeatherSettings = () => {
   });
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   const { config } = settings;
@@ -33,8 +34,10 @@ export const BroadcastWeatherSettings = () => {
     <BaseSettingsSection
       disableInternalScroll
       headingLevel="h3"
-      title="Broadcast Weather"
-      description="Pops up with an animated card when rain starts or stops, the track gets wetter or dries, or track temperature swings by 3 degrees."
+      title={t('Broadcast Weather')}
+      description={t(
+        'Pops up with an animated card when rain starts or stops, the track gets wetter or dries, or track temperature swings by 3 degrees.'
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -43,11 +46,14 @@ export const BroadcastWeatherSettings = () => {
         const mark = changeMarker(config, defaultConfig, handleConfigChange);
         return (
           <div className="space-y-4">
-            <SettingsSection title="Widget options" scaleWidgetId={SETTING_ID}>
+            <SettingsSection
+              title={t('Widget options')}
+              scaleWidgetId={SETTING_ID}
+            >
               {mark(
                 ['background'],
                 <SettingSliderRow
-                  title="Background Opacity"
+                  title={t('Background Opacity')}
                   value={config.background.opacity}
                   units="%"
                   min={0}
@@ -61,9 +67,9 @@ export const BroadcastWeatherSettings = () => {
               {mark(
                 ['intervalMinutes'],
                 <SettingSliderRow
-                  title="Also Every (0 = Only On Change)"
+                  title={t('Also Every (0 = Only On Change)')}
                   value={config.intervalMinutes}
-                  units="min"
+                  units={t('min')}
                   min={0}
                   max={30}
                   step={1}
@@ -73,7 +79,7 @@ export const BroadcastWeatherSettings = () => {
               {mark(
                 ['showSeconds'],
                 <SettingSliderRow
-                  title="Show For"
+                  title={t('Show For')}
                   value={config.showSeconds}
                   units="s"
                   min={5}
@@ -84,7 +90,7 @@ export const BroadcastWeatherSettings = () => {
               )}
             </SettingsSection>
 
-            <SettingsSection title="Visibility">
+            <SettingsSection title={t('Visibility')}>
               {mark(
                 ['sessionVisibility'],
                 <SessionVisibility

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, useState } from 'react';
 import { FilmStrip, Info, X } from '@phosphor-icons/react';
 import { useReplayContextSnapshot } from '@irdashies/context';
@@ -27,10 +28,10 @@ export const GantryReplayBanner = memo(
         className="settings-shell flex items-center gap-2 px-4 py-1.5 bg-slate-800 border-b border-slate-700 text-sm text-slate-300 shrink-0"
       >
         <Icon size={16} className="text-amber-400 shrink-0" />
-        <span className="flex-1 min-w-0">{MESSAGES[provenance]}</span>
+        <span className="flex-1 min-w-0">{t(MESSAGES[provenance])}</span>
         <button
           type="button"
-          aria-label="Dismiss replay message"
+          aria-label={t('Dismiss replay message')}
           onClick={onDismiss}
           className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-200"
         >

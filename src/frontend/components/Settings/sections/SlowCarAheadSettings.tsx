@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
@@ -42,12 +43,12 @@ export const SlowCarAheadSettings = () => {
     localStorage.setItem('slowCarAheadTab', activeTab);
   }, [activeTab]);
 
-  if (!currentDashboard) return <>Loading...</>;
+  if (!currentDashboard) return <>{t('Loading...')}</>;
 
   return (
     <BaseSettingsSection
-      title="Slow Car Ahead"
-      description="Display indicator for slow cars ahead"
+      title={t('Slow Car Ahead')}
+      description={t('Display indicator for slow cars ahead')}
       settings={settings as SlowCarAheadWidgetSettings}
       onSettingsChange={(s) => setSettings(s as SlowCarAheadWidgetSettings)}
       widgetId={SETTING_ID}
@@ -66,14 +67,14 @@ export const SlowCarAheadSettings = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Options
+                {t('Options')}
               </TabButton>
               <TabButton
                 id="visibility"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Visibility
+                {t('Visibility')}
               </TabButton>
             </div>
 
@@ -81,7 +82,10 @@ export const SlowCarAheadSettings = () => {
               {/* OPTIONS TAB */}
               {activeTab === 'options' && (
                 <>
-                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+                  <SettingsSection
+                    title={t('Display')}
+                    scaleWidgetId={SETTING_ID}
+                  >
                     <SettingProp path="maxDistance" />
                     <SettingProp path="slowSpeedThreshold" />
                     <SettingProp path="stoppedSpeedThreshold" />
@@ -92,7 +96,7 @@ export const SlowCarAheadSettings = () => {
 
               {/* VISIBILITY TAB */}
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
+                <SettingsSection title={t('Session Visibility')}>
                   <SessionVisibility
                     sessionVisibility={settings.config.sessionVisibility}
                     handleConfigChange={handleConfigChange}

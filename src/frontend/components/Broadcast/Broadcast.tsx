@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useMemo } from 'react';
 import {
   sessionBarSelectors,
@@ -194,7 +195,7 @@ export const TowerView = ({
     >
       <div className={`overflow-hidden rounded-sm shadow-lg ${look.panel}`}>
         <TowerHeader
-          title={title}
+          title={t(title)}
           logo={settings?.logo}
           theme={theme}
           clock={settings?.headerClock}
@@ -256,7 +257,7 @@ export const TowerView = ({
             id={`${tick}-${battle[0].carIdx}-${battle[1].carIdx}`}
           >
             <div className="border-t-2 border-white/10 px-2 py-0.5 font-bold italic text-white uppercase">
-              {page.className} battle for{' '}
+              {page.className} {t('battle for')}{' '}
               {ordinal(battle[0].classPosition ?? 0)}
             </div>
             <BattleCard standing={battle[0]} showGap={false} />

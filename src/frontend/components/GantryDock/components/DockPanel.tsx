@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo } from 'react';
 import {
   CaretDownIcon,
@@ -49,14 +50,14 @@ export const DockPanelHeader = memo(
   }: DockPanelHeaderProps) => (
     <div className="flex items-center gap-1 px-2 py-0.5 bg-slate-800/60 border-b border-slate-700/50 flex-shrink-0">
       <span className="text-xs font-bold uppercase tracking-wider text-slate-400 truncate">
-        {label}
+        {t(label)}
       </span>
       <div className="flex-1" />
       <button
         type="button"
         className={iconButtonClass}
-        title={`Open ${label} settings`}
-        aria-label={`Open ${label} settings`}
+        title={t('Open {label} settings', { label: t(label) })}
+        aria-label={t('Open {label} settings', { label: t(label) })}
         onClick={() => onOpenSettings(settingsTarget)}
       >
         <GearIcon size={14} />
@@ -64,8 +65,16 @@ export const DockPanelHeader = memo(
       <button
         type="button"
         className={iconButtonClass}
-        title={collapsed ? `Expand ${label}` : `Collapse ${label}`}
-        aria-label={collapsed ? `Expand ${label}` : `Collapse ${label}`}
+        title={
+          collapsed
+            ? t('Expand {label}', { label: t(label) })
+            : t('Collapse {label}', { label: t(label) })
+        }
+        aria-label={
+          collapsed
+            ? t('Expand {label}', { label: t(label) })
+            : t('Collapse {label}', { label: t(label) })
+        }
         aria-expanded={!collapsed}
         onClick={() => onToggleCollapsed(panelId)}
       >
@@ -85,14 +94,14 @@ const PanelMessage = ({
 }) => (
   <div className="h-full flex flex-col items-center justify-center gap-2 p-3 text-center text-xs text-slate-400">
     <WarningIcon size={18} className="text-slate-500" />
-    <p>{message}</p>
+    <p>{t(message)}</p>
     {action && (
       <button
         type="button"
         onClick={action.onClick}
         className="text-sky-400 hover:text-sky-300 underline"
       >
-        {action.label}
+        {t(action.label)}
       </button>
     )}
   </div>
@@ -123,7 +132,7 @@ export const DockPanelContent = memo(
             : `The ${dockPanelLabel(resolved)} widget is missing from this profile.`;
       return (
         <PanelMessage
-          message={message}
+          message={t(message)}
           action={{
             label:
               resolved.status === 'unlinked'
@@ -140,7 +149,7 @@ export const DockPanelContent = memo(
     if (!Widget) return null;
 
     if (!running && !resolved.widget.alwaysEnabled) {
-      return <PanelMessage message="Waiting for iRacing." />;
+      return <PanelMessage message={t('Waiting for iRacing.')} />;
     }
 
     return (

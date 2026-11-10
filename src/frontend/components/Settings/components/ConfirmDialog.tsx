@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useEffect, useId, useRef } from 'react';
 import { TrashIcon } from '@phosphor-icons/react';
 
@@ -148,7 +149,7 @@ export const ConfirmDialog = ({
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label={title}
+        aria-label={t(title)}
         aria-describedby={messageId}
         className={`relative bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-transform duration-200 ${
           isOpen ? 'scale-100' : 'scale-95'
@@ -161,13 +162,13 @@ export const ConfirmDialog = ({
             {styles.icon && (
               <span className="text-2xl mr-3">{styles.icon}</span>
             )}
-            <h3 className="text-lg font-semibold text-white">{title}</h3>
+            <h3 className="text-lg font-semibold text-white">{t(title)}</h3>
           </div>
 
           {/* Content */}
           <div className="mb-6">
             <p id={messageId} className="text-slate-300 leading-relaxed">
-              {message}
+              {t(message)}
             </p>
           </div>
 
@@ -178,7 +179,7 @@ export const ConfirmDialog = ({
               onClick={onCancel}
               className="settings-button"
             >
-              {cancelText}
+              {t(cancelText)}
             </button>
             <button
               ref={confirmButtonRef}
@@ -188,7 +189,7 @@ export const ConfirmDialog = ({
               {variant === 'danger' && (
                 <TrashIcon size={16} aria-hidden="true" />
               )}
-              {confirmText}
+              {t(confirmText)}
             </button>
           </div>
         </div>

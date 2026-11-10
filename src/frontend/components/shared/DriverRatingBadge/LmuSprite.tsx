@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import type { LmuSpriteCell } from './lmuRankArt';
 
 /**
@@ -22,8 +23,8 @@ export const LmuSprite = ({
 }) => (
   <span
     role="img"
-    aria-label={title}
-    title={title}
+    aria-label={t(title)}
+    title={t(title)}
     className="inline-block shrink-0 bg-no-repeat"
     style={{
       backgroundImage: `url(${cell.url})`,

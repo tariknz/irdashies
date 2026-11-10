@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo } from 'react';
 import { PushPin } from '@phosphor-icons/react';
 import logo from '../../../../assets/icons/logo.svg';
@@ -53,10 +54,13 @@ export const GantryTabBar = memo(
           <div className="flex min-w-0 items-center gap-3">
             <img src={logo} alt="" className="h-7 w-7 shrink-0" />
             <span className="shrink-0 text-lg font-semibold tracking-[-0.04em] text-white">
-              ir<span className="text-red-600">Dashies</span>
+              {t('ir')}
+              <span className="text-red-600">{t('Dashies')}</span>
             </span>
             <span aria-hidden="true" className="h-5 w-px bg-slate-700" />
-            <h1 className="text-sm font-normal text-slate-300">Gantry</h1>
+            <h1 className="text-sm font-normal text-slate-300">
+              {t('Gantry')}
+            </h1>
           </div>
           <div className="flex min-w-0 flex-auto items-center justify-center justify-self-center gap-2 text-xs text-slate-400">
             {connectedSimulator && (
@@ -65,25 +69,29 @@ export const GantryTabBar = memo(
                   className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400"
                   aria-hidden="true"
                 />
-                <span className="truncate">{connectedSimulator} connected</span>
+                <span className="truncate">
+                  {connectedSimulator} {t('connected')}
+                </span>
               </>
             )}
           </div>
           <div className="ml-auto flex flex-wrap items-center justify-end justify-self-end gap-2">
-            <span className="text-sm text-slate-400">Follow</span>
+            <span className="text-sm text-slate-400">{t('Follow')}</span>
             <Tooltip
-              content="Pins one driver: their standings row is highlighted, kept scrolled into view, and every other row is dimmed. Choose All drivers to clear it."
+              content={t(
+                'Pins one driver: their standings row is highlighted, kept scrolled into view, and every other row is dimmed. Choose All drivers to clear it.'
+              )}
               placement="bottom"
             >
               <select
-                aria-label="Follow driver"
+                aria-label={t('Follow driver')}
                 value={followedCarIdx ?? ''}
                 onChange={(e) =>
                   onFollowChange(e.target.value ? Number(e.target.value) : null)
                 }
                 className="settings-field w-48"
               >
-                <option value="">All drivers</option>
+                <option value="">{t('All drivers')}</option>
                 {drivers.map((d) => (
                   <option key={d.carIdx} value={d.carIdx}>
                     #{d.carNumber} {d.name}
@@ -92,31 +100,31 @@ export const GantryTabBar = memo(
               </select>
             </Tooltip>
             <Tooltip
-              content={alwaysOnTop ? PIN_TOOLTIPS.on : PIN_TOOLTIPS.off}
+              content={alwaysOnTop ? t(PIN_TOOLTIPS.on) : t(PIN_TOOLTIPS.off)}
               placement="bottom"
             >
               <button
                 type="button"
-                aria-label="Keep on top"
+                aria-label={t('Keep on top')}
                 aria-pressed={alwaysOnTop}
                 onClick={() => onAlwaysOnTopChange(!alwaysOnTop)}
                 className="settings-button aria-pressed:border-accent-400 aria-pressed:text-accent-300"
               >
                 <PushPin size={16} weight={alwaysOnTop ? 'fill' : 'regular'} />
-                Keep on top
+                {t('Keep on top')}
               </button>
             </Tooltip>
           </div>
         </header>
         <nav
-          aria-label="Gantry views"
+          aria-label={t('Gantry views')}
           className="flex items-end gap-1 border-b border-slate-700 bg-slate-900 px-4"
         >
           {(['standings-incidents', 'lap-graph'] as GantryView[]).map(
             (view) => (
               <Tooltip
                 key={view}
-                content={VIEW_TOOLTIPS[view]}
+                content={t(VIEW_TOOLTIPS[view])}
                 placement="bottom"
               >
                 <button
@@ -130,7 +138,7 @@ export const GantryTabBar = memo(
                       : 'border-transparent text-slate-400 hover:bg-slate-800 hover:text-slate-200',
                   ].join(' ')}
                 >
-                  {VIEW_LABELS[view]}
+                  {t(VIEW_LABELS[view])}
                 </button>
               </Tooltip>
             )

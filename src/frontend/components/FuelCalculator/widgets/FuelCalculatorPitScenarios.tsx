@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import React from 'react';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
 import { useFuelProjectionSnapshot } from '@irdashies/context';
@@ -107,7 +108,7 @@ const TargetScenarioRow: React.FC<{
         className={`${rowColor} text-center ${cellPadding}`}
         style={{ fontSize: valueFontSize }}
       >
-        TARGET
+        {t('TARGET')}
       </div>
     </div>
   );
@@ -156,7 +157,7 @@ export const FuelCalculatorPitScenarios: React.FC<
           className="text-[0.75em] text-center text-slate-400 mb-3 py-2 bg-slate-900/40 rounded"
           style={{ fontSize: labelFontSize }}
         >
-          Pit scenarios available after more laps
+          {t('Pit scenarios available after more laps')}
         </div>
       </div>
     );
@@ -173,25 +174,25 @@ export const FuelCalculatorPitScenarios: React.FC<
           className="text-slate-500 text-center"
           style={{ fontSize: labelFontSize }}
         >
-          PIT @
+          {t('PIT @')}
         </div>
         <div
           className="text-slate-500 text-center"
           style={{ fontSize: labelFontSize }}
         >
-          ADD
+          {t('ADD')}
         </div>
         <div
           className="text-slate-500 text-center"
           style={{ fontSize: labelFontSize }}
         >
-          FINISH
+          {t('FINISH')}
         </div>
         <div
           className="text-slate-500 text-center"
           style={{ fontSize: labelFontSize }}
         >
-          WINDOW
+          {t('WINDOW')}
         </div>
 
         {displayData.targetScenarios.map((scenario) => {

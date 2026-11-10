@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 interface ToggleSwitchProps {
   enabled: boolean;
   onToggle: (enabled: boolean) => void;
@@ -29,16 +30,16 @@ export const ToggleSwitch = ({
 }: ToggleSwitchProps) => {
   return (
     <div className="flex shrink-0 items-center gap-3">
-      {label && <span className="text-sm text-slate-200">{label}</span>}
+      {label && <span className="text-sm text-slate-200">{t(label)}</span>}
       <button
         type="button"
         role="switch"
         aria-checked={enabled}
-        aria-label={ariaLabel}
+        aria-label={t(ariaLabel)}
         aria-labelledby={ariaLabelledBy}
         aria-disabled={disabled}
         disabled={disabled}
-        title={disabled ? disabledReason : undefined}
+        title={disabled ? t(disabledReason) : undefined}
         onClick={() => onToggle(!enabled)}
         className={`relative inline-flex ${small ? 'h-6 w-9' : 'h-6 w-11'} shrink-0 items-center rounded-full border border-settings-boundary transition-colors focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-slate-950 ${
           disabled

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useEffect, useState } from 'react';
 import type { ChromiumFlagsType } from '@irdashies/types';
 import { DEFAULT_CHROMIUM_FLAGS } from '@irdashies/types';
@@ -45,7 +46,7 @@ export const ChromiumFlagsSettings = () => {
   }, []);
 
   if (!flags) {
-    return <div className="px-4 text-sm text-slate-400">Loading...</div>;
+    return <div className="px-4 text-sm text-slate-400">{t('Loading...')}</div>;
   }
 
   const persist = (next: ChromiumFlagsType) => {
@@ -72,43 +73,48 @@ export const ChromiumFlagsSettings = () => {
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto min-h-0 pb-4 space-y-6">
         <p className="text-sm text-slate-400 px-4">
-          Override Chromium command-line switches. Use these only if you
-          experience rendering glitches like black flickering on transparent
-          overlays. These settings are stored locally per machine (separate from
-          dashboard.json) and require an app restart to take effect.
+          {t(
+            'Override Chromium command-line switches. Use these only if you experience rendering glitches like black flickering on transparent overlays. These settings are stored locally per machine (separate from dashboard.json) and require an app restart to take effect.'
+          )}
         </p>
 
-        <SettingsSection title="Recommended fixes">
+        <SettingsSection title={t('Recommended fixes')}>
           <SettingToggleRow
-            title="Disable native window occlusion"
-            description="Prevents Chromium from blanking the overlay when it incorrectly thinks the window is hidden. Most common fix for black flickering on NVIDIA GPUs (sets --disable-features=CalculateNativeWinOcclusion)."
+            title={t('Disable native window occlusion')}
+            description={t(
+              'Prevents Chromium from blanking the overlay when it incorrectly thinks the window is hidden. Most common fix for black flickering on NVIDIA GPUs (sets --disable-features=CalculateNativeWinOcclusion).'
+            )}
             enabled={flags.disableNativeWinOcclusion ?? false}
             onToggle={(v) => update('disableNativeWinOcclusion', v)}
           />
 
           <SettingSelectRow
-            title="ANGLE graphics backend"
-            description="Forces Chromium's graphics backend. Switching to OpenGL often resolves NVIDIA RTX-series transparency bugs at a small performance cost (sets --use-angle)."
+            title={t('ANGLE graphics backend')}
+            description={t(
+              "Forces Chromium's graphics backend. Switching to OpenGL often resolves NVIDIA RTX-series transparency bugs at a small performance cost (sets --use-angle)."
+            )}
             value={flags.angleBackend ?? 'default'}
             options={ANGLE_OPTIONS}
             onChange={(v) => update('angleBackend', v)}
           />
 
           <SettingToggleRow
-            title="Disable Direct Composition"
-            description="Disables Windows DirectComposition for transparent windows. Heavier fallback than the occlusion fix while still keeping GPU rendering enabled (sets --disable-direct-composition)."
+            title={t('Disable Direct Composition')}
+            description={t(
+              'Disables Windows DirectComposition for transparent windows. Heavier fallback than the occlusion fix while still keeping GPU rendering enabled (sets --disable-direct-composition).'
+            )}
             enabled={flags.disableDirectComposition ?? false}
             onToggle={(v) => update('disableDirectComposition', v)}
           />
         </SettingsSection>
 
-        <SettingsSection title="Additional features">
+        <SettingsSection title={t('Additional features')}>
           <div className="space-y-2">
             <h4 className="text-md font-medium text-slate-300">
-              Disable features
+              {t('Disable features')}
             </h4>
             <p className="text-sm text-slate-500">
-              Comma- or space-separated feature names appended to{' '}
+              {t('Comma- or space-separated feature names appended to')}{' '}
               <code className="text-slate-400">--disable-features</code>.
             </p>
             <textarea
@@ -118,16 +124,16 @@ export const ChromiumFlagsSettings = () => {
               onChange={(e) =>
                 update('disableFeatures', featuresToList(e.target.value))
               }
-              placeholder="e.g. HardwareMediaKeyHandling, WidgetLayering"
+              placeholder={t('e.g. HardwareMediaKeyHandling, WidgetLayering')}
             />
           </div>
 
           <div className="space-y-2">
             <h4 className="text-md font-medium text-slate-300">
-              Enable features
+              {t('Enable features')}
             </h4>
             <p className="text-sm text-slate-500">
-              Comma- or space-separated feature names appended to{' '}
+              {t('Comma- or space-separated feature names appended to')}{' '}
               <code className="text-slate-400">--enable-features</code>.
             </p>
             <textarea
@@ -137,18 +143,19 @@ export const ChromiumFlagsSettings = () => {
               onChange={(e) =>
                 update('enableFeatures', featuresToList(e.target.value))
               }
-              placeholder="e.g. CanvasOopRasterization"
+              placeholder={t('e.g. CanvasOopRasterization')}
             />
           </div>
         </SettingsSection>
 
-        <SettingsSection title="Custom switches">
+        <SettingsSection title={t('Custom switches')}>
           <p className="text-sm text-slate-500">
-            Freeform Chromium switches, one per line. Format:{' '}
-            <code className="text-slate-400">switch-name</code> or{' '}
-            <code className="text-slate-400">switch-name=value</code> (no
-            leading <code className="text-slate-400">--</code>). Lines starting
-            with <code className="text-slate-400">#</code> are ignored.
+            {t('Freeform Chromium switches, one per line. Format:')}{' '}
+            <code className="text-slate-400">switch-name</code> {t('or')}{' '}
+            <code className="text-slate-400">switch-name=value</code>{' '}
+            {t('(no leading')} <code className="text-slate-400">--</code>
+            {t('). Lines starting with')}{' '}
+            <code className="text-slate-400">#</code> {t('are ignored.')}
           </p>
           <textarea
             className="settings-field w-full resize-y font-mono"
@@ -166,7 +173,7 @@ export const ChromiumFlagsSettings = () => {
             onClick={() => persist({ ...DEFAULT_CHROMIUM_FLAGS })}
             className="text-xs text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors cursor-pointer"
           >
-            Reset all Chromium flags
+            {t('Reset all Chromium flags')}
           </button>
         </div>
       </div>

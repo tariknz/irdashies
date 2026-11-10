@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useEffect } from 'react';
 import { useGarageCoverSettings } from './hooks/useGarageCoverSettings';
 import { useGarageCoverImage } from './hooks/useGarageCoverImage';
@@ -61,7 +62,7 @@ export const GarageCover = () => {
     <div className="w-full h-full flex items-center justify-center rounded-sm bg-slate-800">
       <img
         src={imageUrl || logoSvg}
-        alt="Garage Cover"
+        alt={t('Garage Cover')}
         className="w-full h-full object-contain"
       />
     </div>

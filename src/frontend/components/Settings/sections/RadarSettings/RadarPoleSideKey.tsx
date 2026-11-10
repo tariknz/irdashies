@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useEffect, useState } from 'react';
 import type { KeybindingsMap } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
@@ -27,13 +28,12 @@ export const RadarPoleSideKey = () => {
   return (
     <div className="space-y-1">
       <div className="text-xs uppercase tracking-wider text-slate-500">
-        Pole side key
+        {t('Pole side key')}
       </div>
       <p className="text-sm text-slate-400">
-        In some cases the radar may draw the lanes on the wrong side at a start,
-        restart or standing grid, because the sim does not say which side the
-        pole line is on. The key flips the side on the current track and
-        remembers it for future races.
+        {t(
+          'In some cases the radar may draw the lanes on the wrong side at a start, restart or standing grid, because the sim does not say which side the pole line is on. The key flips the side on the current track and remembers it for future races.'
+        )}
       </p>
       {entry && (
         <BindingRow

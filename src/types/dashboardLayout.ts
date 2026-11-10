@@ -103,7 +103,14 @@ export type FontSize =
   | '8xl'
   | '9xl';
 
+/** Interface language. Unset means the default, Brazilian Portuguese. */
+export type AppLanguage = 'pt-BR' | 'en';
+
+export const DEFAULT_APP_LANGUAGE: AppLanguage = 'pt-BR';
+
 export interface GeneralSettingsType {
+  /** Language of the settings window and overlay labels. */
+  language?: AppLanguage;
   fontType?: FontType;
   fontSize?: FontSize;
   fontWeight?:

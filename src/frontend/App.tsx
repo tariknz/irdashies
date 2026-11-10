@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
@@ -37,7 +38,7 @@ const App = () => {
         ? 'settings'
         : 'overlay';
   return (
-    <ErrorBoundary label={label} resetAfterMs={isTape ? undefined : 2000}>
+    <ErrorBoundary label={t(label)} resetAfterMs={isTape ? undefined : 2000}>
       <Suspense fallback={null}>
         <Content />
       </Suspense>

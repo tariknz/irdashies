@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { CaretDownIcon, CaretRightIcon } from '@phosphor-icons/react';
 import { useState, useEffect, useId } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
@@ -266,15 +267,15 @@ const CustomShiftPointsSection = ({
   return (
     <div className="space-y-3">
       <SettingToggleRow
-        title="Enable Custom Shift Points"
-        description="If enabled, custom shift points will be displayed"
+        title={t('Enable Custom Shift Points')}
+        description={t('If enabled, custom shift points will be displayed')}
         enabled={customShiftPoints.enabled ?? false}
         onToggle={(enabled) => updateCustomShiftPoints({ enabled })}
       />
 
       {configuredCars.length > 0 && (
         <div className="text-md text-slate-300">
-          ({configuredCars.length} cars)
+          ({configuredCars.length} {t('cars)')}
         </div>
       )}
 
@@ -284,11 +285,12 @@ const CustomShiftPointsSection = ({
           <div className="bg-slate-800/40 border border-slate-700 rounded p-3 text-xs">
             <div className="flex items-start gap-2">
               <div className="flex-1">
-                <p className="text-slate-200 mb-1">Demo Mode Car</p>
+                <p className="text-slate-200 mb-1">{t('Demo Mode Car')}</p>
                 <p className="text-slate-400">
-                  Demo mode uses the <strong>BMW M4 GT4</strong> (bmwm4gt4).
-                  Configure custom shift points for this car to test in demo
-                  mode.
+                  {t('Demo mode uses the')} <strong>{t('BMW M4 GT4')}</strong>{' '}
+                  {t(
+                    '(bmwm4gt4). Configure custom shift points for this car to test in demo mode.'
+                  )}
                 </p>
               </div>
             </div>
@@ -300,7 +302,7 @@ const CustomShiftPointsSection = ({
               htmlFor={`${fieldId}-type`}
               className="text-sm text-slate-300"
             >
-              Indicator Type
+              {t('Indicator Type')}
             </label>
             <select
               id={`${fieldId}-type`}
@@ -312,9 +314,9 @@ const CustomShiftPointsSection = ({
               }
               className="settings-field w-full"
             >
-              <option value="glow">Glow</option>
-              <option value="pulse">Pulse</option>
-              <option value="border">Border</option>
+              <option value="glow">{t('Glow')}</option>
+              <option value="pulse">{t('Pulse')}</option>
+              <option value="border">{t('Border')}</option>
             </select>
           </div>
 
@@ -323,7 +325,7 @@ const CustomShiftPointsSection = ({
               htmlFor={`${fieldId}-color`}
               className="text-sm text-slate-300"
             >
-              Indicator Color
+              {t('Indicator Color')}
             </label>
             <input
               type="color"
@@ -342,7 +344,7 @@ const CustomShiftPointsSection = ({
               htmlFor={`${fieldId}-car`}
               className="text-sm text-slate-300"
             >
-              Add Car
+              {t('Add Car')}
             </label>
             <div className="flex gap-2">
               <select
@@ -352,10 +354,10 @@ const CustomShiftPointsSection = ({
                 className="settings-field flex-1"
                 disabled={loading}
               >
-                <option value="">Select a car...</option>
+                <option value="">{t('Select a car...')}</option>
                 {canAddCurrentModelCar && (
                   <option value={currentModelCar.carId}>
-                    {currentModelCar.carId} (current car)
+                    {currentModelCar.carId} {t('(current car)')}
                   </option>
                 )}
                 {availableToAdd.map((car) => (
@@ -369,7 +371,7 @@ const CustomShiftPointsSection = ({
                 disabled={!selectedCarId || loading}
                 className="settings-button-primary"
               >
-                Add
+                {t('Add')}
               </button>
             </div>
             {error && <p className="text-xs text-red-400">{error}</p>}
@@ -378,7 +380,9 @@ const CustomShiftPointsSection = ({
           {/* Configured Cars */}
           {configuredCars.length > 0 && (
             <div className="space-y-2">
-              <label className="text-xs text-slate-400">Configured Cars</label>
+              <label className="text-xs text-slate-400">
+                {t('Configured Cars')}
+              </label>
               <div className="space-y-2">
                 {configuredCars.map((car) => (
                   <div
@@ -394,7 +398,9 @@ const CustomShiftPointsSection = ({
                             )
                           }
                           type="button"
-                          aria-label={`Shift points for ${car.carName}`}
+                          aria-label={t('Shift points for {carName}', {
+                            carName: car.carName,
+                          })}
                           aria-expanded={expandedCarId === car.carId}
                           aria-controls={`${fieldId}-${car.carId}`}
                           className="settings-button h-9 w-9 shrink-0 p-0"
@@ -413,16 +419,21 @@ const CustomShiftPointsSection = ({
                       </div>
                       <div className="flex items-center gap-2">
                         <ToggleSwitch
-                          ariaLabel={`Enable custom shift points for ${car.carName}`}
+                          ariaLabel={t(
+                            'Enable custom shift points for {carName}',
+                            { carName: car.carName }
+                          )}
                           enabled={car.enabled}
                           onToggle={(enabled) => toggleCar(car.carId, enabled)}
                         />
                         <button
-                          aria-label={`Delete shift points for ${car.carName}`}
+                          aria-label={t('Delete shift points for {carName}', {
+                            carName: car.carName,
+                          })}
                           onClick={() => deleteCar(car.carId)}
                           className="settings-button-danger"
                         >
-                          Delete
+                          {t('Delete')}
                         </button>
                       </div>
                     </div>
@@ -433,7 +444,7 @@ const CustomShiftPointsSection = ({
                         className="space-y-3 pt-3 border-t border-slate-700"
                       >
                         <p className="text-xs text-slate-400">
-                          Redline: {car.redlineRpm} RPM
+                          {t('Redline:')} {car.redlineRpm} {t('RPM')}
                         </p>
                         <div className="grid grid-cols-2 gap-2">
                           {Object.entries(car.gearShiftPoints).map(
@@ -443,10 +454,13 @@ const CustomShiftPointsSection = ({
                                 className="flex items-center gap-2"
                               >
                                 <label className="text-xs text-slate-400 w-12">
-                                  Gear {gear}:
+                                  {t('Gear')} {gear}:
                                 </label>
                                 <input
-                                  aria-label={`${car.carName}, gear ${gear} shift RPM`}
+                                  aria-label={t(
+                                    '{carName}, gear {gear} shift RPM',
+                                    { carName: car.carName, gear }
+                                  )}
                                   type="number"
                                   value={
                                     editingValues[`${car.carId}-${gear}`] ??
@@ -522,13 +536,15 @@ export const ShiftLightSettings = () => {
   }, [activeTab]);
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   return (
     <BaseSettingsSection
-      title="Shift Light"
-      description="Configure the Shift Light. Hint: enable 'Show RPM Text' to see where the box is."
+      title={t('Shift Light')}
+      description={t(
+        "Configure the Shift Light. Hint: enable 'Show RPM Text' to see where the box is."
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId="shiftlight"
@@ -550,28 +566,31 @@ export const ShiftLightSettings = () => {
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Display
+                  {t('Display')}
                 </TabButton>
                 <TabButton
                   id="options"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Custom Shift Points
+                  {t('Custom Shift Points')}
                 </TabButton>
                 <TabButton
                   id="visibility"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Visibility
+                  {t('Visibility')}
                 </TabButton>
               </div>
 
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <>
-                  <SettingsSection title="Display" scaleWidgetId="shiftlight">
+                  <SettingsSection
+                    title={t('Display')}
+                    scaleWidgetId="shiftlight"
+                  >
                     <SettingProp path="background.opacity" />
 
                     <SettingProp path="showRpmText" />
@@ -581,7 +600,7 @@ export const ShiftLightSettings = () => {
 
               {/* OPTIONS TAB */}
               {activeTab === 'options' && (
-                <SettingsSection title="Custom Shift Points">
+                <SettingsSection title={t('Custom Shift Points')}>
                   <CustomShiftPointsSection
                     config={config}
                     handleConfigChange={handleConfigChange}
@@ -591,7 +610,7 @@ export const ShiftLightSettings = () => {
 
               {/* VISIBILITY TAB */}
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
+                <SettingsSection title={t('Session Visibility')}>
                   <SessionVisibility
                     sessionVisibility={settings.config.sessionVisibility}
                     handleConfigChange={handleConfigChange}

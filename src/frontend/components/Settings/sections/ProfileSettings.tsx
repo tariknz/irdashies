@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useState, useEffect, useRef } from 'react';
 import { SettingsPopover } from '../components/SettingsPopover';
@@ -45,7 +46,7 @@ const SessionProfileRow = ({
       htmlFor={`session-profile-${triggerKey}`}
       className="text-md font-medium text-slate-300"
     >
-      {label}
+      {t(label)}
     </label>
     <select
       id={`session-profile-${triggerKey}`}
@@ -54,7 +55,7 @@ const SessionProfileRow = ({
       onChange={(e) => onChange(triggerKey, e.target.value)}
       className="settings-field  min-w-52 disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      <option value="">Don&apos;t switch</option>
+      <option value="">{t("Don't switch")}</option>
       {profiles.map((profile) => (
         <option key={profile.id} value={profile.id}>
           {profile.name}
@@ -330,11 +331,12 @@ export const ProfileSettings = () => {
     <div className="flex flex-col h-full">
       <div className="flex-none border-b border-slate-700 px-1 pb-5 pt-1">
         <h2 className="mb-1 text-xl font-semibold tracking-tight text-white">
-          Configuration Profiles
+          {t('Configuration Profiles')}
         </h2>
         <p className="text-slate-400">
-          Manage different dashboard configurations for various scenarios. Each
-          profile stores separate widget configurations and layouts.
+          {t(
+            'Manage different dashboard configurations for various scenarios. Each profile stores separate widget configurations and layouts.'
+          )}
         </p>
       </div>
 
@@ -348,7 +350,7 @@ export const ProfileSettings = () => {
         {/* Create New Profile */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-3">
           <h3 className="text-lg font-semibold text-white">
-            Create New Profile
+            {t('Create New Profile')}
           </h3>
           <div className="flex gap-2">
             <input
@@ -358,8 +360,8 @@ export const ProfileSettings = () => {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleCreateProfile();
               }}
-              aria-label="New profile name"
-              placeholder="Enter profile name..."
+              aria-label={t('New profile name')}
+              placeholder={t('Enter profile name...')}
               disabled={isCreating}
               className="settings-field flex-1  disabled:opacity-50"
             />
@@ -368,7 +370,7 @@ export const ProfileSettings = () => {
               disabled={isCreating || !newProfileName.trim()}
               className="bg-accent-600 hover:bg-accent-700 disabled:bg-settings-control disabled:text-slate-400 disabled:cursor-not-allowed text-on-accent px-4 py-2 rounded font-medium transition-colors"
             >
-              {isCreating ? 'Creating...' : 'Create'}
+              {isCreating ? t('Creating...') : t('Create')}
             </button>
           </div>
         </div>
@@ -376,18 +378,19 @@ export const ProfileSettings = () => {
         {/* Profiles List */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden">
           <div className="px-4 py-3 bg-slate-700/50 border-b border-settings-boundary">
-            <h3 className="text-lg font-semibold text-white">Your Profiles</h3>
+            <h3 className="text-lg font-semibold text-white">
+              {t('Your Profiles')}
+            </h3>
             <p className="text-sm text-slate-400 mt-1">
-              Browser and OBS widget positions are saved separately from the
-              desktop layout. Use Actions &gt; Edit Browser Layout to drag and
-              resize widgets for OBS, then copy the same profile URL into your
-              browser source.
+              {t(
+                'Browser and OBS widget positions are saved separately from the desktop layout. Use Actions > Edit Browser Layout to drag and resize widgets for OBS, then copy the same profile URL into your browser source.'
+              )}
             </p>
           </div>
           <div className="divide-y divide-slate-700 overflow-y-auto min-h-0">
             {profiles.length === 0 ? (
               <div className="px-4 py-8 text-center text-slate-400">
-                No profiles found. Create your first profile above.
+                {t('No profiles found. Create your first profile above.')}
               </div>
             ) : (
               profiles.map((profile) => {
@@ -405,13 +408,15 @@ export const ProfileSettings = () => {
                       {isActive && (
                         <div
                           className="w-2 h-2 bg-accent-500 rounded-full"
-                          title="Active Profile"
+                          title={t('Active Profile')}
                         />
                       )}
                       {isEditing ? (
                         <input
                           type="text"
-                          aria-label={`Name for ${profile.name}`}
+                          aria-label={t('Name for {name}', {
+                            name: profile.name,
+                          })}
                           value={editingProfileName}
                           onChange={(e) =>
                             setEditingProfileName(e.target.value)
@@ -430,7 +435,7 @@ export const ProfileSettings = () => {
                           </div>
                           {profile.lastModified && (
                             <div className="text-xs text-slate-500">
-                              Modified:{' '}
+                              {t('Modified:')}{' '}
                               {new Date(profile.lastModified).toLocaleString()}
                             </div>
                           )}
@@ -445,13 +450,13 @@ export const ProfileSettings = () => {
                             onClick={() => handleSaveEdit(profile.id)}
                             className="settings-button-primary"
                           >
-                            Save
+                            {t('Save')}
                           </button>
                           <button
                             onClick={handleCancelEdit}
                             className="settings-button"
                           >
-                            Cancel
+                            {t('Cancel')}
                           </button>
                         </>
                       ) : (
@@ -461,7 +466,7 @@ export const ProfileSettings = () => {
                               onClick={() => handleSwitchProfile(profile.id)}
                               className="settings-button-primary"
                             >
-                              Switch
+                              {t('Switch')}
                             </button>
                           )}
 
@@ -473,9 +478,9 @@ export const ProfileSettings = () => {
                                 )
                               }
                               className="settings-button"
-                              title="Copy browser URL for this profile"
+                              title={t('Copy browser URL for this profile')}
                             >
-                              Copy URL
+                              {t('Copy URL')}
                             </button>
                           )}
 
@@ -499,7 +504,7 @@ export const ProfileSettings = () => {
                               }}
                               className="settings-button"
                             >
-                              Actions
+                              {t('Actions')}
                               <CaretDownIcon size={12} />
                             </button>
                           </div>
@@ -507,7 +512,7 @@ export const ProfileSettings = () => {
                             open={openDropdownId === profile.id}
                             anchorRef={popupAnchor}
                             onClose={() => setOpenDropdownId(null)}
-                            label={`${profile.name} actions`}
+                            label={t('{name} actions', { name: profile.name })}
                             id={`profile-actions-${profile.id}`}
                           >
                             {browserUrlsReady && (
@@ -517,10 +522,12 @@ export const ProfileSettings = () => {
                                 rel="noopener noreferrer"
                                 onClick={() => setOpenDropdownId(null)}
                                 className="flex min-h-9 w-full items-center gap-2 rounded px-3 py-1.5 text-left text-sm text-slate-200 hover:bg-settings-hover"
-                                title="Open this profile in your browser to arrange its OBS widgets"
+                                title={t(
+                                  'Open this profile in your browser to arrange its OBS widgets'
+                                )}
                               >
                                 <ArrowSquareOutIcon size={14} />
-                                Edit Browser Layout
+                                {t('Edit Browser Layout')}
                               </a>
                             )}
                             <button
@@ -532,7 +539,7 @@ export const ProfileSettings = () => {
                               className="flex min-h-9 w-full items-center gap-2 rounded px-3 py-1.5 text-left text-sm text-slate-200 hover:bg-settings-hover"
                             >
                               <CopySimpleIcon size={14} />
-                              Clone
+                              {t('Clone')}
                             </button>
                             <button
                               onClick={() => {
@@ -543,7 +550,7 @@ export const ProfileSettings = () => {
                               className="flex min-h-9 w-full items-center gap-2 rounded px-3 py-1.5 text-left text-sm text-slate-200 hover:bg-settings-hover"
                             >
                               <PencilSimpleIcon size={14} />
-                              Rename
+                              {t('Rename')}
                             </button>
                             {profile.id !== 'default' && (
                               <button
@@ -555,7 +562,7 @@ export const ProfileSettings = () => {
                                 className="flex min-h-9 w-full items-center gap-2 rounded px-3 py-1.5 text-left text-sm text-red-300 hover:bg-settings-hover"
                               >
                                 <TrashIcon size={14} />
-                                Delete
+                                {t('Delete')}
                               </button>
                             )}
                           </SettingsPopover>
@@ -577,11 +584,12 @@ export const ProfileSettings = () => {
                 id="cycle-profiles-label"
                 className="text-md font-medium text-slate-300"
               >
-                Cycle Profiles
+                {t('Cycle Profiles')}
               </h4>
               <p className="text-sm text-slate-400">
-                When switching profiles with the keyboard shortcut, wrap around
-                from the last profile back to the first (and vice versa).
+                {t(
+                  'When switching profiles with the keyboard shortcut, wrap around from the last profile back to the first (and vice versa).'
+                )}
               </p>
             </div>
             <ToggleSwitch
@@ -597,11 +605,12 @@ export const ProfileSettings = () => {
                 id="show-profile-banner-label"
                 className="text-md font-medium text-slate-300"
               >
-                Show Profile Name Banner
+                {t('Show Profile Name Banner')}
               </h4>
               <p className="text-sm text-slate-400">
-                Briefly display the profile name on the overlay when switching
-                profiles.
+                {t(
+                  'Briefly display the profile name on the overlay when switching profiles.'
+                )}
               </p>
             </div>
             <ToggleSwitch
@@ -616,14 +625,12 @@ export const ProfileSettings = () => {
         <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-3">
           <div>
             <h3 className="text-lg font-semibold text-white mb-2">
-              Switch Profile By Session
+              {t('Switch Profile By Session')}
             </h3>
             <p className="text-sm text-slate-400 mb-3">
-              Set a profile for each session type and it is applied
-              automatically as the event moves from practice through to the
-              race. A session left on Don&apos;t switch keeps whatever profile
-              you are already on, so to come back to a layout, map that session
-              to it rather than leaving it unset.
+              {t(
+                "Set a profile for each session type and it is applied automatically as the event moves from practice through to the race. A session left on Don't switch keeps whatever profile you are already on, so to come back to a layout, map that session to it rather than leaving it unset."
+              )}
             </p>
           </div>
 
@@ -632,7 +639,7 @@ export const ProfileSettings = () => {
               <SessionProfileRow
                 key={key}
                 triggerKey={key}
-                label={SESSION_PROFILE_LABELS[key]}
+                label={t(SESSION_PROFILE_LABELS[key])}
                 profiles={profiles}
                 value={sessionProfileMap[key] ?? ''}
                 disabled={!sessionProfileMapLoaded}
@@ -648,23 +655,24 @@ export const ProfileSettings = () => {
               disabled={!sessionProfileMapLoaded || !currentProfile}
               className="text-sm text-accent-400 hover:text-accent-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Use {currentProfile?.name ?? 'current profile'} for all sessions
+              {t('Use')} {currentProfile?.name ?? t('current profile')}{' '}
+              {t('for all sessions')}
             </button>
           </div>
 
           <div className="border-t border-slate-700 pt-3 space-y-2">
             <SessionProfileRow
               triggerKey={SPOTTING_TRIGGER_KEY}
-              label={SPOTTING_TRIGGER_LABEL}
+              label={t(SPOTTING_TRIGGER_LABEL)}
               profiles={profiles}
               value={sessionProfileMap[SPOTTING_TRIGGER_KEY] ?? ''}
               disabled={!sessionProfileMapLoaded}
               onChange={handleSessionProfileChange}
             />
             <p className="text-sm text-slate-400">
-              Applied while you are in a session but not in the car, whichever
-              session type it is, and handed back as soon as you are driving
-              again.
+              {t(
+                'Applied while you are in a session but not in the car, whichever session type it is, and handed back as soon as you are driving again.'
+              )}
             </p>
           </div>
         </div>
@@ -673,12 +681,12 @@ export const ProfileSettings = () => {
         {currentProfile && !webServerEnabled && (
           <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
             <h3 className="text-lg font-semibold text-white mb-2">
-              OBS Browser Source
+              {t('OBS Browser Source')}
             </h3>
             <p className="text-sm text-slate-400">
-              The built-in web server is turned off, so browser source URLs are
-              unavailable. Re-enable it under Settings &rarr; General &rarr;
-              Enable Web Server (requires restart).
+              {t(
+                'The built-in web server is turned off, so browser source URLs are unavailable. Re-enable it under Settings → General → Enable Web Server (requires restart).'
+              )}
             </p>
           </div>
         )}
@@ -686,13 +694,13 @@ export const ProfileSettings = () => {
         {currentProfile && webServerEnabled && serverPort === null && (
           <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
             <h3 className="text-lg font-semibold text-white mb-2">
-              OBS Browser Source
+              {t('OBS Browser Source')}
             </h3>
             <p
               className="text-sm text-slate-400"
               role={serverPortError ? 'alert' : 'status'}
             >
-              {serverPortError ?? 'Loading browser source URLs...'}
+              {serverPortError ?? t('Loading browser source URLs...')}
             </p>
           </div>
         )}
@@ -701,17 +709,18 @@ export const ProfileSettings = () => {
           <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-3">
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">
-                OBS Browser Source
+                {t('OBS Browser Source')}
               </h3>
               <p className="text-sm text-slate-400 mb-3">
-                Use the URL below for OBS browser sources. OBS requires IP
-                addresses instead of localhost.
+                {t(
+                  'Use the URL below for OBS browser sources. OBS requires IP addresses instead of localhost.'
+                )}
               </p>
             </div>
 
             <div className="space-y-2">
               <div className="text-xs font-medium text-slate-300 mb-2">
-                Localhost (Development)
+                {t('Localhost (Development)')}
               </div>
               <div className="flex gap-2">
                 <input
@@ -728,14 +737,14 @@ export const ProfileSettings = () => {
                   }}
                   className="border border-settings-boundary bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap"
                 >
-                  Copy
+                  {t('Copy')}
                 </button>
               </div>
             </div>
 
             <div className="space-y-2">
               <div className="text-xs font-medium text-slate-300 mb-2">
-                IP Address (OBS/Streaming)
+                {t('IP Address (OBS/Streaming)')}
               </div>
               <div className="flex gap-2">
                 <input
@@ -752,12 +761,13 @@ export const ProfileSettings = () => {
                   }}
                   className="bg-accent-600 hover:bg-accent-700 text-on-accent px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap"
                 >
-                  Copy for OBS
+                  {t('Copy for OBS')}
                 </button>
               </div>
               <p className="text-xs text-slate-500">
-                Note: This URL uses your server&apos;s IP address ({serverIP}).
-                Works in OBS browser sources and from other machines.
+                {t("Note: This URL uses your server's IP address (")}
+                {serverIP}
+                {t('). Works in OBS browser sources and from other machines.')}
               </p>
             </div>
           </div>
@@ -765,22 +775,31 @@ export const ProfileSettings = () => {
 
         {/* Info Box */}
         <div className="bg-slate-800/40 border border-slate-700 rounded-lg p-4">
-          <h4 className="text-slate-200 font-semibold mb-2">About Profiles</h4>
+          <h4 className="text-slate-200 font-semibold mb-2">
+            {t('About Profiles')}
+          </h4>
           <ul className="text-sm text-slate-400 space-y-1 list-disc list-inside">
-            <li>Each profile has its own widget configurations and layouts</li>
-            <li>Switch between profiles to use different dashboard setups</li>
-            <li>The Default cannot be deleted</li>
-            <li>Profile changes are automatically saved</li>
+            <li>
+              {t('Each profile has its own widget configurations and layouts')}
+            </li>
+            <li>
+              {t('Switch between profiles to use different dashboard setups')}
+            </li>
+            <li>{t('The Default cannot be deleted')}</li>
+            <li>{t('Profile changes are automatically saved')}</li>
           </ul>
         </div>
 
         {/* Confirmation Dialog */}
         <ConfirmDialog
           isOpen={confirmDelete.isOpen}
-          title="Delete Profile"
-          message={`Are you sure you want to delete the profile "${confirmDelete.profileName}"? This action cannot be undone and all widget configurations for this profile will be permanently lost.`}
-          confirmText="Delete Profile"
-          cancelText="Keep Profile"
+          title={t('Delete Profile')}
+          message={t(
+            'Are you sure you want to delete the profile "{profileName}"? This action cannot be undone and all widget configurations for this profile will be permanently lost.',
+            { profileName: confirmDelete.profileName }
+          )}
+          confirmText={t('Delete Profile')}
+          cancelText={t('Keep Profile')}
           onConfirm={handleConfirmDelete}
           onCancel={handleCancelDelete}
           variant="danger"

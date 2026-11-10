@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, useEffect, useRef, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
@@ -39,12 +40,12 @@ const HeaderCell = memo(
     tip: string;
     className: string;
   }) => (
-    <Tooltip content={tip} placement="bottom">
+    <Tooltip content={t(tip)} placement="bottom">
       <span
         tabIndex={0}
         className={`${className} cursor-help focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent-400`}
       >
-        {label}
+        {t(label)}
       </span>
     </Tooltip>
   )
@@ -70,59 +71,73 @@ const StandingsHeader = memo(() => (
   <div className="sticky top-0 z-20 flex h-[26px] items-center border-y border-slate-700 bg-slate-900 px-2 text-xs text-slate-400">
     <HeaderCell
       label="P"
-      tip="Running order within the car class. Rows are grouped by class, leader first."
+      tip={t(
+        'Running order within the car class. Rows are grouped by class, leader first.'
+      )}
       className={COL.position}
     />
     <HeaderCell
       label="#"
-      tip="Car number. The coloured bar to its left is the car's class."
+      tip={t("Car number. The coloured bar to its left is the car's class.")}
       className={`${COL.carNumber} border-transparent`}
     />
     <HeaderCell
-      label="Driver"
-      tip="Driver name, in the format set on the Gantry options tab. Click any row to point the sim camera at that car — this only does anything in a replay or while spectating."
+      label={t('Driver')}
+      tip={t(
+        'Driver name, in the format set on the Gantry options tab. Click any row to point the sim camera at that car — this only does anything in a replay or while spectating.'
+      )}
       className={`${COL.name} text-left`}
     />
     <HeaderCell
       label="T"
-      tip="Tyre compound currently fitted, for cars that report one."
+      tip={t('Tyre compound currently fitted, for cars that report one.')}
       className={`${COL.compound} text-center`}
     />
     <HeaderCell
       label="iR"
-      tip="Driver's iRating at the start of the event."
+      tip={t("Driver's iRating at the start of the event.")}
       className={`${COL.rating} text-right`}
     />
     <HeaderCell
-      label="Pit"
-      tip="Shows PIT while the car is on pit road, and DNF once it has retired or been disqualified."
+      label={t('Pit')}
+      tip={t(
+        'Shows PIT while the car is on pit road, and DNF once it has retired or been disqualified.'
+      )}
       className={COL.pit}
     />
     <HeaderCell
-      label="Gap"
-      tip="Time behind the class leader. A value such as 1L means whole laps down; the leader's own row reads 'gap'."
+      label={t('Gap')}
+      tip={t(
+        "Time behind the class leader. A value such as 1L means whole laps down; the leader's own row reads 'gap'."
+      )}
       className={`${COL.gap} text-right`}
     />
     <HeaderCell
-      label="Int"
-      tip="Time behind the car directly ahead in class. The leader's own row reads 'int'."
+      label={t('Int')}
+      tip={t(
+        "Time behind the car directly ahead in class. The leader's own row reads 'int'."
+      )}
       className={`${COL.interval} text-right`}
     />
     <HeaderCell
-      label="Best"
-      tip="Fastest lap this car has set in the session. Purple marks the fastest lap set by anyone."
+      label={t('Best')}
+      tip={t(
+        'Fastest lap this car has set in the session. Purple marks the fastest lap set by anyone.'
+      )}
       className={`${COL.best} text-right`}
     />
     <HeaderCell
-      label="Last"
-      tip="Most recently completed lap. Purple is a session best, green is that driver's personal best."
+      label={t('Last')}
+      tip={t(
+        "Most recently completed lap. Purple is a session best, green is that driver's personal best."
+      )}
       className={`${COL.last} text-right`}
     />
     {(['L-3', 'L-2', 'L-1'] as const).map((label, i) => (
       <HeaderCell
         key={label}
-        label={label}
-        tip={DELTA_TOOLTIPS[i]}
+        label={t(label)}
+        tip={t(DELTA_TOOLTIPS[i])}
         className={`${COL.delta} text-right`}
       />
     ))}
@@ -175,7 +190,7 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
   const isMultiClass = standingsByClass.length > 1;
 
   return (
-    <GantryPanel title="Standings">
+    <GantryPanel title={t('Standings')}>
       {/* One scroller for the header and the rows. A narrow window scrolls both
           together instead of shrinking the columns out of line. */}
       <div className="flex-1 min-h-0 overflow-auto scroll-pt-[26px]">
@@ -199,7 +214,9 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
                   }}
                 >
                   <Tooltip
-                    content="Car class group. Position, gap and interval are all worked out within the class, not against the whole field."
+                    content={t(
+                      'Car class group. Position, gap and interval are all worked out within the class, not against the whole field.'
+                    )}
                     placement="bottom"
                   >
                     <span
@@ -290,7 +307,10 @@ const GantryDriverRow = memo(
         ref={isFollowed ? followedRef : undefined}
         role="button"
         tabIndex={0}
-        title={`Click to point the sim camera at ${driver.driver.name} (works in a replay or while spectating)`}
+        title={t(
+          'Click to point the sim camera at {name} (works in a replay or while spectating)',
+          { name: driver.driver.name }
+        )}
         onClick={() => onFocusDriver(driver.driver.carNum)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -353,7 +373,7 @@ const GantryDriverRow = memo(
         <span className={`${COL.pit} text-xs font-semibold`}>
           {pitLabel && (
             <span className={driver.dnf ? 'text-red-400' : 'text-yellow-400'}>
-              {pitLabel}
+              {t(pitLabel)}
             </span>
           )}
         </span>

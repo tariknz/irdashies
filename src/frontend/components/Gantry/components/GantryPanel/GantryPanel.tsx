@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, type ReactNode } from 'react';
 
 interface GantryPanelProps {
@@ -20,13 +21,13 @@ export const GantryPanel = memo(
     children,
   }: GantryPanelProps) => (
     <section
-      aria-label={label ?? title}
+      aria-label={t(label) ?? t(title)}
       className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-settings-hover bg-settings-control/40"
     >
       {title && (
         <div className="settings-shell flex shrink-0 items-baseline justify-between gap-4 px-4 py-2">
           <h2 className="text-lg leading-snug font-semibold text-slate-200">
-            {title}
+            {t(title)}
           </h2>
           {aside}
         </div>

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useDashboard } from '@irdashies/context';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -131,15 +132,21 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
   };
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   const isDefaultWidget = widgetId === WIDGET_TYPE;
 
   return (
     <BaseSettingsSection
-      title={isDefaultWidget ? 'Input Traces' : `Input Traces - ${widgetId}`}
-      description="Configure the input traces display settings for throttle, brake, and clutch."
+      title={
+        isDefaultWidget
+          ? t('Input Traces')
+          : t('Input Traces - {widgetId}', { widgetId })
+      }
+      description={t(
+        'Configure the input traces display settings for throttle, brake, and clutch.'
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={widgetId}
@@ -164,7 +171,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
               <div className="bg-slate-800 p-3 rounded flex items-center justify-between border border-slate-700">
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-bold text-slate-200">
-                    Editing Widget:
+                    {t('Editing Widget:')}
                   </span>
                   <select
                     value={widgetId}
@@ -185,8 +192,10 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                     disabled={isDefaultWidget}
                     title={
                       isDefaultWidget
-                        ? 'Default widget cannot be deleted. Disable it instead.'
-                        : 'Delete this input widget'
+                        ? t(
+                            'Default widget cannot be deleted. Disable it instead.'
+                          )
+                        : t('Delete this input widget')
                     }
                     className={`px-3 py-1 text-xs rounded border transition-colors ${
                       isDefaultWidget
@@ -194,13 +203,15 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                         : 'bg-red-900/50 hover:bg-red-900 text-red-200 border-red-800'
                     }`}
                   >
-                    {isDefaultWidget ? 'Default (Locked)' : 'Delete Widget'}
+                    {isDefaultWidget
+                      ? t('Default (Locked)')
+                      : t('Delete Widget')}
                   </button>
                   <button
                     onClick={handleAddWidget}
                     className="settings-button-primary"
                   >
-                    <PlusIcon /> New Input Widget
+                    <PlusIcon /> {t('New Input Widget')}
                   </button>
                 </div>
               </div>
@@ -212,32 +223,33 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Layout
+                  {t('Layout')}
                 </TabButton>
                 <TabButton
                   id="options"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Options
+                  {t('Options')}
                 </TabButton>
                 <TabButton
                   id="visibility"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Visibility
+                  {t('Visibility')}
                 </TabButton>
               </div>
 
               <div>
                 {/* LAYOUT TAB */}
                 {activeTab === 'layout' && (
-                  <SettingsSection title="Layout Editor">
+                  <SettingsSection title={t('Layout Editor')}>
                     {isEmptyLayoutTree(currentTree) ? (
                       <div className="h-[450px] flex items-center justify-center bg-slate-900 border border-slate-700 rounded text-sm text-slate-400">
-                        This layout shows no elements. Use Reset to Default
-                        Layout to start editing.
+                        {t(
+                          'This layout shows no elements. Use Reset to Default Layout to start editing.'
+                        )}
                       </div>
                     ) : (
                       <LayoutVisualizer
@@ -248,7 +260,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                     )}
 
                     <SettingActionButton
-                      label="Reset to Default Layout"
+                      label={t('Reset to Default Layout')}
                       onClick={() =>
                         handleTreeUpdate(buildDefaultInputTree(defaultConfig))
                       }
@@ -260,7 +272,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                 {activeTab === 'options' && (
                   <div className="space-y-5">
                     <SettingsSection
-                      title="Widget options"
+                      title={t('Widget options')}
                       scaleWidgetId={widgetId}
                     >
                       <SettingProp path="useRawValues" />
@@ -268,10 +280,12 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                     </SettingsSection>
 
                     {/* Shift Flash Settings */}
-                    <SettingsSection title="Shift Flash">
+                    <SettingsSection title={t('Shift Flash')}>
                       <SettingToggleRow
-                        title="Flash Layout at Shift Point"
-                        description="Flash the whole layout background when it is time to shift"
+                        title={t('Flash Layout at Shift Point')}
+                        description={t(
+                          'Flash the whole layout background when it is time to shift'
+                        )}
                         enabled={shiftFlash.enabled}
                         onToggle={(enabled) =>
                           handleConfigChange({
@@ -283,8 +297,10 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                       {shiftFlash.enabled && (
                         <SettingsSection>
                           <SettingButtonGroupRow<'redline' | 'shiftPoints'>
-                            title="Flash At"
-                            description="Shift Points uses the custom shift points set for this car in the Tachometer settings. Gears without one use the redline."
+                            title={t('Flash At')}
+                            description={t(
+                              'Shift Points uses the custom shift points set for this car in the Tachometer settings. Gears without one use the redline.'
+                            )}
                             value={shiftFlash.source}
                             options={[
                               { label: 'Redline', value: 'redline' },
@@ -299,10 +315,10 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
                           <div className="flex items-center justify-between">
                             <span className="text-md text-slate-300">
-                              Flash Color
+                              {t('Flash Color')}
                             </span>
                             <input
-                              aria-label="Flash Color"
+                              aria-label={t('Flash Color')}
                               type="color"
                               value={shiftFlash.color}
                               onChange={(e) =>
@@ -321,10 +337,12 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                     </SettingsSection>
 
                     {/* Gear Flash Settings */}
-                    <SettingsSection title="Gear Flash">
+                    <SettingsSection title={t('Gear Flash')}>
                       <SettingToggleRow
-                        title="Flash Gear on Shift"
-                        description="Briefly color the gear number on an upshift or downshift"
+                        title={t('Flash Gear on Shift')}
+                        description={t(
+                          'Briefly color the gear number on an upshift or downshift'
+                        )}
                         enabled={gearFlash.enabled}
                         onToggle={(enabled) =>
                           handleConfigChange({
@@ -346,7 +364,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                               className="flex items-center justify-between"
                             >
                               <span className="text-md text-slate-300">
-                                {label}
+                                {t(label)}
                               </span>
                               <input
                                 type="color"
@@ -368,7 +386,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                     </SettingsSection>
 
                     {/* Trace Settings */}
-                    <SettingsSection title="Trace">
+                    <SettingsSection title={t('Trace')}>
                       <SettingProp path="trace.includeClutch" />
 
                       <SettingProp path="trace.includeThrottle" />
@@ -379,8 +397,8 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
                       {config.trace.includeAbs && (
                         <SettingSelectRow<'overlay' | 'bar'>
-                          title="ABS Style"
-                          description="How ABS is shown in the trace"
+                          title={t('ABS Style')}
+                          description={t('How ABS is shown in the trace')}
                           value={config.trace.absStyle ?? 'overlay'}
                           options={[
                             {
@@ -411,7 +429,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                     </SettingsSection>
 
                     {/* Bar Settings */}
-                    <SettingsSection title="Bar">
+                    <SettingsSection title={t('Bar')}>
                       <SettingProp path="bar.includeClutch" />
 
                       <SettingProp path="bar.includeThrottle" />
@@ -422,14 +440,14 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                     </SettingsSection>
 
                     {/* Steer Settings */}
-                    <SettingsSection title="Steer">
+                    <SettingsSection title={t('Steer')}>
                       <SettingProp path="steer.config.style" />
 
                       <SettingProp path="steer.config.color" />
                     </SettingsSection>
 
                     {/* Gear Settings */}
-                    <SettingsSection title="Gear">
+                    <SettingsSection title={t('Gear')}>
                       <SettingProp path="gear.size" />
 
                       <SettingProp path="gear.showspeed" />
@@ -449,7 +467,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
                 {/* VISIBILITY TAB */}
                 {activeTab === 'visibility' && (
-                  <SettingsSection title="Session Visibility">
+                  <SettingsSection title={t('Session Visibility')}>
                     <SessionVisibility
                       sessionVisibility={settings.config.sessionVisibility}
                       handleConfigChange={handleConfigChange}

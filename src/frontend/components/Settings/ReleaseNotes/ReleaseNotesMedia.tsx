@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import { defaultSchema, type Options } from 'rehype-sanitize';
@@ -87,12 +88,12 @@ export const ReleaseNotesMedia = ({
           role="status"
           className="block rounded bg-slate-900/50 p-3 text-slate-400"
         >
-          Media could not be loaded. Open it on GitHub to view it.
+          {t('Media could not be loaded. Open it on GitHub to view it.')}
         </span>
       ) : image ? (
         <img
           src={safeSrc}
-          alt={alt || 'Release screenshot'}
+          alt={alt || t('Release screenshot')}
           loading="lazy"
           decoding="async"
           referrerPolicy="no-referrer"
@@ -106,7 +107,7 @@ export const ReleaseNotesMedia = ({
           playsInline
           poster={releaseMediaUrl(poster) ?? undefined}
           src={safeSources.length ? undefined : safeSrc}
-          aria-label={alt || 'Release video'}
+          aria-label={alt || t('Release video')}
           onError={failVideo}
           className="block max-h-[28rem] w-full rounded bg-slate-950 object-contain"
         >
@@ -118,7 +119,7 @@ export const ReleaseNotesMedia = ({
               onError={index === safeSources.length - 1 ? failVideo : undefined}
             />
           ))}
-          Your browser cannot play this video.
+          {t('Your browser cannot play this video.')}
         </video>
       )}
       {!linked && (
@@ -128,7 +129,7 @@ export const ReleaseNotesMedia = ({
           rel="noopener noreferrer"
           className="mt-1 inline-block text-xs text-accent-300 underline"
         >
-          {label}
+          {t(label)}
         </a>
       )}
     </span>

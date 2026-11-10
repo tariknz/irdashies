@@ -1,3 +1,4 @@
+import { t as translate } from '@irdashies/frontend/i18n';
 import {
   useCurrentSessionType,
   useTotalRaceValue,
@@ -81,7 +82,7 @@ export const TitleBar = ({ titleBarSettings }: TitleBarProps) => {
         )}
 
       {/* Centered series/session name text */}
-      <div className="relative z-10 font-medium">{displayText}</div>
+      <div className="relative z-10 font-medium">{translate(displayText)}</div>
     </div>
   );
 };

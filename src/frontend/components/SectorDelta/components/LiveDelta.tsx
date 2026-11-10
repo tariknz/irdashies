@@ -1,3 +1,4 @@
+import { t as translate } from '@irdashies/frontend/i18n';
 import { useLiveSectorDelta } from '../hooks/useLiveSectorDelta';
 
 /**
@@ -12,7 +13,7 @@ export const LiveDelta = ({
   fallback: string;
 }) => {
   const liveSectorDelta = useLiveSectorDelta();
-  if (liveSectorDelta === null) return <>{fallback}</>;
+  if (liveSectorDelta === null) return <>{translate(fallback)}</>;
   const sign = liveSectorDelta >= 0 ? '+' : '';
   return <>{`${sign}${liveSectorDelta.toFixed(dp)}`}</>;
 };

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 interface SettingButtonGroupRowProps<T extends string> {
   title: string;
   description?: string;
@@ -16,9 +17,9 @@ export function SettingButtonGroupRow<T extends string>({
   return (
     <div className="flex min-h-9 flex-wrap items-center justify-between gap-4">
       <div className="min-w-0 flex-1 basis-40">
-        <span className="text-md text-slate-300">{title}</span>
+        <span className="text-md text-slate-300">{t(title)}</span>
         {description && (
-          <p className="text-sm text-slate-500 mt-1">{description}</p>
+          <p className="text-sm text-slate-500 mt-1">{t(description)}</p>
         )}
       </div>
       <div className="flex max-w-full flex-wrap items-center gap-2">
@@ -35,7 +36,7 @@ export function SettingButtonGroupRow<T extends string>({
                   : 'bg-transparent border-settings-boundary text-slate-300 hover:border-slate-400'
               }`}
             >
-              {opt.label}
+              {t(opt.label)}
             </button>
           );
         })}

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useEffect, useState } from 'react';
 import {
   RADAR_ARC_STYLES,
@@ -157,9 +158,11 @@ export const ConfigJson = ({
 
   return (
     <div className="space-y-2">
-      <h4 className="text-md font-medium text-slate-300">Export / Import</h4>
+      <h4 className="text-md font-medium text-slate-300">
+        {t('Export / Import')}
+      </h4>
       <textarea
-        aria-label="Radar settings as JSON"
+        aria-label={t('Radar settings as JSON')}
         spellCheck={false}
         className="settings-field w-full h-48 font-mono"
         value={text}
@@ -171,10 +174,10 @@ export const ConfigJson = ({
       />
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" className={BUTTON} onClick={copy}>
-          Copy
+          {t('Copy')}
         </button>
         <button type="button" className={BUTTON} onClick={apply}>
-          Apply Pasted
+          {t('Apply Pasted')}
         </button>
         {edited && (
           <button
@@ -185,7 +188,7 @@ export const ConfigJson = ({
               setMessage(null);
             }}
           >
-            Discard
+            {t('Discard')}
           </button>
         )}
         {message && <span className="text-xs text-slate-400">{message}</span>}

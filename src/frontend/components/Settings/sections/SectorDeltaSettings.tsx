@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
@@ -46,12 +47,12 @@ export const SectorDeltaSettings = () => {
     localStorage.setItem('sectorDeltaTab', activeTab);
   }, [activeTab]);
 
-  if (!currentDashboard) return <>Loading...</>;
+  if (!currentDashboard) return <>{t('Loading...')}</>;
 
   return (
     <BaseSettingsSection
-      title="Sector Delta"
-      description="Per-sector timing deltas colored by performance."
+      title={t('Sector Delta')}
+      description={t('Per-sector timing deltas colored by performance.')}
       settings={settings as SectorDeltaWidgetSettings}
       onSettingsChange={(s) => setSettings(s as SectorDeltaWidgetSettings)}
       widgetId={SETTING_ID}
@@ -69,29 +70,34 @@ export const SectorDeltaSettings = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Options
+                {t('Options')}
               </TabButton>
               <TabButton
                 id="visibility"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Visibility
+                {t('Visibility')}
               </TabButton>
             </div>
 
             <div>
               {activeTab === 'options' && (
                 <>
-                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+                  <SettingsSection
+                    title={t('Display')}
+                    scaleWidgetId={SETTING_ID}
+                  >
                     <SettingProp path="background.opacity" />
                     <SettingProp path="timeFormat" />
                     <SettingProp path="ghostComparison" />
                     <SettingProp path="trackIncidentSectors" />
                     <SettingProp path="alwaysScroll" />
                     <SettingToggleRow
-                      title="Limit visible sectors"
-                      description="Show only a fixed number of sectors at once. On tracks with more sectors, the widget becomes a sliding carousel centered on your current sector."
+                      title={t('Limit visible sectors')}
+                      description={t(
+                        'Show only a fixed number of sectors at once. On tracks with more sectors, the widget becomes a sliding carousel centered on your current sector.'
+                      )}
                       enabled={settings.config.maxSectorsShown != null}
                       onToggle={(v) =>
                         handleConfigChange({
@@ -101,8 +107,10 @@ export const SectorDeltaSettings = () => {
                     />
                     {settings.config.maxSectorsShown != null && (
                       <SettingSliderRow
-                        title="Max Sectors Shown"
-                        description="Number of sector cards visible at once. The current sector is centered in the window."
+                        title={t('Max Sectors Shown')}
+                        description={t(
+                          'Number of sector cards visible at once. The current sector is centered in the window.'
+                        )}
                         value={settings.config.maxSectorsShown}
                         min={3}
                         max={12}
@@ -116,10 +124,12 @@ export const SectorDeltaSettings = () => {
 
                   <SettingDivider />
 
-                  <SettingsSection title="Color Thresholds">
+                  <SettingsSection title={t('Color Thresholds')}>
                     <SettingToggleRow
-                      title="Customize thresholds"
-                      description="Override the default color thresholds (green: 0.5%, yellow: 1.0%)."
+                      title={t('Customize thresholds')}
+                      description={t(
+                        'Override the default color thresholds (green: 0.5%, yellow: 1.0%).'
+                      )}
                       enabled={settings.config.thresholds != null}
                       onToggle={(v) =>
                         handleConfigChange({
@@ -140,8 +150,10 @@ export const SectorDeltaSettings = () => {
                     {settings.config.thresholds != null && (
                       <>
                         <SettingSliderRow
-                          title="Green limit"
-                          description="Sectors within this % of session best show green."
+                          title={t('Green limit')}
+                          description={t(
+                            'Sectors within this % of session best show green.'
+                          )}
                           value={
                             settings.config.thresholds.green ?? DEFAULT_GREEN
                           }
@@ -167,8 +179,10 @@ export const SectorDeltaSettings = () => {
                           }}
                         />
                         <SettingSliderRow
-                          title="Yellow limit"
-                          description="Sectors within this % of session best show yellow. Above = red."
+                          title={t('Yellow limit')}
+                          description={t(
+                            'Sectors within this % of session best show yellow. Above = red.'
+                          )}
                           value={
                             settings.config.thresholds.yellow ?? DEFAULT_YELLOW
                           }
@@ -200,7 +214,7 @@ export const SectorDeltaSettings = () => {
               )}
 
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
+                <SettingsSection title={t('Session Visibility')}>
                   <SessionVisibility
                     sessionVisibility={settings.config.sessionVisibility}
                     handleConfigChange={handleConfigChange}

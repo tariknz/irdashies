@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { TabButton } from '../components/TabButton';
@@ -42,13 +43,15 @@ export const PitlaneHelperSettings = () => {
   }, [activeTab]);
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   return (
     <BaseSettingsSection
-      title="Pitlane Helper"
-      description="Assists with pit entry by showing speed delta, pitbox position, and warnings."
+      title={t('Pitlane Helper')}
+      description={t(
+        'Assists with pit entry by showing speed delta, pitbox position, and warnings.'
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -67,21 +70,21 @@ export const PitlaneHelperSettings = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Options
+                {t('Options')}
               </TabButton>
               <TabButton
                 id="visibility"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Visibility
+                {t('Visibility')}
               </TabButton>
               <TabButton
                 id="calibration"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Calibration
+                {t('Calibration')}
               </TabButton>
             </div>
 
@@ -91,12 +94,14 @@ export const PitlaneHelperSettings = () => {
                 <>
                   {/* Display Settings */}
                   <SettingsSection
-                    title="Widget options"
+                    title={t('Widget options')}
                     scaleWidgetId={SETTING_ID}
                   >
                     <SettingToggleRow
-                      title="Show when approaching pit"
-                      description="Display overlay before entering pit lane"
+                      title={t('Show when approaching pit')}
+                      description={t(
+                        'Display overlay before entering pit lane'
+                      )}
                       enabled={settings.config.showMode === 'approaching'}
                       onToggle={(enabled) =>
                         handleConfigChange({
@@ -145,7 +150,7 @@ export const PitlaneHelperSettings = () => {
                   </SettingsSection>
 
                   {/* Warning Settings */}
-                  <SettingsSection title="Warnings">
+                  <SettingsSection title={t('Warnings')}>
                     <SettingProp path="enablePitLimiterWarning" />
 
                     <SettingProp path="showPitlaneTraffic" />
@@ -160,13 +165,13 @@ export const PitlaneHelperSettings = () => {
                   </SettingsSection>
 
                   {/* Pit Exit Inputs Settings */}
-                  <SettingsSection title="Pit Exit Inputs">
+                  <SettingsSection title={t('Pit Exit Inputs')}>
                     <SettingProp path="showPitExitInputs" />
 
                     {settings.config.showPitExitInputs && (
                       <SettingsSection>
                         <SettingToggleRow
-                          title="Show Throttle"
+                          title={t('Show Throttle')}
                           enabled={
                             settings.config.pitExitInputs?.throttle ?? true
                           }
@@ -181,7 +186,7 @@ export const PitlaneHelperSettings = () => {
                           }
                         />
                         <SettingToggleRow
-                          title="Show Clutch"
+                          title={t('Show Clutch')}
                           enabled={
                             settings.config.pitExitInputs?.clutch ?? true
                           }
@@ -205,7 +210,7 @@ export const PitlaneHelperSettings = () => {
 
               {/* VISIBILITY TAB */}
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
+                <SettingsSection title={t('Session Visibility')}>
                   <SessionVisibility
                     sessionVisibility={settings.config.sessionVisibility}
                     handleConfigChange={handleConfigChange}

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, useEffect, useRef } from 'react';
 import { buildHyperateEmbedUrl } from '../hyperateUrl';
 
@@ -165,7 +166,7 @@ export const HeartRateEmbed = memo(
         {!isElectron && (
           <iframe
             src={src}
-            title="HypeRate heart rate"
+            title={t('HypeRate heart rate')}
             scrolling="no"
             allow="autoplay"
             className="absolute inset-0 block h-full w-full border-0 bg-transparent"

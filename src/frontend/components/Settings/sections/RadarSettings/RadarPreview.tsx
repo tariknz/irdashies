@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useMemo } from 'react';
 import type { RadarConfig } from '@irdashies/types';
 import { colorNumToHex } from '@irdashies/utils/colors';
@@ -82,7 +83,7 @@ export const RadarPreview = ({
         background:
           'repeating-linear-gradient(100deg, #3f4a3a 0 24px, #45503f 24px 52px)',
       }}
-      aria-label="Radar preview"
+      aria-label={t('Radar preview')}
     >
       <RadarDisplay
         frame={frame}

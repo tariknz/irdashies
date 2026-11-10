@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import type { ReactNode } from 'react';
 
 /**
@@ -42,8 +43,8 @@ export const changeMarker =
         {changed && (
           <button
             type="button"
-            title="Changed: click to reset"
-            aria-label={`Reset ${keys.join(', ')}`}
+            title={t('Changed: click to reset')}
+            aria-label={t('Reset {value}', { value: keys.join(', ') })}
             className="absolute -left-6 -top-0.5 flex h-6 w-6 items-center justify-center rounded group"
             onClick={() =>
               set(

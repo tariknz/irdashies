@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, useCallback, useMemo } from 'react';
 import { WarningIcon } from '@phosphor-icons/react';
 import {
@@ -153,7 +154,7 @@ export const GantryStandingsHost = memo(
             </>
           ) : (
             <div className="h-full flex items-center justify-center p-3 text-xs text-slate-400">
-              Waiting for iRacing.
+              {t('Waiting for iRacing.')}
             </div>
           )}
         </WidgetRuntimeProvider>

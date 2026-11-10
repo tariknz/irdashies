@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import React from 'react';
 import { formatFuel } from '../fuelCalculations';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
@@ -102,7 +103,7 @@ export const FuelCalculatorTargetMessage: React.FC<
           className="text-slate-400 font-medium"
           style={{ fontSize: labelFontSize }}
         >
-          TARGET
+          {t('TARGET')}
         </span>
         <span
           className="text-white font-bold"
@@ -113,7 +114,7 @@ export const FuelCalculatorTargetMessage: React.FC<
       </div>
       <div className="text-xs">
         <span className="text-slate-400" style={{ fontSize: labelFontSize }}>
-          Need:
+          {t('Need:')}
         </span>
         <span
           className="text-white font-medium ml-1"

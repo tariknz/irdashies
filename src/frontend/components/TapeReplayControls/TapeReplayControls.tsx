@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowCounterClockwiseIcon,
@@ -50,12 +51,12 @@ export function TapeReplayControls({
 
   return (
     <section
-      aria-label="Telemetry replay controls"
+      aria-label={t('Telemetry replay controls')}
       className="rounded-lg border border-slate-600 bg-slate-900/95 px-4 py-2 text-sm text-white shadow-xl"
     >
       <header className="flex cursor-move items-center justify-between text-xs text-slate-400 [-webkit-app-region:drag]">
         <span className="flex items-center gap-2">
-          <DotsSixIcon size={16} /> Telemetry replay
+          <DotsSixIcon size={16} /> {t('Telemetry replay')}
         </span>
         <span
           role={error ? 'alert' : undefined}
@@ -63,10 +64,10 @@ export function TapeReplayControls({
         >
           {error ??
             (status.ended
-              ? 'End of tape'
+              ? t('End of tape')
               : status.paused
-                ? 'Paused'
-                : 'Playing')}
+                ? t('Paused')
+                : t('Playing'))}
         </span>
       </header>
       <div className="mt-2 flex items-center gap-3">
@@ -74,7 +75,7 @@ export function TapeReplayControls({
           {timestamp(position)}
         </span>
         <input
-          aria-label="Replay position"
+          aria-label={t('Replay position')}
           aria-valuetext={`${timestamp(position)} of ${timestamp(status.duration)}`}
           type="range"
           min={0}
@@ -94,8 +95,8 @@ export function TapeReplayControls({
       </div>
       <div className="mt-1 flex items-center justify-center gap-2">
         <button
-          aria-label="Restart replay"
-          title="Restart replay"
+          aria-label={t('Restart replay')}
+          title={t('Restart replay')}
           className={buttonClass}
           disabled={busy}
           onClick={() => seek(0)}
@@ -103,8 +104,8 @@ export function TapeReplayControls({
           <SkipBackIcon size={18} weight="fill" />
         </button>
         <button
-          aria-label="Rewind 10 seconds"
-          title="Rewind 10 seconds"
+          aria-label={t('Rewind 10 seconds')}
+          title={t('Rewind 10 seconds')}
           className={buttonClass}
           disabled={busy}
           onClick={() => seek(status.position - 10)}
@@ -114,7 +115,7 @@ export function TapeReplayControls({
         </button>
         <button
           aria-label={
-            status.paused || status.ended ? 'Play replay' : 'Pause replay'
+            status.paused || status.ended ? t('Play replay') : t('Pause replay')
           }
           className={`${buttonClass} bg-sky-500/20 text-sky-300`}
           disabled={busy}
@@ -132,8 +133,8 @@ export function TapeReplayControls({
           )}
         </button>
         <button
-          aria-label="Fast forward 10 seconds"
-          title="Fast forward 10 seconds"
+          aria-label={t('Fast forward 10 seconds')}
+          title={t('Fast forward 10 seconds')}
           className={buttonClass}
           disabled={busy}
           onClick={() => seek(status.position + 10)}
@@ -142,9 +143,9 @@ export function TapeReplayControls({
           <ArrowClockwiseIcon size={18} />
         </button>
         <label className="ml-3 flex items-center gap-2 text-xs text-slate-400">
-          Speed
+          {t('Speed')}
           <select
-            aria-label="Playback speed"
+            aria-label={t('Playback speed')}
             value={status.speed}
             disabled={busy}
             onChange={(event) =>
@@ -229,7 +230,7 @@ export function TapeReplayOverlay({
     />
   ) : (
     <div className="rounded-lg bg-slate-900 p-4 text-sm text-slate-300">
-      {error ?? 'Waiting for telemetry replay…'}
+      {error ?? t('Waiting for telemetry replay…')}
     </div>
   );
 }

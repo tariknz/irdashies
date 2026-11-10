@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 export interface DriverRatingBadgeProps {
   license?: string;
   rating?: number;
@@ -68,7 +69,7 @@ export const DriverRatingBadge = ({
         <div
           className={`text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[1.8em] ${(isMinimal ? minimalColorMap : colorMap)['A']}`}
         >
-          {'AI'}
+          {t('AI')}
         </div>
       </div>
     );

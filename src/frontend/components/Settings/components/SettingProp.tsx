@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { createContext, useContext, type ReactNode } from 'react';
 import {
   getPath,
@@ -119,23 +120,23 @@ const SettingPropRow = ({
   if (variant === 'compact' && spec.type !== 'number') {
     return (
       <div className="flex items-center justify-between pl-8 mt-2 indent-8">
-        <span className="text-sm text-slate-300">{spec.label}</span>
+        <span className="text-sm text-slate-300">{t(spec.label)}</span>
         {spec.type === 'boolean' ? (
           <ToggleSwitch
             enabled={value as boolean}
             onToggle={change}
-            ariaLabel={spec.label}
+            ariaLabel={t(spec.label)}
           />
         ) : (
           <select
             value={String(value)}
             onChange={(e) => change(fromString(spec.options, e.target.value))}
-            aria-label={spec.label}
+            aria-label={t(spec.label)}
             className="settings-field"
           >
             {spec.options.map((o) => (
               <option key={o.value} value={String(o.value)}>
-                {o.label}
+                {t(o.label)}
               </option>
             ))}
           </select>
@@ -149,8 +150,8 @@ const SettingPropRow = ({
       if (spec.control === 'input') {
         return (
           <SettingNumberRow
-            title={spec.label}
-            description={spec.description}
+            title={t(spec.label)}
+            description={t(spec.description)}
             value={value as number}
             min={spec.min}
             max={spec.max}
@@ -162,8 +163,8 @@ const SettingPropRow = ({
       }
       return (
         <SettingSliderRow
-          title={spec.label}
-          description={spec.description}
+          title={t(spec.label)}
+          description={t(spec.description)}
           value={value as number}
           min={spec.min}
           max={spec.max}
@@ -176,8 +177,8 @@ const SettingPropRow = ({
       if (spec.control === 'select') {
         return (
           <SettingSelectRow
-            title={spec.label}
-            description={spec.description}
+            title={t(spec.label)}
+            description={t(spec.description)}
             value={String(value)}
             options={spec.options.map((o) => ({
               value: String(o.value),
@@ -189,8 +190,8 @@ const SettingPropRow = ({
       }
       return (
         <SettingButtonGroupRow
-          title={spec.label}
-          description={spec.description}
+          title={t(spec.label)}
+          description={t(spec.description)}
           value={value as string}
           options={spec.options.map(({ value, label }) => ({
             value: value as string,
@@ -202,8 +203,8 @@ const SettingPropRow = ({
     case 'boolean':
       return (
         <SettingToggleRow
-          title={spec.label}
-          description={spec.description}
+          title={t(spec.label)}
+          description={t(spec.description)}
           enabled={value as boolean}
           onToggle={change}
         />

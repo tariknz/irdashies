@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { SettingNumberRow } from '../../components/SettingNumberRow';
 import { SettingsSection } from '../../components/SettingSection';
 import { FuelWidgetSettings } from '@irdashies/types';
@@ -20,14 +21,14 @@ export const FuelHistorySection = ({
   const isTable = settings.config.fuelHistoryType === 'table';
 
   return (
-    <SettingsSection title="Fuel History">
+    <SettingsSection title={t('Fuel History')}>
       <SettingProp path="fuelHistoryType" />
       {isTable ? (
         <SettingProp path="fuelHistoryLapCount" />
       ) : (
         <>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">Graph Height</span>
+            <span className="text-sm text-slate-300">{t('Graph Height')}</span>
             <div className="flex items-center gap-4">
               <HeightInput
                 widgetId="fuelGraph"
@@ -37,8 +38,8 @@ export const FuelHistorySection = ({
             </div>
           </div>
           <SettingNumberRow
-            title="Target Line"
-            description="Optional ref (0 to hide)."
+            title={t('Target Line')}
+            description={t('Optional ref (0 to hide).')}
             value={settings.config.manualTarget ?? 0}
             min={0}
             step={0.1}

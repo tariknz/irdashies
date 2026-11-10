@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { BarbellIcon, TimerIcon, UsersIcon } from '@phosphor-icons/react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import type { ClassHeaderStyle } from '@irdashies/types';
@@ -229,7 +230,7 @@ export const DriverClassHeader = ({
               colSpan={cell.colSpan}
               className={`px-1 py-0 text-center text-xs font-bold uppercase tracking-wide text-slate-400 whitespace-nowrap${borderClass}`}
             >
-              {cell.label}
+              {t(cell.label)}
             </td>
           );
         })}

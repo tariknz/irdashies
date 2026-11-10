@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
@@ -42,13 +43,13 @@ export const FlatTrackMapSettings = () => {
   }, [activeTab]);
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   return (
     <BaseSettingsSection
-      title="Flat Track Map"
-      description="Configure flat track map visualization settings."
+      title={t('Flat Track Map')}
+      description={t('Configure flat track map visualization settings.')}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId="flatmap"
@@ -67,21 +68,21 @@ export const FlatTrackMapSettings = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Track
+                {t('Track')}
               </TabButton>
               <TabButton
                 id="drivers"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Drivers
+                {t('Drivers')}
               </TabButton>
               <TabButton
                 id="visibility"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Visibility
+                {t('Visibility')}
               </TabButton>
             </div>
 
@@ -90,7 +91,7 @@ export const FlatTrackMapSettings = () => {
               {activeTab === 'track' && (
                 <>
                   <SettingsSection
-                    title="Track Settings"
+                    title={t('Track Settings')}
                     scaleWidgetId="flatmap"
                   >
                     <SettingProp path="trackLineWidth" />
@@ -104,7 +105,7 @@ export const FlatTrackMapSettings = () => {
 
               {/* DRIVERS TAB */}
               {activeTab === 'drivers' && (
-                <SettingsSection title="Driver Circles">
+                <SettingsSection title={t('Driver Circles')}>
                   <SettingProp path="showCarNumbers" />
 
                   {settings.config.showCarNumbers && (
@@ -127,7 +128,7 @@ export const FlatTrackMapSettings = () => {
 
               {/* VISIBILITY TAB */}
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
+                <SettingsSection title={t('Session Visibility')}>
                   <SessionVisibility
                     sessionVisibility={settings.config.sessionVisibility}
                     handleConfigChange={handleConfigChange}

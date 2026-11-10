@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { TagIcon } from '@phosphor-icons/react';
 import { useState } from 'react';
 import type { ReleaseNotesSummary } from '@irdashies/types';
@@ -42,11 +43,11 @@ export const ReleaseNotesVersions = ({
 
   return (
     <nav
-      aria-label="Release versions"
+      aria-label={t('Release versions')}
       className="w-36 shrink-0 overflow-y-auto border-r border-settings-boundary pr-3 sm:w-44 sm:pr-4"
     >
       <h3 className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-        Versions
+        {t('Versions')}
       </h3>
       <ul className="space-y-1">
         {releases.slice(0, visibleCount).map((release) => (
@@ -57,7 +58,7 @@ export const ReleaseNotesVersions = ({
                 selectedVersion === release.version ? 'true' : undefined
               }
               onClick={() => onSelect(release.version)}
-              title={release.title}
+              title={t(release.title)}
               className="flex w-full items-start gap-2 rounded-md border border-transparent px-3 py-2.5 text-left text-slate-300 transition-colors hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-accent-300 aria-current:border-accent-500/40 aria-current:bg-accent-500/10 aria-current:text-accent-300"
             >
               <TagIcon size={16} className="mt-0.5 shrink-0" />
@@ -67,11 +68,11 @@ export const ReleaseNotesVersions = ({
                 </span>{' '}
                 {release.version === currentVersion ? (
                   <span className="mt-1 block text-xs text-slate-400">
-                    Installed
+                    {t('Installed')}
                   </span>
                 ) : release.version === availableVersion ? (
                   <span className="mt-1 block text-xs text-slate-400">
-                    Downloaded update
+                    {t('Downloaded update')}
                   </span>
                 ) : release.publishedAt ? (
                   <span className="mt-1 block text-xs text-slate-400">
@@ -85,15 +86,15 @@ export const ReleaseNotesVersions = ({
       </ul>
       {history.loading && (
         <p role="status" className="px-3 py-3 text-xs text-slate-400">
-          Loading versions…
+          {t('Loading versions…')}
         </p>
       )}
       {history.error || history.cached ? (
         <div className="px-3 py-3 text-xs text-slate-400">
           <p>
             {history.error
-              ? 'Could not load older versions.'
-              : 'Showing saved versions.'}
+              ? t('Could not load older versions.')
+              : t('Showing saved versions.')}
           </p>
           <button
             type="button"
@@ -101,7 +102,7 @@ export const ReleaseNotesVersions = ({
             disabled={history.loading}
             className="mt-2 text-accent-300 hover:underline disabled:opacity-50"
           >
-            Retry version list
+            {t('Retry version list')}
           </button>
         </div>
       ) : null}
@@ -111,7 +112,7 @@ export const ReleaseNotesVersions = ({
           onClick={loadMore}
           className="mt-3 w-full rounded-md px-3 py-2 text-left text-xs text-accent-300 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-accent-300"
         >
-          Load older versions
+          {t('Load older versions')}
         </button>
       )}
     </nav>

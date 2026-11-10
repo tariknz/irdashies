@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { Fragment, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { changeMarker } from '../components/ChangedMark';
@@ -43,7 +44,7 @@ export const BroadcastEventsSettings = () => {
   });
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   const { config } = settings;
@@ -54,8 +55,10 @@ export const BroadcastEventsSettings = () => {
     <BaseSettingsSection
       disableInternalScroll
       headingLevel="h3"
-      title="Broadcast Events"
-      description="Race control popups for the stream: incidents, yellow and black flags, with a card for the driver involved. Uses the Gantry incident detector and its thresholds."
+      title={t('Broadcast Events')}
+      description={t(
+        'Race control popups for the stream: incidents, yellow and black flags, with a card for the driver involved. Uses the Gantry incident detector and its thresholds.'
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -67,11 +70,14 @@ export const BroadcastEventsSettings = () => {
         );
         return (
           <div className="space-y-4">
-            <SettingsSection title="Widget options" scaleWidgetId={SETTING_ID}>
+            <SettingsSection
+              title={t('Widget options')}
+              scaleWidgetId={SETTING_ID}
+            >
               {mark(
                 ['background'],
                 <SettingSliderRow
-                  title="Background Opacity"
+                  title={t('Background Opacity')}
                   value={config.background.opacity}
                   units="%"
                   min={0}
@@ -85,7 +91,7 @@ export const BroadcastEventsSettings = () => {
               {mark(
                 ['showSeconds'],
                 <SettingSliderRow
-                  title="Show Each Event For"
+                  title={t('Show Each Event For')}
                   value={config.showSeconds}
                   units="s"
                   min={3}
@@ -96,7 +102,7 @@ export const BroadcastEventsSettings = () => {
               )}
             </SettingsSection>
 
-            <SettingsSection title="Events">
+            <SettingsSection title={t('Events')}>
               {(
                 Object.keys(
                   KIND_LABELS
@@ -106,7 +112,7 @@ export const BroadcastEventsSettings = () => {
                   {markKind(
                     [kind],
                     <SettingToggleRow
-                      title={KIND_LABELS[kind]}
+                      title={t(KIND_LABELS[kind])}
                       enabled={kinds[kind]}
                       onToggle={(v) =>
                         handleConfigChange({ kinds: { ...kinds, [kind]: v } })
@@ -117,7 +123,7 @@ export const BroadcastEventsSettings = () => {
               ))}
             </SettingsSection>
 
-            <SettingsSection title="Visibility">
+            <SettingsSection title={t('Visibility')}>
               {mark(
                 ['sessionVisibility'],
                 <SessionVisibility

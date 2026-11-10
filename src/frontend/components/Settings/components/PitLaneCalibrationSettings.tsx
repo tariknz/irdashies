@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CurrentTrackPitLaneInfo, PitLaneBridge } from '@irdashies/types';
 import { SettingsSection } from './SettingSection';
@@ -161,13 +162,13 @@ export const PitLaneCalibrationSettings = ({
           : 'Clear learned pit entry and exit positions for this track. Other tracks are kept.';
 
   return (
-    <SettingsSection title="Pit Lane Calibration">
+    <SettingsSection title={t('Pit Lane Calibration')}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1 basis-52">
           <h4 className="text-md font-medium text-slate-300">
-            {track?.trackName ?? 'Current track unavailable'}
+            {track?.trackName ?? t('Current track unavailable')}
           </h4>
-          <p className="mt-1 text-sm text-slate-500">{explanation}</p>
+          <p className="mt-1 text-sm text-slate-500">{t(explanation)}</p>
         </div>
         <button
           type="button"
@@ -177,18 +178,18 @@ export const PitLaneCalibrationSettings = ({
           onClick={() => setConfirmTrack(track)}
           className="settings-button shrink-0"
         >
-          {pendingAction === 'reset' ? 'Resetting…' : 'Reset calibration'}
+          {pendingAction === 'reset' ? t('Resetting…') : t('Reset calibration')}
         </button>
       </div>
       {(bridge?.openPitLaneDataFile || bridge?.reloadPitLaneDataFile) && (
         <div className="mt-4 border-t border-slate-700/50 pt-4">
           <h4 className="text-md font-medium text-slate-300">
-            Calibration file
+            {t('Calibration file')}
           </h4>
           <p className="mt-1 text-sm text-slate-500">
-            View or edit pitLaneData.json. Positions are lap fractions from 0 to
-            1, or null. Opening pauses automatic learning. Save changes, then
-            Reload file to apply them and resume learning.
+            {t(
+              'View or edit pitLaneData.json. Positions are lap fractions from 0 to 1, or null. Opening pauses automatic learning. Save changes, then Reload file to apply them and resume learning.'
+            )}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {bridge.openPitLaneDataFile && (
@@ -199,8 +200,8 @@ export const PitLaneCalibrationSettings = ({
                 className="settings-button"
               >
                 {pendingAction === 'open'
-                  ? 'Opening…'
-                  : 'Open calibration file'}
+                  ? t('Opening…')
+                  : t('Open calibration file')}
               </button>
             )}
             {bridge.reloadPitLaneDataFile && (
@@ -210,7 +211,9 @@ export const PitLaneCalibrationSettings = ({
                 onClick={() => void editFile('reload')}
                 className="settings-button"
               >
-                {pendingAction === 'reload' ? 'Reloading…' : 'Reload file'}
+                {pendingAction === 'reload'
+                  ? t('Reloading…')
+                  : t('Reload file')}
               </button>
             )}
           </div>
@@ -218,7 +221,7 @@ export const PitLaneCalibrationSettings = ({
       )}
       {message && (
         <p role="status" className="mt-3 text-sm text-emerald-400">
-          {message}
+          {t(message)}
         </p>
       )}
       {error && (
@@ -233,9 +236,12 @@ export const PitLaneCalibrationSettings = ({
       )}
       <ConfirmDialog
         isOpen={confirmTrack !== null}
-        title="Reset pit lane calibration?"
-        message={`Clear learned pit entry and exit positions for ${confirmTrack?.trackName ?? 'this track'}? The overlay will relearn them as cars use the pit lane.`}
-        confirmText="Reset calibration"
+        title={t('Reset pit lane calibration?')}
+        message={t(
+          'Clear learned pit entry and exit positions for {track}? The overlay will relearn them as cars use the pit lane.',
+          { track: confirmTrack?.trackName ?? t('this track') }
+        )}
+        confirmText={t('Reset calibration')}
         onConfirm={() => void reset()}
         onCancel={() => setConfirmTrack(null)}
       />

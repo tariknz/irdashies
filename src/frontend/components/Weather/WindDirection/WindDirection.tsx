@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { WindIcon } from '@phosphor-icons/react';
 import { memo, useRef, useEffect, useState } from 'react';
 import { getWindIntensityClass } from '../../../domain/weather/wind';
@@ -78,7 +79,7 @@ export const WindDirection = memo(
       return (
         <div
           className={`bg-slate-800/70 px-2 py-1 rounded-sm min-w-0 transition-colors duration-300 ${windIntensityClass}`}
-          title="Wind"
+          title={t('Wind')}
         >
           <div className="flex items-center gap-x-1.5">
             <WindArrow
@@ -100,7 +101,7 @@ export const WindDirection = memo(
           className={`bg-slate-800/70 px-2 py-1 rounded-sm min-w-0 transition-colors duration-300 ${windIntensityClass}`}
         >
           <div className="flex items-center gap-x-1.5 text-sm">
-            <span className="truncate min-w-0 text-white/60">Wind</span>
+            <span className="truncate min-w-0 text-white/60">{t('Wind')}</span>
             <WindArrow
               normalizedAngle={normalizedAngle}
               className="flex-none size-5 stroke-current box-border fill-none origin-center transform-gpu transition-transform duration-1000 ease-out"
@@ -119,7 +120,7 @@ export const WindDirection = memo(
         <div className="flex flex-row gap-x-2 items-center text-sm mb-3">
           <WindIcon className="flex-none" />
           <span className="truncate min-w-0 flex-1 @max-[120px]:hidden">
-            Wind
+            {t('Wind')}
           </span>
         </div>
         <div className="flex justify-center">

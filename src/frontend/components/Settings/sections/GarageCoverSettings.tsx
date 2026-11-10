@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { SettingsSection } from '../components/SettingSection';
 import { useState, useEffect, useRef } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
@@ -158,13 +159,15 @@ export const GarageCoverSettings = () => {
   };
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   return (
     <BaseSettingsSection
-      title="Garage Cover"
-      description="Configure settings for the garage cover widget that displays when in the garage."
+      title={t('Garage Cover')}
+      description={t(
+        'Configure settings for the garage cover widget that displays when in the garage.'
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -178,22 +181,23 @@ export const GarageCoverSettings = () => {
             {/* Info Banner */}
             <div className="bg-slate-800/40 border border-slate-700 rounded-md p-4 space-y-2">
               <p className="text-sm text-slate-300">
-                <strong>Note:</strong> The garage cover is intended for use
-                whilst streaming. It only appears when you have the garage
-                window open in iRacing.
+                <strong>{t('Note:')}</strong>{' '}
+                {t(
+                  'The garage cover is intended for use whilst streaming. It only appears when you have the garage window open in iRacing.'
+                )}
               </p>
               <p className="text-sm text-slate-300">
-                <strong>Browser Source URL:</strong>{' '}
+                <strong>{t('Browser Source URL:')}</strong>{' '}
                 <code className="bg-slate-800 px-2 py-1 rounded">
                   {`http://localhost:${serverPort}/dashboard`}
                 </code>
               </p>
             </div>
 
-            <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+            <SettingsSection title={t('Display')} scaleWidgetId={SETTING_ID}>
               {/* Image Upload */}
               <div className="space-y-2">
-                <div className="text-slate-300">Garage Image</div>
+                <div className="text-slate-300">{t('Garage Image')}</div>
                 <div
                   onDrop={handleImageDrop}
                   onDragOver={(e) => {
@@ -206,7 +210,7 @@ export const GarageCoverSettings = () => {
                     type="file"
                     accept="image/*"
                     onChange={(e) => handleImageSelect(e)}
-                    aria-label="Garage image"
+                    aria-label={t('Garage image')}
                     className="sr-only"
                     id="garage-image-input"
                   />
@@ -218,17 +222,21 @@ export const GarageCoverSettings = () => {
                       <div className="text-slate-300">
                         <img
                           src={previewUrl}
-                          alt="Garage preview"
+                          alt={t('Garage preview')}
                           className="max-h-32 mx-auto mb-2 rounded"
                         />
                         <p className="text-sm">
-                          Click or drag to replace image
+                          {t('Click or drag to replace image')}
                         </p>
                       </div>
                     ) : (
                       <div className="text-slate-400">
-                        <p className="mb-1">Drag and drop an image here</p>
-                        <p className="text-sm">or click to select an image</p>
+                        <p className="mb-1">
+                          {t('Drag and drop an image here')}
+                        </p>
+                        <p className="text-sm">
+                          {t('or click to select an image')}
+                        </p>
                       </div>
                     )}
                   </label>
@@ -241,7 +249,7 @@ export const GarageCoverSettings = () => {
                     }}
                     className="settings-button-danger"
                   >
-                    Remove Image
+                    {t('Remove Image')}
                   </button>
                 )}
               </div>

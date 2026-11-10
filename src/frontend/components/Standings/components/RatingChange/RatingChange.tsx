@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { CaretUpIcon, CaretDownIcon, MinusIcon } from '@phosphor-icons/react';
 
 interface RatingChangeProps {
@@ -46,7 +47,7 @@ export const RatingChange = ({
   return (
     <span className={`flex items-center ${justifyClass} gap-0.5 ${color}`}>
       {icon}
-      {text}
+      {t(text)}
     </span>
   );
 };

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import {
   trackStateSelectors,
   useGeneralSettings,
@@ -59,7 +60,7 @@ export const DeltaSpeedDisplay = ({
         // benOfficial2's Delta Bar, but a widget that silently occupies no
         // space is indistinguishable from one that is broken or misconfigured.
         <div className="flex h-full w-full items-center justify-center">
-          <span className="text-sm text-white/40">No clean lap</span>
+          <span className="text-sm text-white/40">{t('No clean lap')}</span>
         </div>
       ) : (
         <DeltaSpeedBox

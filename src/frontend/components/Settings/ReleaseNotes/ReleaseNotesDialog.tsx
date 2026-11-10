@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useEffect, useRef } from 'react';
 import { XIcon } from '@phosphor-icons/react';
 import type { ReleaseNotesPanelState } from './ReleaseNotesPanel';
@@ -39,12 +40,12 @@ export const ReleaseNotesDialog = ({
     >
       <div className="flex items-center justify-between gap-4 border-b border-settings-boundary px-6 py-4">
         <h2 id="release-notes-title" className="text-xl font-bold">
-          {`What's new in v${version}`}
+          {t("What's new in v{version}", { version })}
         </h2>
         <button
           autoFocus
           onClick={onClose}
-          aria-label="Close release notes"
+          aria-label={t('Close release notes')}
           className="rounded p-1 text-slate-300 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-accent-300"
         >
           <XIcon size={24} />
@@ -58,7 +59,7 @@ export const ReleaseNotesDialog = ({
           onClick={onClose}
           className="rounded bg-settings-control px-4 py-2 hover:bg-settings-hover"
         >
-          Done
+          {t('Done')}
         </button>
       </div>
     </dialog>

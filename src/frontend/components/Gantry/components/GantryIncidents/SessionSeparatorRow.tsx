@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo } from 'react';
 
 interface SessionSeparatorRowProps {
@@ -17,20 +18,22 @@ export const SessionSeparatorRow = memo(
         className="sticky top-0 z-10 flex h-[30px] items-center gap-2 border-b border-slate-700 bg-slate-900 px-4 text-xs"
       >
         <span className="truncate font-semibold tracking-wider text-slate-300 uppercase">
-          {label}
+          {t(label)}
         </span>
         {isCurrent && (
           <span className="flex-shrink-0 rounded-sm border border-settings-boundary px-1.5 text-slate-300">
-            {isReplay ? 'REPLAY' : 'LIVE'}
+            {isReplay ? t('REPLAY') : t('LIVE')}
           </span>
         )}
         {isEmptyCurrent && (
-          <span className="truncate text-slate-400">— no incidents yet</span>
+          <span className="truncate text-slate-400">
+            {t('— no incidents yet')}
+          </span>
         )}
         <span className="h-px min-w-4 flex-1 bg-settings-hover" />
         {!isEmptyCurrent && (
           <span className="flex-shrink-0 text-slate-400 tabular-nums">
-            {count} {count === 1 ? 'incident' : 'incidents'}
+            {count} {count === 1 ? t('incident') : t('incidents')}
           </span>
         )}
       </div>

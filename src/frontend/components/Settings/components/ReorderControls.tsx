@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { ArrowDownIcon, ArrowUpIcon } from '@phosphor-icons/react';
 
@@ -35,8 +36,8 @@ export const ReorderControls = ({
       <button
         ref={upRef}
         type="button"
-        aria-label={`Move ${label} up`}
-        title="Move up"
+        aria-label={t('Move {label} up', { label: t(label) })}
+        title={t('Move up')}
         disabled={!onMoveUp}
         onClick={() => {
           moved.current = 'up';
@@ -52,8 +53,8 @@ export const ReorderControls = ({
       <button
         ref={downRef}
         type="button"
-        aria-label={`Move ${label} down`}
-        title="Move down"
+        aria-label={t('Move {label} down', { label: t(label) })}
+        title={t('Move down')}
         disabled={!onMoveDown}
         onClick={() => {
           moved.current = 'down';

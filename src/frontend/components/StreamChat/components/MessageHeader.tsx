@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import {
   CrownIcon,
   SealCheckIcon,
@@ -25,7 +26,7 @@ export const PlatformIcon = ({ platform, size }: PlatformIconProps) => {
       size={size}
       weight="fill"
       color={PLATFORM_ICON_COLOR[platform]}
-      aria-label={platform === 'twitch' ? 'Twitch' : 'YouTube'}
+      aria-label={platform === 'twitch' ? t('Twitch') : t('YouTube')}
       style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
     />
   );
@@ -49,8 +50,8 @@ const BadgeIcon = ({ badge, size }: BadgeIconProps) => {
     return (
       <img
         src={badge.imageUrl}
-        alt={badge.label}
-        title={badge.label}
+        alt={t(badge.label)}
+        title={t(badge.label)}
         style={{
           height: size,
           width: size,

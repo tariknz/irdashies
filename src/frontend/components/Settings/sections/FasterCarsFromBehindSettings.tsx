@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
@@ -39,13 +40,15 @@ export const FasterCarsFromBehindSettings = () => {
   }, [activeTab]);
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   return (
     <BaseSettingsSection
-      title="Faster Cars From Behind"
-      description="Configure settings for the faster cars detection widget."
+      title={t('Faster Cars From Behind')}
+      description={t(
+        'Configure settings for the faster cars detection widget.'
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId="fastercarsfrombehind"
@@ -64,14 +67,14 @@ export const FasterCarsFromBehindSettings = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Display
+                {t('Display')}
               </TabButton>
               <TabButton
                 id="visibility"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Visibility
+                {t('Visibility')}
               </TabButton>
             </div>
 
@@ -79,14 +82,18 @@ export const FasterCarsFromBehindSettings = () => {
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <>
-                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+                  <SettingsSection
+                    title={t('Display')}
+                    scaleWidgetId={SETTING_ID}
+                  >
                     {/* Distance Threshold */}
                     <SettingSliderRow
-                      title="Distance Threshold"
-                      description="Minimum gap to a faster car before it is displayed. Smaller values
-                    show cars that are closer behind you."
+                      title={t('Distance Threshold')}
+                      description={t(
+                        'Minimum gap to a faster car before it is displayed. Smaller values show cars that are closer behind you.'
+                      )}
                       value={Math.abs(settings.config.distanceThreshold)}
-                      units="seconds"
+                      units={t('seconds')}
                       min={0.3}
                       max={20}
                       step={0.1}
@@ -159,7 +166,7 @@ export const FasterCarsFromBehindSettings = () => {
 
               {/* VISIBILITY TAB */}
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
+                <SettingsSection title={t('Session Visibility')}>
                   <SessionVisibility
                     sessionVisibility={settings.config.sessionVisibility}
                     handleConfigChange={handleConfigChange}

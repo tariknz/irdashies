@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useRef, useId } from 'react';
 import { SettingsPopover } from '../components/SettingsPopover';
 import type { TagGroup } from '@irdashies/types';
@@ -58,7 +59,7 @@ export const GroupSelect = ({
         aria-expanded={isOpen}
         aria-controls={isOpen ? optionsId : undefined}
         aria-describedby={selectedGroup ? valueId : undefined}
-        aria-label={label}
+        aria-label={t(label)}
         className="settings-field w-full text-left flex items-center justify-between gap-2 hover:bg-settings-hover"
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -123,7 +124,7 @@ export const GroupSelect = ({
         anchorRef={triggerRef}
         onClose={() => setIsOpen(false)}
         id={optionsId}
-        label={`${label} options`}
+        label={t('{label} options', { label: t(label) })}
         matchAnchorWidth
       >
         {groups.map((g) => (

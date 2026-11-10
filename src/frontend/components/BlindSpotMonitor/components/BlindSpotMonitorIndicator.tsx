@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { CarLeftRight } from '@irdashies/types';
 import { useEffect, useRef, useState } from 'react';
 
@@ -96,7 +97,7 @@ export const BlindSpotMonitorIndicator = ({
               textOrientation: 'mixed',
             }}
           >
-            {twoCarsText}
+            {t(twoCarsText)}
           </div>
         )}
       </div>

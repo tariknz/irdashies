@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { SortableList } from '../../../SortableList';
 import { FuelWidgetSettings } from '@irdashies/types';
 import { SettingNumberRow } from '../../components/SettingNumberRow';
@@ -58,7 +59,7 @@ export const GridOrderSettingsList = ({
         return (
           <DraggableSettingItem
             key={row.id}
-            label={row.label}
+            label={t(row.label)}
             enabled={isEnabled}
             onToggle={(val) => {
               if (val && !itemsOrder.includes(row.id)) {
@@ -71,7 +72,7 @@ export const GridOrderSettingsList = ({
             {row.id === 'avg' && isEnabled && (
               <div className="pl-12 pt-4">
                 <SettingNumberRow
-                  title="Average Laps"
+                  title={t('Average Laps')}
                   value={settings.config.avgLapsCount ?? 3}
                   min={1}
                   max={50}

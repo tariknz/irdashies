@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { ReactNode } from 'react';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { ToggleSwitch } from './ToggleSwitch';
@@ -38,10 +39,10 @@ export function DraggableSettingItem({
           >
             <DotsSixVerticalIcon size={16} className="text-slate-400" />
           </div>
-          <span className="text-sm font-normal text-slate-200">{label}</span>
+          <span className="text-sm font-normal text-slate-200">{t(label)}</span>
         </div>
         <ReorderControls
-          label={label}
+          label={t(label)}
           position={position}
           total={total}
           onMoveUp={onMoveUp}
@@ -51,7 +52,7 @@ export function DraggableSettingItem({
           <ToggleSwitch
             enabled={enabled}
             onToggle={onToggle}
-            ariaLabel={label}
+            ariaLabel={t(label)}
           />
         )}
       </div>

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useEffect, useState } from 'react';
 import { WarningCircleIcon } from '@phosphor-icons/react';
 
@@ -19,10 +20,11 @@ export const StorageStatusNotice = () => {
     >
       <WarningCircleIcon size={22} className="shrink-0" />
       <div>
-        <p className="font-semibold">Disk full — data cannot be saved</p>
+        <p className="font-semibold">{t('Disk full — data cannot be saved')}</p>
         <p className="text-sm">
-          Fuel history or reference laps cannot be saved. Free disk space to
-          resume saving.
+          {t(
+            'Fuel history or reference laps cannot be saved. Free disk space to resume saving.'
+          )}
         </p>
       </div>
     </div>

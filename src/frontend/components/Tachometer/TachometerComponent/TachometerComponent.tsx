@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useEffect, useState } from 'react';
 import type { CarData } from '../../../utils/carData';
 import type { ShiftPointSettings } from '@irdashies/types';
@@ -328,7 +329,7 @@ export const Tachometer = ({
       className={`${tempBoxClass} ${warning ? 'text-red-500' : 'text-white'}`}
       style={tempBoxStyle}
     >
-      <span className="text-[0.7em] text-gray-400">{label}</span>
+      <span className="text-[0.7em] text-gray-400">{t(label)}</span>
       <span>{Math.round(value)}°C</span>
     </div>
   );
@@ -410,7 +411,7 @@ export const Tachometer = ({
                   ? `0 0 4px ${getLedColor(i)}`
                   : 'none',
               }}
-              aria-label={`LED ${i + 1}`}
+              aria-label={t('LED {value}', { value: i + 1 })}
             />
           </div>
         ))}
@@ -429,17 +430,17 @@ export const Tachometer = ({
             {showRpmText && (
               <>
                 {shouldShowCustomShift ? (
-                  <span className="font-bold">SHIFT</span>
+                  <span className="font-bold">{t('SHIFT')}</span>
                 ) : (
                   <>
                     {Math.round(clampedRpm).toLocaleString('en-US')}
-                    <span className="text-[0.6em] ml-2">RPM</span>
+                    <span className="text-[0.6em] ml-2">{t('RPM')}</span>
                   </>
                 )}
               </>
             )}
             {!showRpmText && shouldShowCustomShift && (
-              <span className="font-bold">SHIFT</span>
+              <span className="font-bold">{t('SHIFT')}</span>
             )}
           </div>
         )}
@@ -459,17 +460,17 @@ export const Tachometer = ({
           {showRpmText && (
             <>
               {shouldShowCustomShift ? (
-                <span className="font-bold">SHIFT</span>
+                <span className="font-bold">{t('SHIFT')}</span>
               ) : (
                 <>
                   {Math.round(clampedRpm).toLocaleString('en-US')}
-                  <span className="text-[0.6em] ml-2">RPM</span>
+                  <span className="text-[0.6em] ml-2">{t('RPM')}</span>
                 </>
               )}
             </>
           )}
           {!showRpmText && shouldShowCustomShift && (
-            <span className="font-bold">SHIFT</span>
+            <span className="font-bold">{t('SHIFT')}</span>
           )}
         </div>
       )}

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
@@ -147,7 +148,7 @@ const DisplaySettingsList = ({
         return (
           <DraggableSettingItem
             key={setting.id}
-            label={setting.label}
+            label={t(setting.label)}
             enabled={isEnabled}
             onToggle={(enabled) => {
               const cv = settings.config[setting.configKey] as {
@@ -192,10 +193,12 @@ const DisplaySettingsList = ({
             {setting.configKey === 'driverName' &&
               (configValue as { enabled: boolean }).enabled && (
                 <div className="mt-3">
-                  <p className="mb-2 text-sm text-slate-400">Name format</p>
+                  <p className="mb-2 text-sm text-slate-400">
+                    {t('Name format')}
+                  </p>
                   <div
                     role="group"
-                    aria-label="Driver name format"
+                    aria-label={t('Driver name format')}
                     className="grid grid-cols-2 gap-2 xl:grid-cols-3"
                   >
                     {(
@@ -368,13 +371,13 @@ export const RelativeSettings = () => {
   }, [activeTab]);
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   return (
     <BaseSettingsSection
-      title="Relative"
-      description="Configure the relative timing display settings."
+      title={t('Relative')}
+      description={t('Configure the relative timing display settings.')}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId="relative"
@@ -399,42 +402,42 @@ export const RelativeSettings = () => {
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Display
+                  {t('Display')}
                 </TabButton>
                 <TabButton
                   id="options"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Options
+                  {t('Options')}
                 </TabButton>
                 <TabButton
                   id="header"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Header
+                  {t('Header')}
                 </TabButton>
                 <TabButton
                   id="footer"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Footer
+                  {t('Footer')}
                 </TabButton>
                 <TabButton
                   id="styling"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Styling
+                  {t('Styling')}
                 </TabButton>
                 <TabButton
                   id="visibility"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Visibility
+                  {t('Visibility')}
                 </TabButton>
               </div>
 
@@ -442,9 +445,12 @@ export const RelativeSettings = () => {
                 {/* DISPLAY TAB */}
                 {activeTab === 'display' && (
                   <>
-                    <SettingsSection title="Display" scaleWidgetId="relative">
+                    <SettingsSection
+                      title={t('Display')}
+                      scaleWidgetId="relative"
+                    >
                       <h4 className="text-md font-medium text-slate-200">
-                        Display Order
+                        {t('Display Order')}
                       </h4>
                       <DisplaySettingsList
                         itemsOrder={itemsOrder}
@@ -454,7 +460,7 @@ export const RelativeSettings = () => {
                       />
 
                       <SettingActionButton
-                        label="Reset to Default Order"
+                        label={t('Reset to Default Order')}
                         onClick={() => {
                           const defaultOrder = sortableSettings.map(
                             (s) => s.id
@@ -470,7 +476,7 @@ export const RelativeSettings = () => {
                 {/* OPTIONS TAB */}
                 {activeTab === 'options' && (
                   <>
-                    <SettingsSection title="Driver Standings">
+                    <SettingsSection title={t('Driver Standings')}>
                       <SettingProp path="buffer" />
                       <SettingProp path="useLivePosition" />
                       <SettingProp path="radio.persistenceSeconds" />
@@ -478,7 +484,7 @@ export const RelativeSettings = () => {
 
                     <SettingDivider />
 
-                    <SettingsSection title="Title Bar">
+                    <SettingsSection title={t('Title Bar')}>
                       <SettingProp path="titleBar.enabled" />
 
                       {settings.config.titleBar.enabled && (
@@ -490,14 +496,14 @@ export const RelativeSettings = () => {
 
                     <SettingDivider />
 
-                    <SettingsSection title="Background">
+                    <SettingsSection title={t('Background')}>
                       <SettingProp path="background.opacity" />
                       <SettingProp path="foreground.opacity" />
                     </SettingsSection>
 
                     <SettingDivider />
 
-                    <SettingsSection title="Relative Time">
+                    <SettingsSection title={t('Relative Time')}>
                       <SettingProp path="delta.precision" />
                     </SettingsSection>
                   </>
@@ -505,7 +511,7 @@ export const RelativeSettings = () => {
 
                 {/* HEADER TAB */}
                 {activeTab === 'header' && (
-                  <SettingsSection title="Header Bar">
+                  <SettingsSection title={t('Header Bar')}>
                     <SettingProp path="headerBar.enabled" />
 
                     {settings.config.headerBar.enabled && (
@@ -558,7 +564,7 @@ export const RelativeSettings = () => {
                         />
 
                         <SettingActionButton
-                          label="Reset to Default Order"
+                          label={t('Reset to Default Order')}
                           onClick={() => {
                             handleConfigChange({
                               headerBar: {
@@ -577,7 +583,7 @@ export const RelativeSettings = () => {
 
                 {/* FOOTER TAB */}
                 {activeTab === 'footer' && (
-                  <SettingsSection title="Footer Bar">
+                  <SettingsSection title={t('Footer Bar')}>
                     <SettingProp path="footerBar.enabled" />
 
                     {settings.config.footerBar.enabled && (
@@ -630,7 +636,7 @@ export const RelativeSettings = () => {
                         />
 
                         <SettingActionButton
-                          label="Reset to Default Order"
+                          label={t('Reset to Default Order')}
                           onClick={() => {
                             handleConfigChange({
                               footerBar: {
@@ -650,21 +656,21 @@ export const RelativeSettings = () => {
                 {/* STYLING TAB */}
                 {activeTab === 'styling' && (
                   <div className="space-y-5">
-                    <SettingsSection title="Driver Position">
+                    <SettingsSection title={t('Driver Position')}>
                       <SettingProp path="stylingOptions.driverPosition.background" />
                     </SettingsSection>
 
-                    <SettingsSection title="Car Number">
+                    <SettingsSection title={t('Car Number')}>
                       <SettingProp path="stylingOptions.driverNumber.background" />
                       <SettingProp path="stylingOptions.driverNumber.border" />
                     </SettingsSection>
 
-                    <SettingsSection title="Badges">
+                    <SettingsSection title={t('Badges')}>
                       <SettingProp path="stylingOptions.badge" />
                       <SettingProp path="stylingOptions.statusBadges" />
                     </SettingsSection>
 
-                    <SettingsSection title="Flag Contour">
+                    <SettingsSection title={t('Flag Contour')}>
                       <SettingProp path="stylingOptions.flagContour.enabled" />
                       {settings.config.stylingOptions?.flagContour?.enabled && (
                         <SettingProp path="stylingOptions.flagContour.borderWidth" />
@@ -675,7 +681,7 @@ export const RelativeSettings = () => {
 
                 {/* VISIBILITY TAB */}
                 {activeTab === 'visibility' && (
-                  <SettingsSection title="Session Visibility">
+                  <SettingsSection title={t('Session Visibility')}>
                     <SessionVisibility
                       sessionVisibility={settings.config.sessionVisibility}
                       handleConfigChange={handleConfigChange}

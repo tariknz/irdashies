@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useMemo } from 'react';
 import type { LapTraceConfig } from '@irdashies/types';
 import {
@@ -58,7 +59,7 @@ const RecordingProgress = () => {
         />
       </div>
       <span className="text-slate-500 text-[10px] tabular-nums">
-        Recording {percent}%
+        {t('Recording')} {percent}%
       </span>
     </>
   );
@@ -191,7 +192,7 @@ export const LapTrace = (props: LapTraceProps) => {
           className="text-slate-400 uppercase tracking-wide max-w-[65%] truncate text-[9px]"
           title={referenceLap?.source.label ?? undefined}
         >
-          {referenceLap?.source.label ?? 'Lap Trace'}
+          {referenceLap?.source.label ?? t('Lap Trace')}
         </span>
         {referenceLap && referenceLap.lapTimeSec > 0 && (
           <span className="text-amber-300 font-semibold tabular-nums">
@@ -251,7 +252,7 @@ export const LapTrace = (props: LapTraceProps) => {
       ) : (
         <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-1 text-center">
           <span className="text-slate-400 text-xs">
-            {referenceError ?? 'Drive a clean lap to record a reference'}
+            {referenceError ?? t('Drive a clean lap to record a reference')}
           </span>
           {/* A reference that failed to load is the more serious problem and
               keeps the line above to itself; below it goes either the live
@@ -262,7 +263,7 @@ export const LapTrace = (props: LapTraceProps) => {
             trackLengthM > 0 &&
             (invalidReason ? (
               <span className="text-slate-500 text-[10px]">
-                {invalidLapMessage(invalidReason)}
+                {t(invalidLapMessage(invalidReason))}
               </span>
             ) : (
               <RecordingProgress />

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { TrophyIcon } from '@phosphor-icons/react';
 import type { Standings } from '@irdashies/domain';
 import type { BroadcastPodiumStyle } from '@irdashies/types';
@@ -107,7 +108,7 @@ export const PodiumCard = ({
   <div className="overflow-hidden rounded-sm bg-slate-950/(--bg-opacity) pb-2 text-white">
     <MedalGradients />
     <div className="bg-linear-to-r from-amber-500 to-slate-900 px-2 py-0.5 font-bold italic text-slate-900 uppercase">
-      Podium
+      {t('Podium')}
     </div>
     {groups.map(([classId, drivers]) => {
       const [first, second, third] = drivers;

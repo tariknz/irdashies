@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { DropIcon, SunIcon, WavesIcon } from '@phosphor-icons/react';
 import { memo } from 'react';
 
@@ -44,7 +45,7 @@ export const WeatherTrackWetness = memo(
           <div className="flex items-center gap-x-1.5">
             <WavesIcon size={12} className="flex-none text-white/50" />
             <span className="text-sm font-medium capitalize truncate">
-              {trackStateLabel}
+              {t(trackStateLabel)}
             </span>
           </div>
         </div>
@@ -56,9 +57,11 @@ export const WeatherTrackWetness = memo(
         <div className="bg-slate-800/70 px-2 py-1 rounded-sm min-w-0">
           <div className="flex items-center gap-x-1.5 text-sm">
             <WavesIcon size={12} className="flex-none text-white/50" />
-            <span className="truncate min-w-0 text-white/60">Wetness</span>
+            <span className="truncate min-w-0 text-white/60">
+              {t('Wetness')}
+            </span>
             <div className="flex-none whitespace-nowrap text-right font-medium capitalize">
-              {trackStateLabel}
+              {t(trackStateLabel)}
             </div>
           </div>
         </div>
@@ -71,7 +74,7 @@ export const WeatherTrackWetness = memo(
         <div className="flex flex-row gap-x-2 items-center text-sm mb-2">
           <WavesIcon className="flex-none" />
           <div className="flex-1 min-w-0 truncate capitalize">
-            {trackStateLabel}
+            {t(trackStateLabel)}
           </div>
         </div>
 

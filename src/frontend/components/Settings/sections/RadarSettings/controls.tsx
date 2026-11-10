@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useMemo } from 'react';
 import { useSessionDrivers } from '@irdashies/context';
 import { typicalCarSize, type CarSize } from '@irdashies/domain/radar/carSizes';
@@ -34,8 +35,8 @@ export const ColorRow = ({
     />
     <div className="flex-1">
       <SettingSelectRow
-        title={title}
-        description={description}
+        title={t(title)}
+        description={t(description)}
         value={String(value)}
         options={COLOR_OPTIONS}
         onChange={(v) => onChange(parseInt(v, 10))}
@@ -58,9 +59,11 @@ export const CustomColorRow = ({
   return (
     <div className="flex items-center justify-between gap-3">
       <div>
-        <div className="text-sm text-slate-300">Rival Fill</div>
+        <div className="text-sm text-slate-300">{t('Rival Fill')}</div>
         <div className="text-xs text-slate-500">
-          {value === null ? 'A paler shade of your car.' : 'Your own pick.'}
+          {value === null
+            ? t('A paler shade of your car.')
+            : t('Your own pick.')}
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -70,12 +73,12 @@ export const CustomColorRow = ({
             className="text-xs text-slate-400 hover:text-slate-200"
             onClick={() => onChange(null)}
           >
-            Reset
+            {t('Reset')}
           </button>
         )}
         <input
           type="color"
-          aria-label="Rival Fill"
+          aria-label={t('Rival Fill')}
           value={shown}
           onChange={(e) => onChange(parseInt(e.target.value.slice(1), 16))}
           className="w-10 h-8 bg-slate-700 rounded cursor-pointer"
@@ -123,7 +126,7 @@ export const ClassSizeRows = ({
   if (classes.length === 0) {
     return (
       <p className="text-xs text-slate-400">
-        Join a session to adjust the size of each class in it.
+        {t('Join a session to adjust the size of each class in it.')}
       </p>
     );
   }
@@ -164,14 +167,14 @@ export const ClassSizeRows = ({
                   className="text-xs text-slate-400 hover:text-slate-200"
                   onClick={() => setSize(carClass.name, undefined)}
                 >
-                  Reset
+                  {t('Reset')}
                 </button>
               ) : (
-                <span className="text-xs text-slate-500">typical</span>
+                <span className="text-xs text-slate-500">{t('typical')}</span>
               )}
             </div>
             <SettingSliderRow
-              title="Length"
+              title={t('Length')}
               value={size.length}
               units="m"
               min={3}
@@ -180,7 +183,7 @@ export const ClassSizeRows = ({
               onChange={(length) => setSize(carClass.name, { ...size, length })}
             />
             <SettingSliderRow
-              title="Width"
+              title={t('Width')}
               value={size.width}
               units="m"
               min={1.4}
@@ -209,12 +212,14 @@ export const ColorPickRow = ({
 }) => (
   <div className="flex items-center justify-between gap-3">
     <div>
-      <h4 className="text-md font-medium text-slate-300">{title}</h4>
-      {description && <p className="text-sm text-slate-500">{description}</p>}
+      <h4 className="text-md font-medium text-slate-300">{t(title)}</h4>
+      {description && (
+        <p className="text-sm text-slate-500">{t(description)}</p>
+      )}
     </div>
     <input
       type="color"
-      aria-label={title}
+      aria-label={t(title)}
       value={hex(value)}
       onChange={(e) => onChange(parseInt(e.target.value.slice(1), 16))}
       className="w-10 h-8 bg-slate-700 rounded cursor-pointer shrink-0"
@@ -242,12 +247,14 @@ export const NumberRow = ({
 }) => (
   <div className="flex items-center justify-between gap-3">
     <div>
-      <h4 className="text-sm font-mono text-slate-300">{title}</h4>
-      {description && <p className="text-sm text-slate-500">{description}</p>}
+      <h4 className="text-sm font-mono text-slate-300">{t(title)}</h4>
+      {description && (
+        <p className="text-sm text-slate-500">{t(description)}</p>
+      )}
     </div>
     <input
       type="number"
-      aria-label={title}
+      aria-label={t(title)}
       value={value}
       min={min}
       max={max}

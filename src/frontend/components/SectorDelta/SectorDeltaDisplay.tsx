@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { GhostIcon, WarningIcon } from '@phosphor-icons/react';
 import {
   trackStateSelectors,
@@ -184,7 +185,7 @@ export const SectorDeltaDisplay = ({
             {isCurrent && !demo ? (
               <LiveDelta dp={dp} fallback={fallback} />
             ) : (
-              fallback
+              t(fallback)
             )}
           </span>
           {isUnclean && (

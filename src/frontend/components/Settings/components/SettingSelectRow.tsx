@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 interface SettingSelectRowProps<T extends string> {
   title: string;
   description?: string;
@@ -16,16 +17,16 @@ export function SettingSelectRow<T extends string>({
   return (
     <div className="flex min-h-9 flex-wrap items-center justify-between gap-x-5 gap-y-2">
       <div className="min-w-0 flex-1 basis-40">
-        <h4 className="text-md font-medium text-slate-300">{title}</h4>
+        <h4 className="text-md font-medium text-slate-300">{t(title)}</h4>
         {description && (
-          <p className="text-sm text-slate-500 mt-1">{description}</p>
+          <p className="text-sm text-slate-500 mt-1">{t(description)}</p>
         )}
       </div>
 
       <select
         // The visible <h4> is not tied to the control, so without this a
         // screen reader announces an unnamed combobox.
-        aria-label={title}
+        aria-label={t(title)}
         className="settings-field max-w-full"
         value={value}
         onChange={(e) => {
@@ -36,7 +37,7 @@ export function SettingSelectRow<T extends string>({
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value} disabled={opt.disabled}>
-            {opt.label}
+            {t(opt.label)}
           </option>
         ))}
       </select>

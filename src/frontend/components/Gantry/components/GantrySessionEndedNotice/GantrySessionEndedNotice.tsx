@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, useState } from 'react';
 import { FlagCheckered, X } from '@phosphor-icons/react';
 import { useGantrySessionHold } from '../../hooks/useGantrySessionHold';
@@ -14,12 +15,13 @@ export const GantrySessionEndedBanner = memo(
     >
       <FlagCheckered size={16} className="text-amber-400 shrink-0" />
       <span className="flex-1 min-w-0">
-        Session ended — showing the final results. They clear when the next
-        session loads.
+        {t(
+          'Session ended — showing the final results. They clear when the next session loads.'
+        )}
       </span>
       <button
         type="button"
-        aria-label="Dismiss session ended message"
+        aria-label={t('Dismiss session ended message')}
         onClick={onDismiss}
         className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-200"
       >

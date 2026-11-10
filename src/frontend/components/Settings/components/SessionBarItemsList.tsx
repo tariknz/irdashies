@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useCallback } from 'react';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { ToggleSwitch } from './ToggleSwitch';
@@ -87,18 +88,18 @@ export const SessionBarItemsList = ({
                   <DotsSixVerticalIcon size={16} className="text-slate-400" />
                 </div>
                 <span className="text-md text-slate-300">
-                  {SESSION_BAR_ITEM_LABELS[item.id]}
+                  {t(SESSION_BAR_ITEM_LABELS[item.id])}
                 </span>
               </div>
               <ReorderControls
-                label={SESSION_BAR_ITEM_LABELS[item.id]}
+                label={t(SESSION_BAR_ITEM_LABELS[item.id])}
                 position={position}
                 total={total}
                 onMoveUp={onMoveUp}
                 onMoveDown={onMoveDown}
               />
               <ToggleSwitch
-                ariaLabel={SESSION_BAR_ITEM_LABELS[item.id]}
+                ariaLabel={t(SESSION_BAR_ITEM_LABELS[item.id])}
                 enabled={itemConfig.enabled}
                 onToggle={(enabled) => updateItemConfig(item.id, { enabled })}
               />
@@ -108,9 +109,11 @@ export const SessionBarItemsList = ({
               itemConfig.enabled && (
                 <div className="mt-2 grid max-w-xl grid-cols-2 gap-3 pl-8 sm:grid-cols-3">
                   <label className="flex min-w-0 flex-col gap-1 text-xs text-slate-400">
-                    <span>Units</span>
+                    <span>{t('Units')}</span>
                     <select
-                      aria-label={`${SESSION_BAR_ITEM_LABELS[item.id]} units`}
+                      aria-label={t('{value} units', {
+                        value: SESSION_BAR_ITEM_LABELS[item.id],
+                      })}
                       value={itemConfig.unit ?? 'Metric'}
                       onChange={(e) =>
                         updateItemConfig(item.id, {
@@ -128,7 +131,9 @@ export const SessionBarItemsList = ({
 
             {item.id === 'wind' && itemConfig.enabled && (
               <div className="mt-2 flex flex-wrap items-center gap-2 pl-8">
-                <span className="text-xs text-slate-400">Speed position</span>
+                <span className="text-xs text-slate-400">
+                  {t('Speed position')}
+                </span>
                 {(['left', 'right'] as const).map((pos) => {
                   const currentPos = itemConfig.speedPosition ?? 'right';
                   const arrow = (
@@ -151,7 +156,7 @@ export const SessionBarItemsList = ({
                         updateItemConfig(item.id, { speedPosition: pos })
                       }
                       aria-pressed={currentPos === pos}
-                      aria-label={`Wind speed on ${pos}`}
+                      aria-label={t('Wind speed on {pos}', { pos })}
                       className="settings-button aria-pressed:border-accent-400 aria-pressed:bg-accent-400/10 aria-pressed:text-accent-200"
                     >
                       {pos === 'left' ? (
@@ -174,9 +179,11 @@ export const SessionBarItemsList = ({
             {item.id === 'sessionLaps' && itemConfig.enabled && (
               <div className="mt-2 grid max-w-xl grid-cols-2 gap-3 pl-8 sm:grid-cols-3">
                 <label className="flex min-w-0 flex-col gap-1 text-xs text-slate-400">
-                  <span>Mode</span>
+                  <span>{t('Mode')}</span>
                   <select
-                    aria-label={`${SESSION_BAR_ITEM_LABELS[item.id]} mode`}
+                    aria-label={t('{value} mode', {
+                      value: SESSION_BAR_ITEM_LABELS[item.id],
+                    })}
                     value={itemConfig.mode ?? 'Elapsed'}
                     onChange={(e) =>
                       updateItemConfig(item.id, {
@@ -185,8 +192,8 @@ export const SessionBarItemsList = ({
                     }
                     className="settings-field w-full"
                   >
-                    <option value="Elapsed">Elapsed</option>
-                    <option value="Remaining">Remaining</option>
+                    <option value="Elapsed">{t('Elapsed')}</option>
+                    <option value="Remaining">{t('Remaining')}</option>
                   </select>
                 </label>
               </div>
@@ -196,7 +203,7 @@ export const SessionBarItemsList = ({
               <div className="flex flex-col gap-2 pl-4 mt-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">
-                    Hide if single make in session
+                    {t('Hide if single make in session')}
                   </span>
                   <ToggleSwitch
                     enabled={itemConfig.hideIfSingleMake ?? false}
@@ -207,7 +214,7 @@ export const SessionBarItemsList = ({
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">
-                    Hide if only driver of that make
+                    {t('Hide if only driver of that make')}
                   </span>
                   <ToggleSwitch
                     enabled={itemConfig.hideIfSingleDriver ?? false}
@@ -222,9 +229,11 @@ export const SessionBarItemsList = ({
             {item.id === 'sessionTime' && itemConfig.enabled && (
               <div className="mt-2 grid max-w-xl grid-cols-2 gap-3 pl-8 sm:grid-cols-3">
                 <label className="flex min-w-0 flex-col gap-1 text-xs text-slate-400">
-                  <span>Mode</span>
+                  <span>{t('Mode')}</span>
                   <select
-                    aria-label={`${SESSION_BAR_ITEM_LABELS[item.id]} mode`}
+                    aria-label={t('{value} mode', {
+                      value: SESSION_BAR_ITEM_LABELS[item.id],
+                    })}
                     value={itemConfig.mode ?? 'Remaining'}
                     onChange={(e) =>
                       updateItemConfig(item.id, {
@@ -233,14 +242,16 @@ export const SessionBarItemsList = ({
                     }
                     className="settings-field w-full"
                   >
-                    <option value="Remaining">Remaining</option>
-                    <option value="Elapsed">Elapsed</option>
+                    <option value="Remaining">{t('Remaining')}</option>
+                    <option value="Elapsed">{t('Elapsed')}</option>
                   </select>
                 </label>
                 <label className="flex min-w-0 flex-col gap-1 text-xs text-slate-400">
-                  <span>Format</span>
+                  <span>{t('Format')}</span>
                   <select
-                    aria-label={`${SESSION_BAR_ITEM_LABELS[item.id]} total format`}
+                    aria-label={t('{value} total format', {
+                      value: SESSION_BAR_ITEM_LABELS[item.id],
+                    })}
                     value={itemConfig.totalFormat ?? 'minimal'}
                     onChange={(e) =>
                       updateItemConfig(item.id, {
@@ -254,9 +265,11 @@ export const SessionBarItemsList = ({
                   </select>
                 </label>
                 <label className="flex min-w-0 flex-col gap-1 text-xs text-slate-400">
-                  <span>Labels</span>
+                  <span>{t('Labels')}</span>
                   <select
-                    aria-label={`${SESSION_BAR_ITEM_LABELS[item.id]} label style`}
+                    aria-label={t('{value} label style', {
+                      value: SESSION_BAR_ITEM_LABELS[item.id],
+                    })}
                     value={itemConfig.labelStyle ?? 'minimal'}
                     onChange={(e) =>
                       updateItemConfig(item.id, {
@@ -266,9 +279,9 @@ export const SessionBarItemsList = ({
                     }
                     className="settings-field w-full"
                   >
-                    <option value="minimal">Minimal Labels</option>
-                    <option value="short">Short Labels</option>
-                    <option value="none">Hide Labels</option>
+                    <option value="minimal">{t('Minimal Labels')}</option>
+                    <option value="short">{t('Short Labels')}</option>
+                    <option value="none">{t('Hide Labels')}</option>
                   </select>
                 </label>
               </div>

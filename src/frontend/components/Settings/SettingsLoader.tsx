@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { ReleaseNotesSettings } from './ReleaseNotes/ReleaseNotesSettings';
 import type { ComponentType } from 'react';
 import { useParams } from 'react-router-dom';
@@ -121,8 +122,10 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
     );
 
   return widget ? (
-    <div className="text-red-400">No settings available for {type}</div>
+    <div className="text-red-400">
+      {t('No settings available for')} {type}
+    </div>
   ) : (
-    <div className="text-slate-400">Select a widget to edit</div>
+    <div className="text-slate-400">{t('Select a widget to edit')}</div>
   );
 };

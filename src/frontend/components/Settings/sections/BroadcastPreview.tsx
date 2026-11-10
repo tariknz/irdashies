@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useEffect, useState } from 'react';
 import { useDashboard } from '@irdashies/context';
 import type {
@@ -37,7 +38,7 @@ const useCycle = (seconds: number) => {
 const EventsPreview = ({ config }: { config?: BroadcastEventsConfig }) => {
   const n = useCycle(config?.showSeconds ?? 8);
   const event = demoEvent(n, CAR_IDXS, config?.kinds);
-  if (!event) return <Empty>Every event kind is off.</Empty>;
+  if (!event) return <Empty>{t('Every event kind is off.')}</Empty>;
   return (
     <EventCard
       event={event}
@@ -72,7 +73,7 @@ const WeatherPreview = ({ config }: { config?: BroadcastWeatherConfig }) => {
 };
 
 const Empty = ({ children }: { children: string }) => (
-  <p className="text-sm text-slate-500">{children}</p>
+  <p className="text-sm text-slate-500">{t(children)}</p>
 );
 
 /**
@@ -119,7 +120,7 @@ export const BroadcastPreview = ({ module }: { module: string }) => {
           <TowerView
             settings={tower}
             groups={GROUPS}
-            title={tower?.title || 'Preview Raceway'}
+            title={tower?.title || t('Preview Raceway')}
             focusCarIdx={FOCUS_CAR}
             changes={CHANGES}
             hasTyreChoice
@@ -133,7 +134,7 @@ export const BroadcastPreview = ({ module }: { module: string }) => {
   return (
     <div className="space-y-2">
       <div className="text-xs uppercase tracking-wider text-slate-500">
-        Preview
+        {t('Preview')}
       </div>
       {/* Remounts per module so each starts its animations fresh. */}
       <div key={module}>{preview()}</div>

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo } from 'react';
 import { DropIcon } from '@phosphor-icons/react';
 import { useSessionBarSnapshot } from '@irdashies/context';
@@ -16,7 +17,7 @@ export const HumidityItem = memo(({ standalone }: SessionBarItemProps) => {
     <div className={sessionBarItemWrapperClass(standalone)}>
       <div
         className="flex justify-center gap-1 items-center text-nowrap"
-        title="Humidity"
+        title={t('Humidity')}
       >
         <DropIcon />
         <span>{validHumidity ? `${Math.round(humidity * 100)}%` : '- %'}</span>

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboard } from '@irdashies/context';
@@ -73,13 +74,17 @@ export const FuelSettings = ({ widgetId }: FuelSettingsProps) => {
   if (fuelWidgets.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-4">
-        <h3 className="text-xl font-bold text-slate-200">Fuel Calculator</h3>
-        <p className="text-slate-400">No fuel calculator widgets added yet.</p>
+        <h3 className="text-xl font-bold text-slate-200">
+          {t('Fuel Calculator')}
+        </h3>
+        <p className="text-slate-400">
+          {t('No fuel calculator widgets added yet.')}
+        </p>
         <button
           onClick={handleAddWidget}
           className="flex min-h-9 items-center gap-2 rounded-md bg-accent-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-600"
         >
-          <PlusIcon size={20} /> Create New Widget
+          <PlusIcon size={20} /> {t('Create New Widget')}
         </button>
       </div>
     );

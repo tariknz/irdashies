@@ -5,6 +5,7 @@ import {
   SessionProvider,
 } from '@irdashies/context';
 import { Settings } from '../components/Settings/Settings';
+import { LanguageSync } from '../i18n';
 
 export default function SettingsWindow() {
   return (
@@ -13,7 +14,14 @@ export default function SettingsWindow() {
         <SessionProvider bridge={window.irsdkBridge} />
         <HashRouter>
           <Routes>
-            <Route path="/settings/*" element={<Settings />} />
+            <Route
+              path="/settings/*"
+              element={
+                <LanguageSync>
+                  <Settings />
+                </LanguageSync>
+              }
+            />
           </Routes>
         </HashRouter>
       </RunningStateProvider>

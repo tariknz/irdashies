@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo } from 'react';
 import { DropHalfIcon, DropIcon } from '@phosphor-icons/react';
 
@@ -18,7 +19,7 @@ export const WeatherHumidity = memo(
       return (
         <div
           className="bg-slate-800/70 px-2 py-1 rounded-sm min-w-0"
-          title="Humidity"
+          title={t('Humidity')}
         >
           <div className="flex items-center gap-x-1.5">
             <Icon size={12} className="flex-none text-white/50" />
@@ -33,7 +34,9 @@ export const WeatherHumidity = memo(
         <div className="bg-slate-800/70 px-2 py-1 rounded-sm min-w-0">
           <div className="flex items-center gap-x-1.5 text-sm">
             <Icon size={12} className="flex-none text-white/50" />
-            <span className="truncate min-w-0 text-white/60">Humidity</span>
+            <span className="truncate min-w-0 text-white/60">
+              {t('Humidity')}
+            </span>
             <div className="flex-none whitespace-nowrap text-right font-medium">
               {value}
             </div>
@@ -47,7 +50,7 @@ export const WeatherHumidity = memo(
         <div className="flex flex-row gap-x-2 items-center text-sm">
           <Icon className="flex-none" />
           <span className="truncate min-w-0 flex-1 @max-[120px]:hidden">
-            Humidity
+            {t('Humidity')}
           </span>
           <div className="flex-none whitespace-nowrap text-right">{value}</div>
         </div>

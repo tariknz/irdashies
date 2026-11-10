@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useId, useState } from 'react';
 import { LayoutNode, BoxConfig } from '@irdashies/types';
 import { DotsSixVerticalIcon, TrashIcon } from '@phosphor-icons/react';
@@ -148,7 +149,7 @@ const RecursiveRenderer = ({
   if (!node || !node.type) {
     return (
       <div className="p-2 m-1 bg-red-900/50 border border-red-500 text-red-200 text-xs rounded">
-        Invalid Node
+        {t('Invalid Node')}
       </div>
     );
   }
@@ -169,11 +170,16 @@ const RecursiveRenderer = ({
             onDragStart={(e) => onDragStart(e, node)}
           >
             <DotsSixVerticalIcon className="text-slate-600 cursor-grab" />
-            <span className="sr-only">Group</span>
+            <span className="sr-only">{t('Group')}</span>
           </div>
           <button
             type="button"
-            aria-label={`Remove group: ${(node.widgets ?? []).map((id) => getWidgetLabel(id, availableWidgets)).join(', ') || 'empty'}`}
+            aria-label={t('Remove group: {widgets}', {
+              widgets:
+                (node.widgets ?? [])
+                  .map((id) => getWidgetLabel(id, availableWidgets))
+                  .join(', ') || t('empty'),
+            })}
             onClick={(e) => {
               e.stopPropagation();
               onRemoveBox(node.id);
@@ -242,11 +248,13 @@ const RecursiveRenderer = ({
                   }`}
                 >
                   <span className="text-xs text-slate-200 truncate">
-                    {getWidgetLabel(wId, availableWidgets)}
+                    {t(getWidgetLabel(wId, availableWidgets))}
                   </span>
                   <button
                     type="button"
-                    aria-label={`Remove ${getWidgetLabel(wId, availableWidgets)} from group`}
+                    aria-label={t('Remove {value} from group', {
+                      value: getWidgetLabel(wId, availableWidgets),
+                    })}
                     onClick={(e) => {
                       e.stopPropagation();
                       onRemoveWidgetFromBox(node.id, idx);
@@ -270,7 +278,9 @@ const RecursiveRenderer = ({
             );
           })}
           {(!node.widgets || node.widgets.length === 0) && (
-            <span className="text-xs text-slate-500 italic p-1">Empty</span>
+            <span className="text-xs text-slate-500 italic p-1">
+              {t('Empty')}
+            </span>
           )}
         </div>
 
@@ -289,7 +299,7 @@ const RecursiveRenderer = ({
         )}
         {dropZone === 'center' && (
           <div className="absolute inset-0 bg-accent-500/20 border-2 border-accent-500 animate-pulse pointer-events-none rounded flex items-center justify-center text-accent-200 font-bold text-xs">
-            ADD TO GROUP
+            {t('ADD TO GROUP')}
           </div>
         )}
       </div>
@@ -563,7 +573,13 @@ const LayoutArrangementControls = ({
   const [announcement, setAnnouncement] = useState('');
   const boxes = layoutBoxes(tree);
   const groupLabel = (box: (typeof boxes)[number], index: number) =>
-    `Group ${index + 1}: ${box.widgets.map((widget) => getWidgetLabel(widget, availableWidgets)).join(', ') || 'empty'}`;
+    t('Group {number}: {widgets}', {
+      number: index + 1,
+      widgets:
+        box.widgets
+          .map((widget) => t(getWidgetLabel(widget, availableWidgets)))
+          .join(', ') || t('empty'),
+    });
   const used = getUsedWidgetIds(tree);
   const sources = [
     ...boxes.flatMap((box, index) => [
@@ -576,7 +592,10 @@ const LayoutArrangementControls = ({
       },
       ...box.widgets.map((widget, widgetIndex) => ({
         key: `item-${box.id}-${widget}`,
-        label: `${getWidgetLabel(widget, availableWidgets)} (group ${index + 1})`,
+        label: t('{widget} (group {number})', {
+          widget: t(getWidgetLabel(widget, availableWidgets)),
+          number: index + 1,
+        }),
         boxId: box.id,
         widgetIndex,
         widgetId: undefined as string | undefined,
@@ -586,7 +605,7 @@ const LayoutArrangementControls = ({
       .filter((widget) => !used.includes(widget.id))
       .map((widget) => ({
         key: `new-${widget.id}`,
-        label: `${widget.label} (available)`,
+        label: t('{widget} (available)', { widget: t(widget.label) }),
         widgetId: widget.id,
         boxId: undefined as string | undefined,
         widgetIndex: undefined as number | undefined,
@@ -608,14 +627,14 @@ const LayoutArrangementControls = ({
   return (
     <details className="rounded-md border border-slate-700 p-3">
       <summary className="min-h-9 cursor-pointer text-sm text-slate-300">
-        Arrange without dragging
+        {t('Arrange without dragging')}
       </summary>
       <div className="mt-3 grid grid-cols-2 items-end gap-3">
         <label
           htmlFor={`${id}-source`}
           className="flex min-w-0 flex-col gap-1 text-sm text-slate-300"
         >
-          Item
+          {t('Item')}
           <select
             id={`${id}-source`}
             value={source?.key ?? ''}
@@ -624,7 +643,7 @@ const LayoutArrangementControls = ({
           >
             {sources.map((item) => (
               <option key={item.key} value={item.key}>
-                {item.label}
+                {t(item.label)}
               </option>
             ))}
           </select>
@@ -633,7 +652,7 @@ const LayoutArrangementControls = ({
           htmlFor={`${id}-target`}
           className="flex min-w-0 flex-col gap-1 text-sm text-slate-300"
         >
-          Destination group
+          {t('Destination group')}
           <select
             id={`${id}-target`}
             value={target?.id ?? ''}
@@ -641,10 +660,12 @@ const LayoutArrangementControls = ({
             className="settings-field w-full"
             disabled={!target}
           >
-            {!target && <option value="">Choose an individual item</option>}
+            {!target && (
+              <option value="">{t('Choose an individual item')}</option>
+            )}
             {targets.map((box) => (
               <option key={box.id} value={box.id}>
-                {groupLabel(box, boxes.indexOf(box))}
+                {t(groupLabel(box, boxes.indexOf(box)))}
               </option>
             ))}
           </select>
@@ -653,7 +674,7 @@ const LayoutArrangementControls = ({
           htmlFor={`${id}-placement`}
           className="flex min-w-0 flex-col gap-1 text-sm text-slate-300"
         >
-          Placement
+          {t('Placement')}
           <select
             id={`${id}-placement`}
             value={effectivePlacement}
@@ -662,14 +683,14 @@ const LayoutArrangementControls = ({
             }
             className="settings-field w-full"
           >
-            <option value="first">First in group</option>
-            <option value="last">Last in group</option>
+            <option value="first">{t('First in group')}</option>
+            <option value="last">{t('Last in group')}</option>
             {!sameSingle && (
               <>
-                <option value="top">New group above</option>
-                <option value="bottom">New group below</option>
-                <option value="left">New group to left</option>
-                <option value="right">New group to right</option>
+                <option value="top">{t('New group above')}</option>
+                <option value="bottom">{t('New group below')}</option>
+                <option value="left">{t('New group to left')}</option>
+                <option value="right">{t('New group to right')}</option>
               </>
             )}
           </select>
@@ -688,7 +709,7 @@ const LayoutArrangementControls = ({
             );
           }}
         >
-          Apply arrangement
+          {t('Apply arrangement')}
         </button>
       </div>
       <p role="status" className="mt-2 text-sm text-slate-400">
@@ -947,7 +968,9 @@ export const LayoutVisualizer = ({
             />
           </div>
           <div className="p-2 bg-slate-800 text-xs text-slate-400 border-t border-slate-700 flex justify-between items-center">
-            <span>Drag items to split. Drop in CENTER to join group.</span>
+            <span>
+              {t('Drag items to split. Drop in CENTER to join group.')}
+            </span>
           </div>
         </div>
 
@@ -1001,7 +1024,7 @@ export const LayoutVisualizer = ({
         >
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-medium text-slate-300">
-              Available Widgets
+              {t('Available Widgets')}
             </h4>
             {dragState.draggedNode && (
               <TrashIcon className="text-red-400 animate-pulse" weight="fill" />
@@ -1024,12 +1047,12 @@ export const LayoutVisualizer = ({
                 className="bg-slate-700 hover:bg-settings-hover border border-settings-boundary min-h-9 p-2 rounded text-sm text-slate-200 cursor-grab active:cursor-grabbing flex items-center gap-2"
               >
                 <DotsSixVerticalIcon className="text-slate-400" />
-                {widget.label}
+                {t(widget.label)}
               </div>
             ))}
             {unusedWidgets.length === 0 && (
               <span className="text-xs text-slate-500 italic">
-                All widgets used
+                {t('All widgets used')}
               </span>
             )}
           </div>
@@ -1037,7 +1060,7 @@ export const LayoutVisualizer = ({
           {dragState.draggedNode && (
             <div className="mt-auto p-4 border-2 border-dashed border-red-500/30 rounded-lg flex flex-col items-center justify-center text-red-300 gap-2 bg-slate-900/50">
               <TrashIcon size={24} />
-              <span className="text-xs font-medium">Drop to Remove</span>
+              <span className="text-xs font-medium">{t('Drop to Remove')}</span>
             </div>
           )}
         </div>

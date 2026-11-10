@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, useId, useMemo } from 'react';
 import { Check } from '@phosphor-icons/react';
 import {
@@ -134,16 +135,16 @@ export const GantryIncidents = memo(() => {
 
   return (
     <GantryPanel
-      title="Incidents"
+      title={t('Incidents')}
       aside={
         <span className="text-sm text-slate-400 tabular-nums">
-          {incidents.length} shown
+          {incidents.length} {t('shown')}
         </span>
       }
     >
       <div
         role="group"
-        aria-label="Incident types"
+        aria-label={t('Incident types')}
         className="flex flex-shrink-0 flex-wrap gap-1.5 px-4 pb-2"
       >
         {CHIP_ORDER.map((type) => {
@@ -153,7 +154,7 @@ export const GantryIncidents = memo(() => {
             <Tooltip
               key={type}
               placement="bottom"
-              content={`${style.description} Click to ${isActive ? 'hide' : 'show'} them in the feed. ${FILTERS_COMBINE_HINT}`}
+              content={`${t(style.description)} ${isActive ? t('Click to hide them in the feed.') : t('Click to show them in the feed.')} ${t(FILTERS_COMBINE_HINT)}`}
             >
               <button
                 type="button"
@@ -173,7 +174,7 @@ export const GantryIncidents = memo(() => {
                     isActive ? style.dotOn : style.dotOff,
                   ].join(' ')}
                 />
-                {style.label}
+                {t(style.label)}
                 {isActive && (
                   <Check
                     aria-hidden="true"
@@ -189,40 +190,44 @@ export const GantryIncidents = memo(() => {
 
       <div className="grid flex-shrink-0 grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 border-b border-slate-700 px-4 pb-3">
         <label htmlFor={sessionId} className="text-sm text-slate-400">
-          Session
+          {t('Session')}
         </label>
         <Tooltip
           placement="bottom"
-          content="Narrows the feed to one session. Current session follows the live session, or the session of the replay. Combines with the type and driver filters."
+          content={t(
+            'Narrows the feed to one session. Current session follows the live session, or the session of the replay. Combines with the type and driver filters.'
+          )}
         >
           <select
             id={sessionId}
-            aria-label="Filter incidents by session"
+            aria-label={t('Filter incidents by session')}
             value={String(sessionFilter)}
             onChange={(e) =>
               setSessionFilter(parseSessionFilter(e.target.value))
             }
             className="settings-field"
           >
-            <option value="all">All sessions</option>
-            <option value="current">Current session</option>
+            <option value="all">{t('All sessions')}</option>
+            <option value="current">{t('Current session')}</option>
             {sessionOptions.map(({ sessionNum, label, count }) => (
               <option key={sessionNum} value={sessionNum}>
-                {label} ({count})
+                {t(label)} ({count})
               </option>
             ))}
           </select>
         </Tooltip>
         <label htmlFor={driverId} className="text-sm text-slate-400">
-          Driver
+          {t('Driver')}
         </label>
         <Tooltip
           placement="bottom"
-          content="Narrows the feed to a single driver. Only drivers who have already triggered an incident in the selected session are listed. Combines with the type and session filters."
+          content={t(
+            'Narrows the feed to a single driver. Only drivers who have already triggered an incident in the selected session are listed. Combines with the type and session filters.'
+          )}
         >
           <select
             id={driverId}
-            aria-label="Filter incidents by driver"
+            aria-label={t('Filter incidents by driver')}
             value={driverFilter ?? ''}
             onChange={(e) =>
               setDriverFilter(
@@ -231,7 +236,7 @@ export const GantryIncidents = memo(() => {
             }
             className="settings-field"
           >
-            <option value="">All Drivers</option>
+            <option value="">{t('All Drivers')}</option>
             {driverOptions.map(({ carIdx, driverName }) => (
               <option key={carIdx} value={carIdx}>
                 {driverName}
@@ -244,14 +249,14 @@ export const GantryIncidents = memo(() => {
       <div className="min-h-0 flex-1 overflow-y-auto">
         {rows.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-slate-400">
-            No incidents
+            {t('No incidents')}
           </div>
         ) : (
           rows.map((row) =>
             row.kind === 'session' ? (
               <SessionSeparatorRow
                 key={`session-${row.sessionNum}`}
-                label={row.label}
+                label={t(row.label)}
                 count={row.count}
                 isCurrent={row.isCurrent}
                 isReplay={isReplayPlaying}

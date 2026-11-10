@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
@@ -70,7 +71,7 @@ export const CarSystemsSettings = () => {
     localStorage.setItem('carSystemsTab', activeTab);
   }, [activeTab]);
 
-  if (!currentDashboard) return <>Loading...</>;
+  if (!currentDashboard) return <>{t('Loading...')}</>;
 
   const rows = settings.config.rows ?? [];
 
@@ -94,8 +95,10 @@ export const CarSystemsSettings = () => {
 
   return (
     <BaseSettingsSection
-      title="Car Systems"
-      description="Brake bias, ABS, traction control and the other adjustments your car exposes."
+      title={t('Car Systems')}
+      description={t(
+        'Brake bias, ABS, traction control and the other adjustments your car exposes.'
+      )}
       settings={settings as CarSystemsWidgetSettings}
       onSettingsChange={(s) => setSettings(s as CarSystemsWidgetSettings)}
       widgetId={SETTING_ID}
@@ -113,38 +116,43 @@ export const CarSystemsSettings = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Options
+                {t('Options')}
               </TabButton>
               <TabButton
                 id="visibility"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Visibility
+                {t('Visibility')}
               </TabButton>
             </div>
 
             <div>
               {activeTab === 'options' && (
                 <>
-                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+                  <SettingsSection
+                    title={t('Display')}
+                    scaleWidgetId={SETTING_ID}
+                  >
                     <SettingProp path="background.opacity" />
                     <SettingProp path="showUnsupportedRows" />
                     <SettingProp path="showOffRows" />
                   </SettingsSection>
 
-                  <SettingsSection title="Rows">
+                  <SettingsSection title={t('Rows')}>
                     {SELECTABLE_ROWS.map((adjustment) => (
                       <SettingToggleRow
                         key={adjustment.key}
-                        title={adjustment.label}
+                        title={t(adjustment.label)}
                         // Settings configures every car at once, so rows keep
                         // their catalogue name here. Saying so matters for the
                         // ones a car renames, otherwise the driver enables "ABS"
                         // and a column headed MIGR appears.
                         description={
                           carSystemIsRenamedSomewhere(adjustment.key)
-                            ? 'Named differently on some cars, which control the widget follows.'
+                            ? t(
+                                'Named differently on some cars, which control the widget follows.'
+                              )
                             : undefined
                         }
                         enabled={rows.includes(adjustment.key)}
@@ -158,7 +166,7 @@ export const CarSystemsSettings = () => {
               )}
 
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
+                <SettingsSection title={t('Session Visibility')}>
                   <SessionVisibility
                     sessionVisibility={settings.config.sessionVisibility}
                     handleConfigChange={handleConfigChange}

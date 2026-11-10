@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import React from 'react';
 import { WarningCircleIcon } from '@phosphor-icons/react';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
@@ -61,7 +62,9 @@ export const FuelCalculatorConfidence: React.FC<FuelCalculatorWidgetProps> = ({
         >
           <span className="text-red-400 inline-flex items-center gap-1">
             <WarningCircleIcon size={14} weight="fill" />
-            {confidence === 'very-low' ? 'Not enough data' : 'Low confidence'}
+            {confidence === 'very-low'
+              ? t('Not enough data')
+              : t('Low confidence')}
           </span>
         </div>
         <div
@@ -69,9 +72,9 @@ export const FuelCalculatorConfidence: React.FC<FuelCalculatorWidgetProps> = ({
           style={{ fontSize: valueFontSize }}
         >
           <span className="text-slate-400">
-            Fuelling for{' '}
-            <span className="text-white font-medium">{fuelForLaps}</span> laps
-            (worst case)
+            {t('Fuelling for')}{' '}
+            <span className="text-white font-medium">{fuelForLaps}</span>{' '}
+            {t('laps (worst case)')}
           </span>
         </div>
       </div>
@@ -85,12 +88,12 @@ export const FuelCalculatorConfidence: React.FC<FuelCalculatorWidgetProps> = ({
       >
         <div className="text-center" style={{ fontSize: valueFontSize }}>
           <span className="text-slate-400">
-            Fuelling for{' '}
-            <span className="text-white font-medium">{fuelForLaps}</span> laps
-            (worst case){' '}
+            {t('Fuelling for')}{' '}
+            <span className="text-white font-medium">{fuelForLaps}</span>{' '}
+            {t('laps (worst case)')}{' '}
             <span className="text-amber-400 inline-flex items-center gap-1">
               <WarningCircleIcon size={14} weight="fill" />
-              Lap count uncertain
+              {t('Lap count uncertain')}
             </span>
           </span>
         </div>
@@ -105,9 +108,9 @@ export const FuelCalculatorConfidence: React.FC<FuelCalculatorWidgetProps> = ({
     >
       <div className="text-center" style={{ fontSize: valueFontSize }}>
         <span className="text-slate-400">
-          Fuelling for{' '}
-          <span className="text-white font-medium">{fuelForLaps}</span> laps
-          (worst case)
+          {t('Fuelling for')}{' '}
+          <span className="text-white font-medium">{fuelForLaps}</span>{' '}
+          {t('laps (worst case)')}
         </span>
       </div>
     </div>

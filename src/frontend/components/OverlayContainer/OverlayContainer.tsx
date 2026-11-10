@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   useDashboard,
@@ -163,7 +164,7 @@ export const OverlayContainer = memo(() => {
           className="pointer-events-auto fixed top-12.5 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2 px-3 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded shadow-lg transition-colors cursor-pointer"
         >
           <XIcon size={18} weight="bold" />
-          <span className="text-sm font-medium">Exit Edit Mode</span>
+          <span className="text-sm font-medium">{t('Exit Edit Mode')}</span>
         </button>
       )}
     </div>

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import type { ReactNode } from 'react';
 import {
   DEFAULT_RADAR_TUNING,
@@ -122,8 +123,8 @@ const toggle = (
     hidden,
     render: ({ view, set }) => (
       <SettingToggleRow
-        title={label}
-        description={description}
+        title={t(label)}
+        description={t(description)}
         enabled={view[key]}
         onToggle={(value) => set({ [key]: value })}
       />
@@ -152,8 +153,8 @@ const slider = (
     hidden,
     render: ({ view, set }) => (
       <SettingSliderRow
-        title={label}
-        description={description}
+        title={t(label)}
+        description={t(description)}
         value={view[key]}
         min={min}
         max={max}
@@ -184,7 +185,7 @@ const tuningNumber = (
   render: ({ view, setTuning }) => (
     <NumberRow
       title={key}
-      description={description}
+      description={t(description)}
       value={view.tuning[key]}
       min={min}
       max={max}
@@ -206,8 +207,8 @@ const tuningToggle = (
   tuningKeys: [key],
   render: ({ view, setTuning }) => (
     <SettingToggleRow
-      title={title}
-      description={description}
+      title={t(title)}
+      description={t(description)}
       enabled={view.tuning[key]}
       onToggle={(value) => setTuning({ [key]: value })}
     />
@@ -257,8 +258,8 @@ const arcCard = (
   keys: [key, styleKey],
   render: ({ view, set }) => (
     <ArcEventCard
-      title={title}
-      description={description}
+      title={t(title)}
+      description={t(description)}
       enabled={view[key]}
       onToggle={(value) => set({ [key]: value })}
       style={view[styleKey]}
@@ -290,8 +291,8 @@ const arcLength = (
   render: ({ view, set }) => (
     <div className="space-y-2 pl-3 border-l-2 border-slate-700">
       <SettingSliderRow
-        title={`${title} Arc, Smallest`}
-        description={description}
+        title={t('{title} Arc, Smallest', { title: t(title) })}
+        description={t(description)}
         value={view[minKey]}
         units="°"
         min={2}
@@ -302,7 +303,7 @@ const arcLength = (
         }
       />
       <SettingSliderRow
-        title={`${title} Arc, Largest`}
+        title={t('{title} Arc, Largest', { title: t(title) })}
         value={view[maxKey]}
         units="°"
         min={4}
@@ -331,8 +332,10 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         keys: ['autoHide'],
         render: ({ view, set }) => (
           <SettingButtonGroupRow
-            title="Show Radar"
-            description="Only when a car is near keeps the radar off screen the rest of the time."
+            title={t('Show Radar')}
+            description={t(
+              'Only when a car is near keeps the radar off screen the rest of the time.'
+            )}
             value={view.autoHide ? 'near' : 'always'}
             options={[
               { label: 'Always', value: 'always' },
@@ -351,8 +354,8 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         hidden: autoHideOff,
         render: ({ view, set }) => (
           <SettingSliderRow
-            title="Show Within"
-            description="The radar appears when a car comes this close."
+            title={t('Show Within')}
+            description={t('The radar appears when a car comes this close.')}
             value={view.showDistance}
             units="m"
             min={5}
@@ -377,8 +380,10 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         hidden: autoHideOff,
         render: ({ view, set }) => (
           <SettingSliderRow
-            title="Hide Beyond"
-            description="The radar leaves once every car is further than this. Kept above Show Within so it does not blink."
+            title={t('Hide Beyond')}
+            description={t(
+              'The radar leaves once every car is further than this. Kept above Show Within so it does not blink.'
+            )}
             value={view.hideDistance}
             units="m"
             min={view.showDistance}
@@ -400,7 +405,9 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         keys: ['sessionVisibility'],
         render: ({ view, set }) => (
           <div className="space-y-3">
-            <h4 className="text-md font-medium text-slate-300">Sessions</h4>
+            <h4 className="text-md font-medium text-slate-300">
+              {t('Sessions')}
+            </h4>
             <SessionVisibility
               sessionVisibility={view.sessionVisibility}
               sessions={RADAR_SESSIONS}
@@ -426,7 +433,7 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         keys: ['background'],
         render: ({ view, set }) => (
           <SettingSliderRow
-            title="Background Opacity"
+            title={t('Background Opacity')}
             value={view.background.opacity}
             units="%"
             min={0}
@@ -449,8 +456,10 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         keys: ['rivalColorMode'],
         render: ({ view, set }) => (
           <SettingSelectRow
-            title="Rival Colour"
-            description="Colour rivals by licence (as on the rating badge), by car class, or all the same."
+            title={t('Rival Colour')}
+            description={t(
+              'Colour rivals by licence (as on the rating badge), by car class, or all the same.'
+            )}
             value={view.rivalColorMode}
             options={[
               { label: 'Licence (safety rating)', value: 'safety' },
@@ -482,7 +491,7 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         keys: ['playerColor'],
         render: ({ view, set }) => (
           <ColorRow
-            title="Your Car"
+            title={t('Your Car')}
             value={view.playerColor}
             onChange={(value) => set({ playerColor: value })}
           />
@@ -575,8 +584,8 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         hidden: (view) => !view.showWarnings,
         render: ({ view, set }) => (
           <SettingButtonGroupRow
-            title="Warn"
-            description="How close a car gets before it turns amber."
+            title={t('Warn')}
+            description={t('How close a car gets before it turns amber.')}
             value={String(view.cautionDistance)}
             options={SENSITIVITY}
             onChange={(value) => set({ cautionDistance: Number(value) })}
@@ -595,12 +604,12 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         render: ({ view, set }) => (
           <div className="space-y-3">
             <ColorPickRow
-              title="Close"
+              title={t('Close')}
               value={view.closeColor}
               onChange={(value) => set({ closeColor: value })}
             />
             <ColorPickRow
-              title="Alongside"
+              title={t('Alongside')}
               value={view.alongsideColor}
               onChange={(value) => set({ alongsideColor: value })}
             />
@@ -610,14 +619,14 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
                 className="px-3 py-1 text-sm bg-settings-control hover:bg-settings-hover text-slate-300 rounded-md"
                 onClick={() => set(PALETTES.standard)}
               >
-                Standard
+                {t('Standard')}
               </button>
               <button
                 type="button"
                 className="px-3 py-1 text-sm bg-settings-control hover:bg-settings-hover text-slate-300 rounded-md"
                 onClick={() => set(PALETTES.colourBlind)}
               >
-                Colour-blind friendly
+                {t('Colour-blind friendly')}
               </button>
             </div>
           </div>
@@ -643,8 +652,10 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         hidden: (view) => !view.showOverlap,
         render: ({ view, set }) => (
           <SettingButtonGroupRow
-            title="Room Owed From"
-            description="How far alongside a car must be before it is owed room."
+            title={t('Room Owed From')}
+            description={t(
+              'How far alongside a car must be before it is owed room.'
+            )}
             value={view.overlapThreshold}
             options={[
               { label: 'Rear wheel', value: 'rearWheel' },
@@ -916,6 +927,9 @@ export const matchesQuery = (
   query: string
 ) =>
   !RADAR_MISSING_SPECS.includes(item.id) &&
-  `${item.title} ${item.description ?? ''} ${section.title}`
+  // Searches the English text and the text on screen, in either language.
+  [item.title, item.description ?? '', section.title]
+    .flatMap((text) => [text, t(text)])
+    .join(' ')
     .toLowerCase()
     .includes(query);

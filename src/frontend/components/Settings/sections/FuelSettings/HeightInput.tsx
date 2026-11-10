@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { FuelWidgetSettings } from '@irdashies/types';
 
 export const HeightInput = ({
@@ -16,7 +17,7 @@ export const HeightInput = ({
     <div className="flex items-center gap-2">
       <input
         type="range"
-        aria-label={`${widgetId} height`}
+        aria-label={t('{widgetId} height', { widgetId })}
         min="40"
         max="300"
         step="5"
@@ -30,7 +31,8 @@ export const HeightInput = ({
         className="h-5 w-24 min-w-0 cursor-pointer accent-accent-400"
       />
       <span className="text-xs text-slate-300 w-8 text-right">
-        {height ?? 64}px
+        {height ?? 64}
+        {t('px')}
       </span>
     </div>
   );

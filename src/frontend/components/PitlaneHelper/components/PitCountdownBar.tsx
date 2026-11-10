@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo } from 'react';
 
 export interface PitCountdownBarProps {
@@ -28,7 +29,7 @@ export const PitCountdownBar = memo(
       return (
         <div className="flex flex-col flex-1 items-center gap-1">
           <span className="text-sm text-white font-medium tabular-nums leading-none">
-            {valueLabel}
+            {t(valueLabel)}
           </span>
           <div className="relative w-full h-full min-w-5 min-h-10 bg-slate-700/50 rounded overflow-hidden">
             <div
@@ -54,7 +55,7 @@ export const PitCountdownBar = memo(
         <div className="flex justify-between items-center text-xs">
           <span className="text-slate-400">{targetName}</span>
           <span className="text-white font-medium tabular-nums">
-            {valueLabel}
+            {t(valueLabel)}
           </span>
         </div>
         <div className="relative h-full min-h-5 w-full bg-slate-700/50 rounded overflow-hidden">

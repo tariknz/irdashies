@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { ReactNode, useContext, useState } from 'react';
 import { menuHasToggle } from '../menuItems';
 import { ToggleSwitch } from './ToggleSwitch';
@@ -191,8 +192,8 @@ export const BaseSettingsSection = <T,>({
     return (
       <section className="space-y-4 rounded-lg border border-slate-700 bg-slate-800/40 p-4">
         <div>
-          <h3 className="text-lg font-semibold text-slate-200">{title}</h3>
-          <p className="text-sm text-slate-400">{description}</p>
+          <h3 className="text-lg font-semibold text-slate-200">{t(title)}</h3>
+          <p className="text-sm text-slate-400">{t(description)}</p>
         </div>
         {previewWidgetId && (
           <WidgetPreview key={previewWidgetId} widgetId={previewWidgetId} />
@@ -221,15 +222,17 @@ export const BaseSettingsSection = <T,>({
             onClick={handleResetPosition}
             className="min-h-9 rounded-md border border-settings-boundary bg-slate-800 px-3 py-1.5 text-sm text-slate-200 transition-colors hover:border-accent-400"
           >
-            Reset Position
+            {t('Reset Position')}
           </button>
         </div>
       )}
       <ConfirmDialog
         isOpen={showResetConfirm}
-        title="Reset Position"
-        message="This will reset the position for both the on-screen overlay and the browser/URL source version."
-        confirmText="Reset Position"
+        title={t('Reset Position')}
+        message={t(
+          'This will reset the position for both the on-screen overlay and the browser/URL source version.'
+        )}
+        confirmText={t('Reset Position')}
         onConfirm={confirmResetPosition}
         onCancel={() => setShowResetConfirm(false)}
       />
@@ -250,15 +253,15 @@ export const BaseSettingsSection = <T,>({
                   : 'text-lg font-semibold text-white'
               }
             >
-              {title}
+              {t(title)}
             </Heading>
             <div className="flex flex-col items-end gap-0.5">
               {!menuToggles && !isGantryOnly && (
                 <ToggleSwitch
-                  ariaLabel={`Enable ${title}`}
+                  ariaLabel={t('Enable {title}', { title: t(title) })}
                   enabled={localSettings.enabled}
                   disabled={!!simDisabledReason}
-                  disabledReason={simDisabledReason ?? undefined}
+                  disabledReason={t(simDisabledReason) ?? undefined}
                   onToggle={(enabled) =>
                     handleSettingsChange({ ...localSettings, enabled })
                   }
@@ -267,14 +270,14 @@ export const BaseSettingsSection = <T,>({
               {simIncompatibleLabel && (
                 <span
                   className="text-xs text-slate-500"
-                  title={simDisabledReason ?? undefined}
+                  title={t(simDisabledReason) ?? undefined}
                 >
-                  {simIncompatibleLabel}
+                  {t(simIncompatibleLabel)}
                 </span>
               )}
             </div>
           </div>
-          <p className="text-slate-400 text-sm">{description}</p>
+          <p className="text-slate-400 text-sm">{t(description)}</p>
         </div>
       </header>
 

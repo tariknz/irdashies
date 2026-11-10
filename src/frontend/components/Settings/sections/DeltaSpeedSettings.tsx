@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
@@ -63,12 +64,14 @@ export const DeltaSpeedSettings = () => {
     localStorage.setItem('deltaSpeedTab', activeTab);
   }, [activeTab]);
 
-  if (!currentDashboard) return <>Loading...</>;
+  if (!currentDashboard) return <>{t('Loading...')}</>;
 
   return (
     <BaseSettingsSection
-      title="Delta Speed"
-      description="Live speed difference against your session best clean lap at this point on track."
+      title={t('Delta Speed')}
+      description={t(
+        'Live speed difference against your session best clean lap at this point on track.'
+      )}
       settings={settings as DeltaSpeedWidgetSettings}
       onSettingsChange={(s) => setSettings(s as DeltaSpeedWidgetSettings)}
       widgetId={SETTING_ID}
@@ -86,25 +89,30 @@ export const DeltaSpeedSettings = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Options
+                {t('Options')}
               </TabButton>
               <TabButton
                 id="visibility"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Visibility
+                {t('Visibility')}
               </TabButton>
             </div>
 
             <div>
               {activeTab === 'options' && (
                 <>
-                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+                  <SettingsSection
+                    title={t('Display')}
+                    scaleWidgetId={SETTING_ID}
+                  >
                     <SettingProp path="background.opacity" />
                     <SettingSelectRow
-                      title="Units"
-                      description="Unit for the numeric readout. Auto follows iRacing's own display units setting."
+                      title={t('Units')}
+                      description={t(
+                        "Unit for the numeric readout. Auto follows iRacing's own display units setting."
+                      )}
                       value={settings.config.unit ?? 'km/h'}
                       options={[
                         { label: 'km/h', value: 'km/h' },
@@ -125,7 +133,7 @@ export const DeltaSpeedSettings = () => {
               )}
 
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
+                <SettingsSection title={t('Session Visibility')}>
                   <SessionVisibility
                     sessionVisibility={settings.config.sessionVisibility}
                     handleConfigChange={handleConfigChange}

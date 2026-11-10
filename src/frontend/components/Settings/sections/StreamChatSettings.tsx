@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useEffect, useId, useState } from 'react';
 import { TwitchLogoIcon, YoutubeLogoIcon } from '@phosphor-icons/react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
@@ -53,7 +54,7 @@ const ChannelField = ({
   return (
     <div className="space-y-2">
       <label htmlFor={id} className="text-sm text-slate-300">
-        {label}
+        {t(label)}
       </label>
       <input
         id={id}
@@ -61,7 +62,7 @@ const ChannelField = ({
         aria-invalid={!!error}
         type="text"
         value={value}
-        placeholder={placeholder}
+        placeholder={t(placeholder)}
         onChange={(e) => onChange(e.target.value.trim())}
         className="settings-field w-full"
       />
@@ -71,7 +72,7 @@ const ChannelField = ({
         </p>
       ) : (
         <p id={`${id}-help`} className="text-sm text-slate-400">
-          {description}
+          {t(description)}
         </p>
       )}
     </div>
@@ -101,7 +102,7 @@ export const StreamChatSettings = () => {
   }, [activeTab]);
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   const twitchChannel = settings.config.twitch?.channel ?? '';
@@ -109,8 +110,8 @@ export const StreamChatSettings = () => {
 
   return (
     <BaseSettingsSection
-      title="Stream Chat"
-      description="Show live Twitch and YouTube chat in one overlay."
+      title={t('Stream Chat')}
+      description={t('Show live Twitch and YouTube chat in one overlay.')}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -128,7 +129,7 @@ export const StreamChatSettings = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Display
+                {t('Display')}
               </TabButton>
               <TabButton
                 id="twitch"
@@ -138,7 +139,7 @@ export const StreamChatSettings = () => {
                   <TwitchLogoIcon size={18} weight="fill" color="#a970ff" />
                 }
               >
-                Twitch
+                {t('Twitch')}
               </TabButton>
               <TabButton
                 id="youtube"
@@ -148,19 +149,19 @@ export const StreamChatSettings = () => {
                   <YoutubeLogoIcon size={18} weight="fill" color="#ff0000" />
                 }
               >
-                YouTube
+                {t('YouTube')}
               </TabButton>
             </div>
 
             {activeTab === 'display' && (
               <div className="space-y-5">
-                <SettingsSection title="Display">
+                <SettingsSection title={t('Display')}>
                   <SettingProp path="display.background.opacity" />
                   <SettingProp path="display.fontSize" />
                   <SettingProp path="display.showPlatformIcons" />
                 </SettingsSection>
 
-                <SettingsSection title="Message visibility">
+                <SettingsSection title={t('Message visibility')}>
                   <SettingProp path="display.autoHide.enabled" />
                   {(settings.config.display?.autoHide?.enabled ?? false) && (
                     <SettingProp path="display.autoHide.intervalSeconds" />
@@ -170,12 +171,14 @@ export const StreamChatSettings = () => {
             )}
 
             {activeTab === 'twitch' && (
-              <SettingsSection title="Twitch">
+              <SettingsSection title={t('Twitch')}>
                 <ChannelField
-                  label="Twitch channel:"
+                  label={t('Twitch channel:')}
                   value={twitchChannel}
-                  placeholder="channelname"
-                  description="Name of the Twitch channel to read chat from. Leave empty to turn Twitch chat off."
+                  placeholder={t('channelname')}
+                  description={t(
+                    'Name of the Twitch channel to read chat from. Leave empty to turn Twitch chat off.'
+                  )}
                   error={
                     twitchChannel && !TWITCH_CHANNEL_PATTERN.test(twitchChannel)
                       ? 'Use the channel name only: letters, digits and underscore.'
@@ -191,12 +194,14 @@ export const StreamChatSettings = () => {
             )}
 
             {activeTab === 'youtube' && (
-              <SettingsSection title="YouTube">
+              <SettingsSection title={t('YouTube')}>
                 <ChannelField
-                  label="YouTube channel:"
+                  label={t('YouTube channel:')}
                   value={youtubeChannel}
-                  placeholder="@channelname"
-                  description="Handle of the YouTube channel, starting with @. Chat connects while the channel is live. Leave empty to turn YouTube chat off."
+                  placeholder={t('@channelname')}
+                  description={t(
+                    'Handle of the YouTube channel, starting with @. Chat connects while the channel is live. Leave empty to turn YouTube chat off.'
+                  )}
                   error={
                     youtubeChannel &&
                     !YOUTUBE_HANDLE_PATTERN.test(youtubeChannel)

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { isValidElement, cloneElement, createElement } from 'react';
 import type { CSSProperties, ReactNode, ReactElement } from 'react';
 import { colorNumToHex } from '@irdashies/utils/colors';
@@ -34,7 +35,7 @@ export function renderDriverIcon(
     return (
       <img
         src={icon}
-        alt="icon"
+        alt={t('icon')}
         className={className}
         style={{
           width: size,

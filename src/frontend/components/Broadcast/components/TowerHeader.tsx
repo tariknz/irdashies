@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { validateImageDataUrl } from '@irdashies/utils/imageDataUrl';
 import { useEffect, useState } from 'react';
 import { ClockIcon } from '@phosphor-icons/react';
@@ -69,14 +70,14 @@ const SessionClock = ({ withBoth }: { withBoth: boolean }) => {
     useSessionTimeTiming();
   const { currentLap, totalRaceLaps } = useSessionLapsTiming();
   // iRacing keeps the clock and lap counter running through the cool-down.
-  if (isSessionFinished(state)) return <>FINISH</>;
+  if (isSessionFinished(state)) return <>{t('FINISH')}</>;
   const lapRace = sessionType === 'Race' && isFixedLapRace && totalRaceLaps > 0;
   const remaining = formatTime(Math.max(timeRemaining, 0), 'duration');
   if (withBoth) {
     // A lap race has no time left to count down, so it shows time elapsed.
     return (
       <>
-        LAP {currentLap}
+        {t('LAP')} {currentLap}
         {lapRace && ` / ${totalRaceLaps}`}
         <span className="text-white/70"> · </span>
         {lapRace ? formatTime(time, 'duration') : remaining}
@@ -86,7 +87,7 @@ const SessionClock = ({ withBoth }: { withBoth: boolean }) => {
   if (lapRace) {
     return (
       <>
-        LAP {currentLap} / {totalRaceLaps}
+        {t('LAP')} {currentLap} / {totalRaceLaps}
       </>
     );
   }
@@ -112,7 +113,7 @@ export const TowerHeader = ({
       {logoSrc && (
         <img src={logoSrc} alt="" className="mx-auto max-h-12 py-1" />
       )}
-      <div className="truncate text-base">{title}</div>
+      <div className="truncate text-base">{t(title)}</div>
       <div className="text-lg tabular-nums">
         <SessionClock withBoth={clock === 'laps-time'} />
         {(clock === 'session-track' || clock === 'session-local') && (

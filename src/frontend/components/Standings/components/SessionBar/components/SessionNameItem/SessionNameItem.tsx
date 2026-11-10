@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo } from 'react';
 import { useSessionBarSnapshot } from '@irdashies/context';
 import { sessionBarItemWrapperClass } from '../../sessionBarItemWrapperClass';
@@ -8,7 +9,7 @@ export const SessionNameItem = memo(({ standalone }: SessionBarItemProps) => {
 
   return (
     <div className={sessionBarItemWrapperClass(standalone)}>
-      <div className="flex">{session}</div>
+      <div className="flex">{t(session)}</div>
     </div>
   );
 });

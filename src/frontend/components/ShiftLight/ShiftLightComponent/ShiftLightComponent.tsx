@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useEffect, useState } from 'react';
 import type { CarData } from '@irdashies/utils/carData';
 import type { ShiftPointSettings } from '@irdashies/types';
@@ -172,17 +173,17 @@ export const ShiftLight = ({
             {showRpmText && (
               <>
                 {shouldShowShift ? (
-                  <span className="font-bold text-[2em]">SHIFT</span>
+                  <span className="font-bold text-[2em]">{t('SHIFT')}</span>
                 ) : (
                   <>
                     {Math.round(clampedRpm).toLocaleString('en-US')}
-                    <span className="text-[0.6em] ml-2">RPM</span>
+                    <span className="text-[0.6em] ml-2">{t('RPM')}</span>
                   </>
                 )}
               </>
             )}
             {!showRpmText && shouldShowShift && (
-              <span className="font-bold text-[2em]">SHIFT</span>
+              <span className="font-bold text-[2em]">{t('SHIFT')}</span>
             )}
           </div>
         </div>

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import React from 'react';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
 import { getFuelStatusColors } from './FuelCalculatorGauge';
@@ -68,7 +69,7 @@ export const FuelCalculatorTimeEmpty: React.FC<FuelCalculatorWidgetProps> = ({
           className="text-slate-400 uppercase"
           style={{ fontSize: labelFontSize }}
         >
-          Time Empty
+          {t('Time Empty')}
         </span>
         <span
           className="font-mono font-bold text-white tracking-widest"

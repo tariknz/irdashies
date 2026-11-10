@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useRef, useCallback, useMemo } from 'react';
 import type {
   DriverTagSettings,
@@ -379,18 +380,19 @@ export const DriverTagsSettings = () => {
   }, [filteredEntries, sortField, sortDirection, allGroups]);
 
   if (loading) {
-    return <div className="p-4 text-slate-400">Loading...</div>;
+    return <div className="p-4 text-slate-400">{t('Loading...')}</div>;
   }
 
   return (
     <div className="flex flex-col h-full">
       <div className="border-b border-slate-700 px-1 pb-5 pt-1">
         <h2 className="mb-1 text-xl font-semibold tracking-tight text-white">
-          Driver Tags
+          {t('Driver Tags')}
         </h2>
         <p className="text-slate-400">
-          Create color-coded or icon driver tag groups and assign drivers by
-          iRacing ID (preferred) or iRacing Name.
+          {t(
+            'Create color-coded or icon driver tag groups and assign drivers by iRacing ID (preferred) or iRacing Name.'
+          )}
         </p>
       </div>
 
@@ -400,7 +402,7 @@ export const DriverTagsSettings = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium text-slate-200">
-              Display Style
+              {t('Display Style')}
             </h3>
           </div>
 
@@ -439,9 +441,11 @@ export const DriverTagsSettings = () => {
               }}
               className="settings-field w-full"
             >
-              <option value="badge-fill">Badges (icons, filled)</option>
-              <option value="badge-regular">Badges (icons, outlined)</option>
-              <option value="tag">Tags (colored pills)</option>
+              <option value="badge-fill">{t('Badges (icons, filled)')}</option>
+              <option value="badge-regular">
+                {t('Badges (icons, outlined)')}
+              </option>
+              <option value="tag">{t('Tags (colored pills)')}</option>
             </select>
           </div>
         </div>
@@ -449,7 +453,7 @@ export const DriverTagsSettings = () => {
         {/* Groups section */}
         <div className="space-y-4 pt-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg">Default Groups</h3>
+            <h3 className="text-lg">{t('Default Groups')}</h3>
           </div>
 
           {/* Preset tag preview */}
@@ -493,12 +497,12 @@ export const DriverTagsSettings = () => {
 
         <div className="space-y-4 pt-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg">Custom Groups</h3>
+            <h3 className="text-lg">{t('Custom Groups')}</h3>
             <button
               onClick={addGroup}
               className="min-h-9 rounded-md bg-accent-500 px-3 py-1.5 text-sm text-on-accent hover:bg-accent-600"
             >
-              Add Group
+              {t('Add Group')}
             </button>
           </div>
           <div className="pt-3 ps-4">
@@ -518,7 +522,7 @@ export const DriverTagsSettings = () => {
                       <input
                         value={editingGroupName}
                         onChange={(e) => setEditingGroupName(e.target.value)}
-                        placeholder="Group Name"
+                        placeholder={t('Group Name')}
                         className="settings-field min-w-0 flex-1 basis-40"
                       />
                       {settings.display?.displayStyle === 'tag' ? (
@@ -565,7 +569,7 @@ export const DriverTagsSettings = () => {
                               aria-pressed={editingGroupIconMode === 'name'}
                               className="settings-button aria-pressed:border-accent-400 aria-pressed:bg-accent-400/10 aria-pressed:text-accent-200"
                             >
-                              Icon
+                              {t('Icon')}
                             </button>
                             <button
                               onClick={() => {
@@ -579,7 +583,7 @@ export const DriverTagsSettings = () => {
                               aria-pressed={editingGroupIconMode === 'image'}
                               className="settings-button aria-pressed:border-accent-400 aria-pressed:bg-accent-400/10 aria-pressed:text-accent-200"
                             >
-                              Custom Image
+                              {t('Custom Image')}
                             </button>
                           </div>
                           {editingGroupIconMode === 'name' ? (
@@ -635,14 +639,14 @@ export const DriverTagsSettings = () => {
                                 onClick={() => fileInputRef.current?.click()}
                                 className="settings-button"
                               >
-                                Select an Image
+                                {t('Select an Image')}
                               </button>
                               {typeof editingGroupIcon === 'string' &&
                                 editingGroupIcon.startsWith('data:') && (
                                   <div style={{ width: 24, height: 24 }}>
                                     <img
                                       src={editingGroupIcon}
-                                      alt="preview"
+                                      alt={t('preview')}
                                       className="object-contain"
                                     />
                                   </div>
@@ -692,7 +696,7 @@ export const DriverTagsSettings = () => {
                           }}
                           className="min-h-9 rounded-md bg-accent-500 px-3 py-1.5 text-sm text-on-accent transition-colors hover:bg-accent-600 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                          Save
+                          {t('Save')}
                         </button>
                         <button
                           onClick={() => {
@@ -705,7 +709,7 @@ export const DriverTagsSettings = () => {
                           }}
                           className="settings-button"
                         >
-                          Cancel
+                          {t('Cancel')}
                         </button>
                       </div>
                     </div>
@@ -771,13 +775,13 @@ export const DriverTagsSettings = () => {
                           }}
                           className="min-h-8 flex-none px-3 py-1 text-sm text-slate-300 hover:bg-settings-hover rounded-md"
                         >
-                          Edit
+                          {t('Edit')}
                         </button>
                         <button
                           onClick={() => removeGroup(g.id)}
                           className="min-h-8 flex-none px-3 py-1 text-sm text-red-300 hover:bg-red-950/40 rounded-md"
                         >
-                          Delete
+                          {t('Delete')}
                         </button>
                       </div>
                     </>
@@ -790,10 +794,11 @@ export const DriverTagsSettings = () => {
 
         {/* Driver assignments */}
         <div className="pt-4">
-          <h3 className="text-lg">Driver Assignments</h3>
+          <h3 className="text-lg">{t('Driver Assignments')}</h3>
           <p className="text-sm text-slate-400">
-            Assign drivers by iRacing ID (preferred) and/or display name. Each
-            driver may belong to one group.
+            {t(
+              'Assign drivers by iRacing ID (preferred) and/or display name. Each driver may belong to one group.'
+            )}
           </p>
 
           <div className="space-y-4 pt-4">
@@ -804,7 +809,7 @@ export const DriverTagsSettings = () => {
                 aria-pressed={activeGroupFilter === null}
                 className={`px-3 py-1 rounded font-medium transition-colors shadow-sm ${activeGroupFilter === null ? 'bg-accent-500 text-on-accent ring-2 ring-accent-300' : 'bg-slate-700 text-slate-200 hover:bg-settings-hover'}`}
               >
-                All
+                {t('All')}
               </button>
               {PRESET_DRIVER_TAGS.map((g) => {
                 const override = settings.presetOverrides?.[g.id];
@@ -917,7 +922,7 @@ export const DriverTagsSettings = () => {
                         autoFocus
                         value={searchText}
                         onChange={(e) => setSearchText(e.target.value)}
-                        placeholder="Search for a Driver ..."
+                        placeholder={t('Search for a Driver ...')}
                         className="settings-field w-full"
                       />
                     );
@@ -928,7 +933,7 @@ export const DriverTagsSettings = () => {
                       onClick={() => handleSort(field)}
                       className="flex py-0.5 items-center justify-center gap-0.5 text-left hover:text-slate-200 transition-colors"
                     >
-                      {label}
+                      {t(label)}
                       {sortField === field ? (
                         sortDirection === 'asc' ? (
                           <CaretUpIcon size={10} weight="bold" />
@@ -944,7 +949,7 @@ export const DriverTagsSettings = () => {
                     setSearchOpen((v) => !v);
                     if (searchOpen) setSearchText('');
                   }}
-                  title={searchOpen ? 'Close search' : 'Search drivers'}
+                  title={searchOpen ? t('Close search') : t('Search drivers')}
                   className={`flex w-full py-0.5 items-center justify-center transition-colors ${searchOpen ? 'text-accent-400' : 'text-slate-400 hover:text-slate-200'}`}
                 >
                   {searchOpen ? (
@@ -963,7 +968,7 @@ export const DriverTagsSettings = () => {
               >
                 <label className="min-w-0">
                   <span className="mb-1 block text-xs text-slate-400 lg:sr-only">
-                    iRacing ID
+                    {t('iRacing ID')}
                   </span>
                   <input
                     ref={(el) => {
@@ -985,7 +990,7 @@ export const DriverTagsSettings = () => {
                       if (e.key === 'Enter')
                         (e.currentTarget as HTMLInputElement).blur();
                     }}
-                    placeholder="e.g. 123456"
+                    placeholder={t('e.g. 123456')}
                     aria-invalid={
                       entryError?.key === row.uiKey && entryError.field === 'id'
                     }
@@ -999,7 +1004,7 @@ export const DriverTagsSettings = () => {
                 </label>
                 <label className="min-w-0">
                   <span className="mb-1 block text-xs text-slate-400 lg:sr-only">
-                    iRacing name
+                    {t('iRacing name')}
                   </span>
                   <input
                     ref={(el) => {
@@ -1021,7 +1026,7 @@ export const DriverTagsSettings = () => {
                       if (e.key === 'Enter')
                         (e.currentTarget as HTMLInputElement).blur();
                     }}
-                    placeholder="iRacing Full Name"
+                    placeholder={t('iRacing Full Name')}
                     aria-invalid={
                       entryError?.key === row.uiKey &&
                       entryError.field === 'name'
@@ -1036,7 +1041,7 @@ export const DriverTagsSettings = () => {
                 </label>
                 <label className="min-w-0">
                   <span className="mb-1 block text-xs text-slate-400 lg:sr-only">
-                    Driver label
+                    {t('Driver label')}
                   </span>
                   <input
                     ref={(el) => {
@@ -1058,16 +1063,18 @@ export const DriverTagsSettings = () => {
                       if (e.key === 'Enter')
                         (e.currentTarget as HTMLInputElement).blur();
                     }}
-                    placeholder="Badge label"
+                    placeholder={t('Badge label')}
                     className="settings-field w-full min-w-0"
                   />
                 </label>
                 <div className="min-w-0">
                   <span className="mb-1 block text-xs text-slate-400 lg:sr-only">
-                    Group
+                    {t('Group')}
                   </span>
                   <GroupSelect
-                    label={`Driver group for ${row.name || row.id || `new driver ${rowIndex + 1}`}${row.name && row.id ? ` (${row.id})` : ''}`}
+                    label={t('Driver group for {driver}', {
+                      driver: `${row.name || row.id || t('new driver {number}', { number: rowIndex + 1 })}${row.name && row.id ? ` (${row.id})` : ''}`,
+                    })}
                     value={row.groupId}
                     onChange={(value) => updateEntryGroup(row.uiKey, value)}
                     groups={allGroups}
@@ -1077,11 +1084,13 @@ export const DriverTagsSettings = () => {
                 </div>
                 <button
                   onClick={() => removeEntry(row.uiKey)}
-                  aria-label={`Remove ${row.name || row.id || 'driver'}`}
+                  aria-label={t('Remove {value}', {
+                    value: row.name || row.id || t('driver'),
+                  })}
                   className="col-span-2 inline-flex min-h-9 items-center justify-self-start gap-2 rounded-md px-2 py-1.5 text-sm text-red-200 hover:bg-red-950/40 lg:col-span-1"
                 >
                   <TrashIcon size={16} aria-hidden="true" />
-                  Remove
+                  {t('Remove')}
                 </button>
                 {entryError?.key === row.uiKey && (
                   <p
@@ -1089,7 +1098,7 @@ export const DriverTagsSettings = () => {
                     role="alert"
                     className="col-span-full text-sm text-red-400"
                   >
-                    Driver already exists
+                    {t('Driver already exists')}
                   </p>
                 )}
               </div>
@@ -1100,14 +1109,15 @@ export const DriverTagsSettings = () => {
                 onClick={addEntry}
                 className="min-h-9 rounded-md bg-accent-500 px-3 py-1.5 text-sm text-on-accent hover:bg-accent-600"
               >
-                Add Driver
+                {t('Add Driver')}
               </button>
             </div>
 
             {sortedFilteredEntries.length > 0 && (
               <p className="mt-1 text-sm text-slate-400">
-                * iRacing ID is matched first when provided. Display name is
-                used as a fallback if no ID is set or no match is found.
+                {t(
+                  '* iRacing ID is matched first when provided. Display name is used as a fallback if no ID is set or no match is found.'
+                )}
               </p>
             )}
           </div>
@@ -1115,15 +1125,18 @@ export const DriverTagsSettings = () => {
 
         {/* Name display settings */}
         <div className="pt-4">
-          <h3 className="text-lg">Name Display</h3>
+          <h3 className="text-lg">{t('Name Display')}</h3>
           <p className="text-sm text-slate-400">
-            When a Driver Label is provided, choose what is displayed for the
-            Driver Name in the Standings and Relative overlays.
+            {t(
+              'When a Driver Label is provided, choose what is displayed for the Driver Name in the Standings and Relative overlays.'
+            )}
           </p>
 
           <div className="space-y-3 mt-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-300">Display mode</span>
+              <span className="text-sm text-slate-300">
+                {t('Display mode')}
+              </span>
               <select
                 value={settings.display?.nameDisplay ?? 'both'}
                 onChange={(e) =>
@@ -1137,16 +1150,16 @@ export const DriverTagsSettings = () => {
                 }
                 className="settings-field"
               >
-                <option value="both">Both (Alternate)</option>
-                <option value="label">Label only</option>
-                <option value="name">Name only</option>
+                <option value="both">{t('Both (Alternate)')}</option>
+                <option value="label">{t('Label only')}</option>
+                <option value="name">{t('Name only')}</option>
               </select>
             </div>
 
             {(settings.display?.nameDisplay ?? 'both') === 'both' && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-300">
-                  Alternate Frequency
+                  {t('Alternate Frequency')}
                 </span>
                 <div className="flex items-center gap-2">
                   <input

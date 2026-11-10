@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
@@ -40,12 +41,14 @@ export const CornerNameSettings = () => {
     localStorage.setItem('cornerNameTab', activeTab);
   }, [activeTab]);
 
-  if (!currentDashboard) return <>Loading...</>;
+  if (!currentDashboard) return <>{t('Loading...')}</>;
 
   return (
     <BaseSettingsSection
-      title="Corner Names"
-      description="Displays the current track section name, corner number, and progress through the section. Track data sourced from lovely-track-data."
+      title={t('Corner Names')}
+      description={t(
+        'Displays the current track section name, corner number, and progress through the section. Track data sourced from lovely-track-data.'
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -63,28 +66,31 @@ export const CornerNameSettings = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Display
+                {t('Display')}
               </TabButton>
               <TabButton
                 id="styling"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Appearance
+                {t('Appearance')}
               </TabButton>
               <TabButton
                 id="visibility"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Visibility
+                {t('Visibility')}
               </TabButton>
             </div>
 
             <div>
               {activeTab === 'display' && (
                 <>
-                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+                  <SettingsSection
+                    title={t('Display')}
+                    scaleWidgetId={SETTING_ID}
+                  >
                     <SettingProp path="showCornerNumber" />
                     <SettingProp path="showProgressBar" />
                     <SettingProp path="showTrackPct" />
@@ -93,12 +99,12 @@ export const CornerNameSettings = () => {
               )}
 
               {activeTab === 'styling' && (
-                <SettingsSection title="Appearance">
+                <SettingsSection title={t('Appearance')}>
                   <SettingProp path="fontSize" />
 
                   <SettingSliderRow
-                    title="Opacity"
-                    description="Background opacity of the overlay"
+                    title={t('Opacity')}
+                    description={t('Background opacity of the overlay')}
                     value={Math.round(settings.config.opacity * 100)}
                     units="%"
                     min={20}
@@ -110,7 +116,7 @@ export const CornerNameSettings = () => {
               )}
 
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
+                <SettingsSection title={t('Session Visibility')}>
                   <SessionVisibility
                     sessionVisibility={settings.config.sessionVisibility}
                     handleConfigChange={handleConfigChange}

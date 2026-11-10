@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, useMemo } from 'react';
 import { getColor } from '@irdashies/utils/colors';
 
@@ -82,7 +83,7 @@ export const InputBar = memo(
               />
               {showAbs && (
                 <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[11px] font-bold text-white text-shadow-md pointer-events-none">
-                  ABS
+                  {t('ABS')}
                 </div>
               )}
             </div>

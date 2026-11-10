@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { GearIcon } from '@phosphor-icons/react';
 import {
@@ -57,7 +58,7 @@ const RowArrangement = ({
         return (
           <section
             key={resolved.panel.id}
-            aria-label={dockPanelLabel(resolved)}
+            aria-label={t(dockPanelLabel(resolved))}
             className={[
               'flex flex-col min-w-0 min-h-0',
               isCollapsed ? 'flex-none' : 'flex-1',
@@ -65,7 +66,7 @@ const RowArrangement = ({
           >
             <DockPanelHeader
               panelId={resolved.panel.id}
-              label={dockPanelLabel(resolved)}
+              label={t(dockPanelLabel(resolved))}
               settingsTarget={dockPanelSettingsTarget(resolved)}
               collapsed={isCollapsed}
               onToggleCollapsed={toggleCollapsed}
@@ -101,7 +102,7 @@ const TabsArrangement = ({
     <div className="flex flex-col flex-1 min-h-0">
       <div
         role="tablist"
-        aria-label="Docked panels"
+        aria-label={t('Docked panels')}
         className="flex items-center gap-1 px-2 py-1 bg-slate-800/60 border-b border-slate-700/50 flex-shrink-0"
       >
         {panels.map((resolved) => {
@@ -120,7 +121,7 @@ const TabsArrangement = ({
                   : 'text-slate-400 hover:text-slate-200',
               ].join(' ')}
             >
-              {dockPanelLabel(resolved)}
+              {t(dockPanelLabel(resolved))}
             </button>
           );
         })}
@@ -128,8 +129,10 @@ const TabsArrangement = ({
         <button
           type="button"
           className="p-0.5 rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700/60 transition-colors"
-          title={`Open ${dockPanelLabel(active)} settings`}
-          aria-label={`Open ${dockPanelLabel(active)} settings`}
+          title={t('Open {value} settings', { value: dockPanelLabel(active) })}
+          aria-label={t('Open {value} settings', {
+            value: dockPanelLabel(active),
+          })}
           onClick={() => onOpenSettings(dockPanelSettingsTarget(active))}
         >
           <GearIcon size={14} />

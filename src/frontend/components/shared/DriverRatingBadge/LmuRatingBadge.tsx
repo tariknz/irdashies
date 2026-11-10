@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import {
   lmuChipChrome,
   type LmuBadgeFormat,
@@ -93,7 +94,7 @@ const Chip = ({
   chrome?: boolean;
 }) => (
   <div
-    title={title}
+    title={t(title)}
     className={
       chrome
         ? `text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[1.8em] ${
@@ -130,8 +131,10 @@ const Plate = ({
 }) => {
   const art = lmuRankArt(kind, rank, tier);
   if (!art)
-    return <Chip rank={rank} tier={tier} isMinimal={isMinimal} title={title} />;
-  return <LmuSprite cell={art} title={title} />;
+    return (
+      <Chip rank={rank} tier={tier} isMinimal={isMinimal} title={t(title)} />
+    );
+  return <LmuSprite cell={art} title={t(title)} />;
 };
 
 /**
@@ -181,14 +184,14 @@ export const LmuRatingBadge = ({
             rank={driverRank}
             tier={rating?.driverTier}
             isMinimal={isMinimal}
-            title={driverTitle}
+            title={t(driverTitle)}
           />
         ) : (
           <Chip
             rank={driverRank}
             tier={rating?.driverTier}
             isMinimal={isMinimal}
-            title={driverTitle}
+            title={t(driverTitle)}
             chrome={chrome.driver}
           />
         ))}
@@ -199,14 +202,14 @@ export const LmuRatingBadge = ({
             rank={safetyRank}
             tier={rating?.safetyTier}
             isMinimal={isMinimal}
-            title={safetyTitle}
+            title={t(safetyTitle)}
           />
         ) : (
           <Chip
             rank={safetyRank}
             tier={rating?.safetyTier}
             isMinimal={isMinimal}
-            title={safetyTitle}
+            title={t(safetyTitle)}
             chrome={chrome.safety}
           />
         ))}

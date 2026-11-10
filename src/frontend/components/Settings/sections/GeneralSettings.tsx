@@ -1,9 +1,12 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState } from 'react';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useAvailableSimulators, useDashboard } from '@irdashies/context';
 import { SIMULATOR_IDS, SIMULATOR_LABELS } from '@irdashies/types';
-import type { GeneralSettingsType } from '@irdashies/types';
+import { DEFAULT_APP_LANGUAGE } from '@irdashies/types';
+import type { AppLanguage, GeneralSettingsType } from '@irdashies/types';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { LanguageSettings } from './LanguageSettings';
 
 const FONT_PRESETS = {
   lato: 'Lato',
@@ -114,7 +117,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
   });
 
   if (!currentDashboard || !onDashboardUpdated) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   const updateDashboard = (newSettings: GeneralSettingsType) => {
@@ -123,6 +126,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
       generalSettings: { ...currentDashboard.generalSettings, ...newSettings },
     };
     onDashboardUpdated(updatedDashboard);
+  };
+
+  const handleLanguageChange = (language: AppLanguage) => {
+    const newSettings = { ...settings, language };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
   };
 
   const FONT_SIZE_VALUES: (keyof typeof FONT_SIZE_PRESETS)[] = [
@@ -340,33 +349,42 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
     <div className="flex min-h-0 h-full flex-col">
       <header className="flex-none border-b border-slate-700 px-1 pb-5 pt-1">
         <h2 className="mb-1 text-xl font-semibold tracking-tight text-white">
-          General
+          {t('General')}
         </h2>
         <p className="text-sm text-slate-400">
-          Configure general application settings and preferences.
+          {t('Configure general application settings and preferences.')}
         </p>
       </header>
 
       <div className="min-h-0 flex-1 space-y-6 overflow-y-auto pt-5 pr-1 [scrollbar-gutter:stable]">
+        <LanguageSettings
+          value={
+            currentDashboard.generalSettings?.language ?? DEFAULT_APP_LANGUAGE
+          }
+          onChange={handleLanguageChange}
+        />
         <section className="space-y-5 rounded-lg border border-slate-700 bg-slate-800/40 p-4">
           <div>
             <h3 className="text-lg font-semibold text-slate-200">
-              Overlay appearance
+              {t('Overlay appearance')}
             </h3>
             <p className="mt-1 text-sm text-slate-400">
-              These preferences apply to racing overlays. Settings keeps its own
-              readable text size.
+              {t(
+                'These preferences apply to racing overlays. Settings keeps its own readable text size.'
+              )}
             </p>
           </div>
           {/* Font Settings */}
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-center gap-x-5 gap-y-2">
             <div className="flex items-center justify-between">
-              <h4 className="text-md font-medium text-slate-200">Font</h4>
+              <h4 className="text-md font-medium text-slate-200">
+                {t('Font')}
+              </h4>
             </div>
             {/* Font Weight Dropdown */}
             <div className="min-w-0">
               <select
-                aria-label="Overlay font"
+                aria-label={t('Overlay font')}
                 value={settings.fontType ?? 'lato'}
                 onChange={(e) =>
                   handleFontChange(
@@ -379,7 +397,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
               >
                 {Object.entries(FONT_PRESETS).map(([key, value]) => (
                   <option key={key} value={key}>
-                    {value}
+                    {t(value)}
                   </option>
                 ))}
               </select>
@@ -390,13 +408,13 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-center gap-x-5 gap-y-2">
             <div className="flex items-center justify-between">
               <h4 className="text-md font-medium text-slate-200">
-                Font Weight
+                {t('Font Weight')}
               </h4>
             </div>
             {/* Font Weight Dropdown */}
             <div className="min-w-0">
               <select
-                aria-label="Overlay font weight"
+                aria-label={t('Overlay font weight')}
                 value={resolvedFontWeight}
                 onChange={(e) =>
                   handleFontWeightChange(
@@ -409,7 +427,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
               >
                 {Object.entries(filteredWeights).map(([key, value]) => (
                   <option key={key} value={key}>
-                    {value}
+                    {t(value)}
                   </option>
                 ))}
               </select>
@@ -419,10 +437,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
           {/* Font Size Settings */}
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-center gap-x-5 gap-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h4 className="text-md font-medium text-slate-200">Font Size</h4>
+              <h4 className="text-md font-medium text-slate-200">
+                {t('Font Size')}
+              </h4>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-slate-300">
-                  {FONT_SIZE_PRESETS[settings.fontSize ?? 'sm']}
+                  {t(FONT_SIZE_PRESETS[settings.fontSize ?? 'sm'])}
                 </span>
               </div>
             </div>
@@ -430,7 +450,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             {/* Font Size Slider */}
             <div className="min-w-0">
               <input
-                aria-label="Overlay font size"
+                aria-label={t('Overlay font size')}
                 type="range"
                 min="0"
                 max="15"
@@ -443,21 +463,21 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
           </div>
 
           <figure
-            aria-label="Overlay font sample"
+            aria-label={t('Overlay font sample')}
             className="space-y-2 border-y border-slate-700 py-3"
           >
             <figcaption className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-slate-400">
-              <span>Overlay font sample</span>
+              <span>{t('Overlay font sample')}</span>
               <span>
-                {FONT_PRESETS[settings.fontType ?? 'lato']} /{' '}
-                {FONT_WEIGHT_PRESETS[resolvedFontWeight]} /{' '}
-                {FONT_SIZE_PRESETS[settings.fontSize ?? 'sm']}
+                {t(FONT_PRESETS[settings.fontType ?? 'lato'])} /{' '}
+                {t(FONT_WEIGHT_PRESETS[resolvedFontWeight])} /{' '}
+                {t(FONT_SIZE_PRESETS[settings.fontSize ?? 'sm'])}
               </span>
             </figcaption>
             <p
               className={`overlay-window overlay-theme-${settings.fontSize ?? 'sm'} overlay-theme-font-face-${settings.fontType ?? 'lato'} overlay-theme-font-weight-${resolvedFontWeight} text-base break-words text-slate-200`}
             >
-              irDashies overlay text 0123456789
+              {t('irDashies overlay text 0123456789')}
             </p>
           </figure>
 
@@ -465,12 +485,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-center gap-x-5 gap-y-2">
             <div className="flex items-center justify-between">
               <h4 className="text-md font-medium text-slate-200">
-                Compact Mode
+                {t('Compact Mode')}
               </h4>
             </div>
             <div className="min-w-0">
               <select
-                aria-label="Overlay compact mode"
+                aria-label={t('Overlay compact mode')}
                 value={settings.compactMode ?? 'off'}
                 onChange={(e) =>
                   handleCompactModeChange(
@@ -481,18 +501,20 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                 }
                 className="settings-field w-full"
               >
-                <option value="off">Off</option>
-                <option value="compact">Compact</option>
-                <option value="ultra">Ultra</option>
+                <option value="off">{t('Off')}</option>
+                <option value="compact">{t('Compact')}</option>
+                <option value="ultra">{t('Ultra')}</option>
               </select>
             </div>
           </div>
 
           {/* Color Theme Settings */}
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-center gap-x-5 gap-y-2">
-            <h4 className="text-md font-medium text-slate-200">Color Theme</h4>
+            <h4 className="text-md font-medium text-slate-200">
+              {t('Color Theme')}
+            </h4>
             <select
-              aria-label="Overlay color theme"
+              aria-label={t('Overlay color theme')}
               value={settings.colorPalette ?? 'default'}
               onChange={(e) =>
                 handleColorThemeChange(
@@ -503,17 +525,17 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             >
               {Object.entries(COLOR_THEME_PRESETS).map(([key, value]) => (
                 <option key={key} value={key}>
-                  {value}
+                  {t(value)}
                 </option>
               ))}
             </select>
           </div>
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] items-center gap-x-5 gap-y-2">
             <h4 className="text-md font-medium text-slate-200">
-              Highlight Color
+              {t('Highlight Color')}
             </h4>
             <select
-              aria-label="Overlay highlight color"
+              aria-label={t('Overlay highlight color')}
               value={settings.highlightColor ?? 960745}
               onChange={(e) =>
                 handleHighlightColorChange(parseInt(e.target.value))
@@ -523,7 +545,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
               {Array.from(HIGHLIGHT_COLOR_PRESETS.entries()).map(
                 ([key, value]) => (
                   <option key={key} value={key}>
-                    {value}
+                    {t(value)}
                   </option>
                 )
               )}
@@ -532,8 +554,10 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
         </section>
         {/* Edit Mode Settings */}
         <BaseSettingsSection
-          title="Edit Mode"
-          description="Controls for positioning and sizing widgets while editing the overlay layout."
+          title={t('Edit Mode')}
+          description={t(
+            'Controls for positioning and sizing widgets while editing the overlay layout.'
+          )}
         >
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -541,11 +565,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                 id="show-edit-mode-pixel-distances-label"
                 className="text-md font-medium text-slate-300"
               >
-                Show Pixel Distances
+                {t('Show Pixel Distances')}
               </h4>
               <p className="text-sm text-slate-500 pr-8">
-                Shows the pixel distance from widgets to each edge of the
-                viewport.
+                {t(
+                  'Shows the pixel distance from widgets to each edge of the viewport.'
+                )}
               </p>
             </div>
             <ToggleSwitch
@@ -563,12 +588,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                 id="snap-edit-mode-widgets-to-grid-label"
                 className="text-md font-medium text-slate-300"
               >
-                Snap Widgets to Grid
+                {t('Snap Widgets to Grid')}
               </h4>
               <p className="text-sm text-slate-500 pr-8">
-                Snaps widget movement and resizing to the pixel grid. Hold
-                &apos;Shift&apos; while dragging or resizing to temporarily
-                disable snapping.
+                {t(
+                  "Snaps widget movement and resizing to the pixel grid. Hold 'Shift' while dragging or resizing to temporarily disable snapping."
+                )}
               </p>
             </div>
             <ToggleSwitch
@@ -583,15 +608,16 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
 
         {previewMode && (
           <div className="p-3 bg-slate-700/50 rounded text-sm text-slate-400">
-            More settings are available in the desktop app, including taskbar
-            visibility, startup options, and hardware acceleration.
+            {t(
+              'More settings are available in the desktop app, including taskbar visibility, startup options, and hardware acceleration.'
+            )}
           </div>
         )}
 
         {!previewMode && (
           <section className="space-y-6 rounded-lg border border-slate-700 bg-slate-800/40 p-4">
             <h3 className="text-lg font-semibold text-slate-200">
-              Application &amp; connectivity
+              {t('Application & connectivity')}
             </h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
@@ -600,17 +626,17 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     id="individual-overlay-windows-label"
                     className="text-md font-medium text-slate-200"
                   >
-                    Individual Overlay Windows
+                    {t('Individual Overlay Windows')}
                   </h4>
                   <p className="text-sm text-slate-400">
-                    Give each widget its own window, allowing it to span
-                    monitors. Applies immediately. Edit Layout temporarily uses
-                    shared screen windows and restarts local chart history and
-                    any in-progress Lap Trace recording.
+                    {t(
+                      'Give each widget its own window, allowing it to span monitors. Applies immediately. Edit Layout temporarily uses shared screen windows and restarts local chart history and any in-progress Lap Trace recording.'
+                    )}
                   </p>
                   <p className="text-sm text-amber-300">
-                    Warning: increases CPU usage compared with shared display
-                    windows.
+                    {t(
+                      'Warning: increases CPU usage compared with shared display windows.'
+                    )}
                   </p>
                 </div>
                 <ToggleSwitch
@@ -629,12 +655,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     id="skip-taskbar-label"
                     className="text-md font-medium text-slate-200"
                   >
-                    Hide Overlays from Taskbar
+                    {t('Hide Overlays from Taskbar')}
                   </h4>
                   <p className="text-sm text-slate-400">
-                    When enabled, overlay windows won&apos;t appear in the
-                    taskbar. The app is still accessible via the system tray.
-                    (requires restart)
+                    {t(
+                      "When enabled, overlay windows won't appear in the taskbar. The app is still accessible via the system tray. (requires restart)"
+                    )}
                   </p>
                 </div>
                 <ToggleSwitch
@@ -653,11 +679,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     id="overlay-always-on-top-label"
                     className="text-md font-medium text-slate-200"
                   >
-                    Keep Overlays Always On Top
+                    {t('Keep Overlays Always On Top')}
                   </h4>
                   <p className="text-sm text-slate-400">
-                    When enabled, overlay windows will always stay on top of
-                    other applications. (requires restart)
+                    {t(
+                      'When enabled, overlay windows will always stay on top of other applications. (requires restart)'
+                    )}
                   </p>
                 </div>
                 <ToggleSwitch
@@ -678,14 +705,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     id="enable-web-server-label"
                     className="text-md font-medium text-slate-200"
                   >
-                    Enable Web Server
+                    {t('Enable Web Server')}
                   </h4>
                   <p className="text-sm text-slate-400">
-                    Runs the built-in web server that exposes your overlays as
-                    browser sources for OBS. When disabled, the app listens on
-                    no ports at all &mdash; freeing port 3000 &mdash; and the
-                    OBS browser source URLs stop working. Leave enabled if you
-                    stream or record. (requires restart)
+                    {t(
+                      'Runs the built-in web server that exposes your overlays as browser sources for OBS. When disabled, the app listens on no ports at all — freeing port 3000 — and the OBS browser source URLs stop working. Leave enabled if you stream or record. (requires restart)'
+                    )}
                   </p>
                 </div>
                 <ToggleSwitch
@@ -704,13 +729,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     id="enable-network-access-label"
                     className="text-md font-medium text-slate-200"
                   >
-                    Enable Network Access
+                    {t('Enable Network Access')}
                   </h4>
                   <p className="text-sm text-slate-400">
-                    When enabled, the component server binds to all network
-                    interfaces (0.0.0.0), allowing other devices on your network
-                    to access the dashboard. When disabled, only localhost
-                    connections are allowed. (requires restart)
+                    {t(
+                      'When enabled, the component server binds to all network interfaces (0.0.0.0), allowing other devices on your network to access the dashboard. When disabled, only localhost connections are allowed. (requires restart)'
+                    )}
                   </p>
                 </div>
                 <ToggleSwitch
@@ -729,12 +753,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     id="hardware-acceleration-label"
                     className="text-md font-medium text-slate-200"
                   >
-                    Hardware Acceleration
+                    {t('Hardware Acceleration')}
                   </h4>
                   <p className="text-sm text-slate-400">
-                    Uses GPU hardware acceleration for rendering. Only disable
-                    this if you are experiencing compatibility issues, as it
-                    will significantly impact performance. (requires restart)
+                    {t(
+                      'Uses GPU hardware acceleration for rendering. Only disable this if you are experiencing compatibility issues, as it will significantly impact performance. (requires restart)'
+                    )}
                   </p>
                 </div>
                 <ToggleSwitch
@@ -755,11 +779,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     id="auto-start-label"
                     className="text-md font-medium text-slate-200"
                   >
-                    Start on system startup
+                    {t('Start on system startup')}
                   </h4>
                   <p className="text-sm text-slate-400">
-                    If enabled, irDashies will start automatically on system
-                    start up.
+                    {t(
+                      'If enabled, irDashies will start automatically on system start up.'
+                    )}
                   </p>
                 </div>
                 <ToggleSwitch
@@ -778,11 +803,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     id="start-minimized-label"
                     className="text-md font-medium text-slate-200"
                   >
-                    Start minimized
+                    {t('Start minimized')}
                   </h4>
                   <p className="text-sm text-slate-400">
-                    If enabled, the main settings window will start minimized to
-                    the system tray.
+                    {t(
+                      'If enabled, the main settings window will start minimized to the system tray.'
+                    )}
                   </p>
                 </div>
                 <ToggleSwitch
@@ -801,11 +827,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     id="close-to-tray-label"
                     className="text-md font-medium text-slate-200"
                   >
-                    Close to tray
+                    {t('Close to tray')}
                   </h4>
                   <p className="text-sm text-slate-400">
-                    If enabled, closing the app will minimise to the system tray
-                    rather than quitting.
+                    {t(
+                      'If enabled, closing the app will minimise to the system tray rather than quitting.'
+                    )}
                   </p>
                 </div>
                 <ToggleSwitch
@@ -821,11 +848,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <h4 className="text-md font-medium text-slate-200">
-                    Simulator
+                    {t('Simulator')}
                   </h4>
                   <p className="text-sm text-slate-400">
-                    Which simulator to read telemetry from. Auto picks whichever
-                    supported simulator is running.
+                    {t(
+                      'Which simulator to read telemetry from. Auto picks whichever supported simulator is running.'
+                    )}
                   </p>
                 </div>
                 <select
@@ -839,7 +867,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                   }
                   className="settings-field shrink-0"
                 >
-                  <option value="auto">Auto</option>
+                  <option value="auto">{t('Auto')}</option>
                   {SIMULATOR_IDS.map((id) => {
                     // Listed but disabled when this build has no source for it,
                     // which says more than omitting it would: the option
@@ -848,7 +876,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     return (
                       <option key={id} value={id} disabled={unavailable}>
                         {SIMULATOR_LABELS[id]}
-                        {unavailable ? ' (not available in this build)' : ''}
+                        {unavailable ? t(' (not available in this build)') : ''}
                       </option>
                     );
                   })}

@@ -1,3 +1,4 @@
+import { t as translate } from '@irdashies/frontend/i18n';
 import { CaretDownIcon } from '@phosphor-icons/react';
 import { SettingsPopover } from './components/SettingsPopover';
 import { useState, useRef, useMemo, memo, createElement, useId } from 'react';
@@ -50,7 +51,7 @@ export const IconPicker = memo(function IconPicker({
     <div className="relative">
       <button
         ref={triggerRef}
-        aria-label="Driver group icon"
+        aria-label={translate('Driver group icon')}
         aria-expanded={isOpen}
         aria-controls={isOpen ? panelId : undefined}
         type="button"
@@ -70,7 +71,9 @@ export const IconPicker = memo(function IconPicker({
           {value ? (
             value
           ) : (
-            <span className="text-slate-400">Select an Icon</span>
+            <span className="text-slate-400">
+              {translate('Select an Icon')}
+            </span>
           )}
         </span>
         <CaretDownIcon size={16} className="shrink-0 text-slate-400" />
@@ -81,7 +84,7 @@ export const IconPicker = memo(function IconPicker({
         anchorRef={triggerRef}
         initialFocusRef={searchRef}
         id={panelId}
-        label="Driver group icons"
+        label={translate('Driver group icons')}
         onClose={() => {
           setIsOpen(false);
           setSearch('');
@@ -91,17 +94,24 @@ export const IconPicker = memo(function IconPicker({
           <div className="p-2 border-b border-settings-boundary space-y-1">
             <input
               ref={searchRef}
-              aria-label="Search driver group icons"
+              aria-label={translate('Search driver group icons')}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search icons..."
+              placeholder={translate('Search icons...')}
               className="settings-field w-full placeholder-slate-400"
             />
             <p className="text-xs text-slate-500">
               {search.trim()
-                ? `${filteredIcons.length} result${filteredIcons.length !== 1 ? 's' : ''}`
-                : `Showing first 120 of ${PHOSPHOR_ICON_ENTRIES.length} — search to filter`}
+                ? filteredIcons.length === 1
+                  ? translate('1 result')
+                  : translate('{count} results', {
+                      count: filteredIcons.length,
+                    })
+                : translate(
+                    'Showing first 120 of {length} — search to filter',
+                    { length: PHOSPHOR_ICON_ENTRIES.length }
+                  )}
             </p>
           </div>
 
@@ -117,7 +127,7 @@ export const IconPicker = memo(function IconPicker({
                 }}
                 className="settings-button-danger"
               >
-                Clear selection
+                {translate('Clear selection')}
               </button>
             </div>
           )}

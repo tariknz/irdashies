@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
@@ -81,7 +82,7 @@ const DisplaySettingsList = ({
         return (
           <DraggableSettingItem
             key={setting.id}
-            label={setting.label}
+            label={t(setting.label)}
             enabled={isEnabled}
             onToggle={(enabled) => {
               const cv = settings.config[setting.configKey] as {
@@ -145,12 +146,14 @@ export const BattleSettings = () => {
     localStorage.setItem('battleTab', activeTab);
   }, [activeTab]);
 
-  if (!currentDashboard) return <>Loading...</>;
+  if (!currentDashboard) return <>{t('Loading...')}</>;
 
   return (
     <BaseSettingsSection
-      title="Battle"
-      description="Shows the cars immediately ahead and behind the player with gap information"
+      title={t('Battle')}
+      description={t(
+        'Shows the cars immediately ahead and behind the player with gap information'
+      )}
       settings={settings as BattleWidgetSettings}
       onSettingsChange={(s) => setSettings(s as BattleWidgetSettings)}
       widgetId={SETTING_ID}
@@ -169,21 +172,21 @@ export const BattleSettings = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Display
+                {t('Display')}
               </TabButton>
               <TabButton
                 id="options"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Options
+                {t('Options')}
               </TabButton>
               <TabButton
                 id="visibility"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Visibility
+                {t('Visibility')}
               </TabButton>
             </div>
 
@@ -191,9 +194,12 @@ export const BattleSettings = () => {
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <>
-                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+                  <SettingsSection
+                    title={t('Display')}
+                    scaleWidgetId={SETTING_ID}
+                  >
                     <h4 className="text-md font-medium text-slate-200">
-                      Columns
+                      {t('Columns')}
                     </h4>
                     <DisplaySettingsList
                       itemsOrder={
@@ -212,7 +218,7 @@ export const BattleSettings = () => {
 
               {/* OPTIONS TAB */}
               {activeTab === 'options' && (
-                <SettingsSection title="Options">
+                <SettingsSection title={t('Options')}>
                   <SettingProp path="background.opacity" />
 
                   <SettingDivider />
@@ -223,7 +229,7 @@ export const BattleSettings = () => {
 
               {/* VISIBILITY TAB */}
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
+                <SettingsSection title={t('Session Visibility')}>
                   <SessionVisibility
                     sessionVisibility={settings.config.sessionVisibility}
                     handleConfigChange={handleConfigChange}

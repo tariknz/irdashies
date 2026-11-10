@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { changeMarker } from '../components/ChangedMark';
@@ -32,15 +33,17 @@ export const BroadcastPodiumSettings = () => {
   });
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   return (
     <BaseSettingsSection
       disableInternalScroll
       headingLevel="h3"
-      title="Broadcast Podium"
-      description="The top three of each class on steps, up after the checkered flag of a race. Demo mode shows it all the time so it can be placed."
+      title={t('Broadcast Podium')}
+      description={t(
+        'The top three of each class on steps, up after the checkered flag of a race. Demo mode shows it all the time so it can be placed.'
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -52,12 +55,17 @@ export const BroadcastPodiumSettings = () => {
           handleConfigChange
         );
         return (
-          <SettingsSection title="Widget options" scaleWidgetId={SETTING_ID}>
+          <SettingsSection
+            title={t('Widget options')}
+            scaleWidgetId={SETTING_ID}
+          >
             {mark(
               ['style'],
               <SettingButtonGroupRow<BroadcastPodiumStyle>
-                title="Style"
-                description="Gold, silver and bronze steps, or a trophy for each place."
+                title={t('Style')}
+                description={t(
+                  'Gold, silver and bronze steps, or a trophy for each place.'
+                )}
                 value={settings.config.style}
                 options={STYLE_OPTIONS}
                 onChange={(v) => handleConfigChange({ style: v })}
@@ -66,7 +74,7 @@ export const BroadcastPodiumSettings = () => {
             {mark(
               ['background'],
               <SettingSliderRow
-                title="Background Opacity"
+                title={t('Background Opacity')}
                 value={settings.config.background.opacity}
                 units="%"
                 min={0}

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useEffect, useRef } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
@@ -121,13 +122,13 @@ export const TrackMapSettings = () => {
   }, [imageFilename, useBrowserMode, dashboardBridge]);
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   return (
     <BaseSettingsSection
-      title="Track Map"
-      description="Configure track map visualization settings."
+      title={t('Track Map')}
+      description={t('Configure track map visualization settings.')}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId="map"
@@ -215,35 +216,35 @@ export const TrackMapSettings = () => {
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Track
+                  {t('Track')}
                 </TabButton>
                 <TabButton
                   id="drivers"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Drivers
+                  {t('Drivers')}
                 </TabButton>
                 <TabButton
                   id="styling"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Styling
+                  {t('Styling')}
                 </TabButton>
                 <TabButton
                   id="visibility"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Visibility
+                  {t('Visibility')}
                 </TabButton>
               </div>
 
               <div>
                 {/* TRACK TAB */}
                 {activeTab === 'track' && (
-                  <SettingsSection title="Track Settings">
+                  <SettingsSection title={t('Track Settings')}>
                     <SettingProp path="trackLineWidth" />
 
                     <SettingProp path="trackOutlineWidth" />
@@ -253,8 +254,11 @@ export const TrackMapSettings = () => {
                     <SettingDivider />
 
                     <SettingToggleRow
-                      title="Sector Colors"
-                      description={`Color each sector based on your session performance (purple: session best, green: within ${greenPct}%, yellow: within ${yellowPct}%, red: ${yellowPct}%+ off pace). Thresholds are set in Sector Delta settings.`}
+                      title={t('Sector Colors')}
+                      description={t(
+                        'Color each sector based on your session performance (purple: session best, green: within {greenPct}%, yellow: within {yellowPct}%, red: {yellowPct}%+ off pace). Thresholds are set in Sector Delta settings.',
+                        { greenPct, yellowPct }
+                      )}
                       enabled={settings.config.sectorColoring?.enabled ?? false}
                       onToggle={(newValue) =>
                         handleConfigChange({
@@ -268,8 +272,10 @@ export const TrackMapSettings = () => {
                     <SettingDivider />
 
                     <SettingToggleRow
-                      title="Enable Turn Labels"
-                      description="Show turn numbers and names on the track map"
+                      title={t('Enable Turn Labels')}
+                      description={t(
+                        'Show turn numbers and names on the track map'
+                      )}
                       enabled={settings.config.turnLabels?.enabled ?? false}
                       onToggle={(newValue) =>
                         handleConfigChange({
@@ -295,10 +301,12 @@ export const TrackMapSettings = () => {
 
                 {/* DRIVERS TAB */}
                 {activeTab === 'drivers' && (
-                  <SettingsSection title="Driver Circles">
+                  <SettingsSection title={t('Driver Circles')}>
                     <SettingToggleRow
-                      title="Use custom icon for player"
-                      description="Replace the player circle with a custom image"
+                      title={t('Use custom icon for player')}
+                      description={t(
+                        'Replace the player circle with a custom image'
+                      )}
                       enabled={settings.config.playerIcon?.enabled ?? false}
                       onToggle={(newValue) => {
                         handleConfigChange({
@@ -337,7 +345,7 @@ export const TrackMapSettings = () => {
                               e.target.value = '';
                             }}
                             className="sr-only"
-                            aria-label="Player icon image"
+                            aria-label={t('Player icon image')}
                             id="player-icon-input"
                           />
                           <label
@@ -348,20 +356,22 @@ export const TrackMapSettings = () => {
                               <div className="flex items-center gap-3">
                                 <img
                                   src={previewUrl}
-                                  alt="Player icon"
+                                  alt={t('Player icon')}
                                   className="w-10 h-10 rounded object-contain bg-slate-700"
                                 />
                                 <span className="text-sm text-slate-300">
-                                  Click or drag to replace icon
+                                  {t('Click or drag to replace icon')}
                                 </span>
                               </div>
                             ) : (
                               <div className="text-slate-400">
                                 <p className="mb-1 text-sm">
-                                  Drag and drop an image here
+                                  {t('Drag and drop an image here')}
                                 </p>
                                 <p className="text-xs">
-                                  or click to select (PNG, JPG, GIF, WebP, SVG)
+                                  {t(
+                                    'or click to select (PNG, JPG, GIF, WebP, SVG)'
+                                  )}
                                 </p>
                               </div>
                             )}
@@ -376,7 +386,7 @@ export const TrackMapSettings = () => {
                           (showRemoveConfirm ? (
                             <div className="flex items-center gap-2">
                               <span className="text-sm text-slate-300">
-                                Remove icon?
+                                {t('Remove icon?')}
                               </span>
                               <button
                                 onClick={() => {
@@ -394,13 +404,13 @@ export const TrackMapSettings = () => {
                                 }}
                                 className="settings-button-danger"
                               >
-                                Yes, remove
+                                {t('Yes, remove')}
                               </button>
                               <button
                                 onClick={() => setShowRemoveConfirm(false)}
                                 className="settings-button"
                               >
-                                Cancel
+                                {t('Cancel')}
                               </button>
                             </div>
                           ) : (
@@ -408,7 +418,7 @@ export const TrackMapSettings = () => {
                               onClick={() => setShowRemoveConfirm(true)}
                               className="settings-button-danger"
                             >
-                              Remove icon
+                              {t('Remove icon')}
                             </button>
                           ))}
                       </div>
@@ -423,7 +433,7 @@ export const TrackMapSettings = () => {
                         <SettingButtonGroupRow<
                           'carNumber' | 'sessionPosition' | 'livePosition'
                         >
-                          title="Display Mode"
+                          title={t('Display Mode')}
                           value={settings.config.displayMode ?? 'carNumber'}
                           options={[
                             { label: 'Car Number', value: 'carNumber' },
@@ -455,9 +465,9 @@ export const TrackMapSettings = () => {
                 {/* STYLING TAB */}
                 {activeTab === 'styling' && (
                   <>
-                    <SettingsSection title="Styling" scaleWidgetId="map">
+                    <SettingsSection title={t('Styling')} scaleWidgetId="map">
                       <h4 className="text-md font-medium text-slate-200">
-                        Minimal Styling
+                        {t('Minimal Styling')}
                       </h4>
                       <SettingProp path="styling.isMinimalTrack" />
                       <SettingProp path="styling.isMinimalCar" />
@@ -467,7 +477,7 @@ export const TrackMapSettings = () => {
 
                 {/* VISIBILITY TAB */}
                 {activeTab === 'visibility' && (
-                  <SettingsSection title="Session Visibility">
+                  <SettingsSection title={t('Session Visibility')}>
                     <SessionVisibility
                       sessionVisibility={settings.config.sessionVisibility}
                       handleConfigChange={handleConfigChange}

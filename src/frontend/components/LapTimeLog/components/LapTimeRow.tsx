@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import type { LapTimeLogConfig } from '@irdashies/types';
 import { formatTime, formatDelta } from '@irdashies/utils/time';
 import { useGeneralSettings } from '@irdashies/context';
@@ -14,78 +15,80 @@ interface LapTimeRowProps {
   settings?: LapTimeLogConfig;
 }
 
-export const LapTimeRow = memo(({
-  label,
-  time,
-  delta,
-  dirty,
-  best,
-  overall,
-  alltime,
-  settings,
-}: LapTimeRowProps) => {
-  const generalSettings = useGeneralSettings();
-  const isCompact =
-    generalSettings?.compactMode === 'compact' ||
-    generalSettings?.compactMode === 'ultra';
-  const isUltra = generalSettings?.compactMode === 'ultra';
+export const LapTimeRow = memo(
+  ({
+    label,
+    time,
+    delta,
+    dirty,
+    best,
+    overall,
+    alltime,
+    settings,
+  }: LapTimeRowProps) => {
+    const generalSettings = useGeneralSettings();
+    const isCompact =
+      generalSettings?.compactMode === 'compact' ||
+      generalSettings?.compactMode === 'ultra';
+    const isUltra = generalSettings?.compactMode === 'ultra';
 
-  const isSameLapTime = (left?: number, right?: number) =>
-    left !== undefined &&
-    right !== undefined &&
-    left > 0 &&
-    Math.abs(left - right) < 0.001;
+    const isSameLapTime = (left?: number, right?: number) =>
+      left !== undefined &&
+      right !== undefined &&
+      left > 0 &&
+      Math.abs(left - right) < 0.001;
 
-  const isGreen = isSameLapTime(time, best);
-  const isPurple = isSameLapTime(time, overall);
-  const isYellow = isSameLapTime(time, alltime);
+    const isGreen = isSameLapTime(time, best);
+    const isPurple = isSameLapTime(time, overall);
+    const isYellow = isSameLapTime(time, alltime);
 
-  const isDirty = dirty ?? false;
+    const isDirty = dirty ?? false;
 
-  const deltaIsGreen =
-    time !== undefined && time > 0 && delta !== undefined && delta < 0;
+    const deltaIsGreen =
+      time !== undefined && time > 0 && delta !== undefined && delta < 0;
 
-  const deltaIsRed =
-    time !== undefined && time > 0 && delta !== undefined && delta > 0;
+    const deltaIsRed =
+      time !== undefined && time > 0 && delta !== undefined && delta > 0;
 
-  const opacity = settings?.foreground?.opacity ?? 0;
+    const opacity = settings?.foreground?.opacity ?? 0;
 
-  const getLapColor = () => {
-    if (isDirty) return 'text-zinc-400';
-    if (isYellow) return 'text-yellow-400';
-    if (isPurple) return 'text-purple-400';
-    if (isGreen) return 'text-green-400';
-    return 'text-white';
-  };
+    const getLapColor = () => {
+      if (isDirty) return 'text-zinc-400';
+      if (isYellow) return 'text-yellow-400';
+      if (isPurple) return 'text-purple-400';
+      if (isGreen) return 'text-green-400';
+      return 'text-white';
+    };
 
-  return (
-    <div
-      className={`${!isCompact ? 'p-1' : ''} odd:bg-slate-800/[var(--fg-alpha)] even:bg-slate-900/[var(--fg-alpha)]`}
-      style={{ '--fg-alpha': `${opacity / 3}%` } as React.CSSProperties}
-    >
+    return (
       <div
-        className={`flex w-full text-[1em] ${isUltra ? 'py-px px-1' : 'py-0.5 px-2'}`}
+        className={`${!isCompact ? 'p-1' : ''} odd:bg-slate-800/[var(--fg-alpha)] even:bg-slate-900/[var(--fg-alpha)]`}
+        style={{ '--fg-alpha': `${opacity / 3}%` } as React.CSSProperties}
       >
-        <span className="flex-1 tabular-nums uppercase">{label}</span>
-        {settings?.delta?.enabled && (
-          <span
-            className={`flex-1 text-center tabular-nums ${
-              deltaIsGreen
-                ? 'text-green-400'
-                : deltaIsRed
-                  ? 'text-red-400'
-                  : 'text-zinc-500'
-            }`}
-          >
-            {formatDelta(time !== undefined && time > 0 ? delta : 0)}
+        <div
+          className={`flex w-full text-[1em] ${isUltra ? 'py-px px-1' : 'py-0.5 px-2'}`}
+        >
+          <span className="flex-1 tabular-nums uppercase">{t(label)}</span>
+          {settings?.delta?.enabled && (
+            <span
+              className={`flex-1 text-center tabular-nums ${
+                deltaIsGreen
+                  ? 'text-green-400'
+                  : deltaIsRed
+                    ? 'text-red-400'
+                    : 'text-zinc-500'
+              }`}
+            >
+              {formatDelta(time !== undefined && time > 0 ? delta : 0)}
+            </span>
+          )}
+          <span className={`flex-1 text-right tabular-nums ${getLapColor()}`}>
+            {formatTime(time)}
           </span>
-        )}
-        <span className={`flex-1 text-right tabular-nums ${getLapColor()}`}>
-          {formatTime(time)}
-        </span>
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 LapTimeRow.displayName = 'LapTimeRow';

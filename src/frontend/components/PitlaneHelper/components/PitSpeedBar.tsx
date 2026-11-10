@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo } from 'react';
 
 export interface PitSpeedBarProps {
@@ -55,7 +56,7 @@ export const PitSpeedBar = memo(
           </div>
 
           <div className="flex justify-center items-center text-[11px] w-full">
-            <span className="text-slate-400">Speed</span>
+            <span className="text-slate-400">{t('Speed')}</span>
           </div>
         </div>
       );
@@ -65,7 +66,7 @@ export const PitSpeedBar = memo(
     return (
       <div className="flex flex-col h-full flex-1 gap-1">
         <div className="flex justify-between items-center text-xs">
-          <span className="text-slate-400">Speed</span>
+          <span className="text-slate-400">{t('Speed')}</span>
           <span className="text-white font-medium tabular-nums">
             {speed.toFixed(1)}
           </span>

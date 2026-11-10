@@ -2,6 +2,7 @@
  * Main Lap Time Log Component
  * Displays a widget showing the current lap, last lap, and best lap times
  */
+import { t } from '@irdashies/frontend/i18n';
 import React, { useMemo } from 'react';
 import {
   useFocusCarIdx,
@@ -249,7 +250,7 @@ export const LapTimeLogDisplay = ({
           <div className="flex w-full gap-1">
             {settings.showAllTimeLap && (
               <LapTimeCell
-                label="PERSONAL"
+                label={t('PERSONAL')}
                 time={alltimelap}
                 alltime={alltimelap}
                 settings={settings}
@@ -257,7 +258,7 @@ export const LapTimeLogDisplay = ({
             )}
             {settings.showBestLap && (
               <LapTimeCell
-                label="SESSION"
+                label={t('SESSION')}
                 time={bestlap}
                 best={bestlap}
                 overall={overall}
@@ -267,7 +268,7 @@ export const LapTimeLogDisplay = ({
             )}
             {settings.showLastLap && (
               <LapTimeCell
-                label="LAST LAP"
+                label={t('LAST LAP')}
                 time={lastlap}
                 best={bestlap}
                 overall={overall}
@@ -292,7 +293,7 @@ export const LapTimeLogDisplay = ({
                 {sortedHistory.map((entry) => (
                   <LapTimeRow
                     key={entry.lap} // Critical for React performance
-                    label={`LAP ${entry.lap}`}
+                    label={t('LAP {lap}', { lap: entry.lap })}
                     time={entry.time}
                     delta={entry.delta}
                     dirty={entry.dirty}

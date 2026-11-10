@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowCounterClockwiseIcon } from '@phosphor-icons/react';
 import type {
@@ -302,7 +303,7 @@ const KeyRecorder = ({ actionId, entry, onUpdated }: KeyRecorderProps) => {
     <div className="flex max-w-[280px] shrink-0 flex-wrap items-center justify-end gap-2">
       <button
         ref={recorderRef}
-        aria-label={`Change shortcut for ${entry.label}`}
+        aria-label={t('Change shortcut for {label}', { label: t(entry.label) })}
         type="button"
         onClick={recording ? undefined : startRecording}
         className={[
@@ -313,17 +314,17 @@ const KeyRecorder = ({ actionId, entry, onUpdated }: KeyRecorderProps) => {
         ].join(' ')}
       >
         {recording
-          ? 'Press keys...'
+          ? t('Press keys...')
           : entry.accelerator
             ? formatAccelerator(entry.accelerator)
-            : 'Not set'}
+            : t('Not set')}
       </button>
       {!entry.isDefault && (
         <button
           type="button"
           onClick={handleReset}
           className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
-          title="Reset to default"
+          title={t('Reset to default')}
         >
           <ArrowCounterClockwiseIcon size={14} />
         </button>
@@ -349,8 +350,8 @@ interface BindingRowProps {
 export const BindingRow = ({ actionId, entry, onUpdated }: BindingRowProps) => (
   <div className="flex items-center justify-between gap-4 px-4 py-3 rounded bg-slate-700/50 hover:bg-slate-700/70 transition-colors">
     <div className="flex min-w-0 flex-col gap-0.5">
-      <span className="text-sm font-medium text-white">{entry.label}</span>
-      <span className="text-xs text-slate-400">{entry.description}</span>
+      <span className="text-sm font-medium text-white">{t(entry.label)}</span>
+      <span className="text-xs text-slate-400">{t(entry.description)}</span>
     </div>
     <KeyRecorder actionId={actionId} entry={entry} onUpdated={onUpdated} />
   </div>
@@ -374,7 +375,7 @@ export const KeybindingsSettings = () => {
   };
 
   if (!bindings) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   // The stored map may also contain dynamic widget toggles; the static section
@@ -402,12 +403,12 @@ export const KeybindingsSettings = () => {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="mb-1 text-xl font-semibold tracking-tight text-white">
-              Key Bindings
+              {t('Key Bindings')}
             </h2>
             <p className="text-slate-400 text-sm">
-              Customize keyboard shortcuts. Click a binding then press a new key
-              combination, or hold two or more controller buttons together for a
-              combo.
+              {t(
+                'Customize keyboard shortcuts. Click a binding then press a new key combination, or hold two or more controller buttons together for a combo.'
+              )}
             </p>
           </div>
           <button
@@ -415,7 +416,7 @@ export const KeybindingsSettings = () => {
             onClick={handleResetAll}
             className="min-h-9 rounded-md border border-settings-boundary bg-slate-800 px-3 py-1.5 text-sm text-slate-200 transition-colors hover:border-accent-400 cursor-pointer whitespace-nowrap"
           >
-            Reset All
+            {t('Reset All')}
           </button>
         </div>
       </div>
@@ -435,11 +436,12 @@ export const KeybindingsSettings = () => {
         {widgets.length > 0 && (
           <>
             <h3 className="text-sm font-semibold text-slate-300 mt-6 mb-2 px-1">
-              Widget Visibility
+              {t('Widget Visibility')}
             </h3>
             <p className="text-xs text-slate-400 mb-2 px-1">
-              Assign a key or controller button to show / hide an individual
-              widget. Unbound by default.
+              {t(
+                'Assign a key or controller button to show / hide an individual widget. Unbound by default.'
+              )}
             </p>
             <div className="flex flex-col gap-1">
               {widgets.map((widget) => {

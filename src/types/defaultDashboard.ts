@@ -17,6 +17,7 @@ export const defaultDashboard: {
       }) as TypedDashboardWidget
   ),
   generalSettings: {
+    language: 'pt-BR',
     fontType: 'lato',
     fontSize: 'sm',
     fontWeight: 'normal',

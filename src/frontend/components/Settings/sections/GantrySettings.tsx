@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, useEffect, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
@@ -261,7 +262,7 @@ export const GantrySettings = memo(() => {
     localStorage.setItem('gantryTab', activeTab);
   }, [activeTab]);
 
-  if (!currentDashboard) return <>Loading...</>;
+  if (!currentDashboard) return <>{t('Loading...')}</>;
 
   const config = settings.config;
   const unitSetting = config.speedUnit ?? 'auto';
@@ -277,8 +278,10 @@ export const GantrySettings = memo(() => {
 
   return (
     <BaseSettingsSection
-      title="Gantry"
-      description="Race control window with live standings, an incident feed and a lap gap graph."
+      title={t('Gantry')}
+      description={t(
+        'Race control window with live standings, an incident feed and a lap gap graph.'
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -315,28 +318,28 @@ export const GantrySettings = memo(() => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Options
+                {t('Options')}
               </TabButton>
               <TabButton
                 id="standings"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Standings
+                {t('Standings')}
               </TabButton>
               <TabButton
                 id="incidents"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Incidents
+                {t('Incidents')}
               </TabButton>
               <TabButton
                 id="dock"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Docked Panels
+                {t('Docked Panels')}
               </TabButton>
             </div>
 
@@ -344,17 +347,17 @@ export const GantrySettings = memo(() => {
               {activeTab === 'options' && (
                 <>
                   <SettingsSection
-                    title="Widget options"
+                    title={t('Widget options')}
                     scaleWidgetId={SETTING_ID}
                   >
                     <SettingActionButton
-                      title="Gantry Window"
-                      description={`The Gantry runs in its own resizable window rather than as an on-screen overlay. Use this to bring it back if you closed it.${
+                      title={t('Gantry Window')}
+                      description={`${t('The Gantry runs in its own resizable window rather than as an on-screen overlay. Use this to bring it back if you closed it.')}${
                         showDisabledHint
-                          ? ' Turn the Gantry on above to open its window.'
+                          ? ` ${t('Turn the Gantry on above to open its window.')}`
                           : ''
                       }`}
-                      label="Show Window"
+                      label={t('Show Window')}
                       onClick={() =>
                         void window.raceControlBridge
                           ?.showGantryWindow()
@@ -367,10 +370,10 @@ export const GantrySettings = memo(() => {
                     <SettingDivider />
 
                     <SettingButtonGroupRow<GantryConfig['speedUnit']>
-                      title="Speed Units"
-                      description={`Units for the speed settings on the Incidents tab. Values are always saved in km/h, so switching units never changes how incidents are detected.${
+                      title={t('Speed Units')}
+                      description={`${t('Units for the speed settings on the Incidents tab. Values are always saved in km/h, so switching units never changes how incidents are detected.')}${
                         autoUnresolved
-                          ? ` Auto follows iRacing's own unit setting, which is only known while the sim is running, so it shows ${speedUnit} for now.`
+                          ? ` ${t("Auto follows iRacing's own unit setting, which is only known while the sim is running, so it shows {speedUnit} for now.", { speedUnit })}`
                           : ''
                       }`}
                       value={unitSetting}
@@ -388,12 +391,12 @@ export const GantrySettings = memo(() => {
                       'ready' && (
                       <div className="py-2">
                         <div className="text-sm text-slate-300">
-                          Driver Name
+                          {t('Driver Name')}
                         </div>
                         <div className="text-xs text-slate-400 mt-1">
-                          How names are written in the built-in Gantry standings
-                          list. Surname only keeps the column narrow, which is
-                          what the panel is sized for.
+                          {t(
+                            'How names are written in the built-in Gantry standings list. Surname only keeps the column narrow, which is what the panel is sized for.'
+                          )}
                         </div>
                         <div className="grid grid-cols-2 xl:grid-cols-3 gap-2 mt-3">
                           {NAME_FORMATS.map((format) => (
@@ -414,8 +417,10 @@ export const GantrySettings = memo(() => {
                     )}
 
                     <SettingSelectRow
-                      title="Incident Camera"
-                      description="Which iRacing camera the incident replay buttons switch to. The list comes from the current session, so it fills in once you are on track. Falls back to the camera already selected when a track does not offer this group."
+                      title={t('Incident Camera')}
+                      description={t(
+                        'Which iRacing camera the incident replay buttons switch to. The list comes from the current session, so it fills in once you are on track. Falls back to the camera already selected when a track does not offer this group.'
+                      )}
                       value={cameraGroup}
                       options={cameraGroupOptions(cameraGroups, cameraGroup)}
                       onChange={(v) =>
@@ -424,8 +429,10 @@ export const GantrySettings = memo(() => {
                     />
 
                     <SettingSelectRow
-                      title="Keep Sessions"
-                      description="How many past sessions the Gantry keeps in its history. Lower it if the incident feed gets long and you only care about the current race; All keeps everything until you clear it."
+                      title={t('Keep Sessions')}
+                      description={t(
+                        'How many past sessions the Gantry keeps in its history. Lower it if the incident feed gets long and you only care about the current race; All keeps everything until you clear it.'
+                      )}
                       value={String(config.sessionRetention)}
                       options={retentionOptions}
                       onChange={(v) =>
@@ -439,10 +446,12 @@ export const GantrySettings = memo(() => {
               )}
 
               {activeTab === 'options' && (
-                <SettingsSection title="Lap Graph">
+                <SettingsSection title={t('Lap Graph')}>
                   <SettingButtonGroupRow<LapGraphYAxisMode>
-                    title="Default Y Axis"
-                    description="What the Lap Graph tab measures when the Gantry opens. You can still switch axis on the tab itself."
+                    title={t('Default Y Axis')}
+                    description={t(
+                      'What the Lap Graph tab measures when the Gantry opens. You can still switch axis on the tab itself.'
+                    )}
                     value={lapGraph.yAxisMode}
                     options={yAxisModeButtons}
                     onChange={(v) =>
@@ -462,14 +471,14 @@ export const GantrySettings = memo(() => {
                               isActive ? 'text-slate-300' : 'text-slate-500'
                             }`}
                           >
-                            {mode.label}
+                            {t(mode.label)}
                           </dt>
                           <dd
                             className={
                               isActive ? 'text-slate-400' : 'text-slate-500'
                             }
                           >
-                            {mode.description}
+                            {t(mode.description)}
                           </dd>
                         </div>
                       );
@@ -479,8 +488,10 @@ export const GantrySettings = memo(() => {
                   <SettingDivider />
 
                   <SettingButtonGroupRow<LapGraphAxisFit>
-                    title="Y-axis range"
-                    description="What the Race Trace and Gap axes are sized to. Shown drivers fits your car and the pinned cars, so a car far behind rides along the edge instead of flattening the battle you are watching. All drivers fits every car in the class."
+                    title={t('Y-axis range')}
+                    description={t(
+                      'What the Race Trace and Gap axes are sized to. Shown drivers fits your car and the pinned cars, so a car far behind rides along the edge instead of flattening the battle you are watching. All drivers fits every car in the class.'
+                    )}
                     value={lapGraph.axisFit === 'all' ? 'all' : 'shown'}
                     options={axisFitButtons}
                     onChange={(v) =>
@@ -493,8 +504,14 @@ export const GantrySettings = memo(() => {
                   <SettingDivider />
 
                   <SettingNumberRow
-                    title="Max gap shown (s)"
-                    description={`Caps the top of the Gap axis at this many seconds. Cars further back ride along the top edge and the readout still shows their true gap. 0 turns the cap off. ${LAP_GRAPH_GAP_MAX_BOUNDS.min} to ${LAP_GRAPH_GAP_MAX_BOUNDS.max} seconds.`}
+                    title={t('Max gap shown (s)')}
+                    description={t(
+                      'Caps the top of the Gap axis at this many seconds. Cars further back ride along the top edge and the readout still shows their true gap. 0 turns the cap off. {min} to {max} seconds.',
+                      {
+                        min: LAP_GRAPH_GAP_MAX_BOUNDS.min,
+                        max: LAP_GRAPH_GAP_MAX_BOUNDS.max,
+                      }
+                    )}
                     value={lapGraph.gapMaxSeconds ?? 0}
                     min={LAP_GRAPH_GAP_MAX_BOUNDS.min}
                     max={LAP_GRAPH_GAP_MAX_BOUNDS.max}
@@ -509,8 +526,14 @@ export const GantrySettings = memo(() => {
                   <SettingDivider />
 
                   <SettingNumberRow
-                    title="Laps Shown"
-                    description={`How many laps fit on the graph at once. It follows the latest lap, so earlier laps scroll off the left; you can still pan back to them. ${LAP_GRAPH_LAP_WINDOW_BOUNDS.min} to ${LAP_GRAPH_LAP_WINDOW_BOUNDS.max} laps.`}
+                    title={t('Laps Shown')}
+                    description={t(
+                      'How many laps fit on the graph at once. It follows the latest lap, so earlier laps scroll off the left; you can still pan back to them. {min} to {max} laps.',
+                      {
+                        min: LAP_GRAPH_LAP_WINDOW_BOUNDS.min,
+                        max: LAP_GRAPH_LAP_WINDOW_BOUNDS.max,
+                      }
+                    )}
                     value={lapGraph.lapWindow}
                     min={LAP_GRAPH_LAP_WINDOW_BOUNDS.min}
                     max={LAP_GRAPH_LAP_WINDOW_BOUNDS.max}
@@ -525,8 +548,10 @@ export const GantrySettings = memo(() => {
                   <SettingDivider />
 
                   <SettingToggleRow
-                    title="Pin Cars Automatically"
-                    description="Start with your car, the class leader and the cars around you already drawn. Turn it off to open an empty graph and pick the cars yourself."
+                    title={t('Pin Cars Automatically')}
+                    description={t(
+                      'Start with your car, the class leader and the cars around you already drawn. Turn it off to open an empty graph and pick the cars yourself.'
+                    )}
                     enabled={lapGraph.autoPin}
                     onToggle={(v) =>
                       handleConfigChange({
@@ -538,7 +563,7 @@ export const GantrySettings = memo(() => {
               )}
 
               {activeTab === 'incidents' && (
-                <SettingsSection title="Incident Detection">
+                <SettingsSection title={t('Incident Detection')}>
                   {thresholdFields.map((field) => {
                     const isSeconds =
                       field.isSeconds || field.key === 'cooldownSeconds';
@@ -546,22 +571,21 @@ export const GantrySettings = memo(() => {
                     // converted like a speed and labelled per second.
                     const converts = field.isSpeed || field.isRate;
                     const suffix = field.isRate
-                      ? ` (${speedUnit} per second)`
+                      ? ` (${t('{speedUnit} per second', { speedUnit })})`
                       : field.isSpeed
                         ? ` (${speedUnit})`
                         : isSeconds
-                          ? ' (seconds)'
+                          ? ` (${t('seconds')})`
                           : '';
+                    const description = t(field.description);
 
                     return (
                       <SettingNumberRow
                         key={field.key}
-                        title={`${field.label}${suffix}`}
-                        description={field.description.split('. ')[0]}
+                        title={`${t(field.label)}${suffix}`}
+                        description={description.split('. ')[0]}
                         details={
-                          field.description.includes('. ')
-                            ? field.description
-                            : undefined
+                          description.includes('. ') ? description : undefined
                         }
                         value={
                           converts

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import React, { memo, useMemo, useState, type ReactNode } from 'react';
 import { GantryTabBar } from './components/GantryTabBar/GantryTabBar';
 import { GantryStandings } from './components/GantryStandings/GantryStandings';
@@ -102,11 +103,11 @@ const GantryInner = memo(({ dock, standings }: GantryProps) => {
         {activeView === 'standings-incidents' && (
           <div className="flex flex-1 min-h-0 p-3">
             <SplitPane
-              label="Standings and incidents split"
+              label={t('Standings and incidents split')}
               storageKey={SPLIT_STORAGE_KEY}
               left={
                 standings ? (
-                  <GantryPanel title="Standings" overlayContent>
+                  <GantryPanel title={t('Standings')} overlayContent>
                     {standings(followedCarIdx)}
                   </GantryPanel>
                 ) : (
@@ -117,7 +118,7 @@ const GantryInner = memo(({ dock, standings }: GantryProps) => {
                 dock ? (
                   <SplitPane
                     orientation="vertical"
-                    label="Incidents and docked panels split"
+                    label={t('Incidents and docked panels split')}
                     storageKey={DOCK_SPLIT_STORAGE_KEY}
                     defaultPercent={60}
                     left={<GantryIncidents />}

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useId, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { SettingsSection } from '../components/SettingSection';
@@ -22,32 +23,34 @@ export const HeartRateSettings = () => {
   });
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   return (
     <BaseSettingsSection
-      title="Heart Rate"
-      description="Display your live heart rate via HypeRate — no API key needed."
+      title={t('Heart Rate')}
+      description={t(
+        'Display your live heart rate via HypeRate — no API key needed.'
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
-        <SettingsSection title="HypeRate" scaleWidgetId={SETTING_ID}>
+        <SettingsSection title={t('HypeRate')} scaleWidgetId={SETTING_ID}>
           <div className="space-y-2">
             <label
               htmlFor={`${fieldId}-session`}
               className="text-sm text-slate-300"
             >
-              Session ID
+              {t('Session ID')}
             </label>
             <input
               type="text"
               id={`${fieldId}-session`}
               aria-describedby={`${fieldId}-session-help`}
               value={settings.config.deviceId}
-              placeholder="e.g. KiY"
+              placeholder={t('e.g. KiY')}
               onChange={(e) =>
                 handleConfigChange({ deviceId: e.target.value.trim() })
               }
@@ -57,8 +60,9 @@ export const HeartRateSettings = () => {
               id={`${fieldId}-session-help`}
               className="text-sm text-slate-400"
             >
-              Use the code at the end of your HypeRate share link, for example
-              KiY.
+              {t(
+                'Use the code at the end of your HypeRate share link, for example KiY.'
+              )}
             </p>
           </div>
 
@@ -67,22 +71,24 @@ export const HeartRateSettings = () => {
               htmlFor={`${fieldId}-theme`}
               className="text-sm text-slate-300"
             >
-              Widget / theme <span className="text-slate-500">(optional)</span>
+              {t('Widget / theme')}{' '}
+              <span className="text-slate-500">{t('(optional)')}</span>
             </label>
             <input
               type="text"
               id={`${fieldId}-theme`}
               aria-describedby={`${fieldId}-theme-help`}
               value={settings.config.widgetUrl}
-              placeholder="e.g. Bouncing_Heart_Widget"
+              placeholder={t('e.g. Bouncing_Heart_Widget')}
               onChange={(e) =>
                 handleConfigChange({ widgetUrl: e.target.value.trim() })
               }
               className="settings-field w-full"
             />
             <p id={`${fieldId}-theme-help`} className="text-sm text-slate-400">
-              Paste a HypeRate widget link or name. Your Session ID is filled in
-              automatically; leave blank for the default animated heart.
+              {t(
+                'Paste a HypeRate widget link or name. Your Session ID is filled in automatically; leave blank for the default animated heart.'
+              )}
             </p>
           </div>
         </SettingsSection>

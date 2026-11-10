@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import React from 'react';
 import { useFuelProjectionSnapshot } from '@irdashies/context';
 import { fuelDisplayValue } from '../fuelCalculations';
@@ -349,12 +350,15 @@ export const FuelCalculatorConsumptionGrid: React.FC<
         style={{ fontSize: labelFontSize }}
       >
         <span>
-          Race L{currentLap}
+          {t('Race L')}
+          {currentLap}
           {(displayData?.totalLaps ?? 0) > 0
             ? ` / ${displayData?.totalLaps.toFixed(0)}`
             : ''}
         </span>
-        <span>Fuel {fmtFuel(frozenFuelLevel)}</span>
+        <span>
+          {t('Fuel')} {fmtFuel(frozenFuelLevel)}
+        </span>
       </div>
       {/* Grid Header */}
       <div className="col-span-4 mt-0.5 grid grid-cols-subgrid bg-slate-900/30">
@@ -363,19 +367,19 @@ export const FuelCalculatorConsumptionGrid: React.FC<
           className={`font-bold text-slate-400 flex justify-center items-center leading-none ${headerPadding}`}
           style={{ fontSize: labelFontSize }}
         >
-          USE/LAP
+          {t('USE/LAP')}
         </div>
         <div
           className={`font-bold text-slate-400 flex justify-center items-center leading-none ${headerPadding}`}
           style={{ fontSize: labelFontSize }}
         >
-          LAPS
+          {t('LAPS')}
         </div>
         <div
           className={`font-bold text-slate-400 flex justify-center items-center leading-none ${headerPadding}`}
           style={{ fontSize: labelFontSize }}
         >
-          TO ADD
+          {t('TO ADD')}
         </div>
       </div>
 
@@ -403,7 +407,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     className={`text-slate-400 ${rowPadding}`}
                     style={{ fontSize: labelFontSize }}
                   >
-                    EST.
+                    {t('EST.')}
                   </div>
                   <div
                     className={`text-slate-300 text-center ${rowPadding}`}
@@ -434,7 +438,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     className={`text-white font-semibold ${rowPadding}`}
                     style={{ fontSize: labelFontSize }}
                   >
-                    {avgLabel}
+                    {t(avgLabel)}
                   </div>
                   <div
                     className={`text-white text-center ${rowPadding} font-bold`}
@@ -465,7 +469,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     className={`text-slate-400 ${rowPadding}`}
                     style={{ fontSize: labelFontSize }}
                   >
-                    AVG 10
+                    {t('AVG 10')}
                   </div>
                   <div
                     className={`text-slate-300 text-center ${rowPadding}`}
@@ -495,7 +499,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     className={`text-slate-400 ${rowPadding}`}
                     style={{ fontSize: labelFontSize }}
                   >
-                    MAX
+                    {t('MAX')}
                   </div>
                   <div
                     className={`text-slate-300 text-center ${rowPadding}`}
@@ -525,7 +529,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     className={`text-slate-400 ${rowPadding}`}
                     style={{ fontSize: labelFontSize }}
                   >
-                    LAST
+                    {t('LAST')}
                   </div>
                   <div
                     className={`text-slate-300 text-center ${rowPadding}`}
@@ -555,7 +559,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     className={`text-slate-400 ${rowPadding}`}
                     style={{ fontSize: labelFontSize }}
                   >
-                    MIN
+                    {t('MIN')}
                   </div>
                   <div
                     className={`text-slate-300 text-center ${rowPadding}`}
@@ -586,7 +590,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     className={`text-slate-400 ${rowPadding}`}
                     style={{ fontSize: labelFontSize }}
                   >
-                    QUAL
+                    {t('QUAL')}
                   </div>
                   <div
                     className={`text-slate-300 text-center ${rowPadding}`}
@@ -622,13 +626,13 @@ export const FuelCalculatorConsumptionGrid: React.FC<
             className={`font-bold tracking-wide ${pitWindowStatusClass}`}
             style={{ fontSize: valueFontSize }}
           >
-            {pitWindowStatus}
+            {t(pitWindowStatus)}
           </span>
           <span
             className="font-bold text-white"
             style={{ fontSize: valueFontSize }}
           >
-            {pitWindowLabel}
+            {t(pitWindowLabel)}
           </span>
         </div>
         <div className="flex items-baseline gap-1">
@@ -636,7 +640,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
             className="font-semibold tracking-wide text-slate-500"
             style={{ fontSize: labelFontSize }}
           >
-            ADD
+            {t('ADD')}
           </span>
           <strong
             className={getFuelToAddClass(avgData)}

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useLayoutEffect, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode, RefObject } from 'react';
 import { createPortal } from 'react-dom';
@@ -107,7 +108,7 @@ export function SettingsPopover({
       ref={panelRef}
       id={id}
       role={role}
-      aria-label={label}
+      aria-label={t(label)}
       style={position}
       onKeyDown={(event) => {
         if (event.key === 'Escape') {

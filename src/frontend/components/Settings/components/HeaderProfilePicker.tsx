@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { CaretDownIcon, CheckIcon } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
@@ -63,14 +64,16 @@ export const HeaderProfilePicker = ({
       <button
         ref={trigger}
         type="button"
-        aria-label={`Choose profile, current: ${currentProfile?.name ?? 'Loading'}`}
+        aria-label={t('Choose profile, current: {name}', {
+          name: currentProfile?.name ?? t('Loading'),
+        })}
         aria-expanded={open}
         aria-controls="settings-header-profiles"
         onClick={() => setOpen((value) => !value)}
         className="flex min-h-7 max-w-full items-center gap-1.5 rounded-md px-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white"
       >
         <span className="truncate">
-          {currentProfile?.name ?? 'Loading'} Profile
+          {currentProfile?.name ?? t('Loading')} {t('Profile')}
         </span>
         <CaretDownIcon size={12} className="shrink-0" aria-hidden="true" />
       </button>
@@ -79,7 +82,9 @@ export const HeaderProfilePicker = ({
           id="settings-header-profiles"
           className="absolute left-0 top-full z-50 mt-1 w-64 max-w-[calc(100vw-6rem)] rounded-md border border-settings-boundary bg-slate-950 p-2 shadow-xl"
         >
-          <p className="px-2 pb-1 text-xs text-slate-400">Switch profile</p>
+          <p className="px-2 pb-1 text-xs text-slate-400">
+            {t('Switch profile')}
+          </p>
           <div className="max-h-60 overflow-y-auto">
             {profiles.map((profile) => (
               <button
@@ -114,7 +119,7 @@ export const HeaderProfilePicker = ({
             }}
             className="mt-2 flex min-h-9 items-center border-t border-slate-700 px-2 pt-2 text-sm text-slate-200 hover:text-accent-200"
           >
-            Manage profiles…
+            {t('Manage profiles…')}
           </Link>
           {error && (
             <p role="alert" className="px-2 pt-2 text-xs text-red-400">

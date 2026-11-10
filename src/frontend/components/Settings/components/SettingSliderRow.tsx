@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useId } from 'react';
 
 interface SettingSliderRowProps {
@@ -29,7 +30,7 @@ export function SettingSliderRow({
   return (
     <div className={`space-y-3 ${disabled ? 'opacity-50' : ''}`}>
       <label htmlFor={id} className="text-md text-slate-300">
-        {title}
+        {t(title)}
         <span className="text-md text-slate-400">
           {showValue && `: ${value}${units ? ` ${units}` : ''}`}
         </span>
@@ -45,7 +46,9 @@ export function SettingSliderRow({
         onChange={(e) => onChange(parseFloat(e.target.value))}
         className="h-5 w-full cursor-pointer accent-accent-400 disabled:cursor-not-allowed"
       />
-      {description && <p className="text-sm text-slate-500">{description}</p>}
+      {description && (
+        <p className="text-sm text-slate-500">{t(description)}</p>
+      )}
     </div>
   );
 }

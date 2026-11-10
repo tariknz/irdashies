@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useEffect, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
@@ -80,13 +81,13 @@ export const WindSettings = () => {
   }, [currentDashboard, savedSettings]);
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   return (
     <BaseSettingsSection
-      title="Wind"
-      description="Show wind direction and speed."
+      title={t('Wind')}
+      description={t('Show wind direction and speed.')}
       settings={settings}
       onSettingsChange={(s) => setSettings(s)}
       widgetId={SETTING_ID}
@@ -98,12 +99,15 @@ export const WindSettings = () => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <SettingsSection title="Widget options" scaleWidgetId={SETTING_ID}>
+            <SettingsSection
+              title={t('Widget options')}
+              scaleWidgetId={SETTING_ID}
+            >
               <SettingProp path="background.opacity" />
               <SettingProp path="units" />
             </SettingsSection>
 
-            <SettingsSection title="Visibility">
+            <SettingsSection title={t('Visibility')}>
               <SessionVisibility
                 sessionVisibility={settings.config.sessionVisibility}
                 handleConfigChange={handleConfigChange}

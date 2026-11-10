@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import React, { useMemo } from 'react';
 import type { FuelCalculatorSettings, FuelCalculation } from '../types';
 import { MAX_LAP_HISTORY, useFuelStore } from '../FuelStore';
@@ -140,21 +141,23 @@ export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({
           className="mb-1 flex items-center justify-between text-xs font-bold uppercase text-slate-400"
           style={{ fontSize: labelFontSize }}
         >
-          <span>Fuel History</span>
-          {isDemoMode && <span className="text-amber-400">Preview</span>}
+          <span>{t('Fuel History')}</span>
+          {isDemoMode && <span className="text-amber-400">{t('Preview')}</span>}
         </div>
         <table className="w-full text-sm tabular-nums">
-          <caption className="sr-only">Fuel used per completed lap</caption>
+          <caption className="sr-only">
+            {t('Fuel used per completed lap')}
+          </caption>
           <thead
             className="text-xs text-slate-400"
             style={{ fontSize: labelFontSize }}
           >
             <tr className="border-b border-slate-700/50">
               <th scope="col" className="py-1 text-left font-normal">
-                Lap
+                {t('Lap')}
               </th>
               <th scope="col" className="py-1 text-right font-normal">
-                Fuel Used
+                {t('Fuel Used')}
               </th>
             </tr>
           </thead>
@@ -178,7 +181,7 @@ export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({
                   colSpan={2}
                   className="py-2 text-center text-xs text-slate-400"
                 >
-                  Waiting for a completed lap
+                  {t('Waiting for a completed lap')}
                 </td>
               </tr>
             )}

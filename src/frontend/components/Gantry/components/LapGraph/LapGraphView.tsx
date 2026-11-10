@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { qualifyingGridSlots } from '@irdashies/domain/standings/useQualifyingGrid';
 import {
@@ -460,25 +461,25 @@ export const LapGraphView = memo(
     ]);
 
     return (
-      <GantryPanel label="Lap graph">
+      <GantryPanel label={t('Lap graph')}>
         <div className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-2 border-b border-slate-700 px-4 py-2.5">
           <h2 className="mr-auto text-lg leading-snug font-semibold text-slate-200">
-            {PANEL_TITLES[mode]}
+            {t(PANEL_TITLES[mode])}
           </h2>
           {isMultiClass && (
             <div className="flex items-center gap-2">
-              <Tooltip placement="bottom" content={CLASS_FILTER_TOOLTIP}>
+              <Tooltip placement="bottom" content={t(CLASS_FILTER_TOOLTIP)}>
                 <span
                   tabIndex={0}
                   className={`${GROUP_LABEL_CLASS} cursor-help rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400`}
                 >
-                  Class
+                  {t('Class')}
                 </span>
               </Tooltip>
               <div
                 className="flex items-center gap-1.5"
                 role="group"
-                aria-label="Lap graph car class"
+                aria-label={t('Lap graph car class')}
               >
                 {classes.map((cls) => (
                   <button
@@ -506,17 +507,17 @@ export const LapGraphView = memo(
           )}
 
           <div className="flex items-center gap-2">
-            <span className={GROUP_LABEL_CLASS}>Y axis</span>
+            <span className={GROUP_LABEL_CLASS}>{t('Y axis')}</span>
             <div
               className="flex items-center gap-1.5"
               role="group"
-              aria-label="Lap graph y axis mode"
+              aria-label={t('Lap graph y axis mode')}
             >
               {MODE_OPTIONS.map((option) => (
                 <Tooltip
                   key={option.mode}
                   placement="bottom"
-                  content={option.tooltip}
+                  content={t(option.tooltip)}
                 >
                   <button
                     type="button"
@@ -524,7 +525,7 @@ export const LapGraphView = memo(
                     onClick={() => onModeChange(option.mode)}
                     className={toggleClass(option.mode === mode)}
                   >
-                    {option.label}
+                    {t(option.label)}
                   </button>
                 </Tooltip>
               ))}
@@ -533,17 +534,17 @@ export const LapGraphView = memo(
 
           {mode !== 'position' && (
             <div className="flex items-center gap-2">
-              <span className={GROUP_LABEL_CLASS}>Range</span>
+              <span className={GROUP_LABEL_CLASS}>{t('Range')}</span>
               <div
                 className="flex items-center gap-1.5"
                 role="group"
-                aria-label="Lap graph y axis range"
+                aria-label={t('Lap graph y axis range')}
               >
                 {AXIS_FIT_OPTIONS.map((option) => (
                   <Tooltip
                     key={option.axisFit}
                     placement="bottom"
-                    content={option.tooltip}
+                    content={t(option.tooltip)}
                   >
                     <button
                       type="button"
@@ -551,7 +552,7 @@ export const LapGraphView = memo(
                       onClick={() => onAxisFitChange(option.axisFit)}
                       className={toggleClass(option.axisFit === axisFit)}
                     >
-                      {option.label}
+                      {t(option.label)}
                     </button>
                   </Tooltip>
                 ))}
@@ -564,7 +565,7 @@ export const LapGraphView = memo(
           <div className="min-w-0 flex-1 p-3">
             {built.series.length === 0 ? (
               <div className="flex h-full items-center justify-center px-4 text-center text-sm text-slate-400">
-                {emptyMessage}
+                {t(emptyMessage)}
               </div>
             ) : (
               <LapGraphCanvas
@@ -581,11 +582,11 @@ export const LapGraphView = memo(
             )}
           </div>
           <aside
-            aria-label="Drivers"
+            aria-label={t('Drivers')}
             className="flex w-[260px] max-w-[40%] shrink-0 flex-col overflow-hidden border-l border-slate-700"
           >
             <div className="shrink-0 px-4 pt-3 pb-1.5 text-xs font-semibold tracking-[0.06em] text-slate-300 uppercase">
-              Drivers
+              {t('Drivers')}
             </div>
             <LapGraphDriverList
               drivers={roster}

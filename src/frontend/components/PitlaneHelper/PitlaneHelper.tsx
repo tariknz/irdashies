@@ -1,4 +1,5 @@
-﻿import { usePitlaneHelperSettings } from './hooks/usePitlaneHelperSettings';
+﻿import { t } from '@irdashies/frontend/i18n';
+import { usePitlaneHelperSettings } from './hooks/usePitlaneHelperSettings';
 import { usePitSpeed } from './hooks/usePitSpeed';
 import { usePitboxPosition } from './hooks/usePitboxPosition';
 import { usePitlaneVisibility } from './hooks/usePitlaneVisibility';
@@ -260,13 +261,13 @@ export const PitlaneHelperBody = ({
                     </div>
                   </div>
                   <div className="text-xs text-slate-400">
-                    {displayKph ? 'km/h' : 'mph'}
+                    {displayKph ? t('km/h') : t('mph')}
                   </div>
                 </>
               )}
               {config.speedLimitStyle === 'text' && speed.hasLimit && (
                 <div className="text-lg text-slate-300 flex items-center justify-center">
-                  lim{' '}
+                  {t('lim')}{' '}
                   {displayKph
                     ? speed.limitKph.toFixed(0)
                     : speed.limitMph.toFixed(0)}
@@ -284,7 +285,7 @@ export const PitlaneHelperBody = ({
               {config.speedLimitStyle === 'american' && speed.hasLimit && (
                 <div className="font-bold text-3xl text-slate-800 m-2 w-[2.5em] h-[2.5em] bg-white border-3 border-black rounded-lg flex flex-col items-center justify-center">
                   <div className="text-[0.6em] font-semibold tracking-tight leading-none">
-                    LIMIT
+                    {t('LIMIT')}
                   </div>
                   <div className="text-[1.25em]">
                     {displayKph
@@ -356,7 +357,7 @@ export const PitlaneHelperBody = ({
                         position.distanceToPitEntry,
                         config.approachDistance
                       )}
-                      targetName="Pit Entry"
+                      targetName={t('Pit Entry')}
                     />
                   )}
 
@@ -374,7 +375,7 @@ export const PitlaneHelperBody = ({
                           : 'rgb(34, 197, 94)'
                       }
                       targetName={
-                        position.distanceToPit > 0 ? 'Pitbox' : 'Past Box'
+                        position.distanceToPit > 0 ? t('Pitbox') : t('Past Box')
                       }
                     />
                   )}
@@ -389,7 +390,7 @@ export const PitlaneHelperBody = ({
                       maxDistance={150}
                       orientation={config.progressBarOrientation}
                       color={getCountdownColor(position.distanceToPitExit, 150)}
-                      targetName="Pit Exit"
+                      targetName={t('Pit Exit')}
                     />
                   )}
               </div>
@@ -424,13 +425,13 @@ export const PitlaneHelperBody = ({
         >
           {onPitRoad && Math.abs(position.distanceToPit) < 5 && (
             <div className="text-center text-xs font-bold py-1 px-2 bg-green-600 rounded">
-              At Pitbox
+              {t('At Pitbox')}
             </div>
           )}
 
           {inBlendZone && position.distanceToPitEntry === 0 && (
             <div className="text-center text-xs font-bold py-1 px-2 bg-amber-600 rounded">
-              Entering Pit Lane
+              {t('Entering Pit Lane')}
             </div>
           )}
 
@@ -443,19 +444,20 @@ export const PitlaneHelperBody = ({
                   : 'bg-red-600',
               ].join(' ')}
             >
-              {limiterWarning.warningText}
+              {t(limiterWarning.warningText)}
             </div>
           )}
 
           {showEarlyPitboxWarning && (
             <div className="bg-amber-600 text-center text-xs font-bold py-1 px-2 rounded">
-              EARLY PITBOX
+              {t('EARLY PITBOX')}
             </div>
           )}
 
           {config.showPitlaneTraffic && traffic.totalCars > 0 && (
             <div className="bg-blue-700 text-center text-xs py-1 px-2 rounded">
-              {traffic.carsAhead} ahead · {traffic.carsBehind} behind
+              {traffic.carsAhead} {t('ahead ·')} {traffic.carsBehind}{' '}
+              {t('behind')}
             </div>
           )}
         </div>

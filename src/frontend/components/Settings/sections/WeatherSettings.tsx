@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useEffect, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
@@ -79,7 +80,7 @@ const DisplaySettingsList = ({
         return (
           <DraggableSettingItem
             key={setting.id}
-            label={setting.label}
+            label={t(setting.label)}
             enabled={isEnabled}
             onToggle={(enabled) => {
               const cv =
@@ -124,15 +125,17 @@ export const WeatherSettings = () => {
   }, [activeTab]);
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   // Render settings using the BaseSettingsSection helper.
   // Children is provided as a function which receives `handleConfigChange`.
   return (
     <BaseSettingsSection
-      title="Weather"
-      description="Show weather related readings (air/track temperature, wind, wetness, track state)."
+      title={t('Weather')}
+      description={t(
+        'Show weather related readings (air/track temperature, wind, wetness, track state).'
+      )}
       settings={settings}
       onSettingsChange={(s) => setSettings(s)}
       widgetId={SETTING_ID}
@@ -157,21 +160,21 @@ export const WeatherSettings = () => {
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Display
+                  {t('Display')}
                 </TabButton>
                 <TabButton
                   id="options"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Options
+                  {t('Options')}
                 </TabButton>
                 <TabButton
                   id="visibility"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Visibility
+                  {t('Visibility')}
                 </TabButton>
               </div>
 
@@ -179,9 +182,12 @@ export const WeatherSettings = () => {
                 {/* DISPLAY TAB */}
                 {activeTab === 'display' && (
                   <>
-                    <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+                    <SettingsSection
+                      title={t('Display')}
+                      scaleWidgetId={SETTING_ID}
+                    >
                       <h4 className="text-md font-medium text-slate-200">
-                        Display Order
+                        {t('Display Order')}
                       </h4>
                       <DisplaySettingsList
                         itemsOrder={itemsOrder}
@@ -191,7 +197,7 @@ export const WeatherSettings = () => {
                       />
 
                       <SettingActionButton
-                        label="Reset to Default Order"
+                        label={t('Reset to Default Order')}
                         onClick={() => {
                           const defaultOrder = sortableSettings.map(
                             (s) => s.id
@@ -206,7 +212,7 @@ export const WeatherSettings = () => {
 
                 {/* OPTIONS TAB */}
                 {activeTab === 'options' && (
-                  <SettingsSection title="Options">
+                  <SettingsSection title={t('Options')}>
                     <SettingProp path="background.opacity" />
 
                     <SettingProp path="layout" />
@@ -221,7 +227,7 @@ export const WeatherSettings = () => {
 
                 {/* VISIBILITY TAB */}
                 {activeTab === 'visibility' && (
-                  <SettingsSection title="Session Visibility">
+                  <SettingsSection title={t('Session Visibility')}>
                     <SessionVisibility
                       sessionVisibility={settings.config.sessionVisibility}
                       handleConfigChange={handleConfigChange}

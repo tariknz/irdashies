@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { HeartIcon } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { DEMO_HEART_RATE_INTERVAL_MS, demoHeartRate } from './demoData';
@@ -19,11 +20,11 @@ export const HeartRatePreview = () => {
         <HeartIcon size={32} weight="fill" className="text-rose-500" />
         <span className="text-3xl tabular-nums">
           {bpm}
-          <span className="ml-1 text-sm text-slate-400">BPM</span>
+          <span className="ml-1 text-sm text-slate-400">{t('BPM')}</span>
         </span>
       </div>
       <p className="text-xs text-slate-400">
-        Sample only. Live appearance comes from HypeRate.
+        {t('Sample only. Live appearance comes from HypeRate.')}
       </p>
     </div>
   );

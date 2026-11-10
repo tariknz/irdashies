@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState } from 'react';
 import { useDashboard } from '@irdashies/context';
 import {
@@ -26,7 +27,7 @@ export const AdvancedSettings = () => {
   const [error, setError] = useState<string | null>(null);
 
   if (!currentDashboard || !onDashboardUpdated) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   const onInputUpdated = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -92,10 +93,10 @@ export const AdvancedSettings = () => {
     <div className="flex flex-col h-full">
       <div className="flex-none border-b border-slate-700 px-1 pb-5 pt-1">
         <h2 className="mb-1 text-xl font-semibold tracking-tight text-white">
-          Advanced
+          {t('Advanced')}
         </h2>
         <p className="text-slate-400 text-sm">
-          Configure advanced system settings and preferences.
+          {t('Configure advanced system settings and preferences.')}
         </p>
       </div>
 
@@ -106,21 +107,21 @@ export const AdvancedSettings = () => {
             activeTab={activeTab}
             setActiveTab={setActiveTab}
           >
-            Dashboard
+            {t('Dashboard')}
           </TabButton>
           <TabButton
             id="telemetry"
             activeTab={activeTab}
             setActiveTab={setActiveTab}
           >
-            Telemetry Inspector
+            {t('Telemetry Inspector')}
           </TabButton>
           <TabButton
             id="chromium"
             activeTab={activeTab}
             setActiveTab={setActiveTab}
           >
-            Chromium
+            {t('Chromium')}
           </TabButton>
         </div>
       </div>
@@ -128,7 +129,9 @@ export const AdvancedSettings = () => {
       {activeTab === 'dashboard' && (
         <div className="flex flex-col flex-1 min-h-0 px-4 pt-3 pb-4 gap-3">
           <p className="flex-none text-sm text-slate-400">
-            Directly edit the dashboard configuration file and apply changes
+            {t(
+              'Directly edit the dashboard configuration file and apply changes'
+            )}
           </p>
 
           <div className="flex flex-col flex-1 min-h-0 rounded border border-settings-boundary overflow-hidden">
@@ -143,7 +146,7 @@ export const AdvancedSettings = () => {
                   className="settings-button"
                 >
                   <UploadSimpleIcon size={13} />
-                  Import
+                  {t('Import')}
                 </button>
                 <button
                   type="button"
@@ -151,7 +154,7 @@ export const AdvancedSettings = () => {
                   className="settings-button"
                 >
                   <DownloadSimpleIcon size={13} />
-                  Export
+                  {t('Export')}
                 </button>
                 <div className="w-px bg-settings-control mx-1" />
                 <button
@@ -159,18 +162,18 @@ export const AdvancedSettings = () => {
                   onClick={handleSave}
                   className="settings-button"
                 >
-                  Save
+                  {t('Save')}
                 </button>
               </div>
             </div>
             <textarea
-              aria-label="Dashboard configuration JSON"
+              aria-label={t('Dashboard configuration JSON')}
               aria-invalid={error?.startsWith('Invalid JSON') ?? false}
               aria-describedby={error ? 'dashboard-json-error' : undefined}
               className="settings-field flex-1 w-full resize-none font-mono"
               value={dashboardInput}
               onChange={onInputUpdated}
-              placeholder="Dashboard configuration JSON..."
+              placeholder={t('Dashboard configuration JSON...')}
             />
           </div>
 
@@ -185,7 +188,7 @@ export const AdvancedSettings = () => {
           )}
           <div className="flex-none flex flex-wrap items-center gap-3 border-t border-slate-700/50 pt-3">
             <span className="text-xs text-slate-500 uppercase tracking-wide">
-              Logs
+              {t('Logs')}
             </span>
             <button
               type="button"
@@ -193,7 +196,7 @@ export const AdvancedSettings = () => {
               className="settings-button"
             >
               <FolderOpenIcon size={13} />
-              Open log folder
+              {t('Open log folder')}
             </button>
             <button
               type="button"
@@ -201,13 +204,13 @@ export const AdvancedSettings = () => {
               className="settings-button"
             >
               <FileTextIcon size={13} />
-              Export log file
+              {t('Export log file')}
             </button>
           </div>
 
           <div className="flex-none flex flex-wrap items-center gap-3 border-t border-slate-700/50 pt-3">
             <span className="text-xs text-slate-500 uppercase tracking-wide">
-              Reset
+              {t('Reset')}
             </span>
             <button
               type="button"
@@ -215,7 +218,7 @@ export const AdvancedSettings = () => {
               disabled={pending}
               className="settings-button-danger"
             >
-              Widget configs only
+              {t('Widget configs only')}
             </button>
             <button
               type="button"
@@ -223,7 +226,7 @@ export const AdvancedSettings = () => {
               disabled={pending}
               className="settings-button-danger"
             >
-              Everything to factory defaults
+              {t('Everything to factory defaults')}
             </button>
           </div>
         </div>
@@ -244,16 +247,22 @@ export const AdvancedSettings = () => {
         isOpen={resetScope !== null}
         title={
           resetScope === 'all'
-            ? 'Reset entire dashboard?'
-            : 'Reset widget configurations?'
+            ? t('Reset entire dashboard?')
+            : t('Reset widget configurations?')
         }
         message={
           resetScope === 'all'
-            ? 'Reset all widget positions, enabled states and configurations to factory defaults.'
-            : 'Reset all widget configurations to defaults. Widget positions and enabled states are preserved.'
+            ? t(
+                'Reset all widget positions, enabled states and configurations to factory defaults.'
+              )
+            : t(
+                'Reset all widget configurations to defaults. Widget positions and enabled states are preserved.'
+              )
         }
         confirmText={
-          resetScope === 'all' ? 'Reset Everything' : 'Reset Configurations'
+          resetScope === 'all'
+            ? t('Reset Everything')
+            : t('Reset Configurations')
         }
         onConfirm={() => void handleReset()}
         onCancel={() => setResetScope(null)}

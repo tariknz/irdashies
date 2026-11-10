@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useNavigate } from 'react-router-dom';
 import { PlusIcon, TrashIcon, WarningIcon } from '@phosphor-icons/react';
 import { useDashboard } from '@irdashies/context';
@@ -51,10 +52,10 @@ export const GantryStandingsSettings = () => {
   };
 
   return (
-    <SettingsSection title="Standings">
+    <SettingsSection title={t('Standings')}>
       <SettingSelectRow<GantryStandingsSource>
-        title="Standings view"
-        description={SOURCE_DESCRIPTION}
+        title={t('Standings view')}
+        description={t(SOURCE_DESCRIPTION)}
         value={saved.source}
         options={SOURCE_OPTIONS.map((option) => ({
           ...option,
@@ -67,8 +68,9 @@ export const GantryStandingsSettings = () => {
 
       {saved.source === 'overlay' && (
         <p className="text-xs text-slate-400">
-          Uses the overlay Standings settings as they are. The Gantry always
-          lists every driver and ignores the overlay's visibility rules.
+          {t(
+            "Uses the overlay Standings settings as they are. The Gantry always lists every driver and ignores the overlay's visibility rules."
+          )}
         </p>
       )}
 
@@ -81,8 +83,8 @@ export const GantryStandingsSettings = () => {
                 onClick={createLayout}
                 className={`settings-button-primary`}
               >
-                <PlusIcon size={12} /> Create Gantry standings layout (copy of
-                overlay)
+                <PlusIcon size={12} />{' '}
+                {t('Create Gantry standings layout (copy of overlay)')}
               </button>
             )}
             {layoutId && (
@@ -92,7 +94,7 @@ export const GantryStandingsSettings = () => {
                   onClick={() => navigate(`/settings/${layoutId}`)}
                   className={`${smallButtonClass} bg-slate-700 hover:bg-settings-hover text-slate-200 border-settings-boundary`}
                 >
-                  Edit standings layout
+                  {t('Edit standings layout')}
                 </button>
                 <button
                   type="button"
@@ -103,7 +105,7 @@ export const GantryStandingsSettings = () => {
                   }
                   className={`${smallButtonClass} bg-slate-700 hover:bg-settings-hover text-slate-200 border-settings-boundary`}
                 >
-                  Copy settings from overlay
+                  {t('Copy settings from overlay')}
                 </button>
                 <button
                   type="button"
@@ -114,7 +116,7 @@ export const GantryStandingsSettings = () => {
                   }
                   className={`${smallButtonClass} bg-red-900/50 hover:bg-red-900 text-red-200 border-red-800`}
                 >
-                  <TrashIcon size={12} /> Delete layout
+                  <TrashIcon size={12} /> {t('Delete layout')}
                 </button>
               </>
             )}
@@ -124,8 +126,12 @@ export const GantryStandingsSettings = () => {
             <p className="flex items-center gap-1 text-xs text-amber-300">
               <WarningIcon size={14} />
               {resolved.status === 'removed'
-                ? 'The Gantry-only standings layout was removed. The built-in view is showing until you create another.'
-                : 'No Gantry-only layout yet. The built-in view is showing until you create one.'}
+                ? t(
+                    'The Gantry-only standings layout was removed. The built-in view is showing until you create another.'
+                  )
+                : t(
+                    'No Gantry-only layout yet. The built-in view is showing until you create one.'
+                  )}
             </p>
           )}
         </div>

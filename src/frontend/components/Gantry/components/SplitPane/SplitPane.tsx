@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import {
   memo,
   useCallback,
@@ -193,7 +194,7 @@ export const SplitPane = memo(
         <div
           role="separator"
           aria-orientation={vertical ? 'horizontal' : 'vertical'}
-          aria-label={label}
+          aria-label={t(label)}
           aria-valuenow={Math.round(percent)}
           aria-valuemin={minPercent}
           aria-valuemax={100 - minPercent}
@@ -205,7 +206,7 @@ export const SplitPane = memo(
           onLostPointerCapture={handlePointerUp}
           onKeyDown={handleKeyDown}
           onDoubleClick={handleDoubleClick}
-          title="Drag to resize. Double-click to reset."
+          title={t('Drag to resize. Double-click to reset.')}
           // Taken out of flex flow so the panes split exactly percent /
           // (100 - percent) of the container, not of container-minus-divider.
           className={[

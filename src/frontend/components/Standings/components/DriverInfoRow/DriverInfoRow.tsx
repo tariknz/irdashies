@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, useEffect, useMemo, useRef } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime, type TimeFormat } from '@irdashies/utils/time';
@@ -453,7 +454,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
                 : undefined
             }
             nameFormat={config?.driverName?.nameFormat}
-            label={resolvedTag?.label}
+            label={t(resolvedTag?.label)}
             nameDisplay={tagSettings?.display?.nameDisplay}
             alternateFrequency={tagSettings?.display?.alternateFrequency}
             compactMode={compactMode}

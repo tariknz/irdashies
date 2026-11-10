@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useCarSetup } from '@irdashies/context';
 import type { CarSetupInfo } from '@irdashies/types';
 import { memo, type ReactNode, useState } from 'react';
@@ -58,7 +59,7 @@ const SetupRow = memo(
     if (values.length === 1) {
       return (
         <div className="flex justify-between items-center py-1 border-b border-slate-700/30">
-          <span className="text-slate-400 text-xs">{label}</span>
+          <span className="text-slate-400 text-xs">{t(label)}</span>
           <span className="text-xs font-mono text-white">
             {values[0]} {unit}
           </span>
@@ -72,7 +73,7 @@ const SetupRow = memo(
           gridTemplateColumns: `1fr ${values.map(() => 'auto').join(' ')}`,
         }}
       >
-        <span className="text-slate-400 text-xs">{label}</span>
+        <span className="text-slate-400 text-xs">{t(label)}</span>
         {values.map((val, idx) => (
           <span
             key={idx}
@@ -103,7 +104,9 @@ const SetupSection = memo(
 
     return (
       <div className="mb-4 last:mb-0">
-        <h4 className="text-sm font-semibold text-slate-300 mb-2">{title}</h4>
+        <h4 className="text-sm font-semibold text-slate-300 mb-2">
+          {t(title)}
+        </h4>
         {hasSnapshots && (
           <div
             className="grid gap-2 py-1 mb-1 border-b border-slate-500"
@@ -148,7 +151,7 @@ const SectionAccordion = memo(
   ({ title, children }: { title: string; children: ReactNode }) => (
     <div className="border border-slate-700 rounded">
       <div className="p-3">
-        <h3 className="text-lg font-semibold mb-3">{title}</h3>
+        <h3 className="text-lg font-semibold mb-3">{t(title)}</h3>
         <div className="space-y-4">{children}</div>
       </div>
     </div>
@@ -214,7 +217,7 @@ const TiresAeroSection = memo(
     if (!tiresAero) return null;
     const sectionKey = setup.TiresAero ? 'TiresAero' : 'Tires';
     return (
-      <SectionAccordion title="Tires &amp; Aero">
+      <SectionAccordion title={t('Tires & Aero')}>
         {renderObjectSection(
           tiresAero,
           [sectionKey],
@@ -232,7 +235,7 @@ const ChassisSection = memo(
     const chassis = setup.Chassis;
     if (!chassis) return null;
     return (
-      <SectionAccordion title="Chassis">
+      <SectionAccordion title={t('Chassis')}>
         {renderObjectSection(
           chassis as unknown as Record<string, unknown>,
           ['Chassis'],
@@ -250,9 +253,9 @@ const SuspensionSection = memo(
     const suspension = setup.Suspension;
     if (!suspension || suspension === setup.Chassis) return null;
     return (
-      <SectionAccordion title="Suspension">
+      <SectionAccordion title={t('Suspension')}>
         {suspension.Front && (
-          <SetupSection title="Front" snapshots={snapshots}>
+          <SetupSection title={t('Front')} snapshots={snapshots}>
             {Object.entries(suspension.Front).map(([key]) => (
               <SetupRow
                 key={key}
@@ -264,7 +267,7 @@ const SuspensionSection = memo(
           </SetupSection>
         )}
         {suspension.Rear && (
-          <SetupSection title="Rear" snapshots={snapshots}>
+          <SetupSection title={t('Rear')} snapshots={snapshots}>
             {Object.entries(suspension.Rear).map(([key]) => (
               <SetupRow
                 key={key}
@@ -286,7 +289,7 @@ const DriveBrakeSection = memo(
     const driveBrake = setup.DriveBrake;
     if (!driveBrake) return null;
     return (
-      <SectionAccordion title="Drive &amp; Brake">
+      <SectionAccordion title={t('Drive & Brake')}>
         {renderObjectSection(
           driveBrake as unknown as Record<string, unknown>,
           ['DriveBrake'],
@@ -305,7 +308,7 @@ const TiresSection = memo(
     const tires = (setup as any).Tires;
     if (!tires) return null;
     return (
-      <SectionAccordion title="Tires">
+      <SectionAccordion title={t('Tires')}>
         {renderObjectSection(tires, ['Tires'], snapshots, comparisonMode)}
       </SectionAccordion>
     );
@@ -319,7 +322,7 @@ const DrivetrainSection = memo(
     const drivetrain = (setup as any).Drivetrain;
     if (!drivetrain) return null;
     return (
-      <SectionAccordion title="Drivetrain">
+      <SectionAccordion title={t('Drivetrain')}>
         {renderObjectSection(
           drivetrain,
           ['Drivetrain'],
@@ -338,7 +341,7 @@ const DampersSection = memo(
     const dampers = (setup as any).Dampers;
     if (!dampers) return null;
     return (
-      <SectionAccordion title="Dampers">
+      <SectionAccordion title={t('Dampers')}>
         {renderObjectSection(dampers, ['Dampers'], snapshots, comparisonMode)}
       </SectionAccordion>
     );
@@ -352,7 +355,7 @@ const SystemsSection = memo(
     const systems = (setup as any).Systems;
     if (!systems) return null;
     return (
-      <SectionAccordion title="Systems">
+      <SectionAccordion title={t('Systems')}>
         {renderObjectSection(systems, ['Systems'], snapshots, comparisonMode)}
       </SectionAccordion>
     );
@@ -433,18 +436,18 @@ export const CarSetupSettings = () => {
       <div className="h-full space-y-5 overflow-y-auto">
         <div className="border-b border-slate-700 pb-5 pt-1">
           <h2 className="mb-1 text-xl font-semibold tracking-tight text-white">
-            Car Setup
+            {t('Car Setup')}
           </h2>
           <p className="text-sm text-slate-400">
-            Capture and compare the current car setup from iRacing.
+            {t('Capture and compare the current car setup from iRacing.')}
           </p>
         </div>
         <div className="rounded-md border border-slate-700 p-6 text-center">
           <p className="text-slate-400 mb-2">
-            Car setup data is not available.
+            {t('Car setup data is not available.')}
           </p>
           <p className="text-slate-500 text-sm">
-            Join a session and get in the car to view setup information.
+            {t('Join a session and get in the car to view setup information.')}
           </p>
         </div>
       </div>
@@ -457,10 +460,10 @@ export const CarSetupSettings = () => {
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 pb-5 pt-1">
           <div>
             <h2 className="text-xl font-semibold tracking-tight text-white mb-1">
-              Car Setup
+              {t('Car Setup')}
             </h2>
             <p className="text-sm text-slate-400">
-              Current car setup configuration from iRacing
+              {t('Current car setup configuration from iRacing')}
             </p>
           </div>
           <div className="flex gap-2">
@@ -469,14 +472,14 @@ export const CarSetupSettings = () => {
               disabled={!canTakeSnapshot}
               className="settings-button-primary"
             >
-              Take Snapshot
+              {t('Take Snapshot')}
             </button>
             {snapshots.length > 0 && (
               <button
                 onClick={handleClearAll}
                 className="settings-button-danger"
               >
-                Clear All
+                {t('Clear All')}
               </button>
             )}
           </div>
@@ -484,7 +487,7 @@ export const CarSetupSettings = () => {
         {snapshots.length > 0 && (
           <>
             <div className="flex gap-2 items-center flex-wrap">
-              <span className="text-sm text-slate-400">Compare:</span>
+              <span className="text-sm text-slate-400">{t('Compare:')}</span>
               {(
                 [
                   ['previous', 'To First'],
@@ -500,15 +503,19 @@ export const CarSetupSettings = () => {
                       : 'bg-slate-700 text-slate-300 hover:bg-settings-hover'
                   }`}
                 >
-                  {label}
+                  {t(label)}
                 </button>
               ))}
             </div>
             <div className="bg-slate-800/40 border border-slate-700 rounded p-3">
               <p className="text-slate-300 text-sm">
                 {comparisonMode === 'previous'
-                  ? 'Comparing all columns to the first (leftmost) snapshot - differences in red'
-                  : 'Comparing each column to the one directly to its left - differences in red'}
+                  ? t(
+                      'Comparing all columns to the first (leftmost) snapshot - differences in red'
+                    )
+                  : t(
+                      'Comparing each column to the one directly to its left - differences in red'
+                    )}
               </p>
             </div>
           </>
@@ -516,7 +523,7 @@ export const CarSetupSettings = () => {
         {snapshots.length === 0 ? (
           <div className="flex items-center justify-center py-12">
             <p className="text-slate-500 text-sm">
-              Click &quot;Take Snapshot&quot; to capture the current setup.
+              {t('Click "Take Snapshot" to capture the current setup.')}
             </p>
           </div>
         ) : (

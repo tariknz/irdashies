@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useLayoutEffect, useRef, useState } from 'react';
 import {
   useTrackStateSelector,
@@ -41,7 +42,7 @@ export const Flag = () => {
     return (
       <div className="h-full">
         <FlagDisplay
-          label={visibleLabel}
+          label={t(visibleLabel)}
           showLabel={settings.showLabel ?? true}
           matrixSize={
             settings.matrixMode === '8x8'
@@ -63,7 +64,7 @@ export const Flag = () => {
     <div className="flex h-full w-full justify-between items-stretch">
       <div className="h-full aspect-square">
         <FlagDisplay
-          label={visibleLabel}
+          label={t(visibleLabel)}
           showLabel={settings.showLabel ?? true}
           matrixSize={
             settings.matrixMode === '8x8'
@@ -80,7 +81,7 @@ export const Flag = () => {
 
       <div className="h-full aspect-square">
         <FlagDisplay
-          label={visibleLabel}
+          label={t(visibleLabel)}
           showLabel={settings.showLabel ?? true}
           matrixSize={
             settings.matrixMode === '8x8'
@@ -251,7 +252,7 @@ export const FlagDisplay = ({
           padding: `${Math.round(labelFontSize * 0.25)}px ${Math.round(labelFontSize * 0.6)}px`,
         }}
       >
-        {shortLabel === 'NO' ? 'NO' : shortLabel}
+        {shortLabel === 'NO' ? t('NO') : t(shortLabel)}
       </span>
     </div>
   );

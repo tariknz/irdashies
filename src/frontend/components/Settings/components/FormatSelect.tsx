@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useId, useRef, useState } from 'react';
 import { CaretDownIcon } from '@phosphor-icons/react';
 import { SettingsPopover } from './SettingsPopover';
@@ -38,14 +39,14 @@ export const FormatSelect = <T extends string>({
 
   return (
     <div className="relative flex items-center gap-2">
-      <span className="text-xs text-slate-400 shrink-0">{label}</span>
+      <span className="text-xs text-slate-400 shrink-0">{t(label)}</span>
       <button
         ref={trigger}
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
-        aria-label={`${label} rating format`}
+        aria-label={t('{label} rating format', { label: t(label) })}
         onClick={() => setOpen((wasOpen) => !wasOpen)}
         onKeyDown={(event) => {
           if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -64,7 +65,7 @@ export const FormatSelect = <T extends string>({
         anchorRef={trigger}
         onClose={() => setOpen(false)}
         role="listbox"
-        label={`${label} rating formats`}
+        label={t('{label} rating formats', { label: t(label) })}
         id={listId}
       >
         {options.map((option, index) => (

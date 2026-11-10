@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
@@ -40,13 +41,15 @@ export const BlindSpotMonitorSettings = () => {
   }, [activeTab]);
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   return (
     <BaseSettingsSection
-      title="Blind Spot Monitor"
-      description="Configure settings for the blind spot monitor widget that displays visual indicators when cars are detected on your left or right side."
+      title={t('Blind Spot Monitor')}
+      description={t(
+        'Configure settings for the blind spot monitor widget that displays visual indicators when cars are detected on your left or right side.'
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -65,21 +68,21 @@ export const BlindSpotMonitorSettings = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Display
+                {t('Display')}
               </TabButton>
               <TabButton
                 id="options"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Options
+                {t('Options')}
               </TabButton>
               <TabButton
                 id="visibility"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Visibility
+                {t('Visibility')}
               </TabButton>
             </div>
 
@@ -87,7 +90,10 @@ export const BlindSpotMonitorSettings = () => {
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <>
-                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+                  <SettingsSection
+                    title={t('Display')}
+                    scaleWidgetId={SETTING_ID}
+                  >
                     {/* Display Mode */}
                     <SettingProp path="displayMode" />
 
@@ -101,7 +107,7 @@ export const BlindSpotMonitorSettings = () => {
                         <div className="flex items-center justify-between gap-4 py-2">
                           <div>
                             <p className="text-sm font-medium text-slate-200">
-                              Indicator Color
+                              {t('Indicator Color')}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -127,7 +133,7 @@ export const BlindSpotMonitorSettings = () => {
                                 HIGHLIGHT_COLOR_PRESETS.entries()
                               ).map(([key, value]) => (
                                 <option key={key} value={key}>
-                                  {value}
+                                  {t(value)}
                                 </option>
                               ))}
                             </select>
@@ -148,7 +154,7 @@ export const BlindSpotMonitorSettings = () => {
                           <div className="flex items-center justify-between gap-4 py-2">
                             <div>
                               <p className="text-sm font-medium text-slate-200">
-                                Square Colour
+                                {t('Square Colour')}
                               </p>
                             </div>
                             <div className="flex items-center gap-2">
@@ -176,7 +182,7 @@ export const BlindSpotMonitorSettings = () => {
                                   HIGHLIGHT_COLOR_PRESETS.entries()
                                 ).map(([key, value]) => (
                                   <option key={key} value={key}>
-                                    {value}
+                                    {t(value)}
                                   </option>
                                 ))}
                               </select>
@@ -187,7 +193,7 @@ export const BlindSpotMonitorSettings = () => {
                           <>
                             <div className="flex items-center justify-between gap-4 py-2">
                               <p className="text-sm text-slate-400">
-                                1 car colour
+                                {t('1 car colour')}
                               </p>
                               <div className="flex items-center gap-2">
                                 <span
@@ -214,7 +220,7 @@ export const BlindSpotMonitorSettings = () => {
                                     HIGHLIGHT_COLOR_PRESETS.entries()
                                   ).map(([key, value]) => (
                                     <option key={key} value={key}>
-                                      {value}
+                                      {t(value)}
                                     </option>
                                   ))}
                                 </select>
@@ -222,7 +228,7 @@ export const BlindSpotMonitorSettings = () => {
                             </div>
                             <div className="flex items-center justify-between gap-4 py-2">
                               <p className="text-sm text-slate-400">
-                                2+ cars colour
+                                {t('2+ cars colour')}
                               </p>
                               <div className="flex items-center gap-2">
                                 <span
@@ -249,7 +255,7 @@ export const BlindSpotMonitorSettings = () => {
                                     HIGHLIGHT_COLOR_PRESETS.entries()
                                   ).map(([key, value]) => (
                                     <option key={key} value={key}>
-                                      {value}
+                                      {t(value)}
                                     </option>
                                   ))}
                                 </select>
@@ -265,7 +271,7 @@ export const BlindSpotMonitorSettings = () => {
 
               {/* OPTIONS TAB */}
               {activeTab === 'options' && (
-                <SettingsSection title="Options">
+                <SettingsSection title={t('Options')}>
                   {/* Distance Ahead */}
                   <SettingProp path="distAhead" />
 
@@ -276,7 +282,7 @@ export const BlindSpotMonitorSettings = () => {
 
               {/* VISIBILITY TAB */}
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
+                <SettingsSection title={t('Session Visibility')}>
                   <SessionVisibility
                     sessionVisibility={settings.config.sessionVisibility}
                     handleConfigChange={handleConfigChange}

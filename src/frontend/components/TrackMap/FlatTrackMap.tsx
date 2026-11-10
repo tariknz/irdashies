@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useDriverProgress } from './hooks/useDriverProgress';
 import { useFlatTrackMapSettings } from './hooks/useFlatTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
@@ -42,7 +43,7 @@ export const FlatTrackMap = ({ embedded = false }: { embedded?: boolean }) => {
   if (!trackId || !trackDrawing) {
     return debug ? (
       <div className="w-full h-full flex items-center justify-center text-white">
-        <p>No track data available</p>
+        <p>{t('No track data available')}</p>
       </div>
     ) : (
       <></>

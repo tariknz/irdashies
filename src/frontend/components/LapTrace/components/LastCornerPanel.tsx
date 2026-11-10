@@ -1,3 +1,4 @@
+import { t as translate } from '@irdashies/frontend/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { GaugeIcon, RulerIcon, TimerIcon } from '@phosphor-icons/react';
 import { formatDelta } from '@irdashies/utils/time';
@@ -334,7 +335,7 @@ const LastCornerRow = ({
               labelClassFor(labelLines),
             ].join(' ')}
           >
-            {entry?.label ?? ''}
+            {translate(entry?.label) ?? ''}
           </span>
         ) : (
           <LastCornerChip

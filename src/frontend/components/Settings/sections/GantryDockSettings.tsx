@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlusIcon, TrashIcon, WarningIcon } from '@phosphor-icons/react';
@@ -90,7 +91,7 @@ const PanelRowControls = ({
     <div className="mt-2 ml-7 space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         <select
-          aria-label="Panel type"
+          aria-label={t('Panel type')}
           className={selectClass}
           value={panel.type}
           onChange={(e) =>
@@ -103,14 +104,14 @@ const PanelRowControls = ({
               value={type}
               disabled={isTypeTaken(type, panels, panel.id)}
             >
-              {GANTRY_DOCK_PANEL_LABELS[type]}
+              {t(GANTRY_DOCK_PANEL_LABELS[type])}
             </option>
           ))}
         </select>
 
         {panel.type === 'fuel' && (
           <select
-            aria-label="Source"
+            aria-label={t('Source')}
             className={selectClass}
             value={panel.widgetId ?? NO_SOURCE}
             onChange={(e) =>
@@ -118,11 +119,11 @@ const PanelRowControls = ({
             }
           >
             {!panel.widgetId && (
-              <option value={NO_SOURCE}>Choose a fuel layout</option>
+              <option value={NO_SOURCE}>{t('Choose a fuel layout')}</option>
             )}
             {resolved.status === 'removed' && (
               <option value={panel.widgetId} disabled>
-                Removed layout: {panel.widgetId}
+                {t('Removed layout:')} {panel.widgetId}
               </option>
             )}
             {fuelWidgets.map((widget) => (
@@ -131,7 +132,7 @@ const PanelRowControls = ({
                 value={widget.id}
                 disabled={usedElsewhere.has(widget.id)}
               >
-                {sourceLabel(widget)}
+                {t(sourceLabel(widget))}
               </option>
             ))}
           </select>
@@ -142,8 +143,8 @@ const PanelRowControls = ({
         <button
           type="button"
           onClick={handleRemove}
-          aria-label="Remove panel"
-          title="Remove panel"
+          aria-label={t('Remove panel')}
+          title={t('Remove panel')}
           className="p-1 rounded text-slate-400 hover:text-red-300 hover:bg-settings-hover"
         >
           <TrashIcon size={16} />
@@ -157,7 +158,7 @@ const PanelRowControls = ({
             onClick={() => onCreateGantryFuel(panel.id)}
             className={`settings-button-primary`}
           >
-            <PlusIcon size={12} /> Create Gantry fuel layout
+            <PlusIcon size={12} /> {t('Create Gantry fuel layout')}
           </button>
           {linked && (
             <button
@@ -165,19 +166,23 @@ const PanelRowControls = ({
               onClick={() => onEdit(`/settings/${linked.id}`)}
               className={`${smallButtonClass} bg-slate-700 hover:bg-settings-hover text-slate-200 border-settings-boundary`}
             >
-              Edit fuel layout
+              {t('Edit fuel layout')}
             </button>
           )}
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-          <span>Uses the {GANTRY_DOCK_PANEL_LABELS[panel.type]} settings.</span>
+          <span>
+            {t('Uses the')} {t(GANTRY_DOCK_PANEL_LABELS[panel.type])}{' '}
+            {t('settings.')}
+          </span>
           <button
             type="button"
             onClick={() => onEdit(`/settings/${panel.type}`)}
             className="text-accent-400 hover:text-accent-300 underline"
           >
-            Edit {GANTRY_DOCK_PANEL_LABELS[panel.type]} settings
+            {t('Edit')} {t(GANTRY_DOCK_PANEL_LABELS[panel.type])}{' '}
+            {t('settings')}
           </button>
         </div>
       )}
@@ -186,36 +191,40 @@ const PanelRowControls = ({
         <p className="flex items-center gap-1 text-xs text-amber-300">
           <WarningIcon size={14} />
           {panel.type === 'fuel'
-            ? 'The fuel layout this panel used was removed. Choose another.'
-            : `The ${GANTRY_DOCK_PANEL_LABELS[panel.type]} widget is missing from this profile.`}
+            ? t('The fuel layout this panel used was removed. Choose another.')
+            : t('The {value} widget is missing from this profile.', {
+                value: GANTRY_DOCK_PANEL_LABELS[panel.type],
+              })}
         </p>
       )}
 
       {confirmingRemove && (
         <div className="flex flex-wrap items-center gap-2 p-2 rounded bg-slate-800 border border-settings-boundary text-xs text-slate-300">
           <span className="flex-1">
-            This panel uses a Gantry-only fuel layout. Delete the layout too?
+            {t(
+              'This panel uses a Gantry-only fuel layout. Delete the layout too?'
+            )}
           </span>
           <button
             type="button"
             onClick={() => onRemove(panel.id, true)}
             className={`${smallButtonClass} bg-red-900/50 hover:bg-red-900 text-red-200 border-red-800`}
           >
-            Delete layout
+            {t('Delete layout')}
           </button>
           <button
             type="button"
             onClick={() => onRemove(panel.id, false)}
             className={`${smallButtonClass} bg-slate-700 hover:bg-settings-hover text-slate-200 border-settings-boundary`}
           >
-            Keep layout
+            {t('Keep layout')}
           </button>
           <button
             type="button"
             onClick={() => setConfirmingRemove(false)}
             className="px-2 py-1 text-slate-400 hover:text-slate-200"
           >
-            Cancel
+            {t('Cancel')}
           </button>
         </div>
       )}
@@ -267,10 +276,12 @@ export const GantryDockSettings = () => {
   const full = dock.panels.length >= GANTRY_DOCK_MAX_PANELS;
 
   return (
-    <SettingsSection title="Docked Panels">
+    <SettingsSection title={t('Docked Panels')}>
       <SettingToggleRow
-        title="Show docked panels below the incident feed"
-        description="Shows overlay widgets such as the fuel calculator and track map under the incident feed on the Standings & Incidents tab. Drag the divider in the Gantry to resize them."
+        title={t('Show docked panels below the incident feed')}
+        description={t(
+          'Shows overlay widgets such as the fuel calculator and track map under the incident feed on the Standings & Incidents tab. Drag the divider in the Gantry to resize them.'
+        )}
         enabled={dock.enabled}
         onToggle={(enabled) =>
           updateDock((current) => ({ ...current, enabled }))
@@ -278,8 +289,10 @@ export const GantryDockSettings = () => {
       />
 
       <SettingButtonGroupRow<GantryDockConfig['arrangement']>
-        title="Arrangement"
-        description="Side by side shows every panel at once. Tabs shows one at a time, which suits a narrow window."
+        title={t('Arrangement')}
+        description={t(
+          'Side by side shows every panel at once. Tabs shows one at a time, which suits a narrow window.'
+        )}
         value={dock.arrangement}
         options={[
           { label: 'Side by side', value: 'row' },
@@ -293,16 +306,17 @@ export const GantryDockSettings = () => {
       <SettingDivider />
 
       <div>
-        <h4 className="text-md font-medium text-slate-300">Panels</h4>
+        <h4 className="text-md font-medium text-slate-300">{t('Panels')}</h4>
         <p className="text-sm text-slate-500 mt-1">
-          Drag to reorder. Up to {GANTRY_DOCK_MAX_PANELS} panels. A fuel panel
-          can show one of your overlay fuel layouts, or a Gantry-only layout
-          that never appears on the overlay. Track maps use their own settings.
+          {t('Drag to reorder. Up to')} {GANTRY_DOCK_MAX_PANELS}{' '}
+          {t(
+            'panels. A fuel panel can show one of your overlay fuel layouts, or a Gantry-only layout that never appears on the overlay. Track maps use their own settings.'
+          )}
         </p>
       </div>
 
       {resolved.length === 0 ? (
-        <p className="text-sm text-slate-500 italic">No panels yet.</p>
+        <p className="text-sm text-slate-500 italic">{t('No panels yet.')}</p>
       ) : (
         <SortableList
           items={resolved.map((r) => ({ id: r.panel.id, resolved: r }))}
@@ -315,7 +329,7 @@ export const GantryDockSettings = () => {
           renderItem={({ resolved: row }, sortableProps) => (
             <DraggableSettingItem
               key={row.panel.id}
-              label={GANTRY_DOCK_PANEL_LABELS[row.panel.type]}
+              label={t(GANTRY_DOCK_PANEL_LABELS[row.panel.type])}
               enabled
               onToggle={() => undefined}
               showToggle={false}
@@ -353,7 +367,8 @@ export const GantryDockSettings = () => {
             onClick={() => addPanel(type)}
             className={`${smallButtonClass} bg-slate-700 hover:bg-settings-hover text-slate-200 border-settings-boundary disabled:opacity-40 disabled:cursor-not-allowed`}
           >
-            <PlusIcon size={12} /> Add {GANTRY_DOCK_PANEL_LABELS[type]}
+            <PlusIcon size={12} /> {t('Add')}{' '}
+            {t(GANTRY_DOCK_PANEL_LABELS[type])}
           </button>
         ))}
       </div>

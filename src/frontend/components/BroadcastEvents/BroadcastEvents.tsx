@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlagCheckeredIcon,
@@ -168,7 +169,7 @@ const DriverCard = ({
           {[standing?.carClass.name, standing?.driver.teamName]
             .filter(Boolean)
             .join(' · ')}
-          {event.lap ? ` · Lap ${event.lap}` : ''}
+          {event.lap ? t(' · Lap {lap}', { lap: event.lap }) : ''}
         </div>
         {event.detail && (
           <div className="text-lg font-bold tabular-nums">{event.detail}</div>
@@ -316,7 +317,7 @@ export const EventCard = ({
               : 'animate-pulse'
           }
         />
-        {style.title}
+        {t(style.title)}
       </div>
       {hasCar && <DriverCard event={event} standing={standing} />}
     </BroadcastEnter>

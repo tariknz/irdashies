@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { FuelWidgetSettings, getWidgetDefaultConfig } from '@irdashies/types';
 import { SettingsSection } from '../../components/SettingSection';
 import { settingPropFor } from '../../components/SettingProp';
@@ -16,17 +17,19 @@ export const FuelStatusAlertsSection = ({
   onChange,
 }: FuelStatusAlertsSectionProps) => {
   return (
-    <SettingsSection title="Fuel Status Alerts">
+    <SettingsSection title={t('Fuel Status Alerts')}>
       {/* Border Color Toggle */}
       <SettingProp path="showFuelStatusBorder" />
 
       <div className="space-y-3">
         {/* Green Threshold */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-slate-300">Green Threshold (%)</span>
+          <span className="text-sm text-slate-300">
+            {t('Green Threshold (%)')}
+          </span>
           <div className="flex items-center gap-2">
             <input
-              aria-label="Green Threshold (%)"
+              aria-label={t('Green Threshold (%)')}
               type="range"
               min="0"
               max="100"
@@ -54,10 +57,12 @@ export const FuelStatusAlertsSection = ({
 
         {/* Amber Threshold */}
         <div className="flex items-center justify-between ">
-          <span className="text-sm text-slate-300">Amber Threshold (%)</span>
+          <span className="text-sm text-slate-300">
+            {t('Amber Threshold (%)')}
+          </span>
           <div className="flex items-center gap-2">
             <input
-              aria-label="Amber Threshold (%)"
+              aria-label={t('Amber Threshold (%)')}
               type="range"
               min="0"
               max="100"

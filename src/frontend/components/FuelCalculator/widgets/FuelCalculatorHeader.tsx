@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import React from 'react';
 import { GasPumpIcon } from '@phosphor-icons/react';
 import type { FuelCalculatorSettings, FuelCalculation } from '../types';
@@ -94,17 +95,17 @@ export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({
             style={{ fontSize: labelFontSize }}
           >
             <GasPumpIcon size={12} weight="fill" />
-            <span>To go</span>
+            <span>{t('To go')}</span>
           </div>
           <div
             className={`flex items-center gap-1 ${confConfig.color} font-bold tabular-nums`}
             style={{ fontSize: valueFontSize }}
-            title={`${confidence} confidence`}
+            title={t('{confidence} confidence', { confidence })}
           >
             <span
               className={`w-1.5 h-1.5 rounded-full ${confConfig.bg} ${confConfig.pulse}`}
             />
-            {lapsText}
+            {t(lapsText)}
           </div>
         </div>
         <div className="flex items-baseline gap-1 whitespace-nowrap pb-px">
@@ -112,7 +113,7 @@ export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({
             className="text-slate-500 font-semibold tracking-wide uppercase"
             style={{ fontSize: labelFontSize }}
           >
-            Next pit
+            {t('Next pit')}
           </span>
           <span
             className="text-white font-bold tabular-nums"
@@ -126,7 +127,7 @@ export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({
             className="text-slate-500 font-semibold tracking-wide uppercase"
             style={{ fontSize: labelFontSize }}
           >
-            Stops
+            {t('Stops')}
           </span>
           <span
             className="text-white font-bold tabular-nums"

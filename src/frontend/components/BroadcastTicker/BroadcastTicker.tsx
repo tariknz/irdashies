@@ -1,3 +1,4 @@
+import { t as translate } from '@irdashies/frontend/i18n';
 import { useMemo, useState } from 'react';
 import {
   useSessionVisibility,
@@ -133,7 +134,7 @@ export const TickerView = ({
       <BroadcastEnter id={mode}>
         <div className="flex gap-1 pl-6 text-sm font-bold uppercase">
           <span className="rounded-t-md bg-slate-900/(--bg-opacity) px-6 py-0.5">
-            {MODE_LABELS[mode]}
+            {translate(MODE_LABELS[mode])}
           </span>
         </div>
         <div className="flex h-10 items-center overflow-hidden bg-slate-900/(--bg-opacity)">

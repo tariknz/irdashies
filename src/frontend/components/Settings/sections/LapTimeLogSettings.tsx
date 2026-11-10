@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
@@ -39,13 +40,15 @@ export const LapTimeLogSettings = () => {
   }, [activeTab]);
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   return (
     <BaseSettingsSection
-      title="Lap Timer"
-      description="Configure settings for the Lap Timer widget. Select the lap times you want to see and the display options."
+      title={t('Lap Timer')}
+      description={t(
+        'Configure settings for the Lap Timer widget. Select the lap times you want to see and the display options.'
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -64,21 +67,21 @@ export const LapTimeLogSettings = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Display
+                {t('Display')}
               </TabButton>
               <TabButton
                 id="options"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Options
+                {t('Options')}
               </TabButton>
               <TabButton
                 id="visibility"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Visibility
+                {t('Visibility')}
               </TabButton>
             </div>
 
@@ -86,7 +89,10 @@ export const LapTimeLogSettings = () => {
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <>
-                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+                  <SettingsSection
+                    title={t('Display')}
+                    scaleWidgetId={SETTING_ID}
+                  >
                     <SettingProp path="showCurrentLap" />
 
                     <SettingProp path="showPredictedLap" />
@@ -123,7 +129,7 @@ export const LapTimeLogSettings = () => {
 
               {/* OPTIONS TAB */}
               {activeTab === 'options' && (
-                <SettingsSection title="Options">
+                <SettingsSection title={t('Options')}>
                   {/* Background Opacity */}
                   <SettingProp path="background.opacity" />
 
@@ -141,7 +147,7 @@ export const LapTimeLogSettings = () => {
 
               {/* VISIBILITY TAB */}
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
+                <SettingsSection title={t('Session Visibility')}>
                   <SessionVisibility
                     sessionVisibility={settings.config.sessionVisibility}
                     handleConfigChange={handleConfigChange}

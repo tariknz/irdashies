@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowSquareOutIcon, UploadSimpleIcon } from '@phosphor-icons/react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
@@ -141,7 +142,7 @@ const ColorField = ({
       onChange={(e) => onChange(e.target.value)}
       className="h-6 w-8 flex-none rounded bg-slate-700 cursor-pointer"
     />
-    <span className="truncate">{label}</span>
+    <span className="truncate">{t(label)}</span>
   </label>
 );
 
@@ -407,13 +408,15 @@ export const LapTraceSettings = () => {
     setBestLapInfo((info) => (info ? { ...info, hasBest: false } : info));
   };
 
-  if (!currentDashboard) return <>Loading...</>;
+  if (!currentDashboard) return <>{t('Loading...')}</>;
 
   return (
     <BaseSettingsSection
       hidePositionReset={activeTab === 'help'}
-      title="Lap Trace"
-      description="Compare your throttle, brake and speed with a saved reference lap as you drive."
+      title={t('Lap Trace')}
+      description={t(
+        'Compare your throttle, brake and speed with a saved reference lap as you drive.'
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -431,59 +434,75 @@ export const LapTraceSettings = () => {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Trace
+                {t('Trace')}
               </TabButton>
               <TabButton
                 id="corner"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Corner
+                {t('Corner')}
               </TabButton>
               <TabButton
                 id="braking"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Braking
+                {t('Braking')}
               </TabButton>
               <TabButton
                 id="styling"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Styling
+                {t('Styling')}
               </TabButton>
               <TabButton
                 id="visibility"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Visibility
+                {t('Visibility')}
               </TabButton>
               <TabButton
                 id="help"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               >
-                Help
+                {t('Help')}
               </TabButton>
             </div>
 
             <div>
               {activeTab === 'trace' && (
-                <SettingsSection title="Reference Lap">
+                <SettingsSection title={t('Reference Lap')}>
                   <SettingProp path="referenceSource" />
 
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm text-slate-500">
                       {!bestLapInfo
-                        ? 'Start driving to manage the best lap for the current track and car.'
+                        ? t(
+                            'Start driving to manage the best lap for the current track and car.'
+                          )
                         : !bestLapInfo.hasBest
-                          ? `No best lap recorded yet for ${bestLapInfo.trackName} — ${bestLapInfo.carName}.`
+                          ? t(
+                              'No best lap recorded yet for {trackName} — {carName}.',
+                              {
+                                trackName: bestLapInfo.trackName,
+                                carName: bestLapInfo.carName,
+                              }
+                            )
                           : confirmingResetBest
-                            ? `Delete your best lap for ${bestLapInfo.trackName} — ${bestLapInfo.carName}? This cannot be undone.`
-                            : 'Reset your recorded best lap for the track and car you are driving now. The next clean lap becomes the new best.'}
+                            ? t(
+                                'Delete your best lap for {trackName} — {carName}? This cannot be undone.',
+                                {
+                                  trackName: bestLapInfo.trackName,
+                                  carName: bestLapInfo.carName,
+                                }
+                              )
+                            : t(
+                                'Reset your recorded best lap for the track and car you are driving now. The next clean lap becomes the new best.'
+                              )}
                     </p>
                     <div className="flex items-center gap-2 flex-none">
                       {confirmingResetBest && bestLapInfo?.hasBest ? (
@@ -493,14 +512,14 @@ export const LapTraceSettings = () => {
                             onClick={handleResetBestLap}
                             className="text-xs text-red-400 hover:text-red-300 underline underline-offset-2 transition-colors cursor-pointer"
                           >
-                            Delete
+                            {t('Delete')}
                           </button>
                           <button
                             type="button"
                             onClick={() => setConfirmingResetBest(false)}
                             className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
                           >
-                            Cancel
+                            {t('Cancel')}
                           </button>
                         </>
                       ) : (
@@ -510,7 +529,7 @@ export const LapTraceSettings = () => {
                           onClick={() => setConfirmingResetBest(true)}
                           className="text-xs text-slate-300 hover:text-white hover:bg-settings-hover rounded px-2 py-1 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-default disabled:hover:bg-transparent disabled:hover:text-slate-300"
                         >
-                          Reset my best lap
+                          {t('Reset my best lap')}
                         </button>
                       )}
                     </div>
@@ -519,40 +538,49 @@ export const LapTraceSettings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-slate-500">
-                        Import a lap exported from Garage 61 as a CSV file to
-                        use as the reference.
+                        {t(
+                          'Import a lap exported from Garage 61 as a CSV file to use as the reference.'
+                        )}
                       </p>
                       {garage61Status?.kind === 'success' && (
                         <div className="text-xs text-emerald-400 mt-1 space-y-0.5">
                           <p className="font-semibold text-slate-300">
-                            Imported:
+                            {t('Imported:')}
                           </p>
                           <p>
-                            <span className="text-slate-400">Lap Time:</span>{' '}
+                            <span className="text-slate-400">
+                              {t('Lap Time:')}
+                            </span>{' '}
                             {formatLapTime(garage61Status.lapTimeSec)}
                           </p>
                           {garage61Status.driver && (
                             <p>
-                              <span className="text-slate-400">Driver:</span>{' '}
+                              <span className="text-slate-400">
+                                {t('Driver:')}
+                              </span>{' '}
                               {garage61Status.driver}
                             </p>
                           )}
                           {garage61Status.car && (
                             <p>
-                              <span className="text-slate-400">Car:</span>{' '}
+                              <span className="text-slate-400">
+                                {t('Car:')}
+                              </span>{' '}
                               {garage61Status.car}
                             </p>
                           )}
                           {garage61Status.track && (
                             <p>
-                              <span className="text-slate-400">Track:</span>{' '}
+                              <span className="text-slate-400">
+                                {t('Track:')}
+                              </span>{' '}
                               {garage61Status.track}
                             </p>
                           )}
                           {!garage61Status.driver &&
                             !garage61Status.car &&
                             !garage61Status.track && (
-                              <p>{garage61Status.label}</p>
+                              <p>{t(garage61Status.label)}</p>
                             )}
                         </div>
                       )}
@@ -574,7 +602,7 @@ export const LapTraceSettings = () => {
                         className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-settings-hover rounded px-2 py-1 transition-colors cursor-pointer"
                       >
                         <ArrowSquareOutIcon size={13} />
-                        Find laps on Garage 61
+                        {t('Find laps on Garage 61')}
                       </a>
                       {garage61Status?.kind === 'success' && (
                         <button
@@ -582,7 +610,7 @@ export const LapTraceSettings = () => {
                           onClick={handleClearGarage61}
                           className="text-xs text-red-400 hover:text-red-300 underline underline-offset-2 transition-colors cursor-pointer"
                         >
-                          Clear
+                          {t('Clear')}
                         </button>
                       )}
                       <button
@@ -591,7 +619,7 @@ export const LapTraceSettings = () => {
                         className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-settings-hover rounded px-2 py-1 transition-colors cursor-pointer"
                       >
                         <UploadSimpleIcon size={13} />
-                        Import Garage 61 Lap
+                        {t('Import Garage 61 Lap')}
                       </button>
                     </div>
                   </div>
@@ -599,34 +627,42 @@ export const LapTraceSettings = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-slate-500">
-                        Import a saved iRacing .ibt telemetry file. Only the
-                        fastest clean lap in the file is kept, matched to that
-                        lap&apos;s own track and car.
+                        {t(
+                          "Import a saved iRacing .ibt telemetry file. Only the fastest clean lap in the file is kept, matched to that lap's own track and car."
+                        )}
                       </p>
                       {ibtStatus?.kind === 'success' && (
                         <div className="text-xs text-emerald-400 mt-1 space-y-0.5">
                           <p className="font-semibold text-slate-300">
-                            Imported:
+                            {t('Imported:')}
                           </p>
                           <p>
-                            <span className="text-slate-400">Lap Time:</span>{' '}
+                            <span className="text-slate-400">
+                              {t('Lap Time:')}
+                            </span>{' '}
                             {formatLapTime(ibtStatus.lapTimeSec)}
                           </p>
                           {ibtStatus.driver && (
                             <p>
-                              <span className="text-slate-400">Driver:</span>{' '}
+                              <span className="text-slate-400">
+                                {t('Driver:')}
+                              </span>{' '}
                               {ibtStatus.driver}
                             </p>
                           )}
                           {ibtStatus.car && (
                             <p>
-                              <span className="text-slate-400">Car:</span>{' '}
+                              <span className="text-slate-400">
+                                {t('Car:')}
+                              </span>{' '}
                               {ibtStatus.car}
                             </p>
                           )}
                           {ibtStatus.track && (
                             <p>
-                              <span className="text-slate-400">Track:</span>{' '}
+                              <span className="text-slate-400">
+                                {t('Track:')}
+                              </span>{' '}
                               {ibtStatus.track}
                             </p>
                           )}
@@ -646,7 +682,7 @@ export const LapTraceSettings = () => {
                           onClick={handleClearIbt}
                           className="text-xs text-red-400 hover:text-red-300 underline underline-offset-2 transition-colors cursor-pointer"
                         >
-                          Clear
+                          {t('Clear')}
                         </button>
                       )}
                       <button
@@ -656,14 +692,14 @@ export const LapTraceSettings = () => {
                         className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-settings-hover rounded px-2 py-1 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-default"
                       >
                         <UploadSimpleIcon size={13} />
-                        {ibtImporting ? 'Importing…' : 'Import .ibt Lap'}
+                        {ibtImporting ? t('Importing…') : t('Import .ibt Lap')}
                       </button>
                     </div>
                   </div>
 
                   <SettingSliderRow
-                    title="Distance Behind"
-                    description="How much track behind the car is visible"
+                    title={t('Distance Behind')}
+                    description={t('How much track behind the car is visible')}
                     value={settings.config.metersBehind}
                     units="m"
                     min={50}
@@ -677,7 +713,7 @@ export const LapTraceSettings = () => {
               )}
 
               {activeTab === 'trace' && (
-                <SettingsSection title="Channels">
+                <SettingsSection title={t('Channels')}>
                   <SettingProp path="showThrottle" />
 
                   <SettingProp path="showBrake" />
@@ -707,19 +743,19 @@ export const LapTraceSettings = () => {
               )}
 
               {activeTab === 'corner' && (
-                <SettingsSection title="Last Corner">
+                <SettingsSection title={t('Last Corner')}>
                   <SettingProp path="showLastCorner" />
 
                   {settings.config.showLastCorner && (
                     <>
                       <div className="mt-4">
                         <h3 className="text-sm font-medium text-slate-200">
-                          Corner History Column Order
+                          {t('Corner History Column Order')}
                         </h3>
                         <p className="mt-1 mb-3 text-xs text-slate-400">
-                          Drag columns to choose their left-to-right order.
-                          Empty delta cells keep their column so history stays
-                          aligned.
+                          {t(
+                            'Drag columns to choose their left-to-right order. Empty delta cells keep their column so history stays aligned.'
+                          )}
                         </p>
                         <SortableList
                           items={normalizeLastCornerDisplayOrder(
@@ -738,7 +774,7 @@ export const LapTraceSettings = () => {
                           renderItem={(item, sortableProps) => (
                             <DraggableSettingItem
                               key={item.id}
-                              label={item.label}
+                              label={t(item.label)}
                               enabled={
                                 item.id === 'corner' ||
                                 (item.id === 'cornerTimeDelta' &&
@@ -791,13 +827,15 @@ export const LapTraceSettings = () => {
               )}
 
               {activeTab === 'braking' && (
-                <SettingsSection title="Brake Point Countdown">
+                <SettingsSection title={t('Brake Point Countdown')}>
                   {/* Not nested under either toggle below: this threshold decides
                     what counts as a braking zone for the countdown AND for the
                     Last Corner brake-distance delta. */}
                   <SettingSliderRow
-                    title="Minimum brake pressure"
-                    description="How hard the reference lap had to press for a brake application to count as a braking zone, and so earn a countdown and a brake-distance delta. Raise it if light stabilising brushes inside fast corners are being counted; lower it if a real corner brake point is being missed. Depends on the car, since brake bias and pedal travel differ."
+                    title={t('Minimum brake pressure')}
+                    description={t(
+                      'How hard the reference lap had to press for a brake application to count as a braking zone, and so earn a countdown and a brake-distance delta. Raise it if light stabilising brushes inside fast corners are being counted; lower it if a real corner brake point is being missed. Depends on the car, since brake bias and pedal travel differ.'
+                    )}
                     value={Math.round(
                       (settings.config.brakeCueMinPeak ??
                         BRAKE_CUE_MIN_PEAK_DEFAULT) * 100
@@ -822,8 +860,10 @@ export const LapTraceSettings = () => {
                       return (
                         <>
                           <SettingButtonGroupRow
-                            title="Bar Position"
-                            description="Left/Right run a full-height column of 4 bars beside the trace that drain 3, 2 and 1 second before your reference lap braked. Top/Bottom run a single continuous bar across the width instead."
+                            title={t('Bar Position')}
+                            description={t(
+                              'Left/Right run a full-height column of 4 bars beside the trace that drain 3, 2 and 1 second before your reference lap braked. Top/Bottom run a single continuous bar across the width instead.'
+                            )}
                             value={barSide}
                             options={[
                               { label: 'Left', value: 'left' },
@@ -860,8 +900,10 @@ export const LapTraceSettings = () => {
                       return (
                         <>
                           <SettingSelectRow
-                            title="Audio Output Device"
-                            description="Which Windows playback device the countdown tones use. Default follows whatever Windows is set to."
+                            title={t('Audio Output Device')}
+                            description={t(
+                              'Which Windows playback device the countdown tones use. Default follows whatever Windows is set to.'
+                            )}
                             value={selectedAudioDeviceId}
                             options={audioDeviceOptions}
                             onChange={(v) =>
@@ -870,8 +912,8 @@ export const LapTraceSettings = () => {
                           />
 
                           <SettingSliderRow
-                            title="Cue Volume"
-                            description="How loud the countdown tones are"
+                            title={t('Cue Volume')}
+                            description={t('How loud the countdown tones are')}
                             value={Math.round(
                               (settings.config.brakeCueVolume ?? 0.6) * 100
                             )}
@@ -894,12 +936,12 @@ export const LapTraceSettings = () => {
                                 className="space-y-3 border-t border-slate-700 pt-4"
                               >
                                 <legend className="pr-3 text-sm font-semibold text-slate-200">
-                                  {label}
+                                  {t(label)}
                                 </legend>
                                 <SettingSliderRow
-                                  title="Frequency"
+                                  title={t('Frequency')}
                                   value={Math.round(cue.frequency)}
-                                  units="Hz"
+                                  units={t('Hz')}
                                   min={200}
                                   max={2000}
                                   step={10}
@@ -908,15 +950,15 @@ export const LapTraceSettings = () => {
                                   }
                                 />
                                 <SettingSelectRow<OscillatorType>
-                                  title="Waveform"
+                                  title={t('Waveform')}
                                   value={cue.type}
                                   options={OSCILLATOR_TYPES}
                                   onChange={(v) => updateCue(key, { type: v })}
                                 />
                                 <SettingSliderRow
-                                  title="Duration"
+                                  title={t('Duration')}
                                   value={Math.round(cue.durationSec * 1000)}
-                                  units="ms"
+                                  units={t('ms')}
                                   min={20}
                                   max={500}
                                   step={10}
@@ -925,7 +967,7 @@ export const LapTraceSettings = () => {
                                   }
                                 />
                                 <SettingSliderRow
-                                  title="Level"
+                                  title={t('Level')}
                                   value={Math.round(cue.peak * 100)}
                                   units="%"
                                   min={0}
@@ -941,9 +983,11 @@ export const LapTraceSettings = () => {
 
                           <div className="flex items-center gap-3 border-t border-slate-700/50 pt-2">
                             <SettingActionButton
-                              label="Test sound"
-                              title="Test Sound"
-                              description="Plays the three beeps and the brake tone here in Settings, so you can tune them without being on track."
+                              label={t('Test sound')}
+                              title={t('Test Sound')}
+                              description={t(
+                                'Plays the three beeps and the brake tone here in Settings, so you can tune them without being on track.'
+                              )}
                               onClick={playTestCues}
                             />
                             <button
@@ -955,7 +999,7 @@ export const LapTraceSettings = () => {
                               }
                               className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer flex-none"
                             >
-                              Restore default sound
+                              {t('Restore default sound')}
                             </button>
                           </div>
                         </>
@@ -966,12 +1010,17 @@ export const LapTraceSettings = () => {
 
               {activeTab === 'styling' && (
                 <>
-                  <SettingsSection title="Styling" scaleWidgetId={SETTING_ID}>
+                  <SettingsSection
+                    title={t('Styling')}
+                    scaleWidgetId={SETTING_ID}
+                  >
                     <SettingProp path="strokeWidth" />
 
                     <SettingSliderRow
-                      title="Reference Opacity"
-                      description="How prominent the saved reference lap is (lines and bars)"
+                      title={t('Reference Opacity')}
+                      description={t(
+                        'How prominent the saved reference lap is (lines and bars)'
+                      )}
                       value={Math.round(
                         (settings.config.ghostOpacity ?? 1) * 100
                       )}
@@ -985,8 +1034,10 @@ export const LapTraceSettings = () => {
                     />
 
                     <SettingSliderRow
-                      title="Driver Input Opacity"
-                      description="How prominent the live driver input trace is"
+                      title={t('Driver Input Opacity')}
+                      description={t(
+                        'How prominent the live driver input trace is'
+                      )}
                       value={Math.round(
                         (settings.config.driverOpacity ?? 1) * 100
                       )}
@@ -1000,8 +1051,8 @@ export const LapTraceSettings = () => {
                     />
 
                     <SettingSliderRow
-                      title="Background Opacity"
-                      description="Background opacity of the overlay"
+                      title={t('Background Opacity')}
+                      description={t('Background opacity of the overlay')}
                       value={Math.round(
                         settings.config.background.opacity * 100
                       )}
@@ -1017,7 +1068,7 @@ export const LapTraceSettings = () => {
                     <div className="space-y-2 border-t border-slate-700/50 pt-3">
                       <div className="flex items-center justify-between">
                         <span className="text-md font-semibold text-slate-300">
-                          Plot Colors
+                          {t('Plot Colors')}
                         </span>
                         <button
                           type="button"
@@ -1029,7 +1080,7 @@ export const LapTraceSettings = () => {
                           }
                           className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
                         >
-                          Restore defaults
+                          {t('Restore defaults')}
                         </button>
                       </div>
                       <div className="grid grid-cols-2 gap-x-3 gap-y-2">
@@ -1038,7 +1089,7 @@ export const LapTraceSettings = () => {
                             return (
                               <ColorField
                                 key="carLine"
-                                label={field.label}
+                                label={t(field.label)}
                                 value={
                                   settings.config.carLineColor ?? '#ffffff'
                                 }
@@ -1053,7 +1104,7 @@ export const LapTraceSettings = () => {
                           return (
                             <ColorField
                               key={field.key}
-                              label={field.label}
+                              label={t(field.label)}
                               value={current[field.key]}
                               onChange={(v) =>
                                 handleConfigChange({
@@ -1070,7 +1121,7 @@ export const LapTraceSettings = () => {
                       <div className="space-y-2 border-t border-slate-700/50 pt-3">
                         <div className="flex items-center justify-between">
                           <span className="text-md font-semibold text-slate-300">
-                            Countdown Colors
+                            {t('Countdown Colors')}
                           </span>
                           <button
                             type="button"
@@ -1092,7 +1143,7 @@ export const LapTraceSettings = () => {
                             }
                             className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
                           >
-                            Restore defaults
+                            {t('Restore defaults')}
                           </button>
                         </div>
                         <div className="grid grid-cols-2 gap-x-3 gap-y-2">
@@ -1103,7 +1154,7 @@ export const LapTraceSettings = () => {
                             return (
                               <>
                                 <ColorField
-                                  label="Armed (green)"
+                                  label={t('Armed (green)')}
                                   value={cueColors.brakeCueGreen}
                                   onChange={(v) =>
                                     handleConfigChange({
@@ -1115,7 +1166,7 @@ export const LapTraceSettings = () => {
                                   }
                                 />
                                 <ColorField
-                                  label="2 seconds (amber)"
+                                  label={t('2 seconds (amber)')}
                                   value={cueColors.brakeCueAmber}
                                   onChange={(v) =>
                                     handleConfigChange({
@@ -1127,7 +1178,7 @@ export const LapTraceSettings = () => {
                                   }
                                 />
                                 <ColorField
-                                  label="1 second (orange)"
+                                  label={t('1 second (orange)')}
                                   value={cueColors.brakeCueOrange}
                                   onChange={(v) =>
                                     handleConfigChange({
@@ -1139,7 +1190,7 @@ export const LapTraceSettings = () => {
                                   }
                                 />
                                 <ColorField
-                                  label="Brake point (red)"
+                                  label={t('Brake point (red)')}
                                   value={cueColors.brakeCueRed}
                                   onChange={(v) =>
                                     handleConfigChange({
@@ -1170,7 +1221,7 @@ export const LapTraceSettings = () => {
 
               {/* VISIBILITY TAB */}
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
+                <SettingsSection title={t('Session Visibility')}>
                   <SessionVisibility
                     sessionVisibility={settings.config.sessionVisibility}
                     handleConfigChange={handleConfigChange}

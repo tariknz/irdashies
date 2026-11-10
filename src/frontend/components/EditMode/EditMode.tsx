@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { PropsWithChildren } from 'react';
 import { useDashboard } from '@irdashies/context';
 import { ResizeIcon } from '@phosphor-icons/react';
@@ -36,7 +37,7 @@ export const EditMode = ({ children }: PropsWithChildren) => {
           <div className="flex items-center gap-2 absolute top-0 right-0 py-1 px-2 bg-sky-500 text-white cursor-move">
             <ResizeIcon />
             <span>
-              {widgetName ?? 'Edit Mode'}
+              {widgetName ?? t('Edit Mode')}
               {widgetId && componentType && widgetId !== componentType && (
                 <span className="ml-1 text-xs opacity-80 font-mono">
                   ({widgetId})

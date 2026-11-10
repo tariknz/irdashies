@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import React from 'react';
 import { fuelDisplayValue } from '../fuelCalculations';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
@@ -54,7 +55,7 @@ export const FuelCalculatorEconomyPredict: React.FC<
         className={`flex items-center justify-center w-full rounded bg-slate-900/40 text-slate-500 italic`}
         style={{ fontSize: labelFontSize, minHeight: '30px' }}
       >
-        Needs Fuel Data
+        {t('Needs Fuel Data')}
       </div>
     );
   }

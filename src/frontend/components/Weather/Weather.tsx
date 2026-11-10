@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import {
   useDashboard,
   sessionBarSelectors,
@@ -128,7 +129,7 @@ export const Weather = () => {
         return (
           <WeatherTemp
             key={id}
-            title="Track"
+            title={t('Track')}
             value={trackTemp}
             icon={RoadHorizonIcon}
             variant={componentVariant}
@@ -138,7 +139,7 @@ export const Weather = () => {
         return (
           <WeatherTemp
             key={id}
-            title="Air"
+            title={t('Air')}
             value={airTemp}
             icon={ThermometerIcon}
             variant={componentVariant}

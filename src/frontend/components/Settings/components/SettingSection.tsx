@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { WidgetScaleSettings } from './WidgetScaleSettings';
 
 interface SettingsSectionProps {
@@ -27,7 +28,7 @@ export function SettingsSection({
     >
       {title && (
         <Heading className="text-lg font-semibold text-slate-200">
-          {title}
+          {t(title)}
         </Heading>
       )}
       <div

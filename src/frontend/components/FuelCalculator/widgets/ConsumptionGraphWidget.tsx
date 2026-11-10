@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { formatFuel } from '../fuelCalculations';
 import { FuelLapData } from '../types';
 import { demoFuelGraph } from '../demoData';
@@ -72,13 +73,13 @@ export const ConsumptionGraphWidget = ({
         className="text-slate-400 uppercase mb-1 flex justify-between items-center px-1"
         style={{ fontSize: titleSize }}
       >
-        <span className="font-bold tracking-tight">Fuel History</span>
+        <span className="font-bold tracking-tight">{t('Fuel History')}</span>
         {isDummy && (
           <span
             className="text-amber-500 font-bold animate-pulse"
             style={{ fontSize: axisLabelSize }}
           >
-            TRACKING...
+            {t('TRACKING...')}
           </span>
         )}
       </div>
@@ -104,7 +105,7 @@ export const ConsumptionGraphWidget = ({
                       className="absolute right-1 bottom-0.5 text-yellow-400 font-bold opacity-80 uppercase"
                       style={{ fontSize: axisLabelSize }}
                     >
-                      avg
+                      {t('avg')}
                     </span>
                   </div>
 
@@ -118,7 +119,7 @@ export const ConsumptionGraphWidget = ({
                         className="absolute left-1 bottom-0.5 text-cyan-400 font-bold opacity-80 uppercase"
                         style={{ fontSize: axisLabelSize }}
                       >
-                        tgt
+                        {t('tgt')}
                       </span>
                     </div>
                   )}
@@ -165,7 +166,7 @@ export const ConsumptionGraphWidget = ({
               if (displayValues.length < 2) {
                 return (
                   <div className="h-full w-full flex items-center justify-center text-[10px] text-slate-500 italic">
-                    Recording lap data...
+                    {t('Recording lap data...')}
                   </div>
                 );
               }
@@ -220,7 +221,7 @@ export const ConsumptionGraphWidget = ({
           className="text-slate-500 font-normal uppercase"
           style={{ fontSize: legendLabelSize }}
         >
-          Avg
+          {t('Avg')}
         </span>
         {formatFuel(avgFuel, fuelUnits)}
         {manualTarget && manualTarget > 0 && (
@@ -230,7 +231,7 @@ export const ConsumptionGraphWidget = ({
               className="text-cyan-500 font-normal uppercase"
               style={{ fontSize: legendLabelSize }}
             >
-              Tgt
+              {t('Tgt')}
             </span>
             <span className="text-cyan-400">
               {formatFuel(manualTarget, fuelUnits)}

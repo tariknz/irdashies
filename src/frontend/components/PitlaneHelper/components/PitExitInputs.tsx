@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo } from 'react';
 import { useDriverControlsSnapshot } from '@irdashies/context';
 
@@ -23,7 +24,7 @@ const InputBarColumn = ({ value, color, label }: InputBarColumnProps) => (
         style={{ height: `${value * 100}%`, backgroundColor: color }}
       />
     </div>
-    <span className="text-xs text-slate-400 leading-none">{label}</span>
+    <span className="text-xs text-slate-400 leading-none">{t(label)}</span>
   </div>
 );
 
@@ -49,14 +50,14 @@ export const PitExitInputs = memo(
           <InputBarColumn
             value={clutch}
             color="rgb(59, 130, 246)"
-            label="clt"
+            label={t('clt')}
           />
         )}
         {showThrottle && (
           <InputBarColumn
             value={throttle}
             color="rgb(34, 197, 94)"
-            label="thr"
+            label={t('thr')}
           />
         )}
       </>

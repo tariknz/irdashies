@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { shallow } from 'zustand/shallow';
 import {
@@ -166,7 +167,7 @@ const WeatherIcon = ({ sample }: { sample: WeatherSample }) => {
 
 const Stat = ({ label, value }: { label: string; value: string }) => (
   <div>
-    <div className="text-xs text-white/50">{label}</div>
+    <div className="text-xs text-white/50">{t(label)}</div>
     <div className="font-bold">{value}</div>
   </div>
 );
@@ -211,21 +212,21 @@ export const WeatherView = ({
       className="overflow-hidden rounded-sm bg-slate-950/(--bg-opacity) text-white"
     >
       <div className="flex justify-between bg-linear-to-r from-sky-700 to-slate-900 px-2 py-0.5 font-bold italic uppercase">
-        <span>Weather</span>
-        <span className="text-cyan-300">{popup.headline}</span>
+        <span>{t('Weather')}</span>
+        <span className="text-cyan-300">{t(popup.headline)}</span>
       </div>
       <div className="flex items-center gap-3 px-2 py-2 uppercase">
         <WeatherIcon sample={sample} />
         <div className="grid flex-1 grid-cols-3 gap-x-3 gap-y-1 text-sm tabular-nums">
-          <Stat label="Air" value={temp(sample.airTemp, metric)} />
-          <Stat label="Track" value={temp(sample.trackTemp, metric)} />
+          <Stat label={t('Air')} value={temp(sample.airTemp, metric)} />
+          <Stat label={t('Track')} value={temp(sample.trackTemp, metric)} />
           <Stat
-            label="Rain"
+            label={t('Rain')}
             value={`${Math.round(sample.precipitation * 100)}%`}
           />
           <div className="col-span-2">
             <Stat
-              label="Surface"
+              label={t('Surface')}
               value={WETNESS_LABELS[sample.wetness] ?? '-'}
             />
           </div>
@@ -235,7 +236,7 @@ export const WeatherView = ({
           </div>
           {rubber && (
             <div className="col-span-3">
-              <Stat label="Rubber" value={rubber} />
+              <Stat label={t('Rubber')} value={rubber} />
             </div>
           )}
         </div>

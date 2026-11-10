@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import Markdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -105,11 +106,12 @@ export const ReleaseNotesPanel = ({
       <div className="flex items-start justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold">
-            {release?.title || `irDashies ${version}`}
+            {release?.title || t('irDashies {version}', { version })}
           </h3>
           {release?.publishedAt && (
             <p className="mt-1 text-sm text-slate-400">
-              Released {new Date(release.publishedAt).toLocaleDateString()}
+              {t('Released')}{' '}
+              {new Date(release.publishedAt).toLocaleDateString()}
             </p>
           )}
         </div>
@@ -122,12 +124,12 @@ export const ReleaseNotesPanel = ({
           rel="noopener noreferrer"
           className="flex shrink-0 items-center gap-1 text-sm text-accent-300 hover:underline"
         >
-          View on GitHub <ArrowSquareOutIcon size={16} />
+          {t('View on GitHub')} <ArrowSquareOutIcon size={16} />
         </a>
       </div>
       {state.status === 'loading' && (
         <p role="status" className="text-slate-300">
-          Loading release notes…
+          {t('Loading release notes…')}
         </p>
       )}
       {state.status === 'unavailable' && (
@@ -137,15 +139,17 @@ export const ReleaseNotesPanel = ({
         >
           <p>
             {state.reason === 'not-found'
-              ? 'Release notes have not been published for this version.'
-              : 'Could not load release notes. Check your connection and try again.'}
+              ? t('Release notes have not been published for this version.')
+              : t(
+                  'Could not load release notes. Check your connection and try again.'
+                )}
           </p>
           {onRetry && (
             <button
               onClick={onRetry}
               className="mt-3 flex items-center gap-2 text-accent-300 hover:underline"
             >
-              <ArrowClockwiseIcon size={16} /> Try again
+              <ArrowClockwiseIcon size={16} /> {t('Try again')}
             </button>
           )}
         </div>
@@ -176,7 +180,7 @@ export const ReleaseNotesPanel = ({
           </div>
         ) : (
           <p className="text-slate-400">
-            No release notes were included for this version.
+            {t('No release notes were included for this version.')}
           </p>
         ))}
     </div>

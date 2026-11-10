@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo } from 'react';
 import { WavesIcon } from '@phosphor-icons/react';
 import { useSessionBarSnapshot } from '@irdashies/context';
@@ -22,7 +23,7 @@ export const TrackWetnessItem = memo(({ standalone }: SessionBarItemProps) => {
     <div className={sessionBarItemWrapperClass(standalone)}>
       <div className="flex justify-center gap-1 items-center text-nowrap">
         <WavesIcon />
-        <span>{trackWetness}</span>
+        <span>{t(trackWetness)}</span>
       </div>
     </div>
   );

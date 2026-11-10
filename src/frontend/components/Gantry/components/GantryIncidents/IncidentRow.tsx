@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo, useState } from 'react';
 import { Copy } from '@phosphor-icons/react';
 import type { Incident } from '@irdashies/types';
@@ -76,7 +77,7 @@ export const IncidentRow = memo(({ incident, isReplayPlaying }: Props) => {
         <span
           className={`flex-shrink-0 rounded-sm px-2 py-px text-xs font-semibold ${style.classes}`}
         >
-          {style.label}
+          {t(style.label)}
         </span>
         <span className="text-md font-semibold text-white tabular-nums">
           #{incident.carNumber}
@@ -94,7 +95,7 @@ export const IncidentRow = memo(({ incident, isReplayPlaying }: Props) => {
       <div className="flex items-center justify-end gap-1.5">
         {!canReplay && (
           <span className="flex-1 text-sm text-slate-400">
-            Live -- replay unavailable
+            {t('Live -- replay unavailable')}
           </span>
         )}
         {([5, 10, 30] as const).map((seconds) => (
@@ -103,8 +104,13 @@ export const IncidentRow = memo(({ incident, isReplayPlaying }: Props) => {
             key={seconds}
             content={
               canReplay
-                ? `Jumps the sim's replay to ${seconds} seconds before this incident and points the camera at #${incident.carNumber}.`
-                : 'Only works while a replay is playing. The sim is running live, so there is no replay position to jump to.'
+                ? t(
+                    "Jumps the sim's replay to {seconds} seconds before this incident and points the camera at #{carNumber}.",
+                    { seconds, carNumber: incident.carNumber }
+                  )
+                : t(
+                    'Only works while a replay is playing. The sim is running live, so there is no replay position to jump to.'
+                  )
             }
           >
             <span className="inline-flex">
@@ -119,17 +125,21 @@ export const IncidentRow = memo(({ incident, isReplayPlaying }: Props) => {
           </Tooltip>
         ))}
         {incident.debug && (
-          <Tooltip content="Copies this incident's detection snapshot — what triggered it, the evidence, and the thresholds in force — to the clipboard.">
+          <Tooltip
+            content={t(
+              "Copies this incident's detection snapshot — what triggered it, the evidence, and the thresholds in force — to the clipboard."
+            )}
+          >
             <button
               onClick={handleCopyLog}
               className="settings-button min-h-7 px-2.5 py-0.5"
             >
               <Copy aria-hidden="true" size={14} />
               {copyState === 'copied'
-                ? 'Copied!'
+                ? t('Copied!')
                 : copyState === 'failed'
-                  ? 'Failed'
-                  : 'Log'}
+                  ? t('Failed')
+                  : t('Log')}
             </button>
           </Tooltip>
         )}

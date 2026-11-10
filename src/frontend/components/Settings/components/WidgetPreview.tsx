@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowsInIcon,
@@ -112,7 +113,7 @@ export const WidgetPreview = ({
     <dialog
       ref={dialog}
       open
-      aria-label={`${name} preview`}
+      aria-label={t('{name} preview', { name })}
       onCancel={(event) => {
         event.preventDefault();
         setExpanded(false);
@@ -125,9 +126,9 @@ export const WidgetPreview = ({
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700 px-3 py-2">
         <div className="flex items-center gap-2 text-sm font-medium">
-          Preview{' '}
+          {t('Preview')}{' '}
           <span className="rounded bg-accent-400/10 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-accent-300">
-            Demo
+            {t('Demo')}
           </span>
           <span className="text-xs font-normal text-slate-400">
             {width} × {height} · {Math.round(scale * 100)}%
@@ -138,10 +139,10 @@ export const WidgetPreview = ({
             type="button"
             className={button}
             aria-pressed={zoom === 'fit'}
-            title="Fit and center preview"
+            title={t('Fit and center preview')}
             onClick={() => setZoom('fit')}
           >
-            Fit
+            {t('Fit')}
           </button>
           <button
             type="button"
@@ -154,16 +155,18 @@ export const WidgetPreview = ({
           <button
             type="button"
             className={button}
-            aria-label="Light preview background"
+            aria-label={t('Light preview background')}
             aria-pressed={light}
             onClick={() => setLight(!light)}
           >
-            Background
+            {t('Background')}
           </button>
           <button
             type="button"
             className={button}
-            aria-label={preview.playing ? 'Pause preview' : 'Play preview'}
+            aria-label={
+              preview.playing ? t('Pause preview') : t('Play preview')
+            }
             onClick={preview.togglePlaying}
           >
             {preview.playing ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
@@ -171,7 +174,7 @@ export const WidgetPreview = ({
           <button
             type="button"
             className={button}
-            aria-label={expanded ? 'Collapse preview' : 'Expand preview'}
+            aria-label={expanded ? t('Collapse preview') : t('Expand preview')}
             onClick={() => setExpanded(!expanded)}
           >
             {expanded ? (
@@ -185,8 +188,10 @@ export const WidgetPreview = ({
       <div
         ref={stage}
         role="region"
-        aria-label={`${name} preview canvas`}
-        aria-description="Scroll to zoom. Drag to pan. Use arrow keys to move and Home to center."
+        aria-label={t('{name} preview canvas', { name })}
+        aria-description={t(
+          'Scroll to zoom. Drag to pan. Use arrow keys to move and Home to center.'
+        )}
         data-resizing={resizing || panning || undefined}
         tabIndex={0}
         onPointerDown={(event) => {
@@ -276,7 +281,7 @@ export const WidgetPreview = ({
             >
               <iframe
                 ref={preview.ref}
-                title={`${name} demo`}
+                title={t('{name} demo', { name })}
                 onLoad={preview.onLoad}
                 src={
                   new URL('index-widget-preview.html', window.location.href)
@@ -309,11 +314,11 @@ export const WidgetPreview = ({
           >
             {preview.error ||
               (!preview.available
-                ? 'Preview is available in the desktop app.'
-                : 'Preview paused.')}
+                ? t('Preview is available in the desktop app.')
+                : t('Preview paused.'))}
             {preview.error && (
               <button type="button" className={button} onClick={preview.retry}>
-                Try again
+                {t('Try again')}
               </button>
             )}
           </div>
@@ -323,21 +328,21 @@ export const WidgetPreview = ({
             className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-slate-400"
             role="status"
           >
-            Loading preview…
+            {t('Loading preview…')}
           </div>
         )}
       </div>
       <div className="flex shrink-0 items-center gap-2 border-t border-slate-700 px-3 py-1.5 text-xs text-slate-400">
         <p className="flex-1">
-          Scroll to zoom. Drag to pan. Edges resize the demo frame. Sample data;
-          session visibility filters are ignored. Your overlay layout is
-          unchanged.
+          {t(
+            'Scroll to zoom. Drag to pan. Edges resize the demo frame. Sample data; session visibility filters are ignored. Your overlay layout is unchanged.'
+          )}
         </p>
         <button
           type="button"
           className={button}
-          aria-label="Reset preview size"
-          title="Restore saved widget dimensions"
+          aria-label={t('Reset preview size')}
+          title={t('Restore saved widget dimensions')}
           disabled={
             width === widget.layout.width && height === widget.layout.height
           }

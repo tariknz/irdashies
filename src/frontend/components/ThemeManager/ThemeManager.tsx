@@ -1,5 +1,6 @@
 import { PropsWithChildren } from 'react';
 import { useGeneralSettings } from '@irdashies/context';
+import { LanguageSync } from '@irdashies/frontend/i18n';
 
 /**
  * Check if we're on the settings page by looking at the URL hash.
@@ -16,7 +17,7 @@ export const ThemeManager = ({ children }: PropsWithChildren) => {
   // Don't apply theme changes to the settings page since
   // they share the same theme as the rest of the overlays
   if (isSettingsPage()) {
-    return <>{children}</>;
+    return <LanguageSync>{children}</LanguageSync>;
   }
 
   return (
@@ -29,7 +30,7 @@ export const ThemeManager = ({ children }: PropsWithChildren) => {
         overlay-theme-font-weight-${fontWeight ?? 'normal'}
       `}
     >
-      {children}
+      <LanguageSync>{children}</LanguageSync>
     </div>
   );
 };

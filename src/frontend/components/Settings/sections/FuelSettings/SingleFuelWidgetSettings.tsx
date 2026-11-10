@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BaseSettingsSection } from '../../components/BaseSettingsSection';
@@ -128,14 +129,19 @@ export const SingleFuelWidgetSettings = ({
 
   if (!currentDashboard || !savedSettings) {
     return (
-      <div className="p-4 text-slate-400">Widget not found or loading...</div>
+      <div className="p-4 text-slate-400">
+        {t('Widget not found or loading...')}
+      </div>
     );
   }
 
   return (
     <BaseSettingsSection
-      title="Fuel Calculator"
-      description={`Configure the Fuel Calculator layout. Editing: ${widgetId}${isGantryOnly ? ' (Gantry)' : ''}.`}
+      title={t('Fuel Calculator')}
+      description={t(
+        'Configure the Fuel Calculator layout. Editing: {widget}.',
+        { widget: isGantryOnly ? `${widgetId} (Gantry)` : widgetId }
+      )}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={widgetId}
@@ -161,35 +167,35 @@ export const SingleFuelWidgetSettings = ({
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Layout
+                  {t('Layout')}
                 </TabButton>
                 <TabButton
                   id="display"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Display
+                  {t('Display')}
                 </TabButton>
                 <TabButton
                   id="options"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Options
+                  {t('Options')}
                 </TabButton>
                 <TabButton
                   id="history"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  History
+                  {t('History')}
                 </TabButton>
                 <TabButton
                   id="visibility"
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
                 >
-                  Visibility
+                  {t('Visibility')}
                 </TabButton>
               </div>
 
@@ -201,10 +207,10 @@ export const SingleFuelWidgetSettings = ({
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800/40 p-3">
                       <div className="flex min-w-0 flex-wrap items-center gap-3">
                         <span className="text-sm font-bold text-slate-200">
-                          Editing Widget:
+                          {t('Editing Widget:')}
                         </span>
                         <select
-                          aria-label="Editing fuel widget"
+                          aria-label={t('Editing fuel widget')}
                           value={selectedId}
                           onChange={(e) => handleWidgetChange(e.target.value)}
                           className="settings-field"
@@ -212,7 +218,7 @@ export const SingleFuelWidgetSettings = ({
                           {fuelWidgets.map((w) => (
                             <option key={w.id} value={w.id}>
                               {w.placement === 'gantry'
-                                ? `${w.id} (Gantry)`
+                                ? t('{id} (Gantry)', { id: w.id })
                                 : w.id}
                             </option>
                           ))}
@@ -220,9 +226,11 @@ export const SingleFuelWidgetSettings = ({
                         {isGantryOnly && (
                           <span
                             className="px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider rounded bg-amber-500/20 text-amber-300 border border-amber-500/40"
-                            title="Only shown docked in the Gantry, never on the overlay."
+                            title={t(
+                              'Only shown docked in the Gantry, never on the overlay.'
+                            )}
                           >
-                            Gantry
+                            {t('Gantry')}
                           </span>
                         )}
                       </div>
@@ -233,8 +241,10 @@ export const SingleFuelWidgetSettings = ({
                           disabled={selectedId === 'fuel'}
                           title={
                             selectedId === 'fuel'
-                              ? 'Default widget cannot be deleted. Disable it instead.'
-                              : 'Delete this layout configuration'
+                              ? t(
+                                  'Default widget cannot be deleted. Disable it instead.'
+                                )
+                              : t('Delete this layout configuration')
                           }
                           className={`settings-button-danger ${
                             selectedId === 'fuel'
@@ -243,14 +253,14 @@ export const SingleFuelWidgetSettings = ({
                           }`}
                         >
                           {selectedId === 'fuel'
-                            ? 'Default (Locked)'
-                            : 'Delete Layout'}
+                            ? t('Default (Locked)')
+                            : t('Delete Layout')}
                         </button>
                         <button
                           onClick={handleAddWidget}
                           className="settings-button-primary"
                         >
-                          <PlusIcon /> New Layout
+                          <PlusIcon /> {t('New Layout')}
                         </button>
                       </div>
                     </div>
@@ -258,10 +268,10 @@ export const SingleFuelWidgetSettings = ({
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
                         <h3 className="text-lg font-medium text-slate-200">
-                          Layout Editor
+                          {t('Layout Editor')}
                         </h3>
                         <span className="text-xs text-slate-500">
-                          Drag to Split (Right/Bottom)
+                          {t('Drag to Split (Right/Bottom)')}
                         </span>
                       </div>
 
@@ -279,7 +289,10 @@ export const SingleFuelWidgetSettings = ({
                 {/* DISPLAY TAB */}
                 {activeTab === 'display' && (
                   <div className="space-y-5">
-                    <SettingsSection title="Display" scaleWidgetId={widgetId}>
+                    <SettingsSection
+                      title={t('Display')}
+                      scaleWidgetId={widgetId}
+                    >
                       <SettingProp path="useGeneralCompactMode" />
 
                       {/* Background Opacity */}
@@ -291,7 +304,7 @@ export const SingleFuelWidgetSettings = ({
                 {/* OPTIONS TAB */}
                 {activeTab === 'options' && (
                   <div className="space-y-8">
-                    <SettingsSection title="Options">
+                    <SettingsSection title={t('Options')}>
                       {/* Fuel Units */}
                       <SettingProp path="fuelUnits" />
 
@@ -306,7 +319,7 @@ export const SingleFuelWidgetSettings = ({
                     />
 
                     {/* Consumption Details Section */}
-                    <SettingsSection title="Fuel Consumption">
+                    <SettingsSection title={t('Fuel Consumption')}>
                       {/* Fuel 2 Grid Reordering */}
                       <GridOrderSettingsList
                         itemsOrder={
@@ -346,7 +359,7 @@ export const SingleFuelWidgetSettings = ({
 
                 {/* VISIBILITY TAB */}
                 {activeTab === 'visibility' && (
-                  <SettingsSection title="Session Visibility">
+                  <SettingsSection title={t('Session Visibility')}>
                     <SessionVisibility
                       sessionVisibility={settings.config.sessionVisibility}
                       handleConfigChange={handleConfigChange}

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useContext, useRef, useState, type ReactNode } from 'react';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { useElementSize } from '@irdashies/context';
@@ -43,18 +44,18 @@ export const SettingsPreviewLayout = ({
         className={`grid min-w-0 grid-cols-1 gap-5 @[59rem]/settings-preview:grid-cols-[minmax(37.5rem,1fr)_var(--preview-panel-width)] @[59rem]/settings-preview:grid-rows-1 ${scroll ? 'h-full min-h-0 grid-rows-[auto_minmax(0,1fr)]' : ''}`}
       >
         <aside
-          aria-label="Widget preview"
+          aria-label={t('Widget preview')}
           className={`relative min-h-0 min-w-0 self-start @[59rem]/settings-preview:col-start-2 @[59rem]/settings-preview:row-start-1 ${scroll ? 'max-h-full @[59rem]/settings-preview:h-full' : 'sticky top-0'}`}
         >
           <div
             role="separator"
-            aria-label="Resize preview panel"
+            aria-label={t('Resize preview panel')}
             aria-orientation="vertical"
             aria-valuemin={320}
             aria-valuemax={Math.floor(maxWidth)}
             aria-valuenow={Math.round(panelWidth)}
             tabIndex={0}
-            title="Drag to resize preview panel; arrow keys adjust width"
+            title={t('Drag to resize preview panel; arrow keys adjust width')}
             className={`group absolute -left-5 top-0 bottom-0 hidden w-5 touch-none cursor-col-resize items-center justify-center outline-none @[59rem]/settings-preview:flex ${resizing ? 'text-accent-300' : 'text-slate-500 hover:text-accent-300 focus-visible:text-accent-300'}`}
             onPointerDown={(event) => {
               if (event.button !== 0 || drag.current) return;

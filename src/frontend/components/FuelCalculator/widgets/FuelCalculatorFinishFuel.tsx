@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import React from 'react';
 import { formatFuel } from '../fuelCalculations';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
@@ -51,7 +52,7 @@ export const FuelCalculatorFinishFuel: React.FC<
         className="font-semibold tracking-wide text-slate-400 uppercase"
         style={{ fontSize: labelFontSize }}
       >
-        Fuel at end
+        {t('Fuel at end')}
       </span>
       <span
         className={`font-bold tabular-nums ${isShort ? 'text-red-400' : 'text-emerald-400'}`}

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import React from 'react';
 import { formatFuel } from '../fuelCalculations';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
@@ -112,20 +113,20 @@ export const FuelCalculatorGauge: React.FC<FuelCalculatorWidgetProps> = ({
           className="uppercase tracking-wide"
           style={{ fontSize: labelFontSize }}
         >
-          Tank
+          {t('Tank')}
         </span>
         <span
           className="text-white font-bold tracking-wide"
           style={{ fontSize: valueFontSize }}
         >
           {fuelString} <span className="text-slate-500 font-medium">·</span>{' '}
-          {lapsString} laps
+          {lapsString} {t('laps')}
         </span>
         <span
           className="uppercase tracking-wide"
           style={{ fontSize: labelFontSize }}
         >
-          {tankString} cap
+          {tankString} {t('cap')}
         </span>
       </div>
       <div className="h-1.5 bg-slate-700/80 rounded-sm overflow-hidden">

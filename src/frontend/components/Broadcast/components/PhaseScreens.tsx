@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import type { Standings } from '@irdashies/domain';
 import type { Groups } from '@irdashies/domain/broadcast/broadcastRows';
 import { ClassTitle } from '../../shared/Broadcast/ClassTitle';
@@ -28,7 +29,7 @@ export const GridCard = ({
 }) => (
   <div className="overflow-hidden rounded-sm bg-slate-950/(--bg-opacity) pb-2 text-white">
     <div className="bg-linear-to-r from-slate-700 to-slate-900 px-2 py-0.5 font-bold italic text-cyan-300 uppercase">
-      Starting Grid
+      {t('Starting Grid')}
     </div>
     {groups.map(([classId, drivers]) =>
       drivers[0] ? (

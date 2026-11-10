@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { MicrophoneIcon } from '@phosphor-icons/react';
 import {
   sessionBarSelectors,
@@ -93,13 +94,13 @@ export const FocusCard = ({
         <div className="flex gap-4 border-t border-white/10 px-2 py-1 text-sm tabular-nums">
           {showLastLap && (
             <span>
-              <span className="text-white/50">LAST </span>
+              <span className="text-white/50">{t('LAST')} </span>
               {formatTime(standing.lastTime, 'full') || '-'}
             </span>
           )}
           {showBestLap && (
             <span>
-              <span className="text-white/50">BEST </span>
+              <span className="text-white/50">{t('BEST')} </span>
               {formatTime(standing.fastestTime, 'full') || '-'}
             </span>
           )}

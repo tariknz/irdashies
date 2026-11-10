@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import {
   BaseWidgetSettings,
   DEFAULT_SESSION_KEYS,
@@ -25,7 +26,7 @@ export const SessionVisibility = ({
       {sessions.map((key) => (
         <SettingToggleRow
           key={key}
-          title={SESSION_VISIBILITY_LABELS[key]}
+          title={t(SESSION_VISIBILITY_LABELS[key])}
           enabled={sessionVisibility[key] ?? true}
           onToggle={(enabled) =>
             handleConfigChange({

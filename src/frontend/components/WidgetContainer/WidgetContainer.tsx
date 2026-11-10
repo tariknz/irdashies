@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import {
   memo,
   useCallback,
@@ -238,14 +239,18 @@ export const WidgetContainer = memo(
               {/* Label */}
               <div className="absolute top-0 right-0 py-1 px-2 bg-sky-500 text-white text-sm flex items-center gap-1 cursor-move">
                 <ResizeIcon size={14} />
-                <span>{widgetName}</span>
+                <span>{t(widgetName)}</span>
                 {onOpenSettings && (
                   <button
                     className="p-0.5 hover:bg-sky-600 rounded"
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={() => onOpenSettings(id)}
-                    title={`Open settings for ${widgetName}`}
-                    aria-label={`Open settings for ${widgetName}`}
+                    title={t('Open settings for {widgetName}', {
+                      widgetName: t(widgetName),
+                    })}
+                    aria-label={t('Open settings for {widgetName}', {
+                      widgetName: t(widgetName),
+                    })}
                   >
                     <GearIcon size={14} />
                   </button>
@@ -255,8 +260,12 @@ export const WidgetContainer = memo(
                     className="p-0.5 hover:bg-sky-600 rounded"
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={() => onDisable(id)}
-                    title={`Disable ${widgetName}`}
-                    aria-label={`Disable ${widgetName}`}
+                    title={t('Disable {widgetName}', {
+                      widgetName: t(widgetName),
+                    })}
+                    aria-label={t('Disable {widgetName}', {
+                      widgetName: t(widgetName),
+                    })}
                   >
                     <XIcon size={14} />
                   </button>

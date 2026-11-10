@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { memo } from 'react';
 import { PathIcon } from '@phosphor-icons/react';
 
@@ -15,9 +16,9 @@ export const WeatherTrackRubbered = memo(
             <PathIcon size={12} className="flex-none text-white/50" />
             <div
               className="text-sm font-medium capitalize truncate"
-              title={trackRubbered ?? 'N/A'}
+              title={t(trackRubbered) ?? t('N/A')}
             >
-              {trackRubbered ?? 'N/A'}
+              {t(trackRubbered) ?? t('N/A')}
             </div>
           </div>
         </div>
@@ -29,12 +30,14 @@ export const WeatherTrackRubbered = memo(
         <div className="bg-slate-800/70 px-2 py-1 rounded-sm min-w-0">
           <div className="flex items-center gap-x-1.5 text-sm">
             <PathIcon size={12} className="flex-none text-white/50" />
-            <span className="truncate min-w-0 text-white/60">Rubber</span>
+            <span className="truncate min-w-0 text-white/60">
+              {t('Rubber')}
+            </span>
             <div
               className="flex-none whitespace-nowrap text-right font-medium capitalize"
-              title={trackRubbered ?? 'N/A'}
+              title={t(trackRubbered) ?? t('N/A')}
             >
-              {trackRubbered ?? 'N/A'}
+              {t(trackRubbered) ?? t('N/A')}
             </div>
           </div>
         </div>
@@ -45,12 +48,12 @@ export const WeatherTrackRubbered = memo(
       <div className="bg-slate-800/70 p-2 rounded-sm w-full min-w-0">
         <div className="flex flex-row gap-x-2 items-center text-sm">
           <PathIcon className="flex-none" />
-          <span className="flex-none @max-[160px]:hidden">Rubber</span>
+          <span className="flex-none @max-[160px]:hidden">{t('Rubber')}</span>
           <div
             className="flex-1 min-w-0 truncate text-right capitalize"
-            title={trackRubbered ?? 'N/A'}
+            title={t(trackRubbered) ?? t('N/A')}
           >
-            {trackRubbered ?? 'N/A'}
+            {t(trackRubbered) ?? t('N/A')}
           </div>
         </div>
       </div>

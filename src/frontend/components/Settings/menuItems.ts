@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import {
   SlidersHorizontalIcon,
   UsersIcon,
@@ -108,12 +109,13 @@ export const bottomItems: MenuItem[] = [
 ];
 
 /**
- * Friendly label for a widget given its type (falls back to the raw type when
- * the widget isn't in the settings menu).
+ * Friendly label for a widget given its type, in the active language (falls
+ * back to the raw type when the widget isn't in the settings menu). Call it
+ * while rendering, not at module scope.
  */
 export function widgetLabel(widgetType: string): string {
-  return (
+  return t(
     widgetItems.find((item) => item.widgetType === widgetType)?.label ??
-    widgetType
+      widgetType
   );
 }

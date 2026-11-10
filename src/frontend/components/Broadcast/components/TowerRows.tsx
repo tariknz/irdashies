@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import {
   CaretDownIcon,
   CaretUpIcon,
@@ -57,7 +58,7 @@ const StatusBadges = ({ standing }: { standing: Standings }) => (
   <>
     {standing.repair && (
       <span
-        title="Repair"
+        title={t('Repair')}
         className="size-3.5 rounded-full border-2 border-black bg-orange-500"
       />
     )}
@@ -189,7 +190,7 @@ export const ClassHeader = ({
           key={page.kind}
           className="animate-broadcast-enter text-xs text-white/70"
         >
-          {label}
+          {t(label)}
         </span>
       )}
     </div>

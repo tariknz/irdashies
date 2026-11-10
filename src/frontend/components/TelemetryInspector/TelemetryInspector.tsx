@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import {
   useTelemetryStore,
   useDashboard,
@@ -121,7 +122,7 @@ const PropertyRow = ({ label, path, source }: PropertyRowProps) => {
   return (
     <div className="flex justify-between items-center py-0.5 border-b border-slate-700/50 last:border-b-0">
       <span className="text-slate-400 text-xs truncate mr-2" title={path}>
-        {label}
+        {t(label)}
       </span>
       <span
         className="text-white text-xs font-mono text-right"
@@ -154,9 +155,9 @@ export const TelemetryInspector = (config?: TelemetryInspectorConfig) => {
         }}
       >
         <div className="text-slate-400 text-xs text-center">
-          No properties configured.
+          {t('No properties configured.')}
           <br />
-          Add properties in widget settings.
+          {t('Add properties in widget settings.')}
         </div>
       </div>
     );
@@ -170,7 +171,7 @@ export const TelemetryInspector = (config?: TelemetryInspectorConfig) => {
       }}
     >
       <div className="text-slate-300 text-xs font-semibold mb-1 border-b border-slate-600 pb-1">
-        Telemetry Inspector
+        {t('Telemetry Inspector')}
       </div>
       <div className="flex flex-col">
         {properties.map((prop, index) => (

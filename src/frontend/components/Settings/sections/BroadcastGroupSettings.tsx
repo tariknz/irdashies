@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useDashboard } from '@irdashies/context';
@@ -136,8 +137,8 @@ export const BroadcastGroupSettings = ({
         {transition !== 'random' && (
           <button
             type="button"
-            title="Changed: click to reset"
-            aria-label="Reset transition"
+            title={t('Changed: click to reset')}
+            aria-label={t('Reset transition')}
             className="absolute -left-2 -top-0.5 flex h-6 w-6 items-center justify-center rounded group"
             onClick={() => setTransition('random')}
           >
@@ -145,26 +146,29 @@ export const BroadcastGroupSettings = ({
           </button>
         )}
         <SettingSelectRow<BroadcastTransition>
-          title="Transition"
-          description="How every module animates: tower page changes, ticker views, and events, weather and podium cards popping up. Random never uses the same one twice in a row."
+          title={t('Transition')}
+          description={t(
+            'How every module animates: tower page changes, ticker views, and events, weather and podium cards popping up. Random never uses the same one twice in a row.'
+          )}
           value={transition}
           options={TRANSITION_OPTIONS}
           onChange={setTransition}
         />
       </div>
       <p className="mb-4 flex-none border-b border-slate-700/50 pb-4 text-sm text-slate-400">
-        Add each module to OBS as its own Browser Source, so each gets its own
-        size and place on the stream:{' '}
+        {t(
+          'Add each module to OBS as its own Browser Source, so each gets its own size and place on the stream:'
+        )}{' '}
         <span className="select-all font-mono text-slate-300">{obsUrl}</span>
       </p>
       <div
         className={`grid items-start gap-5 ${sharedPreview ? '' : 'xl:grid-cols-[minmax(0,1fr)_288px]'}`}
       >
         <nav
-          aria-label="Broadcast modules"
+          aria-label={t('Broadcast modules')}
           className={`flex flex-wrap gap-1 border-b border-slate-700 pb-1 ${sharedPreview ? '' : 'xl:col-span-2'}`}
         >
-          <div className="sr-only">Modules</div>
+          <div className="sr-only">{t('Modules')}</div>
           {MODULES.map(({ type, label }) => (
             <Link
               key={type}
@@ -177,15 +181,15 @@ export const BroadcastGroupSettings = ({
               }`}
             >
               <span
-                title={isEnabled(type) ? 'On' : 'Off'}
+                title={isEnabled(type) ? t('On') : t('Off')}
                 className={`h-1.5 w-1.5 shrink-0 rounded-full ${
                   isEnabled(type) ? 'bg-green-400' : 'bg-settings-control'
                 }`}
               />
-              <span className="flex-1">{label}</span>
+              <span className="flex-1">{t(label)}</span>
               {isChanged(type) && (
                 <span
-                  title="Changed"
+                  title={t('Changed')}
                   className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-400"
                 />
               )}
@@ -200,7 +204,7 @@ export const BroadcastGroupSettings = ({
                 className="settings-button"
                 onClick={resetModule}
               >
-                Reset section
+                {t('Reset section')}
               </button>
             </div>
           )}
@@ -227,10 +231,10 @@ export const BroadcastGroupSettings = ({
     >
       <div className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-700 pb-5 pt-1">
         <h2 className="text-xl font-semibold tracking-tight text-white">
-          Broadcast
+          {t('Broadcast')}
         </h2>
         <ToggleSwitch
-          label="All modules"
+          label={t('All modules')}
           enabled={anyEnabled}
           onToggle={setAllEnabled}
         />

@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { SettingsSection } from '../components/SettingSection';
 import { useState } from 'react';
 import { getWidgetDefaultConfig } from '@irdashies/types';
@@ -108,15 +109,17 @@ export const TelemetryInspectorSettings = ({
   });
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   return (
     <BaseSettingsSection
       headingLevel={embedded ? 'h3' : 'h2'}
       disableInternalScroll={embedded}
-      title="Telemetry Inspector"
-      description="Debug widget to display raw telemetry and session values. Add properties to watch."
+      title={t('Telemetry Inspector')}
+      description={t(
+        'Debug widget to display raw telemetry and session values. Add properties to watch.'
+      )}
       settings={settings}
       onSettingsChange={(s) => setSettings(s)}
       widgetId={SETTING_ID}
@@ -146,13 +149,15 @@ export const TelemetryInspectorSettings = ({
           <div className="space-y-4">
             {/* Current Properties */}
             <SettingsSection
-              title={`Watched Properties (${properties.length})`}
+              title={t('Watched Properties ({length})', {
+                length: properties.length,
+              })}
               headingLevel={GroupHeading}
               scaleWidgetId={SETTING_ID}
             >
               {properties.length === 0 ? (
                 <p className="text-sm text-slate-400">
-                  No properties configured. Add some below.
+                  {t('No properties configured. Add some below.')}
                 </p>
               ) : (
                 <div className="space-y-1 max-h-48 overflow-y-auto">
@@ -183,7 +188,9 @@ export const TelemetryInspectorSettings = ({
                       <button
                         onClick={() => removeProperty(index)}
                         type="button"
-                        aria-label={`Remove ${prop.label || prop.path}`}
+                        aria-label={t('Remove {value}', {
+                          value: prop.label || prop.path,
+                        })}
                         className="settings-button h-9 w-9 shrink-0 p-0"
                       >
                         <TrashIcon size={16} className="text-red-400" />
@@ -197,11 +204,11 @@ export const TelemetryInspectorSettings = ({
             {/* Add Custom Property */}
             <div className="space-y-2 border-t border-settings-boundary pt-4">
               <GroupHeading className="text-sm font-semibold text-slate-200">
-                Add Custom Property
+                {t('Add Custom Property')}
               </GroupHeading>
               <div className="grid grid-cols-2 items-end gap-3">
                 <label className="flex min-w-0 flex-col gap-1 text-sm text-slate-300">
-                  Source
+                  {t('Source')}
                   <select
                     value={newProperty.source}
                     onChange={(e) =>
@@ -212,15 +219,15 @@ export const TelemetryInspectorSettings = ({
                     }
                     className="settings-field"
                   >
-                    <option value="telemetry">Telemetry</option>
-                    <option value="session">Session</option>
+                    <option value="telemetry">{t('Telemetry')}</option>
+                    <option value="session">{t('Session')}</option>
                   </select>
                 </label>
                 <label className="flex min-w-0 flex-col gap-1 text-sm text-slate-300">
-                  Property path
+                  {t('Property path')}
                   <input
                     type="text"
-                    placeholder="Property path (e.g., Speed)"
+                    placeholder={t('Property path (e.g., Speed)')}
                     value={newProperty.path}
                     onChange={(e) =>
                       setNewProperty({ ...newProperty, path: e.target.value })
@@ -229,10 +236,10 @@ export const TelemetryInspectorSettings = ({
                   />
                 </label>
                 <label className="flex min-w-0 flex-col gap-1 text-sm text-slate-300">
-                  Label (optional)
+                  {t('Label (optional)')}
                   <input
                     type="text"
-                    placeholder="Label (optional)"
+                    placeholder={t('Label (optional)')}
                     value={newProperty.label ?? ''}
                     onChange={(e) =>
                       setNewProperty({ ...newProperty, label: e.target.value })
@@ -250,7 +257,7 @@ export const TelemetryInspectorSettings = ({
                   type="button"
                   className="settings-button-primary"
                 >
-                  <PlusIcon size={16} /> Add property
+                  <PlusIcon size={16} /> {t('Add property')}
                 </button>
               </div>
             </div>
@@ -258,7 +265,7 @@ export const TelemetryInspectorSettings = ({
             {/* Quick Add Common Properties */}
             <div className="space-y-2 border-t border-settings-boundary pt-4">
               <GroupHeading className="text-sm font-semibold text-slate-200">
-                Quick Add - Telemetry
+                {t('Quick Add - Telemetry')}
               </GroupHeading>
               <div className="flex flex-wrap gap-1">
                 {commonTelemetryProperties.map((prop) => (
@@ -278,7 +285,7 @@ export const TelemetryInspectorSettings = ({
                     )}
                     className="settings-button"
                   >
-                    {prop.label}
+                    {t(prop.label)}
                   </button>
                 ))}
               </div>
@@ -286,7 +293,7 @@ export const TelemetryInspectorSettings = ({
 
             <div className="space-y-2">
               <GroupHeading className="text-sm font-semibold text-slate-200">
-                Quick Add - Session
+                {t('Quick Add - Session')}
               </GroupHeading>
               <div className="flex flex-wrap gap-1">
                 {commonSessionProperties.map((prop) => (
@@ -306,7 +313,7 @@ export const TelemetryInspectorSettings = ({
                     )}
                     className="settings-button"
                   >
-                    {prop.label}
+                    {t(prop.label)}
                   </button>
                 ))}
               </div>
@@ -314,11 +321,13 @@ export const TelemetryInspectorSettings = ({
 
             {/* Background Opacity */}
             <div className="flex items-center justify-between border-t border-settings-boundary pt-4">
-              <span className="text-sm text-slate-300">Background Opacity</span>
+              <span className="text-sm text-slate-300">
+                {t('Background Opacity')}
+              </span>
               <div className="flex items-center gap-2">
                 <input
                   type="range"
-                  aria-label="Background Opacity"
+                  aria-label={t('Background Opacity')}
                   min="0"
                   max="100"
                   value={settings.config.background?.opacity ?? 80}

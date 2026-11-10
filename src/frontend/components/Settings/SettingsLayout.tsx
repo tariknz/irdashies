@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { StorageStatusNotice } from './StorageStatus/StorageStatusNotice';
 import logo from '../../assets/icons/logo.svg';
 import { useEffect, useRef, useState } from 'react';
@@ -76,7 +77,7 @@ export const SettingsLayout = () => {
   };
 
   if (!currentDashboard) {
-    return <>Loading...</>;
+    return <>{t('Loading...')}</>;
   }
 
   return (
@@ -90,14 +91,14 @@ export const SettingsLayout = () => {
           }}
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus:rounded-md focus:bg-slate-800 focus:px-4 focus:py-2 focus:text-slate-200 [-webkit-app-region:no-drag]"
         >
-          Skip to settings
+          {t('Skip to settings')}
         </a>
         {!appPage && (
           <Link
             to={lastApp.current}
             className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus:rounded-md focus:bg-slate-800 focus:px-4 focus:py-2 focus:text-slate-200 [-webkit-app-region:no-drag]"
           >
-            Go to App settings
+            {t('Go to App settings')}
           </Link>
         )}
         <ReleaseNotesAnnouncement />
@@ -115,12 +116,13 @@ export const SettingsLayout = () => {
           }}
         >
           <h1 className="sr-only">
-            {appPage ? 'App settings' : 'Overlay Settings'}
+            {appPage ? t('App settings') : t('Overlay Settings')}
           </h1>
           <div className="flex min-w-0 items-center gap-3">
             <img src={logo} alt="" className="h-7 w-7 shrink-0" />
             <span className="hidden shrink-0 text-lg font-semibold tracking-[-0.04em] text-white md:inline">
-              ir<span className="text-red-600">Dashies</span>
+              {t('ir')}
+              <span className="text-red-600">{t('Dashies')}</span>
             </span>
             <HeaderProfilePicker
               onManage={() => {
@@ -135,7 +137,9 @@ export const SettingsLayout = () => {
                   className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400"
                   aria-hidden="true"
                 />
-                <span className="truncate">{simulatorName} connected</span>
+                <span className="truncate">
+                  {simulatorName} {t('connected')}
+                </span>
               </>
             )}
           </div>
@@ -143,25 +147,27 @@ export const SettingsLayout = () => {
             <button
               type="button"
               onClick={toggleDemoMode}
-              aria-label={isDemoMode ? 'Exit Demo' : 'Demo Mode'}
-              title={isDemoMode ? 'Exit Demo' : 'Demo Mode'}
+              aria-label={isDemoMode ? t('Exit Demo') : t('Demo Mode')}
+              title={isDemoMode ? t('Exit Demo') : t('Demo Mode')}
               aria-pressed={isDemoMode}
               className="flex min-h-8 items-center gap-2 rounded-md border border-settings-boundary bg-slate-800 px-2 py-1 text-sm font-semibold transition-colors hover:border-accent-400 lg:px-3 aria-pressed:border-accent-400 aria-pressed:text-accent-300"
             >
               <PresentationChartIcon size={16} weight="bold" />
               <span className="hidden lg:inline">
-                {isDemoMode ? 'Exit Demo' : 'Demo Mode'}
+                {isDemoMode ? t('Exit Demo') : t('Demo Mode')}
               </span>
             </button>
             <button
               type="button"
               onClick={handleToggleLock}
-              aria-label="Edit Layout"
-              title={`Edit Layout (${editModeAccelerator})`}
+              aria-label={t('Edit Layout')}
+              title={t('Edit Layout ({editModeAccelerator})', {
+                editModeAccelerator,
+              })}
               className="flex min-h-8 items-center gap-2 rounded-md border border-settings-boundary bg-slate-800 px-2 py-1 text-sm font-semibold transition-colors hover:border-accent-400 lg:px-3"
             >
               <LockIcon size={16} weight="bold" />
-              <span className="hidden lg:inline">Edit Layout</span>
+              <span className="hidden lg:inline">{t('Edit Layout')}</span>
               <kbd className="ml-1 hidden rounded bg-black/20 px-1 text-xs lg:inline">
                 {editModeAccelerator}
               </kbd>
@@ -181,7 +187,9 @@ export const SettingsLayout = () => {
             id="settings-content"
             ref={mainRef}
             tabIndex={-1}
-            aria-label={appPage ? 'App settings page' : 'Overlay settings page'}
+            aria-label={
+              appPage ? t('App settings page') : t('Overlay settings page')
+            }
             className="min-w-0 flex-1 bg-slate-900 px-4 pt-4 pb-3 focus:outline-none lg:px-7 lg:pt-7"
           >
             <div

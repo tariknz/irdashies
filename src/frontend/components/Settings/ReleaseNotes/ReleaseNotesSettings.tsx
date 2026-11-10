@@ -1,3 +1,4 @@
+import { t } from '@irdashies/frontend/i18n';
 import { useEffect, useState } from 'react';
 import { useReleaseNotesStatus } from './ReleaseNotesStatusContext';
 import { ReleaseNotesPanel } from './ReleaseNotesPanel';
@@ -35,13 +36,13 @@ export const ReleaseNotesSettings = () => {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <h2 className="mb-5 shrink-0 border-b border-slate-700 pb-5 pt-1 text-xl font-semibold tracking-tight text-white">
-        Release notes
+        {t('Release notes')}
       </h2>
       {error && (
         <p role="alert" className="mb-4 text-amber-200">
-          Could not load or save release notes preferences.{' '}
+          {t('Could not load or save release notes preferences.')}{' '}
           <button onClick={loadStatus} className="underline">
-            Try again
+            {t('Try again')}
           </button>
         </p>
       )}
@@ -55,12 +56,13 @@ export const ReleaseNotesSettings = () => {
               onChange={(event) => void toggle(event.target.checked)}
               className="size-4 accent-accent-500"
             />
-            Show release notes after updates
+            {t('Show release notes after updates')}
           </label>
           {status.simulation && (
             <p className="mb-4 text-amber-200">
-              Local upgrade simulation. Release note preferences and dismissal
-              are saved separately.
+              {t(
+                'Local upgrade simulation. Release note preferences and dismissal are saved separately.'
+              )}
             </p>
           )}
           {version && (
@@ -75,7 +77,7 @@ export const ReleaseNotesSettings = () => {
                 key={version}
                 className="min-w-0 flex-1 overflow-y-auto pr-1"
                 role="region"
-                aria-label={`Release notes for v${version}`}
+                aria-label={t('Release notes for v{version}', { version })}
               >
                 <ReleaseNotesPanel
                   version={version}
@@ -87,7 +89,7 @@ export const ReleaseNotesSettings = () => {
           )}
         </>
       ) : (
-        !error && <p role="status">Loading release notes…</p>
+        !error && <p role="status">{t('Loading release notes…')}</p>
       )}
     </div>
   );
