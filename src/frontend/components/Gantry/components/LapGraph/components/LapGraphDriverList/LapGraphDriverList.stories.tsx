@@ -1,21 +1,22 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useMemo, useState } from 'react';
+import { GantryPanel } from '../../../GantryPanel/GantryPanel';
 import { LapGraphDriverList } from './LapGraphDriverList';
 import type { DriverListEntry } from './LapGraphDriverList';
 
 const SURNAMES = [
-  'Verstappen',
-  'Hamilton',
-  'Leclerc',
-  'Norris',
-  'Russell',
-  'Alonso',
-  'Sainz',
-  'Piastri',
-  'Gasly',
-  'Ocon',
-  'Hulkenberg',
-  'Tsunoda',
+  'Ashford',
+  'Brandt',
+  'Castell',
+  'Doyle',
+  'Eriksen',
+  'Falkner',
+  'Garrity',
+  'Holloway',
+  'Iverson',
+  'Jarrett',
+  'Kessler',
+  'Lindqvist',
 ];
 
 interface DriverListArgs {
@@ -58,25 +59,29 @@ const Harness = ({ args }: HarnessProps) => {
   const [hovered, setHovered] = useState<number | null>(args.focusedCarIdx);
 
   return (
-    <div className="h-screen flex bg-slate-900 text-xs p-3">
-      <div className="flex-1 flex items-center justify-center text-slate-600">
+    <div className="flex h-screen gap-3 bg-settings-page p-3 text-white">
+      <div className="settings-shell flex flex-1 items-center justify-center text-sm text-slate-400">
         Chart goes here
       </div>
-      <LapGraphDriverList
-        drivers={drivers}
-        classColorValue={args.classColorValue}
-        isMultiClass={args.isMultiClass}
-        shownCarIdxs={shown}
-        focusedCarIdx={hovered}
-        onToggle={(carIdx) =>
-          setShown((current) =>
-            current.includes(carIdx)
-              ? current.filter((idx) => idx !== carIdx)
-              : [...current, carIdx]
-          )
-        }
-        onHover={setHovered}
-      />
+      <div className="w-72 shrink-0">
+        <GantryPanel title="Drivers">
+          <LapGraphDriverList
+            drivers={drivers}
+            classColorValue={args.classColorValue}
+            isMultiClass={args.isMultiClass}
+            shownCarIdxs={shown}
+            focusedCarIdx={hovered}
+            onToggle={(carIdx) =>
+              setShown((current) =>
+                current.includes(carIdx)
+                  ? current.filter((idx) => idx !== carIdx)
+                  : [...current, carIdx]
+              )
+            }
+            onHover={setHovered}
+          />
+        </GantryPanel>
+      </div>
     </div>
   );
 };
