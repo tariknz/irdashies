@@ -20,8 +20,8 @@ export interface InputTraceSettings {
   maxSamples: number;
 }
 
-export const TRACE_WIDTH = 400;
-export const TRACE_HEIGHT = 100;
+const TRACE_WIDTH = 400;
+const TRACE_HEIGHT = 100;
 const GRID_TICKS = [0, 0.25, 0.5, 0.75, 1];
 const GRID_DASH = [2, 2];
 const SOLID_DASH: number[] = [];
@@ -153,6 +153,22 @@ export class InputTraceDrawing {
     this.ctx.stroke();
   }
 
+  /** Draw the reference grid before the input curves. */
+  private drawGrid(): void {
+    const { ctx } = this;
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#666';
+    ctx.setLineDash(GRID_DASH);
+    ctx.beginPath();
+    for (const tick of GRID_TICKS) {
+      const y = this.y(tick);
+      ctx.moveTo(0, y);
+      ctx.lineTo(TRACE_WIDTH, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash(SOLID_DASH);
+  }
+
   /** Painting never advances history: resizes and scale changes only repaint. */
   paint = (): void => {
     const { ctx, settings } = this;
@@ -170,17 +186,7 @@ export class InputTraceDrawing {
     ctx.lineCap = 'butt';
     ctx.lineJoin = 'miter';
     ctx.miterLimit = 4;
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = '#666';
-    ctx.setLineDash(GRID_DASH);
-    ctx.beginPath();
-    for (const tick of GRID_TICKS) {
-      const y = this.y(tick);
-      ctx.moveTo(0, y);
-      ctx.lineTo(TRACE_WIDTH, y);
-    }
-    ctx.stroke();
-    ctx.setLineDash(SOLID_DASH);
+    this.drawGrid();
 
     if (settings.includeSteer) this.stroke(this.steer, STEER_COLOR, true);
     const visibleStroke = settings.strokeWidth > 0;
@@ -189,26 +195,30 @@ export class InputTraceDrawing {
       this.stroke(this.clutch, CLUTCH_COLOR);
     if (visibleStroke && settings.includeThrottle)
       this.stroke(this.throttle, THROTTLE_COLOR);
-    if (settings.includeBrake) {
-      if (settings.includeAbs && settings.absStyle === 'bar') {
-        ctx.beginPath();
-        this.absArea(this.indices);
-        ctx.fillStyle = ABS_COLOR;
-        ctx.globalAlpha = 0.3;
-        ctx.fill();
-        ctx.globalAlpha = 1;
-      }
-      if (visibleStroke) this.stroke(this.brake, BRAKE_COLOR);
-      if (visibleStroke && settings.includeAbs) {
-        ctx.beginPath();
-        this.absLine(this.indices);
-        ctx.strokeStyle = ABS_COLOR;
-        ctx.lineWidth =
-          settings.absStyle === 'bar'
-            ? settings.strokeWidth
-            : Math.round(settings.strokeWidth * 1.67);
-        ctx.stroke();
-      }
-    }
+    if (settings.includeBrake) this.drawBrake(visibleStroke);
   };
+
+  /** Keep the ABS fill below the brake curve and its highlight above it. */
+  private drawBrake(visibleStroke: boolean): void {
+    const { ctx, settings } = this;
+    if (settings.includeAbs && settings.absStyle === 'bar') {
+      ctx.beginPath();
+      this.absArea(this.indices);
+      ctx.fillStyle = ABS_COLOR;
+      ctx.globalAlpha = 0.3;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    if (visibleStroke) this.stroke(this.brake, BRAKE_COLOR);
+    if (visibleStroke && settings.includeAbs) {
+      ctx.beginPath();
+      this.absLine(this.indices);
+      ctx.strokeStyle = ABS_COLOR;
+      ctx.lineWidth =
+        settings.absStyle === 'bar'
+          ? settings.strokeWidth
+          : Math.round(settings.strokeWidth * 1.67);
+      ctx.stroke();
+    }
+  }
 }

@@ -48,25 +48,16 @@ export function createInputSelector(config: InputConfig) {
   const steerWanted = steer || (trace && (config.trace.includeSteer ?? true));
   const gearWanted = gear || !!config.gearFlash?.enabled;
   const speedWanted = gear && config.gear.showspeed;
+  const brakeKey = config.useRawValues ? 'brakeRaw' : 'brake';
+  const throttleKey = config.useRawValues ? 'throttleRaw' : 'throttle';
+  const clutchKey = config.useRawValues ? 'clutchRaw' : 'clutch';
   let previous: InputValues | undefined;
   let previousSpeedText: string | undefined;
 
   return (snapshot: DriverControlsSnapshot): InputValues => {
-    const brake = brakeWanted
-      ? config.useRawValues
-        ? snapshot.brakeRaw
-        : snapshot.brake
-      : undefined;
-    const throttle = throttleWanted
-      ? config.useRawValues
-        ? snapshot.throttleRaw
-        : snapshot.throttle
-      : undefined;
-    const clutchRaw = clutchWanted
-      ? config.useRawValues
-        ? snapshot.clutchRaw
-        : snapshot.clutch
-      : undefined;
+    const brake = brakeWanted ? snapshot[brakeKey] : undefined;
+    const throttle = throttleWanted ? snapshot[throttleKey] : undefined;
+    const clutchRaw = clutchWanted ? snapshot[clutchKey] : undefined;
     const clutch = clutchRaw === undefined ? undefined : 1 - clutchRaw;
     const angle = steerWanted ? snapshot.steeringWheelAngle : undefined;
     const brakeAbsActive = absWanted ? snapshot.brakeAbsActive : undefined;

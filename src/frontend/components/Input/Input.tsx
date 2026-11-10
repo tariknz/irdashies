@@ -5,9 +5,13 @@ import { useGearFlash } from './hooks/useGearFlash';
 import { useInputs } from './hooks/useInputs';
 import { useDrivingState, useSessionVisibility } from '@irdashies/context';
 import { useBlink, useShiftFlashActive } from '@irdashies/domain/shiftLight';
-import type { InputWidgetSettings } from '@irdashies/types';
+import type { InputConfig } from '@irdashies/types';
 
-type InputWidgetProps = Partial<InputWidgetSettings['config']>;
+type InputWidgetProps = Partial<InputConfig>;
+
+interface VisibleInputProps {
+  settings: InputConfig;
+}
 
 /** Pick the effective config and render the widget only while it is visible. */
 export const Input = (props: InputWidgetProps) => {
@@ -25,36 +29,31 @@ export const Input = (props: InputWidgetProps) => {
   return <VisibleInput settings={settings} />;
 };
 
-// Mount high-frequency consumers only while content is visible. The parent
-// keeps its lightweight track/session subscriptions so it can show us again.
-/** Subscribes to driver controls and flash sources; lives only while visible. */
-const VisibleInput = memo(
-  ({ settings }: { settings: InputWidgetSettings['config'] }) => {
-    const inputs = useInputs(settings);
-    const shiftFlash = settings?.shiftFlash;
-    const flashActive = useShiftFlashActive(
-      !!shiftFlash?.enabled,
-      shiftFlash?.source ?? 'redline'
-    );
-    const flashOn = useBlink(flashActive);
-    const gearFlash = settings?.gearFlash;
-    const gearFlashColor = useGearFlash(
-      inputs.gear,
-      !!gearFlash?.enabled,
-      gearFlash?.upColor ?? '#22c55e',
-      gearFlash?.downColor ?? '#ef4444'
-    );
+/** Unmount high-frequency consumers while the parent tracks visibility. */
+const VisibleInput = memo(({ settings }: VisibleInputProps) => {
+  const inputs = useInputs(settings);
+  const { shiftFlash, gearFlash } = settings;
+  const flashActive = useShiftFlashActive(
+    !!shiftFlash?.enabled,
+    shiftFlash?.source ?? 'redline'
+  );
+  const flashOn = useBlink(flashActive);
+  const gearFlashColor = useGearFlash(
+    inputs.gear,
+    !!gearFlash?.enabled,
+    gearFlash?.upColor ?? '#22c55e',
+    gearFlash?.downColor ?? '#ef4444'
+  );
 
-    return (
-      <div className="h-full flex flex-col">
-        <InputContainer
-          {...inputs}
-          settings={settings}
-          flashColor={flashOn ? shiftFlash?.color : undefined}
-          gearFlashColor={gearFlashColor}
-        />
-      </div>
-    );
-  }
-);
+  return (
+    <div className="h-full flex flex-col">
+      <InputContainer
+        {...inputs}
+        settings={settings}
+        flashColor={flashOn ? shiftFlash?.color : undefined}
+        gearFlashColor={gearFlashColor}
+      />
+    </div>
+  );
+});
 VisibleInput.displayName = 'VisibleInput';
