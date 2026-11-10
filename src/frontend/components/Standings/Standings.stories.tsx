@@ -1435,11 +1435,18 @@ const AVG_LAP_TIME_SNAPSHOT = (() => {
   const lapTimes = Array.from({ length: NUM_CARS }, (_, idx) =>
     DEMO_LAP_TIMES[idx] !== undefined ? DEMO_LAP_TIMES[idx] : 0
   );
-  const variations = [0, 0.3, -0.2, 0.5, -0.4, 0.1];
+  const variations = [0, 0.3, -0.2, 30, -0.4, 0.1];
   return {
     lapTimes,
     lapTimeHistory: lapTimes.map((base) =>
       base > 0 ? variations.map((variation) => base + variation) : []
+    ),
+    cleanLapTimeHistory: lapTimes.map((base) =>
+      base > 0
+        ? variations
+            .filter((_, idx) => idx !== 3)
+            .map((variation) => base + variation)
+        : []
     ),
     sessionNum: 0,
     version: 1,
@@ -1570,6 +1577,11 @@ export const WithFlags: Story = {
 
 export const AvgLapTime: Story = {
   name: 'Avg Lap Time Column',
+  args: { lapsToAverage: 5, excludePitLaps: false },
+  argTypes: {
+    lapsToAverage: { control: { type: 'number', min: 1, max: 100, step: 1 } },
+    excludePitLaps: { control: 'boolean' },
+  },
   render: () => <Standings />,
   decorators: [
     ChannelSnapshotDecorator({
@@ -1578,21 +1590,28 @@ export const AvgLapTime: Story = {
       'track-state.snapshot': trackStateStorySnapshot,
       'session-bar.snapshot': sessionBarStorySnapshot,
     }),
-    TelemetryDecoratorWithConfig(undefined, {
-      standings: {
-        avgLapTime: { enabled: true, numLaps: 5, timeFormat: 'mixed' },
-        lapTimeDeltas: { enabled: false, numLaps: 3 },
-        displayOrder: [
-          'position',
-          'carNumber',
-          'driverName',
-          'gap',
-          'interval',
-          'lastTime',
-          'avgLapTime',
-        ],
-      },
-    }),
+    (Story, context) =>
+      TelemetryDecoratorWithConfig(undefined, {
+        standings: {
+          avgLapTime: {
+            enabled: true,
+            numLaps: (context.args as { lapsToAverage: number }).lapsToAverage,
+            excludePitLaps: (context.args as { excludePitLaps: boolean })
+              .excludePitLaps,
+            timeFormat: 'mixed',
+          },
+          lapTimeDeltas: { enabled: false, numLaps: 3 },
+          displayOrder: [
+            'position',
+            'carNumber',
+            'driverName',
+            'gap',
+            'interval',
+            'lastTime',
+            'avgLapTime',
+          ],
+        },
+      })(Story, context),
   ],
 };
 

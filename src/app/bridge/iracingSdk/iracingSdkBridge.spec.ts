@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Session } from '@irdashies/types';
+import type { Session, Telemetry } from '@irdashies/types';
 
 const mockGetSessionData = vi.hoisted(() => vi.fn());
 const mockWaitForData = vi.hoisted(() => vi.fn());
+const mockReady = vi.hoisted(() => vi.fn());
+const mockGetTelemetry = vi.hoisted(() => vi.fn());
+const mockStopReporting = vi.hoisted(() => vi.fn());
 const mockStopSDK = vi.hoisted(() => vi.fn());
 const mockSdkState = vi.hoisted(() => ({
   sessionVersion: 1,
@@ -20,9 +23,9 @@ vi.mock('../../irsdk', () => ({
       return mockSdkState.sessionVersion;
     }
 
-    ready = vi.fn().mockResolvedValue(true);
+    ready = mockReady;
     waitForData = mockWaitForData;
-    getTelemetry = vi.fn().mockReturnValue(null);
+    getTelemetry = mockGetTelemetry;
     getSessionData = mockGetSessionData;
     stopSDK = mockStopSDK;
   },
@@ -31,7 +34,7 @@ vi.mock('../../irsdk', () => ({
 vi.mock('../../perfMetrics', () => ({
   TelemetryPerfMetrics: class {
     startReporting = vi.fn();
-    stopReporting = vi.fn();
+    stopReporting = mockStopReporting;
     markStart = vi.fn();
     markEnd = vi.fn();
     tick = vi.fn();
@@ -52,6 +55,8 @@ vi.mock('../../logger', () => ({
   },
 }));
 
+import logger from '../../logger';
+import { createSessionLifecycle } from '../../sessionLifecycle';
 import { publishIRacingSDKEvents } from './iracingSdkBridge';
 
 describe('publishIRacingSDKEvents session polling', () => {
@@ -62,6 +67,11 @@ describe('publishIRacingSDKEvents session polling', () => {
     mockWaitForData.mockReset();
     mockWaitForData.mockReturnValue(true);
     mockStopSDK.mockReset();
+    mockReady.mockReset().mockResolvedValue(true);
+    mockGetTelemetry.mockReset().mockReturnValue(null);
+    mockStopReporting.mockReset();
+    vi.mocked(logger.error).mockClear();
+    offOverlayReady.mockClear();
     mockSdkState.sessionVersion = 1;
     mockSdkState.sessionStatusOK = true;
   });
@@ -76,6 +86,7 @@ describe('publishIRacingSDKEvents session polling', () => {
     onOverlayReady: vi.fn(() => offOverlayReady),
     publishMessage: vi.fn(),
     publishMessageToOverlay: vi.fn(),
+    hasTelemetryInspectorSubscribers: () => false,
   });
 
   it('publishes the running state as soon as the SDK produces data', async () => {
@@ -112,6 +123,89 @@ describe('publishIRacingSDKEvents session polling', () => {
     bridge.stop();
 
     expect(offOverlayReady).toHaveBeenCalledOnce();
+  });
+
+  it('synchronously resets the shared lifecycle once when stopped', async () => {
+    mockGetTelemetry.mockReturnValue({
+      SessionNum: { value: [0] },
+      IsOnTrack: { value: [true] },
+    } as Telemetry);
+    mockGetSessionData.mockReturnValue({
+      SessionInfo: { Sessions: [{ SessionNum: 0, SessionType: 'Practice' }] },
+    } as Session);
+    const lifecycle = createSessionLifecycle();
+    const disconnected = vi.fn();
+    lifecycle.onDisconnect(disconnected);
+    const bridge = await publishIRacingSDKEvents(
+      createOverlayManager() as never,
+      lifecycle
+    );
+    expect(lifecycle.getCurrentState()).toEqual({
+      sessionType: 'Practice',
+      isDriving: true,
+    });
+
+    bridge.stop();
+
+    expect(disconnected).toHaveBeenCalledOnce();
+    expect(lifecycle.getCurrentState()).toEqual({
+      sessionType: undefined,
+      isDriving: undefined,
+    });
+    bridge.stop();
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(disconnected).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('does not disconnect again when stopped during a reconnect delay', async () => {
+    const lifecycle = createSessionLifecycle();
+    const disconnected = vi.fn();
+    lifecycle.onDisconnect(disconnected);
+    const bridge = await publishIRacingSDKEvents(
+      createOverlayManager() as never,
+      lifecycle
+    );
+    mockSdkState.sessionStatusOK = false;
+    mockWaitForData.mockReturnValue(false);
+    await vi.advanceTimersByTimeAsync(40);
+    expect(disconnected).toHaveBeenCalledOnce();
+
+    bridge.stop();
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    expect(disconnected).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('keeps the source disconnected across failures before the first frame', async () => {
+    mockWaitForData.mockImplementation(() => {
+      throw new Error('native failed');
+    });
+    const lifecycle = createSessionLifecycle();
+    const disconnected = vi.fn();
+    lifecycle.onDisconnect(disconnected);
+    const overlayManager = {
+      ...createOverlayManager(),
+      clearLatestSessionData: vi.fn(),
+    };
+    const bridge = await publishIRacingSDKEvents(
+      overlayManager as never,
+      lifecycle
+    );
+    const running = vi.fn();
+    bridge.onRunningState(running);
+
+    // Cross the running-state interval while sessionStatusOK still reads true.
+    await vi.advanceTimersByTimeAsync(6_000);
+
+    expect(mockWaitForData.mock.calls.length).toBeGreaterThan(1);
+    expect(running.mock.calls).toEqual([[false]]);
+    expect(disconnected).not.toHaveBeenCalled();
+    bridge.stop();
+    expect(disconnected).not.toHaveBeenCalled();
+    expect(overlayManager.clearLatestSessionData).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('replays the running state to a subscriber that attaches after the seed', async () => {
@@ -262,5 +356,191 @@ describe('publishIRacingSDKEvents session polling', () => {
     expect(callback).toHaveBeenCalledOnce();
     expect(callback).toHaveBeenCalledWith(session);
     bridge.stop();
+  });
+
+  it('isolates failing telemetry and session subscribers and keeps delivering', async () => {
+    const telemetry = {
+      Speed: { value: [1] },
+    } satisfies Partial<Telemetry>;
+    mockGetTelemetry.mockReturnValue(telemetry);
+    const bridge = await publishIRacingSDKEvents(
+      createOverlayManager() as never
+    );
+    const failingTelemetry = vi.fn(() => {
+      throw new Error('consumer failed');
+    });
+    const failingSession = vi.fn(() => {
+      throw new Error('session failed');
+    });
+    const healthyTelemetry = vi.fn();
+    const healthySession = vi.fn();
+    bridge.onTelemetry(failingTelemetry);
+    bridge.onTelemetry(healthyTelemetry);
+    // Immediate cached delivery is protected too.
+    expect(() => bridge.onSessionData(failingSession)).not.toThrow();
+    bridge.onSessionData(healthySession);
+    mockSdkState.sessionVersion = 2;
+
+    await vi.advanceTimersByTimeAsync(1_100);
+
+    expect(failingTelemetry.mock.calls.length).toBeGreaterThan(1);
+    expect(healthyTelemetry).toHaveBeenCalledTimes(
+      failingTelemetry.mock.calls.length
+    );
+    expect(healthyTelemetry).toHaveBeenLastCalledWith(telemetry);
+    expect(failingSession).toHaveBeenCalledTimes(2);
+    expect(healthySession).toHaveBeenCalledTimes(2);
+    // Persistent subscriber errors do not flood the log on every tick.
+    expect(logger.error).toHaveBeenCalledTimes(2);
+    bridge.stop();
+  });
+
+  it('isolates running-state callbacks during initial delivery and reconnect', async () => {
+    const bridge = await publishIRacingSDKEvents(
+      createOverlayManager() as never
+    );
+    const failing = vi.fn(() => {
+      throw new Error('running-state failed');
+    });
+    const healthy = vi.fn();
+    expect(() => bridge.onRunningState(failing)).not.toThrow();
+    bridge.onRunningState(healthy);
+
+    mockSdkState.sessionStatusOK = false;
+    mockWaitForData.mockReturnValueOnce(false);
+    await vi.advanceTimersByTimeAsync(40);
+    mockSdkState.sessionStatusOK = true;
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(healthy.mock.calls).toEqual([[true], [false], [true]]);
+    expect(failing).toHaveBeenCalledTimes(3);
+    bridge.stop();
+  });
+
+  it.each(['wait', 'read'])(
+    'disconnects and retries after a native %s failure',
+    async (operation) => {
+      const overlayManager = {
+        ...createOverlayManager(),
+        clearLatestSessionData: vi.fn(),
+      };
+      const lifecycle = {
+        _onEnter: vi.fn(),
+        _onTelemetry: vi.fn(),
+        _onSession: vi.fn(),
+        _onDisconnect: vi.fn(),
+      };
+      const bridge = await publishIRacingSDKEvents(
+        overlayManager as never,
+        lifecycle as never
+      );
+      const healthy = vi.fn();
+      bridge.onRunningState(healthy);
+      const operationMock =
+        operation === 'wait' ? mockWaitForData : mockGetTelemetry;
+      operationMock.mockImplementationOnce(() => {
+        throw new Error('native failed');
+      });
+
+      await vi.advanceTimersByTimeAsync(40);
+      expect(lifecycle._onDisconnect).toHaveBeenCalledOnce();
+      expect(overlayManager.clearLatestSessionData).toHaveBeenCalledOnce();
+      const lateSession = vi.fn();
+      bridge.onSessionData(lateSession);
+      expect(lateSession).not.toHaveBeenCalled();
+      const reads = mockWaitForData.mock.calls.length;
+      await vi.advanceTimersByTimeAsync(900);
+      expect(mockWaitForData).toHaveBeenCalledTimes(reads);
+      await vi.advanceTimersByTimeAsync(100);
+
+      expect(healthy.mock.calls).toEqual([[true], [false], [true]]);
+      expect(lifecycle._onEnter).toHaveBeenCalledTimes(2);
+      expect(lateSession).toHaveBeenCalledOnce();
+      bridge.stop();
+    }
+  );
+
+  it('recovers when the first native poll throws', async () => {
+    mockWaitForData.mockImplementationOnce(() => {
+      throw new Error('first poll failed');
+    });
+    const bridge = await publishIRacingSDKEvents(
+      createOverlayManager() as never
+    );
+    const healthy = vi.fn();
+    bridge.onRunningState(healthy);
+    expect(healthy).toHaveBeenLastCalledWith(false);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(healthy).toHaveBeenLastCalledWith(true);
+    expect(mockGetSessionData).toHaveBeenCalledOnce();
+    bridge.stop();
+  });
+
+  it('releases resources if disconnect handling itself fails', async () => {
+    const lifecycle = {
+      _onEnter: vi.fn(),
+      _onTelemetry: vi.fn(),
+      _onSession: vi.fn(),
+      _onDisconnect: vi.fn(() => {
+        throw new Error('disconnect failed');
+      }),
+    };
+    const bridge = await publishIRacingSDKEvents(
+      createOverlayManager() as never,
+      lifecycle as never
+    );
+    mockSdkState.sessionStatusOK = false;
+    mockWaitForData.mockReturnValue(false);
+
+    await vi.advanceTimersByTimeAsync(40);
+
+    expect(mockStopSDK).toHaveBeenCalledOnce();
+    expect(offOverlayReady).toHaveBeenCalledOnce();
+    expect(mockStopReporting).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+    bridge.stop();
+    expect(mockStopSDK).toHaveBeenCalledOnce();
+  });
+
+  it('cleans up failed initialization and preserves the original error', async () => {
+    const error = new Error('SDK load failed');
+    mockReady.mockRejectedValueOnce(error);
+    mockStopSDK.mockImplementationOnce(() => {
+      throw new Error('shutdown failed');
+    });
+
+    await expect(
+      publishIRacingSDKEvents(createOverlayManager() as never)
+    ).rejects.toBe(error);
+
+    expect(mockStopSDK).toHaveBeenCalledOnce();
+    expect(offOverlayReady).toHaveBeenCalledOnce();
+    expect(mockStopReporting).toHaveBeenCalledOnce();
+    expect(mockWaitForData).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('stops idempotently even if native shutdown throws, cancelling the pending retry', async () => {
+    const bridge = await publishIRacingSDKEvents(
+      createOverlayManager() as never
+    );
+    mockWaitForData.mockImplementationOnce(() => {
+      throw new Error('native failed');
+    });
+    await vi.advanceTimersByTimeAsync(40);
+    mockStopSDK.mockImplementationOnce(() => {
+      throw new Error('shutdown failed');
+    });
+    const reads = mockWaitForData.mock.calls.length;
+
+    expect(() => bridge.stop()).not.toThrow();
+    bridge.stop();
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    expect(mockStopSDK).toHaveBeenCalledOnce();
+    expect(offOverlayReady).toHaveBeenCalledOnce();
+    expect(mockStopReporting).toHaveBeenCalledOnce();
+    expect(mockWaitForData).toHaveBeenCalledTimes(reads);
+    expect(vi.getTimerCount()).toBe(0);
   });
 });

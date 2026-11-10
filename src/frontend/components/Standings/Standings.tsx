@@ -195,7 +195,10 @@ export const Standings = () => {
   const highlightColor = useHighlightColor();
 
   const avgLapTimes = useHeld(
-    useCarIdxRollingAvgLapTime(settings?.avgLapTime?.numLaps ?? 5),
+    useCarIdxRollingAvgLapTime(
+      settings?.avgLapTime?.numLaps ?? 5,
+      settings?.avgLapTime?.excludePitLaps ?? false
+    ),
     isEmptyList
   );
 
