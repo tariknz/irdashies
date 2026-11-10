@@ -505,6 +505,7 @@ const summarizeChannels = (
   );
 };
 
+/** Reduce a parsed capture to warmup-trimmed summary statistics. */
 export function summarizeCapture(
   capture: PerfCapture,
   warmupSeconds = 30,
@@ -1232,6 +1233,7 @@ function percentChange(baseline: number, candidate: number): number {
   return ((candidate - baseline) / baseline) * 100;
 }
 
+/** Compute candidate-minus-baseline deltas for the summary metrics. */
 export function compareSummaries(
   baseline: PerfSummary,
   candidate: PerfSummary
@@ -1350,6 +1352,7 @@ function format(value: number, digits = 2): string {
   return Number.isFinite(value) ? value.toFixed(digits) : 'n/a';
 }
 
+/** Format the summary as a Markdown report. */
 export function summaryMarkdown(summary: PerfSummary): string {
   const sections = Object.entries(summary.sections)
     .map(
@@ -1486,6 +1489,7 @@ ${processes}
 `;
 }
 
+/** Format the comparison as a Markdown table. */
 export function comparisonMarkdown(comparison: PerfComparison): string {
   const { baseline, candidate, delta } = comparison;
   const evidenceStatus =

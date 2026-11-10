@@ -46,6 +46,7 @@ export function recordRendererMeasure(
   measuresRun?.add(name);
 }
 
+/** Start interval reporting when enabled by CLI flags; otherwise stay inert. */
 export function startRendererPerfMetrics(): void {
   const config = readRendererPerfArguments();
   if (!config.enabled) return;

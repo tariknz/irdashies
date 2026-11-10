@@ -12,6 +12,7 @@ export interface InputTraceProps {
   settings?: Partial<InputTraceSettings>;
 }
 
+/** Canvas trace of pedal and steering history, sampled and painted per frame. */
 export const InputTrace = memo(({ input, settings }: InputTraceProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef<InputTraceDrawing | null>(null);

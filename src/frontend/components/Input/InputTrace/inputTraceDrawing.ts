@@ -129,6 +129,7 @@ export class InputTraceDrawing {
     this.values = this.brake;
   }
 
+  /** Record one tick for each enabled channel and advance the ring buffer. */
   sample(input: InputTraceInput): void {
     const { settings, writeIndex: index } = this;
     if (settings.includeBrake) {

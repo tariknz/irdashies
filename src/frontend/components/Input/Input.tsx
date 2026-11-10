@@ -9,6 +9,7 @@ import type { InputWidgetSettings } from '@irdashies/types';
 
 type InputWidgetProps = Partial<InputWidgetSettings['config']>;
 
+/** Pick the effective config and render the widget only while it is visible. */
 export const Input = (props: InputWidgetProps) => {
   // Each instance gets its own config as props. Storybook passes none.
   const dashboardSettings = useInputSettings();
@@ -26,6 +27,7 @@ export const Input = (props: InputWidgetProps) => {
 
 // Mount high-frequency consumers only while content is visible. The parent
 // keeps its lightweight track/session subscriptions so it can show us again.
+/** Subscribes to driver controls and flash sources; lives only while visible. */
 const VisibleInput = memo(
   ({ settings }: { settings: InputWidgetSettings['config'] }) => {
     const inputs = useInputs(settings);

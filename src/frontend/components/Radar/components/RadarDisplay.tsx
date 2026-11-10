@@ -98,6 +98,7 @@ const FALLBACK_APPEARANCE: RadarCarAppearance = {
   width: 1.9,
 };
 
+/** Canvas radar of surrounding cars, painted on rAF from the latest frame ref. */
 export const RadarDisplay = memo(
   ({
     frame,

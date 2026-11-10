@@ -60,6 +60,7 @@ const LayoutNodeView = ({ node, renderElement }: LayoutNodeViewProps) => {
   );
 };
 
+/** Render the configured layout tree, feeding each element its selected inputs. */
 export const InputContainer = memo(
   ({
     brake,
