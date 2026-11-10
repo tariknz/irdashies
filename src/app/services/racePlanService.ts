@@ -111,8 +111,11 @@ export function createRacePlanService(options: {
   let status: RacePlanFetchStatus = 'idle';
   let timer: NodeJS.Timeout | undefined;
   let inFlight: Promise<void> | null = null;
-  /** Bumped whenever the planning changes, so stale answers are dropped. */
+  let inFlightGeneration = 0;
+  /** Bumped when the planning or key changes; stale answers are dropped. */
   let generation = 0;
+  /** Bumped by every planning choice, so only the latest one is applied. */
+  let latestChoice = 0;
   let disposed = false;
   const listeners = new Set<(state: RacePlanState) => void>();
 
@@ -183,12 +186,12 @@ export function createRacePlanService(options: {
   };
 
   const refresh = (): Promise<void> => {
-    if (inFlight) return inFlight;
+    if (inFlight && inFlightGeneration === generation) return inFlight;
     const key = apiKey();
     const planningId = stored.config.planningId;
     if (!key || planningId === null) return Promise.resolve();
     const started = generation;
-    inFlight = (async () => {
+    const request: Promise<void> = (async () => {
       const fetched = await fetchPlanning(key, planningId);
       // The planning changed while the request was out: drop the answer.
       if (disposed || generation !== started) return;
@@ -200,9 +203,11 @@ export function createRacePlanService(options: {
       accept(fetched);
       commit();
     })().finally(() => {
-      inFlight = null;
+      if (inFlight === request) inFlight = null;
     });
-    return inFlight;
+    inFlight = request;
+    inFlightGeneration = started;
+    return request;
   };
 
   const schedule = () => {
@@ -240,6 +245,7 @@ export function createRacePlanService(options: {
     async choosePlanning(raw) {
       const planningId = parsePlanningId(raw);
       await ready;
+      const choice = ++latestChoice;
       if (planningId !== null && planningId === stored.config.planningId) {
         await refresh();
         return { status: 'ok', state: snapshot() };
@@ -248,12 +254,11 @@ export function createRacePlanService(options: {
       if (planningId !== null) {
         const key = apiKey();
         if (!key) return { status: 'unauthorized' };
-        const started = generation;
         const fetched = await fetchPlanning(key, planningId);
-        if (!fetched.ok) return { status: fetched.error };
-        // Another choice won while this one was loading.
-        if (disposed || generation !== started)
+        // A later choice replaced this one while it was loading.
+        if (disposed || choice !== latestChoice)
           return { status: 'ok', state: snapshot() };
+        if (!fetched.ok) return { status: fetched.error };
         loaded = fetched;
       }
       generation += 1;
@@ -283,6 +288,7 @@ export function createRacePlanService(options: {
       if (!crypto.isAvailable())
         throw new Error('Secure storage is not available on this PC');
       stored = { ...stored, encryptedApiKey: crypto.encrypt(key) };
+      generation += 1;
       status = 'idle';
       schedule();
       commit();
@@ -292,6 +298,7 @@ export function createRacePlanService(options: {
     async clearApiKey() {
       await ready;
       stored = { ...stored, encryptedApiKey: null };
+      generation += 1;
       status = 'idle';
       schedule();
       commit();

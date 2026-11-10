@@ -335,6 +335,56 @@ describe('racePlanService', () => {
     expect(state.config.planningId).toBe(OTHER_ID);
   });
 
+  it('applies the latest planning choice when an earlier one answers first', async () => {
+    const LATEST_ID = 777;
+    const answers = new Map<number, (value: IracePlanResponse) => void>();
+    const client = stubClient((_key, id) =>
+      id === FIXTURE_PLANNING_ID
+        ? Promise.resolve(okPlanning())
+        : new Promise<IracePlanResponse>((resolve) => answers.set(id, resolve))
+    );
+    const service = make({
+      store: memoryStore(configured()),
+      client,
+      crypto: fakeCrypto(),
+    });
+    await service.refreshNow();
+    const first = service.choosePlanning(OTHER_ID);
+    const latest = service.choosePlanning(LATEST_ID);
+    await vi.waitFor(() => expect(answers.size).toBe(2));
+    answers.get(OTHER_ID)?.(planningWithId(OTHER_ID));
+    await first;
+    answers.get(LATEST_ID)?.(planningWithId(LATEST_ID));
+    await latest;
+    const state = await service.getState();
+    expect(state.config.planningId).toBe(LATEST_ID);
+    expect(state.planning?.id).toBe(LATEST_ID);
+  });
+
+  it('refreshes with a newly saved key while an old request is out', async () => {
+    let answerOld: (value: IracePlanResponse) => void = () => undefined;
+    const client = stubClient((key) =>
+      key === KEY
+        ? new Promise<IracePlanResponse>((resolve) => (answerOld = resolve))
+        : Promise.resolve(okPlanning())
+    );
+    const service = make({
+      store: memoryStore(configured()),
+      client,
+      crypto: fakeCrypto(),
+    });
+    await service.ready;
+    const state = await service.setApiKey('new-key-456');
+    expect(client.getPlanning).toHaveBeenLastCalledWith(
+      'new-key-456',
+      FIXTURE_PLANNING_ID
+    );
+    expect(state.status).toBe('ok');
+    answerOld({ ok: false, error: 'unauthorized' });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect((await service.getState()).status).toBe('ok');
+  });
+
   it('rejects a planning id that is not a positive whole number', async () => {
     const service = make({
       store: memoryStore(configured()),

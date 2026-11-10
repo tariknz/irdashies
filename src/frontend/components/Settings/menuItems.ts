@@ -61,6 +61,7 @@ export const toolItems: MenuItem[] = [
     path: '/race-plan',
     label: 'Race Plan',
     icon: FlagCheckeredIcon,
+    category: 'Tools',
   },
   {
     to: '/settings/car-setup',
