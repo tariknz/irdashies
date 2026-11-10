@@ -205,7 +205,7 @@ export interface StandingsConfig {
   carManufacturer: { enabled: boolean; hideIfSingleMake?: boolean };
   radio?: { persistenceSeconds: number };
   lapTimeDeltas: { enabled: boolean; numLaps: number; decimalPlaces: number };
-  avgLapTime: { enabled: boolean; numLaps: number; timeFormat: TimeFormat };
+  avgLapTime: AverageLapTimeConfig;
   lapCount: { enabled: boolean };
   /** LMU's track-limits penalty points. Absent on sims without them. */
   trackLimits: { enabled: boolean };
@@ -229,6 +229,13 @@ export interface StandingsConfig {
   sessionVisibility: SessionVisibilitySettings;
   stylingOptions?: StylingOptions;
   classHeaderStyle?: ClassHeaderStyle;
+}
+
+export interface AverageLapTimeConfig {
+  enabled: boolean;
+  numLaps: number;
+  timeFormat: TimeFormat;
+  excludePitLaps?: boolean;
 }
 
 export interface RelativeConfig {
@@ -277,6 +284,7 @@ export interface RelativeConfig {
   pushToPass: { enabled: boolean };
   driverTag: { enabled: boolean; widthPx?: number };
   lapTimeDeltas: { enabled: boolean; numLaps: number; decimalPlaces: number };
+  avgLapTime: AverageLapTimeConfig;
   /** LMU's track-limits penalty points. Absent on sims without them. */
   trackLimits: { enabled: boolean };
   /**
@@ -948,6 +956,8 @@ export interface LapTimeLogConfig {
      * average, which flattens the laps you are actually comparing.
      */
     hidePittedLaps?: boolean;
+    /** Leave laps driven under full-course cautions out of the history. */
+    hideCautionLaps?: boolean;
   };
   scale: number;
   alignment: 'top' | 'bottom';

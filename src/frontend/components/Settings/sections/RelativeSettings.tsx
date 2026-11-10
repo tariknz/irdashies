@@ -90,6 +90,12 @@ const sortableSettings: SortableSetting[] = [
   { id: 'delta', label: 'Relative', configKey: 'delta' },
   { id: 'fastestTime', label: 'Best Time', configKey: 'fastestTime' },
   { id: 'lastTime', label: 'Last Time', configKey: 'lastTime' },
+  {
+    id: 'avgLapTime',
+    label: 'Average Lap Time',
+    configKey: 'avgLapTime',
+    hasSubSetting: true,
+  },
   { id: 'compound', label: 'Tire Compound', configKey: 'compound' },
   {
     id: 'lapTimeDeltas',
@@ -300,6 +306,17 @@ const DisplaySettingsList = ({
                   path="carManufacturer.hideIfSingleMake"
                   variant="compact"
                 />
+              )}
+            {setting.configKey === 'avgLapTime' &&
+              settings.config.avgLapTime?.enabled && (
+                <>
+                  <SettingProp path="avgLapTime.numLaps" variant="compact" />
+                  <SettingProp path="avgLapTime.timeFormat" variant="compact" />
+                  <SettingProp
+                    path="avgLapTime.excludePitLaps"
+                    variant="compact"
+                  />
+                </>
               )}
             {setting.hasSubSetting &&
               setting.configKey === 'lapTimeDeltas' &&

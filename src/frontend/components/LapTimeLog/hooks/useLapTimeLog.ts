@@ -102,6 +102,7 @@ export const useLapTimeLog = () => {
   const incidentCount = snapshot?.incidentCount ?? 0;
   const lapDistPct = snapshot?.lapDistPct ?? 0;
   const lapInvalidated = snapshot?.lapInvalidated ?? false;
+  const lastLapUnderCaution = snapshot?.lastLapUnderCaution ?? false;
 
   // Refs
   const lastLoggedLap = useRef<number>(lapCompleted);
@@ -251,6 +252,7 @@ export const useLapTimeLog = () => {
           : 0,
       dirty: isDirty,
       pitted: isPitted,
+      caution: lastLapUnderCaution,
     };
     setHistory((prev) => [newEntry, ...prev].slice(0, MAX_HISTORY_ENTRIES));
     // reset for new lap
@@ -265,6 +267,7 @@ export const useLapTimeLog = () => {
     lastLapTime,
     isDirty,
     isPitted,
+    lastLapUnderCaution,
     incidentCount,
     referenceTime,
     history,

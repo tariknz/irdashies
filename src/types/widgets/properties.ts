@@ -1,5 +1,14 @@
 import type { SessionVisibilitySettings } from '../widgetConfigs';
 
+export const timeFormatOptions = [
+  { value: 'full', label: '1:42.123' },
+  { value: 'mixed', label: '1:42.1' },
+  { value: 'minutes', label: '1:42' },
+  { value: 'seconds-full', label: '42.123' },
+  { value: 'seconds-mixed', label: '42.1' },
+  { value: 'seconds', label: '42' },
+] as const;
+
 /**
  * Describes one widget setting once: what it is, its limits and how it is
  * labelled. Settings UI picks the control from it (see SettingProp) instead of

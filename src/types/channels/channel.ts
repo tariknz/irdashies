@@ -394,6 +394,8 @@ export interface LapLogSnapshot {
   deltaToSessionBestLapOk: boolean;
   /** LMU's void flag for the player's lap in progress; always false in iRacing. */
   lapInvalidated: boolean;
+  /** A full-course caution was seen during the most recently completed lap. */
+  lastLapUnderCaution: boolean;
   version: number;
 }
 
@@ -605,8 +607,10 @@ export interface CarSpeedsSnapshot {
 export interface LapTimesSnapshot {
   /** Median filtered pace for each car index. */
   lapTimes: readonly number[];
-  /** At most the ten most recent observed lap times per car index. */
+  /** At most the 100 most recent observed lap times per car index. */
   lapTimeHistory: readonly (readonly number[])[];
+  /** Last 100 fully observed laps without pit-road running. Old sources may omit it. */
+  cleanLapTimeHistory?: readonly (readonly number[])[];
   sessionNum: number | null;
   version: number;
 }

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { CarLeftRight, TIMED_SESSION_LAPS } from '@irdashies/types';
+import {
+  CarLeftRight,
+  GlobalFlags,
+  TIMED_SESSION_LAPS,
+} from '@irdashies/types';
 import type { LmuRawTelemetry } from './native';
 import { mapLmuSectorTimes, mapLmuTelemetry } from './mapTelemetry';
 import { fixture } from './rawFixture';
@@ -313,6 +317,35 @@ describe('mapLmuTelemetry', () => {
       }).SessionFlags.value[0]
     ).toBe(32);
   });
+
+  it.each([
+    { gamePhase: 6, yellowFlagState: 0 },
+    ...[1, 2, 3, 4, 5, 6].map((yellowFlagState) => ({
+      gamePhase: 5,
+      yellowFlagState,
+    })),
+  ])(
+    'distinguishes full-course caution state %j from local yellows',
+    (state) => {
+      const mapped = mapLmuTelemetry({ ...fixture(), ...state });
+      expect(mapped.SessionFlags.value[0]).toBe(
+        GlobalFlags.Yellow | GlobalFlags.Caution
+      );
+    }
+  );
+
+  it.each([-1, 0, 7, 8])(
+    'keeps sector yellows local with non-FCY yellow state %i',
+    (yellowFlagState) => {
+      const mapped = mapLmuTelemetry({
+        ...fixture(),
+        gamePhase: 5,
+        yellowFlagState,
+        sectorFlags: new Uint8Array([0, 1, 0]),
+      });
+      expect(mapped.SessionFlags.value[0]).toBe(GlobalFlags.Yellow);
+    }
+  );
 
   it('converts cumulative LMU sector times and invalid sentinels', () => {
     const times = mapLmuSectorTimes(32.4, 73.4, 133.4);

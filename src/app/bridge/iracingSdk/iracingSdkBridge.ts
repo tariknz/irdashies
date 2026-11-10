@@ -138,9 +138,10 @@ const RETRY_INTERVAL = 1000;
 // detection latency to about 500 ms while avoiding work on every telemetry tick.
 const SESSION_POLL_INTERVAL = 500;
 
-// Subscribers run synchronously; a faulty consumer must not stop SDK delivery.
-// Report a persistent failure once, and report again if it recurs after recovery.
-/** Isolate subscriber failures and log each failing callback once until recovery. */
+/**
+ * Isolate synchronous subscriber failures without interrupting SDK delivery.
+ * Log a persistent failure once, then allow logging again after recovery.
+ */
 function createSubscriberNotifier() {
   const failed = new WeakSet<object>();
   return <T>(callback: (value: T) => void, value: T): void => {
@@ -156,10 +157,12 @@ function createSubscriberNotifier() {
   };
 }
 
-// Keep entry ownership across bridge replacement without retaining lifecycles.
-const enteredLifecycles = new WeakSet<SessionLifecycle>();
-
-/** Publish SDK frames, recover native poll failures, and own bridge resources. */
+/**
+ * Start live or tape SDK polling, retrying read failures until stopped.
+ * The returned bridge owns all acquired resources; stopping it synchronously
+ * disconnects an entered lifecycle and releases resources even if cleanup fails.
+ * Initialization failures release acquired resources and rethrow the cause.
+ */
 export async function publishIRacingSDKEvents(
   overlayManager: OverlayManager,
   lifecycle?: SessionLifecycle,
@@ -172,6 +175,7 @@ export async function publishIRacingSDKEvents(
   const perfMetrics = new TelemetryPerfMetrics(undefined, channelBus);
   let shouldStop = false;
   const disposers: (() => void)[] = [];
+  /** Release acquired resources once, continuing if an individual cleanup fails. */
   const stop = () => {
     if (shouldStop) return;
     shouldStop = true;
@@ -282,14 +286,21 @@ export async function publishIRacingSDKEvents(
     // interval tick 5s later — this is what made exiting demo mode feel slow.
     const initialRunningState = sdk.sessionStatusOK;
     lastRunningState = initialRunningState;
+    let isLifecycleEntered = false;
+    let pollingFailed = false;
+    disposers.push(() => {
+      if (!isLifecycleEntered) return;
+      // Stop synchronously resets the shared lifecycle before another source
+      // can enter it. The telemetry loop skips its teardown once stopped.
+      isLifecycleEntered = false;
+      lifecycle?._onDisconnect();
+    });
     overlayManager.publishMessage('runningState', initialRunningState);
     runningStateCallbacks.forEach((callback) =>
       notify(callback, initialRunningState)
     );
 
-    // Publishes a change once, whoever notices it first. The telemetry loop
-    // calls this the moment it has data, so overlays are not left believing the
-    // sim is down until the poll below next runs.
+    /** Publish each state transition once, whether polling or a frame detects it. */
     const publishRunningState = (isSimRunning: boolean) => {
       if (isSimRunning === lastRunningState) {
         return;
@@ -307,7 +318,9 @@ export async function publishIRacingSDKEvents(
 
     const runningStateInterval = setInterval(() => {
       try {
-        publishRunningState(sdk.sessionStatusOK);
+        // A polling error owns the disconnected state until a frame proves
+        // that telemetry delivery has recovered.
+        if (!pollingFailed) publishRunningState(sdk.sessionStatusOK);
       } catch (error) {
         logger.error('[iracingSdkBridge] Running-state poll failed', error);
       }
@@ -317,6 +330,7 @@ export async function publishIRacingSDKEvents(
     // Reuse the completion callback on every tick; stop also wakes the delay.
     let delayTimer: ReturnType<typeof setTimeout> | undefined;
     let resolveDelay: (() => void) | undefined;
+    /** Clear the current delay and wake the polling loop, including during stop. */
     const finishDelay = () => {
       clearTimeout(delayTimer);
       delayTimer = undefined;
@@ -324,6 +338,7 @@ export async function publishIRacingSDKEvents(
       resolveDelay = undefined;
       resolve?.();
     };
+    /** Wait between polls or retries, resolving immediately once stopped. */
     const delay = (milliseconds: number) =>
       new Promise<void>((resolve) => {
         if (shouldStop) {
@@ -342,7 +357,7 @@ export async function publishIRacingSDKEvents(
         let lastInspectorTelemetryPublishTime = Number.NEGATIVE_INFINITY;
         // Negative infinity makes the first tick fetch and publish immediately.
         let lastSessionPollTime = Number.NEGATIVE_INFINITY;
-        let wasRunning = false;
+        let hadLifecycleEntry = false;
 
         try {
           while (!shouldStop) {
@@ -375,15 +390,16 @@ export async function publishIRacingSDKEvents(
             }
             // This frame already satisfies pending subscriber demand.
             replayRefreshPending = false;
-            if (!wasRunning) {
+            if (!hadLifecycleEntry) {
               logger.info(`[iracingSdkBridge] ${sourceName} is running`);
-              wasRunning = true;
+              hadLifecycleEntry = true;
+              isLifecycleEntered = true;
+              pollingFailed = false;
               // sessionStatusOK can still read false when the bridge seeds it, so
               // the arrival of real data is the earliest reliable proof the sim is
               // up. Without this the overlays wait out the 5s poll before showing
               // anything.
               publishRunningState(true);
-              if (lifecycle) enteredLifecycles.add(lifecycle);
               lifecycle?._onEnter({ replay: isTapeReplay });
             }
             perfMetrics.markStart('processTelemetry');
@@ -466,12 +482,14 @@ export async function publishIRacingSDKEvents(
             '[iracingSdkBridge] Telemetry poll failed; retrying',
             error
           );
+          pollingFailed = true;
           // A read can fail before the first frame, while the seeded state is up.
-          wasRunning = true;
+          publishRunningState(false);
         }
 
         if (shouldStop) break;
-        if (wasRunning) {
+        if (hadLifecycleEntry) {
+          isLifecycleEntered = false;
           publishRunningState(false);
           logger.info(
             `[iracingSdkBridge] ${sourceName} is no longer publishing telemetry`
@@ -482,9 +500,7 @@ export async function publishIRacingSDKEvents(
           // They get repopulated on the next successful waitForData tick.
           latestSession = null;
           overlayManager.clearLatestSessionData?.();
-          if (lifecycle && enteredLifecycles.delete(lifecycle)) {
-            lifecycle._onDisconnect();
-          }
+          lifecycle?._onDisconnect();
         }
 
         await delay(isTapeReplay ? 75 : RETRY_INTERVAL);

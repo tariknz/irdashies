@@ -1,4 +1,5 @@
-import { memo, useMemo } from 'react';
+import { memo, useId, useMemo } from 'react';
+import { Check } from '@phosphor-icons/react';
 import {
   IncidentType,
   resolveSessionFilter,
@@ -18,6 +19,7 @@ import {
 import type { TrackStateSnapshot } from '@irdashies/types';
 import { IncidentRow } from './IncidentRow';
 import { SessionSeparatorRow } from './SessionSeparatorRow';
+import { GantryPanel } from '../GantryPanel/GantryPanel';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { useGantrySessionData } from '../../hooks/useGantrySessionData';
 
@@ -39,37 +41,37 @@ const parseSessionFilter = (value: string): IncidentSessionFilter =>
 
 const CHIP_STYLES: Record<
   IncidentType,
-  { label: string; active: string; inactive: string; description: string }
+  { label: string; dotOn: string; dotOff: string; description: string }
 > = {
   [IncidentType.Crash]: {
     label: 'Crash',
-    active: 'bg-red-500/30 text-red-400 border-red-500/50',
-    inactive: 'bg-slate-800/50 text-slate-600 border-slate-700',
+    dotOn: 'border-red-400 bg-red-400',
+    dotOff: 'border-red-400',
     description: `Raised when a car stops suddenly from speed, crawls for several seconds during a race, or goes off alongside another car. ${SETTINGS_HINT}`,
   },
   [IncidentType.OffTrack]: {
     label: 'Off Track',
-    active: 'bg-yellow-500/30 text-yellow-400 border-yellow-500/50',
-    inactive: 'bg-slate-800/50 text-slate-600 border-slate-700',
+    dotOn: 'border-yellow-400 bg-yellow-400',
+    dotOff: 'border-yellow-400',
     description: `Raised when a car leaves the racing surface on its own for longer than the debounce window. ${SETTINGS_HINT}`,
   },
   [IncidentType.Slowdown]: {
     label: 'Slowdown',
-    active: 'bg-orange-500/30 text-orange-400 border-orange-500/50',
-    inactive: 'bg-slate-800/50 text-slate-600 border-slate-700',
+    dotOn: 'border-orange-400 bg-orange-400',
+    dotOff: 'border-orange-400',
     description:
       'Raised when iRacing waves the furled black flag at a car, which is normally a track-limits slowdown penalty.',
   },
   [IncidentType.PitEntry]: {
     label: 'Pit Entry',
-    active: 'bg-blue-500/30 text-blue-400 border-blue-500/50',
-    inactive: 'bg-slate-800/50 text-slate-600 border-slate-700',
+    dotOn: 'border-blue-400 bg-blue-400',
+    dotOff: 'border-blue-400',
     description: `Raised once a car has stayed on pit road long enough to count as a real stop rather than a brush past the entry. ${SETTINGS_HINT}`,
   },
   [IncidentType.BlackFlag]: {
     label: 'Black Flag',
-    active: 'bg-white/15 text-slate-300 border-slate-500',
-    inactive: 'bg-slate-800/50 text-slate-600 border-slate-700',
+    dotOn: 'border-slate-300 bg-slate-300',
+    dotOff: 'border-slate-300',
     description:
       'Raised the moment race control shows a car the black flag or disqualifies it.',
   },
@@ -127,10 +129,23 @@ export const GantryIncidents = memo(() => {
     [allIncidents, selectedSessionNum, driverFilter]
   );
 
+  const sessionId = useId();
+  const driverId = useId();
+
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Filter chips */}
-      <div className="flex flex-wrap gap-1 px-2 py-1.5 border-b border-slate-700/50 flex-shrink-0">
+    <GantryPanel
+      title="Incidents"
+      aside={
+        <span className="text-sm text-slate-400 tabular-nums">
+          {incidents.length} shown
+        </span>
+      }
+    >
+      <div
+        role="group"
+        aria-label="Incident types"
+        className="flex flex-shrink-0 flex-wrap gap-1.5 px-4 pb-2"
+      >
         {CHIP_ORDER.map((type) => {
           const style = CHIP_STYLES[type];
           const isActive = activeTypeFilters.has(type);
@@ -141,33 +156,53 @@ export const GantryIncidents = memo(() => {
               content={`${style.description} Click to ${isActive ? 'hide' : 'show'} them in the feed. ${FILTERS_COMBINE_HINT}`}
             >
               <button
+                type="button"
                 aria-pressed={isActive}
                 onClick={() => toggleTypeFilter(type)}
                 className={[
-                  'px-2 py-0.5 rounded text-xs font-bold border cursor-pointer',
-                  isActive ? style.active : style.inactive,
+                  'inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm transition-colors',
+                  isActive
+                    ? 'border-settings-boundary bg-settings-control text-slate-200'
+                    : 'border-settings-hover bg-transparent text-slate-400 hover:bg-settings-hover',
                 ].join(' ')}
               >
+                <span
+                  aria-hidden="true"
+                  className={[
+                    'size-2 rounded-full border-[1.5px]',
+                    isActive ? style.dotOn : style.dotOff,
+                  ].join(' ')}
+                />
                 {style.label}
+                {isActive && (
+                  <Check
+                    aria-hidden="true"
+                    size={12}
+                    className="text-slate-300"
+                  />
+                )}
               </button>
             </Tooltip>
           );
         })}
       </div>
 
-      {/* Session and driver filter dropdowns */}
-      <div className="flex gap-2 px-2 py-1.5 border-b border-slate-700/50 flex-shrink-0">
+      <div className="grid flex-shrink-0 grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 border-b border-slate-700 px-4 pb-3">
+        <label htmlFor={sessionId} className="text-sm text-slate-400">
+          Session
+        </label>
         <Tooltip
           placement="bottom"
           content="Narrows the feed to one session. Current session follows the live session, or the session of the replay. Combines with the type and driver filters."
         >
           <select
+            id={sessionId}
             aria-label="Filter incidents by session"
             value={String(sessionFilter)}
             onChange={(e) =>
               setSessionFilter(parseSessionFilter(e.target.value))
             }
-            className="flex-1 min-w-0 bg-slate-800/50 border border-slate-700 text-slate-300 text-xs rounded px-2 py-1"
+            className="settings-field"
           >
             <option value="all">All sessions</option>
             <option value="current">Current session</option>
@@ -178,11 +213,15 @@ export const GantryIncidents = memo(() => {
             ))}
           </select>
         </Tooltip>
+        <label htmlFor={driverId} className="text-sm text-slate-400">
+          Driver
+        </label>
         <Tooltip
           placement="bottom"
           content="Narrows the feed to a single driver. Only drivers who have already triggered an incident in the selected session are listed. Combines with the type and session filters."
         >
           <select
+            id={driverId}
             aria-label="Filter incidents by driver"
             value={driverFilter ?? ''}
             onChange={(e) =>
@@ -190,7 +229,7 @@ export const GantryIncidents = memo(() => {
                 e.target.value === '' ? null : Number(e.target.value)
               )
             }
-            className="flex-1 min-w-0 bg-slate-800/50 border border-slate-700 text-slate-300 text-xs rounded px-2 py-1"
+            className="settings-field"
           >
             <option value="">All Drivers</option>
             {driverOptions.map(({ carIdx, driverName }) => (
@@ -202,10 +241,9 @@ export const GantryIncidents = memo(() => {
         </Tooltip>
       </div>
 
-      {/* Incident feed */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {rows.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-slate-600 text-sm">
+          <div className="flex h-full items-center justify-center text-sm text-slate-400">
             No incidents
           </div>
         ) : (
@@ -222,14 +260,13 @@ export const GantryIncidents = memo(() => {
               <IncidentRow
                 key={row.incident.id}
                 incident={row.incident}
-                isOdd={row.isOdd}
                 isReplayPlaying={isReplayPlaying}
               />
             )
           )
         )}
       </div>
-    </div>
+    </GantryPanel>
   );
 });
 GantryIncidents.displayName = 'GantryIncidents';

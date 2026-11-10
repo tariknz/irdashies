@@ -149,9 +149,13 @@ function sessionFlags(raw: Raw): number {
   if (raw.gamePhase === 7) return GlobalFlags.Red;
   if (
     raw.gamePhase === 6 ||
-    (raw.yellowFlagState >= 1 && raw.yellowFlagState <= 6) ||
-    Array.from(raw.sectorFlags).some((flag) => flag === 1)
+    (raw.yellowFlagState >= 1 && raw.yellowFlagState <= 6)
   ) {
+    // Preserve the yellow display while distinguishing an FCY from a sector
+    // yellow for consumers such as the lap-history filter.
+    return GlobalFlags.Yellow | GlobalFlags.Caution;
+  }
+  if (Array.from(raw.sectorFlags).some((flag) => flag === 1)) {
     return GlobalFlags.Yellow;
   }
   const playerFlag = raw.vehFlag?.[raw.playerVehicleIdx];
