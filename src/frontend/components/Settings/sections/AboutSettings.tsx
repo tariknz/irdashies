@@ -134,9 +134,9 @@ export const AboutSettings = () => {
                 <li>
                   <strong className="text-slate-300">System information</strong>
                   <br />
-                  Including operating system, CPU, memory, and screen
-                  resolution. This data helps us optimise performance and ensure
-                  compatibility across common hardware configurations.
+                  Including operating system, CPU, memory, and screen resolution
+                  and scaling. This data helps us optimise performance and
+                  ensure compatibility across common hardware configurations.
                 </li>
                 <li>
                   <strong className="text-slate-300">Errors and crashes</strong>

@@ -78,7 +78,7 @@ import {
 import logger from './logger';
 import { getAnalyticsOptOut } from './storage/analytics';
 import { readData, writeData } from './storage/storage';
-import { app } from 'electron';
+import { app, screen } from 'electron';
 import type { PitLaneAnalyticsCheckpoint } from './storage/pitLaneAnalyticsCheckpoint';
 import {
   getSimulatorUsageStore,
@@ -236,6 +236,28 @@ describe('Analytics.setupLogTransport', () => {
       expect.objectContaining({
         distinctId: 'test-installation',
         properties: expect.objectContaining({ version: '2.0.0+test' }),
+      })
+    );
+    await analytics.waitForCalibrationUpload();
+    await analytics.waitForRadarPoleSideUpload();
+    analytics.shutdown();
+  });
+
+  it("identifies with the primary screen's physical resolution and its scaling", async () => {
+    // A 4096x2160 screen at 250%, as Electron reports it.
+    vi.mocked(screen.getPrimaryDisplay).mockReturnValueOnce({
+      size: { width: 1639, height: 864 },
+      scaleFactor: 2.5,
+    } as Electron.Display);
+    await analytics.init('2.0.0+test', { widgets: [] });
+    await analytics.waitForStartupIdentify();
+    expect(provider.identify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        properties: expect.objectContaining({
+          $screen_width: 4096,
+          $screen_height: 2160,
+          screen_scale_factor: 2.5,
+        }),
       })
     );
     await analytics.waitForCalibrationUpload();

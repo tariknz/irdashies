@@ -1,6 +1,7 @@
 import { PostHog } from 'posthog-node';
 import type { EventMessage, IdentifyMessage } from 'posthog-node';
 import { app, screen } from 'electron';
+import { physicalScreenSize } from './analytics/screenResolution';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import type { ActiveSimulator, DashboardLayout } from '@irdashies/types';
@@ -283,6 +284,9 @@ export class Analytics {
   async init(version: string, dashboard: DashboardLayout): Promise<void> {
     const displays = screen.getAllDisplays();
     const primaryDisplay = screen.getPrimaryDisplay();
+    // Electron's sizes are scaled by Windows display scaling; the resolution
+    // is the physical one.
+    const primaryResolution = physicalScreenSize(primaryDisplay);
     const cpus = os.cpus();
     const cpuName = cpus.length > 0 ? cpus[0].model : undefined;
     const userId = this.getOrCreateUserId();
@@ -297,8 +301,9 @@ export class Analytics {
       os_arch: os.arch(),
       cpu_count: os.cpus().length,
       total_memory: os.totalmem(),
-      $screen_width: primaryDisplay.size.width,
-      $screen_height: primaryDisplay.size.height,
+      $screen_width: primaryResolution.width,
+      $screen_height: primaryResolution.height,
+      screen_scale_factor: primaryDisplay.scaleFactor,
       number_of_screens: displays.length,
       cpu: cpuName,
       version,
