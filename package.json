@@ -138,5 +138,9 @@
   "overrides": {
     "yauzl": "^3.3.1",
     "@electron/rebuild": "^4"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "electron-winstaller@5.4.4": true
   }
 }
