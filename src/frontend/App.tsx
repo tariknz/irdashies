@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
+import { AppTranslator } from './components/Settings/i18n/SettingsTranslator';
 
 const SettingsWindow = lazy(() => import('./windows/SettingsWindow'));
 const GantryWindow = lazy(() => import('./windows/GantryWindow'));
@@ -39,6 +40,7 @@ const App = () => {
   return (
     <ErrorBoundary label={label} resetAfterMs={isTape ? undefined : 2000}>
       <Suspense fallback={null}>
+        <AppTranslator />
         <Content />
       </Suspense>
     </ErrorBoundary>

@@ -43,7 +43,7 @@ export const login = async () => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Login failed:', response.status, errorText);
-      
+
       if (response.status === 400) {
         const rateLimitRemaining = response.headers.get('RateLimit-Remaining');
         const retryAfter = response.headers.get('Retry-After');
@@ -53,12 +53,12 @@ export const login = async () => {
           );
         }
       }
-      
+
       throw new Error(`Failed to login: ${response.status} ${errorText}`);
     }
 
     const tokenData: TokenData = await response.json();
-    
+
     const expiresAt = Date.now() + tokenData.expires_in * 1000;
     const tokenDataWithExpiry = {
       ...tokenData,
@@ -67,14 +67,20 @@ export const login = async () => {
 
     const assetDataDir = path.join(process.cwd(), 'asset-data');
     fs.mkdirSync(assetDataDir, { recursive: true });
-    
+
     const tokenPath = path.join(assetDataDir, 'tokens.json');
-    fs.writeFileSync(tokenPath, JSON.stringify(tokenDataWithExpiry, null, 2), 'utf8');
-    
+    fs.writeFileSync(
+      tokenPath,
+      JSON.stringify(tokenDataWithExpiry, null, 2),
+      'utf8'
+    );
+
     console.log('Tokens saved to tokens.json');
     console.log(`Access token expires in ${tokenData.expires_in} seconds`);
     if (tokenData.refresh_token) {
-      console.log(`Refresh token expires in ${tokenData.refresh_token_expires_in} seconds`);
+      console.log(
+        `Refresh token expires in ${tokenData.refresh_token_expires_in} seconds`
+      );
     }
   } catch (error) {
     console.error('Login error:', error);

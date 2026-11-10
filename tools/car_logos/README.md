@@ -12,11 +12,13 @@ The script processes all PNG files in the `logos/` directory, resizes them to 12
 - Pillow (PIL) - Image processing library
 
 Install dependencies:
+
 ```bash
 pip install Pillow
 ```
 
 Or if using the project's dependency management:
+
 ```bash
 # From the project root
 uv sync
@@ -42,6 +44,7 @@ chmod +x create_sprite_sheet.py
 Place car manufacturer logo PNG files in the `logos/` directory. The filename (without extension) will be used as the manufacturer identifier in the TypeScript mapping.
 
 Example:
+
 - `logos/acura.png` → manufacturer key: `acura`
 - `logos/ferrari.png` → manufacturer key: `ferrari`
 
@@ -77,7 +80,10 @@ export const SPRITE_SIZE = 128;
 export const SPRITES_PER_ROW = 7;
 export const SPRITES_PER_COLUMN = 6;
 
-export const CAR_MANUFACTURER_SPRITE_POSITIONS: Record<string, { x: number; y: number }> = {
+export const CAR_MANUFACTURER_SPRITE_POSITIONS: Record<
+  string,
+  { x: number; y: number }
+> = {
   acura: { x: 1, y: 0 },
   ferrari: { x: 3, y: 1 },
   // ... etc
@@ -97,8 +103,12 @@ This file maps car IDs to their manufacturer names. When adding new cars or upda
 3. Use `'unknown'` for cars without a specific manufacturer logo
 
 Example:
+
 ```typescript
-export const CAR_ID_TO_CAR_MANUFACTURER: Record<number, { name: string; manufacturer: string }> = {
+export const CAR_ID_TO_CAR_MANUFACTURER: Record<
+  number,
+  { name: string; manufacturer: string }
+> = {
   170: { name: 'Acura ARX-06 GTP', manufacturer: 'acura' },
   173: { name: 'Ferrari 296 GT3', manufacturer: 'ferrari' },
   // ... etc
@@ -106,6 +116,7 @@ export const CAR_ID_TO_CAR_MANUFACTURER: Record<number, { name: string; manufact
 ```
 
 **Important**: If you add a new manufacturer logo, make sure to:
+
 1. Add the logo PNG file to `logos/` directory
 2. Run the sprite sheet generator script
 3. Update `carManufacturerMapping.ts` to use the new manufacturer key for relevant cars
@@ -116,4 +127,3 @@ export const CAR_ID_TO_CAR_MANUFACTURER: Record<number, { name: string; manufact
 - Logos are resized using LANCZOS resampling for high quality
 - Duplicate manufacturer names (if multiple files have the same base name) will use the first processed logo
 - The grid dimensions are calculated to be approximately square for optimal space usage
-
