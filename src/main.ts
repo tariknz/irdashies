@@ -76,7 +76,7 @@ import {
   LapHistoryRuntime,
   type LapHistoryPersistence,
 } from './app/processors/lapHistoryRuntime';
-import { needsLapHistory } from './app/lapHistoryDemand';
+import { watchLapHistoryDemand } from './app/lapHistoryDemand';
 import {
   flushLapHistoryOnShutdown,
   listArchivedLapHistorySessions,
@@ -222,8 +222,9 @@ let disposeRendererDataSubscriptions: (() => void) | undefined;
 /**
  * Hosts lap-history recording outside the ProcessorHost, the way the incident
  * runtime is hosted: an enabled Gantry keeps recording while its window is
- * closed. Gated on widgets whose manifest sets `usesLapHistory`, so a user
- * who enables none of them pays no frame cost.
+ * closed. Gated on widgets whose manifest sets `usesLapHistory` and on live
+ * subscribers such as browser sources, so a user who uses none of them pays
+ * no frame cost.
  */
 function setupLapHistoryRuntime(
   initialDashboard: DashboardLayout,
@@ -246,11 +247,12 @@ function setupLapHistoryRuntime(
       loadArchivedLapHistory(sessionId, sessionNum),
   });
 
-  const applyDashboard = (layout: DashboardLayout | undefined) => {
-    runtime.updateEnabled(needsLapHistory(layout));
-  };
-  applyDashboard(initialDashboard);
-  const unsubscribeDashboard = onDashboardUpdated(applyDashboard);
+  const unsubscribeDemand = watchLapHistoryDemand(
+    channelBus,
+    initialDashboard,
+    onDashboardUpdated,
+    (needed) => runtime.updateEnabled(needed)
+  );
 
   let unsubscribeSession: (() => void) | undefined;
   let unsubscribeTelemetry: (() => void) | undefined;
@@ -287,7 +289,7 @@ function setupLapHistoryRuntime(
     unsubscribeSession = undefined;
     unsubscribeTelemetry = undefined;
     unsubscribeBridgeChanged?.();
-    unsubscribeDashboard?.();
+    unsubscribeDemand();
     unsubscribeSessionId?.();
     unsubscribeReplayContext();
     runtime.dispose();
@@ -320,11 +322,14 @@ function setupReplayContextRuntime(
   );
 
   let readFrames = false;
-  const applyDashboard = (layout: DashboardLayout | undefined) => {
-    readFrames = needsLapHistory(layout);
-  };
-  applyDashboard(initialDashboard);
-  const unsubscribeDashboard = onDashboardUpdated(applyDashboard);
+  const unsubscribeDemand = watchLapHistoryDemand(
+    channelBus,
+    initialDashboard,
+    onDashboardUpdated,
+    (needed) => {
+      readFrames = needed;
+    }
+  );
 
   let unsubscribeSession: (() => void) | undefined;
   let unsubscribeTelemetry: (() => void) | undefined;
@@ -350,7 +355,7 @@ function setupReplayContextRuntime(
     unsubscribeSession = undefined;
     unsubscribeTelemetry = undefined;
     unsubscribeBridgeChanged?.();
-    unsubscribeDashboard?.();
+    unsubscribeDemand();
     runtime.dispose();
   };
   return runtime;

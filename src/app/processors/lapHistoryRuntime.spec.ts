@@ -442,6 +442,31 @@ describe('LapHistoryRuntime', () => {
     expect(runtime.snapshot().lap[0]).toBe(9);
   });
 
+  it('keeps recorded laps but records no false crossing after a pause', async () => {
+    const runtime = new LapHistoryRuntime(
+      new ChannelBus(),
+      createSessionLifecycle(),
+      newMetrics(),
+      newPersistence()
+    );
+    runtime.onSession(raceSession());
+    await settle();
+    runtime.onFrame(frame({ sessionTime: 100, laps: [3] }));
+    runtime.onFrame(frame({ sessionTime: 190, laps: [4] }));
+    expect(crossingCount(runtime.snapshot(), 0)).toBe(1);
+
+    // Recording stops while the car runs laps 4 to 8.
+    runtime.updateEnabled(false);
+    runtime.updateEnabled(true);
+    runtime.onFrame(frame({ sessionTime: 900, laps: [9] }));
+    expect(crossingCount(runtime.snapshot(), 0)).toBe(1);
+
+    runtime.onFrame(frame({ sessionTime: 990, laps: [10] }));
+    expect(crossingCount(runtime.snapshot(), 0)).toBe(2);
+    expect(runtime.snapshot().lap[1]).toBe(9);
+    expect(runtime.snapshot().sessionTime[1]).toBe(990);
+  });
+
   it('disposes lifecycle subscriptions so later events no longer reach it', async () => {
     const lifecycle = createSessionLifecycle();
     const runtime = new LapHistoryRuntime(

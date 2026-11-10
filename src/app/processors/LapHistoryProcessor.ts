@@ -142,6 +142,15 @@ export class LapHistoryProcessor implements TelemetryProcessor<LapHistorySnapsho
     this.reset(null);
   }
 
+  /**
+   * Forgets the last seen lap per car but keeps recorded crossings. Call it
+   * when frames resume after a gap: the lap counters moved on meanwhile, and
+   * the first frame would otherwise record a crossing at the wrong time.
+   */
+  rebaseline(): void {
+    this.previousLap.fill(-1);
+  }
+
   snapshot(): LapHistorySnapshot {
     return this.latest;
   }

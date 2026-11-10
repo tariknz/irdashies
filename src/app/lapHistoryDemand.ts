@@ -1,5 +1,8 @@
 import { getWidgetManifest } from '@irdashies/types';
 import type { DashboardLayout } from '@irdashies/types';
+import type { ChannelBus } from './bridge/channelBus';
+
+const CHANNEL = 'lap-history.snapshot';
 
 /**
  * True when an enabled widget's manifest declares `usesLapHistory`. Recording
@@ -11,3 +14,49 @@ export const needsLapHistory = (layout: DashboardLayout | undefined): boolean =>
       widget.enabled &&
       getWidgetManifest(widget.type || widget.id)?.usesLapHistory === true
   ) ?? false;
+
+type DemandBus = Pick<
+  ChannelBus,
+  'subscriberCount' | 'onSubscriberCountChanged'
+>;
+
+/**
+ * Calls `onChange` with whether lap history should be recorded, now and on
+ * every change. An enabled widget needs it, and so does any live subscriber:
+ * a browser source at /widget/<id> renders a widget that is disabled on the
+ * desktop.
+ */
+export const watchLapHistoryDemand = (
+  bus: DemandBus,
+  initialLayout: DashboardLayout | undefined,
+  onDashboardUpdated: (
+    listener: (layout: DashboardLayout) => void
+  ) => () => void,
+  onChange: (needed: boolean) => void
+): (() => void) => {
+  let fromLayout = needsLapHistory(initialLayout);
+  let subscribed = bus.subscriberCount(CHANNEL) > 0;
+  let needed: boolean | undefined;
+  const update = () => {
+    const next = fromLayout || subscribed;
+    if (next === needed) return;
+    needed = next;
+    onChange(next);
+  };
+
+  const unsubscribeDashboard = onDashboardUpdated((layout) => {
+    fromLayout = needsLapHistory(layout);
+    update();
+  });
+  const unsubscribeBus = bus.onSubscriberCountChanged((channel, count) => {
+    if (channel !== CHANNEL) return;
+    subscribed = count > 0;
+    update();
+  });
+  update();
+
+  return () => {
+    unsubscribeDashboard();
+    unsubscribeBus();
+  };
+};
