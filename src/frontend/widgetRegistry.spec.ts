@@ -7,10 +7,9 @@ import {
 import { WIDGET_MAP, getWidget } from './WidgetIndex';
 import { WIDGET_SETTINGS } from './components/Settings/SettingsLoader';
 
-const runtimeModules = import.meta.glob<{ default: { id: string } }>(
-  './components/*/widgetRuntimeDefinition.ts',
-  { eager: true }
-);
+const runtimeModules = import.meta.glob<{
+  default: { id: string; channels?: readonly string[] };
+}>('./components/*/widgetRuntimeDefinition.ts', { eager: true });
 const widgetModules = import.meta.glob<{
   default: { id: string } | readonly { id: string }[];
 }>('./components/*/widget.ts', { eager: true });
@@ -38,6 +37,17 @@ describe('widget registry', () => {
     expect(
       sorted(Object.values(runtimeModules).map((m) => m.default.id))
     ).toEqual(manifestIds);
+  });
+
+  it('flags every lap-history reader in its manifest', () => {
+    // Lap history is only recorded for widgets whose manifest says so.
+    const readers = Object.values(runtimeModules)
+      .filter((m) => m.default.channels?.includes('lap-history.snapshot'))
+      .map((m) => m.default.id);
+    const flagged = WIDGET_MANIFESTS.filter((m) => m.usesLapHistory).map(
+      (m) => m.id
+    );
+    expect(sorted(flagged)).toEqual(sorted(readers));
   });
 
   it('declares each widget id exactly once across widget.ts files', () => {

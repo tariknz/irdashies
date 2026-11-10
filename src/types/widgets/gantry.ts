@@ -7,6 +7,7 @@ export default defineWidgetManifest({
   category: 'Broadcast & Streaming',
   menuLabel: 'Gantry',
   enabled: false,
+  usesLapHistory: true,
   layout: {
     x: 0,
     y: 0,
