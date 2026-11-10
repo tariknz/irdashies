@@ -2,6 +2,7 @@ import { render, screen, cleanup, act } from '@testing-library/react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
   HERO_HOLD_MS,
+  LAST_CORNER_UNAVAILABLE_TEXT,
   LastCornerPanel,
   type LastCornerPanelEntry,
 } from './LastCornerPanel';
@@ -129,6 +130,17 @@ describe('LastCornerPanel', () => {
     // every time a corner completed.
     expect(panel().children).toHaveLength(3);
     expect(screen.queryByText('-0.14')).toBeNull();
+  });
+
+  it('says the corners are not available, in the box the rows would fill', () => {
+    render(
+      <LastCornerPanel {...defaultProps} entries={[]} count={3} unavailable />
+    );
+
+    expect(screen.getByText(LAST_CORNER_UNAVAILABLE_TEXT)).toBeTruthy();
+    expect(panel().children).toHaveLength(1);
+    // The same size as the three rows, so the trace beside it stays put.
+    expect(panel().style.height).toBe(`${3 * (16 + 2)}px`);
   });
 
   it('pads a partial history up to the configured count', () => {

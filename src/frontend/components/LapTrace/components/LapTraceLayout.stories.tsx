@@ -108,7 +108,14 @@ const LitBars = ({ side }: { side: BrakeCueBarSide }) => {
 };
 
 /** The widget's own frame: padding, background and the reference header. */
-const LayoutPreview = ({ tree }: { tree: LayoutNode }) => {
+const LayoutPreview = ({
+  tree,
+  cornersUnavailable = false,
+}: {
+  tree: LayoutNode;
+  /** A track and layout with no corner data, as the widget sees it. */
+  cornersUnavailable?: boolean;
+}) => {
   const barSide = lapTraceElementSide(tree, 'brakeCue') ?? 'right';
   const renderElement = (id: string): ReactNode => {
     switch (id) {
@@ -136,15 +143,18 @@ const LayoutPreview = ({ tree }: { tree: LayoutNode }) => {
       case 'corners':
         return (
           <LastCornerPanel
-            entries={entries}
+            entries={cornersUnavailable ? [] : entries}
             count={3}
             placement={lapTraceElementSide(tree, 'corners') ?? 'right'}
             speedUnit="km/h"
             showTime
             showBrakeDelta
             showApexSpeed
-            cornerLabels={entries.map((entry) => entry.label)}
+            cornerLabels={
+              cornersUnavailable ? [] : entries.map((entry) => entry.label)
+            }
             latestScale={1.4}
+            unavailable={cornersUnavailable}
           />
         );
       case 'brakeCue':
@@ -228,6 +238,19 @@ const threeColumns = split('root', 'row', [
 
 /** Corner panel, trace and countdown side by side in the default size. */
 export const ThreeColumns: Story = { args: { tree: threeColumns } };
+
+/** Three columns on a track and layout with no corner data. */
+export const CornersUnavailable: Story = {
+  args: { tree: threeColumns, cornersUnavailable: true },
+};
+
+/** The panel below the trace, on a track and layout with no corner data. */
+export const CornersUnavailableBelow: Story = {
+  args: {
+    tree: split('root', 'col', [box('plot'), box('corners')]),
+    cornersUnavailable: true,
+  },
+};
 
 /** The same at a width that suits three columns. */
 export const ThreeColumnsWide: Story = {

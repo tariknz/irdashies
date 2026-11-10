@@ -5,6 +5,7 @@ import type {
   ChannelBridge,
   LapTraceSampleSnapshot,
   LayoutNode,
+  Session,
   TrackStateSnapshot,
 } from '@irdashies/types';
 import { useLapTraceStore, useSessionStore } from '@irdashies/context';
@@ -457,6 +458,48 @@ describe('LapTrace', () => {
       expect(screen.queryByTestId('last-corner-panel')).toBeNull();
       expect(screen.queryByTestId('brake-cue-bars')).toBeNull();
       expect(document.querySelector('svg')).toBeTruthy();
+    });
+
+    it('says the corners are not available when the track and layout have none', () => {
+      const withTrack = (TrackName: string) =>
+        useSessionStore.setState({
+          session: { WeekendInfo: { TrackName } } as Session,
+        });
+      const message = () => screen.queryByTestId('last-corner-unavailable');
+      const tree = split('row', [box('corners'), box('plot')]);
+
+      // A track the bundled data does not know: said even before the first
+      // corner is driven, since no lap will ever bring the corners.
+      seedReference();
+      withTrack('no such track layout');
+      const { unmount } = render(<LapTrace {...baseProps} layoutTree={tree} />);
+      expect(message()).toBeTruthy();
+      unmount();
+
+      // A known track and layout: the rows, no message.
+      withTrack('lagunaseca');
+      const { unmount: unmountKnown } = render(
+        <LapTrace {...baseProps} layoutTree={tree} />
+      );
+      expect(screen.getByTestId('last-corner-panel')).toBeTruthy();
+      expect(message()).toBeNull();
+      unmountKnown();
+
+      // No session yet: nothing is known about the track, so nothing is said.
+      useSessionStore.getState().resetSession();
+      const { unmount: unmountNoSession } = render(
+        <LapTrace {...baseProps} layoutTree={tree} />
+      );
+      expect(message()).toBeNull();
+      unmountNoSession();
+
+      // Not in the layout: no panel, and no message.
+      withTrack('no such track layout');
+      render(
+        <LapTrace {...baseProps} layoutTree={split('col', [box('plot')])} />
+      );
+      expect(screen.queryByTestId('last-corner-panel')).toBeNull();
+      expect(message()).toBeNull();
     });
 
     it('runs the panel and the strip full height beside the trace, across it above or below', () => {

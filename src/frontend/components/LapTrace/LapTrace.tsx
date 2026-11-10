@@ -35,6 +35,7 @@ import { layoutTreeHas } from '@irdashies/domain/layoutTree';
 import {
   useLastCornerComparison,
   useLastCornerLabels,
+  useTrackHasCorners,
 } from './hooks/useLastCornerComparison';
 
 export type LapTraceProps = Partial<LapTraceConfig> & {
@@ -119,6 +120,7 @@ export const LapTrace = (props: LapTraceProps) => {
     lastCornerEnabled,
     lastCornerLabelStyle
   );
+  const trackHasCorners = useTrackHasCorners();
   const lastCornerEntries = useMemo(
     () =>
       lastCorners.map((entry) => ({
@@ -156,6 +158,7 @@ export const LapTrace = (props: LapTraceProps) => {
       cornerLabels={cornerLabels}
       fontSize={config.lastCornerFontSize ?? LAST_CORNER_DEFAULT_FONT_SIZE}
       latestScale={config.lastCornerLatestScale ?? 1.4}
+      unavailable={trackHasCorners === false}
     />
   ) : null;
 

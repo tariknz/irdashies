@@ -4,6 +4,7 @@ import {
   getChannelSnapshotStore,
   useLapTraceStore,
   useLovelyTrackData,
+  useSessionStore,
 } from '@irdashies/context';
 import { compareCorner } from '../../../domain/lapTrace/cornerComparison';
 import {
@@ -226,6 +227,29 @@ const useTrackCorners = (
     }
     return labelCorners(kept, labelStyle);
   }, [sections, enabled, labelStyle]);
+};
+
+/**
+ * Whether the session's track and layout have corners in the bundled track
+ * data: false when the track is named but not found, or found without a
+ * corner. Undefined until a session names its track, so nothing is claimed
+ * about a track not yet known.
+ *
+ * Not gated on a reference lap, unlike the hooks below: whether the corners
+ * can ever show is a fact about the track, worth saying before the first
+ * corner is driven.
+ */
+export const useTrackHasCorners = (): boolean | undefined => {
+  const trackName = useSessionStore((s) => s.session?.WeekendInfo?.TrackName);
+  const { sections } = useLovelyTrackData();
+
+  return useMemo(
+    () =>
+      trackName
+        ? sections.some((section) => section.type !== 'straight')
+        : undefined,
+    [trackName, sections]
+  );
 };
 
 /**

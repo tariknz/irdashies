@@ -472,7 +472,17 @@ export interface LastCornerPanelProps {
    * this renders identically to before.
    */
   latestScale?: number;
+  /**
+   * The track and layout have no corner data, so no corner can ever show.
+   * The panel says so in its own box rather than sitting blank, which reads
+   * as broken.
+   */
+  unavailable?: boolean;
 }
+
+/** What the panel says when the track and layout have no corner data. */
+export const LAST_CORNER_UNAVAILABLE_TEXT =
+  'Corners are not available for this track and layout';
 
 /**
  * The recently completed corners, newest at the top, every one measured
@@ -498,6 +508,7 @@ export const LastCornerPanel = ({
   cornerLabels,
   fontSize = LAST_CORNER_DEFAULT_FONT_SIZE,
   latestScale = 1,
+  unavailable = false,
 }: LastCornerPanelProps) => {
   const container = useRef<HTMLDivElement>(null);
   const requested = Math.max(1, count);
@@ -658,20 +669,31 @@ export const LastCornerPanel = ({
         maxHeight: '100%',
       }}
     >
-      {/* Keyed by slot, not by section: the same corner legitimately appears
-          twice once history spans a lap boundary, and these are fixed
-          positions (newest first) rather than a reorderable list. */}
-      {slots.map((entry, i) => (
-        <LastCornerRow
-          key={`slot-${i}`}
-          entry={entry}
-          speedUnit={speedUnit}
-          columns={drawnColumns}
-          labelEm={labelEm}
-          fontSize={i === 0 ? heroFontSize : fontSize}
-          hero={i === 0}
-        />
-      ))}
+      {/* In the box the rows would have had, so the trace beside it does not
+          move between a track with corners and one without. */}
+      {unavailable ? (
+        <span
+          data-testid="last-corner-unavailable"
+          className="leading-tight text-slate-400"
+        >
+          {LAST_CORNER_UNAVAILABLE_TEXT}
+        </span>
+      ) : (
+        // Keyed by slot, not by section: the same corner legitimately appears
+        // twice once history spans a lap boundary, and these are fixed
+        // positions (newest first) rather than a reorderable list.
+        slots.map((entry, i) => (
+          <LastCornerRow
+            key={`slot-${i}`}
+            entry={entry}
+            speedUnit={speedUnit}
+            columns={drawnColumns}
+            labelEm={labelEm}
+            fontSize={i === 0 ? heroFontSize : fontSize}
+            hero={i === 0}
+          />
+        ))
+      )}
     </div>
   );
 };
