@@ -17,8 +17,8 @@ describe('buildSimulatorUsageProperties', () => {
         last_simulator: 'lmu',
         used_iracing: true,
         used_lmu: true,
-        iracing_connected_seconds: 1200,
-        lmu_connected_seconds: 5400,
+        iracing_connected_minutes: 20,
+        lmu_connected_minutes: 90,
       },
       $set_once: { first_simulator: 'iracing' },
     });
@@ -47,20 +47,23 @@ describe('buildSimulatorUsageProperties', () => {
     });
   });
 
-  it('rounds the time to the second', () => {
+  it('gives the time in whole minutes, rounded up', () => {
     expect(
       buildSimulatorUsageProperties({ lmu: { first: 1, last: 1, ms: 90_499 } })
     ).toEqual({
       $set: {
         last_simulator: 'lmu',
         used_lmu: true,
-        lmu_connected_seconds: 90,
+        lmu_connected_minutes: 2,
       },
       $set_once: { first_simulator: 'lmu' },
     });
-    expect(
-      buildSimulatorUsageProperties({ lmu: { first: 1, last: 1, ms: 500 } })
-        ?.$set.lmu_connected_seconds
-    ).toBe(1);
+    const minutes = (ms: number) =>
+      buildSimulatorUsageProperties({ lmu: { first: 1, last: 1, ms } })?.$set
+        .lmu_connected_minutes;
+    expect(minutes(0)).toBe(0);
+    expect(minutes(500)).toBe(1);
+    expect(minutes(60_000)).toBe(1);
+    expect(minutes(60_001)).toBe(2);
   });
 });

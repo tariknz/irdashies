@@ -1,6 +1,8 @@
 import type { ActiveSimulator } from '@irdashies/types';
 import type { SimulatorUsage } from '../storage/simulatorUsage';
 
+const MINUTE_MS = 60 * 1000;
+
 /** Person properties in PostHog, set from the simulators used. */
 export interface SimulatorUsageProperties {
   $set: {
@@ -8,11 +10,11 @@ export interface SimulatorUsageProperties {
     last_simulator: ActiveSimulator;
   } & Partial<Record<`used_${ActiveSimulator}`, true>> &
     /**
-     * How long each showed the track since the previous report, in seconds:
-     * in the car, a replay, spectating or LMU's monitor. Menus and the garage
-     * do not count.
+     * How long each showed the track since the previous report, in whole
+     * minutes, rounded up: in the car, a replay, spectating or LMU's monitor.
+     * Menus and the garage do not count.
      */
-    Partial<Record<`${ActiveSimulator}_connected_seconds`, number>>;
+    Partial<Record<`${ActiveSimulator}_connected_minutes`, number>>;
   /**
    * The simulator used first in the period reported. PostHog keeps
    * the first value it receives, so it names the first simulator used since
@@ -45,8 +47,9 @@ export const buildSimulatorUsageProperties = (
   };
   for (const simulator of byFirst) {
     properties.$set[`used_${simulator}`] = true;
-    properties.$set[`${simulator}_connected_seconds`] = Math.round(
-      (usage[simulator]?.ms ?? 0) / 1000
+    // Rounded up, so a minute begun counts as one.
+    properties.$set[`${simulator}_connected_minutes`] = Math.ceil(
+      (usage[simulator]?.ms ?? 0) / MINUTE_MS
     );
   }
   return properties;

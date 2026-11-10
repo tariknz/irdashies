@@ -1055,8 +1055,9 @@ describe('Analytics simulator usage', () => {
         last_simulator: 'lmu',
         used_iracing: true,
         used_lmu: true,
-        iracing_connected_seconds: 5400,
-        lmu_connected_seconds: 90,
+        iracing_connected_minutes: 90,
+        // 1 min 30.4 s, rounded up.
+        lmu_connected_minutes: 2,
         $set_once: { first_simulator: 'iracing' },
       }),
     });
@@ -1101,8 +1102,8 @@ describe('Analytics simulator usage', () => {
       last_simulator: 'lmu',
       used_iracing: true,
       used_lmu: true,
-      iracing_connected_seconds: 60,
-      lmu_connected_seconds: 30,
+      iracing_connected_minutes: 1,
+      lmu_connected_minutes: 1,
       $set_once: { first_simulator: 'iracing' },
     });
     // Still connected: LMU stays, to carry the rest of this connection.
@@ -1136,7 +1137,7 @@ describe('Analytics simulator usage', () => {
     await start(watchingAnalytics());
     expect(identified()).toMatchObject({
       last_simulator: 'iracing',
-      iracing_connected_seconds: 2,
+      iracing_connected_minutes: 1,
     });
   });
 
@@ -1186,9 +1187,10 @@ describe('Analytics simulator usage', () => {
     await analytics.setOptOut(false);
     clock += 3000;
     await start(analytics);
+    // 3 s from the opt-in; counting the 65 s before it would make 2.
     expect(identified()).toMatchObject({
       used_lmu: true,
-      lmu_connected_seconds: 3,
+      lmu_connected_minutes: 1,
     });
   });
 
