@@ -5,12 +5,19 @@ import {
   ViewportGridSnapState,
   snapLayoutPositionToViewportGrid,
 } from './snapToViewportGrid';
+import { isNearDisplayCenter, snapToDisplayCenter } from './displayCenter';
 
 interface UseDragWidgetOptions {
   layout: WidgetLayout;
   onLayoutChange: (layout: WidgetLayout) => void;
   enabled: boolean;
   snapOptions?: ViewportGridSnapOptions;
+  /**
+   * The display's horizontal middle, in screen coordinates. A widget whose
+   * center comes close snaps onto it, and the center line shows once the
+   * widget comes near it. Undefined before the display is known.
+   */
+  centerX?: number;
 }
 
 interface DragState {
@@ -20,14 +27,21 @@ interface DragState {
   startLayoutY: number;
 }
 
-/** Provides pointer-driven drag behaviour for a widget, with optional viewport grid snapping. */
+/**
+ * Provides pointer-driven drag behaviour for a widget, with optional viewport
+ * grid snapping and a snap onto the display's middle. Shift drags freely.
+ */
 export function useDragWidget({
   layout,
   onLayoutChange,
   enabled,
   snapOptions,
+  centerX,
 }: UseDragWidgetOptions) {
   const [isDragging, setIsDragging] = useState(false);
+  // Once shown, the center line stays for the rest of the drag.
+  const [showCenterGuide, setShowCenterGuide] = useState(false);
+  const showCenterGuideRef = useRef(false);
   const dragStateRef = useRef<DragState | null>(null);
   const layoutRef = useRef(layout);
   const snapStateRef = useRef<ViewportGridSnapState>({});
@@ -51,6 +65,8 @@ export function useDragWidget({
         startLayoutY: layoutRef.current.y,
       };
       snapStateRef.current = {};
+      showCenterGuideRef.current = false;
+      setShowCenterGuide(false);
       setIsDragging(true);
     },
     [enabled]
@@ -79,12 +95,27 @@ export function useDragWidget({
       );
 
       snapStateRef.current = snapped.state;
-      onLayoutChange(snapped.layout);
+
+      let placed = snapped.layout;
+      if (centerX !== undefined) {
+        if (!e.shiftKey)
+          placed = snapToDisplayCenter(placed, nextLayout, centerX);
+        if (
+          !showCenterGuideRef.current &&
+          isNearDisplayCenter(placed, centerX)
+        ) {
+          showCenterGuideRef.current = true;
+          setShowCenterGuide(true);
+        }
+      }
+      onLayoutChange(placed);
     };
 
     const handlePointerUp = () => {
       dragStateRef.current = null;
       snapStateRef.current = {};
+      showCenterGuideRef.current = false;
+      setShowCenterGuide(false);
       setIsDragging(false);
     };
 
@@ -95,10 +126,11 @@ export function useDragWidget({
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
-  }, [isDragging, onLayoutChange, snapOptions]);
+  }, [isDragging, onLayoutChange, snapOptions, centerX]);
 
   return {
     isDragging,
+    showCenterGuide,
     dragHandleProps: {
       onPointerDown: handlePointerDown,
       style: { cursor: enabled ? 'move' : 'default' },
