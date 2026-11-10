@@ -16,15 +16,17 @@ reduction or change to input precision is involved.
 A drawing object owns the bounded sample ring and reusable generators.
 Painting is separate from sampling: ResizeObserver, device-pixel-ratio resize
 events and widget-scale changes repaint existing history without moving its
-time axis. Only an input/config update schedules a sample, with the latest
-update winning before RAF. Unmount cancels RAF and releases resize listeners.
+time axis. Each committed input/config update records a sample synchronously;
+only painting is coalesced before RAF. Unmount cancels RAF and releases resize
+listeners.
 Capacity changes reset all channels together. Invalid capacities cannot
 produce a zero-sized ring or non-finite coordinates.
 
 The canvas has explicit CSS sizing and a backing buffer derived from its
 logical dimensions, device pixel ratio and widget scale. `inputTraceFrameMs`
-continues to measure the complete data frame (configuration, sample insertion
-and painting); resize-only repaints use the same measure.
+measures painting only, including resize-only repaints. Configuration and sample
+insertion do not increment the frame count. The historical benchmark below
+predates this sampling change and measures the complete RAF callback as described.
 
 ## Controlled CPU microbenchmark
 
@@ -72,7 +74,7 @@ and the standalone review harness are outside the repository under
 `/tmp/irdashies-canvas-review/`.
 
 Tests record numerical Canvas commands and verify ring-buffer wraparound,
-capacity changes, latest-input coalescing, cancellation, channel order,
+capacity changes, sample retention with coalesced paints, cancellation, channel order,
 steering/brake coordinates, ABS fill opacity and overlay width, disabled
 channel clearing, resize without sampling, DPR/widget scale, and invalid
 capacities. Existing Input stories cover random controls, out-of-range input,

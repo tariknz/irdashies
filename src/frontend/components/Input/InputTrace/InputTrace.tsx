@@ -12,7 +12,7 @@ export interface InputTraceProps {
   settings?: Partial<InputTraceSettings>;
 }
 
-/** Canvas trace of pedal and steering history, sampled and painted per frame. */
+/** Canvas trace sampled on input updates and painted on animation frames. */
 export const InputTrace = memo(({ input, settings }: InputTraceProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef<InputTraceDrawing | null>(null);
@@ -57,15 +57,12 @@ export const InputTrace = memo(({ input, settings }: InputTraceProps) => {
   }, [widgetScale]);
 
   useEffect(() => {
-    const drawFrame = () => {
-      const drawing = drawingRef.current;
-      if (!drawing) return;
-      drawing.configure(settings);
-      drawing.sample(input);
-      drawing.paint();
-    };
+    const drawing = drawingRef.current;
+    if (!drawing) return;
+    drawing.configure(settings);
+    drawing.sample(input);
     const handle = requestAnimationFrame(() =>
-      perfMetrics.measure('inputTraceFrame', drawFrame)
+      perfMetrics.measure('inputTraceFrame', drawing.paint)
     );
     return () => cancelAnimationFrame(handle);
   }, [input, settings]);

@@ -215,12 +215,20 @@ describe('InputTrace Canvas', () => {
     expect(paths(existing.container)).toEqual(paths(fresh.container));
   });
 
-  it('keeps only the latest update before the next frame and cancels on unmount', () => {
+  it('retains every input update while coalescing paints and cancels on unmount', () => {
     const existing = render(trace(activeInput, 40));
+    recordMeasure.mockClear();
     existing.rerender(trace(idleInput, 40));
     expect(callbacks.size).toBe(1);
+    expect(recordMeasure).not.toHaveBeenCalled();
     drawFrame();
-    const fresh = render(trace(idleInput, 40));
+    expect(recordMeasure).toHaveBeenCalledExactlyOnceWith(
+      'inputTraceFrame',
+      expect.any(Number)
+    );
+    const fresh = render(trace(activeInput, 40));
+    drawFrame();
+    fresh.rerender(trace(idleInput, 40));
     drawFrame();
     expect(paths(existing.container)).toEqual(paths(fresh.container));
     existing.rerender(trace(activeInput, 40));
@@ -347,7 +355,7 @@ describe('InputTrace Canvas', () => {
     view.rerender(
       <WidgetScale scale={200}>{trace(activeInput, 40)}</WidgetScale>
     );
-    // Layout redraws only; the source sample hasn't been delivered yet.
+    // Input samples update immediately; painting remains frame-scheduled.
     expect(paths(view.container)).toEqual(before);
     expect(canvas.width).toBe(1600);
     expect(canvas.height).toBe(400);
