@@ -48,8 +48,8 @@ export const GantryTabBar = memo(
     onAlwaysOnTopChange,
   }: GantryTabBarProps) => {
     return (
-      <div className="settings-shell shrink-0 bg-slate-950 text-slate-200">
-        <header className="grid min-h-12 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-4 border-b border-slate-700 px-4 py-1">
+      <div className="settings-shell @container shrink-0 bg-slate-950 text-slate-200">
+        <header className="flex min-h-12 flex-wrap items-center gap-x-4 gap-y-1 border-b border-slate-700 px-4 py-1 @min-[64rem]:grid @min-[64rem]:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
           <div className="flex min-w-0 items-center gap-3">
             <img src={logo} alt="" className="h-7 w-7 shrink-0" />
             <span className="shrink-0 text-lg font-semibold tracking-[-0.04em] text-white">
@@ -58,7 +58,7 @@ export const GantryTabBar = memo(
             <span aria-hidden="true" className="h-5 w-px bg-slate-700" />
             <h1 className="text-sm font-normal text-slate-300">Gantry</h1>
           </div>
-          <div className="flex min-w-0 items-center justify-self-center gap-2 text-xs text-slate-400">
+          <div className="flex min-w-0 flex-auto items-center justify-center justify-self-center gap-2 text-xs text-slate-400">
             {connectedSimulator && (
               <>
                 <span
@@ -69,7 +69,7 @@ export const GantryTabBar = memo(
               </>
             )}
           </div>
-          <div className="flex shrink-0 items-center justify-self-end gap-2">
+          <div className="ml-auto flex flex-wrap items-center justify-end justify-self-end gap-2">
             <span className="text-sm text-slate-400">Follow</span>
             <Tooltip
               content="Pins one driver: their standings row is highlighted, kept scrolled into view, and every other row is dimmed. Choose All drivers to clear it."
