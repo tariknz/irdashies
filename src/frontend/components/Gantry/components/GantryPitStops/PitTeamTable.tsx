@@ -14,7 +14,7 @@ interface PitTeamTableProps {
 }
 
 const HEADER =
-  'sticky top-0 bg-slate-900 text-left text-[10px] uppercase tracking-wider text-slate-500 font-bold px-2 py-1';
+  'sticky top-0 z-10 h-[26px] border-y border-slate-700 bg-slate-900 px-2 text-left text-xs font-normal whitespace-nowrap text-slate-400';
 
 const Delta = ({
   value,
@@ -26,12 +26,12 @@ const Delta = ({
   value === null ? null : (
     <span
       className={[
-        'ml-1 text-[11px]',
+        'ml-1 text-xs',
         value > 0
           ? 'text-red-400'
           : value < 0
             ? 'text-green-400'
-            : 'text-slate-500',
+            : 'text-slate-400',
       ].join(' ')}
     >
       ({format(value)})
@@ -63,7 +63,7 @@ export const PitTeamTable = memo(
 
     if (summaries.length === 0) {
       return (
-        <div className="flex h-full items-center justify-center text-sm text-slate-500">
+        <div className="flex h-full items-center justify-center text-sm text-slate-400">
           No pit stops yet.
         </div>
       );
@@ -71,7 +71,7 @@ export const PitTeamTable = memo(
 
     const columns = showClass ? 12 : 11;
     return (
-      <table className="w-full text-xs border-collapse">
+      <table className="w-full border-collapse text-sm">
         <thead>
           <tr>
             <th className={HEADER} />
@@ -97,20 +97,22 @@ export const PitTeamTable = memo(
                 key={summary.carIdx}
                 onClick={() => toggle(summary.carIdx)}
                 className={[
-                  'cursor-pointer odd:bg-slate-800/40 border-b border-slate-800/60 hover:bg-slate-700/40',
-                  car?.isPlayer ? 'text-amber-300' : 'text-slate-200',
+                  'cursor-pointer border-b border-slate-700/55 tabular-nums',
+                  car?.isPlayer
+                    ? 'bg-yellow-500/20 text-amber-300 hover:bg-yellow-500/30'
+                    : 'text-slate-200 hover:bg-slate-800',
                   summary.carIdx === followedCarIdx
-                    ? 'outline outline-1 outline-amber-400/70'
+                    ? 'outline-2 -outline-offset-2 outline-accent-400'
                     : '',
                 ].join(' ')}
               >
-                <td className="px-2 py-1 text-slate-500">
-                  {open ? <CaretDown size={12} /> : <CaretRight size={12} />}
+                <td className="px-2 py-1 text-slate-400">
+                  {open ? <CaretDown size={14} /> : <CaretRight size={14} />}
                 </td>
-                <td className="px-2 py-1 tabular-nums">
+                <td className="px-2 py-1">
                   {car?.classPosition ? `P${car.classPosition}` : '-'}
                 </td>
-                <td className="px-2 py-1 tabular-nums font-bold">
+                <td className="px-2 py-1 font-semibold">
                   {car ? `#${car.carNumber}` : `car ${summary.carIdx}`}
                 </td>
                 {showClass && (
@@ -121,44 +123,44 @@ export const PitTeamTable = memo(
                 <td className="px-2 py-1 max-w-56 truncate">
                   {car?.teamName ?? ''}
                   {summary.inPitLane && (
-                    <span className="ml-2 rounded bg-amber-500 px-1.5 py-px text-[10px] font-bold uppercase tracking-wider text-slate-900">
+                    <span className="ml-2 rounded-sm bg-yellow-500/20 px-2 py-px text-xs font-semibold text-yellow-400">
                       In pits
                     </span>
                   )}
                 </td>
-                <td className="px-2 py-1 tabular-nums">
+                <td className="px-2 py-1 whitespace-nowrap">
                   {summary.stops}
                   <Delta
                     value={summary.stopsDelta}
                     format={(value) => formatSigned(value)}
                   />
                 </td>
-                <td className="px-2 py-1 tabular-nums">
+                <td className="px-2 py-1 whitespace-nowrap">
                   {formatStopSeconds(summary.pitLaneSeconds)}
                   <Delta
                     value={summary.pitLaneDelta}
                     format={(value) => `${formatSigned(value, 1)}s`}
                   />
                 </td>
-                <td className="px-2 py-1 tabular-nums">
+                <td className="px-2 py-1">
                   {formatStopSeconds(summary.averageStallSeconds)}
                 </td>
-                <td className="px-2 py-1 tabular-nums">
+                <td className="px-2 py-1 whitespace-nowrap">
                   {summary.averageStintLaps === null
                     ? '-'
                     : `${summary.averageStintLaps.toFixed(1)} laps`}
                 </td>
-                <td className="px-2 py-1 tabular-nums">
+                <td className="px-2 py-1 whitespace-nowrap">
                   {summary.lastStopLap === null
                     ? '-'
                     : `Lap ${summary.lastStopLap}`}
                   {summary.lapsSinceStop !== null && (
-                    <span className="ml-1 text-[11px] text-slate-500">
+                    <span className="ml-1 text-xs text-slate-400">
                       ({summary.lapsSinceStop} ago)
                     </span>
                   )}
                 </td>
-                <td className="px-2 py-1 tabular-nums">
+                <td className="px-2 py-1 whitespace-nowrap">
                   {summary.nextStopLap === null
                     ? '-'
                     : `≈ Lap ${summary.nextStopLap}`}
@@ -167,7 +169,7 @@ export const PitTeamTable = memo(
                   <div className="truncate">
                     {summary.drivers.join(', ') || '-'}
                   </div>
-                  <div className="text-[11px] text-slate-500">
+                  <div className="text-xs text-slate-400">
                     {summary.driverChanges} change
                     {summary.driverChanges === 1 ? '' : 's'}
                   </div>
@@ -175,7 +177,10 @@ export const PitTeamTable = memo(
               </tr>,
               open ? (
                 <tr key={`${summary.carIdx}-stops`}>
-                  <td colSpan={columns} className="bg-slate-950/60 px-4 py-2">
+                  <td
+                    colSpan={columns}
+                    className="border-b border-slate-700 bg-slate-950/60 px-4 py-2"
+                  >
                     <PitStopLog
                       rows={rows.filter(
                         (row) => row.stop.carIdx === summary.carIdx

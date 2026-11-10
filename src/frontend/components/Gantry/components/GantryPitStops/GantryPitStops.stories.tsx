@@ -26,7 +26,7 @@ const Interactive = ({
   );
   const [teamFilter, setTeamFilter] = useState<number | null>(null);
   return (
-    <div className="h-[720px] w-full bg-slate-900 text-white">
+    <div className="h-screen overflow-hidden bg-settings-page p-3 text-white">
       <PitStopsView
         data={demoPitStopData({ inProgress, empty })}
         followedCarIdx={5}

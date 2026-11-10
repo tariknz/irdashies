@@ -21,9 +21,6 @@ import {
   withGantryPitStops,
 } from './gantryPitStopEdits';
 
-const smallButtonClass =
-  'flex items-center gap-1 px-2 py-1 text-xs rounded border transition-colors';
-
 const TYRE_FIELDS: { key: PitTyreChange; label: string }[] = [
   { key: 'front', label: 'Front tyres' },
   { key: 'rear', label: 'Rear tyres' },
@@ -44,7 +41,7 @@ const ProfileEditor = ({
   const { tyreSeconds, fuelRate, driverChangeSeconds, fuelPerLap, tankLitres } =
     PIT_PROFILE_LIMITS;
   return (
-    <div className="space-y-3 rounded border border-slate-700 bg-slate-800/40 p-3">
+    <div className="space-y-3 rounded-lg border border-settings-hover bg-settings-control/40 p-4">
       <div className="flex items-center gap-2">
         <input
           aria-label="Profile name"
@@ -52,17 +49,17 @@ const ProfileEditor = ({
           onChange={(event) =>
             onChange({ ...profile, name: event.target.value })
           }
-          className="flex-1 rounded-md bg-slate-900 border border-slate-600 px-2 py-1 text-sm text-white"
+          className="settings-field flex-1"
         />
-        <span className="font-mono text-xs text-slate-500">
+        <span className="font-mono text-xs text-slate-400">
           {profile.carPath}
         </span>
         <button
           type="button"
           onClick={onDelete}
-          className={`${smallButtonClass} border-red-800 text-red-300 hover:bg-red-900/40`}
+          className="settings-button-danger"
         >
-          <TrashIcon size={12} />
+          <TrashIcon size={16} />
           Remove
         </button>
       </div>
@@ -189,9 +186,9 @@ export const GantryPitStopSettings = () => {
                 newPitProfile(car.carPath, car.name),
               ])
             }
-            className={`${smallButtonClass} border-slate-600 text-slate-200 hover:bg-slate-700`}
+            className="settings-button"
           >
-            <PlusIcon size={12} />
+            <PlusIcon size={16} />
             Add {car.name}
           </button>
         ))}
@@ -199,15 +196,13 @@ export const GantryPitStopSettings = () => {
           type="button"
           onClick={download}
           disabled={pitStops.profiles.length === 0}
-          className={`${smallButtonClass} border-slate-600 text-slate-200 hover:bg-slate-700 disabled:opacity-50`}
+          className="settings-button"
         >
-          <DownloadSimpleIcon size={12} />
+          <DownloadSimpleIcon size={16} />
           Export
         </button>
-        <label
-          className={`${smallButtonClass} cursor-pointer border-slate-600 text-slate-200 hover:bg-slate-700`}
-        >
-          <UploadSimpleIcon size={12} />
+        <label className="settings-button cursor-pointer">
+          <UploadSimpleIcon size={16} />
           Import
           <input
             type="file"
@@ -232,11 +227,11 @@ export const GantryPitStopSettings = () => {
             }}
           />
         </label>
-        {message && <span className="text-xs text-slate-400">{message}</span>}
+        {message && <span className="text-sm text-slate-400">{message}</span>}
       </div>
 
       {pitStops.profiles.length === 0 && (
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-400">
           No cars yet. Join a session to add its cars, or import a file.
         </p>
       )}

@@ -24,11 +24,11 @@ interface PitStopLogProps {
 const REPLAY_LEAD_SECONDS = 5;
 
 const HEADER =
-  'sticky top-0 bg-slate-900 text-left text-[10px] uppercase tracking-wider text-slate-500 font-bold px-2 py-1';
+  'sticky top-0 z-10 h-[26px] border-y border-slate-700 bg-slate-900 px-2 text-left text-xs font-normal whitespace-nowrap text-slate-400';
 
 const Badge = ({ children, tone }: { children: string; tone: string }) => (
   <span
-    className={`inline-block rounded px-1.5 py-px text-[10px] font-bold uppercase tracking-wider ${tone}`}
+    className={`inline-block rounded-sm px-2 py-px text-xs font-semibold whitespace-nowrap ${tone}`}
   >
     {children}
   </span>
@@ -79,16 +79,18 @@ const LogRow = memo(
     return (
       <tr
         className={[
-          'odd:bg-slate-800/40 border-b border-slate-800/60',
-          car?.isPlayer ? 'text-amber-300' : 'text-slate-200',
-          followed ? 'outline outline-1 outline-amber-400/70' : '',
+          'border-b border-slate-700/55 tabular-nums',
+          car?.isPlayer
+            ? 'bg-yellow-500/20 text-amber-300 hover:bg-yellow-500/30'
+            : 'text-slate-200 hover:bg-slate-800',
+          followed ? 'outline-2 -outline-offset-2 outline-accent-400' : '',
         ].join(' ')}
       >
-        <td className="px-2 py-1 tabular-nums text-slate-400">
+        <td className="px-2 py-1 text-slate-400">
           {formatSessionClock(stop.entryTime)}
         </td>
-        <td className="px-2 py-1 tabular-nums">{stop.lap}</td>
-        <td className="px-2 py-1 tabular-nums font-bold">
+        <td className="px-2 py-1">{stop.lap}</td>
+        <td className="px-2 py-1 font-semibold">
           {car ? `#${car.carNumber}` : `car ${stop.carIdx}`}
         </td>
         {showClass && (
@@ -96,29 +98,29 @@ const LogRow = memo(
         )}
         <td className="px-2 py-1 max-w-56">
           <div className="truncate">{car?.teamName ?? ''}</div>
-          <div className="truncate text-[11px] text-slate-400">
+          <div className="truncate text-xs text-slate-400">
             {row.driverChanged
               ? `${stop.driverNameIn} → ${stop.driverNameOut}`
               : stop.driverNameIn}
           </div>
         </td>
-        <td className="px-2 py-1 tabular-nums text-slate-400">{row.number}</td>
-        <td className="px-2 py-1 tabular-nums">{row.stintLaps || '-'}</td>
-        <td className="px-2 py-1 tabular-nums">
+        <td className="px-2 py-1 text-slate-400">{row.number}</td>
+        <td className="px-2 py-1">{row.stintLaps || '-'}</td>
+        <td className="px-2 py-1">
           <LiveSeconds
             seconds={row.pitLaneSeconds}
             running={row.inProgress}
             since={receivedAt}
           />
         </td>
-        <td className="px-2 py-1 tabular-nums">
+        <td className="px-2 py-1">
           <LiveSeconds
             seconds={stop.stallTime === null ? null : row.stallSeconds}
             running={stop.stallEnteredAt !== null}
             since={receivedAt}
           />
         </td>
-        <td className="px-2 py-1 tabular-nums">
+        <td className="px-2 py-1 whitespace-nowrap">
           {row.positionChange === null ? (
             '-'
           ) : (
@@ -138,22 +140,22 @@ const LogRow = memo(
         <td className="px-2 py-1">
           <div className="flex flex-wrap gap-1">
             {row.inProgress && (
-              <Badge tone="bg-amber-500 text-slate-900">In pits</Badge>
+              <Badge tone="bg-yellow-500/20 text-yellow-400">In pits</Badge>
             )}
             {row.driverChanged && (
-              <Badge tone="bg-sky-700 text-sky-100">Driver change</Badge>
+              <Badge tone="bg-blue-500/20 text-blue-400">Driver change</Badge>
             )}
             {stop.fastRepairs > 0 && (
-              <Badge tone="bg-red-800 text-red-100">Fast repair</Badge>
+              <Badge tone="bg-red-500/20 text-red-400">Fast repair</Badge>
             )}
             {compoundChanged && (
-              <Badge tone="bg-emerald-800 text-emerald-100">Compound</Badge>
+              <Badge tone="bg-emerald-500/20 text-emerald-400">Compound</Badge>
             )}
             {stop.kind === 'tow' && (
-              <Badge tone="bg-slate-600 text-slate-100">Towed</Badge>
+              <Badge tone="bg-orange-500/20 text-orange-400">Towed</Badge>
             )}
             {stop.exitTime !== null && stop.stallTime === null && (
-              <Badge tone="bg-slate-700 text-slate-200">Drive-through</Badge>
+              <Badge tone="bg-white/10 text-slate-300">Drive-through</Badge>
             )}
           </div>
         </td>
@@ -172,12 +174,7 @@ const LogRow = memo(
                 type="button"
                 onClick={handleReplay}
                 disabled={!canReplay}
-                className={[
-                  'px-2 py-0.5 rounded text-xs font-bold',
-                  canReplay
-                    ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 hover:bg-indigo-500/30'
-                    : 'bg-white/5 text-slate-600 border border-slate-700 cursor-not-allowed',
-                ].join(' ')}
+                className="settings-button min-h-7 px-2.5 py-0.5 tabular-nums"
               >
                 -{REPLAY_LEAD_SECONDS}s
               </button>
@@ -208,13 +205,13 @@ export const PitStopLog = memo(
   }: PitStopLogProps) => {
     if (rows.length === 0) {
       return (
-        <div className="flex h-full items-center justify-center text-sm text-slate-500">
+        <div className="flex h-full items-center justify-center text-sm text-slate-400">
           No pit stops yet.
         </div>
       );
     }
     return (
-      <table className="w-full text-xs border-collapse">
+      <table className="w-full border-collapse text-sm">
         <thead>
           <tr>
             <th className={HEADER}>Time</th>

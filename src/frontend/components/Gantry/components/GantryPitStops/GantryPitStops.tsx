@@ -3,6 +3,7 @@ import { useTrackStateSelector } from '@irdashies/context';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import type { PitStopRow } from '@irdashies/domain';
 import type { TrackStateSnapshot } from '@irdashies/types';
+import { GantryPanel } from '../GantryPanel/GantryPanel';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { LiveSeconds } from './LiveSeconds';
 import { PitStopLog, type PitStopReplay } from './PitStopLog';
@@ -27,13 +28,19 @@ interface ViewState {
   onTeamFilterChange: (carIdx: number | null) => void;
 }
 
-const BUTTON =
-  'flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold uppercase tracking-wider transition-colors';
-const buttonTone = (active: boolean) =>
-  active
-    ? 'bg-amber-500 text-slate-900'
-    : 'bg-slate-800 text-slate-400 hover:text-slate-200';
-const LABEL = 'text-xs text-slate-500 font-bold uppercase tracking-wider';
+const toggleClass = (active: boolean) =>
+  [
+    'flex min-h-9 items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors',
+    active
+      ? 'border-accent-500 bg-accent-500 text-on-accent'
+      : 'border-settings-boundary bg-transparent text-slate-300 hover:border-slate-400',
+  ].join(' ');
+const LABEL = 'text-sm text-slate-400';
+
+const PANEL_TITLES: Record<PitStopsMode, string> = {
+  stops: 'Pit stops',
+  teams: 'Team strategy',
+};
 
 const MODE_TOOLTIPS: Record<PitStopsMode, string> = {
   stops:
@@ -49,17 +56,17 @@ const PitLaneNow = memo(
   ({ rows, receivedAt }: { rows: PitStopRow[]; receivedAt: number }) => {
     if (rows.length === 0) return null;
     return (
-      <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 border-b border-slate-700/50 bg-amber-500/10 shrink-0">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-700 bg-yellow-500/10 px-4 py-2">
         <span className={LABEL}>In pit lane</span>
         {rows.map((row) => (
           <span
             key={row.stop.id}
             className={[
-              'flex items-center gap-2 rounded bg-slate-800 px-2 py-0.5 text-xs tabular-nums',
+              'flex items-center gap-2 rounded-md border border-settings-boundary bg-settings-control px-2 py-0.5 text-sm tabular-nums',
               row.car?.isPlayer ? 'text-amber-300' : 'text-slate-200',
             ].join(' ')}
           >
-            <span className="font-bold">
+            <span className="font-semibold">
               #{row.car?.carNumber ?? row.stop.carIdx}
             </span>
             <span className="text-slate-400">lane</span>
@@ -151,10 +158,13 @@ export const PitStopsView = memo(
     const showClass = isMultiClass && activeClass === ALL_CLASSES;
 
     return (
-      <div className="flex flex-col h-full overflow-hidden">
-        <div className="flex flex-wrap items-center gap-4 px-3 py-1.5 border-b border-slate-700/50 shrink-0">
+      <GantryPanel label="Pit stops">
+        <div className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-2 border-b border-slate-700 px-4 py-2.5">
+          <h2 className="mr-auto text-lg leading-snug font-semibold text-slate-200">
+            {PANEL_TITLES[mode]}
+          </h2>
           <div
-            className="flex items-center gap-1"
+            className="flex items-center gap-1.5"
             role="group"
             aria-label="Pit stops view"
           >
@@ -168,7 +178,7 @@ export const PitStopsView = memo(
                   type="button"
                   aria-pressed={mode === option}
                   onClick={() => onModeChange(option)}
-                  className={`${BUTTON} ${buttonTone(mode === option)}`}
+                  className={toggleClass(mode === option)}
                 >
                   {option === 'stops' ? 'Stops' : 'Teams'}
                 </button>
@@ -180,7 +190,7 @@ export const PitStopsView = memo(
             <div className="flex items-center gap-2">
               <span className={LABEL}>Class</span>
               <div
-                className="flex items-center gap-1"
+                className="flex items-center gap-1.5"
                 role="group"
                 aria-label="Pit stops car class"
               >
@@ -190,10 +200,10 @@ export const PitStopsView = memo(
                     type="button"
                     aria-pressed={cls.id === activeClass}
                     onClick={() => onClassFilterChange(cls.id)}
-                    className={`${BUTTON} ${buttonTone(cls.id === activeClass)}`}
+                    className={toggleClass(cls.id === activeClass)}
                   >
                     <span
-                      className="w-2 h-2 rounded-full shrink-0"
+                      className="size-2 shrink-0 rounded-full"
                       style={{
                         backgroundColor: getTailwindStyle(
                           cls.color,
@@ -209,7 +219,7 @@ export const PitStopsView = memo(
                   type="button"
                   aria-pressed={activeClass === ALL_CLASSES}
                   onClick={() => onClassFilterChange(ALL_CLASSES)}
-                  className={`${BUTTON} ${buttonTone(activeClass === ALL_CLASSES)}`}
+                  className={toggleClass(activeClass === ALL_CLASSES)}
                 >
                   All
                 </button>
@@ -228,7 +238,7 @@ export const PitStopsView = memo(
                     event.target.value ? Number(event.target.value) : null
                   )
                 }
-                className="bg-slate-800 border border-slate-600 rounded text-xs text-slate-300 px-2 py-1 max-w-60"
+                className="settings-field max-w-60"
               >
                 <option value="">All teams</option>
                 {teamOptions.map((summary) => (
@@ -240,8 +250,7 @@ export const PitStopsView = memo(
             </div>
           )}
 
-          <div className="flex-1" />
-          <span className="text-xs text-slate-500 tabular-nums">
+          <span className="text-sm text-slate-400 tabular-nums">
             {logRows.length} stop{logRows.length === 1 ? '' : 's'}
           </span>
         </div>
@@ -268,7 +277,7 @@ export const PitStopsView = memo(
             />
           )}
         </div>
-      </div>
+      </GantryPanel>
     );
   }
 );
