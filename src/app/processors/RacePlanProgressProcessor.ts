@@ -202,6 +202,8 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
   private openStop: OpenStop | null = null;
   private lastStopExit: StopExit | null = null;
   private lastTeamLaps: number | null = null;
+  /** Team laps when the checkered flag fell; the race ends on the next one. */
+  private checkeredLaps: number | null = null;
   private lastDriverId: number | null = null;
   private lastCompound: number | null = null;
   private lastFuel: number | null = null;
@@ -329,9 +331,16 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
 
     if (race && !race.finished) {
       if (sessionState >= SessionState.Checkered) {
+        this.checkeredLaps ??= this.lastTeamLaps ?? teamLaps;
+      }
+      const crossed =
+        this.checkeredLaps !== null && teamLaps > this.checkeredLaps;
+      if (crossed || sessionState >= SessionState.CoolDown) {
         race.finished = true;
         this.openStop = null;
+        this.lastTeamLaps = teamLaps;
         this.closeCurrentStint(teamLaps, elapsed);
+        lapCompleted = crossed;
         event = true;
         persist = true;
       } else {
@@ -639,8 +648,10 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
       maxFuel: fuel,
       driverId: this.driverId,
       compound,
+      // No box call left means the stint runs to the flag: any stop is extra.
       unplanned:
-        boxLap !== null && boxLap - (teamLaps + 1) > UNPLANNED_WINDOW_LAPS,
+        this.result !== null &&
+        (boxLap === null || boxLap - (teamLaps + 1) > UNPLANNED_WINDOW_LAPS),
     };
   }
 
@@ -882,6 +893,7 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
     this.openStop = null;
     this.lastStopExit = null;
     this.lastTeamLaps = null;
+    this.checkeredLaps = null;
     this.lastDriverId = null;
     this.lastCompound = null;
     this.lastFuel = null;

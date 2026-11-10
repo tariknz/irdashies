@@ -611,6 +611,20 @@ describe('RacePlanProgressProcessor', () => {
     ]);
   });
 
+  it('counts any stop as unplanned once the stint is due to run to the flag', () => {
+    const { sim } = start();
+    engine.mockImplementation((input) => ({
+      ...fakeEngine(input),
+      boxLap: null,
+    }));
+    sim.driveLaps(BOX_AFTER_LAPS - 2);
+    sim.pit({ fuelAdd: 25 });
+    expect(sim.snapshot.stops[0].unplanned).toBe(true);
+    expect(lastInput().actual.map(({ planIndex }) => planIndex)).toEqual([
+      0, 0,
+    ]);
+  });
+
   it('moves a split stint to the next plan slot when the swap shows late', () => {
     const { sim } = start();
     sim.driveLaps(4);
@@ -887,16 +901,40 @@ describe('RacePlanProgressProcessor', () => {
     expect(sim.snapshot.mismatches).toEqual([]);
   });
 
-  it('closes the last stint at the checkered flag', () => {
+  it('finishes when the team car takes the checkered flag, not the leader', () => {
     const persistence = memoryPersistence();
     const { sim } = start({ persistence });
     sim.driveLaps(2);
     sim.state = SessionState.Checkered;
+    sim.tick(10);
+    expect(sim.snapshot.status).not.toBe('finished');
+    sim.lap();
+    expect(sim.snapshot.status).toBe('finished');
+    expect(lastInput().actual[0]).toMatchObject({ endLap: 3 });
+    expect(lastInput().remainingSec).toBe(0);
+    expect(persistence.records.get(SUB_SESSION_ID)?.finished).toBe(true);
+  });
+
+  it('finishes at once when the team car takes the flag as the leader', () => {
+    const { sim } = start();
+    sim.driveLaps(2);
+    sim.tick(PLAN_LAP_SEC - 1);
+    sim.laps += 1;
+    sim.state = SessionState.Checkered;
+    sim.tick();
+    expect(sim.snapshot.status).toBe('finished');
+    expect(lastInput().actual[0]).toMatchObject({ endLap: 3 });
+  });
+
+  it('finishes at cool-down when the team car does not cross the line again', () => {
+    const { sim } = start();
+    sim.driveLaps(2);
+    sim.state = SessionState.Checkered;
+    sim.tick(10);
+    sim.state = SessionState.CoolDown;
     sim.tick();
     expect(sim.snapshot.status).toBe('finished');
     expect(lastInput().actual[0]).toMatchObject({ endLap: 2 });
-    expect(lastInput().remainingSec).toBe(0);
-    expect(persistence.records.get(SUB_SESSION_ID)?.finished).toBe(true);
   });
 
   it('bumps the version only when something changed', () => {
