@@ -260,6 +260,7 @@ export function createRacePlanHistoryStore(
       await fsp.writeFile(temp, JSON.stringify(payload), 'utf8');
       await fsp.rename(temp, filePath);
     } catch (error) {
+      dirty = true;
       logger.warn(
         '[RacePlan] Failed to save race plan history',
         fileName,

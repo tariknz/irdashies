@@ -29,14 +29,17 @@ const CHECKED = new Set<RacePlanProjectedStint['status']>([
 const windowText = (
   level: RacePlanClashLevel,
   window: RacePlanAvailability,
+  stintStartMs: number,
   stintEndMs: number,
   timeZone: string | undefined
 ) => {
   const what = level === 'clash' ? 'unavailable' : 'maybe unavailable';
+  const from = formatClock(window.startMs, timeZone);
+  const until = formatClock(window.endMs, timeZone);
+  if (window.endMs >= stintEndMs) return `${what} from ${from}`;
   // A window that ends mid-stint is told by when the driver is back.
-  return window.endMs < stintEndMs
-    ? `${what} until ${formatClock(window.endMs, timeZone)}`
-    : `${what} from ${formatClock(window.startMs, timeZone)}`;
+  if (window.startMs <= stintStartMs) return `${what} until ${until}`;
+  return `${what} ${from}–${until}`;
 };
 
 /**
@@ -70,7 +73,7 @@ export const findStintClash = (
   return {
     stintNumber: stint.number,
     level,
-    description: `${projected}, ${windowText(level, window, endMs, timeZone)}`,
+    description: `${projected}, ${windowText(level, window, startMs, endMs, timeZone)}`,
   };
 };
 

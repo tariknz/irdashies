@@ -208,4 +208,20 @@ describe('race plan history store', () => {
     expect(warn).toHaveBeenCalled();
     expect(fs.readdirSync(tmpDir)).toEqual(['blocked']);
   });
+
+  it('keeps a failed write pending, so the next flush saves it', async () => {
+    vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    const blocked = path.join(tmpDir, 'blocked');
+    fs.writeFileSync(blocked, '');
+    const target = path.join(blocked, 'race-plan-history.json');
+    const store = createRacePlanHistoryStore(target);
+    store.save(record(1));
+    await store.flush();
+    fs.rmSync(blocked);
+    await store.flush();
+    const saved = JSON.parse(fs.readFileSync(target, 'utf8')) as {
+      sessions: unknown[];
+    };
+    expect(saved.sessions).toHaveLength(1);
+  });
 });

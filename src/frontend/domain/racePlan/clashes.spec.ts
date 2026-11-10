@@ -64,6 +64,18 @@ describe('findStintClash', () => {
     );
   });
 
+  it('gives both times for a window inside the stint', () => {
+    const clash = findStintClash(
+      stint(4, '07:00', '09:00'),
+      [window('unavailable', '07:30', '08:00')],
+      START,
+      'UTC'
+    );
+    expect(clash?.description).toBe(
+      'Projected 07:00–09:00, unavailable 07:30–08:00'
+    );
+  });
+
   it('flags an overlap with a maybe window as a warning', () => {
     const clash = findStintClash(
       stint(2, '01:00', '02:00'),
