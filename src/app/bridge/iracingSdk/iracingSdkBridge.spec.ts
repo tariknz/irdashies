@@ -460,13 +460,48 @@ describe('publishIRacingSDKEvents session polling', () => {
     }
   );
 
+  it('cleans up an entered lifecycle after bridge replacement fails its first poll', async () => {
+    const lifecycle = {
+      _onEnter: vi.fn(),
+      _onSession: vi.fn(),
+      _onTelemetry: vi.fn(),
+      _onDisconnect: vi.fn(),
+    };
+    const first = await publishIRacingSDKEvents(
+      createOverlayManager() as never,
+      lifecycle as never
+    );
+    expect(lifecycle._onEnter).toHaveBeenCalledOnce();
+    first.stop();
+    // Stop synchronously disconnects the entered lifecycle so a replacement
+    // source starts clean; the failed first poll must not disconnect again.
+    expect(lifecycle._onDisconnect).toHaveBeenCalledOnce();
+    mockWaitForData.mockImplementationOnce(() => {
+      throw new Error('replacement poll failed');
+    });
+    const replacement = await publishIRacingSDKEvents(
+      createOverlayManager() as never,
+      lifecycle as never
+    );
+    expect(lifecycle._onDisconnect).toHaveBeenCalledOnce();
+    replacement.stop();
+  });
+
   it('recovers when the first native poll throws', async () => {
     mockWaitForData.mockImplementationOnce(() => {
       throw new Error('first poll failed');
     });
+    const lifecycle = {
+      _onEnter: vi.fn(),
+      _onSession: vi.fn(),
+      _onTelemetry: vi.fn(),
+      _onDisconnect: vi.fn(),
+    };
     const bridge = await publishIRacingSDKEvents(
-      createOverlayManager() as never
+      createOverlayManager() as never,
+      lifecycle as never
     );
+    expect(lifecycle._onDisconnect).not.toHaveBeenCalled();
     const healthy = vi.fn();
     bridge.onRunningState(healthy);
     expect(healthy).toHaveBeenLastCalledWith(false);

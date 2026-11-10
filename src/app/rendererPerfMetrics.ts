@@ -36,6 +36,7 @@ export function recordChannelCallback(durationMs: number): void {
   channelCallbackTimes?.add(durationMs);
 }
 
+/** Record an enabled named measure and mark it as exercised in this interval. */
 export function recordRendererMeasure(
   name: RendererPerfMeasureName,
   durationMs: number
@@ -45,6 +46,7 @@ export function recordRendererMeasure(
   measuresRun?.add(name);
 }
 
+/** Start interval reporting when enabled by CLI flags; otherwise stay inert. */
 export function startRendererPerfMetrics(): void {
   const config = readRendererPerfArguments();
   if (!config.enabled) return;
@@ -118,6 +120,8 @@ export function startRendererPerfMetrics(): void {
       telemetryCallbackMs: callbackTimes.summarize(),
       channelCallbackMs: channelTimes.summarize(),
       trackMapAnimationFrameMs: measured('trackMapAnimationFrame'),
+      inputTraceFrameMs: measured('inputTraceFrame'),
+      radarFrameMs: measured('radarFrame'),
       standingsFinalTimingMs: measured('standingsFinalTiming'),
       standingsPlayerGapsMs: measured('standingsPlayerGaps'),
       lapTraceFrameMs: measured('lapTraceFrame'),

@@ -184,6 +184,55 @@ describe('performance analysis', () => {
     );
   });
 
+  it('reports Input and Radar measures without diluting them with unrelated windows', () => {
+    const input = capture([mainSample(5, 100, 100, 100, 5000)]);
+    const base: RendererPerfSample = {
+      schemaVersion: 1,
+      timestamp: new Date(5000).toISOString(),
+      runId: 'run',
+      scenario: 'full',
+      pid: 1,
+      route: '/',
+      visibilityState: 'visible',
+      intervalMs: 5000,
+      frameTimeMs: stats(16),
+      framesOver25Ms: 0,
+      framesOver50Ms: 0,
+    };
+    input.renderer = [
+      {
+        ...base,
+        inputTraceFrameMs: stats(0.5, { count: 300, p99: 1 }),
+        radarFrameMs: stats(0.4, { count: 300, p99: 0.8 }),
+      },
+      { ...base, pid: 2 },
+    ];
+    const summary = summarizeCapture(input, 0);
+    expect(summary.renderer.inputTraceFrameRateHz).toBe(60);
+    expect(summary.renderer.radarFrameRateHz).toBe(60);
+    expect(summary.renderer.inputTraceFrameP99WorstMs).toBe(1);
+    expect(summary.renderer.radarFrameP99MeanMs).toBe(0.8);
+    expect(summaryMarkdown(summary)).toContain(
+      '| Radar frames / second | 60.00 |'
+    );
+    const candidate = {
+      ...summary,
+      renderer: {
+        ...summary.renderer,
+        radarFrameRateHz: 30,
+        radarFrameP99MeanMs: 0.5,
+        inputTraceFrameP99MeanMs: 0.7,
+      },
+    };
+    const comparison = compareSummaries(summary, candidate);
+    expect(comparison.delta.radarFrameRateHz).toBe(-30);
+    expect(comparison.delta.radarFrameP99Ms).toBeCloseTo(-0.3);
+    expect(comparison.delta.inputTraceFrameP99Ms).toBeCloseTo(-0.3);
+    expect(comparisonMarkdown(comparison)).toContain(
+      '| Radar frames / second | -30.00 Hz |'
+    );
+  });
+
   it('summarizes the Lap Trace frame and brake-cue measures', () => {
     const input = capture([
       mainSample(5, 100, 100, 100, 5000),
