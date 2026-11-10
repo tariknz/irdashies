@@ -6,6 +6,8 @@ export interface LapEntry {
   dirty?: boolean;
   /** The car was in the pit lane or its box during this lap. */
   pitted?: boolean;
+  /** A full-course caution was shown during this lap. */
+  caution?: boolean;
 }
 
 export interface LapTimeLogDemoData {

@@ -956,6 +956,8 @@ export interface LapTimeLogConfig {
      * average, which flattens the laps you are actually comparing.
      */
     hidePittedLaps?: boolean;
+    /** Leave laps driven under full-course cautions out of the history. */
+    hideCautionLaps?: boolean;
   };
   scale: number;
   alignment: 'top' | 'bottom';

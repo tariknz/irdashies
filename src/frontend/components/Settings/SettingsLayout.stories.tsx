@@ -24,7 +24,7 @@ interface StoryProps {
   emptyFuel?: boolean;
   scaleInstances?: boolean;
   initialTab?: {
-    key: 'fuelWidgetTab' | 'inputTab' | 'standingsTab';
+    key: 'fuelWidgetTab' | 'inputTab' | 'standingsTab' | 'lapTimeTab';
     value: 'display' | 'options';
   };
 
@@ -357,6 +357,13 @@ export const StandingsDockedScale: Story = {
 
 export const ProfilesRoute: Story = {
   args: { initialPath: '/settings/profiles' },
+};
+
+export const LapTimerHistory: Story = {
+  args: {
+    initialPath: '/settings/laptimelog',
+    initialTab: { key: 'lapTimeTab', value: 'display' },
+  },
 };
 
 export const DriverTagsRoute: Story = {
