@@ -9,6 +9,7 @@ import {
   getIsDemoMode,
   getSessionLifecycle,
   onBridgeChanged,
+  onConnectedSimulatorChanged,
 } from './app/bridge/iracingSdk/setup';
 import {
   applyDefaultsToAllProfiles,
@@ -37,6 +38,7 @@ import { updateElectronApp } from 'update-electron-app';
 // @ts-expect-error no types for squirrel
 import started from 'electron-squirrel-startup';
 import { Analytics } from './app/analytics';
+import { onAnalyticsOptOutChanged } from './app/storage/analytics';
 import { setupKeybindingsBridge } from './app/bridge/keybindingsBridge';
 import { setupLogBridge } from './app/bridge/logBridge';
 import { setupPersonalBestLapTimesBridge } from './app/bridge/personalBestLapTimesBridge';
@@ -59,6 +61,7 @@ import {
   initializeSettingsWindowBounds,
   flushSettingsWindowBoundsOnShutdown,
 } from './app/storage/settingsWindowBounds';
+import { flushSimulatorUsageOnShutdown } from './app/storage/simulatorUsage';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { getHiddenWidgets } from './app/widgetVisibility';
 import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
@@ -151,6 +154,15 @@ const overlayManager = new OverlayManager();
 const analytics = new Analytics();
 const perfRun = getPerfRunConfig();
 analytics.setupLogTransport(overlayManager.getVersion());
+// Before any bridge exists, so the first connect is heard even when the sim
+// was already running as irdashies started.
+onConnectedSimulatorChanged((simulator) =>
+  analytics.setConnectedSimulator(simulator)
+);
+getSessionLifecycle().onWatchingStateChange((watching) =>
+  analytics.setWatchingTrack(watching)
+);
+onAnalyticsOptOutChanged((optOut) => void analytics.setOptOut(optOut));
 
 overlayManager.setupChromiumFlags();
 overlayManager.setupHardwareAcceleration();
@@ -707,6 +719,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
       flushGarage61SearchSessionOnShutdown(),
       flushStorageWritesOnShutdown(),
       flushSettingsWindowBoundsOnShutdown(),
+      flushSimulatorUsageOnShutdown(),
     ]);
   },
   quit: () => app.quit(),

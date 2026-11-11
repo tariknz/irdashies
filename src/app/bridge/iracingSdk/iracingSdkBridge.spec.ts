@@ -143,6 +143,7 @@ describe('publishIRacingSDKEvents session polling', () => {
     expect(lifecycle.getCurrentState()).toEqual({
       sessionType: 'Practice',
       isDriving: true,
+      isWatching: true,
     });
 
     bridge.stop();
@@ -151,6 +152,7 @@ describe('publishIRacingSDKEvents session polling', () => {
     expect(lifecycle.getCurrentState()).toEqual({
       sessionType: undefined,
       isDriving: undefined,
+      isWatching: undefined,
     });
     bridge.stop();
     await vi.advanceTimersByTimeAsync(2_000);

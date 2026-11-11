@@ -289,6 +289,14 @@ export async function publishLmuSDKEvents(
 
   let shouldStop = false;
   let lastRunningState: boolean | undefined = undefined;
+  /** Whether this bridge has entered the shared lifecycle and not left it. */
+  let isLifecycleEntered = false;
+  /** Leaves the shared lifecycle, once. */
+  const leaveLifecycle = () => {
+    if (!isLifecycleEntered) return;
+    isLifecycleEntered = false;
+    lifecycle?._onDisconnect();
+  };
   let latestSession: Session | null = null;
   let lastSessionSignature: string | null = null;
   /** Last reported rating tally, so a settled grid is reported once. */
@@ -489,7 +497,7 @@ export async function publishLmuSDKEvents(
           publishRunningState(false);
           latestSession = null;
           overlayManager.clearLatestSessionData?.();
-          lifecycle?._onDisconnect();
+          leaveLifecycle();
           wasRunning = false;
           lastSessionSignature = null;
           resetLmuLapDistanceState(lapDistanceState);
@@ -564,6 +572,11 @@ export async function publishLmuSDKEvents(
         restPoller.setActive(true);
         liveStandings?.setActive(true);
         publishRunningState(true);
+        // A running-state listener can stop this bridge as LMU comes up (a
+        // hand-over). Its stop() found nothing to leave yet, so entering the
+        // lifecycle now would leave a stopped bridge in it for good.
+        if (shouldStop) break;
+        isLifecycleEntered = true;
         lifecycle?._onEnter({ replay: false });
       }
 
@@ -906,7 +919,7 @@ export async function publishLmuSDKEvents(
     if (lastRunningState) {
       latestSession = null;
       overlayManager.clearLatestSessionData?.();
-      lifecycle?._onDisconnect();
+      leaveLifecycle();
     }
     restPoller.setActive(false);
     liveStandings?.stop();
@@ -937,6 +950,11 @@ export async function publishLmuSDKEvents(
     },
     stop: () => {
       shouldStop = true;
+      // Resets the shared lifecycle synchronously, as the iRacing bridge does,
+      // before another source can enter it. Left as it was, LMU's driving and
+      // watching states outlived it into the next bridge, and analytics
+      // counted the next sim as shown on track before its first frame said so.
+      leaveLifecycle();
       unsubscribeOverlayReady?.();
       restPoller.stop();
       ratingClient.reset();

@@ -52,12 +52,38 @@ vi.mock('./storage/analytics', () => ({
   getAnalyticsOptOut: vi.fn().mockReturnValue(true),
 }));
 
-import { Analytics, type AnalyticsProvider } from './analytics';
+// One real store per userData folder: each test's temp folder starts empty,
+// as an installation would.
+vi.mock('./storage/simulatorUsage', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('./storage/simulatorUsage')>();
+  const stores = new Map<string, SimulatorUsageStore>();
+  return {
+    ...actual,
+    getSimulatorUsageStore: () => {
+      const store =
+        stores.get(userDataPath.value) ??
+        actual.createSimulatorUsageStore(userDataPath.value);
+      stores.set(userDataPath.value, store);
+      return store;
+    },
+  };
+});
+
+import {
+  Analytics,
+  withSimulatorOnException,
+  type AnalyticsProvider,
+} from './analytics';
 import logger from './logger';
 import { getAnalyticsOptOut } from './storage/analytics';
 import { readData, writeData } from './storage/storage';
-import { app } from 'electron';
+import { app, screen } from 'electron';
 import type { PitLaneAnalyticsCheckpoint } from './storage/pitLaneAnalyticsCheckpoint';
+import {
+  getSimulatorUsageStore,
+  type SimulatorUsageStore,
+} from './storage/simulatorUsage';
 
 const makeProvider = () => ({
   capture: vi.fn<(event: EventMessage) => void>(),
@@ -109,8 +135,41 @@ describe('Analytics.setupLogTransport', () => {
         level: 'warn',
         message: 'something went wrong',
         data: ['something went wrong'],
+        simulator: null,
       },
     });
+  });
+
+  it('names the simulator connected as each message is logged, and none after it disconnects', () => {
+    vi.spyOn(getSimulatorUsageStore(), 'setConnected').mockImplementation(
+      () => undefined
+    );
+    analytics.setConnectedSimulator('lmu');
+    emit('warn', 'lmu warning');
+    analytics.setConnectedSimulator(undefined);
+    emit('warn', 'warning after lmu closed');
+    analytics.setConnectedSimulator('iracing');
+    emit('warn', 'iracing warning');
+    expect(
+      provider.capture.mock.calls.map(([event]) => event.properties?.simulator)
+    ).toEqual(['lmu', null, 'iracing']);
+  });
+
+  it('names the connected simulator on exceptions PostHog captures itself, and only those', () => {
+    const exception = {
+      event: '$exception',
+      distinctId: 'test-installation',
+      properties: { $exception_list: [] },
+    };
+    expect(withSimulatorOnException(exception, 'lmu')).toEqual({
+      ...exception,
+      properties: { $exception_list: [], simulator: 'lmu' },
+    });
+    expect(
+      withSimulatorOnException(exception, undefined).properties?.simulator
+    ).toBeNull();
+    const other = { event: 'app_started' };
+    expect(withSimulatorOnException(other, 'lmu')).toBe(other);
   });
 
   it('suppresses identical messages within the dedup window', () => {
@@ -150,6 +209,7 @@ describe('Analytics.setupLogTransport', () => {
         level: 'warn',
         message: 'context: {"code":42}',
         data: ['context:', { code: 42 }],
+        simulator: null,
       },
     });
   });
@@ -168,6 +228,7 @@ describe('Analytics.setupLogTransport', () => {
   it('uses the same identity for startup logs and identify, without waiting for init', async () => {
     emit('error', 'startup failure');
     await analytics.init('2.0.0+test', { widgets: [] });
+    await analytics.waitForStartupIdentify();
     expect(provider.capture.mock.calls[0][0].distinctId).toBe(
       'test-installation'
     );
@@ -175,6 +236,28 @@ describe('Analytics.setupLogTransport', () => {
       expect.objectContaining({
         distinctId: 'test-installation',
         properties: expect.objectContaining({ version: '2.0.0+test' }),
+      })
+    );
+    await analytics.waitForCalibrationUpload();
+    await analytics.waitForRadarPoleSideUpload();
+    analytics.shutdown();
+  });
+
+  it("identifies with the primary screen's physical resolution and its scaling", async () => {
+    // A 4096x2160 screen at 250%, as Electron reports it.
+    vi.mocked(screen.getPrimaryDisplay).mockReturnValueOnce({
+      size: { width: 1639, height: 864 },
+      scaleFactor: 2.5,
+    } as Electron.Display);
+    await analytics.init('2.0.0+test', { widgets: [] });
+    await analytics.waitForStartupIdentify();
+    expect(provider.identify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        properties: expect.objectContaining({
+          $screen_width: 4096,
+          $screen_height: 2160,
+          screen_scale_factor: 2.5,
+        }),
       })
     );
     await analytics.waitForCalibrationUpload();
@@ -194,6 +277,7 @@ describe('Analytics.setupLogTransport', () => {
     const userId = provider.capture.mock.calls[0][0].distinctId;
     expect(writeData).toHaveBeenCalledWith('userId', userId);
     await firstRun.init('2.0.0', { widgets: [] });
+    await firstRun.waitForStartupIdentify();
     expect(writeData).toHaveBeenCalledTimes(1);
     expect(provider.identify.mock.calls[0][0].distinctId).toBe(userId);
     await firstRun.waitForCalibrationUpload();
@@ -229,6 +313,7 @@ describe('Analytics.setupLogTransport', () => {
     expect(persistedId).toBeUndefined();
     expect(provider.identify).not.toHaveBeenCalled();
     await firstRun.init('2.0.0', { widgets: [] });
+    await firstRun.waitForStartupIdentify();
     expect(writeData).toHaveBeenCalledTimes(2);
     expect(vi.mocked(writeData).mock.calls[1]).toEqual(['userId', cachedId]);
     expect(persistedId).toBe(cachedId);
@@ -363,6 +448,7 @@ describe('Analytics startup pit lane calibration', () => {
     version = '2.0.0'
   ): Promise<void> => {
     await target.init(version, dashboard);
+    await target.waitForStartupIdentify();
     await target.waitForCalibrationUpload();
   };
 
@@ -869,5 +955,280 @@ describe('Analytics startup pit lane calibration', () => {
     expect(loggerStub.warn).toHaveBeenCalledWith(
       '[Analytics] Could not publish pit lane calibration'
     );
+  });
+});
+
+describe('Analytics simulator usage', () => {
+  let provider: ReturnType<typeof makeProvider>;
+  /** The usage store's monotonic clock, moved by hand. */
+  let clock: number;
+  const identified = () => provider.identify.mock.calls[0]?.[0].properties;
+  const usageFile = () => path.join(userDataPath.value, 'simulator-usage.json');
+  const writeUsage = (value: unknown) =>
+    fs.writeFile(usageFile(), JSON.stringify(value));
+  const storedUsage = async () => {
+    await getSimulatorUsageStore().flush();
+    return JSON.parse(await fs.readFile(usageFile(), 'utf8'));
+  };
+  const usageFileExists = async () => {
+    await getSimulatorUsageStore().flush();
+    return fs.access(usageFile()).then(
+      () => true,
+      () => false
+    );
+  };
+
+  const start = async (analytics: Analytics): Promise<void> => {
+    await analytics.init('2.0.0', { widgets: [] });
+    await analytics.waitForStartupIdentify();
+    await analytics.waitForCalibrationUpload();
+    await analytics.waitForRadarPoleSideUpload();
+  };
+  /** Analytics for a sim that shows the track, so a connection counts. */
+  const watchingAnalytics = (): Analytics => {
+    const analytics = new Analytics(provider);
+    analytics.setWatchingTrack(true);
+    return analytics;
+  };
+
+  beforeEach(async () => {
+    userDataPath.value = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'irdashies-simulators-')
+    );
+    vi.mocked(readData).mockReturnValue('test-installation');
+    vi.mocked(getAnalyticsOptOut).mockReturnValue(false);
+    loggerStub.warn.mockClear();
+    provider = makeProvider();
+    clock = 1000;
+    vi.spyOn(performance, 'now').mockImplementation(() => clock);
+  });
+
+  afterEach(async () => {
+    getSimulatorUsageStore().setConnected(undefined);
+    await getSimulatorUsageStore().flush();
+    vi.restoreAllMocks();
+    vi.mocked(readData).mockReset();
+    vi.mocked(getAnalyticsOptOut).mockReturnValue(true);
+    await fs.rm(userDataPath.value, { recursive: true, force: true });
+  });
+
+  it('counts a simulator only while it shows the track', async () => {
+    const analytics = new Analytics(provider);
+    analytics.setConnectedSimulator('lmu');
+    // At its menus: connected, not counted.
+    clock += 5000;
+    analytics.setWatchingTrack(true);
+    clock += 7000;
+    // The garage, or out of a session.
+    analytics.setWatchingTrack(false);
+    clock += 4000;
+    analytics.setWatchingTrack(true);
+    clock += 3000;
+    analytics.setConnectedSimulator(undefined);
+    clock += 2000;
+    analytics.setWatchingTrack(false);
+    expect(await storedUsage()).toEqual({
+      lmu: { first: 1, last: 2, ms: 10_000 },
+    });
+  });
+
+  it('counts nothing for a simulator that never showed the track', async () => {
+    const analytics = new Analytics(provider);
+    analytics.setConnectedSimulator('iracing');
+    clock += 60_000;
+    analytics.setConnectedSimulator(undefined);
+    await getSimulatorUsageStore().ready();
+    expect(getSimulatorUsageStore().takeForReport()).toEqual({});
+  });
+
+  it('counts nothing shown without a connected simulator, such as a recorded replay', async () => {
+    const analytics = new Analytics(provider);
+    analytics.setWatchingTrack(true);
+    clock += 60_000;
+    analytics.setWatchingTrack(false);
+    await getSimulatorUsageStore().ready();
+    expect(getSimulatorUsageStore().takeForReport()).toEqual({});
+  });
+
+  it('stores a connection for the next launch instead of sending it', async () => {
+    const analytics = watchingAnalytics();
+    analytics.setConnectedSimulator('lmu');
+    clock += 5000;
+    analytics.setConnectedSimulator(undefined);
+    expect(provider.capture).not.toHaveBeenCalled();
+    expect(provider.identify).not.toHaveBeenCalled();
+    expect(await storedUsage()).toEqual({
+      lmu: { first: 1, last: 1, ms: 5000 },
+    });
+  });
+
+  it('sends the simulators used and for how long with the startup identify, then clears them', async () => {
+    await writeUsage({
+      iracing: { first: 1, last: 1, ms: 5_400_000 },
+      lmu: { first: 2, last: 2, ms: 90_400 },
+    });
+    await start(watchingAnalytics());
+    expect(provider.identify).toHaveBeenCalledExactlyOnceWith({
+      distinctId: 'test-installation',
+      disableGeoip: false,
+      properties: expect.objectContaining({
+        version: '2.0.0',
+        dashboard: { widgets: [] },
+        last_simulator: 'lmu',
+        used_iracing: true,
+        used_lmu: true,
+        iracing_connected_minutes: 90,
+        // 1 min 30.4 s, rounded up.
+        lmu_connected_minutes: 2,
+        $set_once: { first_simulator: 'iracing' },
+      }),
+    });
+    expect(await storedUsage()).toEqual({});
+  });
+
+  it('identifies as before, and creates no file, when no simulator was used', async () => {
+    await start(watchingAnalytics());
+    const properties = identified();
+    expect(properties).toMatchObject({ version: '2.0.0' });
+    expect(properties).not.toHaveProperty('last_simulator');
+    expect(properties).not.toHaveProperty('$set_once');
+    expect(await usageFileExists()).toBe(false);
+  });
+
+  it('sends app_started and the other reports without waiting for the simulators used', async () => {
+    const store = getSimulatorUsageStore();
+    const loaded = Promise.withResolvers<boolean>();
+    vi.spyOn(store, 'ready').mockReturnValueOnce(loaded.promise);
+    const analytics = watchingAnalytics();
+    await analytics.init('2.0.0', { widgets: [] });
+    await analytics.waitForCalibrationUpload();
+    await analytics.waitForRadarPoleSideUpload();
+    expect(provider.capture).toHaveBeenCalledWith({ event: 'app_started' });
+    expect(provider.identify).not.toHaveBeenCalled();
+
+    loaded.resolve(true);
+    await analytics.waitForStartupIdentify();
+    expect(provider.identify).toHaveBeenCalledOnce();
+  });
+
+  it('sends a simulator already running at startup as the latest, and keeps counting it', async () => {
+    // Its bridge reports it before the file has been read.
+    await writeUsage({
+      iracing: { first: 1, last: 9, ms: 60_000 },
+      lmu: { first: 2, last: 8, ms: 30_000 },
+    });
+    const analytics = watchingAnalytics();
+    analytics.setConnectedSimulator('lmu');
+    await start(analytics);
+    expect(identified()).toMatchObject({
+      last_simulator: 'lmu',
+      used_iracing: true,
+      used_lmu: true,
+      iracing_connected_minutes: 1,
+      lmu_connected_minutes: 1,
+      $set_once: { first_simulator: 'iracing' },
+    });
+    // Still connected: LMU stays, to carry the rest of this connection.
+    expect(await storedUsage()).toEqual({
+      lmu: { first: 1, last: 1, ms: 0 },
+    });
+  });
+
+  it('names the simulator connected first, even when another connected in between', async () => {
+    const analytics = watchingAnalytics();
+    analytics.setConnectedSimulator('iracing');
+    analytics.setConnectedSimulator('lmu');
+    analytics.setConnectedSimulator('iracing');
+    analytics.setConnectedSimulator(undefined);
+    await start(analytics);
+    expect(identified()).toMatchObject({
+      last_simulator: 'iracing',
+      $set_once: { first_simulator: 'iracing' },
+    });
+  });
+
+  it('keeps a connect after the report for the next launch', async () => {
+    const analytics = watchingAnalytics();
+    await start(analytics);
+    expect(identified()).not.toHaveProperty('last_simulator');
+    analytics.setConnectedSimulator('iracing');
+    clock += 2000;
+    analytics.setConnectedSimulator(undefined);
+
+    provider.identify.mockClear();
+    await start(watchingAnalytics());
+    expect(identified()).toMatchObject({
+      last_simulator: 'iracing',
+      iracing_connected_minutes: 1,
+    });
+  });
+
+  it('keeps the list for a later launch while it cannot be read', async () => {
+    const analytics = watchingAnalytics();
+    analytics.setConnectedSimulator('lmu');
+    analytics.setConnectedSimulator(undefined);
+    vi.spyOn(getSimulatorUsageStore(), 'ready').mockResolvedValueOnce(false);
+    await start(analytics);
+    expect(identified()).not.toHaveProperty('used_lmu');
+
+    provider.identify.mockClear();
+    await start(watchingAnalytics());
+    expect(identified()).toMatchObject({ used_lmu: true });
+  });
+
+  it('stops the clock and deletes what was noted when the player opts out mid-connection', async () => {
+    await writeUsage({ iracing: { first: 1, last: 1, ms: 60_000 } });
+    const analytics = watchingAnalytics();
+    analytics.setConnectedSimulator('lmu');
+    clock += 5000;
+    expect(Object.keys(await storedUsage()).sort()).toEqual(['iracing', 'lmu']);
+
+    vi.mocked(getAnalyticsOptOut).mockReturnValue(true);
+    await analytics.setOptOut(true);
+    expect(await usageFileExists()).toBe(false);
+    // Nothing is noted while opted out, and the running connection's clock
+    // has stopped.
+    clock += 60_000;
+    analytics.setConnectedSimulator('iracing');
+    analytics.setConnectedSimulator(undefined);
+    expect(await usageFileExists()).toBe(false);
+    await start(analytics);
+    expect(identified()).not.toHaveProperty('used_lmu');
+    expect(identified()).not.toHaveProperty('used_iracing');
+  });
+
+  it('starts counting from the opt-in a simulator connected while opted out', async () => {
+    const analytics = watchingAnalytics();
+    analytics.setConnectedSimulator('lmu');
+    clock += 5000;
+    vi.mocked(getAnalyticsOptOut).mockReturnValue(true);
+    await analytics.setOptOut(true);
+    clock += 60_000;
+
+    vi.mocked(getAnalyticsOptOut).mockReturnValue(false);
+    await analytics.setOptOut(false);
+    clock += 3000;
+    await start(analytics);
+    // 3 s from the opt-in; counting the 65 s before it would make 2.
+    expect(identified()).toMatchObject({
+      used_lmu: true,
+      lmu_connected_minutes: 1,
+    });
+  });
+
+  it('deletes what was noted when it starts opted out', async () => {
+    await writeUsage({ lmu: { first: 1, last: 1, ms: 60_000 } });
+    vi.mocked(getAnalyticsOptOut).mockReturnValue(true);
+    expect(new Analytics().isInitialized()).toBe(false);
+    await vi.waitFor(async () => expect(await usageFileExists()).toBe(false));
+  });
+
+  it('stores nothing without a provider', async () => {
+    const analytics = watchingAnalytics();
+    (analytics as unknown as { provider: AnalyticsProvider | null }).provider =
+      null;
+    analytics.setConnectedSimulator('iracing');
+    await getSimulatorUsageStore().ready();
+    expect(getSimulatorUsageStore().takeForReport()).toEqual({});
   });
 });

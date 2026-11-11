@@ -37,6 +37,16 @@ const onBridgeChangedCallbacks = new Set<(bridge: IrSdkSourceBridge) => void>();
 const onSimulatorChangedCallbacks = new Set<
   (simulator: ActiveSimulator | null) => void
 >();
+/**
+ * The simulator whose bridge last reported it running, or undefined while
+ * none is: between sessions, in demo mode, or on a tape.
+ */
+let connectedSimulator: ActiveSimulator | undefined;
+/** Stops following the current bridge's running state. */
+let unwatchConnection: (() => void) | undefined;
+const onConnectedSimulatorCallbacks = new Set<
+  (simulator: ActiveSimulator | undefined) => void
+>();
 
 // Singleton lifecycle — created once; survives bridge restarts so subscribers
 // registered before a demo-mode toggle are preserved.
@@ -62,6 +72,24 @@ export function getActiveSimulator(): ActiveSimulator | undefined {
 }
 
 /**
+ * Calls each listener with a value, so one that throws is logged and the
+ * rest still hear it.
+ */
+function notifyEach<T>(
+  callbacks: Iterable<(value: T) => void>,
+  value: T,
+  name: string
+) {
+  for (const callback of callbacks) {
+    try {
+      callback(value);
+    } catch (err) {
+      logger.error(`Error in ${name} callback:`, err);
+    }
+  }
+}
+
+/**
  * Records the running simulator and tells the renderer. Auto-detection calls
  * this once it has probed; the pinned paths call it up front.
  */
@@ -74,13 +102,11 @@ export function setActiveSimulator(
   // The manager publishes the change and rebuilds the overlays: the set of
   // widgets this sim supports has changed, so windows have to be recreated.
   overlayManager.setActiveSimulator(simulator ?? null);
-  onSimulatorChangedCallbacks.forEach((callback) => {
-    try {
-      callback(simulator ?? null);
-    } catch (err) {
-      logger.error('Error in simulator changed callback:', err);
-    }
-  });
+  notifyEach(
+    onSimulatorChangedCallbacks,
+    simulator ?? null,
+    'simulator changed'
+  );
 }
 
 /**
@@ -95,6 +121,53 @@ export function onActiveSimulatorChanged(
 ) {
   onSimulatorChangedCallbacks.add(callback);
   return () => onSimulatorChangedCallbacks.delete(callback);
+}
+
+/**
+ * Subscribes to the connected simulator: called with it each time the
+ * attached simulator's bridge starts running, and with undefined when that
+ * connection ends -- the sim stops, or the bridge is replaced. Demo mode and
+ * tapes never count. A simulator already connected when this is called is
+ * reported at once, so a late subscriber still hears about a sim that was up
+ * before irdashies.
+ */
+export function onConnectedSimulatorChanged(
+  callback: (simulator: ActiveSimulator | undefined) => void
+) {
+  onConnectedSimulatorCallbacks.add(callback);
+  if (connectedSimulator) {
+    notifyEach([callback], connectedSimulator, 'connected simulator');
+  }
+  return () => onConnectedSimulatorCallbacks.delete(callback);
+}
+
+function setConnectedSimulator(simulator: ActiveSimulator | undefined) {
+  if (simulator === connectedSimulator) return;
+  connectedSimulator = simulator;
+  notifyEach(onConnectedSimulatorCallbacks, simulator, 'connected simulator');
+}
+
+/**
+ * Follows a new bridge's running state for onConnectedSimulatorChanged.
+ * Every bridge replays its current state to a new subscriber, so a sim that
+ * was already running before the bridge was handed over still counts.
+ */
+function watchConnection(bridge: IrSdkSourceBridge, isRealSimulator: boolean) {
+  unwatchCurrentConnection();
+  if (!isRealSimulator) return;
+  const unsubscribe = bridge.onRunningState((running) =>
+    // Read at each change: auto-detect can hand over to another sim, which is
+    // named before its bridge reports running.
+    setConnectedSimulator(running ? activeSimulator : undefined)
+  );
+  unwatchConnection = () => unsubscribe?.();
+}
+
+/** Lets go of the current bridge, ending any connection it reported. */
+function unwatchCurrentConnection() {
+  unwatchConnection?.();
+  unwatchConnection = undefined;
+  setConnectedSimulator(undefined);
 }
 
 export function onBridgeChanged(callback: (bridge: IrSdkSourceBridge) => void) {
@@ -186,6 +259,9 @@ async function setupBridge(
   try {
     const isTapeReplay = Boolean(process.env.IRDASHIES_TELEMETRY_REPLAY);
     const isLmuTapeReplay = Boolean(process.env.IRDASHIES_LMU_REPLAY);
+    // A recorded capture played through the isolated SDK addon: it looks like
+    // iRacing to the bridge, but is no more a sim in use than a tape.
+    const isIsolatedSdkReplay = process.env.IRDASHIES_IRSDK_REPLAY === '1';
     const isMock =
       isDemoMode ||
       (process.platform !== 'win32' && !isTapeReplay && !isLmuTapeReplay);
@@ -218,6 +294,7 @@ async function setupBridge(
     }
 
     if (currentBridge) {
+      unwatchCurrentConnection();
       currentBridge.stop();
       currentBridge = undefined;
     }
@@ -247,6 +324,10 @@ async function setupBridge(
       overlayManager,
       lifecycle,
       channelBus
+    );
+    watchConnection(
+      currentBridge,
+      !isMock && !isTapeReplay && !isLmuTapeReplay && !isIsolatedSdkReplay
     );
 
     if (onBridgeChangedCallbacks.size > 0 && currentBridge) {

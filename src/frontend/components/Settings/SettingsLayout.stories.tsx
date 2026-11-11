@@ -296,6 +296,11 @@ export const GeneralSettings: Story = {
   args: { initialPath: '/settings/general' },
 };
 
+/** The About page, with what usage analytics collects. */
+export const AboutRoute: Story = {
+  args: { initialPath: '/settings/about' },
+};
+
 // Show the notice immediately for visual review without changing real preferences.
 export const GitHubStarPrompt: Story = {
   args: { initialPath: '/settings/general' },

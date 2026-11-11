@@ -280,6 +280,71 @@ const runningStatesPublished = (overlayManager: OverlayManager) =>
     .mock.calls.filter(([channel]) => channel === 'runningState')
     .map(([, value]) => value);
 
+describe('publishLmuSDKEvents when stopped', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sdkState.running = true;
+    sdkState.readThrows = false;
+  });
+
+  it('resets the shared lifecycle once, synchronously, when stopped mid-session', async () => {
+    const lifecycle = createLifecycle();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(createOverlayManager(), lifecycle);
+    await vi.waitFor(() => expect(lifecycle._onEnter).toHaveBeenCalled());
+
+    bridge.stop();
+    expect(lifecycle._onDisconnect).toHaveBeenCalledOnce();
+    bridge.stop();
+    expect(lifecycle._onDisconnect).toHaveBeenCalledOnce();
+  });
+
+  it('leaves the lifecycle alone when LMU never ran', async () => {
+    sdkState.running = false;
+    const lifecycle = createLifecycle();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(createOverlayManager(), lifecycle);
+
+    bridge.stop();
+    expect(lifecycle._onEnter).not.toHaveBeenCalled();
+    expect(lifecycle._onDisconnect).not.toHaveBeenCalled();
+  });
+
+  it('stays out of the lifecycle when a running-state listener stops it as LMU starts', async () => {
+    sdkState.running = false;
+    const lifecycle = createLifecycle();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(createOverlayManager(), lifecycle);
+    let stoppedOnStart = false;
+    bridge.onRunningState((running) => {
+      if (!running) return;
+      stoppedOnStart = true;
+      bridge.stop();
+    });
+
+    sdkState.running = true;
+    await vi.waitFor(() => expect(stoppedOnStart).toBe(true), {
+      timeout: 5000,
+    });
+    // Time for the stopped iteration to have run on, had it not broken off.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(lifecycle._onEnter).not.toHaveBeenCalled();
+    expect(lifecycle._onTelemetry).not.toHaveBeenCalled();
+  });
+
+  it('does not leave it twice after a failure already released it', async () => {
+    const lifecycle = createLifecycle();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(createOverlayManager(), lifecycle);
+    await vi.waitFor(() => expect(lifecycle._onEnter).toHaveBeenCalled());
+    sdkState.readThrows = true;
+    await vi.waitFor(() => expect(lifecycle._onDisconnect).toHaveBeenCalled());
+
+    bridge.stop();
+    expect(lifecycle._onDisconnect).toHaveBeenCalledOnce();
+  });
+});
+
 describe('publishLmuSDKEvents when the telemetry loop fails', () => {
   beforeEach(() => {
     vi.clearAllMocks();
