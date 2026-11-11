@@ -10,12 +10,14 @@ import {
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { WIDGET_MANIFESTS } from '@irdashies/types';
+import type { WidgetCategory } from '@irdashies/types';
 
 export interface MenuItem {
   to: string;
   path: string;
   label: string;
   widgetType?: string;
+  category?: WidgetCategory | 'Tools';
   /** Widgets that share this item's page; it shows On while any of them is. */
   groupTypes?: string[];
   icon?: Icon;
@@ -31,37 +33,44 @@ export const generalItems: MenuItem[] = [
     icon: SlidersHorizontalIcon,
   },
   {
-    to: '/settings/profiles',
-    path: '/profiles',
-    label: 'Profiles',
-    icon: UsersIcon,
-  },
-  {
     to: '/settings/keybindings',
     path: '/keybindings',
     label: 'Key Bindings',
     icon: KeyboardIcon,
+  },
+];
+
+export const toolItems: MenuItem[] = [
+  {
+    to: '/settings/profiles',
+    path: '/profiles',
+    label: 'Profiles',
+    icon: UsersIcon,
+    category: 'Tools',
   },
   {
     to: '/settings/driver-tags',
     path: '/driver-tags',
     label: 'Driver Tags',
     icon: TagIcon,
+    category: 'Tools',
   },
   {
     to: '/settings/car-setup',
     path: '/car-setup',
     label: 'Setup Comparison',
     icon: ScalesIcon,
+    category: 'Tools',
   },
 ];
 
 export const widgetItems: MenuItem[] = WIDGET_MANIFESTS.map(
-  ({ id, name, menuLabel, hideInMenu, groupTypes }) => ({
+  ({ id, name, menuLabel, category, hideInMenu, groupTypes }) => ({
     to: `/settings/${id}`,
     path: `/${id}`,
     label: menuLabel ?? name,
     widgetType: id,
+    category,
     ...(groupTypes && { groupTypes }),
     ...(hideInMenu && { hideInMenu }),
   })

@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { SettingsSection } from '../components/SettingSection';
 import { useDashboard } from '@irdashies/context';
 import { getWidgetDefaultConfig } from '@irdashies/types';
@@ -11,6 +10,7 @@ const SETTING_ID = 'heartrate';
 const defaultConfig = getWidgetDefaultConfig('heartrate');
 
 export const HeartRateSettings = () => {
+  const fieldId = useId();
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
@@ -34,48 +34,55 @@ export const HeartRateSettings = () => {
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
-        <SettingsSection title="HypeRate">
-          <WidgetScaleSettings widgetId={SETTING_ID} />
+        <SettingsSection title="HypeRate" scaleWidgetId={SETTING_ID}>
           <div className="space-y-2">
-            <label className="text-md text-slate-300">Session ID</label>
+            <label
+              htmlFor={`${fieldId}-session`}
+              className="text-sm text-slate-300"
+            >
+              Session ID
+            </label>
             <input
               type="text"
+              id={`${fieldId}-session`}
+              aria-describedby={`${fieldId}-session-help`}
               value={settings.config.deviceId}
               placeholder="e.g. KiY"
               onChange={(e) =>
                 handleConfigChange({ deviceId: e.target.value.trim() })
               }
-              className="w-full rounded border-slate-600 bg-slate-700 p-2 text-slate-300"
+              className="settings-field w-full"
             />
-            <p className="text-sm text-slate-500">
-              The code at the end of your HypeRate share link (app.hyperate.io/
-              <span className="text-slate-300">KiY</span>). No account or API
-              key required.
+            <p
+              id={`${fieldId}-session-help`}
+              className="text-sm text-slate-400"
+            >
+              Use the code at the end of your HypeRate share link, for example
+              KiY.
             </p>
           </div>
 
           <div className="space-y-2">
-            <label className="text-md text-slate-300">
+            <label
+              htmlFor={`${fieldId}-theme`}
+              className="text-sm text-slate-300"
+            >
               Widget / theme <span className="text-slate-500">(optional)</span>
             </label>
             <input
               type="text"
+              id={`${fieldId}-theme`}
+              aria-describedby={`${fieldId}-theme-help`}
               value={settings.config.widgetUrl}
               placeholder="e.g. Bouncing_Heart_Widget"
               onChange={(e) =>
                 handleConfigChange({ widgetUrl: e.target.value.trim() })
               }
-              className="w-full rounded border-slate-600 bg-slate-700 p-2 text-slate-300"
+              className="settings-field w-full"
             />
-            <p className="text-sm text-slate-500">
-              Pick a widget on hyperate.io and paste its link or just the name —
-              e.g. <span className="text-slate-300">Bouncing_Heart_Widget</span>{' '}
-              or{' '}
-              <span className="text-slate-300">
-                app.hyperate.io/animation/59/YOUR-ID-HERE
-              </span>
-              . Your Session ID is filled in automatically. Leave blank for the
-              default animated heart.
+            <p id={`${fieldId}-theme-help`} className="text-sm text-slate-400">
+              Paste a HypeRate widget link or name. Your Session ID is filled in
+              automatically; leave blank for the default animated heart.
             </p>
           </div>
         </SettingsSection>

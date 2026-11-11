@@ -1,338 +1,74 @@
-import * as d3 from 'd3';
-import { useEffect, useRef, useMemo } from 'react';
-import { getColor } from '@irdashies/utils/colors';
-
-const BRAKE_COLOR = getColor('red');
-const BRAKE_ABS_COLOR = getColor('yellow', 500);
-const THROTTLE_COLOR = getColor('green');
-const CLUTCH_COLOR = getColor('blue');
-const STEER_COLOR = getColor('slate', 300);
+import { memo, useEffect, useLayoutEffect, useRef } from 'react';
+import { useWidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
+import { perfMetrics } from '@irdashies/utils/perfMetrics';
+import {
+  InputTraceDrawing,
+  type InputTraceInput,
+  type InputTraceSettings,
+} from './inputTraceDrawing';
 
 export interface InputTraceProps {
-  input: {
-    clutch?: number;
-    brake?: number;
-    brakeAbsActive?: boolean;
-    throttle?: number;
-    steer?: number;
-  };
-  settings?: {
-    includeClutch?: boolean;
-    includeThrottle?: boolean;
-    includeBrake?: boolean;
-    includeAbs?: boolean;
-    absStyle?: 'overlay' | 'bar';
-    includeSteer?: boolean;
-    strokeWidth?: number;
-    maxSamples?: number;
-  };
+  input: InputTraceInput;
+  settings?: Partial<InputTraceSettings>;
 }
 
-interface InputTraceHistory {
-  brake: number[];
-  brakeAbs: boolean[];
-  throttle: number[];
-  steer: number[];
-  clutch: number[];
-  writeIndex: number;
-}
+/** Canvas trace sampled on input updates and painted on animation frames. */
+export const InputTrace = memo(({ input, settings }: InputTraceProps) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawingRef = useRef<InputTraceDrawing | null>(null);
+  const widgetScale = useWidgetScale();
 
-// Pre-allocated indices array (reused across renders)
-let cachedIndices: number[] = [];
-function getIndices(bufferSize: number): number[] {
-  if (cachedIndices.length !== bufferSize) {
-    cachedIndices = Array.from({ length: bufferSize }, (_, i) => i);
-  }
-  return cachedIndices;
-}
-
-export const InputTrace = ({ input, settings }: InputTraceProps) => {
-  const {
-    includeClutch = true,
-    includeThrottle = true,
-    includeBrake = true,
-    includeAbs = true,
-    absStyle = 'overlay',
-    includeSteer = true,
-    strokeWidth = 3,
-    maxSamples = 400,
-  } = settings ?? {};
-
-  const { width, height } = { width: 400, height: 100 };
-  const bufferSize = maxSamples;
-
-  // Refs for persistent SVG path elements
-  const throttlePathRef = useRef<SVGPathElement>(null);
-  const brakePathRef = useRef<SVGPathElement>(null);
-  const brakeAbsAreaRef = useRef<SVGPathElement>(null);
-  const brakeAbsPathRef = useRef<SVGPathElement>(null);
-  const clutchPathRef = useRef<SVGPathElement>(null);
-  const steerPathRef = useRef<SVGPathElement>(null);
-  const rafRef = useRef<number | null>(null);
-
-  const historyRef = useRef<InputTraceHistory | null>(null);
-
-  // Pre-compute scales (only change if dimensions change)
-  const { xScale, yScale } = useMemo(() => {
-    const scaleMargin = 0.05;
-    return {
-      xScale: d3
-        .scaleLinear()
-        .domain([0, bufferSize - 1])
-        .range([0, width]),
-      yScale: d3
-        .scaleLinear()
-        .domain([0 - scaleMargin, 1 + scaleMargin])
-        .range([height, 0]),
+  useLayoutEffect(() => {
+    const ctx = canvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    drawingRef.current = new InputTraceDrawing(ctx);
+    return () => {
+      drawingRef.current = null;
     };
-  }, [bufferSize, width, height]);
+  }, []);
 
-  // Pre-compute gridline Y positions
-  const gridlines = useMemo(
-    () => [0, 0.25, 0.5, 0.75, 1].map((tick) => ({ tick, y: yScale(tick) })),
-    [yScale]
-  );
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    let width = canvas.clientWidth;
+    let height = canvas.clientHeight;
+    const resize = () => {
+      const ratio = (window.devicePixelRatio || 1) * widgetScale;
+      const nextWidth = Math.max(0, Math.round(width * ratio));
+      const nextHeight = Math.max(0, Math.round(height * ratio));
+      if (canvas.width === nextWidth && canvas.height === nextHeight) return;
+      canvas.width = nextWidth;
+      canvas.height = nextHeight;
+      const drawing = drawingRef.current;
+      if (drawing) perfMetrics.measure('inputTraceFrame', drawing.paint);
+    };
+    const observer = new ResizeObserver(([entry]) => {
+      width = entry.contentRect.width;
+      height = entry.contentRect.height;
+      resize();
+    });
+    observer.observe(canvas);
+    window.addEventListener('resize', resize);
+    resize();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', resize);
+    };
+  }, [widgetScale]);
 
   useEffect(() => {
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-    }
-
-    rafRef.current = requestAnimationFrame(() => {
-      // Allocate only on the first sample or a capacity change. Reset every
-      // trace together when resizing so no old samples use the new time axis.
-      if (
-        !historyRef.current ||
-        historyRef.current.brake.length !== bufferSize
-      ) {
-        historyRef.current = {
-          brake: Array.from({ length: bufferSize }, () => 0),
-          brakeAbs: Array.from({ length: bufferSize }, () => false),
-          throttle: Array.from({ length: bufferSize }, () => 0),
-          steer: Array.from({ length: bufferSize }, () => 0.5),
-          clutch: Array.from({ length: bufferSize }, () => 0),
-          writeIndex: 0,
-        };
-      }
-      const history = historyRef.current;
-      const idx = history.writeIndex;
-
-      // Update arrays in-place at current write position
-      if (includeThrottle) {
-        history.throttle[idx] = input.throttle ?? 0;
-      }
-      if (includeBrake) {
-        history.brake[idx] = input.brake ?? 0;
-        if (includeAbs) {
-          history.brakeAbs[idx] = input.brakeAbsActive ?? false;
-        }
-      }
-      if (includeClutch) {
-        history.clutch[idx] = input.clutch ?? 0;
-      }
-      if (includeSteer) {
-        const angleRad = input.steer ?? 0;
-        const normalizedValue = Math.max(
-          0,
-          Math.min(1, angleRad / (2 * Math.PI) + 0.5)
-        );
-        history.steer[idx] = normalizedValue;
-      }
-
-      // Move write index forward (circular)
-      history.writeIndex = (idx + 1) % bufferSize;
-      const wi = history.writeIndex;
-      const indices = getIndices(bufferSize);
-
-      // Helper to generate path d string for a standard line
-      const generatePathD = (values: number[]) => {
-        const line = d3
-          .line<number>()
-          .x((i) => xScale(i))
-          .y((i) => {
-            const pi = (wi + i) % bufferSize;
-            return yScale(Math.max(0, Math.min(1, values[pi])));
-          })
-          .curve(d3.curveBasis);
-        return line(indices) ?? '';
-      };
-
-      // Helper for centered line (steering)
-      const generateCenteredPathD = (values: number[]) => {
-        const centerY = height / 2;
-        const line = d3
-          .line<number>()
-          .x((i) => xScale(i))
-          .y((i) => {
-            const pi = (wi + i) % bufferSize;
-            const d = values[pi];
-            return centerY - (d - 0.5) * height;
-          })
-          .curve(d3.curveBasis);
-        return line(indices) ?? '';
-      };
-
-      // Helper to generate the ABS-active line path (same curve, gated by ABS history)
-      const generateAbsLineD = () => {
-        const line = d3
-          .line<number>()
-          .x((i) => xScale(i))
-          .y((i) => {
-            const pi = (wi + i) % bufferSize;
-            return yScale(Math.max(0, Math.min(1, history.brake[pi])));
-          })
-          .defined((i) => {
-            const pi = (wi + i) % bufferSize;
-            return history.brakeAbs[pi];
-          })
-          .curve(d3.curveBasis);
-        return line(indices) ?? '';
-      };
-
-      // Helper to generate the ABS area fill (brake curve → y=0, gated by ABS history)
-      const generateAbsAreaD = () => {
-        const area = d3
-          .area<number>()
-          .x((i) => xScale(i))
-          .y0(yScale(0))
-          .y1((i) => {
-            const pi = (wi + i) % bufferSize;
-            return yScale(Math.max(0, Math.min(1, history.brake[pi])));
-          })
-          .defined((i) => {
-            const pi = (wi + i) % bufferSize;
-            return history.brakeAbs[pi];
-          })
-          .curve(d3.curveBasis);
-        return area(indices) ?? '';
-      };
-
-      // Update path d attributes directly on persistent DOM elements
-      if (includeSteer && steerPathRef.current) {
-        steerPathRef.current.setAttribute(
-          'd',
-          generateCenteredPathD(history.steer)
-        );
-      }
-      if (includeClutch && clutchPathRef.current) {
-        clutchPathRef.current.setAttribute('d', generatePathD(history.clutch));
-      }
-      if (includeThrottle && throttlePathRef.current) {
-        throttlePathRef.current.setAttribute(
-          'd',
-          generatePathD(history.throttle)
-        );
-      }
-      if (includeBrake) {
-        if (brakePathRef.current) {
-          brakePathRef.current.setAttribute('d', generatePathD(history.brake));
-        }
-        if (includeAbs) {
-          if (absStyle === 'bar' && brakeAbsAreaRef.current) {
-            brakeAbsAreaRef.current.setAttribute('d', generateAbsAreaD());
-          }
-          if (brakeAbsPathRef.current) {
-            brakeAbsPathRef.current.setAttribute('d', generateAbsLineD());
-          }
-        }
-      }
-    });
-
-    return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-      }
-    };
-  }, [
-    input,
-    includeThrottle,
-    includeBrake,
-    includeAbs,
-    absStyle,
-    includeSteer,
-    includeClutch,
-    bufferSize,
-    width,
-    height,
-    strokeWidth,
-    xScale,
-    yScale,
-  ]);
+    const drawing = drawingRef.current;
+    if (!drawing) return;
+    drawing.configure(settings);
+    drawing.sample(input);
+    const handle = requestAnimationFrame(() =>
+      perfMetrics.measure('inputTraceFrame', drawing.paint)
+    );
+    return () => cancelAnimationFrame(handle);
+  }, [input, settings]);
 
   return (
-    <svg
-      width={'100%'}
-      viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="none"
-    >
-      {/* Static gridlines - rendered once by React */}
-      {gridlines.map(({ tick, y }) => (
-        <line
-          key={tick}
-          x1={0}
-          x2={width}
-          y1={y}
-          y2={y}
-          stroke="#666"
-          strokeDasharray="2,2"
-        />
-      ))}
-      {/* Persistent path elements - only d attribute is updated each frame */}
-      {includeSteer && (
-        <path
-          ref={steerPathRef}
-          fill="none"
-          stroke={STEER_COLOR}
-          strokeWidth={1}
-        />
-      )}
-      {includeClutch && (
-        <path
-          ref={clutchPathRef}
-          fill="none"
-          stroke={CLUTCH_COLOR}
-          strokeWidth={strokeWidth}
-        />
-      )}
-      {includeThrottle && (
-        <path
-          ref={throttlePathRef}
-          fill="none"
-          stroke={THROTTLE_COLOR}
-          strokeWidth={strokeWidth}
-        />
-      )}
-      {includeBrake && (
-        <>
-          {/* ABS bar-style area fill — rendered below the brake line */}
-          {includeAbs && absStyle === 'bar' && (
-            <path
-              ref={brakeAbsAreaRef}
-              fill={BRAKE_ABS_COLOR}
-              fillOpacity={0.3}
-              stroke="none"
-            />
-          )}
-          <path
-            ref={brakePathRef}
-            fill="none"
-            stroke={BRAKE_COLOR}
-            strokeWidth={strokeWidth}
-          />
-          {includeAbs && (
-            <path
-              ref={brakeAbsPathRef}
-              fill="none"
-              stroke={BRAKE_ABS_COLOR}
-              strokeWidth={
-                absStyle === 'bar'
-                  ? strokeWidth
-                  : Math.round(strokeWidth * 1.67)
-              }
-            />
-          )}
-        </>
-      )}
-    </svg>
+    <canvas ref={canvasRef} className="block w-full h-full min-w-0 min-h-0" />
   );
-};
+});
+InputTrace.displayName = 'InputTrace';

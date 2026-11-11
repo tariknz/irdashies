@@ -12,7 +12,13 @@ const drivers = [
 ];
 
 /** Keeps the tab, follow and pin choices live so the controls can be clicked. */
-const TabBarStory = ({ alwaysOnTop }: { alwaysOnTop: boolean }) => {
+const TabBarStory = ({
+  alwaysOnTop,
+  connectedSimulator = null,
+}: {
+  alwaysOnTop: boolean;
+  connectedSimulator?: string | null;
+}) => {
   const [view, setView] = useState<GantryView>('standings-incidents');
   const [followed, setFollowed] = useState<number | null>(null);
   const [pinned, setPinned] = useState(alwaysOnTop);
@@ -22,6 +28,7 @@ const TabBarStory = ({ alwaysOnTop }: { alwaysOnTop: boolean }) => {
       <GantryTabBar
         activeView={view}
         onViewChange={setView}
+        connectedSimulator={connectedSimulator}
         drivers={drivers}
         followedCarIdx={followed}
         onFollowChange={setFollowed}
@@ -54,4 +61,9 @@ export const Unpinned: Story = {
 
 export const Pinned: Story = {
   args: { alwaysOnTop: true },
+};
+
+/** Resize the canvas below 1024px to see the controls wrap to a second row. */
+export const Connected: Story = {
+  args: { alwaysOnTop: false, connectedSimulator: 'iRacing' },
 };

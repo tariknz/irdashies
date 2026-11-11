@@ -13,6 +13,8 @@ export const ROW_HEIGHT = 24;
 export type Page =
   | { kind: 'names' }
   | { kind: 'gaps'; classId?: string; className?: string }
+  | { kind: 'lastLap' }
+  | { kind: 'bestLap' }
   | { kind: 'gained' }
   | { kind: 'pits' }
   | { kind: 'tyres' };
@@ -20,21 +22,25 @@ export type Page =
 /** What the session can fill right now; other pages are left out. */
 interface PageData {
   classes: [classId: string, className: string][];
+  hasLastLap?: boolean;
+  hasBestLap?: boolean;
   hasGained: boolean;
   hasPits: boolean;
   hasTyreChoice: boolean;
 }
 
+interface PageConfig {
+  pageMode?: BroadcastConfig['pageMode'];
+  pages?: Partial<Record<BroadcastPage, boolean>>;
+  staticPage?: BroadcastPage;
+}
+
 /**
- * The tower pages: the one static page, or the rotation the user picked,
- * minus pages with nothing to show yet. Never empty: names is the fallback.
+ * Static mode always keeps the selected page, even before its data arrives.
+ * Rotation skips pages with nothing to show yet; names is the fallback when
+ * no enabled page has data.
  */
-export const buildPages = (
-  config: Partial<
-    Pick<BroadcastConfig, 'pageMode' | 'pages' | 'staticPage'>
-  > = {},
-  data: PageData
-): Page[] => {
+export const buildPages = (config: PageConfig = {}, data: PageData): Page[] => {
   if (config.pageMode === 'static') {
     const kind: BroadcastPage = config.staticPage ?? 'gaps';
     return [kind === 'gaps' ? { kind: 'gaps' } : { kind }];
@@ -49,6 +55,8 @@ export const buildPages = (
           className,
         }))
       : []),
+    ...(on('lastLap') && data.hasLastLap ? [{ kind: 'lastLap' } as const] : []),
+    ...(on('bestLap') && data.hasBestLap ? [{ kind: 'bestLap' } as const] : []),
     ...(on('gained') && data.hasGained ? [{ kind: 'gained' } as const] : []),
     ...(on('pits') && data.hasPits ? [{ kind: 'pits' } as const] : []),
     ...(on('tyres') && data.hasTyreChoice ? [{ kind: 'tyres' } as const] : []),
@@ -58,6 +66,8 @@ export const buildPages = (
 
 /** Header label for the pages that show the same column for every class. */
 export const PAGE_LABELS: Partial<Record<Page['kind'], string>> = {
+  lastLap: 'Last Lap',
+  bestLap: 'Best Lap',
   gained: '+/- Start',
   pits: 'Last Pit',
   tyres: 'Tyres',

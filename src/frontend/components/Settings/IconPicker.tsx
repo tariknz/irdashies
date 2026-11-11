@@ -1,11 +1,6 @@
-import {
-  useState,
-  useRef,
-  useEffect,
-  useMemo,
-  memo,
-  createElement,
-} from 'react';
+import { CaretDownIcon } from '@phosphor-icons/react';
+import { SettingsPopover } from './components/SettingsPopover';
+import { useState, useRef, useMemo, memo, createElement, useId } from 'react';
 import { PHOSPHOR_ICON_ENTRIES } from '@irdashies/utils/phosphorIconMap';
 
 interface IconPickerProps {
@@ -24,38 +19,8 @@ export const IconPicker = memo(function IconPicker({
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (isOpen) searchRef.current?.focus();
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const onMouseDown = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setIsOpen(false);
-        setSearch('');
-      }
-    };
-    document.addEventListener('mousedown', onMouseDown);
-    return () => document.removeEventListener('mousedown', onMouseDown);
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsOpen(false);
-        setSearch('');
-      }
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [isOpen]);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelId = useId();
 
   const colorHex =
     color != null
@@ -82,11 +47,15 @@ export const IconPicker = memo(function IconPicker({
     : undefined;
 
   return (
-    <div ref={containerRef} className="relative">
+    <div className="relative">
       <button
+        ref={triggerRef}
+        aria-label="Driver group icon"
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? panelId : undefined}
         type="button"
         onClick={() => setIsOpen((o) => !o)}
-        className="flex items-center gap-1.5 px-2 py-1 bg-slate-600 hover:bg-slate-500 rounded text-sm min-w-[150px]"
+        className="settings-button min-w-[150px]"
       >
         <span className="flex-none inline-flex items-center justify-center w-5 h-5">
           {selectedEntry
@@ -104,19 +73,30 @@ export const IconPicker = memo(function IconPicker({
             <span className="text-slate-400">Select an Icon</span>
           )}
         </span>
-        <span className="flex-none text-slate-400 text-xs">▾</span>
+        <CaretDownIcon size={16} className="shrink-0 text-slate-400" />
       </button>
 
-      {isOpen && (
-        <div className="absolute z-50 top-full mt-1 left-0 w-80 bg-slate-800 border border-slate-600 rounded shadow-xl">
-          <div className="p-2 border-b border-slate-600 space-y-1">
+      <SettingsPopover
+        open={isOpen}
+        anchorRef={triggerRef}
+        initialFocusRef={searchRef}
+        id={panelId}
+        label="Driver group icons"
+        onClose={() => {
+          setIsOpen(false);
+          setSearch('');
+        }}
+      >
+        <div className="w-72 max-w-full">
+          <div className="p-2 border-b border-settings-boundary space-y-1">
             <input
               ref={searchRef}
+              aria-label="Search driver group icons"
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search icons..."
-              className="w-full px-2 py-1 bg-slate-700 rounded text-sm placeholder-slate-400"
+              className="settings-field w-full placeholder-slate-400"
             />
             <p className="text-xs text-slate-500">
               {search.trim()
@@ -133,8 +113,9 @@ export const IconPicker = memo(function IconPicker({
                   onChange(undefined);
                   setIsOpen(false);
                   setSearch('');
+                  triggerRef.current?.focus();
                 }}
-                className="text-xs text-red-400 hover:text-red-300"
+                className="settings-button-danger"
               >
                 Clear selection
               </button>
@@ -150,10 +131,15 @@ export const IconPicker = memo(function IconPicker({
                   onChange(name);
                   setIsOpen(false);
                   setSearch('');
+                  triggerRef.current?.focus();
                 }}
+                aria-label={name}
+                aria-pressed={value === name}
                 title={name}
-                className={`flex flex-col items-center gap-0.5 p-1.5 rounded hover:bg-slate-600 transition-colors ${
-                  value === name ? 'bg-slate-600 ring-1 ring-accent-500' : ''
+                className={`flex flex-col items-center gap-0.5 p-1.5 rounded hover:bg-settings-hover transition-colors ${
+                  value === name
+                    ? 'bg-settings-control ring-1 ring-accent-500'
+                    : ''
                 }`}
               >
                 <span className="inline-flex items-center justify-center w-5 h-5">
@@ -163,14 +149,14 @@ export const IconPicker = memo(function IconPicker({
                     weight,
                   })}
                 </span>
-                <span className="text-[8px] text-slate-400 leading-none truncate w-full text-center">
+                <span className="text-[10px] text-slate-400 leading-none truncate w-full text-center">
                   {name}
                 </span>
               </button>
             ))}
           </div>
         </div>
-      )}
+      </SettingsPopover>
     </div>
   );
 });

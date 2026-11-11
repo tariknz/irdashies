@@ -1,6 +1,5 @@
 import { memo, useEffect, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   GantryWidgetSettings,
   GantryConfig,
@@ -310,7 +309,7 @@ export const GantrySettings = memo(() => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <div className="flex border-b border-slate-700/50">
+            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
               <TabButton
                 id="options"
                 activeTab={activeTab}
@@ -344,8 +343,10 @@ export const GantrySettings = memo(() => {
             <div>
               {activeTab === 'options' && (
                 <>
-                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
-                  <SettingsSection title="Options">
+                  <SettingsSection
+                    title="Widget options"
+                    scaleWidgetId={SETTING_ID}
+                  >
                     <SettingActionButton
                       title="Gantry Window"
                       description={`The Gantry runs in its own resizable window rather than as an on-screen overlay. Use this to bring it back if you closed it.${
@@ -394,7 +395,7 @@ export const GantrySettings = memo(() => {
                           list. Surname only keeps the column narrow, which is
                           what the panel is sized for.
                         </div>
-                        <div className="flex flex-wrap gap-3 justify-end mt-3">
+                        <div className="grid grid-cols-2 xl:grid-cols-3 gap-2 mt-3">
                           {NAME_FORMATS.map((format) => (
                             <DriverNamePreview
                               key={format}
@@ -556,7 +557,12 @@ export const GantrySettings = memo(() => {
                       <SettingNumberRow
                         key={field.key}
                         title={`${field.label}${suffix}`}
-                        description={field.description}
+                        description={field.description.split('. ')[0]}
+                        details={
+                          field.description.includes('. ')
+                            ? field.description
+                            : undefined
+                        }
                         value={
                           converts
                             ? toDisplay(config[field.key], speedUnit)

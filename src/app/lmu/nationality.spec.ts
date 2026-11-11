@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normaliseNationality, parseTeamNationalities } from './nationality';
+import { normaliseNationality, readTeamNationalities } from './nationality';
 
 describe('normaliseNationality', () => {
   it('passes an alpha-2 code through, upper-cased', () => {
@@ -7,7 +7,7 @@ describe('normaliseNationality', () => {
     expect(normaliseNationality('GB')).toBe('GB');
   });
 
-  it('converts the alpha-3 codes LMU reports', () => {
+  it('converts alpha-3 codes, which the rating service sends', () => {
     expect(normaliseNationality('FRA')).toBe('FR');
     expect(normaliseNationality('DEU')).toBe('DE');
     expect(normaliseNationality('USA')).toBe('US');
@@ -43,9 +43,9 @@ describe('normaliseNationality', () => {
   });
 });
 
-describe('parseTeamNationalities', () => {
+describe('readTeamNationalities found', () => {
   it('reads the teams payload into a name-keyed map', () => {
-    const map = parseTeamNationalities({
+    const { found: map } = readTeamNationalities({
       drivers: {
         'Jean Dupont': { nationality: 'FRA' },
         'Max Muster': { nationality: 'DEU' },
@@ -57,7 +57,7 @@ describe('parseTeamNationalities', () => {
   });
 
   it('skips drivers whose nationality cannot be read', () => {
-    const map = parseTeamNationalities({
+    const { found: map } = readTeamNationalities({
       drivers: {
         Known: { nationality: 'ITA' },
         Unknown: { nationality: 'XYZ' },
@@ -80,7 +80,49 @@ describe('parseTeamNationalities', () => {
       {},
       { drivers: 7 },
     ]) {
-      expect(parseTeamNationalities(payload).size).toBe(0);
+      expect(readTeamNationalities(payload).found.size).toBe(0);
     }
+  });
+});
+
+describe('readTeamNationalities', () => {
+  it('names the drivers left without a flag, with what the sim sent', () => {
+    const { found, unknown } = readTeamNationalities({
+      drivers: {
+        Known: { nationality: 'ITA' },
+        Kosovo: { nationality: ' XKX ' },
+        Empty: { nationality: '' },
+        Missing: {},
+        NotAString: { nationality: 42 },
+        NotAnObject: 'nope',
+      },
+    });
+
+    expect([...found.keys()]).toEqual(['Known']);
+    // Trimmed as sent; '' for nothing usable. An entry that is not even an
+    // object is not a driver, and is skipped as before.
+    expect(unknown).toEqual([
+      { name: 'Kosovo', nationality: 'XKX' },
+      { name: 'Empty', nationality: '' },
+      { name: 'Missing', nationality: '' },
+      { name: 'NotAString', nationality: '' },
+    ]);
+  });
+
+  it("skips the server's admin entry, which drives no car", () => {
+    // As recorded online: the admin is listed with the drivers, without a
+    // team or a nationality. Drivers carry ["Driver","Owner"] or null.
+    const { found, unknown } = readTeamNationalities({
+      drivers: {
+        Admin: { roles: ['Admin'], isConnected: false, nationality: '' },
+        Host: { roles: ['Admin', 'Driver'], nationality: '' },
+        Driver: { roles: ['Driver', 'Owner'], nationality: 'GB' },
+        Unroled: { roles: null, nationality: 'DE' },
+      },
+    });
+
+    expect(Object.fromEntries(found)).toEqual({ Driver: 'GB', Unroled: 'DE' });
+    // An admin who also drives is a driver, and their missing flag is real.
+    expect(unknown).toEqual([{ name: 'Host', nationality: '' }]);
   });
 });

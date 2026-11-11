@@ -8,7 +8,8 @@ import {
 } from '@irdashies/storybook';
 import { useFuelStore } from './FuelStore';
 import { defaultFuelCalculatorSettings } from './defaults';
-import type { FuelCalculation, FuelLapData } from './types';
+import type { FuelLapData } from './types';
+import { demoFuelData } from './demoData';
 import type { LayoutNode } from '@irdashies/types';
 
 const OverlayFrame = ({
@@ -80,61 +81,23 @@ const baselineArgs = {
   showFuelStatusBorder: false,
 };
 
-const previewFuelData: FuelCalculation = {
-  fuelLevel: 32.6,
-  lastLapUsage: 2.4,
-  currentLapUsage: 1.3,
-  projectedLapUsage: 2.35,
-  avgLaps: 2.34,
-  avg10Laps: 2.36,
-  avgAllGreenLaps: 2.34,
-  minLapUsage: 2.28,
-  maxLapUsage: 2.48,
-  lapsWithFuel: 13.9,
-  lapsRemaining: 32,
-  totalLaps: 35,
-  currentLap: 3,
-  fuelToFinish: 74.9,
-  fuelToAdd: 42.3,
-  pitWindowOpen: 15,
-  pitWindowClose: 16.9,
-  canFinish: false,
-  targetConsumption: 1.02,
-  confidence: 'high',
-  fuelAtFinish: -42.3,
-  avgLapTime: 90,
-  stopsRemaining: 1,
-  lapsPerStint: 25.6,
-  targetScenarios: [
-    { laps: 11, fuelPerLap: 2.34, isCurrentTarget: false },
-    { laps: 12, fuelPerLap: 2.34, isCurrentTarget: true },
-    { laps: 13, fuelPerLap: 2.34, isCurrentTarget: false },
-  ],
-  earliestPitLap: 15,
-  fuelTankCapacity: 60,
-  lastFinishedLap: 2,
-  fuelStatus: 'safe',
-  lapsRange: [31, 34],
-  maxQualify: null,
-};
-
 const previewProjection = {
   isReplay: false,
-  fuelLevel: previewFuelData.fuelLevel,
-  fuelLevelPct: previewFuelData.fuelLevel / 60,
-  currentLap: previewFuelData.currentLap,
+  fuelLevel: demoFuelData.fuelLevel,
+  fuelLevelPct: demoFuelData.fuelLevel / 60,
+  currentLap: demoFuelData.currentLap,
   lapDistPct: 0.55,
-  currentLapUsage: previewFuelData.currentLapUsage ?? 0,
-  projectedLapUsage: previewFuelData.projectedLapUsage ?? 0,
-  lastLapUsage: previewFuelData.lastLapUsage,
-  sessionLapsRemain: previewFuelData.lapsRemaining,
+  currentLapUsage: demoFuelData.currentLapUsage ?? 0,
+  projectedLapUsage: demoFuelData.projectedLapUsage ?? 0,
+  lastLapUsage: demoFuelData.lastLapUsage,
+  sessionLapsRemain: demoFuelData.lapsRemaining,
   sessionTimeRemain: 2700,
   sessionTimeTotal: 3600,
   sessionFlags: 0,
   sessionState: 4,
   sessionNum: 0,
-  sessionLaps: previewFuelData.totalLaps,
-  calculatedTotalRaceLaps: previewFuelData.totalLaps,
+  sessionLaps: demoFuelData.totalLaps,
+  calculatedTotalRaceLaps: demoFuelData.totalLaps,
   estimatedLapsRemaining: 0,
   hasValidRaceEstimate: false,
   isFixedLapRace: true,
@@ -187,7 +150,7 @@ export const Primary: Story = {
       </MockFuelDataProvider>
     ),
   ],
-  args: { ...baselineArgs, previewData: previewFuelData },
+  args: { ...baselineArgs, previewData: demoFuelData },
 };
 
 /** Guards the widest consumption label at a font size that exceeded the old fixed column. */
@@ -209,7 +172,7 @@ export const Avg10AtLargerFontSize: Story = {
         valueFontSize: 15,
       },
     },
-    previewData: previewFuelData,
+    previewData: demoFuelData,
   },
 };
 
@@ -223,7 +186,7 @@ export const RefuelFitsTank: Story = {
     ),
     TelemetryDecorator(),
   ],
-  args: { ...baselineArgs, previewData: previewFuelData },
+  args: { ...baselineArgs, previewData: demoFuelData },
 };
 
 /** Fuel required exceeds one tank, signalling that another stop is necessary. */
@@ -239,7 +202,7 @@ export const RefuelExceedsTank: Story = {
   args: {
     ...baselineArgs,
     previewData: {
-      ...previewFuelData,
+      ...demoFuelData,
       fuelLevel: 8,
       lapsWithFuel: 3.4,
       fuelToAdd: 66.9,
@@ -277,7 +240,7 @@ export const StrategyWithHistory: Story = {
       'curr',
       'qual',
     ],
-    previewData: previewFuelData,
+    previewData: demoFuelData,
   },
 };
 
@@ -306,7 +269,7 @@ export const StrategyWithTableHistory: Story = {
     layoutTree: strategyWithHistoryLayout,
     fuelHistoryType: 'table',
     fuelHistoryLapCount: 5,
-    previewData: { ...previewFuelData, currentLap: 6, lastFinishedLap: 5 },
+    previewData: { ...demoFuelData, currentLap: 6, lastFinishedLap: 5 },
   },
 };
 
@@ -331,7 +294,7 @@ export const StrategyWithPitPlanning: Story = {
     enableTargetPitLap: true,
     targetPitLap: 15,
     showFuelScenarios: true,
-    previewData: previewFuelData,
+    previewData: demoFuelData,
   },
 };
 
@@ -350,7 +313,7 @@ export const TargetPitMessage: Story = {
     layoutTree: targetPitMessageLayout,
     enableTargetPitLap: true,
     targetPitLap: 15,
-    previewData: previewFuelData,
+    previewData: demoFuelData,
   },
 };
 
@@ -367,7 +330,7 @@ export const FuelSaveTargets: Story = {
   args: {
     ...baselineArgs,
     layoutTree: fuelSaveTargetsLayout,
-    previewData: previewFuelData,
+    previewData: demoFuelData,
   },
 };
 
@@ -384,7 +347,7 @@ export const FuelAtFinish: Story = {
   args: {
     ...baselineArgs,
     layoutTree: fuelAtFinishLayout,
-    previewData: previewFuelData,
+    previewData: demoFuelData,
   },
 };
 
@@ -401,7 +364,7 @@ export const Gallons: Story = {
   args: {
     ...baselineArgs,
     fuelUnits: 'gal',
-    previewData: previewFuelData,
+    previewData: demoFuelData,
   },
 };
 
@@ -418,7 +381,7 @@ export const Caution: Story = {
   args: {
     ...baselineArgs,
     showFuelStatusBorder: true,
-    previewData: { ...previewFuelData, fuelStatus: 'caution' },
+    previewData: { ...demoFuelData, fuelStatus: 'caution' },
   },
 };
 
@@ -435,7 +398,7 @@ export const LowConfidence: Story = {
   args: {
     ...baselineArgs,
     previewData: {
-      ...previewFuelData,
+      ...demoFuelData,
       confidence: 'low',
       lapsRange: [28, 36],
     },

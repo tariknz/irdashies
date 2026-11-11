@@ -135,7 +135,8 @@ describe('DriverStatusBadges penalty kind', () => {
       'span'
     ) as HTMLElement;
     expect(span.className).toContain('text-white');
-    expect(span.style.backgroundColor).toBe('rgb(255, 0, 0)');
+    expect(span.className).toContain('bg-[#FF0000]');
+    expect(span.getAttribute('style')).toBeNull();
   });
 
   it('shows up on its own, without another status to carry it', () => {
@@ -181,6 +182,59 @@ describe('DriverStatusBadges penalty kind', () => {
       penaltySeconds: 10,
     }).querySelector('span') as HTMLElement;
     expect(span.className).toContain('text-white');
-    expect(span.style.backgroundColor).toBe('rgb(255, 0, 0)');
+    expect(span.className).toContain('bg-[#FF0000]');
+  });
+
+  describe("LMU's finish status", () => {
+    it('draws a checkered flag for a finished car', () => {
+      const { getByTestId, getByLabelText } = render(
+        <DriverStatusBadges finishState="FINISHED" />
+      );
+
+      expect(getByTestId('finish-flag')).toBeTruthy();
+      expect(getByLabelText('Finished')).toBeTruthy();
+    });
+
+    it('writes DNF and DQ out, in the penalty badge style', () => {
+      for (const state of ['DNF', 'DQ'] as const) {
+        const { container, unmount } = render(
+          <DriverStatusBadges finishState={state} />
+        );
+        const badge = container.querySelector('span');
+        expect(badge?.textContent).toBe(state);
+        // The same exact red as the DT / SG badge.
+        expect(badge?.className).toContain('bg-[#FF0000]');
+        unmount();
+      }
+    });
+
+    it('replaces the penalty badge for a car that is out', () => {
+      const dq = render(
+        <DriverStatusBadges finishState="DQ" penaltyKind="DT" />
+      );
+      expect(dq.container.textContent).toBe('DQ');
+      expect(
+        dq.container.querySelector('[data-testid="finish-flag"]')
+      ).toBeNull();
+    });
+
+    it('draws the checkered flag beside a penalty still carried', () => {
+      const { container } = render(
+        <DriverStatusBadges finishState="FINISHED" penaltyKind="SG" />
+      );
+      const row = container.firstElementChild;
+      const flag = container.querySelector('[data-testid="finish-flag"]');
+      expect(flag).not.toBeNull();
+      expect(container.textContent).toBe('SG');
+      // First in a reversed row, so rightmost: the penalty badge keeps the
+      // place it had before the car finished.
+      expect(row?.firstElementChild?.contains(flag)).toBe(true);
+      expect(row?.children[1]?.textContent).toBe('SG');
+    });
+
+    it('leaves the penalty badge alone for a car still running', () => {
+      const { container } = render(<DriverStatusBadges penaltyKind="SG" />);
+      expect(container.textContent).toBe('SG');
+    });
   });
 });

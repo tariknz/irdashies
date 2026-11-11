@@ -114,7 +114,31 @@ export const InputGear = memo(
         </div>
       </div>
     );
-  }
+  },
+  gearPropsEqual
 );
+
+/** Skip re-renders while the displayed gear text and speed digits are unchanged. */
+function gearPropsEqual(
+  previous: InputGearProps,
+  next: InputGearProps
+): boolean {
+  if (
+    previous.settings !== next.settings ||
+    previous.gear !== next.gear ||
+    previous.flashColor !== next.flashColor ||
+    previous.unit !== next.unit
+  )
+    return false;
+  if (!next.settings.showspeed) return true;
+  const unit = resolveSpeedUnit(
+    next.settings.unit === 'none' ? 'mph' : next.settings.unit,
+    next.unit
+  );
+  return (
+    speedFromMs(previous.speedMs ?? 0, unit).toFixed(0) ===
+    speedFromMs(next.speedMs ?? 0, unit).toFixed(0)
+  );
+}
 
 InputGear.displayName = 'InputGear';

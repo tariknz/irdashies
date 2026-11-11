@@ -26,6 +26,7 @@ export const FuelStatusAlertsSection = ({
           <span className="text-sm text-slate-300">Green Threshold (%)</span>
           <div className="flex items-center gap-2">
             <input
+              aria-label="Green Threshold (%)"
               type="range"
               min="0"
               max="100"
@@ -43,7 +44,7 @@ export const FuelStatusAlertsSection = ({
                   >,
                 });
               }}
-              className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+              className="w-32 h-1.5 bg-settings-track rounded-lg appearance-none cursor-pointer"
             />
             <span className="text-xs text-slate-300 w-8 text-right">
               {settings.config.fuelStatusThresholds?.green ?? 60}%
@@ -56,6 +57,7 @@ export const FuelStatusAlertsSection = ({
           <span className="text-sm text-slate-300">Amber Threshold (%)</span>
           <div className="flex items-center gap-2">
             <input
+              aria-label="Amber Threshold (%)"
               type="range"
               min="0"
               max="100"
@@ -73,7 +75,7 @@ export const FuelStatusAlertsSection = ({
                   >,
                 });
               }}
-              className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+              className="w-32 h-1.5 bg-settings-track rounded-lg appearance-none cursor-pointer"
             />
             <span className="text-xs text-slate-300 w-8 text-right">
               {settings.config.fuelStatusThresholds?.amber ?? 30}%

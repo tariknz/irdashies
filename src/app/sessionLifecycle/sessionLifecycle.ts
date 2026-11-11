@@ -5,6 +5,7 @@ type Callback = () => void;
 type CarIdxCallback = (carIdx: number) => void;
 type SessionTypeCallback = (sessionType: string) => void;
 type DrivingStateCallback = (isDriving: boolean) => void;
+type WatchingStateCallback = (isWatching: boolean) => void;
 export interface SessionEnterEvent {
   replay: boolean;
 }
@@ -16,6 +17,32 @@ export interface SessionLifecycleState {
   sessionType: string | undefined;
   /** Undefined until the first telemetry frame settles it. */
   isDriving: boolean | undefined;
+  /** Undefined until the first telemetry frame settles it. */
+  isWatching: boolean | undefined;
+}
+
+const telemetryFlag = (telemetry: Telemetry, key: keyof Telemetry): boolean =>
+  (telemetry[key] as { value?: unknown[] } | undefined)?.value?.[0] === true;
+
+/**
+ * Whether the sim is showing the track: the player in the car, a replay,
+ * spectating, or LMU's monitor watching the session. Not a menu, iRacing's
+ * garage screen, or LMU outside a session.
+ *
+ * LMU frames carry `LmuNotInSession`, from LMU's own game state. The monitor
+ * counts while its frame is live; a frame the sim stopped writing, out of the
+ * car, is a session that has ended. iRacing has no such state, so its garage
+ * screen is the one place in a session that does not show the track.
+ */
+export function isWatchingTrack(telemetry: Telemetry): boolean {
+  if (telemetry.LmuNotInSession !== undefined) {
+    return (
+      !telemetryFlag(telemetry, 'LmuNotInSession') &&
+      (telemetryFlag(telemetry, 'IsOnTrack') ||
+        !telemetryFlag(telemetry, 'LmuDataStale'))
+    );
+  }
+  return !telemetryFlag(telemetry, 'IsGarageVisible');
 }
 
 export interface SessionLifecycle {
@@ -41,6 +68,11 @@ export interface SessionLifecycle {
    * anything that is not hands on the wheel.
    */
   onDrivingStateChange: (cb: DrivingStateCallback) => () => void;
+  /**
+   * Called when the sim starts or stops showing the track; see
+   * isWatchingTrack. A disconnect while watching reports false.
+   */
+  onWatchingStateChange: (cb: WatchingStateCallback) => () => void;
   /** Called when iRacing disconnects (SDK stops publishing). */
   onDisconnect: (cb: Callback) => () => void;
 
@@ -70,6 +102,7 @@ export function createSessionLifecycle(): SessionLifecycle {
   const sessionNumChangeCallbacks = new Set<Callback>();
   const sessionTypeChangeCallbacks = new Set<SessionTypeCallback>();
   const drivingStateChangeCallbacks = new Set<DrivingStateCallback>();
+  const watchingStateChangeCallbacks = new Set<WatchingStateCallback>();
   const disconnectCallbacks = new Set<Callback>();
 
   // Track current state to detect deltas.
@@ -78,6 +111,7 @@ export function createSessionLifecycle(): SessionLifecycle {
   const sessionTypesByNum = new Map<number, string>();
   let lastSessionType: string | undefined;
   let lastIsDriving: boolean | undefined;
+  let lastIsWatching: boolean | undefined;
   let lastSubSessionId: string | undefined;
 
   function fire<T>(callbacks: Set<(arg: T) => void>, arg: T): void {
@@ -118,8 +152,7 @@ export function createSessionLifecycle(): SessionLifecycle {
 
   function resolveDrivingState(telemetry: Telemetry): void {
     const flag = (key: keyof Telemetry): boolean =>
-      (telemetry[key] as { value?: unknown[] } | undefined)?.value?.[0] ===
-      true;
+      telemetryFlag(telemetry, key);
 
     // Mirrors the renderer's useDrivingState: in the car counts even when
     // stationary in the pit box, while the garage and replay playback do not.
@@ -130,6 +163,13 @@ export function createSessionLifecycle(): SessionLifecycle {
     if (isDriving === lastIsDriving) return;
     lastIsDriving = isDriving;
     fire(drivingStateChangeCallbacks, isDriving);
+  }
+
+  function resolveWatchingState(telemetry: Telemetry): void {
+    const isWatching = isWatchingTrack(telemetry);
+    if (isWatching === lastIsWatching) return;
+    lastIsWatching = isWatching;
+    fire(watchingStateChangeCallbacks, isWatching);
   }
 
   return {
@@ -157,13 +197,21 @@ export function createSessionLifecycle(): SessionLifecycle {
       drivingStateChangeCallbacks.add(cb);
       return () => drivingStateChangeCallbacks.delete(cb);
     },
+    onWatchingStateChange(cb) {
+      watchingStateChangeCallbacks.add(cb);
+      return () => watchingStateChangeCallbacks.delete(cb);
+    },
     onDisconnect(cb) {
       disconnectCallbacks.add(cb);
       return () => disconnectCallbacks.delete(cb);
     },
 
     getCurrentState() {
-      return { sessionType: lastSessionType, isDriving: lastIsDriving };
+      return {
+        sessionType: lastSessionType,
+        isDriving: lastIsDriving,
+        isWatching: lastIsWatching,
+      };
     },
 
     _onEnter(event) {
@@ -183,6 +231,7 @@ export function createSessionLifecycle(): SessionLifecycle {
         resolveSessionType();
       }
       resolveDrivingState(telemetry);
+      resolveWatchingState(telemetry);
     },
 
     _onSession(session) {
@@ -281,6 +330,9 @@ export function createSessionLifecycle(): SessionLifecycle {
       sessionTypesByNum.clear();
       lastSessionType = undefined;
       lastIsDriving = undefined;
+      const wasWatching = lastIsWatching;
+      lastIsWatching = undefined;
+      if (wasWatching) fire(watchingStateChangeCallbacks, false);
       lastSubSessionId = undefined;
       fireAll(disconnectCallbacks);
     },

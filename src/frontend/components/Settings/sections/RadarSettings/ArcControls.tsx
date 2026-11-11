@@ -151,13 +151,34 @@ export const ArcEventCard = ({
             aria-label={`${title} style`}
             className="grid grid-cols-2 sm:grid-cols-4 gap-2"
           >
-            {ARC_STYLES.map((option) => (
+            {ARC_STYLES.map((option, index) => (
               <button
                 key={option.value}
                 type="button"
                 role="radio"
                 aria-checked={option.value === style}
+                tabIndex={option.value === style ? 0 : -1}
                 onClick={() => onStyle(option.value)}
+                onKeyDown={(event) => {
+                  const step = ['ArrowRight', 'ArrowDown'].includes(event.key)
+                    ? 1
+                    : ['ArrowLeft', 'ArrowUp'].includes(event.key)
+                      ? -1
+                      : 0;
+                  if (!step && !['Home', 'End'].includes(event.key)) return;
+                  event.preventDefault();
+                  const next =
+                    event.key === 'Home'
+                      ? 0
+                      : event.key === 'End'
+                        ? ARC_STYLES.length - 1
+                        : (index + step + ARC_STYLES.length) %
+                          ARC_STYLES.length;
+                  onStyle(ARC_STYLES[next].value);
+                  event.currentTarget.parentElement
+                    ?.querySelectorAll<HTMLButtonElement>('[role="radio"]')
+                    ?.[next]?.focus();
+                }}
                 className={`flex flex-col items-center gap-1 rounded-md border p-1.5 text-xs transition-colors ${
                   option.value === style
                     ? 'border-accent-500 bg-accent-600/20 text-white'

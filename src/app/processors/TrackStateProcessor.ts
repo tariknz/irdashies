@@ -78,6 +78,8 @@ export class TrackStateProcessor implements TelemetryProcessor<TrackStateSnapsho
     carLeftRight: 0,
     isOnTrack: false,
     dataStale: false,
+    notInSession: false,
+    outOfCar: false,
     playerCarInPitStall: false,
     playerTrackSurface: 0,
     onPitRoad: false,
@@ -103,6 +105,7 @@ export class TrackStateProcessor implements TelemetryProcessor<TrackStateSnapsho
     void session;
   }
 
+  /** Copies one frame's track state in, bumping the version on a change. */
   onFrame(frame: Telemetry): void {
     let changed = false;
     changed =
@@ -133,6 +136,11 @@ export class TrackStateProcessor implements TelemetryProcessor<TrackStateSnapsho
       this.set('isOnTrack', booleanValue(frame, 'IsOnTrack')) || changed;
     changed =
       this.set('dataStale', booleanValue(frame, 'LmuDataStale')) || changed;
+    changed =
+      this.set('notInSession', booleanValue(frame, 'LmuNotInSession')) ||
+      changed;
+    changed =
+      this.set('outOfCar', booleanValue(frame, 'LmuOutOfCar')) || changed;
     changed =
       this.set(
         'playerCarInPitStall',
@@ -184,6 +192,10 @@ export class TrackStateProcessor implements TelemetryProcessor<TrackStateSnapsho
     if (changed) this.latest.version += 1;
   }
 
+  /**
+   * Clears the snapshot on any lifecycle event but entering a session, so no
+   * widget reads the previous session's cars.
+   */
   onLifecycle(event: SessionLifecycleEvent): void {
     if (event.type === 'enter') return;
     (this.latest.carIdxLapDistPct as number[]).length = 0;
@@ -194,6 +206,8 @@ export class TrackStateProcessor implements TelemetryProcessor<TrackStateSnapsho
     this.latest.carLeftRight = 0;
     this.latest.isOnTrack = false;
     this.latest.dataStale = false;
+    this.latest.notInSession = false;
+    this.latest.outOfCar = false;
     this.latest.playerCarInPitStall = false;
     this.latest.playerTrackSurface = 0;
     this.latest.onPitRoad = false;

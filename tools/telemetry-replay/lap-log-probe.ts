@@ -15,7 +15,7 @@ export const createLapLogProbe = (): ReplayProbe<LapLogSnapshot> => {
   const processor = rateLimited(new LapLogProcessor());
   return {
     name: 'lap-log-state',
-    schemaVersion: 1,
+    schemaVersion: 2,
     variables: [
       'SessionTick',
       'LapCompleted',
@@ -25,6 +25,7 @@ export const createLapLogProbe = (): ReplayProbe<LapLogSnapshot> => {
       'CarIdxBestLapTime',
       'SessionNum',
       'SessionTime',
+      'SessionFlags',
       'PlayerTrackSurface',
       'PlayerCarMyIncidentCount',
       'LapDistPct',

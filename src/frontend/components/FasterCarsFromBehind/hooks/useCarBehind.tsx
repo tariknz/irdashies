@@ -56,8 +56,11 @@ export const useCarBehind = ({
       .sort((a, b) => b.delta - a.delta) // Sort by closest first (least negative delta)
       .slice(0, settings.numberDriversBehind) // Take only the configured number
       .map((car) => {
-        const percent = parseInt(
-          (100 - (Math.abs(car.delta ?? 0) / 3) * 100).toFixed(0)
+        // Keep sub-percent changes for the animated bar. Only the displayed
+        // number is rounded, and the configured detection range sets the scale.
+        const percent = Math.max(
+          0,
+          Math.min(100, (1 - Math.abs(car.delta) / Math.abs(threshold)) * 100)
         );
 
         return {
@@ -65,8 +68,10 @@ export const useCarBehind = ({
           name: car.driver?.name,
           license: car.driver?.license,
           rating: car.driver?.rating,
-          distance: parseFloat(car.delta?.toFixed(1) ?? '0'),
+          distance: car.delta,
           classColor: car.carClass?.color,
+          className: car.carClass?.name,
+          classPosition: car.classPosition,
           percent: percent,
         };
       });

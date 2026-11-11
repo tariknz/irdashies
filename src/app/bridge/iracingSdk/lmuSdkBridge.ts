@@ -22,6 +22,11 @@ import {
 import { createRosterGate } from '../../lmu/rosterSettle';
 import { createLmuSessionIdentity } from '../../lmu/sessionIdentity';
 import { createLmuDataFreeze } from '../../lmu/dataFreeze';
+import { describeLmuGameState, type LmuGameState } from '../../lmu/gameState';
+import {
+  createLmuNationalityWatch,
+  NATIONALITY_JOIN_DELAY_MS,
+} from '../../lmu/nationalityWatch';
 import {
   LMU_DISCONNECT_GRACE_MS,
   shouldHoldLmuRunningState,
@@ -40,6 +45,7 @@ import { lmuRestOrigin } from '../../lmu/rest/constants';
 import { createLmuRestTransport } from '../../lmu/rest/httpJson';
 import { createLmuRestPoller } from '../../lmu/rest/poller';
 import { createLmuRestData } from '../../lmu/rest/state';
+import { LMU_TEAMS_TASK_ID } from '../../lmu/rest/tasks';
 import { createLmuTapeRestTransport } from '../../lmu/rest/tapeTransport';
 import { createLmuLiveStandings } from '../../lmu/liveStandings/client';
 import { lmuLivePenaltyChannels } from '../../lmu/liveStandings/penalties';
@@ -56,6 +62,7 @@ import { raceosUsername } from '../../lmu/raceos/parse';
 import { createLmuTapeRatingClient } from '../../lmu/raceos/tapeRatings';
 import { createRaceosTransport } from '../../lmu/raceos/httpsJson';
 import { createTicketFetcher } from '../../lmu/raceos/ticket';
+import { RACEOS_ENABLED } from '../../lmu/raceos/enabled';
 import {
   createDriverRatingCache,
   type DriverRatingCache,
@@ -190,6 +197,11 @@ const gridUsernames = (raw: {
   );
 };
 
+/**
+ * Starts the Le Mans Ultimate bridge: reads shared memory and the REST API,
+ * maps both into iRacing-shaped telemetry and session data, and publishes
+ * them to the overlays. Resolves to the bridge the app drives, as for iRacing.
+ */
 export async function publishLmuSDKEvents(
   overlayManager: OverlayManager,
   lifecycle?: SessionLifecycle,
@@ -277,6 +289,14 @@ export async function publishLmuSDKEvents(
 
   let shouldStop = false;
   let lastRunningState: boolean | undefined = undefined;
+  /** Whether this bridge has entered the shared lifecycle and not left it. */
+  let isLifecycleEntered = false;
+  /** Leaves the shared lifecycle, once. */
+  const leaveLifecycle = () => {
+    if (!isLifecycleEntered) return;
+    isLifecycleEntered = false;
+    lifecycle?._onDisconnect();
+  };
   let latestSession: Session | null = null;
   let lastSessionSignature: string | null = null;
   /** Last reported rating tally, so a settled grid is reported once. */
@@ -305,10 +325,20 @@ export async function publishLmuSDKEvents(
   /**
    * Whether the sim has stopped writing shared memory.
    *
-   * Ending a session leaves the block readable and stale, so without this the
-   * last snapshot was taken at face value forever. See dataFreeze.ts.
+   * Two jobs. It slows the loop while there is nothing new to read. And it is
+   * the fallback for in-session and in-car while GetGameState has not
+   * answered: ending a session leaves the block readable and stale, so without
+   * this the last snapshot was taken at face value forever. See dataFreeze.ts
+   * and gameState.ts.
    */
   const dataFreeze = createLmuDataFreeze();
+  /** The game state last logged, so each change is one line. */
+  let lastGameState: LmuGameState | undefined;
+  /**
+   * Which drivers an online grid has shown, so a burst of teams polls starts
+   * only when one arrives. See nationalityWatch.ts.
+   */
+  const nationalityWatch = createLmuNationalityWatch();
   let activeTrackName = '';
   let trackMap: LmuTrackMap | null = null;
   let lastBlindSpotDataIssue: string | null | undefined;
@@ -340,9 +370,19 @@ export async function publishLmuSDKEvents(
   // `anonymise` bakes the ratings into the tape instead, keyed by the same
   // pseudonymised names its snapshots carry, so a replay shows the badges it
   // was recorded with and carries no real identity.
+  //
+  // All of it is behind RACEOS_ENABLED, which is off: then neither branch is
+  // taken and the client below answers nothing, live or replayed.
   let ratingCache: DriverRatingCache | undefined;
   let ratingClient: RaceosClient;
-  if (isTapeReplay) {
+  if (!RACEOS_ENABLED) {
+    logger.info('[lmuSdkBridge] Driver ratings: off (RaceOS is disabled)');
+    ratingClient = {
+      get: () => undefined,
+      request: () => undefined,
+      reset: () => undefined,
+    };
+  } else if (isTapeReplay) {
     logger.info(
       '[lmuSdkBridge] Driver ratings: reading what the tape was anonymised with'
     );
@@ -457,7 +497,7 @@ export async function publishLmuSDKEvents(
           publishRunningState(false);
           latestSession = null;
           overlayManager.clearLatestSessionData?.();
-          lifecycle?._onDisconnect();
+          leaveLifecycle();
           wasRunning = false;
           lastSessionSignature = null;
           resetLmuLapDistanceState(lapDistanceState);
@@ -465,6 +505,9 @@ export async function publishLmuSDKEvents(
           rosterGate.reset();
           sessionIdentity.reset();
           dataFreeze.reset();
+          nationalityWatch.reset();
+          // Cleared with the REST data below, so its going is not news.
+          lastGameState = undefined;
           restPoller.setActive(false);
           liveStandings?.setActive(false);
           // The token was bought with a ticket this sim run minted, and a
@@ -511,6 +554,8 @@ export async function publishLmuSDKEvents(
         // Session settings and the forecast are fetched once per activation,
         // and a new track means a new session.
         restPoller.invalidateOnce();
+        // A new event, so its grid's flags are asked for afresh.
+        nationalityWatch.reset();
         resetLmuLapDistanceState(lapDistanceState);
         resetLmuOpponentLapDistanceState(opponentLapDistanceState);
         lastSessionSignature = null;
@@ -527,6 +572,11 @@ export async function publishLmuSDKEvents(
         restPoller.setActive(true);
         liveStandings?.setActive(true);
         publishRunningState(true);
+        // A running-state listener can stop this bridge as LMU comes up (a
+        // hand-over). Its stop() found nothing to leave yet, so entering the
+        // lifecycle now would leave a stopped bridge in it for good.
+        if (shouldStop) break;
+        isLifecycleEntered = true;
         lifecycle?._onEnter({ replay: false });
       }
 
@@ -567,6 +617,16 @@ export async function publishLmuSDKEvents(
         sessionStartEvents: raw.sessionStartEvents,
         sessionEndEvents: raw.sessionEndEvents,
       });
+      // Where the player is, as the sim says, polled once a second. When it
+      // is known it alone decides in-car and in-session in the frame below;
+      // the freeze watch only paces the loop.
+      const gameState = restData.gameState;
+      if (gameState !== lastGameState) {
+        lastGameState = gameState;
+        logger.info(
+          `[lmuSdkBridge] Game state: ${describeLmuGameState(gameState)}`
+        );
+      }
       const frozen = dataFreeze.observe(
         { scoringUpdates: raw.scoringUpdates, currentET: raw.currentET },
         tickTime
@@ -574,8 +634,10 @@ export async function publishLmuSDKEvents(
       if (dataFreeze.justChanged()) {
         logger.info(
           frozen
-            ? '[lmuSdkBridge] Shared memory stopped updating; treating the ' +
-                'player as out of the car'
+            ? '[lmuSdkBridge] Shared memory stopped updating' +
+                (gameState === undefined
+                  ? '; treating the player as out of the car'
+                  : '')
             : '[lmuSdkBridge] Shared memory updating again'
         );
       }
@@ -610,6 +672,16 @@ export async function publishLmuSDKEvents(
         // nothing else about the grid moved, and an id already resolved,
         // remembered as a miss or in flight costs one set lookup to skip.
         ratingClient.request(gridUsernames(rawSession));
+        // Flags for an online grid: a burst of teams polls a second after a
+        // driver arrives, until every driver on it has one or the burst runs
+        // out. Offline, the watch never calls for one.
+        if (nationalityWatch.observe(rawSession)) {
+          restPoller.burst(LMU_TEAMS_TASK_ID, {
+            delayMs: NATIONALITY_JOIN_DELAY_MS,
+            isComplete: () =>
+              nationalityWatch.complete(restData.session.nationalities),
+          });
+        }
         const signature = lmuSessionSignature(rawSession);
         // Only the roster is gated. Anything else that moves -- a position, a
         // lap time, the weather -- rebuilds at once as it always did, because
@@ -717,7 +789,8 @@ export async function publishLmuSDKEvents(
         restData.cells,
         sessionIdentity,
         frozen,
-        penaltyChannels
+        penaltyChannels,
+        gameState
       );
       lifecycle?._onTelemetry(telemetry);
       perfMetrics.markEnd('lifecycleTelemetry');
@@ -846,7 +919,7 @@ export async function publishLmuSDKEvents(
     if (lastRunningState) {
       latestSession = null;
       overlayManager.clearLatestSessionData?.();
-      lifecycle?._onDisconnect();
+      leaveLifecycle();
     }
     restPoller.setActive(false);
     liveStandings?.stop();
@@ -877,6 +950,11 @@ export async function publishLmuSDKEvents(
     },
     stop: () => {
       shouldStop = true;
+      // Resets the shared lifecycle synchronously, as the iRacing bridge does,
+      // before another source can enter it. Left as it was, LMU's driving and
+      // watching states outlived it into the next bridge, and analytics
+      // counted the next sim as shown on track before its first frame said so.
+      leaveLifecycle();
       unsubscribeOverlayReady?.();
       restPoller.stop();
       ratingClient.reset();

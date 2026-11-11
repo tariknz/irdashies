@@ -54,9 +54,10 @@ describe('hiddenRatingColumns', () => {
   it('shows the rating column on LMU and hides iRacing-only ones', () => {
     const hidden = hiddenRatingColumns('lmu');
 
-    // `badge` holds the LMU rank pair; hiding it is what broke the feature.
+    // `badge` holds the LMU rank pair, and marks AI entries without it.
     expect(hidden.has('badge')).toBe(false);
-    expect(hidden.has('lmuBadge')).toBe(false);
+    // Only RaceOS fills it, and RaceOS is switched off.
+    expect(hidden.has('lmuBadge')).toBe(true);
     // LMU reports no iRating, so its change column stays hidden.
     expect(hidden.has('iratingChange')).toBe(true);
   });
@@ -69,14 +70,16 @@ describe('hiddenRatingColumns', () => {
     expect(hidden.has('iratingChange')).toBe(false);
   });
 
-  it('hides nothing before a simulator is detected', () => {
-    // With no sim to be incompatible with, hiding would be guessing.
-    expect(hiddenRatingColumns(undefined).size).toBe(0);
-    expect(hiddenRatingColumns(null).size).toBe(0);
+  it('hides only columns no simulator fills before one is detected', () => {
+    // With no sim to be incompatible with, hiding anything else would be
+    // guessing; the LMU badge has no source at all while RaceOS is off.
+    for (const sim of [undefined, null]) {
+      expect([...hiddenRatingColumns(sim)]).toEqual(['lmuBadge']);
+    }
   });
 
   it('only ever hides ids that are rating columns', () => {
-    for (const sim of ['iracing', 'lmu'] as const) {
+    for (const sim of ['iracing', 'lmu', undefined] as const) {
       for (const id of hiddenRatingColumns(sim)) {
         expect(RATING_COLUMN_IDS).toContain(id);
       }

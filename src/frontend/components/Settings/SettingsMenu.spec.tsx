@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import {
   assert,
   afterEach,
@@ -45,6 +45,26 @@ vi.mock('./menuItems', () => ({
   generalItems: [
     { to: '/settings/general', path: '/general', label: 'General' },
   ],
+  toolItems: [
+    {
+      to: '/settings/profiles',
+      path: '/profiles',
+      label: 'Profiles',
+      category: 'Tools',
+    },
+    {
+      to: '/settings/driver-tags',
+      path: '/driver-tags',
+      label: 'Driver Tags',
+      category: 'Tools',
+    },
+    {
+      to: '/settings/car-setup',
+      path: '/car-setup',
+      label: 'Setup Comparison',
+      category: 'Tools',
+    },
+  ],
   bottomItems: [{ to: '/settings/about', path: '/about', label: 'About' }],
   menuHasToggle: (widgetType: string, ids: string[]) =>
     ids.includes(widgetType),
@@ -54,18 +74,21 @@ vi.mock('./menuItems', () => ({
       path: '/standings',
       label: 'Standings',
       widgetType: 'standings',
+      category: 'Standings',
     },
     {
       to: '/settings/wind',
       path: '/wind',
       label: 'Wind',
       widgetType: 'wind',
+      category: 'Session & Weather',
     },
     {
       to: '/settings/twitchchat',
       path: '/twitchchat',
       label: 'Twitch Chat',
       widgetType: 'twitchchat',
+      category: 'Broadcast & Streaming',
     },
   ],
 }));
@@ -76,8 +99,8 @@ function CurrentPath() {
 
 function renderMenu() {
   return render(
-    <MemoryRouter initialEntries={['/settings/general']}>
-      <SettingsMenu />
+    <MemoryRouter initialEntries={['/settings/standings']}>
+      <SettingsMenu returnTo="/settings/standings" />
       <CurrentPath />
     </MemoryRouter>
   );
@@ -121,7 +144,59 @@ describe('SettingsMenu', () => {
     window.dashboardBridge = originalBridge;
   });
 
-  it('lists supported widgets without groups or redundant live labels', () => {
+  it('opens a dedicated app view and returns without changing settings', () => {
+    renderMenu();
+    expect(
+      screen.queryByRole('link', { name: 'General' })
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: 'App settings' }));
+    expect(screen.getByTestId('current-path')).toHaveTextContent(
+      '/settings/general'
+    );
+    expect(
+      screen.getByRole('navigation', { name: 'App settings pages' })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'General' })).toHaveAttribute(
+      'aria-current',
+      'page'
+    );
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Driver Tags' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Setup Comparison' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Profiles' })).toBeNull();
+    fireEvent.click(screen.getByRole('link', { name: 'Back to overlays' }));
+    expect(screen.getByTestId('current-path')).toHaveTextContent(
+      '/settings/standings'
+    );
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+    expect(state.onDashboardUpdated).not.toHaveBeenCalled();
+  });
+
+  it('retains overlay query and support reveal across app navigation', () => {
+    renderMenu();
+    fireEvent.click(screen.getByText('(1 hidden)'));
+    fireEvent.change(screen.getByRole('searchbox'), {
+      target: { value: 'Wind' },
+    });
+    fireEvent.click(screen.getByRole('link', { name: 'App settings' }));
+    fireEvent.click(screen.getByRole('link', { name: 'About' }));
+    expect(screen.getByRole('link', { name: 'About' })).toHaveAttribute(
+      'aria-current',
+      'page'
+    );
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: 'Back to overlays' }));
+    expect(screen.getByRole('searchbox')).toHaveValue('Wind');
+    expect(screen.getByRole('link', { name: /Wind/ })).toBeInTheDocument();
+    expect(screen.getByText('(showing 1 hidden)')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('switch', { name: 'Enable Wind' })
+    ).not.toBeInTheDocument();
+    expect(state.onDashboardUpdated).not.toHaveBeenCalled();
+  });
+
+  it('lists supported widgets in categories without redundant live labels', () => {
     assert(state.dashboard);
     state.dashboard.generalSettings = {};
     renderMenu();
@@ -136,10 +211,38 @@ describe('SettingsMenu', () => {
     ).not.toBeInTheDocument();
     expect(screen.getByText('(1 hidden)')).toBeInTheDocument();
     expect(
+      within(screen.getByRole('region', { name: 'Standings' })).getByRole(
+        'link',
+        { name: 'Standings' }
+      )
+    ).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole('region', { name: 'Broadcast & Streaming' })
+      ).getByRole('link', { name: 'Twitch Chat' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('heading', { level: 3 }).map((el) => el.textContent)
+    ).toEqual(['Standings', 'Broadcast & Streaming', 'Tools']);
+    const tools = within(screen.getByRole('region', { name: 'Tools' }));
+    expect(tools.getAllByRole('link').map((link) => link.textContent)).toEqual([
+      'Profiles',
+      'Driver Tags',
+      'Setup Comparison',
+    ]);
+    expect(tools.queryByRole('switch')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Session & Weather' })
+    ).not.toBeInTheDocument();
+    expect(
       screen.queryByRole('link', { name: /Wind/ })
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'General' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'About' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'General' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'About' })
+    ).not.toBeInTheDocument();
   });
 
   it('switches every copy of the widget off and preserves other widgets and settings', () => {
@@ -157,7 +260,7 @@ describe('SettingsMenu', () => {
     });
     expect(state.dashboard).toEqual(original);
     expect(screen.getByTestId('current-path')).toHaveTextContent(
-      '/settings/general'
+      '/settings/standings'
     );
   });
 
@@ -243,7 +346,104 @@ describe('SettingsMenu', () => {
     fireEvent.click(screen.getByText('(1 hidden)'));
     expect(screen.getByRole('link', { name: /Wind/ })).toBeInTheDocument();
     expect(
+      within(
+        screen.getByRole('region', { name: 'Session & Weather' })
+      ).getByRole('link', { name: /Wind/ })
+    ).toBeInTheDocument();
+    expect(
       screen.queryByRole('switch', { name: 'Enable Wind' })
     ).not.toBeInTheDocument();
+  });
+
+  it('searches category names and omits categories with no visible matches', () => {
+    renderMenu();
+    const search = screen.getByRole('searchbox');
+    fireEvent.change(search, { target: { value: '  BROADCAST  ' } });
+    expect(
+      screen.getByRole('link', { name: 'Twitch Chat' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('heading', { level: 3 }).map((el) => el.textContent)
+    ).toEqual(['Broadcast & Streaming']);
+
+    fireEvent.change(search, { target: { value: 'session & weather' } });
+    expect(screen.getByText(/No overlays match/)).toHaveAttribute(
+      'role',
+      'status'
+    );
+    expect(screen.queryByRole('heading', { level: 3 })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('(1 hidden)'));
+    expect(screen.getByRole('link', { name: /Wind/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent(
+      'Session & Weather'
+    );
+    expect(state.onDashboardUpdated).not.toHaveBeenCalled();
+  });
+
+  it('filters overlays while keeping app access available without changing saved settings', () => {
+    renderMenu();
+    const search = screen.getByRole('searchbox', { name: 'Find an overlay' });
+    fireEvent.change(search, { target: { value: '  STAND  ' } });
+    expect(screen.getByRole('link', { name: 'Standings' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Twitch Chat' })
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Standings' })).toHaveAttribute(
+      'aria-current',
+      'page'
+    );
+    expect(
+      screen.queryByRole('link', { name: 'About' })
+    ).not.toBeInTheDocument();
+    fireEvent.change(search, { target: { value: 'no matching widget' } });
+    expect(
+      screen.getByRole('link', { name: 'App settings' })
+    ).toBeInTheDocument();
+    expect(screen.getByText(/No overlays match/)).toHaveAttribute(
+      'role',
+      'status'
+    );
+    fireEvent.change(search, { target: { value: '' } });
+    expect(
+      screen.getByRole('link', { name: 'Twitch Chat' })
+    ).toBeInTheDocument();
+    expect(state.onDashboardUpdated).not.toHaveBeenCalled();
+  });
+
+  it('keeps preview exclusions hidden even when revealing unsupported widgets', () => {
+    render(
+      <MemoryRouter initialEntries={['/settings/standings']}>
+        <SettingsMenu
+          previewMode
+          excludedWidgetTypes={new Set(['twitchchat'])}
+        />
+      </MemoryRouter>
+    );
+    fireEvent.click(screen.getByText('(1 hidden)'));
+    expect(screen.getByRole('link', { name: /Wind/ })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Twitch Chat' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Tools' })).toBeNull();
+    expect(
+      screen.getByRole('switch', { name: 'Enable Standings' })
+    ).toBeChecked();
+  });
+
+  it('limits preview app pages to General while retaining the return route', () => {
+    render(
+      <MemoryRouter initialEntries={['/settings/general']}>
+        <SettingsMenu previewMode returnTo="/settings/standings" />
+        <CurrentPath />
+      </MemoryRouter>
+    );
+    expect(screen.getByRole('link', { name: 'General' })).toHaveAttribute(
+      'aria-current',
+      'page'
+    );
+    expect(screen.queryByRole('link', { name: 'Profiles' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'About' })).toBeNull();
+    fireEvent.click(screen.getByRole('link', { name: 'Back to overlays' }));
+    expect(screen.getByTestId('current-path')).toHaveTextContent(
+      '/settings/standings'
+    );
   });
 });

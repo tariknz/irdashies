@@ -3,6 +3,7 @@ import {
   type SessionType,
 } from './useCurrentSessionType';
 import type { SessionVisibilitySettings } from '@irdashies/types';
+import { trackStateSelectors, useTrackStateSelector } from '../ChannelStore';
 
 const SESSION_TYPE_MAP: Partial<
   Record<SessionType, keyof SessionVisibilitySettings>
@@ -17,6 +18,11 @@ const SESSION_TYPE_MAP: Partial<
 
 /**
  * Hook to check if the current session should be visible based on session visibility settings.
+ *
+ * Out of any session -- LMU reports that through GetGameState -- reads as
+ * Offline Testing, whatever session the snapshot last described, so only the
+ * widgets allowed there stay up between sessions.
+ *
  * @param sessionVisibility - The session visibility settings from widget config
  * @returns true if the current session should be visible, false otherwise
  */
@@ -24,7 +30,15 @@ export function useSessionVisibility(
   sessionVisibility: SessionVisibilitySettings | undefined
 ): boolean {
   const sessionType = useCurrentSessionType();
-  if (!sessionType || !sessionVisibility) {
+  const notInSession =
+    useTrackStateSelector(trackStateSelectors.notInSession) ?? false;
+  if (!sessionVisibility) {
+    return true;
+  }
+  if (notInSession) {
+    return sessionVisibility.offlineTesting ?? true;
+  }
+  if (!sessionType) {
     return true;
   }
 

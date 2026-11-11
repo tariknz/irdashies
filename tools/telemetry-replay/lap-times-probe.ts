@@ -20,8 +20,15 @@ export const createLapTimesProbe = (): ReplayProbe<
 
   return {
     name: 'lap-times-state',
-    schemaVersion: 1,
-    variables: ['CarIdxLastLapTime', 'SessionNum'],
+    schemaVersion: 2,
+    variables: [
+      'CarIdxLastLapTime',
+      'CarIdxLapCompleted',
+      'CarIdxOnPitRoad',
+      'CarIdxTrackSurface',
+      'SessionNum',
+      'SessionTime',
+    ],
     onFrame(frame) {
       processor.onFrame(telemetryFrom(frame));
       const snapshot = processor.snapshot();

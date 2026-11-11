@@ -7,6 +7,7 @@ vi.mock('@irdashies/context', () => ({
 import { LapTimeLogDisplay } from './LapTimeLog';
 import { LapTimeRow } from './components/LapTimeRow';
 import type { LapTimeLogConfig } from '@irdashies/types';
+import { getWidgetDefaultConfig } from '@irdashies/types';
 import { formatTime, formatDelta } from '@irdashies/utils/time';
 
 // Mock settings for tests
@@ -300,5 +301,105 @@ describe('hiding pitted laps', () => {
     for (const lap of ['LAP 1', 'LAP 2', 'LAP 5', 'LAP 6']) {
       expect(screen.getByText(lap)).toBeInTheDocument();
     }
+  });
+});
+
+describe('hiding caution laps', () => {
+  const history = [
+    { lap: 1, time: 31.2 },
+    { lap: 2, time: 31.4 },
+    { lap: 3, time: 65, caution: true },
+    { lap: 4, time: 70, caution: true, pitted: true },
+    { lap: 5, time: 43, pitted: true },
+    { lap: 6, time: 31.3 },
+  ];
+  const config = (
+    overrides: Partial<LapTimeLogConfig['history']> = {}
+  ): LapTimeLogConfig =>
+    mockSettings({
+      showCurrentLap: false,
+      showPredictedLap: false,
+      showLastLap: false,
+      showBestLap: false,
+      history: { enabled: true, count: 10, ...overrides },
+    });
+
+  it('defaults off and keeps caution laps in existing configurations', () => {
+    expect(getWidgetDefaultConfig('laptimelog').history.hideCautionLaps).toBe(
+      false
+    );
+    const { rerender } = render(
+      <LapTimeLogDisplay settings={config()} history={history} />
+    );
+    expect(screen.getByText('LAP 3')).toBeInTheDocument();
+    rerender(
+      <LapTimeLogDisplay
+        settings={config({ hideCautionLaps: false })}
+        history={history}
+      />
+    );
+    expect(screen.getByText('LAP 3')).toBeInTheDocument();
+  });
+
+  it('filters before the count and can restore the recorded laps', () => {
+    const { rerender } = render(
+      <LapTimeLogDisplay
+        settings={config({ hideCautionLaps: true, count: 4 })}
+        history={history}
+      />
+    );
+    expect(
+      screen.getAllByText(/^LAP \d+$/).map((row) => row.textContent)
+    ).toEqual(['LAP 6', 'LAP 5', 'LAP 2', 'LAP 1']);
+    rerender(<LapTimeLogDisplay settings={config()} history={history} />);
+    expect(screen.getAllByText(/^LAP \d+$/)).toHaveLength(6);
+  });
+
+  it('combines with the pit-lap filter', () => {
+    render(
+      <LapTimeLogDisplay
+        settings={config({ hideCautionLaps: true, hidePittedLaps: true })}
+        history={history}
+      />
+    );
+    expect(
+      screen.getAllByText(/^LAP \d+$/).map((row) => row.textContent)
+    ).toEqual(['LAP 6', 'LAP 2', 'LAP 1']);
+  });
+
+  it('rescales the chart and averages only visible laps', () => {
+    const { container, rerender } = render(
+      <LapTimeLogDisplay
+        settings={config({ style: 'chart', hidePittedLaps: true })}
+        history={history}
+      />
+    );
+    const before = container.querySelector('path')?.getAttribute('d');
+    expect(container.querySelectorAll('circle')).toHaveLength(4);
+    expect(screen.getByText('AVG 0:39.725')).toBeInTheDocument();
+    rerender(
+      <LapTimeLogDisplay
+        settings={config({
+          style: 'chart',
+          hideCautionLaps: true,
+          hidePittedLaps: true,
+        })}
+        history={history}
+      />
+    );
+    expect(container.querySelectorAll('circle')).toHaveLength(3);
+    expect(container.querySelector('path')?.getAttribute('d')).not.toBe(before);
+    expect(screen.getByText('AVG 0:31.300')).toBeInTheDocument();
+  });
+
+  it('handles an entirely hidden history', () => {
+    const { container } = render(
+      <LapTimeLogDisplay
+        settings={config({ style: 'chart', hideCautionLaps: true })}
+        history={[history[2]]}
+      />
+    );
+    expect(container.querySelector('svg')).toBeNull();
+    expect(screen.queryByText(/AVG/)).not.toBeInTheDocument();
   });
 });

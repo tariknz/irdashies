@@ -23,6 +23,46 @@ const frame = (
   ...overrides,
 });
 
+describe('refineLmuOpponentLapDistPcts lap counts', () => {
+  it('writes each refined car the completed laps that go with it', () => {
+    // A car whose counts moved on at the timing line, still short of
+    // scoring's wrap: lap plus fraction must not jump a lap ahead.
+    const state = createLmuOpponentLapDistanceState();
+    const out = [0.5, 0.5];
+    // Filled from the raw counts each frame, as the mapper does.
+    let laps = [3, 3];
+    let completed = [3, 3];
+
+    refineLmuOpponentLapDistPcts(
+      state,
+      out,
+      frame({
+        scoringPcts: [0.5, 0.5],
+        lapNumbers: [3, 3],
+        completedLaps: [3, 3],
+        elapsedTimes: [10, 10],
+      }),
+      [laps, completed]
+    );
+    laps = [3, 4];
+    completed = [3, 4];
+    refineLmuOpponentLapDistPcts(
+      state,
+      out,
+      frame({
+        scoringPcts: [0.5, 0.999],
+        lapNumbers: [3, 4],
+        completedLaps: [3, 4],
+        elapsedTimes: [10.1, 20],
+      }),
+      [laps, completed]
+    );
+
+    expect(laps).toEqual([3, 3]);
+    expect(completed).toEqual([3, 3]);
+  });
+});
+
 describe('refineLmuOpponentLapDistPcts', () => {
   it('advances a car between scoring updates', () => {
     // Scoring is frozen at 0.2 while the clock runs on, which is exactly the

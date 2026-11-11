@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   deepMergeConfig,
   getWidgetDefaultConfig,
@@ -99,8 +98,7 @@ export const WindSettings = () => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <SettingsSection title="Options">
-              <WidgetScaleSettings widgetId={SETTING_ID} />
+            <SettingsSection title="Widget options" scaleWidgetId={SETTING_ID}>
               <SettingProp path="background.opacity" />
               <SettingProp path="units" />
             </SettingsSection>

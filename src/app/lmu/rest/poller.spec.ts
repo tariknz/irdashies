@@ -5,7 +5,7 @@ import {
   type LmuRestTransport,
 } from './poller';
 import { createLmuRestData, type LmuRestData } from './state';
-import type { LmuRestTask } from './tasks';
+import { LMU_REST_TASKS, type LmuRestTask } from './tasks';
 import {
   REST_MAX_INTERVAL_MS,
   REST_RETRY_DELAY_MS,
@@ -308,6 +308,36 @@ describe('createLmuRestPoller', () => {
     // Latched off: no further requests however long we wait.
     await advance(60_000);
     expect(calls).toHaveLength(afterGivingUp);
+  });
+
+  it('logs what an output reports, once per changed response', async () => {
+    // A parser's report goes through the poller's logger, so parsers stay
+    // free of IO; and only a body that changed is parsed at all, so an
+    // answer repeated every poll is reported once.
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const reportingTask: LmuRestTask = {
+      ...repeatTask,
+      outputs: [
+        {
+          ...repeatTask.outputs[0],
+          report: (value) => `total is ${String(value)}`,
+        },
+      ],
+    };
+    const { transport } = makeTransport(() => ok('{"total":7}'));
+    const poller = createLmuRestPoller({
+      data: createLmuRestData(),
+      transport,
+      logger,
+      tasks: [reportingTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    await advance(REST_MAX_INTERVAL_MS * 3);
+
+    expect(logger.info).toHaveBeenCalledTimes(1);
+    expect(logger.info).toHaveBeenCalledWith('total is 7');
   });
 
   it('treats a refusal on the first request as the API being absent', async () => {
@@ -903,5 +933,464 @@ describe('createLmuRestPoller and an output that reports no change', () => {
 
     await advance(BASE_MS * 2);
     expect(data.revision).toBeGreaterThan(afterFirst);
+  });
+});
+
+/**
+ * The teams payload, polled only in bursts the bridge starts: two seconds
+ * apart, for at most sixteen.
+ */
+const BURST_INTERVAL_MS = 2000;
+const BURST_MS = 16_000;
+const burstTask: LmuRestTask = {
+  id: 'burst',
+  path: '/rest/multiplayer/teams',
+  mode: 'burst',
+  baseIntervalMs: BURST_INTERVAL_MS,
+  burstMs: BURST_MS,
+  outputs: [
+    {
+      id: 'nationalities',
+      target: 'session',
+      parse: (payload) =>
+        typeof payload === 'object' && payload !== null
+          ? (payload as { codes?: Record<string, string> }).codes
+          : undefined,
+      apply: (data, value) => {
+        data.session.nationalities = value as Record<string, string>;
+      },
+    },
+  ],
+};
+
+describe('createLmuRestPoller with a burst task', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const setup = (responder: (path: string) => LmuRestResponse) => {
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const { transport, calls } = makeTransport(responder);
+    const data = createLmuRestData();
+    const poller = createLmuRestPoller({
+      data,
+      transport,
+      logger,
+      tasks: [burstTask],
+    });
+    return { poller, calls, data, logger };
+  };
+
+  it('never polls on its own, only after a burst is asked for', async () => {
+    const { poller, calls } = setup(() => ok('{"codes":{"A":"FR"}}'));
+
+    poller.setActive(true);
+    await advance(60_000);
+
+    expect(calls).toEqual([]);
+  });
+
+  it('waits the delay, then polls until the check passes', async () => {
+    let body = '{"codes":{"A":"FR"}}';
+    const { poller, calls, data, logger } = setup(() => ok(body));
+    poller.setActive(true);
+    await advance(0);
+
+    poller.burst('burst', {
+      delayMs: 1000,
+      isComplete: () => data.session.nationalities?.B !== undefined,
+    });
+    await advance(999);
+    expect(calls).toHaveLength(0);
+    await advance(1);
+    expect(calls).toHaveLength(1);
+
+    await advance(BURST_INTERVAL_MS);
+    expect(calls).toHaveLength(2);
+
+    body = '{"codes":{"A":"FR","B":"DE"}}';
+    await advance(BURST_INTERVAL_MS);
+    expect(calls).toHaveLength(3);
+    expect(data.session.nationalities).toEqual({ A: 'FR', B: 'DE' });
+
+    await advance(BURST_MS);
+    expect(calls).toHaveLength(3);
+    expect(logger.info).toHaveBeenCalledWith(
+      '[lmuRest] /rest/multiplayer/teams: complete after 3 polls, 4.0s'
+    );
+  });
+
+  it('gives up once the burst has run its length', async () => {
+    const { poller, calls, logger } = setup(() => ok('{"codes":{"A":"FR"}}'));
+    poller.setActive(true);
+    await advance(0);
+
+    poller.burst('burst', { delayMs: 1000, isComplete: () => false });
+    await advance(1000 + BURST_MS + 60_000);
+
+    // A poll at 0, 2, ... 16 s after the first: none past the end.
+    expect(calls).toHaveLength(BURST_MS / BURST_INTERVAL_MS + 1);
+    expect(logger.info).toHaveBeenCalledWith(
+      '[lmuRest] /rest/multiplayer/teams: stopped incomplete after 9 polls, 16.0s'
+    );
+  });
+
+  it('starts over, delay and length, when asked again', async () => {
+    const { poller, calls } = setup(() => ok('{"codes":{"A":"FR"}}'));
+    poller.setActive(true);
+    await advance(0);
+
+    poller.burst('burst', { delayMs: 1000, isComplete: () => false });
+    await advance(500);
+    // A second driver arriving before the first poll pushes it back.
+    poller.burst('burst', { delayMs: 1000, isComplete: () => false });
+    await advance(999);
+    expect(calls).toHaveLength(0);
+    await advance(1);
+    expect(calls).toHaveLength(1);
+
+    // Twelve seconds in, another arrival buys a fresh sixteen.
+    await advance(12_000);
+    poller.burst('burst', { delayMs: 1000, isComplete: () => false });
+    const before = calls.length;
+    await advance(1000 + BURST_MS + 60_000);
+
+    expect(calls.length - before).toBe(BURST_MS / BURST_INTERVAL_MS + 1);
+  });
+
+  it('rides out failures inside a burst without latching the task off', async () => {
+    let answer: LmuRestResponse = fail('status');
+    const { poller, calls, data, logger } = setup(() => answer);
+    poller.setActive(true);
+    await advance(0);
+
+    poller.burst('burst', { delayMs: 0, isComplete: () => false });
+    await advance(BURST_MS + 60_000);
+    expect(calls.length).toBeGreaterThan(REST_RETRY_LIMIT);
+    expect(logger.warn).not.toHaveBeenCalled();
+
+    // The next burst still runs.
+    answer = ok('{"codes":{"A":"FR"}}');
+    poller.burst('burst', {
+      delayMs: 0,
+      isComplete: () => data.session.nationalities?.A !== undefined,
+    });
+    await advance(0);
+    expect(data.session.nationalities).toEqual({ A: 'FR' });
+  });
+
+  it('waits on a pending source, then gives the burst its full length', async () => {
+    // A tape whose first teams record comes late. Spending the window on the
+    // wait ended the burst before the record it was started for.
+    let pending = true;
+    const { poller, calls, logger } = setup(() =>
+      pending ? { ok: false, reason: 'pending' } : ok('{"codes":{"A":"FR"}}')
+    );
+    poller.setActive(true);
+    await advance(0);
+
+    poller.burst('burst', { delayMs: 0, isComplete: () => false });
+    await advance(40_000);
+    const waited = calls.length;
+    expect(waited).toBe(40_000 / BURST_INTERVAL_MS + 1);
+
+    pending = false;
+    await advance(BURST_MS + 60_000);
+
+    expect(calls.length - waited).toBe(BURST_MS / BURST_INTERVAL_MS + 1);
+    expect(logger.info).toHaveBeenCalledWith(
+      '[lmuRest] /rest/multiplayer/teams: stopped incomplete after 9 polls, 16.0s'
+    );
+  });
+
+  it('drops a burst when deactivated', async () => {
+    const { poller, calls } = setup(() => ok('{"codes":{"A":"FR"}}'));
+    poller.setActive(true);
+    await advance(0);
+    poller.burst('burst', { delayMs: 1000, isComplete: () => false });
+
+    poller.setActive(false);
+    poller.setActive(true);
+    await advance(60_000);
+
+    expect(calls).toEqual([]);
+  });
+
+  it('ignores a burst asked of a task that is not one', async () => {
+    const { transport, calls } = makeTransport(() => ok('{"total":30}'));
+    const poller = createLmuRestPoller({
+      data: createLmuRestData(),
+      transport,
+      tasks: [sessionTask],
+    });
+    poller.setActive(true);
+    await advance(0);
+    const afterActivation = calls.length;
+
+    poller.burst('once', { delayMs: 0, isComplete: () => false });
+    await advance(60_000);
+
+    expect(calls.length).toBe(afterActivation);
+  });
+});
+
+describe('createLmuRestPoller and a report that compares', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('hands a report what its output parsed last', async () => {
+    const report = vi.fn<
+      (value: unknown, previous: unknown) => string | undefined
+    >(() => undefined);
+    const comparingTask: LmuRestTask = {
+      ...repeatTask,
+      outputs: [{ ...repeatTask.outputs[0], report }],
+    };
+    let total = 7;
+    const { transport } = makeTransport(() => ok(`{"total":${total}}`));
+    const poller = createLmuRestPoller({
+      data: createLmuRestData(),
+      transport,
+      tasks: [comparingTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    total = 8;
+    await advance(BASE_MS);
+
+    expect(report.mock.calls).toEqual([
+      [7, undefined],
+      [8, 7],
+    ]);
+
+    // A new activation starts the history over.
+    poller.setActive(false);
+    poller.setActive(true);
+    await advance(0);
+    expect(report).toHaveBeenLastCalledWith(8, undefined);
+  });
+});
+
+describe('createLmuRestPoller and a failure that is an answer', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** GetGameState: a 404 says "not in a game", and polling goes on. */
+  const stateTask: LmuRestTask = {
+    id: 'state',
+    path: '/rest/sessions/GetGameState',
+    mode: 'repeat',
+    baseIntervalMs: BASE_MS,
+    maxIntervalMs: BASE_MS,
+    optional: true,
+    answerFailure: (data, failure) => {
+      if (failure.status !== 404) return false;
+      data.gameState = 'notInGame';
+      return true;
+    },
+    outputs: [
+      {
+        id: 'gameState',
+        target: 'telemetry',
+        parse: (payload) =>
+          typeof payload === 'object' && payload !== null
+            ? (payload as { MultiStintState?: string }).MultiStintState ===
+              'DRIVING'
+              ? 'driving'
+              : undefined
+            : undefined,
+        apply: (data, value) => {
+          data.gameState = value as 'driving';
+        },
+        clear: (data) => {
+          data.gameState = undefined;
+        },
+      },
+    ],
+  };
+
+  it('reads it, keeps polling at the base rate, and reports nothing absent', async () => {
+    let answer: LmuRestResponse = ok('{"MultiStintState":"DRIVING"}');
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const { transport, calls } = makeTransport(() => answer);
+    const data = createLmuRestData();
+    const poller = createLmuRestPoller({
+      data,
+      transport,
+      logger,
+      tasks: [stateTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    expect(data.gameState).toBe('driving');
+
+    answer = { ok: false, reason: 'status', status: 404, body: '' };
+    await advance(BASE_MS);
+    expect(data.gameState).toBe('notInGame');
+
+    const before = calls.length;
+    await advance(BASE_MS * 10);
+    expect(calls.length - before).toBe(10);
+    expect(logger.info).not.toHaveBeenCalled();
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it('reads the same body again once the failure has passed', async () => {
+    // The hash would otherwise skip it as unchanged, leaving the failure's
+    // reading in place after the sim was back in the car.
+    let answer: LmuRestResponse = ok('{"MultiStintState":"DRIVING"}');
+    const { transport } = makeTransport(() => answer);
+    const data = createLmuRestData();
+    const poller = createLmuRestPoller({
+      data,
+      transport,
+      tasks: [stateTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    answer = { ok: false, reason: 'status', status: 404 };
+    await advance(BASE_MS);
+    expect(data.gameState).toBe('notInGame');
+
+    answer = ok('{"MultiStintState":"DRIVING"}');
+    await advance(BASE_MS);
+    expect(data.gameState).toBe('driving');
+  });
+
+  it('falls back to clearing on a failure that is not an answer', async () => {
+    let answer: LmuRestResponse = ok('{"MultiStintState":"DRIVING"}');
+    const { transport } = makeTransport(() => answer);
+    const data = createLmuRestData();
+    const poller = createLmuRestPoller({
+      data,
+      transport,
+      tasks: [stateTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    answer = fail('timeout');
+    await advance(BASE_MS);
+
+    expect(data.gameState).toBeUndefined();
+  });
+
+  it('does not take a refusal after an answer for an absent API', async () => {
+    // The 404 drops the task's hash so the next body is read afresh. Read off
+    // that hash, one reset socket -- which the transport reports as refused
+    // -- latched every task off as if there were no API at all.
+    let answer: LmuRestResponse = {
+      ok: false,
+      reason: 'status',
+      status: 404,
+      body: '',
+    };
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const { transport, calls } = makeTransport((path) =>
+      path === stateTask.path ? answer : ok('{"total":30}')
+    );
+    const data = createLmuRestData();
+    const poller = createLmuRestPoller({
+      data,
+      transport,
+      logger,
+      tasks: [stateTask, repeatTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    expect(data.gameState).toBe('notInGame');
+
+    answer = fail('refused');
+    await advance(BASE_MS);
+    const estimates = calls.filter((path) => path === repeatTask.path).length;
+    await advance(BASE_MS * 10);
+
+    expect(logger.info).not.toHaveBeenCalledWith(
+      expect.stringContaining('No REST API')
+    );
+    // The other task polls on, and the state goes through the optional path.
+    expect(
+      calls.filter((path) => path === repeatTask.path).length
+    ).toBeGreaterThan(estimates);
+    expect(data.gameState).toBeUndefined();
+  });
+
+  it('holds the last answer through the misses it is allowed', async () => {
+    let answer: LmuRestResponse = ok('{"MultiStintState":"DRIVING"}');
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const { transport } = makeTransport(() => answer);
+    const data = createLmuRestData();
+    const poller = createLmuRestPoller({
+      data,
+      transport,
+      logger,
+      tasks: [{ ...stateTask, clearAfterFailures: 3 }],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    answer = fail('timeout');
+    await advance(BASE_MS);
+    await advance(BASE_MS);
+    expect(data.gameState).toBe('driving');
+    expect(logger.info).not.toHaveBeenCalled();
+
+    await advance(BASE_MS);
+    expect(data.gameState).toBeUndefined();
+    expect(logger.info).toHaveBeenCalledTimes(1);
+
+    // An answer starts the count over.
+    answer = ok('{"MultiStintState":"DRIVING"}');
+    await advance(BASE_MS);
+    answer = fail('timeout');
+    await advance(BASE_MS);
+    expect(data.gameState).toBe('driving');
+  });
+
+  it('hands the outputs a body that is not JSON, as nothing', async () => {
+    // So GetGameState drops the last state rather than holding it through an
+    // answer it cannot read.
+    const gameState = LMU_REST_TASKS.find((task) => task.id === 'game-state');
+    if (!gameState) throw new Error('no game-state task');
+    let answer: LmuRestResponse = ok('{"MultiStintState":"DRIVING"}');
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const { transport } = makeTransport(() => answer);
+    const data = createLmuRestData();
+    const poller = createLmuRestPoller({
+      data,
+      transport,
+      logger,
+      tasks: [gameState],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    expect(data.gameState).toBe('driving');
+
+    answer = ok('<html>loading</html>');
+    await advance(BASE_MS);
+    expect(data.gameState).toBeUndefined();
+    expect(logger.info).toHaveBeenCalledWith(
+      '[lmuRest] Unrecognised GetGameState answer that is not JSON; ' +
+        'reading in-car and in-session from shared memory'
+    );
   });
 });

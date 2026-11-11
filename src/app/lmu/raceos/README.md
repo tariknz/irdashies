@@ -3,6 +3,14 @@
 Fetches LMU driver ranks and badges, and merges them into the standings beside
 the nationality and flag that `lmu/mapSession.ts` sets from the sim's own data.
 
+> **Switched off.** `RACEOS_ENABLED` in `enabled.ts` is `false`, so none of
+> this runs: no ticket is asked of the sim, nothing is sent to `raceos.gg`, the
+> rating cache is neither read nor written, and replays ignore baked ratings.
+> The Standings and Relative settings no longer offer the LMU Badge column or
+> the LMU rank format, and the LMU Badge column is always hidden. The code
+> below is kept as it was; setting the flag back to `true` restores the
+> bridge's behaviour, and the two settings would have to be put back by hand.
+
 ## What is here
 
 | File             | Role                                                               |

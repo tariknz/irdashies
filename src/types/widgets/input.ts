@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'input',
   name: 'Input Traces',
+  category: 'Car & Controls',
   menuLabel: 'Input',
   enabled: true,
   layout: {

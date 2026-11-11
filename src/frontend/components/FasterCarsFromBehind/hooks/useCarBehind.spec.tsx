@@ -424,9 +424,36 @@ describe('useCarBehind', () => {
   });
 
   describe('Return Value Format', () => {
+    it('keeps sub-percent changes within the same displayed tenth', () => {
+      const mockDrivers = [
+        createMockDriver(10, -0.714, 42, 'Approaching'),
+        createMockDriver(20, 0, 37, 'Player'),
+      ];
+      vi.mocked(driverRelativesModule.useDriverRelatives).mockReturnValue(
+        mockDrivers
+      );
+      const { result, rerender } = renderHook(() =>
+        useCarBehind({ distanceThreshold: 1.5 })
+      );
+      const previous = result.current[0];
+      vi.mocked(driverRelativesModule.useDriverRelatives).mockReturnValue([
+        { ...mockDrivers[0], delta: -0.711 },
+        mockDrivers[1],
+      ]);
+      rerender();
+      const next = result.current[0];
+      expect(previous.distance.toFixed(1)).toBe(next.distance.toFixed(1));
+      expect(previous.percent).toBeCloseTo(52.4);
+      expect(next.percent).toBeCloseTo(52.6);
+    });
+
     it('should return correctly formatted car data', () => {
       const mockDrivers = [
-        createMockDriver(10, -1.234, 42, 'Test Car'),
+        {
+          ...createMockDriver(10, -1.234, 42, 'Test Car'),
+          position: 1,
+          classPosition: 3,
+        },
         createMockDriver(20, 0, 37, 'Player'),
       ];
 
@@ -446,9 +473,11 @@ describe('useCarBehind', () => {
       expect(car.name).toBe('Test Car');
       expect(car.license).toBe('A');
       expect(car.rating).toBe(2000);
-      expect(car.distance).toBe(-1.2); // Rounded to 1 decimal
+      expect(car.distance).toBe(-1.234);
       expect(car.classColor).toBe(0xff0000);
-      expect(typeof car.percent).toBe('number');
+      expect(car.className).toBe('GT3');
+      expect(car.classPosition).toBe(3);
+      expect(car.percent).toBeCloseTo((1 - 1.234 / 2.5) * 100);
     });
 
     it('should calculate percent correctly', () => {
@@ -471,7 +500,7 @@ describe('useCarBehind', () => {
       );
 
       const { result } = renderHook(() =>
-        useCarBehind({ distanceThreshold: -3.5 })
+        useCarBehind({ distanceThreshold: -3 })
       );
 
       // Sorted by closest first (least negative delta first)
@@ -480,7 +509,7 @@ describe('useCarBehind', () => {
 
       // Very Close (delta -0.01) comes first after sorting
       expect(result.current[0].name).toBe('Very Close');
-      expect(result.current[0].percent).toBe(100); // delta -0.01 -> ~100%
+      expect(result.current[0].percent).toBeCloseTo(99.6666667);
 
       // Half Way (delta -1.5) comes second
       expect(result.current[1].name).toBe('Half Way');

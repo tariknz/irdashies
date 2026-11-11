@@ -95,4 +95,12 @@ describe('widget registry', () => {
     expect(getWidgetManifest('__proto__')).toBeUndefined();
     expect(getWidget('toString')).toBeUndefined();
   });
+
+  it('uses one registered component for live and demo hosts', () => {
+    for (const manifest of WIDGET_MANIFESTS)
+      expect(getWidget(manifest.id), manifest.id).toBeDefined();
+    for (const { default: module } of Object.values(widgetModules))
+      for (const widget of Array.isArray(module) ? module : [module])
+        expect(widget).not.toHaveProperty('preview');
+  });
 });

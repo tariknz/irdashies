@@ -22,6 +22,22 @@ const tsconfigPathAliases = Object.fromEntries(
 
 // https://vitejs.dev/config
 export default defineConfig({
+  plugins: [
+    {
+      name: 'widget-preview-dev-csp',
+      apply: 'serve',
+      transformIndexHtml(html, context) {
+        // Vite injects its inline React Refresh preamble in development only.
+        // The packaged preview keeps the restrictive policy in its HTML.
+        return context.path.endsWith('/index-widget-preview.html')
+          ? html.replace(
+              /<meta\s+http-equiv="Content-Security-Policy"[\s\S]*?\/>/,
+              ''
+            )
+          : html;
+      },
+    },
+  ],
   server: {
     host: '0.0.0.0',
   },
@@ -39,6 +55,7 @@ export default defineConfig({
         main: path.resolve(__dirname, 'index.html'),
         'dashboard-view': path.resolve(__dirname, 'index-dashboard-view.html'),
         'hid-host': path.resolve(__dirname, 'index-hid-host.html'),
+        'widget-preview': path.resolve(__dirname, 'index-widget-preview.html'),
       },
       output: {
         chunkFileNames: 'assets/[name]-[hash].js',

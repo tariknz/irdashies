@@ -1,5 +1,10 @@
 import type { LmuWeatherNode } from '@irdashies/types';
-import { parseTeamNationalities } from '../nationality';
+import {
+  parseLmuGameState,
+  readLmuGameStateFailure,
+  type ParsedLmuGameState,
+} from '../gameState';
+import { readTeamNationalities, type UnknownNationality } from '../nationality';
 import type { LmuRestData } from './state';
 
 /**
@@ -51,6 +56,15 @@ export interface LmuRestOutput {
    * spectator view. Absent, the value is kept, as it always was.
    */
   readonly clear?: (data: LmuRestData) => void;
+  /**
+   * A line for the log about a value just parsed, or undefined for nothing
+   * to say. Logged by the poller, which owns the IO, so parsers stay pure;
+   * and only for a changed body, so a value is reported once, not per poll.
+   *
+   * `previous` is what this output parsed last in the activation, undefined
+   * at first, so a report can name only what is new.
+   */
+  readonly report?: (value: unknown, previous: unknown) => string | undefined;
 }
 
 export interface LmuRestTask {
@@ -59,10 +73,26 @@ export interface LmuRestTask {
   /**
    * `once` runs a single time per activation -- session settings and the
    * forecast cannot change mid-session. `repeat` polls, backing off while the
-   * response is unchanged.
+   * response is unchanged. `burst` polls only when the bridge asks, through
+   * `LmuRestPoller.burst`: every `baseIntervalMs` until the bridge's own
+   * check passes or `burstMs` has gone by.
    */
-  readonly mode: 'once' | 'repeat';
+  readonly mode: 'once' | 'repeat' | 'burst';
   readonly baseIntervalMs: number;
+  /** How long one burst may poll for. Read only for a `burst` task. */
+  readonly burstMs?: number;
+  /**
+   * Reads a failed request as an answer, for a path whose errors mean
+   * something; returns true when it was one.
+   *
+   * The poller then treats the failure as a poll that answered: no retry is
+   * spent, nothing is reported absent, and the task polls on at its base
+   * interval.
+   */
+  readonly answerFailure?: (
+    data: LmuRestData,
+    failure: { readonly status?: number; readonly body?: string }
+  ) => boolean;
   /**
    * The ceiling this task's interval backs off to, if not REST_MAX_INTERVAL_MS.
    *
@@ -87,6 +117,12 @@ export interface LmuRestTask {
    * and one log line.
    */
   readonly optional?: boolean;
+  /**
+   * How many failures in a row an optional task takes before it reports
+   * itself absent and clears its outputs. One if unset: the last answer goes
+   * the moment the path stops answering.
+   */
+  readonly clearAfterFailures?: number;
   readonly outputs: readonly LmuRestOutput[];
 }
 
@@ -276,24 +312,120 @@ const sessionSetting = (
 const garageNumber = (payload: unknown, key: string): number | undefined =>
   firstNumber(at(payload, ['carSetup', 'garageValues', key, 'stringValue']));
 
+interface ParsedNationalities {
+  codes: Record<string, string>;
+  unknown: UnknownNationality[];
+}
+
+/** Whether two flag maps name the same code for the same drivers. */
+const sameCodes = (
+  current: Readonly<Record<string, string>> | undefined,
+  next: Readonly<Record<string, string>>
+): boolean => {
+  if (!current) return false;
+  const names = Object.keys(next);
+  if (names.length !== Object.keys(current).length) return false;
+  return names.every((name) => current[name] === next[name]);
+};
+
 /**
  * Driver nationalities, which only multiplayer reports.
  *
- * Returns undefined rather than an empty map when nothing parses, so the
- * "parser found nothing" case leaves any previous value alone instead of
- * wiping the flags -- the same contract every other output here follows.
+ * A payload with no flag at all leaves any previous value alone instead of
+ * wiping the flags -- the same contract every other output here follows --
+ * but is still reported: the drivers it names without a usable country are
+ * logged, with what the sim sent, since otherwise a missing flag says nothing
+ * about why.
  */
 const nationalities: LmuRestOutput = {
   id: 'nationalities',
   target: 'session',
-  parse: (payload) => {
-    const found = parseTeamNationalities(payload);
-    return found.size > 0 ? Object.fromEntries(found) : undefined;
+  /** The flags found and the drivers without one; nothing if neither. */
+  parse: (payload): ParsedNationalities | undefined => {
+    const { found, unknown } = readTeamNationalities(payload);
+    if (found.size === 0 && unknown.length === 0) return undefined;
+    return { codes: Object.fromEntries(found), unknown };
+  },
+  /**
+   * The body moves on nearly every poll -- each driver's isConnected flips
+   * constantly -- while the flags move only when the grid does. Republishing
+   * on the body would rebuild and broadcast the whole session every poll of a
+   * burst; this republishes only when a flag is gained, lost or changed.
+   */
+  unchanged: (data, value) => {
+    const { codes } = value as ParsedNationalities;
+    return (
+      Object.keys(codes).length === 0 ||
+      sameCodes(data.session.nationalities, codes)
+    );
   },
   apply: (data, value) => {
-    data.session.nationalities = value as Record<string, string>;
+    data.session.nationalities = (value as ParsedNationalities).codes;
+  },
+  /**
+   * Only the drivers who were not already without a flag in the last body, so
+   * a burst names each one once rather than on every poll.
+   */
+  report: (value, previous) => {
+    const { codes, unknown } = value as ParsedNationalities;
+    const already = new Set(
+      (previous as ParsedNationalities | undefined)?.unknown.map(
+        ({ name }) => name
+      )
+    );
+    const newly = unknown.filter(({ name }) => !already.has(name));
+    if (newly.length === 0) return undefined;
+    const total = Object.keys(codes).length + unknown.length;
+    const drivers = newly
+      .map(
+        ({ name, nationality }) =>
+          `${JSON.stringify(name)} (${nationality ? nationality : 'empty'})`
+      )
+      .join(', ');
+    return (
+      `[lmuRest] No country flag for ${drivers}; ` +
+      `${unknown.length} of ${total} drivers have none`
+    );
   },
 };
+
+/**
+ * Where the player is: in the car, at the monitor, or out of any session.
+ *
+ * A telemetry target only so that it forces no republish -- it is not a
+ * channel. The bridge reads it on every frame. See ../gameState.ts.
+ */
+const gameState: LmuRestOutput = {
+  id: 'gameState',
+  target: 'telemetry',
+  parse: parseLmuGameState,
+  apply: (data, value) => {
+    data.gameState = (value as ParsedLmuGameState).state;
+  },
+  // Unknown again once the path stops answering, so the bridge goes back to
+  // shared memory rather than trusting the last answer for ever.
+  clear: (data) => {
+    data.gameState = undefined;
+  },
+  /** Logs an unrecognised answer when it first appears, not every poll. */
+  report: (value, previous) => {
+    const { unrecognised } = value as ParsedLmuGameState;
+    if (
+      !unrecognised ||
+      unrecognised ===
+        (previous as ParsedLmuGameState | undefined)?.unrecognised
+    ) {
+      return undefined;
+    }
+    return (
+      `[lmuRest] Unrecognised GetGameState ${unrecognised}; ` +
+      'reading in-car and in-session from shared memory'
+    );
+  },
+};
+
+/** The teams task, which the bridge starts bursts of by this id. */
+export const LMU_TEAMS_TASK_ID = 'multiplayer-teams';
 
 /**
  * The session's tyre compounds, in the order the sim indexes them.
@@ -582,16 +714,47 @@ export const LMU_REST_TASKS: readonly LmuRestTask[] = [
     ],
   },
   {
-    id: 'multiplayer-teams',
+    id: LMU_TEAMS_TASK_ID,
     path: '/rest/multiplayer/teams',
-    // The entry list is fixed once a session is joined, so this is fetched
-    // once per activation like the other roster-shaped payloads. A driver
-    // joining mid-session is picked up at the next activation rather than
-    // polled for -- a flag appearing a session late is a fair trade against
-    // re-fetching the whole roster on a timer.
-    mode: 'once',
+    // Polled in bursts, never on a timer of its own. The sim lists a driver
+    // here before it has their country -- the nationality arrives empty and
+    // is filled in a little later -- so the single fetch per activation this
+    // used to be caught most of a grid before its flags existed and never
+    // asked again. The bridge starts a burst a second after a new driver
+    // appears in an online session, and it runs until every driver on the
+    // grid has a flag or sixteen seconds have gone by. Offline sessions have
+    // no nationalities and never start one.
+    mode: 'burst',
     baseIntervalMs: 2000,
+    burstMs: 16_000,
     outputs: [nationalities],
+  },
+  {
+    id: 'game-state',
+    path: '/rest/sessions/GetGameState',
+    mode: 'repeat',
+    // Once a second, with no backoff: this decides whether the player is in
+    // the car, so a change has to show promptly, and the body moves every
+    // poll in any case -- it carries the time of day.
+    baseIntervalMs: 1000,
+    maxIntervalMs: 1000,
+    // Never given up on. Its errors are answers -- 404 outside a game -- and
+    // anything else just means the bridge reads shared memory until it
+    // answers again.
+    optional: true,
+    // But not after one miss. A request that times out behind another on the
+    // single socket says nothing about the player, and dropping to shared
+    // memory for it would flicker a paused player out of the car -- the
+    // frozen block reads as out. Three in a row, about three seconds.
+    clearAfterFailures: 3,
+    /** A 404 or an `unavailable` body still says where the player is. */
+    answerFailure: (data, failure) => {
+      const parsed = readLmuGameStateFailure(failure);
+      if (!parsed) return false;
+      data.gameState = parsed.state;
+      return true;
+    },
+    outputs: [gameState],
   },
   {
     id: 'tire-management',

@@ -1,8 +1,9 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DashboardLayout } from '@irdashies/types';
 import { BaseSettingsSection } from './BaseSettingsSection';
 import { WidgetScaleSettings } from './WidgetScaleSettings';
+import { SettingsSection } from './SettingSection';
 
 const mocks = vi.hoisted(() => ({
   dashboard: undefined as DashboardLayout | undefined,
@@ -32,8 +33,11 @@ const renderSection = (widgetId = 'fuel-2') => (
   >
     {(change) => (
       <>
-        <WidgetScaleSettings widgetId={widgetId} />
-        <button onClick={() => change({ opacity: 40 })}>Change opacity</button>
+        <SettingsSection title="Display" scaleWidgetId={widgetId}>
+          <button onClick={() => change({ opacity: 40 })}>
+            Change opacity
+          </button>
+        </SettingsSection>
       </>
     )}
   </BaseSettingsSection>
@@ -55,6 +59,48 @@ beforeEach(() => {
 });
 
 describe('WidgetScaleSettings in shared settings', () => {
+  it('groups scale and reset inside the panel with the widget controls', () => {
+    render(renderSection());
+    const group = screen.getByRole('group', { name: 'Widget Scale' });
+    expect(
+      within(group).getByRole('slider', { name: 'Widget Scale' })
+    ).toHaveAttribute('aria-valuetext', '125%');
+    expect(
+      within(group).getByRole('button', { name: 'Reset scale to 100%' })
+    ).toBeEnabled();
+    expect(
+      within(group).getByRole('button', { name: 'Reset scale to 100%' })
+    ).toHaveTextContent('Reset');
+    const panel = group.closest('section');
+    expect(panel).not.toBeNull();
+    if (!panel) throw new Error('Missing configuration panel');
+    expect(
+      within(panel).getByRole('heading', { name: 'Display' })
+    ).toBeInTheDocument();
+    expect(
+      within(panel).getByRole('button', { name: 'Change opacity' })
+    ).toBeInTheDocument();
+  });
+
+  it('allows scale configuration while the widget is disabled', () => {
+    if (!mocks.dashboard) throw new Error('Missing test dashboard');
+    mocks.dashboard.widgets[1].enabled = false;
+    render(renderSection());
+    const slider = screen.getByRole('slider', { name: 'Widget Scale' });
+    expect(slider).toBeEnabled();
+    fireEvent.change(slider, { target: { value: '150' } });
+    expect(mocks.update.mock.lastCall?.[0].widgets[1]).toMatchObject({
+      scale: 150,
+      enabled: false,
+    });
+  });
+
+  it('does not create a widget when the selected instance is missing', () => {
+    render(<WidgetScaleSettings widgetId="missing" />);
+    expect(screen.queryByRole('group')).not.toBeInTheDocument();
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+
   it('defaults older widgets to 100% without writing a setting', () => {
     if (!mocks.dashboard) throw new Error('Missing test dashboard');
     delete mocks.dashboard.widgets[1].scale;
@@ -65,6 +111,9 @@ describe('WidgetScaleSettings in shared settings', () => {
     expect(
       screen.getByRole('button', { name: 'Reset scale to 100%' })
     ).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Reset scale to 100%' })
+    ).toHaveAttribute('title', 'Scale is already 100%');
     expect(mocks.update).not.toHaveBeenCalled();
   });
 
@@ -113,6 +162,7 @@ describe('WidgetScaleSettings in shared settings', () => {
 
   it('resets only this instance to 100%', () => {
     render(renderSection());
+    screen.getByRole('button', { name: 'Reset scale to 100%' }).focus();
     fireEvent.click(
       screen.getByRole('button', { name: 'Reset scale to 100%' })
     );
@@ -121,6 +171,7 @@ describe('WidgetScaleSettings in shared settings', () => {
         (w: { scale: number }) => w.scale
       )
     ).toEqual([90, 100]);
+    expect(screen.getByRole('slider', { name: 'Widget Scale' })).toHaveFocus();
   });
 
   it('reads the next widget instance when the selection changes', () => {

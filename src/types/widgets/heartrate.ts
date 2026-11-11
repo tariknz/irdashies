@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'heartrate',
   name: 'Heart Rate',
+  category: 'Driver Health',
   alwaysEnabled: true,
   enabled: false,
   layout: {

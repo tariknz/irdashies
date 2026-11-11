@@ -6,7 +6,7 @@ import {
   DashboardProvider,
 } from '@irdashies/context';
 import { generateMockData } from '../../../src/app/bridge/iracingSdk/mock-data/generateMockData';
-import type { DashboardBridge, IrSdkSourceBridge } from '@irdashies/types';
+import type { DashboardLayout, IrSdkSourceBridge } from '@irdashies/types';
 import { defaultDashboard } from '@irdashies/types';
 import type { TypedDashboardWidget } from '@irdashies/types';
 import {
@@ -15,7 +15,7 @@ import {
   type PreviewChannelRuntime,
 } from './previewChannelRuntime';
 import { createPreviewStorage } from './previewStorage';
-import { previewRaceTelemetry } from './previewRaceTelemetry';
+import { createPreviewDashboardBridge } from '@irdashies/domain/widgetPreview/dashboardBridge';
 
 /**
  * The mock SDK source and the channel runtime built on it are page-lifetime
@@ -40,11 +40,7 @@ function getPreviewSource(): IrSdkSourceBridge {
     window.raceControlBridge = storage.raceControl;
     rawSource = generateMockData();
     const source = rawSource;
-    previewSource = shieldSourceFromStop({
-      ...source,
-      onTelemetry: (callback) =>
-        source.onTelemetry((frame) => callback(previewRaceTelemetry(frame))),
-    });
+    previewSource = shieldSourceFromStop(source);
     stopStorageSession = previewSource.onSessionData(storage.updateSession);
     previewRuntime = createPreviewChannelRuntime(previewSource);
     window.channelBridge = previewRuntime.bridge;
@@ -65,109 +61,10 @@ if (import.meta.hot) {
   });
 }
 
-function createMockDashboardBridge(
-  widgetOverrides?: TypedDashboardWidget[],
-  onDashboardSaved?: (dashboard: typeof defaultDashboard) => void
-): DashboardBridge {
-  let dashboard = widgetOverrides
-    ? { ...defaultDashboard, widgets: widgetOverrides }
-    : { ...defaultDashboard };
-
-  const dashboardCallbacks = new Set<
-    (value: typeof dashboard, profileId?: string) => void
-  >();
-
-  return {
-    reloadDashboard: () => {
-      /* noop */
-    },
-    saveDashboard: (updated) => {
-      if (updated) {
-        dashboard = updated as typeof dashboard;
-        dashboardCallbacks.forEach((cb) => cb(dashboard, undefined));
-        onDashboardSaved?.(dashboard);
-      }
-    },
-    resetDashboard: async () => dashboard,
-    dashboardUpdated: (callback) => {
-      dashboardCallbacks.add(callback);
-      callback(dashboard, undefined);
-      return () => {
-        dashboardCallbacks.delete(callback);
-      };
-    },
-    onEditModeToggled: (callback) => {
-      callback(false);
-      return () => {
-        /* noop */
-      };
-    },
-    toggleLockOverlays: () => Promise.resolve(true),
-    getAppVersion: () => Promise.resolve('2.0.0'),
-    toggleDemoMode: () => {
-      /* noop */
-    },
-    onDemoModeChanged: (callback) => {
-      callback(true);
-      return () => {
-        /* noop */
-      };
-    },
-    getCurrentDashboard: () => null,
-    saveGarageCoverImage: () => Promise.resolve(''),
-    getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
-    savePlayerIconImage: () => Promise.resolve(''),
-    getPlayerIconImageAsDataUrl: () => Promise.resolve(null),
-    getAnalyticsOptOut: () => Promise.resolve(false),
-    setAnalyticsOptOut: () => Promise.resolve(),
-    listProfiles: () =>
-      Promise.resolve([
-        {
-          id: 'default',
-          name: 'Default',
-          createdAt: new Date().toISOString(),
-          lastModified: new Date().toISOString(),
-        },
-      ]),
-    createProfile: (name: string) =>
-      Promise.resolve({
-        id: 'mock',
-        name,
-        createdAt: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-      }),
-    cloneProfile: () =>
-      Promise.resolve({
-        id: 'mock-clone',
-        name: 'Clone',
-        createdAt: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-      }),
-    deleteProfile: () => Promise.resolve(),
-    renameProfile: () => Promise.resolve(),
-    switchProfile: () => Promise.resolve(),
-    getCurrentProfile: () =>
-      Promise.resolve({
-        id: 'default',
-        name: 'Default',
-        createdAt: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-      }),
-    updateProfileTheme: async () => undefined,
-    getDashboardForProfile: async () => null,
-    exportDashboardToFile: async () => false,
-    importDashboardFromFile: async () => null,
-    stop: () => undefined,
-    setAutoStart: () => Promise.resolve(),
-    openLogFolder: async () => undefined,
-    exportLogFile: async () => false,
-  };
-}
-
 interface LivePreviewProviderProps {
   children: ReactNode;
   widgets?: TypedDashboardWidget[];
-  onDashboardSaved?: (dashboard: typeof defaultDashboard) => void;
+  onDashboardSaved?: (dashboard: DashboardLayout) => void;
 }
 
 export function LivePreviewProvider({
@@ -182,9 +79,10 @@ export function LivePreviewProvider({
   }, [onDashboardSaved]);
   const dashboardBridge = useMemo(
     () =>
-      createMockDashboardBridge(widgets, (value) =>
-        onSavedRef.current?.(value)
-      ),
+      createPreviewDashboardBridge(
+        widgets ? { ...defaultDashboard, widgets } : defaultDashboard,
+        { onSave: (value) => onSavedRef.current?.(value) }
+      ).bridge,
     [widgets]
   );
 

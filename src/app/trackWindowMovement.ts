@@ -1,7 +1,13 @@
 import { BrowserWindow } from 'electron';
-import { writeData } from './storage/storage';
+import { saveSettingsWindowBounds as persistBounds } from './storage/settingsWindowBounds';
 
 const DEBOUNCE_MS = 200;
+const pendingSaves = new Set<() => void>();
+
+/** Drain movement timers before the asynchronous storage shutdown flush. */
+export const flushSettingsWindowMovementOnShutdown = (): void => {
+  for (const save of pendingSaves) save();
+};
 
 /**
  * Bounds the app itself moved a window to, as opposed to the user dragging it.
@@ -40,16 +46,28 @@ export const markCorrectedBounds = (
  */
 export const trackSettingsWindowMovement = (browserWindow: BrowserWindow) => {
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+  const flush = () => {
+    if (!debounceTimer) return;
+    clearTimeout(debounceTimer);
+    debounceTimer = undefined;
+    pendingSaves.delete(flush);
+    if (!browserWindow.isDestroyed()) saveSettingsWindowBounds(browserWindow);
+  };
   const debouncedSave = () => {
     if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(
-      () => saveSettingsWindowBounds(browserWindow),
-      DEBOUNCE_MS
-    );
+    pendingSaves.add(flush);
+    debounceTimer = setTimeout(flush, DEBOUNCE_MS);
   };
 
   browserWindow.on('moved', debouncedSave);
   browserWindow.on('resized', debouncedSave);
+  // Drain the movement debounce while the native rectangle is still readable.
+  // The storage writer is flushed by the before-quit coordinator.
+  browserWindow.on('close', flush);
+  browserWindow.on('closed', () => {
+    clearTimeout(debounceTimer);
+    pendingSaves.delete(flush);
+  });
 };
 
 function saveSettingsWindowBounds(browserWindow: BrowserWindow): void {
@@ -63,5 +81,5 @@ function saveSettingsWindowBounds(browserWindow: BrowserWindow): void {
   const corrected = correctedBounds.get(browserWindow);
   if (corrected && sameRect(bounds, corrected)) return;
 
-  writeData('settingsWindowBounds', bounds);
+  persistBounds(bounds);
 }

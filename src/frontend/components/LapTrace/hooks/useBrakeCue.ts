@@ -14,13 +14,14 @@ import type { LapTraceSamples } from '@irdashies/types';
 import {
   normalisePct,
   valueAtDistance,
-} from '../../../domain/lapTrace/lapSamples';
+} from '@irdashies/domain/lapTrace/lapSamples';
 import {
   createBrakeCueLatch,
   createBrakeCueOutput,
   resetBrakeCueLatch,
   stepBrakeCueLatch,
-} from '../../../domain/lapTrace/brakeCueLatch';
+} from '@irdashies/domain/lapTrace/brakeCueLatch';
+import { scheduleLapTraceFrames } from './lapTraceFrameScheduler';
 import {
   BRAKE_CUE_BAR_COUNT,
   BRAKE_CUE_UNLIT_COLOR,
@@ -79,13 +80,20 @@ export interface BrakeCueOptions {
 }
 
 /**
- * Drives the brake-point countdown: one telemetry subscription and one rAF
- * loop feeding both outputs.
+ * Drives the brake-point countdown: one telemetry subscription and one
+ * animation-frame step feeding both outputs.
  *
  * Telemetry is read through a direct store subscription rather than a hook
  * (R2.3) and the bars are updated by mutating their DOM, so the widget never
  * re-renders at telemetry rate — the only React renders in the whole feature
  * come from settings changes and the reference lap appearing.
+ *
+ * The latch is stepped on the first frame after its inputs change — a new
+ * track-state snapshot, the reference lap or track length, or the settings —
+ * and not otherwise. That is the frame an every-frame loop first sees new data
+ * on; the frames between snapshots would only repeat a step on the same
+ * inputs, which fires nothing and shows nothing new (brakeCueLatch.spec pins
+ * this).
  */
 export const useBrakeCue = (
   refs: BrakeCueRefs,
@@ -118,6 +126,9 @@ export const useBrakeCue = (
   // gives a deterministic, silent re-arm.
   const latch = useRef(createBrakeCueLatch());
   const output = useRef(createBrakeCueOutput());
+  // Asks the stepping effect for a frame. The subscription below lives in an
+  // effect of its own, so a settings change does not resubscribe it.
+  const requestStep = useRef<() => void>(() => undefined);
 
   useEffect(() => {
     if (carDistanceMOverride !== undefined) return;
@@ -141,6 +152,7 @@ export const useBrakeCue = (
       current.isOnTrack = snapshot.isOnTrack;
       current.onPitRoad = snapshot.onPitRoad;
       current.isReplayPlaying = snapshot.isReplayPlaying;
+      requestStep.current();
     });
   }, [carDistanceMOverride]);
 
@@ -155,7 +167,6 @@ export const useBrakeCue = (
 
     const horizontal = isBrakeCueHorizontal(side);
 
-    let raf = 0;
     // Track what was last written rather than reading style back: the CSSOM
     // normalises `rgb(34 197 94)` to `rgb(34, 197, 94)`, so a read-back compare
     // never matches and would repaint every frame.
@@ -165,8 +176,6 @@ export const useBrakeCue = (
     let lastDistanceText = '';
 
     const draw = () => {
-      raf = requestAnimationFrame(draw);
-
       // Read fresh every frame: the active lap's buffers are reset in place at
       // each lap boundary, so a captured reference can go stale.
       const { trackLengthM, referenceLap } = useLapTraceStore.getState();
@@ -264,10 +273,21 @@ export const useBrakeCue = (
       }
     };
 
-    raf = requestAnimationFrame(draw);
+    // The reference's cue points arrive as a prop; its speed (the pace gate)
+    // and the track length are read from the store, and either can change
+    // with no new telemetry.
+    const scheduler = scheduleLapTraceFrames(
+      'lapTraceBrakeCue',
+      draw,
+      (state, prev) =>
+        state.referenceLap !== prev.referenceLap ||
+        state.trackLengthM !== prev.trackLengthM
+    );
+    requestStep.current = scheduler.request;
 
     return () => {
-      cancelAnimationFrame(raf);
+      scheduler.dispose();
+      requestStep.current = () => undefined;
       const strip = refs.strip.current;
       if (strip) strip.style.visibility = 'hidden';
     };

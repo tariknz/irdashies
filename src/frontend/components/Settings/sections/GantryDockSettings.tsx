@@ -48,8 +48,7 @@ const isTypeTaken = (
   type !== 'fuel' &&
   panels.some((panel) => panel.type === type && panel.id !== exceptId);
 
-const selectClass =
-  'bg-slate-700 text-white text-sm rounded-md px-2 py-1 disabled:opacity-50';
+const selectClass = 'settings-field';
 const smallButtonClass =
   'flex items-center gap-1 px-2 py-1 text-xs rounded border transition-colors';
 
@@ -145,7 +144,7 @@ const PanelRowControls = ({
           onClick={handleRemove}
           aria-label="Remove panel"
           title="Remove panel"
-          className="p-1 rounded text-slate-400 hover:text-red-300 hover:bg-slate-600"
+          className="p-1 rounded text-slate-400 hover:text-red-300 hover:bg-settings-hover"
         >
           <TrashIcon size={16} />
         </button>
@@ -156,7 +155,7 @@ const PanelRowControls = ({
           <button
             type="button"
             onClick={() => onCreateGantryFuel(panel.id)}
-            className={`${smallButtonClass} bg-green-800/60 hover:bg-green-700 text-green-100 border-green-700`}
+            className={`settings-button-primary`}
           >
             <PlusIcon size={12} /> Create Gantry fuel layout
           </button>
@@ -164,7 +163,7 @@ const PanelRowControls = ({
             <button
               type="button"
               onClick={() => onEdit(`/settings/${linked.id}`)}
-              className={`${smallButtonClass} bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600`}
+              className={`${smallButtonClass} bg-slate-700 hover:bg-settings-hover text-slate-200 border-settings-boundary`}
             >
               Edit fuel layout
             </button>
@@ -193,7 +192,7 @@ const PanelRowControls = ({
       )}
 
       {confirmingRemove && (
-        <div className="flex flex-wrap items-center gap-2 p-2 rounded bg-slate-800 border border-slate-600 text-xs text-slate-300">
+        <div className="flex flex-wrap items-center gap-2 p-2 rounded bg-slate-800 border border-settings-boundary text-xs text-slate-300">
           <span className="flex-1">
             This panel uses a Gantry-only fuel layout. Delete the layout too?
           </span>
@@ -207,7 +206,7 @@ const PanelRowControls = ({
           <button
             type="button"
             onClick={() => onRemove(panel.id, false)}
-            className={`${smallButtonClass} bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600`}
+            className={`${smallButtonClass} bg-slate-700 hover:bg-settings-hover text-slate-200 border-settings-boundary`}
           >
             Keep layout
           </button>
@@ -352,7 +351,7 @@ export const GantryDockSettings = () => {
             type="button"
             disabled={full || isTypeTaken(type, dock.panels)}
             onClick={() => addPanel(type)}
-            className={`${smallButtonClass} bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600 disabled:opacity-40 disabled:cursor-not-allowed`}
+            className={`${smallButtonClass} bg-slate-700 hover:bg-settings-hover text-slate-200 border-settings-boundary disabled:opacity-40 disabled:cursor-not-allowed`}
           >
             <PlusIcon size={12} /> Add {GANTRY_DOCK_PANEL_LABELS[type]}
           </button>

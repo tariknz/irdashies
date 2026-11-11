@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'broadcastevents',
   name: 'Broadcast Events',
+  category: 'Broadcast & Streaming',
   // Reached through a tab on the Broadcast settings page.
   hideInMenu: true,
   enabled: false,

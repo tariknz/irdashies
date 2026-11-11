@@ -9,6 +9,7 @@
 import fs from 'fs';
 import path from 'path';
 import https from 'https';
+import { getFreshBundleAgeMs } from './lovely-bundle-cache';
 
 interface TrackManifestEntry {
   trackName: string;
@@ -81,32 +82,23 @@ const GAMES: readonly { game: string; output: string }[] = [
 // Check if force flag is passed
 const FORCE_FETCH = process.argv.includes('--force');
 
-// Max age: 7 days in milliseconds
-const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
-
 // Abort an HTTPS request after this many ms of no progress
 const REQUEST_TIMEOUT_MS = 15_000;
 
 /**
  * Check if the bundle file exists and is recent enough
  */
-function shouldSkipFetch(outputFile: string): boolean {
+async function shouldSkipFetch(outputFile: string): Promise<boolean> {
   if (FORCE_FETCH) {
     console.log('Force flag detected, fetching fresh data...\n');
     return false;
   }
 
-  if (!fs.existsSync(outputFile)) {
-    console.log('No existing bundle found, fetching...\n');
-    return false;
-  }
-
-  const stats = fs.statSync(outputFile);
-  const age = Date.now() - stats.mtimeMs;
-
-  if (age > MAX_AGE_MS) {
-    const daysOld = Math.floor(age / (24 * 60 * 60 * 1000));
-    console.log(`Bundle is ${daysOld} days old, fetching fresh data...\n`);
+  const age = await getFreshBundleAgeMs(outputFile);
+  if (age === null) {
+    console.log(
+      'Bundle is missing, stale, or has an invalid fetch timestamp; fetching fresh data...\n'
+    );
     return false;
   }
 
@@ -282,7 +274,7 @@ async function main(): Promise<void> {
       const outputFile = path.join(DATA_DIR, output);
       // Each bundle ages on its own, so adding a game does not force the
       // others to be re-fetched.
-      if (shouldSkipFetch(outputFile)) continue;
+      if (await shouldSkipFetch(outputFile)) continue;
 
       const manifest = await fetchManifest(game);
       const tracks = await fetchAllTrackData(manifest);

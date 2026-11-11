@@ -210,3 +210,63 @@ describe('DriverInfoRow interaction', () => {
     expect(scrollIntoView).toHaveBeenCalled();
   });
 });
+
+describe('DriverInfoRow and an LMU retirement', () => {
+  const cell = (container: HTMLElement, column: string) =>
+    container.querySelector(`td[data-column="${column}"]`)?.textContent ?? '';
+
+  it('writes a DQ in the name cell without the pit column repeating it', () => {
+    // LMU's DQ also raises the Disqualify flag that `dnf` reads.
+    const { container } = renderRow({ dnf: true, finishState: 'DQ' });
+    expect(cell(container, 'driverName')).toContain('DQ');
+    expect(cell(container, 'pitStatus')).not.toContain('DNF');
+  });
+
+  it('keeps the pit column DNF when the name cell shows no badges', () => {
+    // Otherwise the DQ would be shown nowhere at all.
+    const { container } = renderRow({
+      dnf: true,
+      finishState: 'DQ',
+      config: {
+        ...baseProps.config,
+        driverName: { enabled: true, showStatusBadges: false },
+      },
+    });
+    expect(cell(container, 'driverName')).not.toContain('DQ');
+    expect(cell(container, 'pitStatus')).toContain('DNF');
+  });
+
+  it('shows a retirement in the pit column when the name cell cannot', () => {
+    // LMU raises no Disqualify for a retirement, so `dnf` is false: the
+    // finish status is the only thing that says it.
+    const hidden = { dnf: false, finishState: 'DNF' as const };
+    const noBadges = renderRow({
+      ...hidden,
+      config: {
+        ...baseProps.config,
+        driverName: { enabled: true, showStatusBadges: false },
+      },
+    }).container;
+    expect(cell(noBadges, 'driverName')).not.toContain('DNF');
+    expect(cell(noBadges, 'pitStatus')).toContain('DNF');
+
+    const nameHidden = renderRow({
+      ...hidden,
+      config: {
+        ...baseProps.config,
+        driverName: { enabled: false, showStatusBadges: true },
+      },
+    }).container;
+    expect(cell(nameHidden, 'pitStatus')).toContain('DNF');
+
+    // And once only while the name cell writes it out.
+    const shown = renderRow(hidden).container;
+    expect(cell(shown, 'driverName')).toContain('DNF');
+    expect(cell(shown, 'pitStatus')).not.toContain('DNF');
+  });
+
+  it('keeps the pit column DNF for a flag with no finish status, as iRacing has', () => {
+    const { container } = renderRow({ dnf: true });
+    expect(cell(container, 'pitStatus')).toContain('DNF');
+  });
+});

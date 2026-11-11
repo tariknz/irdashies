@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { readData, writeData } from './storage';
 
 vi.mock('./storage', () => ({ readData: vi.fn(), writeData: vi.fn() }));
+vi.mock('../logger', () => ({ default: { error: vi.fn() } }));
 
 describe('analytics consent cache', () => {
   beforeEach(() => {
@@ -34,6 +35,26 @@ describe('analytics consent cache', () => {
       ['analyticsOptOut', true],
       ['analyticsOptOut', false],
     ]);
+  });
+
+  it('tells listeners about each change, even when persistence fails', async () => {
+    vi.mocked(readData).mockReturnValue(false);
+    const { getAnalyticsOptOut, setAnalyticsOptOut, onAnalyticsOptOutChanged } =
+      await import('./analytics');
+    getAnalyticsOptOut();
+    const listener = vi.fn();
+    const stop = onAnalyticsOptOutChanged(listener);
+    setAnalyticsOptOut(false);
+    setAnalyticsOptOut(true);
+    setAnalyticsOptOut(true);
+    vi.mocked(writeData).mockImplementation(() => {
+      throw new Error('disk full');
+    });
+    expect(() => setAnalyticsOptOut(false)).toThrow('disk full');
+    stop();
+    vi.mocked(writeData).mockReset();
+    setAnalyticsOptOut(true);
+    expect(listener.mock.calls).toEqual([[true], [false]]);
   });
 
   it('honours a new opt-out in memory even when persistence fails', async () => {

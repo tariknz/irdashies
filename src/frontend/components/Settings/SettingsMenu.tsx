@@ -1,4 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  ArrowLeftIcon,
+  GearIcon,
+  MagnifyingGlassIcon,
+} from '@phosphor-icons/react';
 import { Link, useLocation } from 'react-router-dom';
 import { useReleaseNotesStatus } from './ReleaseNotes/ReleaseNotesStatusContext';
 import {
@@ -6,9 +11,10 @@ import {
   useDashboard,
   useSimWidgetSupport,
 } from '@irdashies/context';
-import { widgetDisabledMessage } from '@irdashies/types';
+import { WIDGET_CATEGORIES, widgetDisabledMessage } from '@irdashies/types';
 import {
   generalItems,
+  toolItems,
   widgetItems,
   bottomItems,
   menuHasToggle,
@@ -24,6 +30,7 @@ const MenuLink = ({
   onToggle,
   isNew,
   disabledReason,
+  onNavigate,
 }: {
   item: MenuItem;
   pathname: string;
@@ -34,23 +41,59 @@ const MenuLink = ({
   disabledReason?: string;
   /** Present when the row controls a widget that exists in the dashboard. */
   onToggle?: (enabled: boolean) => void;
+  onNavigate?: () => void;
 }) => {
   const isActive = pathname.startsWith(`/settings${item.path}`);
+  const linkRef = useRef<HTMLAnchorElement>(null);
+  useEffect(() => {
+    const link = linkRef.current;
+    const scroller = link?.closest<HTMLElement>('[data-overlay-scroll]');
+    if (!isActive || !link || !scroller) return;
+    const reveal = () => {
+      if (!scroller.clientHeight) return;
+      const row = link.getBoundingClientRect();
+      const bounds = scroller.getBoundingClientRect();
+      if (row.top < bounds.top) scroller.scrollTop -= bounds.top - row.top;
+      else if (row.bottom > bounds.bottom)
+        scroller.scrollTop += row.bottom - bounds.bottom;
+    };
+    reveal();
+    // Keep the current page visible when a restored window becomes compact.
+    let lastWidth = scroller.clientWidth;
+    let lastHeight = scroller.clientHeight;
+    const observer =
+      typeof ResizeObserver === 'undefined'
+        ? undefined
+        : new ResizeObserver(() => {
+            const width = scroller.clientWidth;
+            const height = scroller.clientHeight;
+            if (!height || (width === lastWidth && height === lastHeight))
+              return;
+            lastWidth = width;
+            lastHeight = height;
+            reveal();
+          });
+    observer?.observe(scroller);
+    return () => observer?.disconnect();
+  }, [isActive]);
   return (
     <li
       title={disabledReason}
       className={[
-        'flex items-center gap-2 pr-2 rounded border-l-2 select-none transition-colors',
+        'flex items-center gap-2 pr-2 rounded-md border-l-2 select-none transition-colors',
         disabledReason ? 'opacity-50' : '',
         isActive
-          ? 'border-accent-500 bg-accent-500/10 text-white'
+          ? 'border-accent-400 bg-accent-400/10 text-accent-200'
           : 'border-transparent text-slate-400 hover:bg-slate-700/50 hover:text-white',
       ].join(' ')}
     >
       <Link
+        ref={linkRef}
         to={item.to}
+        onClick={onNavigate}
+        aria-current={isActive ? 'page' : undefined}
         draggable={false}
-        className="flex items-center gap-2 flex-1 min-w-0 px-2 py-1 cursor-pointer"
+        className="flex min-h-9 min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-sm cursor-pointer"
       >
         {showIcon && item.icon && (
           <item.icon
@@ -60,7 +103,7 @@ const MenuLink = ({
           />
         )}
         <span className="flex-1 min-w-0">
-          <span className="block truncate">{item.label}</span>
+          <span className="block leading-5">{item.label}</span>
           {disabledReason && (
             <span className="block text-xs whitespace-normal">
               {disabledReason}
@@ -85,13 +128,40 @@ const MenuLink = ({
   );
 };
 
-export const SettingsMenu = () => {
+export const SettingsMenu = ({
+  appTo = '/settings/general',
+  returnTo = '/settings/relative',
+  previewMode = false,
+  excludedWidgetTypes,
+}: {
+  appTo?: string;
+  returnTo?: string;
+  previewMode?: boolean;
+  excludedWidgetTypes?: ReadonlySet<string>;
+}) => {
   const { status: releaseNotesStatus } = useReleaseNotesStatus();
   const { pathname } = useLocation();
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const simulator = useActiveSimulator();
   const supportConfig = useSimWidgetSupport();
   const [showHidden, setShowHidden] = useState(false);
+  const [query, setQuery] = useState('');
+  const appPage = [...generalItems, ...bottomItems].some(
+    (item) => item.to === pathname
+  );
+  const overlayPath = useRef(pathname);
+  const overlayScroll = useRef<HTMLDivElement>(null);
+  const appScroll = useRef<HTMLElement>(null);
+  const overlayScrollPosition = useRef(0);
+  const wasAppPage = useRef(appPage);
+  useEffect(() => {
+    if (!appPage) overlayPath.current = pathname;
+  }, [appPage, pathname]);
+  useLayoutEffect(() => {
+    if (wasAppPage.current && !appPage && overlayScroll.current)
+      overlayScroll.current.scrollTop = overlayScrollPosition.current;
+    wasAppPage.current = appPage;
+  }, [appPage]);
   // Layout-editor copies of a widget share its menu entry: it is on while any
   // copy is, so a custom layout cannot hide behind a switched-off default.
   const instancesOf = (widgetType: string) =>
@@ -126,66 +196,182 @@ export const SettingsMenu = () => {
     !!item.widgetType &&
     (item.groupTypes ?? [item.widgetType]).some(isWidgetEnabled);
 
-  const menuItems = widgetItems.filter((item) => !item.hideInMenu);
+  const menuItems = [
+    ...widgetItems.filter(
+      (item) =>
+        !item.hideInMenu && !excludedWidgetTypes?.has(item.widgetType ?? '')
+    ),
+    ...(previewMode ? [] : toolItems),
+  ];
   const unsupported = (item: MenuItem) =>
     widgetDisabledMessage(supportConfig, item.widgetType, simulator);
   // Widgets the running sim cannot support are left out unless asked for.
   const supportedItems = menuItems.filter((item) => !unsupported(item));
   const hiddenCount = menuItems.length - supportedItems.length;
-  const visibleItems = showHidden ? menuItems : supportedItems;
+  const searchQuery = query.trim().toLowerCase();
+  const visibleItems = (showHidden ? menuItems : supportedItems).filter(
+    (item) =>
+      item.label.toLowerCase().includes(searchQuery) ||
+      item.category?.toLowerCase().includes(searchQuery)
+  );
+  const categories = [...WIDGET_CATEGORIES, 'Tools']
+    .map((category) => ({
+      category,
+      items: visibleItems.filter((item) => item.category === category),
+    }))
+    .filter(({ items }) => items.length > 0);
+
+  useLayoutEffect(() => {
+    const scroller = appPage ? appScroll.current : overlayScroll.current;
+    if (!scroller) return;
+    // Fade only the edges with more content, including after filtering or resize.
+    const updateFade = () => {
+      const remaining =
+        scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop;
+      scroller.style.setProperty(
+        '--scroll-fade-top',
+        `${Math.min(12, Math.max(0, scroller.scrollTop))}px`
+      );
+      scroller.style.setProperty(
+        '--scroll-fade-bottom',
+        `${Math.min(12, Math.max(0, remaining))}px`
+      );
+    };
+    updateFade();
+    scroller.addEventListener('scroll', updateFade, { passive: true });
+    const observer =
+      typeof ResizeObserver === 'undefined'
+        ? undefined
+        : new ResizeObserver(updateFade);
+    observer?.observe(scroller);
+    for (const child of scroller.children) observer?.observe(child);
+    return () => {
+      scroller.removeEventListener('scroll', updateFade);
+      observer?.disconnect();
+    };
+  }, [appPage, query, showHidden, visibleItems.length]);
 
   return (
-    <div className="w-1/4 bg-slate-800 p-3 rounded-md border border-slate-600/60 flex flex-col gap-0 overflow-y-auto">
-      <ul className="flex flex-col pb-2 border-b border-slate-700">
-        {generalItems.map((item) => (
-          <MenuLink key={item.path} item={item} pathname={pathname} showIcon />
-        ))}
-      </ul>
-
-      {hiddenCount > 0 && (
-        <div className="px-2 pt-2 pb-1">
-          <button
-            type="button"
-            onClick={() => setShowHidden((v) => !v)}
-            className="text-xs text-slate-600 hover:text-slate-300 cursor-pointer"
-          >
-            {showHidden
-              ? `(showing ${hiddenCount} hidden)`
-              : `(${hiddenCount} hidden)`}
-          </button>
-        </div>
+    <nav
+      aria-label={appPage ? 'App settings pages' : 'Overlay settings'}
+      className="flex w-[232px] shrink-0 flex-col border-r border-slate-700 bg-slate-950 p-3 xl:w-[252px]"
+    >
+      {appPage && (
+        <section
+          ref={appScroll}
+          aria-label="App pages"
+          className="settings-menu-scroll min-h-0 flex-1 overflow-y-auto pb-3"
+        >
+          <h2 className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+            App settings
+          </h2>
+          <ul className="space-y-0.5">
+            {[...generalItems, ...bottomItems]
+              .filter((item) => !previewMode || item.path === '/general')
+              .map((item) => (
+                <MenuLink
+                  key={item.path}
+                  item={item}
+                  pathname={pathname}
+                  showIcon
+                  isNew={
+                    item.path === '/release-notes' &&
+                    !!releaseNotesStatus?.unreadVersion
+                  }
+                />
+              ))}
+          </ul>
+        </section>
       )}
-      <ul className="flex flex-col py-2">
-        {visibleItems.map((item) => (
-          <MenuLink
-            key={item.path}
-            item={item}
-            pathname={pathname}
-            isEnabled={item.widgetType ? isItemEnabled(item) : undefined}
-            disabledReason={unsupported(item) ?? undefined}
-            onToggle={
-              canToggle(item) && item.widgetType && !unsupported(item)
-                ? setWidgetEnabled.bind(null, item.widgetType)
-                : undefined
-            }
-          />
-        ))}
-      </ul>
+      <div
+        hidden={appPage}
+        className={appPage ? 'hidden' : 'flex min-h-0 flex-1 flex-col'}
+        data-overlay-area
+      >
+        <div className="shrink-0 bg-slate-950 px-1 pb-3 pt-3">
+          <label className="flex min-h-9 items-center gap-2 rounded-md border border-settings-boundary bg-slate-900 px-2 text-slate-400 focus-within:outline-2 focus-within:outline-offset-3 focus-within:outline-accent-400">
+            <MagnifyingGlassIcon size={16} className="shrink-0" />
+            <input
+              type="search"
+              aria-label="Find an overlay"
+              placeholder="Find an overlay"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              className="min-h-9 w-full min-w-0 bg-transparent text-sm text-slate-200 outline-none placeholder:text-slate-400 focus-visible:outline-none!"
+            />
+          </label>
+        </div>
 
-      <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col">
-        {bottomItems.map((item) => (
-          <MenuLink
-            key={item.path}
-            item={item}
-            pathname={pathname}
-            showIcon
-            isNew={
-              item.path === '/release-notes' &&
-              !!releaseNotesStatus?.unreadVersion
-            }
-          />
-        ))}
-      </ul>
-    </div>
+        <div
+          ref={overlayScroll}
+          onScroll={(event) => {
+            if (!appPage && event.currentTarget.clientHeight > 0)
+              overlayScrollPosition.current = event.currentTarget.scrollTop;
+          }}
+          data-overlay-scroll
+          className="settings-menu-scroll min-h-0 flex-1 overflow-y-auto"
+        >
+          {hiddenCount > 0 && (
+            <div className="px-2 pt-2 pb-1">
+              <button
+                type="button"
+                onClick={() => setShowHidden((v) => !v)}
+                className="text-xs text-slate-400 hover:text-slate-200 cursor-pointer"
+              >
+                {showHidden
+                  ? `(showing ${hiddenCount} hidden)`
+                  : `(${hiddenCount} hidden)`}
+              </button>
+            </div>
+          )}
+          <div className="space-y-4 pb-3">
+            {categories.map(({ category, items }) => (
+              <section key={category} aria-label={category}>
+                <h3 className="px-2 pt-2 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  {category}
+                </h3>
+                <ul className="flex flex-col gap-0.5">
+                  {items.map((item) => (
+                    <MenuLink
+                      key={item.path}
+                      item={item}
+                      pathname={appPage ? overlayPath.current : pathname}
+                      showIcon={item.category === 'Tools'}
+                      isEnabled={
+                        item.widgetType ? isItemEnabled(item) : undefined
+                      }
+                      disabledReason={unsupported(item) ?? undefined}
+                      onToggle={
+                        canToggle(item) && item.widgetType && !unsupported(item)
+                          ? setWidgetEnabled.bind(null, item.widgetType)
+                          : undefined
+                      }
+                    />
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+          {visibleItems.length === 0 && (
+            <p role="status" className="px-2 py-4 text-sm text-slate-400">
+              No overlays match “{query}”.
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="shrink-0 pt-1">
+        <Link
+          to={appPage ? returnTo : appTo}
+          className="flex min-h-9 items-center gap-2 rounded-md border-l-2 border-transparent px-2 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white"
+        >
+          {appPage ? (
+            <ArrowLeftIcon size={14} aria-hidden="true" />
+          ) : (
+            <GearIcon size={14} aria-hidden="true" />
+          )}
+          {appPage ? 'Back to overlays' : 'App settings'}
+        </Link>
+      </div>
+    </nav>
   );
 };

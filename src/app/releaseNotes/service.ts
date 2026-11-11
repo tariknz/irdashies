@@ -1,5 +1,7 @@
 import type {
   ReleaseNotes,
+  ReleaseNotesHistoryResult,
+  ReleaseNotesSummary,
   ReleaseNotesResult,
   ReleaseNotesStatus,
 } from '@irdashies/types';
@@ -38,6 +40,85 @@ export function advanceInstalledVersion(
 const githubUrl = (tag: string) =>
   `https://github.com/tariknz/irdashies/releases/tag/${encodeURIComponent(tag)}`;
 
+const GITHUB_HEADERS = {
+  Accept: 'application/vnd.github+json',
+  'X-GitHub-Api-Version': '2022-11-28',
+};
+const HISTORY_PAGE_SIZE = 30;
+// Bound the session cache and the renderer-controlled pagination (3,000 releases).
+const HISTORY_PAGE_LIMIT = 100;
+
+async function readGitHubResponse(response: Response, limit: number) {
+  if (Number(response.headers.get('content-length')) > limit)
+    throw new Error('Release response too large');
+  // Content-Length is optional and can be compressed; bound the stream too.
+  if (!response.body) throw new Error('Missing response body');
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > limit) throw new Error('Release response too large');
+      chunks.push(value);
+    }
+  } finally {
+    await reader.cancel();
+  }
+  return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown;
+}
+
+export async function fetchGitHubReleases(
+  page: number,
+  fetcher: typeof fetch = fetch
+): Promise<ReleaseNotesHistoryResult> {
+  try {
+    const response = await fetcher(
+      `https://api.github.com/repos/tariknz/irdashies/releases?per_page=${HISTORY_PAGE_SIZE}&page=${page}`,
+      {
+        headers: GITHUB_HEADERS,
+        signal: AbortSignal.timeout(8_000),
+        redirect: 'error',
+      }
+    );
+    if (!response.ok) throw new Error('Release history unavailable');
+    const raw = await readGitHubResponse(response, 10_000_000);
+    if (!Array.isArray(raw) || raw.length > HISTORY_PAGE_SIZE)
+      throw new Error('Invalid release history');
+    const releases: ReleaseNotesSummary[] = [];
+    for (const entry of raw) {
+      if (!entry || typeof entry !== 'object') continue;
+      const release = entry as Record<string, unknown>;
+      const version = normalizeVersion(release.tag_name);
+      if (!version || release.draft === true) continue;
+      const parsed = sanitizeRelease({
+        version,
+        title: release.name ?? `irDashies ${version}`,
+        body: '',
+        url: githubUrl(String(release.tag_name)),
+        publishedAt: release.published_at,
+      });
+      if (parsed)
+        releases.push({
+          version: parsed.version,
+          title: parsed.title,
+          publishedAt: parsed.publishedAt,
+        });
+    }
+    return {
+      status: 'ready',
+      releases,
+      hasMore: page < HISTORY_PAGE_LIMIT && raw.length === HISTORY_PAGE_SIZE,
+      cached: false,
+    };
+  } catch {
+    logger.warn('[ReleaseNotes] Could not fetch release history');
+    return { status: 'unavailable', reason: 'offline' };
+  }
+}
+
 export async function fetchGitHubRelease(
   version: string,
   fetcher: typeof fetch = fetch
@@ -48,35 +129,14 @@ export async function fetchGitHubRelease(
       const response = await fetcher(
         `https://api.github.com/repos/tariknz/irdashies/releases/tags/${encodeURIComponent(tag)}`,
         {
-          headers: {
-            Accept: 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
-          },
+          headers: GITHUB_HEADERS,
           signal: AbortSignal.timeout(8_000),
           redirect: 'error',
         }
       );
       if (response.status === 404) continue;
       if (!response.ok) return { status: 'unavailable', reason: 'offline' };
-      const length = Number(response.headers.get('content-length'));
-      if (length > 1_000_000) throw new Error('Release response too large');
-      // Bound the streamed body too: Content-Length is optional and can be compressed.
-      if (!response.body) throw new Error('Missing response body');
-      const reader = response.body.getReader();
-      const chunks: Uint8Array[] = [];
-      let size = 0;
-      try {
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          size += value.byteLength;
-          if (size > 1_000_000) throw new Error('Release response too large');
-          chunks.push(value);
-        }
-      } finally {
-        await reader.cancel();
-      }
-      const raw: unknown = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      const raw = await readGitHubResponse(response, 1_000_000);
       if (!raw || typeof raw !== 'object') throw new Error('Invalid release');
       const release = raw as Record<string, unknown>;
       if (
@@ -116,6 +176,7 @@ export function createReleaseNotesService(options: {
   fixture?: (version: string) => ReleaseNotes;
   simulation?: boolean;
   fetchRelease?: (version: string) => Promise<ReleaseNotesResult>;
+  fetchReleases?: (page: number) => Promise<ReleaseNotesHistoryResult>;
 }) {
   const currentVersion = normalizeVersion(options.currentVersion);
   if (!currentVersion) throw new Error('Invalid installed version');
@@ -123,6 +184,14 @@ export function createReleaseNotesService(options: {
   let availableVersion: string | null = null;
   const inFlight = new Map<string, Promise<ReleaseNotesResult>>();
   const refreshedAt = new Map<string, number>();
+  const history = new Map<
+    number,
+    {
+      result: Extract<ReleaseNotesHistoryResult, { status: 'ready' }>;
+      at: number;
+    }
+  >();
+  const historyInFlight = new Map<number, Promise<ReleaseNotesHistoryResult>>();
   const REFRESH_INTERVAL_MS = 5 * 60_000;
   // Start at app launch, even if the user never opens Settings on this version.
   const ready = options.store.load().then((loaded) => {
@@ -158,10 +227,15 @@ export function createReleaseNotesService(options: {
     async getRelease(raw: unknown): Promise<ReleaseNotesResult> {
       await ready;
       const version = normalizeVersion(raw);
-      // Renderer cannot turn the bridge into an arbitrary release scraper.
+      // Only installed, downloaded, cached or publicly listed releases are allowed.
       if (
         !version ||
-        (version !== currentVersion && version !== availableVersion)
+        (version !== currentVersion &&
+          version !== availableVersion &&
+          !state.cache.some((entry) => entry.version === version) &&
+          ![...history.values()].some(({ result }) =>
+            result.releases.some((entry) => entry.version === version)
+          ))
       )
         throw new Error('Invalid release version');
       if (options.fixture)
@@ -211,6 +285,60 @@ export function createReleaseNotesService(options: {
         void task.finally(() => inFlight.delete(version));
       }
       if (cached) return { status: 'ready', release: cached, cached: true };
+      return task;
+    },
+    async getReleases(raw: unknown): Promise<ReleaseNotesHistoryResult> {
+      await ready;
+      if (
+        typeof raw !== 'number' ||
+        !Number.isInteger(raw) ||
+        raw < 1 ||
+        raw > HISTORY_PAGE_LIMIT
+      )
+        throw new Error('Invalid release history page');
+      if (options.fixture) {
+        return {
+          status: 'ready',
+          releases: raw === 1 ? [options.fixture(currentVersion)] : [],
+          hasMore: false,
+          cached: false,
+        };
+      }
+      const cached = history.get(raw);
+      if (cached && Date.now() - cached.at < REFRESH_INTERVAL_MS)
+        return cached.result;
+      let task = historyInFlight.get(raw);
+      if (!task) {
+        task = (async (): Promise<ReleaseNotesHistoryResult> => {
+          let result: ReleaseNotesHistoryResult;
+          try {
+            result = await (options.fetchReleases ?? fetchGitHubReleases)(raw);
+          } catch {
+            result = { status: 'unavailable', reason: 'offline' };
+          }
+          if (result.status === 'ready') {
+            history.set(raw, { result, at: Date.now() });
+            return result;
+          }
+          if (cached) return { ...cached.result, cached: true };
+          if (raw === 1 && state.cache.length)
+            return {
+              status: 'ready',
+              releases: state.cache
+                .map(({ version, title, publishedAt }) => ({
+                  version,
+                  title,
+                  publishedAt,
+                }))
+                .sort((a, b) => compareVersions(b.version, a.version)),
+              hasMore: false,
+              cached: true,
+            };
+          return result;
+        })();
+        historyInFlight.set(raw, task);
+        void task.finally(() => historyInFlight.delete(raw));
+      }
       return task;
     },
     async dismiss(raw: unknown) {

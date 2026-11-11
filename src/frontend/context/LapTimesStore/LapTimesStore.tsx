@@ -5,6 +5,7 @@ import type { LapTimesSnapshot } from '@irdashies/types';
 
 export interface LapTimeBuffer {
   lapTimeHistory: number[][]; // [carIdx][sample]
+  cleanLapTimeHistory?: number[][];
   version: number;
 }
 
@@ -32,6 +33,13 @@ export const useLapTimesStore = create<LapTimesState>((set) => ({
     set({
       lapTimeBuffer: {
         lapTimeHistory: snapshot.lapTimeHistory.map((history) => [...history]),
+        ...(snapshot.cleanLapTimeHistory
+          ? {
+              cleanLapTimeHistory: snapshot.cleanLapTimeHistory.map(
+                (history) => [...history]
+              ),
+            }
+          : {}),
         version: snapshot.version,
       },
       lapTimes: [...snapshot.lapTimes],
@@ -60,15 +68,17 @@ const lapTimeHistoryEqual = (left: number[][], right: number[][]): boolean =>
 
 /**
  * @returns Raw lap time history for each car. Returns array of arrays where [carIdx][lapIndex] contains lap time in seconds
- * Most recent lap is at the end of each car's array. Returns up to LAP_TIME_AVG_WINDOW laps per car.
+ * Most recent lap is at the end of each car's array. Retains up to 100 laps per car.
  *
  * The snapshot store preserves this reference between channel publications.
  */
-export const useLapTimeHistory = (): number[][] => {
+export const useLapTimeHistory = (excludePitLaps = false): number[][] => {
   return useStoreWithEqualityFn(
     useLapTimesStore,
     (state: LapTimesState) =>
-      state.lapTimeBuffer?.lapTimeHistory ?? EMPTY_LAP_HISTORY,
+      (excludePitLaps
+        ? state.lapTimeBuffer?.cleanLapTimeHistory
+        : state.lapTimeBuffer?.lapTimeHistory) ?? EMPTY_LAP_HISTORY,
     lapTimeHistoryEqual
   );
 };

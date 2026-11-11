@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'telemetryinspector',
   name: 'Telemetry Inspector',
+  category: 'Car & Controls',
   // Its settings live on the Advanced page.
   hideInMenu: true,
   enabled: false,

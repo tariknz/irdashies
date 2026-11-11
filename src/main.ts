@@ -1,4 +1,5 @@
 import { setupStorageStatusBridge } from './app/bridge/storageStatusBridge';
+import { setupWidgetPreviewBridge } from './app/bridge/widgetPreviewBridge';
 import { app, autoUpdater, BrowserWindow, ipcMain } from 'electron';
 import { setupReleaseNotesBridge } from './app/bridge/releaseNotesBridge';
 import log from './app/logger';
@@ -8,6 +9,7 @@ import {
   getIsDemoMode,
   getSessionLifecycle,
   onBridgeChanged,
+  onConnectedSimulatorChanged,
 } from './app/bridge/iracingSdk/setup';
 import {
   applyDefaultsToAllProfiles,
@@ -36,6 +38,7 @@ import { updateElectronApp } from 'update-electron-app';
 // @ts-expect-error no types for squirrel
 import started from 'electron-squirrel-startup';
 import { Analytics } from './app/analytics';
+import { onAnalyticsOptOutChanged } from './app/storage/analytics';
 import { setupKeybindingsBridge } from './app/bridge/keybindingsBridge';
 import { setupLogBridge } from './app/bridge/logBridge';
 import { setupPersonalBestLapTimesBridge } from './app/bridge/personalBestLapTimesBridge';
@@ -54,6 +57,11 @@ import {
   saveGarage61SearchSession,
 } from './app/storage/garage61SearchSession';
 import { flushStorageWritesOnShutdown } from './app/storage/storage';
+import {
+  initializeSettingsWindowBounds,
+  flushSettingsWindowBoundsOnShutdown,
+} from './app/storage/settingsWindowBounds';
+import { flushSimulatorUsageOnShutdown } from './app/storage/simulatorUsage';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { getHiddenWidgets } from './app/widgetVisibility';
 import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
@@ -106,6 +114,7 @@ import { setupRendererDataSubscriptions } from './app/bridge/rendererDataSubscri
 import { PerfHeapProfiler } from './app/perfHeapProfiler';
 import { createBeforeQuitHandler } from './app/shutdownCoordinator';
 import { monitorDevParent } from './app/devParentMonitor';
+import { flushSettingsWindowMovementOnShutdown } from './app/trackWindowMovement';
 
 const safeErrorDetails = (error: unknown) => {
   const code =
@@ -145,6 +154,15 @@ const overlayManager = new OverlayManager();
 const analytics = new Analytics();
 const perfRun = getPerfRunConfig();
 analytics.setupLogTransport(overlayManager.getVersion());
+// Before any bridge exists, so the first connect is heard even when the sim
+// was already running as irdashies started.
+onConnectedSimulatorChanged((simulator) =>
+  analytics.setConnectedSimulator(simulator)
+);
+getSessionLifecycle().onWatchingStateChange((watching) =>
+  analytics.setWatchingTrack(watching)
+);
+onAnalyticsOptOutChanged((optOut) => void analytics.setOptOut(optOut));
 
 overlayManager.setupChromiumFlags();
 overlayManager.setupHardwareAcceleration();
@@ -410,6 +428,8 @@ void app.whenReady().then(async () => {
     return;
   }
 
+  await initializeSettingsWindowBounds();
+
   if (perfRun.enabled) {
     log.info('[PerfRun] Configuration', perfRun);
   }
@@ -458,6 +478,8 @@ void app.whenReady().then(async () => {
   // Setup IPC bridges
   setupLogBridge();
   setupStorageStatusBridge();
+  const disposeWidgetPreviews = setupWidgetPreviewBridge(runtimePerfMetrics);
+  app.once('will-quit', disposeWidgetPreviews);
   fuelDatabase = setupFuelCalculatorBridge();
   const pitLaneBridge = setupPitLaneBridge(overlayManager, channelBus);
   setupPersonalBestLapTimesBridge();
@@ -671,6 +693,7 @@ const SHUTDOWN_FLUSH_TIMEOUT_MS = 5_000;
 const handleBeforeQuit = createBeforeQuitHandler({
   prepareToQuit: () => overlayManager.markQuitting(),
   shutdown: async () => {
+    flushSettingsWindowMovementOnShutdown();
     keybindingManager?.stopGamepad();
     disconnectLifecycleChannel?.();
     sessionProfileSwitcher?.dispose();
@@ -695,6 +718,8 @@ const handleBeforeQuit = createBeforeQuitHandler({
       releaseNotes?.flush(),
       flushGarage61SearchSessionOnShutdown(),
       flushStorageWritesOnShutdown(),
+      flushSettingsWindowBoundsOnShutdown(),
+      flushSimulatorUsageOnShutdown(),
     ]);
   },
   quit: () => app.quit(),

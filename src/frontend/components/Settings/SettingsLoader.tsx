@@ -40,6 +40,7 @@ import { LapTraceSettings } from './sections/LapTraceSettings';
 import { BattleSettings } from './sections/BattleSettings';
 import { BroadcastSettingsPage } from './sections/BroadcastGroupSettings';
 import { GantrySettings } from './sections/GantrySettings';
+import { SettingsPreviewContext } from '@irdashies/domain/widgetPreview/settingsPreviewContext';
 
 /**
  * Settings page per widget type. Telemetry Inspector has none of its own: its
@@ -112,7 +113,12 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
   const Settings = Object.hasOwn(WIDGET_SETTINGS, type ?? '')
     ? WIDGET_SETTINGS[type as keyof typeof WIDGET_SETTINGS]
     : undefined;
-  if (Settings) return <Settings widgetId={widget?.id} widgetType={type} />;
+  if (Settings)
+    return (
+      <SettingsPreviewContext value={previewMode ? undefined : widgetId}>
+        <Settings widgetId={widget?.id} widgetType={type} />
+      </SettingsPreviewContext>
+    );
 
   return widget ? (
     <div className="text-red-400">No settings available for {type}</div>

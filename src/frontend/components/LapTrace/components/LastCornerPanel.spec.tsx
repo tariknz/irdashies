@@ -2,6 +2,7 @@ import { render, screen, cleanup, act } from '@testing-library/react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
   HERO_HOLD_MS,
+  LAST_CORNER_UNAVAILABLE_TEXT,
   LastCornerPanel,
   type LastCornerPanelEntry,
 } from './LastCornerPanel';
@@ -123,18 +124,27 @@ describe('LastCornerPanel', () => {
   });
 
   it('renders every configured slot even with no history yet', () => {
-    const { container } = render(
-      <LastCornerPanel {...defaultProps} entries={[]} count={3} />
-    );
+    render(<LastCornerPanel {...defaultProps} entries={[]} count={3} />);
 
     // Sizing to the history it happens to hold would resize the trace beside it
     // every time a corner completed.
-    expect(container.querySelectorAll('[style*="height"]')).toHaveLength(3);
+    expect(panel().children).toHaveLength(3);
     expect(screen.queryByText('-0.14')).toBeNull();
   });
 
+  it('says the corners are not available, in the box the rows would fill', () => {
+    render(
+      <LastCornerPanel {...defaultProps} entries={[]} count={3} unavailable />
+    );
+
+    expect(screen.getByText(LAST_CORNER_UNAVAILABLE_TEXT)).toBeTruthy();
+    expect(panel().children).toHaveLength(1);
+    // The same size as the three rows, so the trace beside it stays put.
+    expect(panel().style.height).toBe(`${3 * (16 + 2)}px`);
+  });
+
   it('pads a partial history up to the configured count', () => {
-    const { container } = render(
+    render(
       <LastCornerPanel
         {...defaultProps}
         entries={[entry(), entry({ sectionId: 'turn-4', label: 'T4' })]}
@@ -142,7 +152,7 @@ describe('LastCornerPanel', () => {
       />
     );
 
-    expect(container.querySelectorAll('[style*="height"]')).toHaveLength(4);
+    expect(panel().children).toHaveLength(4);
     expect(screen.getByText('T5')).toBeTruthy();
     expect(screen.getByText('T4')).toBeTruthy();
   });
@@ -291,11 +301,20 @@ describe('LastCornerPanel', () => {
     expect(parseFloat(panel().style.width)).toBeGreaterThan(small * 2);
   });
 
-  it('leaves a top or bottom panel to span the widget width', () => {
-    render(<LastCornerPanel {...defaultProps} />);
-
-    // Only a side column needs pinning; above or below it should simply fill.
-    expect(panel().style.width).toBe('');
+  it('pins its own size in every placement, never bigger than its box', () => {
+    // Sized to its content, the box it sits in shrank as it dropped rows and
+    // columns, and they never came back when the widget grew.
+    for (const placement of ['top', 'bottom', 'left', 'right'] as const) {
+      const { unmount } = render(
+        <LastCornerPanel {...defaultProps} count={3} placement={placement} />
+      );
+      expect(parseFloat(panel().style.width)).toBeGreaterThan(0);
+      // Three one-line rows at 10px, each with the gap after it.
+      expect(panel().style.height).toBe(`${3 * (16 + 2)}px`);
+      expect(panel().style.maxWidth).toBe('100%');
+      expect(panel().style.maxHeight).toBe('100%');
+      unmount();
+    }
   });
 
   it('puts the newest corner and all its deltas on one row', () => {
@@ -365,7 +384,7 @@ describe('LastCornerPanel', () => {
       .mockReturnValue(heroHeight + rowHeight);
 
     try {
-      const { container } = render(
+      render(
         <LastCornerPanel
           {...defaultProps}
           fontSize={fontSize}
@@ -378,7 +397,7 @@ describe('LastCornerPanel', () => {
         />
       );
 
-      expect(container.querySelectorAll('[style*="height"]')).toHaveLength(2);
+      expect(panel().children).toHaveLength(2);
       // Newest survive; the oldest is the one dropped.
       expect(screen.getByText('T5')).toBeTruthy();
       expect(screen.getByText('T4')).toBeTruthy();
@@ -388,6 +407,173 @@ describe('LastCornerPanel', () => {
       vi.unstubAllGlobals();
       observers.length = 0;
     }
+  });
+
+  describe('in less width than its columns need', () => {
+    // jsdom lays nothing out, so drive the measurement: a ResizeObserver that
+    // only lets the panel measure once, and the width a layout gave it.
+    const measured = (width: number, panel: React.ReactElement) => {
+      class FakeResizeObserver {
+        observe() {
+          /* measurement is driven by the size stubs below */
+        }
+        disconnect() {
+          /* no teardown needed for the stub */
+        }
+      }
+      vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+      const clientWidth = vi
+        .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+        .mockReturnValue(width);
+      const clientHeight = vi
+        .spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+        .mockReturnValue(500);
+      try {
+        render(panel);
+      } finally {
+        clientWidth.mockRestore();
+        clientHeight.mockRestore();
+        vi.unstubAllGlobals();
+      }
+    };
+    // 'T5' takes the 3.5em minimum name column. At the 10px history size the
+    // name and the time delta need 3.5 + 0.3 + 4.7 = 8.5em, 85px; adding the
+    // brake delta needs 133px.
+    const props = {
+      ...defaultProps,
+      placement: 'right' as const,
+      fontSize: 10,
+      latestScale: 1.4,
+    };
+
+    it('draws the columns that fit, dropping from the end of the order', () => {
+      measured(100, <LastCornerPanel {...props} />);
+      expect(screen.getByText('-0.14')).toBeTruthy();
+      // Gone whole, not drawn half hidden behind the trace.
+      expect(screen.queryByText('-7')).toBeNull();
+      expect(screen.queryByText('+2.4')).toBeNull();
+    });
+
+    it('follows the configured order when it drops a column', () => {
+      // Apex speed first: name and apex need 3.5 + 0.3 + 6.2 = 10em, which
+      // fits 100px exactly, and the time delta behind it goes.
+      measured(
+        100,
+        <LastCornerPanel
+          {...props}
+          displayOrder={[
+            'corner',
+            'apexSpeedDelta',
+            'cornerTimeDelta',
+            'brakePointDelta',
+          ]}
+        />
+      );
+      expect(screen.getByText('+2.4')).toBeTruthy();
+      expect(screen.queryByText('-0.14')).toBeNull();
+    });
+
+    it('draws the newest corner smaller before it loses a column', () => {
+      measured(100, <LastCornerPanel {...props} />);
+      // 14px would need 119px for name and time; it gives up its extra size
+      // to fit 100px, and keeps the time delta the history shows.
+      const heroSize = parseFloat(rowOf('T5').style.fontSize);
+      expect(heroSize).toBeLessThan(14);
+      expect(heroSize).toBeGreaterThanOrEqual(10);
+    });
+
+    it('always keeps the corner name', () => {
+      measured(20, <LastCornerPanel {...props} />);
+      expect(screen.getByText('T5')).toBeTruthy();
+      expect(screen.queryByText('-0.14')).toBeNull();
+      // Never below the history size.
+      expect(parseFloat(rowOf('T5').style.fontSize)).toBe(10);
+    });
+
+    it('keeps its width sized for every column, so the box it measures stays put', () => {
+      measured(100, <LastCornerPanel {...props} />);
+      // 19.8em at the 14px newest-row size, whatever is drawn inside, and
+      // rounded up so it always holds every column.
+      expect(panel().style.width).toBe(`${Math.ceil(14 * 19.8)}px`);
+      expect(panel().style.maxWidth).toBe('100%');
+    });
+
+    it('keeps every column when given exactly its own width', () => {
+      // A layout with room to spare gives the panel the width it asks for.
+      // At 13px with no emphasis on the newest row that is 19.8em, 257.4px:
+      // rounded down to 257 and compared exactly, it dropped the apex speed
+      // with nothing constraining it. Float error did the same at 14px.
+      for (let fontSize = 8; fontSize <= 24; fontSize += 1) {
+        const sized = { ...props, fontSize, latestScale: 1 };
+        const { unmount } = render(<LastCornerPanel {...sized} />);
+        const ownWidth = parseFloat(panel().style.width);
+        unmount();
+
+        measured(ownWidth, <LastCornerPanel {...sized} />);
+        expect(screen.getByText('+2.4')).toBeTruthy();
+        cleanup();
+      }
+    });
+
+    it('keeps one measurement running as its room changes, and gets columns and rows back', () => {
+      let created = 0;
+      let resized = () => {
+        /* replaced by the observer's callback */
+      };
+      class FakeResizeObserver {
+        constructor(callback: () => void) {
+          created += 1;
+          resized = callback;
+        }
+        observe() {
+          /* measurement is driven by the size stubs below */
+        }
+        disconnect() {
+          /* no teardown needed for the stub */
+        }
+      }
+      vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+      let width = 400;
+      let height = 500;
+      const clientWidth = vi
+        .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+        .mockImplementation(() => width);
+      const clientHeight = vi
+        .spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+        .mockImplementation(() => height);
+      const threeCorners = [
+        entry({ sectionId: 'a', label: 'T5' }),
+        entry({ sectionId: 'b', label: 'T4' }),
+        entry({ sectionId: 'c', label: 'T3' }),
+      ];
+      try {
+        render(<LastCornerPanel {...props} count={3} entries={threeCorners} />);
+        const ownSize = [panel().style.width, panel().style.height];
+        expect(screen.getAllByText('-7')).toHaveLength(3);
+
+        // Squeezed both ways: the newest row shrinks, a column and a row go.
+        width = 100;
+        height = 30;
+        act(() => resized());
+        expect(screen.queryByText('-7')).toBeNull();
+        expect(panel().children).toHaveLength(1);
+        // Its own size does not follow what it draws, so its box can grow
+        // back; and changing the newest row's size did not restart the
+        // measurement.
+        expect([panel().style.width, panel().style.height]).toEqual(ownSize);
+        expect(created).toBe(1);
+
+        width = 400;
+        height = 500;
+        act(() => resized());
+        expect(screen.getAllByText('-7')).toHaveLength(3);
+        expect(created).toBe(1);
+      } finally {
+        clientWidth.mockRestore();
+        clientHeight.mockRestore();
+        vi.unstubAllGlobals();
+      }
+    });
   });
 
   it('scales the text to the configured size', () => {
@@ -668,6 +854,39 @@ describe('LastCornerPanel', () => {
         );
 
         expect(isHero('T5')).toBe(false);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('keeps room for a wrapped name the single slot still shows after the hold', () => {
+      // The one slot keeps its corner after the hold, so the panel's own
+      // height has to count that corner's two lines, not the empty slot
+      // behind it, or the second line is clipped.
+      vi.useFakeTimers();
+      try {
+        const single = { ...defaultProps, count: 1, fontSize: 10 };
+        const { unmount } = render(
+          <LastCornerPanel
+            {...single}
+            entries={[withClock('Variante Tamburello A', Date.now())]}
+          />
+        );
+        const fresh = panel().style.height;
+        unmount();
+
+        render(
+          <LastCornerPanel
+            {...single}
+            entries={[
+              withClock('Variante Tamburello A', Date.now() - HERO_HOLD_MS - 1),
+            ]}
+          />
+        );
+        expect(isHero('Variante Tamburello A')).toBe(true);
+        // Two lines at 10px, and the gap after the row.
+        expect(fresh).toBe('27px');
+        expect(panel().style.height).toBe(fresh);
       } finally {
         vi.useRealTimers();
       }

@@ -147,6 +147,8 @@ describe('release notes runtime bridge', () => {
   it('validates renderer arguments at the real service boundary', async () => {
     await setupReleaseNotesBridge().ready;
     await expect(invoke('get', '../../private')).rejects.toThrow();
+    await expect(invoke('list', '../../private')).rejects.toThrow();
+    await expect(invoke('list', 0)).rejects.toThrow();
     await expect(invoke('dismiss', '9.9.9')).rejects.toThrow();
     await expect(invoke('autoShow', 'true')).rejects.toThrow();
     await invoke('autoShow', false);

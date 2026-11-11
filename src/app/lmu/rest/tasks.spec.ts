@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { at, finiteNumber, LMU_REST_TASKS } from './tasks';
+import { at, finiteNumber, LMU_REST_TASKS, LMU_TEAMS_TASK_ID } from './tasks';
 import { createLmuRestData } from './state';
 import {
   pitstopEstimateFixture,
@@ -555,6 +555,229 @@ describe('tire-management task', () => {
         optimalCompoundConditions: { compounds: [{}, {}] },
       }).applied
     ).toEqual([]);
+  });
+});
+
+describe('multiplayer-teams task', () => {
+  const output = () => {
+    const found = taskById('multiplayer-teams').outputs.find(
+      (candidate) => candidate.id === 'nationalities'
+    );
+    if (!found) throw new Error('no nationalities output');
+    return found;
+  };
+
+  it('polls only in bursts the bridge starts, two seconds apart for sixteen', () => {
+    const task = taskById(LMU_TEAMS_TASK_ID);
+    expect(task.path).toBe('/rest/multiplayer/teams');
+    expect(task.mode).toBe('burst');
+    expect(task.baseIntervalMs).toBe(2000);
+    expect(task.burstMs).toBe(16_000);
+  });
+
+  it('applies the flags it can read', () => {
+    const { data } = apply('multiplayer-teams', {
+      drivers: {
+        'Jean Dupont': { nationality: 'FR' },
+        'Ana Kosova': { nationality: 'XKX' },
+      },
+    });
+    expect(data.session.nationalities).toEqual({ 'Jean Dupont': 'FR' });
+  });
+
+  it('reports each driver left without a flag, with what the sim sent', () => {
+    const value = output().parse({
+      drivers: {
+        'Jean Dupont': { nationality: 'FR' },
+        'Ana Kosova': { nationality: 'XKX' },
+        'No Body': { nationality: '' },
+      },
+    });
+
+    expect(output().report?.(value, undefined)).toBe(
+      '[lmuRest] No country flag for "Ana Kosova" (XKX), "No Body" (empty); ' +
+        '2 of 3 drivers have none'
+    );
+  });
+
+  it('names only the drivers who were not already without a flag', () => {
+    const before = output().parse({
+      drivers: {
+        'Jean Dupont': { nationality: 'FR' },
+        'No Body': { nationality: '' },
+      },
+    });
+    const after = output().parse({
+      drivers: {
+        'Jean Dupont': { nationality: 'FR' },
+        'No Body': { nationality: '' },
+        'New Comer': { nationality: '' },
+      },
+    });
+
+    expect(output().report?.(before, before)).toBeUndefined();
+    expect(output().report?.(after, before)).toBe(
+      '[lmuRest] No country flag for "New Comer" (empty); ' +
+        '2 of 3 drivers have none'
+    );
+  });
+
+  it('does not count the admin entry of the server', () => {
+    const value = output().parse({
+      drivers: {
+        'Jean Dupont': { nationality: 'FR' },
+        Admin: { roles: ['Admin'], nationality: '' },
+      },
+    });
+    expect(output().report?.(value, undefined)).toBeUndefined();
+  });
+
+  it('says nothing when every driver has a flag', () => {
+    const value = output().parse({
+      drivers: { 'Jean Dupont': { nationality: 'FR' } },
+    });
+    expect(output().report?.(value, undefined)).toBeUndefined();
+  });
+
+  it('republishes only when the flags themselves change', () => {
+    // The body moves on every poll because isConnected flips; the flags do
+    // not, and an unchanged set must not rebuild the session.
+    const data = createLmuRestData();
+    data.session.nationalities = { 'Jean Dupont': 'FR', 'Max Muster': 'DE' };
+    const same = output().parse({
+      drivers: {
+        'Jean Dupont': { nationality: 'FR', isConnected: false },
+        'Max Muster': { nationality: 'DE', isConnected: true },
+      },
+    });
+    const gained = output().parse({
+      drivers: {
+        'Jean Dupont': { nationality: 'FR' },
+        'Max Muster': { nationality: 'DE' },
+        'New Comer': { nationality: 'IT' },
+      },
+    });
+    const changed = output().parse({
+      drivers: {
+        'Jean Dupont': { nationality: 'BE' },
+        'Max Muster': { nationality: 'DE' },
+      },
+    });
+
+    expect(output().unchanged?.(data, same)).toBe(true);
+    expect(output().unchanged?.(data, gained)).toBe(false);
+    expect(output().unchanged?.(data, changed)).toBe(false);
+    expect(output().unchanged?.(createLmuRestData(), same)).toBe(false);
+  });
+
+  it('still reports a payload with no flag at all, but keeps the old ones', () => {
+    // Nothing to write, so the flags already held stay; the reason they are
+    // not joined by these drivers' is still worth a line.
+    const value = output().parse({
+      drivers: { 'No Body': { nationality: '' } },
+    });
+    const data = createLmuRestData();
+    data.session.nationalities = { 'Jean Dupont': 'FR' };
+
+    expect(output().report?.(value, undefined)).toBe(
+      '[lmuRest] No country flag for "No Body" (empty); 1 of 1 drivers have none'
+    );
+    expect(output().unchanged?.(data, value)).toBe(true);
+  });
+});
+
+describe('game-state task', () => {
+  const task = () => taskById('game-state');
+  const stateOf = (payload: unknown) =>
+    apply('game-state', payload).data.gameState;
+
+  it('polls once a second, without backing off or giving up', () => {
+    expect(task().path).toBe('/rest/sessions/GetGameState');
+    expect(task().mode).toBe('repeat');
+    expect(task().baseIntervalMs).toBe(1000);
+    expect(task().maxIntervalMs).toBe(1000);
+    expect(task().optional).toBe(true);
+  });
+
+  it('holds its last answer through two misses, not one', () => {
+    // A single timeout behind another request on the one socket says nothing
+    // about the player.
+    expect(task().clearAfterFailures).toBe(3);
+  });
+
+  it('reads where the player is from MultiStintState', () => {
+    expect(stateOf({ MultiStintState: 'DRIVING', inMonitor: false })).toBe(
+      'driving'
+    );
+    expect(stateOf({ MultiStintState: 'PAUSED', inMonitor: false })).toBe(
+      'paused'
+    );
+    expect(stateOf({ MultiStintState: 'MONITOR_MENU', inMonitor: true })).toBe(
+      'monitor'
+    );
+    expect(
+      stateOf({
+        MultiStintState: 'END_OF_RACE_GRACE',
+        gamePhase: 'GPHASE_CHECKERED',
+        inMonitor: false,
+      })
+    ).toBe('driving');
+  });
+
+  it('reads the unavailable answer as out of any session', () => {
+    expect(
+      stateOf({
+        status: 'unavailable',
+        reason: 'Game is not in an active session',
+        gameState: 'Setup',
+      })
+    ).toBe('notInSession');
+  });
+
+  it('reads a 404 as out of any game, and other failures as nothing', () => {
+    const data = createLmuRestData();
+    expect(task().answerFailure?.(data, { status: 404 })).toBe(true);
+    expect(data.gameState).toBe('notInGame');
+
+    const other = createLmuRestData();
+    expect(task().answerFailure?.(other, { status: 500, body: '' })).toBe(
+      false
+    );
+    expect(task().answerFailure?.(other, {})).toBe(false);
+    expect(other.gameState).toBeUndefined();
+  });
+
+  it('forgets the state once the path stops answering', () => {
+    const { data } = apply('game-state', { MultiStintState: 'DRIVING' });
+    task().outputs.forEach((output) => output.clear?.(data));
+    expect(data.gameState).toBeUndefined();
+  });
+
+  it('reports a MultiStintState it does not know, once, and reads no state', () => {
+    const output = task().outputs[0];
+    const value = output.parse({ MultiStintState: 'SPECTATING' });
+    expect(stateOf({ MultiStintState: 'SPECTATING' })).toBeUndefined();
+    expect(output.report?.(value, undefined)).toBe(
+      '[lmuRest] Unrecognised GetGameState MultiStintState "SPECTATING"; ' +
+        'reading in-car and in-session from shared memory'
+    );
+    expect(output.report?.(value, value)).toBeUndefined();
+  });
+
+  it('drops the last state for an answer of any other shape', () => {
+    // A load screen answering something new must not leave the player in
+    // the car for as long as it lasts.
+    const data = createLmuRestData();
+    data.gameState = 'driving';
+    const output = task().outputs[0];
+    output.apply(data, output.parse({ status: 'loading' }));
+    expect(data.gameState).toBeUndefined();
+  });
+
+  it('knows the grace after the checkered flag, and does not report it', () => {
+    const output = task().outputs[0];
+    const value = output.parse({ MultiStintState: 'END_OF_RACE_GRACE' });
+    expect(output.report?.(value, undefined)).toBeUndefined();
   });
 });
 

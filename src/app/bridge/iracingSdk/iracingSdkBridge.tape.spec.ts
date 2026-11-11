@@ -4,6 +4,11 @@ import type { Session } from '@irdashies/types';
 
 const mocks = vi.hoisted(() => ({
   waitForData: vi.fn(() => true),
+  ready: vi.fn(async () => true),
+  stopSDK: vi.fn(),
+  stopReporting: vi.fn(),
+  offOverlayReady: vi.fn(),
+  loadRadarPoleSideOverrides: vi.fn(async () => undefined),
   onFrame: vi.fn(),
   onSession: vi.fn(),
   dispose: vi.fn(),
@@ -18,12 +23,12 @@ vi.mock('../../irsdk', () => ({
   IRacingSDK: class {
     sessionStatusOK = true;
     currDataVersion = 1;
-    ready = async () => true;
+    ready = mocks.ready;
     waitForData = mocks.waitForData;
     getTelemetry = () => telemetry;
     getSessionData = () => session;
     getTapeReplayStatus = mocks.getTapeReplayStatus;
-    stopSDK = vi.fn();
+    stopSDK = mocks.stopSDK;
   },
 }));
 vi.mock('../../processors/processorRegistry', () => ({
@@ -40,12 +45,12 @@ vi.mock('../../storage/referenceLaps', () => ({
 vi.mock('../../storage/radarTuning', () => ({ getRadarTuning: vi.fn() }));
 vi.mock('../../storage/radarPoleSideOverrides', () => ({
   radarPoleSideOverrides: {},
-  loadRadarPoleSideOverrides: async () => undefined,
+  loadRadarPoleSideOverrides: mocks.loadRadarPoleSideOverrides,
 }));
 vi.mock('../../perfMetrics', () => ({
   TelemetryPerfMetrics: class {
     startReporting = vi.fn();
-    stopReporting = vi.fn();
+    stopReporting = mocks.stopReporting;
     markStart = vi.fn();
     markEnd = vi.fn();
     tick = vi.fn();
@@ -64,7 +69,7 @@ async function startBridge() {
   const bus = new ChannelBus();
   const bridge = await publishIRacingSDKEvents(
     {
-      onOverlayReady: () => () => undefined,
+      onOverlayReady: () => mocks.offOverlayReady,
       publishMessage: vi.fn(),
       publishMessageToOverlay: vi.fn(),
       hasTelemetryInspectorSubscribers: () => false,
@@ -93,6 +98,9 @@ describe('paused tape processor demand', () => {
     vi.stubEnv('IRDASHIES_TELEMETRY_REPLAY', '/fixture.irdt');
     vi.clearAllMocks();
     mocks.waitForData.mockReturnValue(true);
+    mocks.ready.mockReset().mockResolvedValue(true);
+    mocks.loadRadarPoleSideOverrides.mockReset().mockResolvedValue(undefined);
+    mocks.stopSDK.mockReset();
     mocks.getTapeReplayStatus.mockReturnValue({ paused: true });
   });
   afterEach(() => {
@@ -118,6 +126,10 @@ describe('paused tape processor demand', () => {
     expect(mocks.onFrame).toHaveBeenCalledTimes(calls + 1);
     bridge.stop();
     expect(mocks.dispose).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+    const framesAtStop = mocks.onFrame.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(100);
+    expect(mocks.onFrame).toHaveBeenCalledTimes(framesAtStop);
   });
 
   it('discards pending demand during active playback without replaying it when playback pauses', async () => {
@@ -158,5 +170,47 @@ describe('paused tape processor demand', () => {
     expect(mocks.onFrame).toHaveBeenCalledTimes(calls);
     expect(mocks.getTapeReplayStatus).not.toHaveBeenCalled();
     bridge.stop();
+  });
+
+  it('releases the processor host and replay-demand listener if SDK readiness fails', async () => {
+    const bus = new ChannelBus();
+    const offDemand = vi.fn();
+    vi.spyOn(bus, 'onSubscriberCountChanged').mockReturnValue(offDemand);
+    const failure = new Error('SDK readiness failed');
+    mocks.ready.mockRejectedValueOnce(failure);
+    mocks.stopSDK.mockImplementationOnce(() => {
+      throw new Error('stop failed');
+    });
+
+    await expect(
+      publishIRacingSDKEvents(
+        {
+          onOverlayReady: () => mocks.offOverlayReady,
+          publishMessage: vi.fn(),
+          clearLatestSessionData: vi.fn(),
+        } as never,
+        undefined,
+        bus
+      )
+    ).rejects.toBe(failure);
+
+    expect(mocks.dispose).toHaveBeenCalledOnce();
+    expect(offDemand).toHaveBeenCalledOnce();
+    expect(mocks.offOverlayReady).toHaveBeenCalledOnce();
+    expect(mocks.stopReporting).toHaveBeenCalledOnce();
+    expect(mocks.stopSDK).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('stops perf reporting when storage initialization rejects before SDK creation', async () => {
+    const failure = new Error('storage failed');
+    mocks.loadRadarPoleSideOverrides.mockRejectedValueOnce(failure);
+
+    await expect(startBridge()).rejects.toBe(failure);
+
+    expect(mocks.stopReporting).toHaveBeenCalledOnce();
+    expect(mocks.ready).not.toHaveBeenCalled();
+    expect(mocks.offOverlayReady).not.toHaveBeenCalled();
+    expect(mocks.dispose).not.toHaveBeenCalled();
   });
 });

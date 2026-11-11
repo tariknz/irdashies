@@ -12,9 +12,17 @@ import { ArrowSquareOutIcon, ArrowClockwiseIcon } from '@phosphor-icons/react';
 import type { ReleaseNotesResult } from '@irdashies/types';
 
 const releaseNotesComponents: Components = {
-  a: ({ children, href }) => (
-    <ReleaseNotesLink href={href}>{children}</ReleaseNotesLink>
-  ),
+  a: ({ children, href, node }) => {
+    const pullRequest = href?.match(
+      /^https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/(\d+)\/?$/
+    );
+    const text = node?.children.length === 1 ? node.children[0] : null;
+    const label =
+      pullRequest && text?.type === 'text' && text.value === href
+        ? `#${pullRequest[1]}`
+        : children;
+    return <ReleaseNotesLink href={href}>{label}</ReleaseNotesLink>;
+  },
   img: ({ src, alt }) => (
     <ReleaseNotesMedia
       key={typeof src === 'string' ? src : ''}
@@ -142,14 +150,9 @@ export const ReleaseNotesPanel = ({
           )}
         </div>
       )}
-      {state.status === 'ready' && state.cached && (
-        <p role="status" className="text-sm text-amber-200">
-          Showing saved release notes.
-        </p>
-      )}
       {release &&
         (release.body.trim() ? (
-          <div className="text-sm leading-relaxed text-slate-300 break-words [&_h1]:mt-5 [&_h1]:mb-3 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mt-5 [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:font-semibold [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1 [&_a]:text-accent-300 [&_a]:underline [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-slate-950 [&_pre]:p-3 [&_code]:font-mono [&_code]:text-xs [&_blockquote]:border-l-2 [&_blockquote]:border-slate-500 [&_blockquote]:pl-3 [&_table]:w-full [&_th]:border [&_th]:border-slate-600 [&_th]:p-2 [&_th]:text-left [&_td]:border [&_td]:border-slate-600 [&_td]:p-2 [&_hr]:my-4 [&_hr]:border-slate-600">
+          <div className="text-sm leading-relaxed text-slate-300 break-words [&_h1]:mt-5 [&_h1]:mb-3 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mt-5 [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:font-semibold [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1 [&_a]:text-accent-300 [&_a]:underline [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-slate-950 [&_pre]:p-3 [&_code]:font-mono [&_code]:text-xs [&_blockquote]:border-l-2 [&_blockquote]:border-slate-500 [&_blockquote]:pl-3 [&_table]:w-full [&_th]:border [&_th]:border-settings-boundary [&_th]:p-2 [&_th]:text-left [&_td]:border [&_td]:border-settings-boundary [&_td]:p-2 [&_hr]:my-4 [&_hr]:border-settings-boundary">
             <Markdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw, [rehypeSanitize, releaseNotesSchema]]}

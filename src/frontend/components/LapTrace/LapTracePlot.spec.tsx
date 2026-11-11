@@ -1,17 +1,16 @@
 import { render, waitFor, cleanup } from '@testing-library/react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { useLapTraceStore } from '@irdashies/context';
-import { DEFAULT_LAP_TRACE_COLORS } from '@irdashies/types';
-import { hydrateLapTrace } from '../../domain/lapTrace/hydrateLapTrace';
+import {
+  DEFAULT_LAP_TRACE_COLORS,
+  type ChannelBridge,
+  type LapTraceSampleSnapshot,
+} from '@irdashies/types';
+import { hydrateLapTrace } from '@irdashies/domain/lapTrace/hydrateLapTrace';
+import { tileLayout } from '@irdashies/domain/lapTrace/lapTraceTiles';
 import { LapTracePlot } from './LapTracePlot';
 import { makeSyntheticLapTrace } from './fixtures/syntheticLap';
-import {
-  MAX_GEAR_LABELS,
-  PLOT_BOTTOM,
-  PLOT_TOP,
-  VIEW_WIDTH,
-  yForNorm,
-} from './layout';
+import { PLOT_BOTTOM, PLOT_TOP, VIEW_WIDTH, yForNorm } from './layout';
 
 vi.mock('@irdashies/utils/logger', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
@@ -47,16 +46,74 @@ const seedReference = () => {
   return view;
 };
 
-/** Pull the x coordinates out of a path built as a run of M/L commands. */
-const xsOf = (d: string): number[] =>
-  [...d.matchAll(/[ML](-?[\d.]+)/g)].map((m) => Number(m[1]));
+interface Point {
+  x: number;
+  y: number;
+}
 
 /** Pull the (x, y) pairs out of a path built as a run of M/L commands. */
-const pointsOf = (d: string): { x: number; y: number }[] =>
+const pointsOf = (d: string): Point[] =>
   [...d.matchAll(/[ML](-?[\d.]+) (-?[\d.]+)/g)].map((m) => ({
     x: Number(m[1]),
     y: Number(m[2]),
   }));
+
+type Layer = 'reference' | 'ghost' | 'abs-area' | 'ghost-overlay' | 'markers';
+
+interface Tile {
+  svg: SVGSVGElement;
+  /** The path's `d`, in the layer's own coordinates. */
+  d: string;
+  /** Where the layer's x = 0 sits in the window, in viewBox units. */
+  offset: number;
+  /** The layer's width in viewBox units. */
+  width: number;
+  /** Every point of the path, in window coordinates. */
+  points: Point[];
+  /** The points inside the layer's own box, which is all it shows. */
+  shown: Point[];
+}
+
+/**
+ * The elements of a layer on screen, each with one trace read back into
+ * window coordinates. A reference span is translated by a percentage of its
+ * own width, and its viewBox is that width in the same units as the
+ * window's; the driver's layers are the window itself.
+ */
+const tilesOf = (container: HTMLElement, layer: Layer, trace: string): Tile[] =>
+  [...container.querySelectorAll<SVGSVGElement>(`svg[data-layer="${layer}"]`)]
+    .filter((svg) => svg.style.display !== 'none')
+    .map((svg) => {
+      const width = Number(svg.getAttribute('viewBox')?.split(' ')[2]);
+      const pct = Number(
+        /translateX\((-?[\d.]+)%\)/.exec(svg.style.transform)?.[1] ?? 0
+      );
+      const offset = (pct / 100) * width;
+      const d =
+        svg.querySelector(`path[data-trace="${trace}"]`)?.getAttribute('d') ??
+        '';
+      const local = pointsOf(d);
+      return {
+        svg,
+        d,
+        offset,
+        width,
+        points: local.map((p) => ({ x: p.x + offset, y: p.y })),
+        shown: local
+          .filter((p) => p.x >= 0 && p.x <= width)
+          .map((p) => ({ x: p.x + offset, y: p.y })),
+      };
+    });
+
+/** Everything a layer's trace shows on screen, left to right. */
+const shownPoints = (
+  container: HTMLElement,
+  layer: Layer,
+  trace: string
+): Point[] =>
+  tilesOf(container, layer, trace)
+    .flatMap((t) => t.shown)
+    .sort((a, b) => a.x - b.x);
 
 interface GhostSample {
   d: number;
@@ -72,6 +129,10 @@ const seedGhost = async (samples: GhostSample[]) => {
     .getState()
     .initialize(undefined, 1, '', 'car', TRACK_LENGTH_M);
   seedReference();
+  pushGhost(samples);
+};
+
+const pushGhost = (samples: GhostSample[]) => {
   const { activeLap } = useLapTraceStore.getState();
   if (!activeLap) throw new Error('activeLap not initialised');
   for (const s of samples) {
@@ -109,21 +170,57 @@ const seedCarryOver = (samples: GhostSample[]) => {
   useLapTraceStore.setState({ activeLap });
 };
 
-/** Samples every `step` metres from 0 to `untilM`, shaped by `at`. */
+/** Samples every `step` metres from `fromM` to `untilM`, shaped by `at`. */
 const everyMetres = (
   untilM: number,
   step: number,
-  at: (d: number) => Omit<GhostSample, 'd'>
+  at: (d: number) => Omit<GhostSample, 'd'>,
+  fromM = 0
 ): GhostSample[] => {
   const out: GhostSample[] = [];
-  for (let d = 0; d <= untilM; d += step) out.push({ d, ...at(d) });
+  for (let d = fromM; d <= untilM; d += step) out.push({ d, ...at(d) });
   return out;
 };
 
-const ghostPathByStroke = (container: HTMLElement, stroke: string) =>
-  [...container.querySelectorAll('svg > g')[1].querySelectorAll('path')].find(
-    (p) => p.getAttribute('stroke') === stroke
-  );
+/** A bridge that delivers lap-trace.sample frames when told to. */
+const sampleBridge = () => {
+  let deliver: ((payload: LapTraceSampleSnapshot) => void) | undefined;
+  let version = 0;
+  window.channelBridge = {
+    subscribe: (
+      channel: string,
+      callback: (payload: LapTraceSampleSnapshot) => void
+    ) => {
+      if (channel === 'lap-trace.sample') deliver = callback;
+      return () => undefined;
+    },
+  } as unknown as ChannelBridge;
+  return (lapDistPct: number) =>
+    deliver?.({
+      sessionTime: lapDistPct * 100,
+      lapDistPct,
+      throttle: 0,
+      brake: 0,
+      speed: 50,
+      gear: 3,
+      brakeAbsActive: false,
+      onPitRoad: false,
+      isOnTrack: true,
+      sessionNum: 0,
+      lastLapTime: 0,
+      lapCompleted: 0,
+      incidentCount: 0,
+      simLapInvalidated: false,
+      version: ++version,
+    });
+};
+
+const nextFrames = (count: number) =>
+  new Promise<void>((resolve) => {
+    const step = (left: number) =>
+      left === 0 ? resolve() : setTimeout(() => step(left - 1), 20);
+    step(count);
+  });
 
 describe('LapTracePlot', () => {
   beforeEach(() => {
@@ -132,6 +229,8 @@ describe('LapTracePlot', () => {
 
   afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
+    Reflect.deleteProperty(window, 'channelBridge');
   });
 
   it('keeps a stopped car on the axis, not below it', async () => {
@@ -149,13 +248,7 @@ describe('LapTracePlot', () => {
     );
 
     await waitFor(() => {
-      const d =
-        ghostPathByStroke(
-          container,
-          DEFAULT_LAP_TRACE_COLORS.ghostSpeed
-        )?.getAttribute('d') ?? '';
-      expect(d).not.toBe('');
-      const ys = pointsOf(d).map((p) => p.y);
+      const ys = shownPoints(container, 'ghost', 'speed').map((p) => p.y);
       expect(ys.length).toBeGreaterThan(0);
       // PLOT_BOTTOM is the largest y in the band; nothing may sit past it.
       for (const y of ys) expect(y).toBeLessThanOrEqual(PLOT_BOTTOM);
@@ -175,8 +268,7 @@ describe('LapTracePlot', () => {
       );
     };
 
-    it('runs the driver trace back over the line into the lap just finished', async () => {
-      await seedJustAfterTheLine();
+    const seedLapJustFinished = () =>
       seedCarryOver(
         everyMetres(200, 5, () => ({ throttle: 1, speed: 40 })).map((s) => ({
           ...s,
@@ -184,23 +276,22 @@ describe('LapTracePlot', () => {
         }))
       );
 
+    it('runs the driver trace back over the line into the lap just finished', async () => {
+      await seedJustAfterTheLine();
+      seedLapJustFinished();
+
       const { container } = render(
         <LapTracePlot {...defaultProps} carDistanceMOverride={CAR_M} />
       );
 
       await waitFor(() => {
-        const d =
-          ghostPathByStroke(
-            container,
-            DEFAULT_LAP_TRACE_COLORS.ghostThrottle
-          )?.getAttribute('d') ?? '';
-        expect(d).not.toBe('');
-        const xs = xsOf(d);
+        const xs = shownPoints(container, 'ghost', 'throttle').map((p) => p.x);
         // Reaches the left edge of the window, which is the previous lap.
         expect(Math.min(...xs)).toBeLessThan(lineX - 1);
         // One subpath: the pen stays down across the seam, so the trace is
         // continuous rather than two strokes meeting at the line.
-        expect((d.match(/M/g) ?? []).length).toBe(1);
+        const [ghost] = tilesOf(container, 'ghost', 'throttle');
+        expect((ghost.d.match(/M/g) ?? []).length).toBe(1);
       });
     });
 
@@ -212,40 +303,30 @@ describe('LapTracePlot', () => {
       );
 
       await waitFor(() => {
-        const d =
-          ghostPathByStroke(
-            container,
-            DEFAULT_LAP_TRACE_COLORS.ghostThrottle
-          )?.getAttribute('d') ?? '';
-        expect(d).not.toBe('');
+        const xs = shownPoints(container, 'ghost', 'throttle').map((p) => p.x);
+        expect(xs.length).toBeGreaterThan(0);
         // Nothing behind the line exists on the first lap of a session.
-        expect(Math.min(...xsOf(d))).toBeGreaterThanOrEqual(lineX - 1);
+        expect(Math.min(...xs)).toBeGreaterThanOrEqual(lineX - 1);
       });
     });
 
     it('never draws the carried lap ahead of the car', async () => {
       await seedJustAfterTheLine();
-      seedCarryOver(
-        everyMetres(200, 5, () => ({ throttle: 1, speed: 40 })).map((s) => ({
-          ...s,
-          d: TRACK_LENGTH_M - 200 + s.d,
-        }))
-      );
+      seedLapJustFinished();
 
       const { container } = render(
         <LapTracePlot {...defaultProps} carDistanceMOverride={CAR_M} />
       );
 
       await waitFor(() => {
-        const d =
-          ghostPathByStroke(
-            container,
-            DEFAULT_LAP_TRACE_COLORS.ghostThrottle
-          )?.getAttribute('d') ?? '';
-        expect(d).not.toBe('');
+        const xs = tilesOf(container, 'ghost', 'throttle').flatMap((t) =>
+          t.points.map((p) => p.x)
+        );
+        expect(xs.length).toBeGreaterThan(0);
         // The reference may run ahead; what the driver has actually done
-        // cannot, whichever lap the samples came from.
-        expect(Math.max(...xsOf(d))).toBeLessThanOrEqual(carX + 1);
+        // cannot, whichever lap the samples came from — not even in the part
+        // of a tile its clip hides.
+        expect(Math.max(...xs)).toBeLessThanOrEqual(carX + 0.1);
       });
     });
   });
@@ -268,50 +349,39 @@ describe('LapTracePlot', () => {
       );
 
       await waitFor(() => {
-        const paths = [...container.querySelectorAll('path')];
-        const withD = paths.filter(
-          (p) => (p.getAttribute('d') ?? '').length > 0
-        );
-        expect(withD.length).toBeGreaterThan(0);
+        expect(
+          shownPoints(container, 'ghost-overlay', 'brake-abs').length
+        ).toBeGreaterThan(0);
       });
 
-      const brake = ghostPathByStroke(
-        container,
-        DEFAULT_LAP_TRACE_COLORS.ghostBrake
+      const brakeXs = shownPoints(container, 'ghost', 'brake').map((p) => p.x);
+      const absXs = shownPoints(container, 'ghost-overlay', 'brake-abs').map(
+        (p) => p.x
       );
-      const abs = ghostPathByStroke(container, DEFAULT_LAP_TRACE_COLORS.abs);
-      const brakeXs = xsOf(brake?.getAttribute('d') ?? '');
-      const absXs = xsOf(abs?.getAttribute('d') ?? '');
       // The ABS overlay covers a strict subset of the brake run it sits on:
       // 750..800 m of a window that starts at 600 m.
-      expect(absXs.length).toBeGreaterThan(0);
       expect(absXs.length).toBeLessThan(brakeXs.length);
       expect(Math.min(...absXs)).toBeGreaterThan(Math.min(...brakeXs));
     });
 
     it('draws no ABS overlay when it is switched off', async () => {
       await seedAbsLap();
-      const withAbs = render(
-        <LapTracePlot {...defaultProps} showAbs carDistanceMOverride={800} />
-      );
-      await waitFor(() =>
-        expect(
-          withAbs.container.querySelectorAll('path').length
-        ).toBeGreaterThan(0)
-      );
-      const withAbsCount = withAbs.container.querySelectorAll('path').length;
-      cleanup();
-
-      const withoutAbs = render(
+      const { container } = render(
         <LapTracePlot
           {...defaultProps}
           showAbs={false}
           carDistanceMOverride={800}
         />
       );
-      expect(withoutAbs.container.querySelectorAll('path').length).toBeLessThan(
-        withAbsCount
+      await waitFor(() =>
+        expect(shownPoints(container, 'ghost', 'brake').length).toBeGreaterThan(
+          0
+        )
       );
+      expect(container.querySelector('path[data-trace="brake-abs"]')).toBe(
+        null
+      );
+      expect(container.querySelector('path[data-trace="abs-area"]')).toBe(null);
     });
 
     it('adds a strip only when the ABS bar is switched on', async () => {
@@ -319,21 +389,26 @@ describe('LapTracePlot', () => {
       const without = render(
         <LapTracePlot {...defaultProps} carDistanceMOverride={800} />
       );
-      const baseline = without.container.querySelectorAll('path').length;
+      expect(
+        without.container.querySelector('path[data-trace="abs-bar"]')
+      ).toBe(null);
       cleanup();
 
       const withBar = render(
         <LapTracePlot {...defaultProps} showAbsBar carDistanceMOverride={800} />
       );
-      expect(withBar.container.querySelectorAll('path').length).toBe(
-        baseline + 1
-      );
       await waitFor(() => {
-        const bar = [...withBar.container.querySelectorAll('path')].find(
-          (p) => p.getAttribute('stroke-width') === '4'
-        );
+        const drawn = tilesOf(
+          withBar.container,
+          'ghost-overlay',
+          'abs-bar'
+        ).filter((t) => t.d !== '');
         // One run, drawn as its two ends.
-        expect(xsOf(bar?.getAttribute('d') ?? '')).toHaveLength(2);
+        expect(drawn).toHaveLength(1);
+        expect(drawn[0].points).toHaveLength(2);
+        expect(drawn[0].svg.querySelector('path[data-trace="abs-bar"]')).toBe(
+          drawn[0].svg.querySelector('[stroke-width="4"]')
+        );
       });
     });
 
@@ -347,7 +422,9 @@ describe('LapTracePlot', () => {
           carDistanceMOverride={800}
         />
       );
-      const overlayCount = overlay.container.querySelectorAll('path').length;
+      expect(
+        overlay.container.querySelector('path[data-trace="abs-area"]')
+      ).toBe(null);
       cleanup();
 
       const bar = render(
@@ -359,21 +436,42 @@ describe('LapTracePlot', () => {
         />
       );
 
-      expect(bar.container.querySelectorAll('path').length).toBe(
-        overlayCount + 1
+      await waitFor(() => {
+        const filled = tilesOf(bar.container, 'abs-area', 'abs-area').filter(
+          (t) => t.d.includes('Z')
+        );
+        expect(filled.length).toBeGreaterThan(0);
+        // The layer is blended rather than the path, so the fill mixes with
+        // the reference spans beneath it and not just its own layer.
+        for (const tile of filled) {
+          expect(tile.svg.style.mixBlendMode).toBe('screen');
+        }
+      });
+    });
+
+    it('blends the ABS fill only while there is ABS in the window', async () => {
+      await seedAbsLap();
+      // 2 km on, well clear of the stretch where ABS engaged.
+      const { container } = render(
+        <LapTracePlot
+          {...defaultProps}
+          showAbs
+          absStyle="bar"
+          carDistanceMOverride={2000}
+        />
       );
 
-      let filled: Element | undefined;
       await waitFor(() => {
-        filled = [...bar.container.querySelectorAll('path')].find(
-          (p) =>
-            p.getAttribute('fill') !== 'none' &&
-            p.getAttribute('fill') !== null &&
-            (p.getAttribute('d') ?? '').includes('Z')
+        expect(shownPoints(container, 'ghost', 'brake').length).toBeGreaterThan(
+          0
         );
-        expect(filled).toBeTruthy();
       });
-      expect((filled as SVGElement)?.style.mixBlendMode).toBe('screen');
+      const tiles = tilesOf(container, 'abs-area', 'abs-area');
+      expect(tiles.length).toBeGreaterThan(0);
+      for (const tile of tiles) {
+        expect(tile.d).toBe('');
+        expect(tile.svg.style.mixBlendMode).toBe('');
+      }
     });
   });
 
@@ -384,20 +482,18 @@ describe('LapTracePlot', () => {
     );
 
     await waitFor(() => {
-      const paths = [...container.querySelectorAll('path')];
-      expect(paths.length).toBeGreaterThan(0);
-      expect(paths.some((p) => p.getAttribute('d'))).toBe(true);
+      expect(
+        tilesOf(container, 'reference', 'throttle').length
+      ).toBeGreaterThan(0);
     });
 
-    const paths = [...container.querySelectorAll('path')];
-    const drawn = paths.filter((p) => (p.getAttribute('d') ?? '').length > 0);
-    // Throttle, brake and speed for the reference lap.
-    expect(drawn.length).toBeGreaterThanOrEqual(3);
-
-    const xs = xsOf(drawn[drawn.length - 1].getAttribute('d') ?? '');
-    expect(xs.length).toBeGreaterThan(50);
-    expect(Math.min(...xs)).toBeLessThanOrEqual(0);
-    expect(Math.max(...xs)).toBeGreaterThanOrEqual(VIEW_WIDTH);
+    for (const trace of ['throttle', 'brake', 'speed']) {
+      const tiles = tilesOf(container, 'reference', trace);
+      const xs = tiles.flatMap((t) => t.points.map((p) => p.x));
+      expect(xs.length).toBeGreaterThan(50);
+      expect(Math.min(...xs)).toBeLessThanOrEqual(0);
+      expect(Math.max(...xs)).toBeGreaterThanOrEqual(VIEW_WIDTH);
+    }
   });
 
   it('keeps x monotonic when the window straddles start/finish', async () => {
@@ -409,23 +505,57 @@ describe('LapTracePlot', () => {
       />
     );
 
-    const firstDrawn = () =>
-      [...container.querySelectorAll('path')]
-        .map((p) => p.getAttribute('d') ?? '')
-        .find((v) => v.length > 0);
-
+    // One span on screen, whatever the window straddles.
     await waitFor(() => {
-      expect(firstDrawn()).toBeTruthy();
+      expect(tilesOf(container, 'reference', 'throttle')).toHaveLength(1);
     });
 
-    const d = firstDrawn() ?? '';
-    const xs = xsOf(d);
+    const [span] = tilesOf(container, 'reference', 'throttle');
+    expect(span.offset).toBeLessThanOrEqual(0);
+    expect(span.offset + span.width).toBeGreaterThanOrEqual(VIEW_WIDTH);
+    const xs = span.points.map((p) => p.x);
     expect(xs.length).toBeGreaterThan(50);
     for (let i = 1; i < xs.length; i++) {
       expect(xs[i]).toBeGreaterThanOrEqual(xs[i - 1]);
     }
     // One continuous run through the line — no pen lift at the seam.
-    expect((d.match(/M/g) ?? []).length).toBe(1);
+    expect((span.d.match(/M/g) ?? []).length).toBe(1);
+  });
+
+  it('draws the same trace after moving onto the next span', async () => {
+    seedReference();
+    const layout = tileLayout(TRACK_LENGTH_M, 200, 200);
+    if (!layout) throw new Error('no layout');
+    // Either side of the moment the window's left edge crosses into the next
+    // tile, which is when the plot swaps the span it shows. The start/finish
+    // tile, so the new span also has to bin the line the same way.
+    const boundaryCar = layout.tileM * layout.tileCount + 200;
+    const at = async (car: number) => {
+      const { container } = render(
+        <LapTracePlot {...defaultProps} carDistanceMOverride={car} />
+      );
+      await waitFor(() =>
+        expect(tilesOf(container, 'reference', 'throttle')).toHaveLength(1)
+      );
+      const [span] = tilesOf(container, 'reference', 'throttle');
+      cleanup();
+      return span;
+    };
+    const before = await at(boundaryCar - 0.4 - TRACK_LENGTH_M);
+    const after = await at(boundaryCar + 0.4 - TRACK_LENGTH_M);
+    expect(after.offset).not.toBeCloseTo(before.offset, 0);
+
+    // The same stretch of track, seen 0.8 m apart: every point moves left by
+    // the same 2 units and nothing else changes.
+    const shift = (0.8 / 400) * VIEW_WIDTH;
+    const key = (p: Point, dx: number) =>
+      `${(p.x + dx).toFixed(0)},${p.y.toFixed(1)}`;
+    const inView = (p: Point) => p.x > 10 && p.x < VIEW_WIDTH - 10;
+    expect(after.shown.filter(inView).map((p) => key(p, shift))).toEqual(
+      before.shown
+        .filter((p) => inView({ x: p.x - shift, y: p.y }))
+        .map((p) => key(p, 0))
+    );
   });
 
   it('never draws the ghost trace ahead of the car, even when the window wraps at start/finish', async () => {
@@ -448,29 +578,22 @@ describe('LapTracePlot', () => {
     );
 
     await waitFor(() => {
-      const groups = container.querySelectorAll('svg > g');
-      const ghostGroup = groups[1];
-      const drawn = ghostGroup
-        ? [...ghostGroup.querySelectorAll('path')].some(
-            (p) => (p.getAttribute('d') ?? '').length > 0
-          )
-        : false;
-      expect(drawn).toBe(true);
+      expect(
+        shownPoints(container, 'ghost', 'throttle').length
+      ).toBeGreaterThan(0);
     });
 
-    // Reference group (groups[0]) legitimately draws ahead of the car — only
-    // the ghost/driver group (groups[1]) is under test here.
-    const ghostGroup = container.querySelectorAll('svg > g')[1];
-    const ghostXs = [...ghostGroup.querySelectorAll('path')]
-      .map((p) => p.getAttribute('d') ?? '')
-      .flatMap(xsOf);
-
+    const ghostXs = ['throttle', 'brake', 'speed'].flatMap((trace) =>
+      tilesOf(container, 'ghost', trace).flatMap((t) =>
+        t.points.map((p) => p.x)
+      )
+    );
     expect(ghostXs.length).toBeGreaterThan(0);
     for (const x of ghostXs) {
       // VIEW_WIDTH/2 is the car's x for this file's symmetric
-      // metersBehind/metersAhead=200/200 defaultProps; +0.05 tolerates the
-      // path's toFixed(1) rounding at the exact boundary.
-      expect(x).toBeLessThanOrEqual(VIEW_WIDTH / 2 + 0.05);
+      // metersBehind/metersAhead=200/200 defaultProps; +0.1 tolerates the
+      // toFixed rounding of the point and of the tile's offset.
+      expect(x).toBeLessThanOrEqual(VIEW_WIDTH / 2 + 0.1);
     }
   });
 
@@ -489,31 +612,18 @@ describe('LapTracePlot', () => {
     );
 
     await waitFor(() => {
-      const brake = ghostPathByStroke(
-        container,
-        DEFAULT_LAP_TRACE_COLORS.ghostBrake
+      expect(shownPoints(container, 'ghost', 'brake').length).toBeGreaterThan(
+        0
       );
-      expect((brake?.getAttribute('d') ?? '').length).toBeGreaterThan(0);
     });
 
     const baseline = yForNorm(0);
-    const throttle = pointsOf(
-      ghostPathByStroke(
-        container,
-        DEFAULT_LAP_TRACE_COLORS.ghostThrottle
-      )?.getAttribute('d') ?? ''
-    );
-    const brake = pointsOf(
-      ghostPathByStroke(
-        container,
-        DEFAULT_LAP_TRACE_COLORS.ghostBrake
-      )?.getAttribute('d') ?? ''
-    );
-
-    const throttleOffX = throttle.find(
+    const throttleOffX = shownPoints(container, 'ghost', 'throttle').find(
       (p) => Math.abs(p.y - baseline) < 0.2
     )?.x;
-    const brakeOnX = brake.find((p) => p.y < baseline - 1)?.x;
+    const brakeOnX = shownPoints(container, 'ghost', 'brake').find(
+      (p) => p.y < baseline - 1
+    )?.x;
     expect(throttleOffX).toBeDefined();
     expect(brakeOnX).toBeDefined();
     expect(throttleOffX as number).toBeLessThan(brakeOnX as number);
@@ -528,22 +638,14 @@ describe('LapTracePlot', () => {
       <LapTracePlot {...defaultProps} carDistanceMOverride={700} />
     );
 
-    await waitFor(() => {
-      const brake = ghostPathByStroke(
-        container,
-        DEFAULT_LAP_TRACE_COLORS.ghostBrake
-      );
-      expect((brake?.getAttribute('d') ?? '').length).toBeGreaterThan(0);
-    });
-
-    const brake = pointsOf(
-      ghostPathByStroke(
-        container,
-        DEFAULT_LAP_TRACE_COLORS.ghostBrake
-      )?.getAttribute('d') ?? ''
-    );
     const top = yForNorm(1);
-    expect(brake.some((p) => Math.abs(p.y - top) < 0.2)).toBe(true);
+    await waitFor(() => {
+      expect(
+        shownPoints(container, 'ghost', 'brake').some(
+          (p) => Math.abs(p.y - top) < 0.2
+        )
+      ).toBe(true);
+    });
   });
 
   it('leaves the traces empty until a reference lap exists', async () => {
@@ -569,6 +671,8 @@ describe('LapTracePlot', () => {
         showBrake={false}
         showSpeed={false}
         showGhost={false}
+        showBrakePointMarkers={false}
+        showThrottlePointMarkers={false}
         carDistanceMOverride={800}
       />
     );
@@ -577,9 +681,24 @@ describe('LapTracePlot', () => {
       const drawn = [...container.querySelectorAll('path')].filter(
         (p) => (p.getAttribute('d') ?? '').length > 0
       );
-      expect(drawn).toHaveLength(1);
+      expect(drawn.length).toBeGreaterThan(0);
+      for (const path of drawn) {
+        expect(path.getAttribute('data-trace')).toBe('throttle');
+        expect(path.closest('svg')?.getAttribute('data-layer')).toBe(
+          'reference'
+        );
+      }
     });
   });
+
+  /** x of every marker line on screen, in window coordinates. */
+  const markerXs = (container: HTMLElement, trace: string) =>
+    tilesOf(container, 'markers', trace).flatMap((t) =>
+      [...t.d.matchAll(/M(-?[\d.]+) /g)]
+        .map((m) => Number(m[1]))
+        .filter((x) => x >= 0 && x <= t.width)
+        .map((x) => x + t.offset)
+    );
 
   it('places brake application markers at their sub-metre position', async () => {
     const view = seedReference();
@@ -587,115 +706,100 @@ describe('LapTracePlot', () => {
     expect(brakeOnM.length).toBeGreaterThan(0);
 
     // Centre the window on the first braking point so it must be visible.
-    const target = brakeOnM[0];
     const { container } = render(
-      <LapTracePlot {...defaultProps} carDistanceMOverride={target} />
+      <LapTracePlot {...defaultProps} carDistanceMOverride={brakeOnM[0]} />
     );
 
-    await waitFor(() => {
-      const visible = [...container.querySelectorAll('line')].filter(
-        (l) => l.style.visibility === 'visible'
-      );
-      expect(visible.length).toBeGreaterThan(0);
-    });
-
-    const visible = [...container.querySelectorAll('line')].filter(
-      (l) => l.style.visibility === 'visible'
-    );
     // The marker for the point under the car sits on the car line at x=500.
-    const xs = visible.map((l) => Number(l.getAttribute('x1')));
-    expect(xs.some((x) => Math.abs(x - VIEW_WIDTH / 2) < 1)).toBe(true);
+    await waitFor(() => {
+      expect(
+        markerXs(container, 'brake-markers').some(
+          (x) => Math.abs(x - VIEW_WIDTH / 2) < 1
+        )
+      ).toBe(true);
+    });
   });
 
   it('draws markers as a dotted line through the full height of the plot', async () => {
     const view = seedReference();
-    const brakeOnM = view.events.brakeOnM[0] ?? 0;
-
     const { container } = render(
-      <LapTracePlot {...defaultProps} carDistanceMOverride={brakeOnM} />
+      <LapTracePlot
+        {...defaultProps}
+        carDistanceMOverride={view.events.brakeOnM[0] ?? 0}
+      />
     );
 
     await waitFor(() => {
-      const visible = [...container.querySelectorAll('line')].filter(
-        (l) => l.style.visibility === 'visible'
-      );
-      expect(visible.length).toBeGreaterThan(0);
+      expect(markerXs(container, 'brake-markers').length).toBeGreaterThan(0);
     });
 
-    const visible = [...container.querySelectorAll('line')].filter(
-      (l) => l.style.visibility === 'visible'
-    );
-    for (const line of visible) {
-      expect(Number(line.getAttribute('y1'))).toBe(PLOT_TOP);
-      expect(Number(line.getAttribute('y2'))).toBe(PLOT_BOTTOM);
-      expect(line.getAttribute('stroke-dasharray')).toBeTruthy();
+    for (const tile of tilesOf(container, 'markers', 'brake-markers')) {
+      // One subpath per marker, so the dash pattern starts afresh at the top
+      // of each line rather than carrying on from the one before.
+      for (const line of tile.d.match(/M[^M]+/g) ?? []) {
+        expect(line).toMatch(
+          new RegExp(`^M-?[\\d.]+ ${PLOT_TOP}V${PLOT_BOTTOM}$`)
+        );
+      }
+      const path = tile.svg.querySelector('path[data-trace="brake-markers"]');
+      expect(path?.getAttribute('stroke-dasharray')).toBeTruthy();
     }
   });
 
   it('hides markers entirely when both settings are off', async () => {
     const view = seedReference();
-    const target = view.events.brakeOnM[0] ?? 0;
-
     const { container } = render(
       <LapTracePlot
         {...defaultProps}
         showBrakePointMarkers={false}
         showThrottlePointMarkers={false}
-        carDistanceMOverride={target}
+        carDistanceMOverride={view.events.brakeOnM[0] ?? 0}
       />
     );
 
     await waitFor(() => {
-      expect(container.querySelectorAll('path').length).toBeGreaterThan(0);
+      expect(
+        tilesOf(container, 'reference', 'throttle').length
+      ).toBeGreaterThan(0);
     });
-
-    // Gridlines and the car line carry no visibility style, so anything
-    // explicitly visible would have to be a marker from the pool.
-    const visible = [...container.querySelectorAll('line')].filter(
-      (l) => l.style.visibility === 'visible'
-    );
-    expect(visible).toHaveLength(0);
+    expect(container.querySelector('svg[data-layer="markers"]')).toBe(null);
   });
 
   it('shows brake markers when only that setting is on', async () => {
     const view = seedReference();
-    const brakeOnM = view.events.brakeOnM[0] ?? 0;
-
     const { container } = render(
       <LapTracePlot
         {...defaultProps}
         showThrottlePointMarkers={false}
-        carDistanceMOverride={brakeOnM}
+        carDistanceMOverride={view.events.brakeOnM[0] ?? 0}
       />
     );
 
     await waitFor(() => {
-      const visible = [...container.querySelectorAll('line')].filter(
-        (l) => l.style.visibility === 'visible'
-      );
-      expect(visible.length).toBeGreaterThan(0);
+      expect(markerXs(container, 'brake-markers').length).toBeGreaterThan(0);
     });
+    expect(container.querySelector('path[data-trace="throttle-markers"]')).toBe(
+      null
+    );
   });
 
   it('shows throttle markers when only that setting is on', async () => {
     const view = seedReference();
     // The markers draw the filtered list, not every application.
-    const throttleOnM = view.throttlePointsM[0] ?? 0;
-
     const { container } = render(
       <LapTracePlot
         {...defaultProps}
         showBrakePointMarkers={false}
-        carDistanceMOverride={throttleOnM}
+        carDistanceMOverride={view.throttlePointsM[0] ?? 0}
       />
     );
 
     await waitFor(() => {
-      const visible = [...container.querySelectorAll('line')].filter(
-        (l) => l.style.visibility === 'visible'
-      );
-      expect(visible.length).toBeGreaterThan(0);
+      expect(markerXs(container, 'throttle-markers').length).toBeGreaterThan(0);
     });
+    expect(container.querySelector('path[data-trace="brake-markers"]')).toBe(
+      null
+    );
   });
 
   it('labels the window extents relative to the car', () => {
@@ -708,27 +812,164 @@ describe('LapTracePlot', () => {
     expect(getByText('+200m')).toBeTruthy();
   });
 
-  it('pre-renders a fixed gear label pool so no node is created per frame', () => {
-    seedReference();
-    const { getByTestId } = render(
-      <LapTracePlot {...defaultProps} carDistanceMOverride={800} />
-    );
-
-    const labels = getByTestId('gear-labels').querySelectorAll('span');
-    expect(labels.length).toBe(MAX_GEAR_LABELS);
-  });
-
-  it('positions gear labels once the plot has been measured', async () => {
-    seedReference();
+  it('labels each gear change once, without measuring the plot', async () => {
+    const view = seedReference();
     const { getByTestId } = render(
       <LapTracePlot {...defaultProps} carDistanceMOverride={340} />
     );
 
-    // jsdom reports a zero client width and has no ResizeObserver, so labels
-    // stay hidden — the guard against dividing by an unmeasured width.
+    const shownTiles = () =>
+      [
+        ...getByTestId('gear-labels').querySelectorAll<HTMLDivElement>(
+          ':scope > div'
+        ),
+      ].filter((el) => el.style.display !== 'none');
     await waitFor(() => {
-      const labels = [...getByTestId('gear-labels').querySelectorAll('span')];
-      expect(labels.every((el) => el.style.visibility === 'hidden')).toBe(true);
+      expect(shownTiles().length).toBeGreaterThan(0);
+      expect(
+        shownTiles().some((el) => el.querySelectorAll('span').length > 0)
+      ).toBe(true);
+    });
+
+    // Every change in the span on screen is labelled, once.
+    const layout = tileLayout(TRACK_LENGTH_M, 200, 200);
+    if (!layout) throw new Error('no layout');
+    expect(shownTiles()).toHaveLength(1);
+    const start = Math.floor((340 - 200) / layout.tileM) * layout.tileM;
+    const inSpan = [...view.gearChangeM].filter(
+      (m) => m >= start && m < start + layout.spanM
+    );
+    expect(shownTiles()[0].querySelectorAll('span')).toHaveLength(
+      inSpan.length
+    );
+  });
+
+  describe('spans', () => {
+    const referenceTransforms = (container: HTMLElement) =>
+      tilesOf(container, 'reference', 'throttle').map(
+        (t) => t.svg.style.transform
+      );
+    const traceDs = (container: HTMLElement, layer: Layer) =>
+      tilesOf(container, layer, 'throttle').map((t) => t.d);
+
+    it('slides the reference as the car moves, and redraws only the driver', async () => {
+      await useLapTraceStore
+        .getState()
+        .initialize(undefined, 1, '', 'car', TRACK_LENGTH_M);
+      seedReference();
+      pushGhost(everyMetres(1000, 1, () => ({ throttle: 1 })));
+      const moveTo = sampleBridge();
+      const { container } = render(<LapTracePlot {...defaultProps} />);
+      moveTo(1000 / TRACK_LENGTH_M);
+      await waitFor(() =>
+        expect(traceDs(container, 'ghost').some((d) => d !== '')).toBe(true)
+      );
+      const transforms = referenceTransforms(container);
+      const reference = traceDs(container, 'reference');
+      const ghost = traceDs(container, 'ghost');
+
+      // 5 m on, still inside the same span.
+      pushGhost(everyMetres(1005, 1, () => ({ throttle: 0.5 }), 1001));
+      moveTo(1005 / TRACK_LENGTH_M);
+      await waitFor(() =>
+        expect(referenceTransforms(container)).not.toEqual(transforms)
+      );
+      expect(traceDs(container, 'reference')).toEqual(reference);
+      expect(traceDs(container, 'ghost')).not.toEqual(ghost);
+    });
+
+    it('builds the next span ahead of the car', async () => {
+      seedReference();
+      const { container } = render(
+        <LapTracePlot {...defaultProps} carDistanceMOverride={800} />
+      );
+      const all = () =>
+        [
+          ...container.querySelectorAll<SVGSVGElement>(
+            'svg[data-layer="reference"]'
+          ),
+        ].map(
+          (svg) =>
+            svg
+              .querySelector('path[data-trace="throttle"]')
+              ?.getAttribute('d') ?? ''
+        );
+      // The span on screen and, a frame later, the one after it.
+      await waitFor(() => expect(all().every((d) => d !== '')).toBe(true));
+      expect(tilesOf(container, 'reference', 'throttle')).toHaveLength(1);
+    });
+  });
+
+  describe('frame scheduling', () => {
+    const referenceThrottle = (container: HTMLElement) =>
+      tilesOf(container, 'reference', 'throttle')
+        .map((t) => t.d)
+        .find((d) => d.length > 0) ?? '';
+
+    it('asks for no frames while nothing changes', async () => {
+      seedReference();
+      const moveTo = sampleBridge();
+      const { container } = render(<LapTracePlot {...defaultProps} />);
+      moveTo(0.2);
+      await waitFor(() => expect(referenceThrottle(container)).not.toBe(''));
+
+      const raf = vi.spyOn(window, 'requestAnimationFrame');
+      await nextFrames(10);
+
+      expect(raf).not.toHaveBeenCalled();
+    });
+
+    it('draws a reference that arrives with no telemetry', async () => {
+      useLapTraceStore.setState({ trackLengthM: TRACK_LENGTH_M });
+      const { container } = render(
+        <LapTracePlot {...defaultProps} carDistanceMOverride={800} />
+      );
+      await nextFrames(3);
+      expect(referenceThrottle(container)).toBe('');
+
+      seedReference();
+
+      await waitFor(() => expect(referenceThrottle(container)).not.toBe(''));
+    });
+
+    it('writes no gear label as the car moves past them', async () => {
+      seedReference();
+      const moveTo = sampleBridge();
+      const { getByTestId } = render(<LapTracePlot {...defaultProps} />);
+      // 340 m into the synthetic lap, where the window holds gear changes.
+      moveTo(340 / TRACK_LENGTH_M);
+      const container = getByTestId('gear-labels');
+      const tiles = () =>
+        [...container.querySelectorAll<HTMLDivElement>(':scope > div')].filter(
+          (el) => el.style.display !== 'none'
+        );
+      await waitFor(() =>
+        expect(
+          [...container.querySelectorAll(':scope > div')].every(
+            (el) => el.querySelectorAll('span').length > 0
+          )
+        ).toBe(true)
+      );
+      const before = tiles().map((el) => el.style.transform);
+
+      const mutations: MutationRecord[] = [];
+      const observer = new MutationObserver((records) =>
+        mutations.push(...records)
+      );
+      observer.observe(tiles()[0], {
+        subtree: true,
+        childList: true,
+        characterData: true,
+      });
+      // A metre on: the labels move with their tile, and nothing is written
+      // to them.
+      moveTo(341 / TRACK_LENGTH_M);
+      await waitFor(() =>
+        expect(tiles().map((el) => el.style.transform)).not.toEqual(before)
+      );
+      observer.disconnect();
+
+      expect(mutations).toEqual([]);
     });
   });
 
@@ -745,17 +986,20 @@ describe('LapTracePlot', () => {
         />
       );
 
-      const groups = container.querySelectorAll('svg > g');
-      expect(groups.length).toBeGreaterThanOrEqual(2);
+      const refGroup = container.querySelector(
+        'svg[data-layer="reference"] > g'
+      );
+      const driverGroup = container.querySelector(
+        'svg[data-layer="ghost"] > g'
+      );
 
-      const refGroup = groups[0];
-      const driverGroup = groups[1];
+      expect(refGroup?.getAttribute('stroke-opacity')).toBe('0.6');
+      expect(driverGroup?.getAttribute('stroke-opacity')).toBe('0.8');
 
-      expect(refGroup.getAttribute('stroke-opacity')).toBe('0.6');
-      expect(driverGroup.getAttribute('stroke-opacity')).toBe('0.8');
-
-      const refThrottlePath = refGroup.querySelectorAll('path')[1];
-      expect(refThrottlePath.getAttribute('fill-opacity')).toBe(
+      const refThrottlePath = refGroup?.querySelector(
+        'path[data-trace="throttle"]'
+      );
+      expect(refThrottlePath?.getAttribute('fill-opacity')).toBe(
         String(0.35 * 0.6)
       );
     });

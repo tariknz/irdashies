@@ -76,4 +76,39 @@ describe('TrackStateProcessor', () => {
       version: 1,
     });
   });
+
+  it("carries LMU's not-in-a-session flag, and drops it on disconnect", () => {
+    const processor = new TrackStateProcessor();
+    processor.onFrame(frame({}));
+    expect(processor.snapshot().notInSession).toBe(false);
+
+    processor.onFrame(frame({ LmuNotInSession: [true] }));
+    expect(processor.snapshot().notInSession).toBe(true);
+
+    processor.onLifecycle({ type: 'disconnect' });
+    expect(processor.snapshot().notInSession).toBe(false);
+  });
+
+  it("carries LMU's out-of-car flag beside live pit flags, and drops it on disconnect", () => {
+    const processor = new TrackStateProcessor();
+    processor.onFrame(frame({}));
+    expect(processor.snapshot().outOfCar).toBe(false);
+
+    // At the monitor with the car in its pit stall: both stand as reported.
+    processor.onFrame(
+      frame({
+        LmuOutOfCar: [true],
+        OnPitRoad: [true],
+        PlayerCarInPitStall: [true],
+      })
+    );
+    expect(processor.snapshot()).toMatchObject({
+      outOfCar: true,
+      onPitRoad: true,
+      playerCarInPitStall: true,
+    });
+
+    processor.onLifecycle({ type: 'disconnect' });
+    expect(processor.snapshot().outOfCar).toBe(false);
+  });
 });

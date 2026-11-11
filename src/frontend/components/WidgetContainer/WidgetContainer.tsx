@@ -7,6 +7,7 @@ import {
   useMemo,
   CSSProperties,
 } from 'react';
+import { createPortal } from 'react-dom';
 import type { DashboardWidget, WidgetLayout } from '@irdashies/types';
 import { WidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import { useDragWidget } from './useDragWidget';
@@ -14,6 +15,8 @@ import { useResizeWidget } from './useResizeWidget';
 import { ResizeHandles } from './ResizeHandle';
 import { EdgeDistanceLabels } from './EdgeDistanceLabels';
 import { useEdgeDistances } from './useEdgeDistances';
+import { CenterGuide } from './CenterGuide';
+import { displayCenterX } from './displayCenter';
 import { getWidgetName } from '../../constants/widgetNames';
 import { ResizeIcon, GearIcon, XIcon } from '@phosphor-icons/react';
 import { useContainerOffset, useDashboard } from '@irdashies/context';
@@ -94,11 +97,12 @@ export const WidgetContainer = memo(
       }
     }, [id, onLayoutChange]);
 
-    const { isDragging, dragHandleProps } = useDragWidget({
+    const { isDragging, showCenterGuide, dragHandleProps } = useDragWidget({
       layout: localLayout,
       onLayoutChange: handleLayoutChange,
       enabled: editMode,
       snapOptions: gridSnapOptions,
+      centerX: snapBounds ? displayCenterX(snapBounds) : undefined,
     });
 
     const { isResizing, getResizeHandleProps } = useResizeWidget({
@@ -271,6 +275,16 @@ export const WidgetContainer = memo(
             {pixelDistances && edgeDistances && (
               <EdgeDistanceLabels distances={edgeDistances} />
             )}
+
+            {/* The display's middle, while dragging near it. Portalled out:
+                the transform on this container would otherwise make the
+                fixed line relative to the widget rather than the window. */}
+            {showCenterGuide &&
+              snapBounds &&
+              createPortal(
+                <CenterGuide bounds={snapBounds} offset={containerOffset} />,
+                document.body
+              )}
           </>
         )}
       </div>

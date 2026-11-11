@@ -1,5 +1,9 @@
 import { memo, type ReactNode } from 'react';
-import { lmuPenaltyBadgeText, type LmuPenaltyKind } from '@irdashies/types';
+import {
+  lmuPenaltyBadgeText,
+  type LmuFinishState,
+  type LmuPenaltyKind,
+} from '@irdashies/types';
 import { formatTime } from '@irdashies/utils/time';
 
 interface StatusBadgeProps {
@@ -8,12 +12,6 @@ interface StatusBadgeProps {
   animate?: boolean;
   children: ReactNode;
   additionalClasses?: string;
-  /**
-   * An exact background, for a badge whose colour is specified rather than
-   * chosen. Inline because it is a fixed hex, not a palette step: Tailwind's
-   * red-500 is #ef4444 and the penalty badge is specified as #FF0000.
-   */
-  backgroundColor?: string;
 }
 
 const StatusBadge = ({
@@ -22,7 +20,6 @@ const StatusBadge = ({
   animate,
   children,
   additionalClasses = '',
-  backgroundColor,
 }: StatusBadgeProps) => {
   const baseClasses =
     'text-xs border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight';
@@ -31,7 +28,6 @@ const StatusBadge = ({
   return (
     <span
       className={`${textColor} ${baseClasses} ${borderColorClass} ${animationClass} ${additionalClasses}`}
-      style={backgroundColor ? { backgroundColor } : undefined}
     >
       {children}
     </span>
@@ -40,6 +36,39 @@ const StatusBadge = ({
 
 // Shared classes for penalty / slowdown / meatball — matches original penalty badge dimensions
 const flagBadgeClasses = 'bg-black/80 inline-block min-w-6';
+
+/** The black squares of a 5 x 4 checkered flag, one unit each. */
+const CHECKERED_SQUARES = Array.from({ length: 20 }, (_, i) => ({
+  x: i % 5,
+  y: Math.floor(i / 5),
+})).filter(({ x, y }) => (x + y) % 2 === 0);
+
+/**
+ * The finished car's checkered flag, as a badge of its own.
+ *
+ * Drawn here rather than taken from Phosphor, an exception to the icon rule
+ * in AGENTS.md: Phosphor's FlagCheckered is not visible enough at badge size.
+ *
+ * As tall as a DT or SG badge beside it, whose colour fills its 2px border
+ * too: StatusBadge's line height plus that border. So the flag matches the
+ * badges and the row keeps its height.
+ */
+const CheckeredFlagBadge = () => (
+  <span className="inline-flex text-xs leading-tight">
+    <svg
+      viewBox="0 0 5 4"
+      className="h-[calc(1.25em+4px)] w-auto"
+      role="img"
+      aria-label="Finished"
+      data-testid="finish-flag"
+    >
+      <rect width="5" height="4" fill="white" />
+      {CHECKERED_SQUARES.map(({ x, y }) => (
+        <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" fill="black" />
+      ))}
+    </svg>
+  </span>
+);
 
 interface DriverStatusBadgesProps {
   /**
@@ -57,6 +86,13 @@ interface DriverStatusBadgesProps {
    * other two, which are served on track rather than paid in time.
    */
   penaltySeconds?: number;
+  /**
+   * LMU's finish status. A finished car gets a checkered flag, as iRacing
+   * shows one, beside any penalty badge it still carries. DNF and DQ are
+   * written out in the penalty badge's style and take its place: once a car
+   * is out, a penalty has nothing left to say.
+   */
+  finishState?: LmuFinishState;
   repair?: boolean;
   penalty?: boolean;
   slowdown?: boolean;
@@ -79,6 +115,7 @@ export const DriverStatusBadges = memo(
   ({
     penaltyKind,
     penaltySeconds,
+    finishState,
     repair,
     penalty,
     slowdown,
@@ -97,7 +134,14 @@ export const DriverStatusBadges = memo(
     isMinimal = false,
   }: DriverStatusBadgesProps) => {
     const muted = 'border-transparent';
+    // A car that is out says so in the penalty badge's place: once it is
+    // out, a penalty has nothing left to say.
+    const redBadgeText =
+      finishState === 'DNF' || finishState === 'DQ'
+        ? finishState
+        : penaltyKind && lmuPenaltyBadgeText(penaltyKind, penaltySeconds);
     const hasStatus =
+      finishState ||
       penaltyKind ||
       penalty ||
       slowdown ||
@@ -137,14 +181,18 @@ export const DriverStatusBadges = memo(
       <div
         className={`flex flex-row-reverse items-center gap-0.5 ${className}`}
       >
-        {penaltyKind && (
+        {/* First, so the reversed row draws it rightmost and a penalty
+            badge keeps its own place beside it. */}
+        {finishState === 'FINISHED' && <CheckeredFlagBadge />}
+        {redBadgeText && (
           <StatusBadge
             textColor="text-white"
             borderColorClass="border-transparent"
-            additionalClasses="inline-block min-w-6 font-bold"
-            backgroundColor="#FF0000"
+            // An exact red, as specified for the penalty badge: Tailwind's
+            // red-500 is #ef4444.
+            additionalClasses="inline-block min-w-6 font-bold bg-[#FF0000]"
           >
-            {lmuPenaltyBadgeText(penaltyKind, penaltySeconds)}
+            {redBadgeText}
           </StatusBadge>
         )}
         {penalty && (

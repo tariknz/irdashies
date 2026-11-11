@@ -1,9 +1,10 @@
-import { numberOptions } from './properties';
+import { numberOptions, timeFormatOptions } from './properties';
 import { defineWidgetManifest } from './types';
 
 export default defineWidgetManifest({
   id: 'relative',
   name: 'Relative',
+  category: 'Standings',
   enabled: true,
   layout: {
     x: 7,
@@ -83,6 +84,12 @@ export default defineWidgetManifest({
       numLaps: 3,
       decimalPlaces: 1,
     },
+    avgLapTime: {
+      enabled: false,
+      numLaps: 5,
+      timeFormat: 'mixed',
+      excludePitLaps: false,
+    },
     pushToPass: { enabled: false },
     // Off by default: only LMU reports these, so on iRacing the column
     // would be permanently blank.
@@ -108,6 +115,7 @@ export default defineWidgetManifest({
       'lastTime',
       'compound',
       'lapTimeDeltas',
+      'avgLapTime',
       'trackLimits',
       'lmuVirtualEnergy',
       'pushToPass',
@@ -319,6 +327,27 @@ export default defineWidgetManifest({
     },
   },
   properties: {
+    'avgLapTime.numLaps': {
+      type: 'number',
+      control: 'input',
+      label: 'Laps to Average',
+      description:
+        'Uses the available laps until the selected count is recorded.',
+      min: 1,
+      max: 100,
+      step: 1,
+    },
+    'avgLapTime.timeFormat': {
+      type: 'enum',
+      label: 'Time Format',
+      options: timeFormatOptions,
+    },
+    'avgLapTime.excludePitLaps': {
+      type: 'boolean',
+      label: 'Exclude in-laps and out-laps',
+      description:
+        'Average the most recent eligible laps, skipping laps that include pit road. Opponent incident invalidations are not available in iRacing.',
+    },
     buffer: {
       type: 'enum',
       control: 'select',

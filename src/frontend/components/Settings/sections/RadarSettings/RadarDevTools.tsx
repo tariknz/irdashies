@@ -99,7 +99,7 @@ const wrongSettings = (settings: Record<string, unknown>): string[] => {
 };
 
 const BUTTON =
-  'px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors';
+  'px-3 py-1 text-sm bg-settings-control hover:bg-settings-hover text-slate-300 rounded-md transition-colors';
 
 /** The radar config as JSON, to copy out or paste back in. */
 export const ConfigJson = ({
@@ -161,7 +161,7 @@ export const ConfigJson = ({
       <textarea
         aria-label="Radar settings as JSON"
         spellCheck={false}
-        className="w-full h-48 rounded-md bg-slate-900 text-slate-200 font-mono text-xs p-2 border border-slate-700"
+        className="settings-field w-full h-48 font-mono"
         value={text}
         onChange={(e) => {
           setText(e.target.value);

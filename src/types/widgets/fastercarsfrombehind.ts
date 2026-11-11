@@ -4,13 +4,14 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'fastercarsfrombehind',
   name: 'Faster Cars From Behind',
+  category: 'Spotter & Safety',
   menuLabel: 'Faster Cars Behind',
   enabled: false,
   layout: {
     x: 588,
     y: 44,
     width: 405,
-    height: 43,
+    height: 120,
   },
   config: {
     distanceThreshold: -1.5,

@@ -9,6 +9,7 @@
 import fs from 'fs';
 import path from 'path';
 import https from 'https';
+import { getFreshBundleAgeMs } from './lovely-bundle-cache';
 
 interface CarManifestEntry {
   carName: string;
@@ -45,29 +46,20 @@ const OUTPUT_FILE = path.join(DATA_DIR, 'cars-bundle.json');
 // Check if force flag is passed
 const FORCE_FETCH = process.argv.includes('--force');
 
-// Max age: 7 days in milliseconds
-const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
-
 /**
  * Check if the bundle file exists and is recent enough
  */
-function shouldSkipFetch(): boolean {
+async function shouldSkipFetch(): Promise<boolean> {
   if (FORCE_FETCH) {
     console.log('🔄 Force flag detected, fetching fresh data...\n');
     return false;
   }
 
-  if (!fs.existsSync(OUTPUT_FILE)) {
-    console.log('📦 No existing bundle found, fetching...\n');
-    return false;
-  }
-
-  const stats = fs.statSync(OUTPUT_FILE);
-  const age = Date.now() - stats.mtimeMs;
-
-  if (age > MAX_AGE_MS) {
-    const daysOld = Math.floor(age / (24 * 60 * 60 * 1000));
-    console.log(`📦 Bundle is ${daysOld} days old, fetching fresh data...\n`);
+  const age = await getFreshBundleAgeMs(OUTPUT_FILE);
+  if (age === null) {
+    console.log(
+      'Bundle is missing, stale, or has an invalid fetch timestamp; fetching fresh data...\n'
+    );
     return false;
   }
 
@@ -218,7 +210,7 @@ function saveBundle(bundle: CarDataBundle): void {
 async function main(): Promise<void> {
   try {
     // Skip if bundle exists and is recent
-    if (shouldSkipFetch()) {
+    if (await shouldSkipFetch()) {
       return;
     }
 

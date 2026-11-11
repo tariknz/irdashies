@@ -16,6 +16,7 @@ export interface InputProps {
   unit?: number;
   steer?: number;
   brakeAbsActive?: boolean;
+  traceTick?: number;
   settings: InputWidgetSettings['config'];
   /** Background colour while the shift flash is on. */
   flashColor?: string;
@@ -59,6 +60,7 @@ const LayoutNodeView = ({ node, renderElement }: LayoutNodeViewProps) => {
   );
 };
 
+/** Render the configured layout tree, feeding each element its selected inputs. */
 export const InputContainer = memo(
   ({
     brake,
@@ -69,22 +71,22 @@ export const InputContainer = memo(
     steer,
     unit,
     brakeAbsActive,
+    traceTick,
     settings,
     flashColor,
     gearFlashColor,
   }: InputProps) => {
     const tree = useMemo(() => getInputLayoutTree(settings), [settings]);
 
+    const traceInput = useMemo(
+      () => ({ brake, throttle, clutch, brakeAbsActive, steer, traceTick }),
+      [brake, throttle, clutch, brakeAbsActive, steer, traceTick]
+    );
     const renderElement = useCallback(
       (id: string) => {
         switch (id) {
           case 'trace':
-            return (
-              <InputTrace
-                input={{ brake, throttle, clutch, brakeAbsActive, steer }}
-                settings={settings.trace}
-              />
-            );
+            return <InputTrace input={traceInput} settings={settings.trace} />;
           case 'bar':
             return (
               <InputBar
@@ -132,6 +134,7 @@ export const InputContainer = memo(
         }
       },
       [
+        traceInput,
         brake,
         throttle,
         clutch,

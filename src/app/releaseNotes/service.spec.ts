@@ -4,6 +4,7 @@ import {
   advanceInstalledVersion,
   createReleaseNotesService,
   fetchGitHubRelease,
+  fetchGitHubReleases,
 } from './service';
 import { compareVersions, normalizeVersion } from './version';
 import {
@@ -291,5 +292,157 @@ describe('GitHub fetching and offline cache', () => {
     expect(results.every((result) => result.status === 'ready')).toBe(true);
     await service.getRelease('2.1.0');
     expect(fetchRelease).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('release history', () => {
+  const summary = (version: string) => ({
+    version,
+    title: `irDashies ${version}`,
+    publishedAt: null,
+  });
+  it('fetches a page of public versions, excluding drafts and invalid tags', async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        Response.json([
+          { tag_name: 'v2.1.0', name: 'Current release' },
+          { tag_name: '2.0.0', name: 'Older release' },
+          { tag_name: 'v2.2.0-beta.1', name: 'Beta' },
+          { tag_name: 'v3.0.0', name: 'Draft', draft: true },
+          { tag_name: '../../private' },
+        ])
+      );
+    expect(await fetchGitHubReleases(2, fetcher)).toEqual({
+      status: 'ready',
+      releases: [
+        { ...summary('2.1.0'), title: 'Current release' },
+        { ...summary('2.0.0'), title: 'Older release' },
+        { ...summary('2.2.0-beta.1'), title: 'Beta' },
+      ],
+      hasMore: false,
+      cached: false,
+    });
+    expect(fetcher.mock.calls[0][0]).toBe(
+      'https://api.github.com/repos/tariknz/irdashies/releases?per_page=30&page=2'
+    );
+  });
+  it('continues past full pages even when some tags are unsupported', async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async () =>
+        Response.json(
+          Array.from({ length: 30 }, () => ({ tag_name: 'unsupported' }))
+        )
+      );
+    expect(await fetchGitHubReleases(1, fetcher)).toMatchObject({
+      releases: [],
+      hasMore: true,
+    });
+    expect(await fetchGitHubReleases(100, fetcher)).toMatchObject({
+      hasMore: false,
+    });
+  });
+  it('handles rate limits, malformed and oversized history responses', async () => {
+    for (const response of [
+      new Response('', { status: 429 }),
+      Response.json({ message: 'invalid' }),
+      new Response('{'),
+      new Response('x'.repeat(10_000_001)),
+    ]) {
+      expect(
+        await fetchGitHubReleases(
+          1,
+          vi.fn<typeof fetch>().mockResolvedValue(response)
+        )
+      ).toEqual({ status: 'unavailable', reason: 'offline' });
+    }
+  });
+  it('deduplicates history requests and permits only discovered or cached versions', async () => {
+    const fetchReleases = vi.fn().mockResolvedValue({
+      status: 'ready',
+      releases: [summary('2.0.0')],
+      hasMore: false,
+      cached: false,
+    });
+    const fetchRelease = vi.fn(async (version: string) => ({
+      status: 'ready' as const,
+      release: releaseNotesFixture(version),
+      cached: false,
+    }));
+    const service = makeService(memoryStore(), { fetchReleases, fetchRelease });
+    await expect(service.getRelease('2.0.0')).rejects.toThrow();
+    await Promise.all([service.getReleases(1), service.getReleases(1)]);
+    await service.getReleases(1);
+    expect(fetchReleases).toHaveBeenCalledOnce();
+    expect(await service.getRelease('2.0.0')).toMatchObject({
+      status: 'ready',
+      release: { version: '2.0.0' },
+    });
+    await expect(service.getRelease('1.0.0')).rejects.toThrow();
+    for (const invalid of [0, -1, 1.5, 101, '1', undefined, NaN])
+      await expect(service.getReleases(invalid)).rejects.toThrow(
+        'Invalid release history page'
+      );
+  });
+  it('falls back to saved versions offline and retries the history request', async () => {
+    const fetchReleases = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue({
+        status: 'ready',
+        releases: [summary('1.9.0')],
+        hasMore: true,
+        cached: false,
+      });
+    const fetchRelease = vi
+      .fn()
+      .mockResolvedValue({ status: 'unavailable', reason: 'offline' });
+    const service = makeService(
+      memoryStore({
+        ...upgraded(),
+        cache: [releaseNotesFixture('2.0.0'), releaseNotesFixture()],
+      }),
+      { fetchReleases, fetchRelease }
+    );
+    expect(await service.getReleases(1)).toMatchObject({
+      status: 'ready',
+      cached: true,
+      hasMore: false,
+      releases: [{ version: '2.1.0' }, { version: '2.0.0' }],
+    });
+    expect(await service.getRelease('2.0.0')).toMatchObject({
+      status: 'ready',
+      cached: true,
+    });
+    expect(await service.getReleases(1)).toMatchObject({
+      status: 'ready',
+      cached: false,
+      hasMore: true,
+    });
+    expect(await service.getRelease('1.9.0')).toMatchObject({
+      status: 'unavailable',
+    });
+  });
+  it('does not acknowledge an update while reading older notes', async () => {
+    const service = makeService(memoryStore(upgraded()), {
+      fetchReleases: async () => ({
+        status: 'ready',
+        releases: [summary('2.0.0')],
+        hasMore: false,
+        cached: false,
+      }),
+      fetchRelease: async (version) => ({
+        status: 'ready',
+        release: releaseNotesFixture(version),
+        cached: false,
+      }),
+    });
+    await service.getReleases(1);
+    await service.getRelease('2.0.0');
+    expect(await service.getStatus()).toMatchObject({
+      unreadVersion: '2.1.0',
+      pendingVersion: '2.1.0',
+    });
   });
 });

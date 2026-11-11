@@ -157,15 +157,22 @@ export interface ActiveLap {
    */
   incidentCountAtStart: number;
   /**
-   * LapLastLapTime and LapCompleted as they stood on the previous frame.
-   * Frame memory, not lap state: they are deliberately left alone by
-   * `resetActiveLap`, because a crossing needs to know what the official time
-   * was showing *before* that frame. iRacing can publish the finished lap's
-   * time in the very frame the line is crossed, and taking the crossing
-   * frame's value as the baseline would make the lap wait for a change that
-   * only the next lap's time can supply.
+   * LapLastLapTime as it stood on the last frame before LAP_END_PCT: what the
+   * official time was showing while this lap was being driven, which a
+   * crossing compares against to recognise the lap's own time.
+   *
+   * Not the frame before the crossing. The finished lap's time can arrive
+   * before the crossing frame -- iRacing can publish it in that very frame,
+   * and on LMU the lap counter, and the time with it, flips a couple of
+   * metres before the distance the recorder follows reaches the line -- and
+   * any baseline taken after it would make the lap wait for a change that only
+   * the next lap's time can supply. By 95% of the lap the previous lap's time,
+   * however late, has long arrived.
+   *
+   * Frame memory, not lap state: left alone by `resetActiveLap`.
    */
-  prevLastLapTime: number;
+  lastLapTimeOnLap: number;
+  /** LapCompleted as it stood on the previous frame. */
   prevLapCompleted: number;
   /**
    * The sim's lap-void flag as it stood on the previous frame. Frame memory
@@ -364,7 +371,7 @@ function createActiveLap(): ActiveLap {
     // The first frame classifies the lap properly (out-lap, partial, clean).
     invalidReason: null,
     incidentCountAtStart: 0,
-    prevLastLapTime: -1,
+    lastLapTimeOnLap: -1,
     prevLapCompleted: -1,
     prevSimLapInvalidated: false,
     speedMinMs: Number.POSITIVE_INFINITY,
@@ -804,11 +811,11 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
           set({
             pendingBest: {
               record,
-              // The previous frame's value, not this one's: iRacing can
-              // publish the finished lap's official time in the same frame
-              // the line is crossed, and a baseline taken from that frame
-              // would hide the very change being waited for.
-              lastLapTimeAtBoundary: lap.prevLastLapTime,
+              // The value from before the end of the lap, not this frame's:
+              // the finished lap's official time can already be showing
+              // here, and a baseline taken after it would hide the very
+              // change being waited for. See `lastLapTimeOnLap`.
+              lastLapTimeAtBoundary: lap.lastLapTimeOnLap,
               incidentCountAtBoundary: incidentCount,
               simInvalidatedLate: false,
               lapCompletedAtBoundary: lapCompleted,
@@ -905,7 +912,7 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
 
     lap.lastTrackedPct = pct;
     lap.lastTrackedTime = sessionTime;
-    lap.prevLastLapTime = lastLapTime;
+    if (pct < LAP_END_PCT) lap.lastLapTimeOnLap = lastLapTime;
     lap.prevLapCompleted = lapCompleted;
     lap.prevSimLapInvalidated = simLapInvalidated;
   },
@@ -1201,13 +1208,19 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
   },
 }));
 
-/** Progress through the lap currently being recorded, 0..1. */
-export const useLapTraceRecordingProgress = (): number =>
+/**
+ * Progress through the lap currently being recorded, in whole percent: what
+ * the widget shows, so it re-renders once per percent rather than on every
+ * notification of the lap in progress.
+ */
+export const useLapTraceRecordingPercent = (): number =>
   useLapTraceStore((s) =>
     s.activeLap && s.trackLengthM > 0
-      ? Math.min(
-          1,
-          Math.max(0, s.activeLap.samples.lastDistanceM()) / s.trackLengthM
+      ? Math.round(
+          Math.min(
+            1,
+            Math.max(0, s.activeLap.samples.lastDistanceM()) / s.trackLengthM
+          ) * 100
         )
       : 0
   );
@@ -1219,7 +1232,7 @@ export const useLapTraceRecordingProgress = (): number =>
  * Returns a primitive on purpose. `activeLap` is mutated in place and
  * republished under the same object identity, so a selector returning the lap
  * itself would never re-render — the same reason
- * `useLapTraceRecordingProgress` returns a number.
+ * `useLapTraceRecordingPercent` returns a number.
  */
 export const useLapTraceInvalidReason = (): LapInvalidReason | null =>
   useLapTraceStore((s) => s.activeLap?.invalidReason ?? null);

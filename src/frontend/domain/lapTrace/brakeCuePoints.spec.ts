@@ -72,11 +72,26 @@ describe('selectBrakeCuePoints', () => {
         offM: 1040,
         entrySpeedMs: 60,
         minSpeedMs: 56,
-        peakBrake: 0.08,
+        peakBrake: 0.04,
       },
     ]);
 
+    // Under the 5% default; an 8% brush needs the setting raised.
     expect(selectBrakeCuePoints(lap).length).toBe(0);
+    expect(
+      selectBrakeCuePoints(
+        lapWith([
+          {
+            onM: 1000,
+            offM: 1040,
+            entrySpeedMs: 60,
+            minSpeedMs: 56,
+            peakBrake: 0.08,
+          },
+        ]),
+        { minPeak: 0.12 }
+      ).length
+    ).toBe(0);
   });
 
   it('drops a hard stab that does not actually slow the car', () => {
@@ -155,18 +170,27 @@ describe('selectBrakeCuePoints', () => {
         offM: 1060,
         entrySpeedMs: 60,
         minSpeedMs: 52,
-        peakBrake: 0.1,
+        peakBrake: 0.04,
       },
     ]);
 
-    expect(Array.from(selectBrakeCuePoints(lap, { minPeak: 0.05 }))).toEqual([
+    // 0 leaves only the speed floor, and this application slows the car.
+    expect(Array.from(selectBrakeCuePoints(lap, { minPeak: 0 }))).toEqual([
       1000,
     ]);
     expect(selectBrakeCuePoints(lap, { minPeak: 0.25 }).length).toBe(0);
-    // Absent or nonsensical options fall back to the default, which rejects it.
+    // Absent or nonsensical options fall back to the 5% default, which
+    // rejects it.
     expect(selectBrakeCuePoints(lap).length).toBe(0);
     expect(selectBrakeCuePoints(lap, {}).length).toBe(0);
     expect(selectBrakeCuePoints(lap, { minPeak: Number.NaN }).length).toBe(0);
+  });
+
+  it('still drops a stab that does not slow the car at 0%', () => {
+    const lap = lapWith([
+      { onM: 1000, offM: 1015, entrySpeedMs: 60, minSpeedMs: 58.7 },
+    ]);
+    expect(selectBrakeCuePoints(lap, { minPeak: 0 }).length).toBe(0);
   });
 
   it('keeps two genuinely separate corners', () => {

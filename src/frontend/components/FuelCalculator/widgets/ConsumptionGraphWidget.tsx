@@ -1,5 +1,6 @@
 import { formatFuel } from '../fuelCalculations';
 import { FuelLapData } from '../types';
+import { demoFuelGraph } from '../demoData';
 
 export interface ConsumptionGraphData {
   maxFuel: number;
@@ -40,17 +41,7 @@ export const ConsumptionGraphWidget = ({
     !graphData || !graphData.fuelValues || graphData.fuelValues.length < 2;
 
   // Use dummy graph data for placeholder in edit mode or when no data
-  const effectiveGraphData =
-    !isDummy && graphData
-      ? graphData
-      : {
-          maxFuel: 3.5,
-          avgFuel: 2.8,
-          fuelValues: [
-            2.5, 3.1, 2.7, 3.4, 2.9, 3.0, 2.6, 3.2, 2.8, 3.0, 2.5, 3.1, 2.7,
-            3.4, 2.9,
-          ],
-        };
+  const effectiveGraphData = !isDummy && graphData ? graphData : demoFuelGraph;
 
   const { maxFuel, avgFuel, fuelValues } = effectiveGraphData;
 

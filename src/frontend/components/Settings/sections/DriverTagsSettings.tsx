@@ -9,6 +9,7 @@ import {
   CaretDownIcon,
   MagnifyingGlassIcon,
   XCircleIcon,
+  TrashIcon,
 } from '@phosphor-icons/react';
 import { PRESET_DRIVER_TAGS } from '../../../constants/driverTagBadges';
 import { renderDriverIcon } from '@irdashies/utils/driverIcons';
@@ -383,15 +384,17 @@ export const DriverTagsSettings = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 bg-slate-700 rounded">
-        <h2 className="text-xl mb-2">Driver Tags</h2>
+      <div className="border-b border-slate-700 px-1 pb-5 pt-1">
+        <h2 className="mb-1 text-xl font-semibold tracking-tight text-white">
+          Driver Tags
+        </h2>
         <p className="text-slate-400">
           Create color-coded or icon driver tag groups and assign drivers by
           iRacing ID (preferred) or iRacing Name.
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4 mt-4">
+      <div className="min-h-0 flex-1 overflow-y-auto space-y-6 pt-5 pr-1 [scrollbar-gutter:stable]">
         {/* Display style */}
 
         <div className="space-y-4">
@@ -434,7 +437,7 @@ export const DriverTagsSettings = () => {
                   });
                 }
               }}
-              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500"
+              className="settings-field w-full"
             >
               <option value="badge-fill">Badges (icons, filled)</option>
               <option value="badge-regular">Badges (icons, outlined)</option>
@@ -493,7 +496,7 @@ export const DriverTagsSettings = () => {
             <h3 className="text-lg">Custom Groups</h3>
             <button
               onClick={addGroup}
-              className="px-3 py-1 bg-accent-600 text-on-accent rounded"
+              className="min-h-9 rounded-md bg-accent-500 px-3 py-1.5 text-sm text-on-accent hover:bg-accent-600"
             >
               Add Group
             </button>
@@ -511,12 +514,12 @@ export const DriverTagsSettings = () => {
                   className="inline-flex items-center gap-3 px-2 py-2 min-h-12 rounded bg-slate-700 text-sm text-slate-100"
                 >
                   {editingGroupId === g.id ? (
-                    <div className="flex items-center justify-between w-full">
+                    <div className="flex w-full flex-wrap items-center gap-3">
                       <input
                         value={editingGroupName}
                         onChange={(e) => setEditingGroupName(e.target.value)}
                         placeholder="Group Name"
-                        className="px-2 py-1 bg-slate-600 rounded text-sm"
+                        className="settings-field min-w-0 flex-1 basis-40"
                       />
                       {settings.display?.displayStyle === 'tag' ? (
                         <>
@@ -559,7 +562,8 @@ export const DriverTagsSettings = () => {
                                 )
                                   setEditingGroupIcon(undefined);
                               }}
-                              className={`px-2 py-0.5 rounded text-xs ${editingGroupIconMode === 'name' ? 'bg-accent-600 text-on-accent' : 'bg-slate-600 text-slate-300'}`}
+                              aria-pressed={editingGroupIconMode === 'name'}
+                              className="settings-button aria-pressed:border-accent-400 aria-pressed:bg-accent-400/10 aria-pressed:text-accent-200"
                             >
                               Icon
                             </button>
@@ -572,7 +576,8 @@ export const DriverTagsSettings = () => {
                                 )
                                   setEditingGroupIcon(undefined);
                               }}
-                              className={`px-2 py-0.5 rounded text-xs ${editingGroupIconMode === 'image' ? 'bg-accent-600 text-on-accent' : 'bg-slate-600 text-slate-300'}`}
+                              aria-pressed={editingGroupIconMode === 'image'}
+                              className="settings-button aria-pressed:border-accent-400 aria-pressed:bg-accent-400/10 aria-pressed:text-accent-200"
                             >
                               Custom Image
                             </button>
@@ -628,7 +633,7 @@ export const DriverTagsSettings = () => {
                               />
                               <button
                                 onClick={() => fileInputRef.current?.click()}
-                                className="flex items-center justify-center px-2 h-[28px] bg-slate-600 hover:bg-slate-500 rounded text-xs min-w-[150px]"
+                                className="settings-button"
                               >
                                 Select an Image
                               </button>
@@ -685,7 +690,7 @@ export const DriverTagsSettings = () => {
                             setEditingGroupIcon(undefined);
                             setEditingGroupColor(undefined);
                           }}
-                          className="px-2 py-1 bg-accent-600 text-on-accent rounded text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="min-h-9 rounded-md bg-accent-500 px-3 py-1.5 text-sm text-on-accent transition-colors hover:bg-accent-600 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           Save
                         </button>
@@ -698,7 +703,7 @@ export const DriverTagsSettings = () => {
                             setEditingGroupIcon(undefined);
                             setEditingGroupColor(undefined);
                           }}
-                          className="px-2 py-1 bg-slate-600 rounded text-xs"
+                          className="settings-button"
                         >
                           Cancel
                         </button>
@@ -764,13 +769,13 @@ export const DriverTagsSettings = () => {
                                 : 'name'
                             );
                           }}
-                          className="flex-none w-auto px-2 py-0.5 text-xs text-slate-300"
+                          className="min-h-8 flex-none px-3 py-1 text-sm text-slate-300 hover:bg-settings-hover rounded-md"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => removeGroup(g.id)}
-                          className="flex-none w-auto px-2 py-0.5 text-xs text-red-400"
+                          className="min-h-8 flex-none px-3 py-1 text-sm text-red-300 hover:bg-red-950/40 rounded-md"
                         >
                           Delete
                         </button>
@@ -797,7 +802,7 @@ export const DriverTagsSettings = () => {
               <button
                 onClick={() => setActiveGroupFilter(null)}
                 aria-pressed={activeGroupFilter === null}
-                className={`px-3 py-1 rounded font-medium transition-colors shadow-sm ${activeGroupFilter === null ? 'bg-accent-500 text-on-accent ring-2 ring-accent-300' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'}`}
+                className={`px-3 py-1 rounded font-medium transition-colors shadow-sm ${activeGroupFilter === null ? 'bg-accent-500 text-on-accent ring-2 ring-accent-300' : 'bg-slate-700 text-slate-200 hover:bg-settings-hover'}`}
               >
                 All
               </button>
@@ -817,7 +822,7 @@ export const DriverTagsSettings = () => {
                     aria-pressed={activeGroupFilter === g.id}
                     title={name}
                     aria-label={name}
-                    className={`px-3 py-1 rounded inline-flex items-center gap-1.5 transition-colors shadow-sm text-sm ${activeGroupFilter === g.id ? 'bg-accent-500 text-on-accent ring-2 ring-accent-300' : 'bg-slate-700 text-slate-200 border border-slate-600 hover:bg-slate-600'}`}
+                    className={`px-3 py-1 rounded inline-flex items-center gap-1.5 transition-colors shadow-sm text-sm ${activeGroupFilter === g.id ? 'bg-accent-500 text-on-accent ring-2 ring-accent-300' : 'bg-slate-700 text-slate-200 border border-settings-boundary hover:bg-settings-hover'}`}
                   >
                     {settings.display?.displayStyle === 'tag' ? (
                       <span
@@ -860,7 +865,7 @@ export const DriverTagsSettings = () => {
                   aria-pressed={activeGroupFilter === g.id}
                   title={g.name}
                   aria-label={g.name}
-                  className={`px-3 py-1 rounded inline-flex items-center gap-1.5 transition-colors shadow-sm text-sm ${activeGroupFilter === g.id ? 'bg-accent-500 text-on-accent ring-2 ring-accent-300' : 'bg-slate-700 text-slate-200 border border-slate-600 hover:bg-slate-600'}`}
+                  className={`px-3 py-1 rounded inline-flex items-center gap-1.5 transition-colors shadow-sm text-sm ${activeGroupFilter === g.id ? 'bg-accent-500 text-on-accent ring-2 ring-accent-300' : 'bg-slate-700 text-slate-200 border border-settings-boundary hover:bg-settings-hover'}`}
                 >
                   {settings.display?.displayStyle === 'tag' ? (
                     <span
@@ -896,7 +901,7 @@ export const DriverTagsSettings = () => {
             </div>
 
             {syncedDrafts.length > 0 && (
-              <div className="grid grid-cols-[5rem_9rem_9rem_1fr_5rem] gap-2 items-center text-sm text-slate-400 pt-4">
+              <div className="flex flex-wrap items-center gap-3 pt-4 text-sm text-slate-400 lg:grid lg:grid-cols-[5rem_9rem_9rem_minmax(0,1fr)_6rem]">
                 {(
                   [
                     ['id', 'iRacing ID'],
@@ -913,7 +918,7 @@ export const DriverTagsSettings = () => {
                         value={searchText}
                         onChange={(e) => setSearchText(e.target.value)}
                         placeholder="Search for a Driver ..."
-                        className="px-2 py-0.5 bg-slate-700 rounded text-sm text-slate-200 w-full focus:outline-none focus:ring-1 focus:ring-accent-500"
+                        className="settings-field w-full"
                       />
                     );
                   }
@@ -951,103 +956,139 @@ export const DriverTagsSettings = () => {
               </div>
             )}
 
-            {sortedFilteredEntries.map((row) => (
+            {sortedFilteredEntries.map((row, rowIndex) => (
               <div
                 key={row.uiKey}
-                className="grid grid-cols-[5rem_9rem_9rem_1fr_5rem] gap-2 items-center"
+                className="grid grid-cols-2 items-end gap-3 rounded-md border border-slate-700 p-3 lg:grid-cols-[5rem_9rem_9rem_minmax(0,1fr)_6rem] lg:border-0 lg:p-0"
               >
-                <input
-                  ref={(el) => {
-                    inputRefs.current[`${row.uiKey}-id`] = el;
-                  }}
-                  value={row.id}
-                  onChange={(e) =>
-                    updateEntryDraft(row.uiKey, 'id', e.target.value)
-                  }
-                  onBlur={(e) => {
-                    const stayingInRow =
-                      e.relatedTarget ===
-                        inputRefs.current[`${row.uiKey}-name`] ||
-                      e.relatedTarget ===
-                        inputRefs.current[`${row.uiKey}-label`];
-                    if (!stayingInRow) commitEntryDraft(row.uiKey);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter')
-                      (e.currentTarget as HTMLInputElement).blur();
-                  }}
-                  placeholder="e.g. 123456"
-                  className={`px-2 py-1 bg-slate-700 rounded w-full ${
-                    entryError?.key === row.uiKey && entryError.field === 'id'
-                      ? 'border border-red-500'
-                      : ''
-                  }`}
-                />
-                <input
-                  ref={(el) => {
-                    inputRefs.current[`${row.uiKey}-name`] = el;
-                  }}
-                  value={row.name}
-                  onChange={(e) =>
-                    updateEntryDraft(row.uiKey, 'name', e.target.value)
-                  }
-                  onBlur={(e) => {
-                    const stayingInRow =
-                      e.relatedTarget ===
-                        inputRefs.current[`${row.uiKey}-id`] ||
-                      e.relatedTarget ===
-                        inputRefs.current[`${row.uiKey}-label`];
-                    if (!stayingInRow) commitEntryDraft(row.uiKey);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter')
-                      (e.currentTarget as HTMLInputElement).blur();
-                  }}
-                  placeholder="iRacing Full Name"
-                  className={`px-2 py-1 bg-slate-700 rounded w-full ${
-                    entryError?.key === row.uiKey && entryError.field === 'name'
-                      ? 'border border-red-500'
-                      : ''
-                  }`}
-                />
-                <input
-                  ref={(el) => {
-                    inputRefs.current[`${row.uiKey}-label`] = el;
-                  }}
-                  value={row.label}
-                  onChange={(e) =>
-                    updateEntryDraft(row.uiKey, 'label', e.target.value)
-                  }
-                  onBlur={(e) => {
-                    const stayingInRow =
-                      e.relatedTarget ===
-                        inputRefs.current[`${row.uiKey}-id`] ||
-                      e.relatedTarget ===
-                        inputRefs.current[`${row.uiKey}-name`];
-                    if (!stayingInRow) commitEntryDraft(row.uiKey);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter')
-                      (e.currentTarget as HTMLInputElement).blur();
-                  }}
-                  placeholder="Badge label"
-                  className="px-2 py-1 bg-slate-700 rounded w-full"
-                />
-                <GroupSelect
-                  value={row.groupId}
-                  onChange={(value) => updateEntryGroup(row.uiKey, value)}
-                  groups={allGroups}
-                  displayStyle={settings.display?.displayStyle}
-                  iconWeight={settings.display?.iconWeight}
-                />
+                <label className="min-w-0">
+                  <span className="mb-1 block text-xs text-slate-400 lg:sr-only">
+                    iRacing ID
+                  </span>
+                  <input
+                    ref={(el) => {
+                      inputRefs.current[`${row.uiKey}-id`] = el;
+                    }}
+                    value={row.id}
+                    onChange={(e) =>
+                      updateEntryDraft(row.uiKey, 'id', e.target.value)
+                    }
+                    onBlur={(e) => {
+                      const stayingInRow =
+                        e.relatedTarget ===
+                          inputRefs.current[`${row.uiKey}-name`] ||
+                        e.relatedTarget ===
+                          inputRefs.current[`${row.uiKey}-label`];
+                      if (!stayingInRow) commitEntryDraft(row.uiKey);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter')
+                        (e.currentTarget as HTMLInputElement).blur();
+                    }}
+                    placeholder="e.g. 123456"
+                    aria-invalid={
+                      entryError?.key === row.uiKey && entryError.field === 'id'
+                    }
+                    aria-describedby={
+                      entryError?.key === row.uiKey
+                        ? `entry-error-${row.uiKey}`
+                        : undefined
+                    }
+                    className="settings-field w-full"
+                  />
+                </label>
+                <label className="min-w-0">
+                  <span className="mb-1 block text-xs text-slate-400 lg:sr-only">
+                    iRacing name
+                  </span>
+                  <input
+                    ref={(el) => {
+                      inputRefs.current[`${row.uiKey}-name`] = el;
+                    }}
+                    value={row.name}
+                    onChange={(e) =>
+                      updateEntryDraft(row.uiKey, 'name', e.target.value)
+                    }
+                    onBlur={(e) => {
+                      const stayingInRow =
+                        e.relatedTarget ===
+                          inputRefs.current[`${row.uiKey}-id`] ||
+                        e.relatedTarget ===
+                          inputRefs.current[`${row.uiKey}-label`];
+                      if (!stayingInRow) commitEntryDraft(row.uiKey);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter')
+                        (e.currentTarget as HTMLInputElement).blur();
+                    }}
+                    placeholder="iRacing Full Name"
+                    aria-invalid={
+                      entryError?.key === row.uiKey &&
+                      entryError.field === 'name'
+                    }
+                    aria-describedby={
+                      entryError?.key === row.uiKey
+                        ? `entry-error-${row.uiKey}`
+                        : undefined
+                    }
+                    className="settings-field w-full"
+                  />
+                </label>
+                <label className="min-w-0">
+                  <span className="mb-1 block text-xs text-slate-400 lg:sr-only">
+                    Driver label
+                  </span>
+                  <input
+                    ref={(el) => {
+                      inputRefs.current[`${row.uiKey}-label`] = el;
+                    }}
+                    value={row.label}
+                    onChange={(e) =>
+                      updateEntryDraft(row.uiKey, 'label', e.target.value)
+                    }
+                    onBlur={(e) => {
+                      const stayingInRow =
+                        e.relatedTarget ===
+                          inputRefs.current[`${row.uiKey}-id`] ||
+                        e.relatedTarget ===
+                          inputRefs.current[`${row.uiKey}-name`];
+                      if (!stayingInRow) commitEntryDraft(row.uiKey);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter')
+                        (e.currentTarget as HTMLInputElement).blur();
+                    }}
+                    placeholder="Badge label"
+                    className="settings-field w-full min-w-0"
+                  />
+                </label>
+                <div className="min-w-0">
+                  <span className="mb-1 block text-xs text-slate-400 lg:sr-only">
+                    Group
+                  </span>
+                  <GroupSelect
+                    label={`Driver group for ${row.name || row.id || `new driver ${rowIndex + 1}`}${row.name && row.id ? ` (${row.id})` : ''}`}
+                    value={row.groupId}
+                    onChange={(value) => updateEntryGroup(row.uiKey, value)}
+                    groups={allGroups}
+                    displayStyle={settings.display?.displayStyle}
+                    iconWeight={settings.display?.iconWeight}
+                  />
+                </div>
                 <button
                   onClick={() => removeEntry(row.uiKey)}
-                  className="w-full px-2 py-1 bg-red-600 rounded"
+                  aria-label={`Remove ${row.name || row.id || 'driver'}`}
+                  className="col-span-2 inline-flex min-h-9 items-center justify-self-start gap-2 rounded-md px-2 py-1.5 text-sm text-red-200 hover:bg-red-950/40 lg:col-span-1"
                 >
+                  <TrashIcon size={16} aria-hidden="true" />
                   Remove
                 </button>
                 {entryError?.key === row.uiKey && (
-                  <p className="col-span-full text-xs text-red-400 -mt-1">
+                  <p
+                    id={`entry-error-${row.uiKey}`}
+                    role="alert"
+                    className="col-span-full text-sm text-red-400"
+                  >
                     Driver already exists
                   </p>
                 )}
@@ -1057,14 +1098,14 @@ export const DriverTagsSettings = () => {
             <div className="flex mb-3 justify-center pb-2">
               <button
                 onClick={addEntry}
-                className="px-3 py-1 bg-green-600 rounded"
+                className="min-h-9 rounded-md bg-accent-500 px-3 py-1.5 text-sm text-on-accent hover:bg-accent-600"
               >
                 Add Driver
               </button>
             </div>
 
             {sortedFilteredEntries.length > 0 && (
-              <p className="mt-1 text-sm italic text-white/40">
+              <p className="mt-1 text-sm text-slate-400">
                 * iRacing ID is matched first when provided. Display name is
                 used as a fallback if no ID is set or no match is found.
               </p>
@@ -1094,7 +1135,7 @@ export const DriverTagsSettings = () => {
                     },
                   })
                 }
-                className="px-2 py-1 bg-slate-700 rounded text-sm"
+                className="settings-field"
               >
                 <option value="both">Both (Alternate)</option>
                 <option value="label">Label only</option>
@@ -1122,7 +1163,7 @@ export const DriverTagsSettings = () => {
                         },
                       })
                     }
-                    className="h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                    className="h-2 bg-settings-control rounded-lg appearance-none cursor-pointer"
                   />
                   <span className="text-xs text-slate-400 w-8">
                     {settings.display?.alternateFrequency ?? 5}s

@@ -9,7 +9,7 @@ vi.mock('@irdashies/context', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@irdashies/context')>();
   return {
     ...actual,
-    useDriverControlsSnapshot: vi.fn(),
+    useChannelSelector: vi.fn(),
     useDashboard: vi.fn(),
     useSessionStore: vi.fn(),
   };
@@ -20,7 +20,7 @@ vi.mock('@irdashies/utils/carData', async (importOriginal) => {
   return { ...actual, loadCarData: vi.fn() };
 });
 
-const mockSnapshot = vi.mocked(Context.useDriverControlsSnapshot);
+const mockSelector = vi.mocked(Context.useChannelSelector);
 const mockDashboard = vi.mocked(Context.useDashboard);
 const mockSessionStore = vi.mocked(Context.useSessionStore);
 const mockLoadCarData = vi.mocked(CarData.loadCarData);
@@ -52,7 +52,11 @@ const sessionState = {
 };
 
 const setRpm = (rpm: number, gear = 2) =>
-  mockSnapshot.mockReturnValue({ rpm, gear, blinkRpm: 6800, version: 1 });
+  mockSelector.mockImplementation((_channel, selector, options) =>
+    options?.enabled === false
+      ? undefined
+      : selector({ rpm, gear, blinkRpm: 6800, version: 1 } as never)
+  );
 
 describe('useShiftFlashActive', () => {
   beforeEach(() => {

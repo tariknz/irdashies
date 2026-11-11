@@ -191,6 +191,30 @@ export const EstimatedLaps = {
   },
 };
 
+/**
+ * Estimated laps in a header short of width, as in a narrow Standings widget.
+ * The lap count stays on one line.
+ */
+export const EstimatedLapsNarrow = {
+  ...EstimatedLaps,
+  // Inside the file's table wrapper, so in a row and cell of it.
+  decorators: [
+    (Story: () => React.ReactNode) => (
+      <tr>
+        <td className="p-0">
+          <div className="w-[230px] overflow-hidden">
+            <table className="w-full text-white text-sm">
+              <tbody>
+                <Story />
+              </tbody>
+            </table>
+          </div>
+        </td>
+      </tr>
+    ),
+  ],
+};
+
 export const AllClasses: Story = {
   render: () => (
     <TableWrapper>

@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'fuel',
   name: 'Fuel Calculator',
+  category: 'Fuel',
   enabled: false,
   layout: {
     x: 1102,
@@ -137,11 +138,6 @@ export default defineWidgetManifest({
       max: 100,
       step: 1,
       units: '%',
-    },
-    useGeneralFontSize: {
-      type: 'boolean',
-      label: 'Use General font Sizes',
-      description: 'Syncs with Font Size slider in General tab',
     },
     fuelUnits: {
       type: 'enum',

@@ -1,6 +1,9 @@
+import { useId } from 'react';
+
 interface SettingNumberRowProps {
   title: string;
   description?: string;
+  details?: string;
   value: number;
   min?: number;
   max?: number;
@@ -13,6 +16,7 @@ interface SettingNumberRowProps {
 export function SettingNumberRow({
   title,
   description,
+  details,
   value,
   min,
   max,
@@ -20,19 +24,32 @@ export function SettingNumberRow({
   units,
   onChange,
 }: SettingNumberRowProps) {
+  const descriptionId = useId();
   return (
-    <div className="flex items-center justify-between">
-      <div className="max-w-[70%]">
+    <div className="flex min-h-9 flex-wrap items-center justify-between gap-4">
+      <div className="min-w-0 flex-1 basis-40">
         <h4 className="text-md font-medium text-slate-300">{title}</h4>
         {description && (
-          <p className="text-sm text-slate-500 mt-1">{description}</p>
+          <p id={descriptionId} className="text-sm text-slate-400 mt-1">
+            {description}
+          </p>
+        )}
+        {details && (
+          <details className="mt-1 text-sm text-slate-400">
+            <summary className="min-h-9 cursor-pointer py-2 text-slate-300">
+              Why adjust this?
+            </summary>
+            <p className="pb-2 leading-relaxed">{details}</p>
+          </details>
         )}
       </div>
 
       <div className="flex items-center gap-2">
         <input
           type="number"
-          className="w-24 rounded-md bg-slate-900 border border-slate-600 focus:border-accent-500 focus:outline-none text-white font-mono px-2 py-1 text-right"
+          aria-label={title}
+          aria-describedby={description ? descriptionId : undefined}
+          className="settings-field w-24 text-right tabular-nums font-mono"
           value={value}
           step={step}
           min={min}

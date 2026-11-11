@@ -97,6 +97,7 @@ function createFrame(index: number, length = 36): Buffer {
 }
 
 interface TapeFixtureOptions {
+  session?: Buffer;
   includeSessionUpdate?: boolean;
   includeEndRecord?: boolean;
   qpcFrequency?: bigint;
@@ -105,6 +106,10 @@ interface TapeFixtureOptions {
 }
 
 function createTapeFixture({
+  session = Buffer.from(
+    '---\nWeekendInfo:\n TrackName: Replay Test Track\n...\n',
+    'ascii'
+  ),
   includeSessionUpdate = false,
   includeEndRecord = true,
   qpcFrequency = 60n,
@@ -188,10 +193,6 @@ function createTapeFixture({
     );
   }
 
-  const session = Buffer.from(
-    '---\nWeekendInfo:\n TrackName: Replay Test Track\n...\n',
-    'ascii'
-  );
   const records = [
     createRecord(2, 0n, -1, 1, session),
     createRecord(1, 0n, 100, 0, createFrame(0, frameLength)),
@@ -291,6 +292,80 @@ describe('tape-backed native SDK', () => {
   afterAll(async () => {
     await rm(temporaryDirectory, { recursive: true, force: true });
   });
+
+  it.each([
+    // Names from the 7 November 2026 F7 captures, before double decoding.
+    ['captured Catalan name', Buffer.from('Jaime Perpinyà'), 'Jaime Perpinyà'],
+    [
+      'captured Spanish name',
+      Buffer.from('Guillermo Bermúdez3'),
+      'Guillermo Bermúdez3',
+    ],
+    [
+      'captured Turkish name',
+      Buffer.from('Oktay Doğanyıldız2'),
+      'Oktay Doğanyıldız2',
+    ],
+    ['ASCII name', Buffer.from('Tarik Alani'), 'Tarik Alani'],
+    ['three-byte UTF-8', Buffer.from('畅 谭2'), '畅 谭2'],
+    ['four-byte UTF-8', Buffer.from('\u{1d11e}'), '\u{1d11e}'],
+    ['legacy accented name', Buffer.from([0x4a, 0x6f, 0x73, 0xe9]), 'José'],
+    ['legacy punctuation', Buffer.from([0x91, 0x92, 0x96, 0x80]), '‘’–€'],
+    [
+      'mixed UTF-8 and legacy text',
+      Buffer.concat([Buffer.from('Perpinyà '), Buffer.from([0x96])]),
+      'Perpinyà –',
+    ],
+    ['truncated UTF-8', Buffer.from([0xe2, 0x82]), 'â‚'],
+    ['invalid continuation', Buffer.from([0xe2, 0x28, 0xa1]), 'â(¡'],
+    ['overlong two-byte UTF-8', Buffer.from([0xc0, 0xaf]), 'À¯'],
+    ['overlong three-byte UTF-8', Buffer.from([0xe0, 0x80, 0xaf]), 'à€¯'],
+    ['UTF-8 surrogate', Buffer.from([0xed, 0xa0, 0x80]), 'í\u00a0€'],
+    ['overlong four-byte UTF-8', Buffer.from([0xf0, 0x80, 0xbf, 0xbf]), 'ð€¿¿'],
+    ['out-of-range UTF-8', Buffer.from([0xf4, 0xbf, 0xbf, 0xbf]), 'ô¿¿¿'],
+  ] as const)(
+    'decodes %s through the native session boundary',
+    async (_, bytes, name) => {
+      const prefix = '---\nDriverInfo:\n Drivers:\n - UserName: ';
+      const suffix = '\n...\n';
+      await writeFile(
+        tapePath,
+        createTapeFixture({
+          session: Buffer.concat([
+            Buffer.from(prefix),
+            bytes,
+            Buffer.from(suffix),
+          ]),
+        })
+      );
+      // Windows' CRT snapshots environment options on the first addon load.
+      // Isolate these fixtures from the looping playback tests below.
+      const script = `
+        const assert = require('node:assert/strict');
+        const { iRacingSdkNode } = require(process.argv[1]);
+        const sdk = new iRacingSdkNode();
+        try {
+          assert.equal(sdk.startSDK(), true);
+          assert.equal(sdk.waitForData(20), true);
+          assert.equal(sdk.getSessionData(), process.argv[2]);
+        } finally {
+          sdk.stopSDK();
+        }
+      `;
+      await execFileAsync(
+        process.execPath,
+        ['-e', script, addonPath, `${prefix}${name}${suffix}`],
+        {
+          env: {
+            ...process.env,
+            IRDASHIES_TELEMETRY_REPLAY: tapePath,
+            IRDASHIES_TELEMETRY_REPLAY_LOOP: '0',
+          },
+          timeout: 5000,
+        }
+      );
+    }
+  );
 
   it('replays raw frames and embedded session YAML through INativeSDK', async () => {
     await writeFile(tapePath, createTapeFixture());

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import type { LapTraceConfig } from '@irdashies/types';
 import {
   DEFAULT_AUDIO_OUTPUT_DEVICE_ID,
@@ -9,7 +9,7 @@ import {
   trackStateSelectors,
   useDrivingState,
   useLapTraceInvalidReason,
-  useLapTraceRecordingProgress,
+  useLapTraceRecordingPercent,
   useLapTraceStore,
   useSessionVisibility,
   useTrackStateSelector,
@@ -22,15 +22,23 @@ import {
 } from '../../domain/lapTrace/brakeCuePoints';
 import { LapTracePlot } from './LapTracePlot';
 import { BrakeCue } from './components/BrakeCue';
+import { isBrakeCueHorizontal } from './components/BrakeCueBars';
+import { LapTraceLayout } from './components/LapTraceLayout';
 import {
   LastCornerPanel,
   LAST_CORNER_DEFAULT_FONT_SIZE,
 } from './components/LastCornerPanel';
 import { invalidLapMessage } from './invalidLapMessage';
 import { useLapTraceSettings } from './hooks/useLapTraceSettings';
+import { lapTraceElementSide, resolveLapTraceLayoutTree } from './layoutTree';
+import {
+  layoutTreeHas,
+  withoutRepeatedElements,
+} from '@irdashies/domain/layoutTree';
 import {
   useLastCornerComparison,
   useLastCornerLabels,
+  useTrackHasCorners,
 } from './hooks/useLastCornerComparison';
 
 export type LapTraceProps = Partial<LapTraceConfig> & {
@@ -42,6 +50,29 @@ export type LapTraceProps = Partial<LapTraceConfig> & {
 const EMPTY_CUE_POINTS = new Float32Array(0);
 
 /**
+ * The bar towards a first reference. Its own component so that only it
+ * re-renders as the lap is driven, and only while it is on screen: the lap
+ * store publishes the lap in progress every few metres for the whole session,
+ * reference or not.
+ */
+const RecordingProgress = () => {
+  const percent = useLapTraceRecordingPercent();
+  return (
+    <>
+      <div className="w-2/3 h-1 bg-slate-700/60 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-amber-400 rounded-full"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      <span className="text-slate-500 text-[10px] tabular-nums">
+        Recording {percent}%
+      </span>
+    </>
+  );
+};
+
+/**
  * Plots a saved reference lap's inputs against position on track, in a window
  * that slides with the car. The reference is drawn pastel, as a washed-out
  * background target; the lap currently being driven is overlaid as a bright
@@ -51,21 +82,34 @@ export const LapTrace = (props: LapTraceProps) => {
   const settings = useLapTraceSettings();
   const config = { ...settings, ...props };
 
+  // Which elements show, and where, comes from the layout tree. Configs saved
+  // before the layout editor got theirs from the dashboard-load migration.
+  // An element held twice is drawn where it first appears only, so the sides
+  // below are read from the same tree the layout draws.
+  const tree = useMemo(
+    () => withoutRepeatedElements(resolveLapTraceLayoutTree(config.layoutTree)),
+    [config.layoutTree]
+  );
+  const showCorners = layoutTreeHas(tree, 'corners');
+  const showBars = layoutTreeHas(tree, 'brakeCue');
+  // Beside the plot the panel and the strip run full height, above or below
+  // it they run across. Without the trace in the layout, they run full height.
+  const lastCornerPosition = lapTraceElementSide(tree, 'corners') ?? 'right';
+  const barSide = lapTraceElementSide(tree, 'brakeCue') ?? 'right';
+
   const { isDriving } = useDrivingState();
   const isSessionVisible = useSessionVisibility(config.sessionVisibility);
 
   const referenceLap = useLapTraceStore((s) => s.referenceLap);
   const referenceError = useLapTraceStore((s) => s.referenceError);
   const trackLengthM = useLapTraceStore((s) => s.trackLengthM);
-  const recordingProgress = useLapTraceRecordingProgress();
   const invalidReason = useLapTraceInvalidReason();
 
   // Changes essentially never, so this costs no per-frame renders.
   const displayUnits = useTrackStateSelector(trackStateSelectors.displayUnits);
   const speedUnit = resolveSpeedUnit(config.lastCornerSpeedUnit, displayUnits);
   const lastCornerLabelStyle = config.lastCornerLabelStyle ?? 'name';
-  const lastCornerEnabled =
-    !!config.showLastCorner && !!referenceLap && isSessionVisible;
+  const lastCornerEnabled = showCorners && !!referenceLap && isSessionVisible;
   // Read once and handed to both consumers of the cue-point list. The countdown
   // and the brake-distance delta must filter the reference lap identically, or
   // one of them goes silent at a corner the other reports on.
@@ -81,7 +125,7 @@ export const LapTrace = (props: LapTraceProps) => {
     lastCornerEnabled,
     lastCornerLabelStyle
   );
-  const lastCornerPosition = config.lastCornerPosition ?? 'bottom';
+  const trackHasCorners = useTrackHasCorners();
   const lastCornerEntries = useMemo(
     () =>
       lastCorners.map((entry) => ({
@@ -104,15 +148,9 @@ export const LapTrace = (props: LapTraceProps) => {
         : EMPTY_CUE_POINTS,
     [referenceLap, brakeCueMinPeak]
   );
-  const brakeCueActive =
-    !!referenceLap && (!!config.brakeCueBars || !!config.brakeCueAudio);
-  const barSide = config.brakeCueBarSide ?? 'right';
-  const barsOnLeft = barSide === 'left';
-  const barsHorizontal = barSide === 'top' || barSide === 'bottom';
+  const brakeCueActive = !!referenceLap && (showBars || !!config.brakeCueAudio);
 
-  // One element, placed on whichever edge is configured. Only ever rendered in
-  // one of the four slots below.
-  const lastCornerPanel = config.showLastCorner ? (
+  const lastCornerPanel = showCorners ? (
     <LastCornerPanel
       entries={lastCornerEntries}
       count={config.lastCornerCount ?? 3}
@@ -125,15 +163,16 @@ export const LapTrace = (props: LapTraceProps) => {
       cornerLabels={cornerLabels}
       fontSize={config.lastCornerFontSize ?? LAST_CORNER_DEFAULT_FONT_SIZE}
       latestScale={config.lastCornerLatestScale ?? 1.4}
+      unavailable={trackHasCorners === false}
     />
   ) : null;
 
-  // One element, placed on whichever edge is configured. Only ever rendered in
-  // one of the four slots below.
+  // Mounted for the audio cues too, with no strip in the layout: then it
+  // renders nothing and sits outside the layout.
   const brakeCue = brakeCueActive ? (
     <BrakeCue
       cuePointsM={brakeCuePointsM}
-      showBars={!!config.brakeCueBars}
+      showBars={showBars}
       barSide={barSide}
       lastBar={config.brakeCueLastBar ?? 'top'}
       playAudio={!!config.brakeCueAudio}
@@ -147,6 +186,45 @@ export const LapTrace = (props: LapTraceProps) => {
       carDistanceMOverride={props.carDistanceMOverride}
     />
   ) : null;
+
+  const plot = (
+    <div className="min-h-0 min-w-0 flex-1">
+      <LapTracePlot
+        metersBehind={config.metersBehind}
+        metersAhead={config.metersAhead}
+        showThrottle={config.showThrottle}
+        showBrake={config.showBrake}
+        showSpeed={config.showSpeed}
+        showGhost={config.showGhost}
+        showGearLabels={config.showGearLabels}
+        showBrakePointMarkers={config.showBrakePointMarkers}
+        showThrottlePointMarkers={config.showThrottlePointMarkers}
+        showAbs={config.showAbs ?? true}
+        absStyle={config.absStyle ?? 'bar'}
+        showAbsBar={config.showAbsBar ?? false}
+        ghostOpacity={config.ghostOpacity ?? 1}
+        driverOpacity={config.driverOpacity ?? 1}
+        referenceFilled={config.referenceFilled}
+        strokeWidth={config.strokeWidth}
+        carLineColor={config.carLineColor ?? '#ffffff'}
+        colors={config.colors ?? DEFAULT_LAP_TRACE_COLORS}
+        carDistanceMOverride={props.carDistanceMOverride}
+      />
+    </div>
+  );
+
+  const renderElement = (id: string): ReactNode => {
+    switch (id) {
+      case 'plot':
+        return plot;
+      case 'corners':
+        return lastCornerPanel;
+      case 'brakeCue':
+        return brakeCue;
+      default:
+        return null;
+    }
+  };
 
   if (!isSessionVisible) return null;
   if (config.showOnlyWhenOnTrack && !isDriving) return null;
@@ -180,51 +258,12 @@ export const LapTrace = (props: LapTraceProps) => {
 
       {referenceLap ? (
         <>
-          {lastCornerPosition === 'top' && lastCornerPanel}
-          {/* The countdown bars sit beside/above/below the trace, not as an
-              overlay on it, so they never cover the plot. Where the
-              last-corner panel shares an edge with them, the bars sit
-              inboard, closer to the plot: they are a live cue tied to what
-              the trace is showing, while the panel is history. */}
-          <div className="flex min-h-0 min-w-0 flex-1 flex-row gap-1.5 overflow-hidden">
-            {lastCornerPosition === 'left' && lastCornerPanel}
-            {!barsHorizontal && barsOnLeft && brakeCue}
-            {/* The plot and its top/bottom countdown strip share one column so
-                the horizontal strip spans only the trace width, not the whole
-                widget: a left/right last-corner panel takes its width from
-                this column, and the live cue stays aligned to the trace it
-                belongs to rather than running on across the history panel. */}
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-              {barsHorizontal && barSide === 'top' && brakeCue}
-              <div className="min-h-0 min-w-0 flex-1">
-                <LapTracePlot
-                  metersBehind={config.metersBehind}
-                  metersAhead={config.metersAhead}
-                  showThrottle={config.showThrottle}
-                  showBrake={config.showBrake}
-                  showSpeed={config.showSpeed}
-                  showGhost={config.showGhost}
-                  showGearLabels={config.showGearLabels}
-                  showBrakePointMarkers={config.showBrakePointMarkers}
-                  showThrottlePointMarkers={config.showThrottlePointMarkers}
-                  showAbs={config.showAbs ?? true}
-                  absStyle={config.absStyle ?? 'bar'}
-                  showAbsBar={config.showAbsBar ?? false}
-                  ghostOpacity={config.ghostOpacity ?? 1}
-                  driverOpacity={config.driverOpacity ?? 1}
-                  referenceFilled={config.referenceFilled}
-                  strokeWidth={config.strokeWidth}
-                  carLineColor={config.carLineColor ?? '#ffffff'}
-                  colors={config.colors ?? DEFAULT_LAP_TRACE_COLORS}
-                  carDistanceMOverride={props.carDistanceMOverride}
-                />
-              </div>
-              {barsHorizontal && barSide === 'bottom' && brakeCue}
-            </div>
-            {!barsHorizontal && !barsOnLeft && brakeCue}
-            {lastCornerPosition === 'right' && lastCornerPanel}
-          </div>
-          {lastCornerPosition === 'bottom' && lastCornerPanel}
+          <LapTraceLayout
+            tree={tree}
+            barsVertical={!isBrakeCueHorizontal(barSide)}
+            renderElement={renderElement}
+          />
+          {!showBars && brakeCue}
         </>
       ) : (
         <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-1 text-center">
@@ -243,17 +282,7 @@ export const LapTrace = (props: LapTraceProps) => {
                 {invalidLapMessage(invalidReason)}
               </span>
             ) : (
-              <>
-                <div className="w-2/3 h-1 bg-slate-700/60 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-amber-400 rounded-full"
-                    style={{ width: `${Math.round(recordingProgress * 100)}%` }}
-                  />
-                </div>
-                <span className="text-slate-500 text-[10px] tabular-nums">
-                  Recording {Math.round(recordingProgress * 100)}%
-                </span>
-              </>
+              <RecordingProgress />
             ))}
         </div>
       )}

@@ -8,6 +8,7 @@ import {
   useGeneralSettings,
   useLapTimesStoreUpdater,
   useLapTimeHistory,
+  useCarIdxRollingAvgLapTime,
   useFocusCarIdx,
   useTrackStateSnapshot,
   useP2PDisplayStates,
@@ -34,6 +35,7 @@ import { FlagContour } from '@irdashies/utils/FlagContour';
 import { getFlag } from '@irdashies/utils/getFlag';
 import { getFlagColor } from '@irdashies/utils/getFlagColor';
 
+/** The relative widget: the cars just ahead of and behind the focus car. */
 export const Relative = () => {
   const settings = useRelativeSettings();
   const generalSettings = useGeneralSettings();
@@ -89,7 +91,13 @@ export const Relative = () => {
   const p2pDisplayStates = useP2PDisplayStates();
 
   const lapTimeDeltasEnabled = settings?.lapTimeDeltas?.enabled ?? false;
-  useLapTimesStoreUpdater(lapTimeDeltasEnabled);
+  useLapTimesStoreUpdater(
+    lapTimeDeltasEnabled || !!settings?.avgLapTime?.enabled
+  );
+  const avgLapTimes = useCarIdxRollingAvgLapTime(
+    settings?.avgLapTime?.numLaps ?? 5,
+    settings?.avgLapTime?.excludePitLaps ?? false
+  );
   const numLapDeltas = settings?.lapTimeDeltas?.numLaps ?? 3;
   const focusCarIdx = useFocusCarIdx();
   const lapTimeHistory = useLapTimeHistory();
@@ -293,6 +301,7 @@ export const Relative = () => {
           }
           penaltyKind={result.penaltyKind}
           penaltySeconds={result.penaltySeconds}
+          finishState={result.finishState}
           trackLimitsPoints={result.trackLimitsPoints}
           trackLimitsMax={trackLimitsMax}
           lmuVirtualEnergy={result.energyRemaining}
@@ -315,6 +324,11 @@ export const Relative = () => {
           }
           numLapDeltasToShow={lapTimeDeltasEnabled ? numLapDeltas : undefined}
           displayOrder={settings?.displayOrder}
+          avgLapTime={
+            settings?.avgLapTime?.enabled
+              ? avgLapTimes[result.carIdx]
+              : undefined
+          }
           hiddenColumns={hiddenColumns}
           hasDriverRatings={hasDriverRatings}
           isAI={result.driver?.isAI}
@@ -353,6 +367,7 @@ export const Relative = () => {
     lapTimeDeltasEnabled,
     numLapDeltas,
     lapDeltasByCarIdx,
+    avgLapTimes,
     pitStopDurations,
     pitExitAfterSF,
   ]);

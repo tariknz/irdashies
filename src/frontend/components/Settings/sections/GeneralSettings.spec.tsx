@@ -27,6 +27,24 @@ vi.mock('../components/BaseSettingsSection', () => ({
 }));
 
 describe('individual window setting', () => {
+  it('places appearance field headings below their section heading', () => {
+    render(<GeneralSettings />);
+    expect(
+      screen.getByRole('heading', { name: 'Overlay appearance', level: 3 })
+    ).toBeInTheDocument();
+    for (const name of [
+      'Font',
+      'Font Weight',
+      'Font Size',
+      'Compact Mode',
+      'Color Theme',
+      'Highlight Color',
+    ]) {
+      expect(
+        screen.getByRole('heading', { name, level: 4 })
+      ).toBeInTheDocument();
+    }
+  });
   beforeEach(() => {
     mocks.update.mockClear();
     mocks.dashboard = { widgets: [], generalSettings: { fontSize: 'md' } };
@@ -67,5 +85,37 @@ describe('individual window setting', () => {
         name: 'Individual Overlay Windows',
       })
     ).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('shows the selected overlay font configuration without saving on mount', () => {
+    render(<GeneralSettings />);
+    const sample = screen.getByRole('figure', { name: 'Overlay font sample' });
+    expect(sample).toHaveTextContent('Lato / Normal / Medium');
+    expect(mocks.update).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Overlay font' }), {
+      target: { value: 'inter' },
+    });
+    fireEvent.change(
+      screen.getByRole('combobox', { name: 'Overlay font weight' }),
+      {
+        target: { value: 'bold' },
+      }
+    );
+    fireEvent.change(
+      screen.getByRole('slider', { name: 'Overlay font size' }),
+      {
+        target: { value: '6' },
+      }
+    );
+    expect(sample).toHaveTextContent('Inter / Bold / Large');
+    expect(mocks.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        generalSettings: expect.objectContaining({
+          fontType: 'inter',
+          fontWeight: 'bold',
+          fontSize: 'lg',
+        }),
+      })
+    );
   });
 });

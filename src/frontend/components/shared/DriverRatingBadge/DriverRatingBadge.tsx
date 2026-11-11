@@ -64,7 +64,7 @@ export const DriverRatingBadge = ({
 
   if (!license || !rating) {
     return (
-      <div className="flex gap-1 items-center justify-center mx-2">
+      <div className="flex gap-1 items-center justify-center">
         <div
           className={`text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[1.8em] ${(isMinimal ? minimalColorMap : colorMap)['A']}`}
         >
@@ -77,7 +77,7 @@ export const DriverRatingBadge = ({
       case 'license-color-fullrating-combo':
         // License = colored badge, full irating combined
         return (
-          <div className="flex gap-1 items-center justify-center mx-2">
+          <div className="flex gap-1 items-center justify-center">
             <div
               className={`flex justify-between items-center text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[6.4em] ${color}`}
             >
@@ -92,7 +92,7 @@ export const DriverRatingBadge = ({
       case 'fullrating-color-no-license':
         // Full rating only in white
         return (
-          <div className="flex gap-1 items-center justify-center mx-2">
+          <div className="flex gap-1 items-center justify-center">
             <div
               className={`text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3.6em] ${color}`}
             >
@@ -121,7 +121,7 @@ export const DriverRatingBadge = ({
       case 'license-color-rating-bw':
         // Default format: License + colored badge, rating in B&W
         return (
-          <div className="flex gap-1 items-center mx-2">
+          <div className="flex gap-1 items-center">
             <div
               className={`text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3.6em] ${color}`}
             >
@@ -136,7 +136,7 @@ export const DriverRatingBadge = ({
       case 'rating-only-color-rating-bw':
         // Rating only in colored badge, rating in B&W
         return (
-          <div className="flex gap-1 items-center mx-2">
+          <div className="flex gap-1 items-center">
             <div
               className={`text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[2.4em] ${color}`}
             >
@@ -151,7 +151,7 @@ export const DriverRatingBadge = ({
       case 'license-color-rating-bw-no-license':
         // License without safety rating + colored badge, rating in B&W
         return (
-          <div className="flex gap-1 items-center mx-2">
+          <div className="flex gap-1 items-center">
             <div
               className={`text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[1.8em] ${color}`}
             >
@@ -166,7 +166,7 @@ export const DriverRatingBadge = ({
       case 'rating-color-no-license':
         // Rating only in colored badge, no license
         return (
-          <div className="flex gap-1 items-center justify-center mx-2">
+          <div className="flex gap-1 items-center justify-center">
             <div
               className={`text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight ${color}`}
             >
@@ -178,7 +178,7 @@ export const DriverRatingBadge = ({
       case 'license-bw-rating-bw':
         // All B&W badges - license without safety rating (like current but B&W)
         return (
-          <div className="flex gap-1 items-center mx-2">
+          <div className="flex gap-1 items-center">
             <div className="bg-white/10 text-white text-center border-2 border-transparent px-1 rounded-md text-xs leading-tight min-w-[3.6em]">
               {formattedLicense} {safetyRating}
             </div>
@@ -191,7 +191,7 @@ export const DriverRatingBadge = ({
       case 'rating-only-bw-rating-bw':
         // Rating only in colored badge, rating in B&W
         return (
-          <div className="flex gap-1 items-center mx-2">
+          <div className="flex gap-1 items-center">
             <div className="bg-white/10 text-white text-center border-2 border-transparent px-1 rounded-md text-xs leading-tight min-w-[2.4em]">
               {safetyRating}
             </div>
@@ -204,7 +204,7 @@ export const DriverRatingBadge = ({
       case 'license-bw-rating-bw-no-license':
         // All B&W badges - license without safety rating
         return (
-          <div className="flex gap-1 items-center mx-2">
+          <div className="flex gap-1 items-center">
             <div className="bg-white/10 text-white text-center border-2 border-transparent px-1 rounded-md text-xs leading-tight min-w-[1.8em]">
               {formattedLicense}
             </div>
@@ -217,7 +217,7 @@ export const DriverRatingBadge = ({
       case 'rating-bw-no-license':
         // Rating only in B&W
         return (
-          <div className="flex gap-1 items-center justify-center mx-2">
+          <div className="flex gap-1 items-center justify-center">
             <div className="text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight bg-white/10 border-transparent">
               {simplifiedRating}k
             </div>
@@ -227,7 +227,7 @@ export const DriverRatingBadge = ({
       case 'fullrating-bw-no-license':
         // Full rating only in B&W
         return (
-          <div className="flex gap-1 items-center justify-center mx-2">
+          <div className="flex gap-1 items-center justify-center">
             <div className="text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight bg-white/10 border-transparent">
               {rating}
             </div>
@@ -237,7 +237,7 @@ export const DriverRatingBadge = ({
       default:
         // Fallback to default format
         return (
-          <div className="flex gap-1 items-center mx-2">
+          <div className="flex gap-1 items-center">
             <div
               className={`text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3.6em] ${color}`}
             >
