@@ -221,13 +221,7 @@ describe('SettingsMenu', () => {
       fireEvent.click(sortButton());
 
       expect(categoryHeadings()).toHaveLength(0);
-      expect(listedLinks(/alphabetical/)).toEqual([
-        'Driver Tags',
-        'Profiles',
-        'Setup Comparison',
-        'Standings',
-        'Twitch Chat',
-      ]);
+      expect(listedLinks(/alphabetical/)).toEqual(['Standings', 'Twitch Chat']);
       expect(localStorage.getItem('settingsMenuSort')).toBe('alpha');
 
       // Next time the menu opens, it is as it was left.
@@ -241,18 +235,25 @@ describe('SettingsMenu', () => {
     });
 
     it('puts the activated overlays first, then the rest, each alphabetically', () => {
+      assert(state.dashboard);
+      // Twitch Chat on, Standings off: the reverse of alphabetical.
+      state.dashboard.widgets = [
+        ...state.dashboard.widgets.map((w) =>
+          (w.type ?? w.id) === 'standings' ? { ...w, enabled: false } : w
+        ),
+        {
+          id: 'twitchchat',
+          enabled: true,
+          layout: { x: 0, y: 200, width: 100, height: 100 },
+        },
+      ];
       localStorage.setItem('settingsMenuSort', 'activated');
       renderMenu();
 
       expect(categoryHeadings()).toHaveLength(0);
-      // Standings is on; Twitch Chat is not in the dashboard, and tools have
-      // no switch.
       expect(listedLinks(/activated first/)).toEqual([
-        'Standings',
-        'Driver Tags',
-        'Profiles',
-        'Setup Comparison',
         'Twitch Chat',
+        'Standings',
       ]);
 
       // A click steps back round to categories.
@@ -280,7 +281,10 @@ describe('SettingsMenu', () => {
       expect(
         screen.queryByRole('listbox', { name: 'Sort overlays' })
       ).not.toBeInTheDocument();
-      expect(listedLinks(/activated first/)[0]).toBe('Standings');
+      expect(listedLinks(/activated first/)).toEqual([
+        'Standings',
+        'Twitch Chat',
+      ]);
       expect(localStorage.getItem('settingsMenuSort')).toBe('activated');
     });
 
@@ -294,6 +298,80 @@ describe('SettingsMenu', () => {
         }
       );
       expect(listedLinks(/alphabetical/)).toEqual(['Twitch Chat']);
+    });
+  });
+
+  describe('tools', () => {
+    const toolLinks = () =>
+      within(screen.getByRole('navigation', { name: 'Tools pages' }))
+        .getAllByRole('list')[0]
+        .querySelectorAll('a');
+
+    it('opens Tools as a menu of its own, like App settings', () => {
+      renderMenu();
+      const tools = screen.getByRole('link', { name: 'Tools' });
+      const appSettings = screen.getByRole('link', { name: 'App settings' });
+      // Just above App settings, at the bottom.
+      expect(tools.compareDocumentPosition(appSettings)).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING
+      );
+      expect(tools.textContent).toBe('Tools');
+      expect(tools.querySelector('svg')).not.toBeNull();
+
+      fireEvent.click(tools);
+      expect(screen.getByTestId('current-path')).toHaveTextContent(
+        '/settings/profiles'
+      );
+      const title = screen.getByRole('heading', { level: 2, name: 'Tools' });
+      // Written Tools, shown TOOLS, as App settings is.
+      expect(title.classList).toContain('uppercase');
+      expect([...toolLinks()].map((link) => link.textContent)).toEqual([
+        'Profiles',
+        'Driver Tags',
+        'Setup Comparison',
+      ]);
+      expect(screen.getByRole('link', { name: 'Profiles' })).toHaveAttribute(
+        'aria-current',
+        'page'
+      );
+      expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Tools' })).toBeNull();
+
+      fireEvent.click(screen.getByRole('link', { name: 'Back to overlays' }));
+      expect(screen.getByTestId('current-path')).toHaveTextContent(
+        '/settings/standings'
+      );
+      expect(screen.getByRole('searchbox')).toBeInTheDocument();
+    });
+
+    it('never sorts the tools', () => {
+      for (const mode of ['alpha', 'activated']) {
+        localStorage.setItem('settingsMenuSort', mode);
+        const { unmount } = render(
+          <MemoryRouter initialEntries={['/settings/driver-tags']}>
+            <SettingsMenu returnTo="/settings/standings" />
+          </MemoryRouter>
+        );
+        // Alphabetical would put Driver Tags first.
+        expect([...toolLinks()].map((link) => link.textContent)).toEqual([
+          'Profiles',
+          'Driver Tags',
+          'Setup Comparison',
+        ]);
+        unmount();
+      }
+    });
+
+    it('has no Tools in the preview', () => {
+      render(
+        <MemoryRouter initialEntries={['/settings/standings']}>
+          <SettingsMenu previewMode />
+        </MemoryRouter>
+      );
+      expect(screen.queryByRole('link', { name: 'Tools' })).toBeNull();
+      expect(
+        screen.getByRole('link', { name: 'App settings' })
+      ).toBeInTheDocument();
     });
   });
 
@@ -324,14 +402,11 @@ describe('SettingsMenu', () => {
     ).toBeInTheDocument();
     expect(
       screen.getAllByRole('heading', { level: 3 }).map((el) => el.textContent)
-    ).toEqual(['Standings', 'Broadcast & Streaming', 'Tools']);
-    const tools = within(screen.getByRole('region', { name: 'Tools' }));
-    expect(tools.getAllByRole('link').map((link) => link.textContent)).toEqual([
-      'Profiles',
-      'Driver Tags',
-      'Setup Comparison',
-    ]);
-    expect(tools.queryByRole('switch')).not.toBeInTheDocument();
+    ).toEqual(['Standings', 'Broadcast & Streaming']);
+    // Tools are not overlays: no category, no entries in the list.
+    expect(screen.queryByRole('region', { name: 'Tools' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Profiles' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Tools' })).toBeInTheDocument();
     expect(
       screen.queryByRole('heading', { name: 'Session & Weather' })
     ).not.toBeInTheDocument();

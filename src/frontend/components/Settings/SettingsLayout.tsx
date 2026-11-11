@@ -19,7 +19,7 @@ import { simulatorDisplayName } from '@irdashies/types';
 import { SettingsLoader } from './SettingsLoader';
 import { SettingsMenu } from './SettingsMenu';
 import { HeaderProfilePicker } from './components/HeaderProfilePicker';
-import { generalItems, bottomItems } from './menuItems';
+import { generalItems, bottomItems, toolItems } from './menuItems';
 import { ReleaseNotesStatusProvider } from './ReleaseNotes/ReleaseNotesStatusContext';
 import { ReleaseNotesAnnouncement } from './ReleaseNotes/ReleaseNotesAnnouncement';
 import { GitHubStarPrompt } from './GitHubStarPrompt/GitHubStarPrompt';
@@ -33,13 +33,18 @@ export const SettingsLayout = () => {
   const appPage = [...generalItems, ...bottomItems].some(
     (item) => item.to === pathname
   );
+  // Tool pages are neither overlays nor app settings: they keep their own
+  // last page, so Back to overlays never lands on one.
+  const toolPage = toolItems.some((item) => item.to === pathname);
   const lastApp = useRef('/settings/general');
+  const lastTool = useRef('/settings/profiles');
   const lastOverlay = useRef('/settings/relative');
   useEffect(() => {
     if (appPage) lastApp.current = pathname;
+    else if (toolPage) lastTool.current = pathname;
     else if (pathname.replace(/\/$/, '') !== '/settings')
       lastOverlay.current = pathname;
-  }, [appPage, pathname]);
+  }, [appPage, toolPage, pathname]);
   const mainRef = useRef<HTMLElement>(null);
   const previousPath = useRef(pathname);
   useEffect(() => {
@@ -115,7 +120,7 @@ export const SettingsLayout = () => {
           }}
         >
           <h1 className="sr-only">
-            {appPage ? 'App settings' : 'Overlay Settings'}
+            {appPage ? 'App settings' : toolPage ? 'Tools' : 'Overlay Settings'}
           </h1>
           <div className="flex min-w-0 items-center gap-3">
             <img src={logo} alt="" className="h-7 w-7 shrink-0" />
@@ -173,6 +178,7 @@ export const SettingsLayout = () => {
           {/* Left Column - Widget Menu */}
           <SettingsMenu
             appTo={lastApp.current}
+            toolsTo={lastTool.current}
             returnTo={lastOverlay.current}
           />
 
@@ -181,7 +187,13 @@ export const SettingsLayout = () => {
             id="settings-content"
             ref={mainRef}
             tabIndex={-1}
-            aria-label={appPage ? 'App settings page' : 'Overlay settings page'}
+            aria-label={
+              appPage
+                ? 'App settings page'
+                : toolPage
+                  ? 'Tools page'
+                  : 'Overlay settings page'
+            }
             className="min-w-0 flex-1 bg-slate-900 px-4 pt-4 pb-3 focus:outline-none lg:px-7 lg:pt-7"
           >
             <div

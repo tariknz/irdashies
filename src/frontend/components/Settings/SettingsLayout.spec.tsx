@@ -136,8 +136,9 @@ describe('SettingsLayout navigation', () => {
     expect(
       screen.getByRole('heading', { name: 'profiles' })
     ).toBeInTheDocument();
+    // Profiles is a tool: its menu is Tools, not the overlay list.
     expect(
-      screen.getByRole('navigation', { name: 'Overlay settings' })
+      screen.getByRole('navigation', { name: 'Tools pages' })
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Profiles' })).toHaveAttribute(
       'aria-current',
