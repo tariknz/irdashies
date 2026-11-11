@@ -47,7 +47,11 @@ import {
   lapTraceElementSide,
   resolveLapTraceLayoutTree,
 } from '../../LapTrace/layoutTree';
-import { isEmptyLayoutTree, layoutTreeHas } from '@irdashies/domain/layoutTree';
+import {
+  isEmptyLayoutTree,
+  layoutTreeHas,
+  withoutRepeatedElements,
+} from '@irdashies/domain/layoutTree';
 
 const SETTING_ID = 'laptrace';
 const SettingProp = settingPropFor(SETTING_ID);
@@ -226,7 +230,9 @@ export const LapTraceSettings = () => {
   );
   const cornersInLayout = layoutTreeHas(currentTree, 'corners');
   const barsInLayout = layoutTreeHas(currentTree, 'brakeCue');
-  const barSide = lapTraceElementSide(currentTree, 'brakeCue') ?? 'right';
+  const barSide =
+    lapTraceElementSide(withoutRepeatedElements(currentTree), 'brakeCue') ??
+    'right';
 
   const [activeTab, setActiveTab] = useState<SettingsTabType>(() => {
     const saved = localStorage.getItem('lapTraceTab') as SettingsTabType | null;

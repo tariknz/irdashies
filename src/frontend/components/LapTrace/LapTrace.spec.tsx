@@ -755,6 +755,24 @@ describe('LapTrace', () => {
       expect(screen.getByTestId('brake-cue-bars').dataset.side).toBe('left');
       expect(screen.getAllByTestId('last-corner-panel')).toHaveLength(1);
     });
+
+    it('places an element beside the trace that is drawn, not a repeated one', () => {
+      seedReference();
+
+      // The repeated trace above the strip is not drawn, so the strip sits
+      // beside the first trace: a column of bars, not one across.
+      render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('row', [
+            box('plot'),
+            split('col', [box('plot'), box('brakeCue')]),
+          ])}
+        />
+      );
+      expect(screen.getAllByTestId('gear-labels')).toHaveLength(1);
+      expect(screen.getByTestId('brake-cue-bars').dataset.side).toBe('right');
+    });
   });
 
   it('caps a long imported lap name at half the header', () => {

@@ -31,7 +31,10 @@ import {
 import { invalidLapMessage } from './invalidLapMessage';
 import { useLapTraceSettings } from './hooks/useLapTraceSettings';
 import { lapTraceElementSide, resolveLapTraceLayoutTree } from './layoutTree';
-import { layoutTreeHas } from '@irdashies/domain/layoutTree';
+import {
+  layoutTreeHas,
+  withoutRepeatedElements,
+} from '@irdashies/domain/layoutTree';
 import {
   useLastCornerComparison,
   useLastCornerLabels,
@@ -81,8 +84,10 @@ export const LapTrace = (props: LapTraceProps) => {
 
   // Which elements show, and where, comes from the layout tree. Configs saved
   // before the layout editor got theirs from the dashboard-load migration.
+  // An element held twice is drawn where it first appears only, so the sides
+  // below are read from the same tree the layout draws.
   const tree = useMemo(
-    () => resolveLapTraceLayoutTree(config.layoutTree),
+    () => withoutRepeatedElements(resolveLapTraceLayoutTree(config.layoutTree)),
     [config.layoutTree]
   );
   const showCorners = layoutTreeHas(tree, 'corners');
