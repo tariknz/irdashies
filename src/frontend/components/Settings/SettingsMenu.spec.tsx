@@ -324,6 +324,65 @@ describe('SettingsMenu', () => {
       expect(scrollTop).toBe(80);
     });
 
+    it('brings the current row back into view when a switch moves it in Activated first', () => {
+      assert(state.dashboard);
+      // Both on: Standings first, then Twitch Chat.
+      state.dashboard.widgets = [
+        ...state.dashboard.widgets,
+        {
+          id: 'twitchchat',
+          enabled: true,
+          layout: { x: 0, y: 200, width: 100, height: 100 },
+        },
+      ];
+      localStorage.setItem('settingsMenuSort', 'activated');
+      const { rerender } = renderMenu();
+      expect(listedLinks(/activated first/)).toEqual([
+        'Standings',
+        'Twitch Chat',
+      ]);
+      const scroller = document.querySelector<HTMLElement>(
+        '[data-overlay-scroll]'
+      );
+      assert(scroller);
+      const row = screen.getByRole('link', { name: 'Standings' });
+      let scrollTop = 0;
+      Object.defineProperty(scroller, 'clientHeight', {
+        configurable: true,
+        value: 100,
+      });
+      Object.defineProperty(scroller, 'scrollTop', {
+        configurable: true,
+        get: () => scrollTop,
+        set: (value: number) => {
+          scrollTop = value;
+        },
+      });
+      scroller.getBoundingClientRect = () =>
+        ({ top: 0, bottom: 100 }) as DOMRect;
+      row.getBoundingClientRect = () => ({ top: 150, bottom: 180 }) as DOMRect;
+
+      // Standings switched off: it moves after Twitch Chat.
+      state.dashboard = {
+        ...state.dashboard,
+        widgets: state.dashboard.widgets.map((w) =>
+          (w.type ?? w.id) === 'standings' ? { ...w, enabled: false } : w
+        ),
+      };
+      rerender(
+        <MemoryRouter initialEntries={['/settings/standings']}>
+          <SettingsMenu returnTo="/settings/standings" />
+          <CurrentPath />
+        </MemoryRouter>
+      );
+      expect(listedLinks(/activated first/)).toEqual([
+        'Twitch Chat',
+        'Standings',
+      ]);
+      expect(screen.getByRole('link', { name: 'Standings' })).toBe(row);
+      expect(scrollTop).toBe(80);
+    });
+
     it('still filters by the search in a list without categories', () => {
       localStorage.setItem('settingsMenuSort', 'alpha');
       renderMenu();

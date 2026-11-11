@@ -55,7 +55,8 @@ const MenuLink = ({
   onNavigate?: () => void;
   /**
    * A change brings the current row back into view: the list was reordered
-   * under it, which keeps the row mounted and its scroll position stale.
+   * under it (a new sort order, or a switch moving it to the other group in
+   * Activated first), which keeps the row mounted and its scroll stale.
    */
   revealKey?: string;
 }) => {
@@ -253,12 +254,14 @@ export const SettingsMenu = ({
       ? []
       : sortMenuItems(visibleItems, sortMode, isItemEnabled);
 
-  const renderLink = (item: MenuItem) => (
+  // The order and the row's place in it: a change to either re-runs the
+  // current row's reveal. Other rows ignore it.
+  const renderLink = (item: MenuItem, index: number) => (
     <MenuLink
       key={item.path}
       item={item}
       pathname={asidePage ? overlayPath.current : pathname}
-      revealKey={sortMode}
+      revealKey={`${sortMode}:${index}`}
       isEnabled={item.widgetType ? isItemEnabled(item) : undefined}
       disabledReason={unsupported(item) ?? undefined}
       onToggle={

@@ -16,10 +16,10 @@ import {
   useRunningState,
 } from '@irdashies/context';
 import { simulatorDisplayName } from '@irdashies/types';
-import { SettingsLoader } from './SettingsLoader';
+import { SettingsLoader, WIDGET_SETTINGS } from './SettingsLoader';
 import { SettingsMenu } from './SettingsMenu';
 import { HeaderProfilePicker } from './components/HeaderProfilePicker';
-import { generalItems, bottomItems, toolItems, widgetItems } from './menuItems';
+import { generalItems, bottomItems, toolItems } from './menuItems';
 import { settingsPagePath } from './settingsPagePath';
 import {
   readLastWidgetPage,
@@ -47,14 +47,31 @@ export const SettingsLayout = () => {
   // The widget page open when irDashies last quit, read once at start.
   const storedWidgetPage = useRef(readLastWidgetPage());
   const lastOverlay = useRef<string | null>(null);
+  // A widget with a settings page of its own: a widget type, or a copy in
+  // this layout, which resolves to its type. The Telemetry Inspector has
+  // none (its settings are on Advanced), so it is never kept or reopened.
+  const hasWidgetPage = (id: string) => {
+    const widget = currentDashboard?.widgets.find((w) => w.id === id);
+    return Object.hasOwn(
+      WIDGET_SETTINGS,
+      widget ? (widget.type ?? widget.id) : id
+    );
+  };
+  const pageId = pathname.match(/^\/settings\/([^/]+)$/)?.[1];
+  const keepsWidgetPage =
+    !appPage &&
+    !toolPage &&
+    !!currentDashboard &&
+    !!pageId &&
+    hasWidgetPage(pageId);
   useEffect(() => {
     if (appPage) lastApp.current = pathname;
     else if (toolPage) lastTool.current = pathname;
-    else if (pathname.replace(/\/$/, '') !== '/settings') {
-      lastOverlay.current = pathname;
-      saveLastWidgetPage(pathname);
-    }
+    else if (pathname !== '/settings') lastOverlay.current = pathname;
   }, [appPage, toolPage, pathname]);
+  useEffect(() => {
+    if (keepsWidgetPage) saveLastWidgetPage(pathname);
+  }, [keepsWidgetPage, pathname]);
   const mainRef = useRef<HTMLElement>(null);
   const previousPath = useRef(pathname);
   useEffect(() => {
@@ -94,14 +111,8 @@ export const SettingsLayout = () => {
     return <>Loading...</>;
   }
 
-  // Settings open on the widget page left last, while it still exists: a
-  // widget in this layout (a copy has its own page) or a widget type.
-  const startPage = startWidgetPage(
-    storedWidgetPage.current,
-    (id) =>
-      currentDashboard.widgets.some((widget) => widget.id === id) ||
-      widgetItems.some((item) => item.path === `/${id}`)
-  );
+  // Settings open on the widget page left last, while it still has one.
+  const startPage = startWidgetPage(storedWidgetPage.current, hasWidgetPage);
   const overlayReturn = lastOverlay.current ?? startPage;
 
   return (

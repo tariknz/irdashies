@@ -30,6 +30,9 @@ vi.mock('@irdashies/context', () => ({
 }));
 vi.mock('./SettingsLoader', () => ({
   SettingsLoader: () => <h2>{useParams().widgetId}</h2>,
+  // The widget types with settings pages of their own that these tests
+  // visit. The Telemetry Inspector has none, as in the real list.
+  WIDGET_SETTINGS: { relative: {}, standings: {}, weather: {} },
 }));
 
 function renderLayout(path = '/settings/relative') {
@@ -107,6 +110,32 @@ describe('SettingsLayout navigation', () => {
         screen.getByRole('link', { name: 'Back to overlays' })
       ).toHaveAttribute('href', '/settings/relative');
       expect(localStorage.getItem('settingsLastWidgetPage')).toBeNull();
+    });
+
+    it('never keeps or reopens the Telemetry Inspector, whose settings are on Advanced', () => {
+      dashboard.widgets = [{ id: 'telemetryinspector' }];
+      const { unmount } = renderLayout('/settings/standings');
+      unmount();
+      // Opened from its overlay: the page left last stays Standings.
+      const { unmount: unmountInspector } = renderLayout(
+        '/settings/telemetryinspector'
+      );
+      unmountInspector();
+      expect(localStorage.getItem('settingsLastWidgetPage')).toBe(
+        '/settings/standings'
+      );
+      renderLayout('/settings');
+      expect(shownPage()).toHaveTextContent('standings');
+    });
+
+    it('opens on Relative when the Telemetry Inspector was saved', () => {
+      dashboard.widgets = [{ id: 'telemetryinspector' }];
+      localStorage.setItem(
+        'settingsLastWidgetPage',
+        '/settings/telemetryinspector'
+      );
+      renderLayout('/settings');
+      expect(shownPage()).toHaveTextContent('relative');
     });
 
     it('returns to the reopened page from App settings', () => {
