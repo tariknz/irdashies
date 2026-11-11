@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   DEFAULT_WIDGET_PAGE,
+  existingWidgetPage,
   readLastWidgetPage,
   saveLastWidgetPage,
   startWidgetPage,
@@ -34,6 +35,17 @@ describe('last widget page', () => {
     expect(startWidgetPage('/settings/removed', isWidgetPage)).toBe(
       DEFAULT_WIDGET_PAGE
     );
+  });
+
+  it('keeps a path only while its widget page exists', () => {
+    expect(existingWidgetPage('/settings/standings', isWidgetPage)).toBe(
+      '/settings/standings'
+    );
+    expect(
+      existingWidgetPage('/settings/removed', isWidgetPage)
+    ).toBeUndefined();
+    expect(existingWidgetPage(null, isWidgetPage)).toBeUndefined();
+    expect(existingWidgetPage(undefined, isWidgetPage)).toBeUndefined();
   });
 
   it('ignores anything that is not a settings page', () => {

@@ -22,6 +22,7 @@ import { HeaderProfilePicker } from './components/HeaderProfilePicker';
 import { generalItems, bottomItems, toolItems } from './menuItems';
 import { settingsPagePath } from './settingsPagePath';
 import {
+  existingWidgetPage,
   readLastWidgetPage,
   saveLastWidgetPage,
   startWidgetPage,
@@ -113,7 +114,10 @@ export const SettingsLayout = () => {
 
   // Settings open on the widget page left last, while it still has one.
   const startPage = startWidgetPage(storedWidgetPage.current, hasWidgetPage);
-  const overlayReturn = lastOverlay.current ?? startPage;
+  // Back to overlays: the overlay page visited last, while it still exists.
+  // A profile switch can take a layout copy away without remounting this.
+  const overlayReturn =
+    existingWidgetPage(lastOverlay.current, hasWidgetPage) ?? startPage;
 
   return (
     <ReleaseNotesStatusProvider>

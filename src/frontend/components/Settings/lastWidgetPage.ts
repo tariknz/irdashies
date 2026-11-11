@@ -22,15 +22,21 @@ export const saveLastWidgetPage = (path: string): void => {
 };
 
 /**
- * The page to open on: the widget page left last, while that widget still
- * has a page, else Relative. A widget can be gone by the next start: removed
- * from the layout, a copy missing from the profile now active, or a type a
- * newer version dropped.
+ * `path` while it is a widget page that still exists, else undefined. A
+ * widget can be gone since the path was taken: removed from the layout, a
+ * copy missing from the profile now active, or a type a newer version
+ * dropped.
  */
+export const existingWidgetPage = (
+  path: string | null | undefined,
+  isWidgetPage: (id: string) => boolean
+): string | undefined => {
+  const id = path?.match(/^\/settings\/([^/]+)$/)?.[1];
+  return path && id && isWidgetPage(id) ? path : undefined;
+};
+
+/** The page to open on: the widget page left last, if it still exists, else Relative. */
 export const startWidgetPage = (
   stored: string | null,
   isWidgetPage: (id: string) => boolean
-): string => {
-  const id = stored?.match(/^\/settings\/([^/]+)$/)?.[1];
-  return stored && id && isWidgetPage(id) ? stored : DEFAULT_WIDGET_PAGE;
-};
+): string => existingWidgetPage(stored, isWidgetPage) ?? DEFAULT_WIDGET_PAGE;

@@ -138,6 +138,30 @@ describe('SettingsLayout navigation', () => {
       expect(shownPage()).toHaveTextContent('relative');
     });
 
+    it('does not go back to a layout copy a profile switch took away', () => {
+      dashboard.widgets = [{ id: 'standings-g1', type: 'standings' }];
+      const { rerender } = renderLayout('/settings/standings-g1');
+      fireEvent.click(screen.getByRole('link', { name: 'Tools' }));
+      expect(shownPage()).toHaveTextContent('profiles');
+      expect(
+        screen.getByRole('link', { name: 'Back to overlays' })
+      ).toHaveAttribute('href', '/settings/standings-g1');
+
+      // Another profile, without the copy: the layout stays mounted.
+      dashboard.widgets = [];
+      rerender(
+        <MemoryRouter initialEntries={['/settings/standings-g1']}>
+          <Routes>
+            <Route path="/settings/*" element={<SettingsLayout />} />
+          </Routes>
+        </MemoryRouter>
+      );
+      expect(shownPage()).toHaveTextContent('profiles');
+      expect(
+        screen.getByRole('link', { name: 'Back to overlays' })
+      ).toHaveAttribute('href', '/settings/relative');
+    });
+
     it('returns to the reopened page from App settings', () => {
       localStorage.setItem('settingsLastWidgetPage', '/settings/standings');
       renderLayout('/settings/general');
