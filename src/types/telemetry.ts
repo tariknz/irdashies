@@ -159,6 +159,12 @@ export type Telemetry = {
   LmuVirtualEnergy?: TelemetryVar<number[]>;
   LmuStateOfCharge?: TelemetryVar<number[]>;
   LmuRegen?: TelemetryVar<number[]>;
+  /**
+   * iRacing Season 3+ — true when the car needs mandatory / optional repairs.
+   * Not in every generated snapshot yet; optional so older builds still typecheck.
+   */
+  PitRepairNeeded?: TelemetryVar<boolean[]>;
+  PitOptRepairNeeded?: TelemetryVar<boolean[]>;
 };
 /**
  * What SessionLapsRemain and SessionLapsTotal carry when the session has no

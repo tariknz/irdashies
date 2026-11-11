@@ -37,6 +37,7 @@ export interface DriverIdentity {
 
 export interface TrackProps {
   trackId: number;
+  trackDrawing?: TrackDrawing;
   drivers: TrackDriver[];
   driverIdentities?: DriverIdentity[];
   turnLabels?: {
@@ -86,9 +87,16 @@ const TRACK_DRAWING_HEIGHT = 1080;
 
 /** Mount canvas effects only once the requested drawing is available. */
 export const TrackCanvas = (props: TrackProps) => {
-  const drawing = useTrackDrawing(props.trackId);
+  const override = props.trackDrawing;
+  const loaded = useTrackDrawing(override ? undefined : props.trackId);
+  const drawing = override ?? loaded;
   return drawing ? (
-    <LoadedTrackCanvas key={props.trackId} {...props} trackDrawing={drawing} />
+    <LoadedTrackCanvas
+      key={props.trackId}
+      {...props}
+      trackDrawing={drawing}
+      hasDrawingOverride={override !== undefined}
+    />
   ) : null;
 };
 
@@ -122,7 +130,11 @@ const LoadedTrackCanvas = ({
   driverLivePositions = {},
   maxFps,
   trackDrawing,
-}: TrackProps & { trackDrawing: TrackDrawing }) => {
+  hasDrawingOverride,
+}: TrackProps & {
+  trackDrawing: TrackDrawing;
+  hasDrawingOverride: boolean;
+}) => {
   const playerIconDataUrl = useMemo(
     () => validateImageDataUrl(rawPlayerIconDataUrl),
     [rawPlayerIconDataUrl]
@@ -137,7 +149,9 @@ const LoadedTrackCanvas = ({
   const playerIconElRef = useRef<HTMLImageElement>(null);
   const playerPitBadgeRef = useRef<HTMLDivElement>(null);
 
-  const shouldShow = shouldShowTrack(trackId, trackDrawing);
+  const shouldShow = hasDrawingOverride
+    ? !!trackDrawing.active?.inside && !!trackDrawing.startFinish?.line
+    : shouldShowTrack(trackId, trackDrawing);
 
   const driversOffTrack = useCarIdxOffTrack();
   const carIdxIsOnPitRoad =
@@ -364,7 +378,7 @@ const LoadedTrackCanvas = ({
     }
 
     drawStartFinishLine(cacheCtx, startFinishLine);
-    drawTurnNames(cacheCtx, trackDrawing.turns, turnLabels);
+    drawTurnNames(cacheCtx, trackDrawing?.turns, turnLabels);
 
     cacheCtx.restore();
 

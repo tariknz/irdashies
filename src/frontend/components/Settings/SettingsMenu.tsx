@@ -11,7 +11,14 @@ import {
   useDashboard,
   useSimWidgetSupport,
 } from '@irdashies/context';
-import { WIDGET_CATEGORIES, widgetDisabledMessage } from '@irdashies/types';
+import {
+  SIMULATOR_IDS,
+  SIMULATOR_LABELS,
+  WIDGET_CATEGORIES,
+  isWidgetVisibleInGameFilter,
+  widgetDisabledMessage,
+  type WidgetGameFilter,
+} from '@irdashies/types';
 import {
   generalItems,
   toolItems,
@@ -21,6 +28,17 @@ import {
   type MenuItem,
 } from './menuItems';
 import { ToggleSwitch } from './components/ToggleSwitch';
+
+const GAME_FILTERS: { value: WidgetGameFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  ...SIMULATOR_IDS.map((id) => ({ value: id, label: SIMULATOR_LABELS[id] })),
+];
+
+const FILTER_PANEL_CLASS: Record<WidgetGameFilter, string> = {
+  all: 'border-settings-boundary bg-slate-900',
+  iracing: 'border-[#3b82f6]/40 bg-[#1e3a8a]/20',
+  lmu: 'border-orange-500/40 bg-orange-900/20',
+};
 
 const MenuLink = ({
   item,
@@ -144,6 +162,7 @@ export const SettingsMenu = ({
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const simulator = useActiveSimulator();
   const supportConfig = useSimWidgetSupport();
+  const [gameFilter, setGameFilter] = useState<WidgetGameFilter>('all');
   const [showHidden, setShowHidden] = useState(false);
   const [query, setQuery] = useState('');
   const appPage = [...generalItems, ...bottomItems].some(
@@ -208,8 +227,19 @@ export const SettingsMenu = ({
   // Widgets the running sim cannot support are left out unless asked for.
   const supportedItems = menuItems.filter((item) => !unsupported(item));
   const hiddenCount = menuItems.length - supportedItems.length;
+  const runningSimItems = showHidden ? menuItems : supportedItems;
+  const gameFilteredItems =
+    gameFilter === 'all'
+      ? runningSimItems
+      : menuItems.filter((item) =>
+          isWidgetVisibleInGameFilter(
+            supportConfig,
+            item.widgetType,
+            gameFilter
+          )
+        );
   const searchQuery = query.trim().toLowerCase();
-  const visibleItems = (showHidden ? menuItems : supportedItems).filter(
+  const visibleItems = gameFilteredItems.filter(
     (item) =>
       item.label.toLowerCase().includes(searchQuery) ||
       item.category?.toLowerCase().includes(searchQuery)
@@ -249,7 +279,7 @@ export const SettingsMenu = ({
       scroller.removeEventListener('scroll', updateFade);
       observer?.disconnect();
     };
-  }, [appPage, query, showHidden, visibleItems.length]);
+  }, [appPage, query, showHidden, gameFilter, visibleItems.length]);
 
   return (
     <nav
@@ -288,7 +318,7 @@ export const SettingsMenu = ({
         className={appPage ? 'hidden' : 'flex min-h-0 flex-1 flex-col'}
         data-overlay-area
       >
-        <div className="shrink-0 bg-slate-950 px-1 pb-3 pt-3">
+        <div className="shrink-0 space-y-2 bg-slate-950 px-1 pb-3 pt-3">
           <label className="flex min-h-9 items-center gap-2 rounded-md border border-settings-boundary bg-slate-900 px-2 text-slate-400 focus-within:outline-2 focus-within:outline-offset-3 focus-within:outline-accent-400">
             <MagnifyingGlassIcon size={16} className="shrink-0" />
             <input
@@ -300,6 +330,30 @@ export const SettingsMenu = ({
               className="min-h-9 w-full min-w-0 bg-transparent text-sm text-slate-200 outline-none placeholder:text-slate-400 focus-visible:outline-none!"
             />
           </label>
+          <div
+            className={`rounded-md border p-2 ${FILTER_PANEL_CLASS[gameFilter]}`}
+          >
+            <label
+              htmlFor="widget-game-filter"
+              className="mb-1 block text-xs font-medium text-slate-300"
+            >
+              Show widgets for
+            </label>
+            <select
+              id="widget-game-filter"
+              value={gameFilter}
+              onChange={(event) =>
+                setGameFilter(event.target.value as WidgetGameFilter)
+              }
+              className="min-h-9 w-full rounded-md border border-settings-boundary bg-slate-950 px-2 text-sm text-slate-200"
+            >
+              {GAME_FILTERS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div
@@ -311,12 +365,12 @@ export const SettingsMenu = ({
           data-overlay-scroll
           className="settings-menu-scroll min-h-0 flex-1 overflow-y-auto"
         >
-          {hiddenCount > 0 && (
+          {gameFilter === 'all' && hiddenCount > 0 && (
             <div className="px-2 pt-2 pb-1">
               <button
                 type="button"
                 onClick={() => setShowHidden((v) => !v)}
-                className="text-xs text-slate-400 hover:text-slate-200 cursor-pointer"
+                className="cursor-pointer text-xs text-slate-400 hover:text-slate-200"
               >
                 {showHidden
                   ? `(showing ${hiddenCount} hidden)`
@@ -354,7 +408,9 @@ export const SettingsMenu = ({
           </div>
           {visibleItems.length === 0 && (
             <p role="status" className="px-2 py-4 text-sm text-slate-400">
-              No overlays match “{query}”.
+              {query.trim()
+                ? `No overlays match “${query}”.`
+                : 'No widgets match this filter.'}
             </p>
           )}
         </div>

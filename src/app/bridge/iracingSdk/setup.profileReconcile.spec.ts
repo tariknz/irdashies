@@ -3,30 +3,41 @@ import type { ActiveSimulator, IrSdkSourceBridge } from '@irdashies/types';
 import type { OverlayManager } from '../../overlayManager';
 import logger from '../../logger';
 
-const ipcMain = vi.hoisted(() => ({ on: vi.fn(), handle: vi.fn() }));
-vi.mock('electron', () => ({ ipcMain }));
+const ipc = vi.hoisted(() => {
+  const handlers = new Map<string, () => Promise<void>>();
+  return {
+    handlers,
+    ipcMain: {
+      on: vi.fn((channel: string, handler: () => Promise<void>) => {
+        handlers.set(channel, handler);
+      }),
+      handle: vi.fn(),
+    },
+  };
+});
+vi.mock('electron', () => ({
+  ipcMain: ipc.ipcMain,
+  app: {
+    getPath: vi.fn(() => '/mock/user/data'),
+  },
+}));
 
 vi.mock('../../logger', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
-// Only ever referenced as a type by setup.ts, but stubbed so the spec does not
-// drag the real window manager in.
 vi.mock('../../overlayManager', () => ({ OverlayManager: vi.fn() }));
 
-const storage = vi.hoisted(() => ({
-  profileId: 'a',
-  simulatorFor: {} as Record<string, ActiveSimulator>,
-  /** Counts resolutions, so a reconcile that reuses the bridge is still visible. */
-  reads: 0,
+const dashboard = vi.hoisted(() => ({
+  profileId: 'default',
+  simulator: 'iracing' as 'auto' | 'iracing' | 'lmu' | undefined,
 }));
 
 vi.mock('../../storage/dashboards', () => ({
-  getCurrentProfileId: () => storage.profileId,
-  getDashboard: (id: string) => {
-    storage.reads += 1;
-    return { generalSettings: { simulator: storage.simulatorFor[id] } };
-  },
+  getCurrentProfileId: () => dashboard.profileId,
+  getDashboard: () => ({
+    generalSettings: { simulator: dashboard.simulator },
+  }),
 }));
 
 const registry = vi.hoisted(() => ({
@@ -67,16 +78,14 @@ const realPlatform = process.platform;
 
 describe('simulator selection across profiles', () => {
   beforeEach(() => {
-    // The preference is only honoured on the real-SDK path; the non-Windows
-    // fallback builds the mock bridge whatever it says.
     Object.defineProperty(process, 'platform', { value: 'win32' });
     vi.resetModules();
+    ipc.handlers.clear();
     registry.built = [];
     registry.stopped = [];
     registry.failure = undefined;
-    storage.profileId = 'a';
-    storage.reads = 0;
-    storage.simulatorFor = { a: 'iracing', b: 'lmu' };
+    dashboard.profileId = 'default';
+    dashboard.simulator = 'iracing';
   });
 
   afterEach(() => {
@@ -114,45 +123,31 @@ describe('simulator selection across profiles', () => {
     await iRacingSDKSetup(overlayManager);
     expect(registry.built).toEqual(['iracing']);
 
-    storage.profileId = 'b';
-    emitDashboardUpdated({} as never);
-
-    await vi.waitFor(() => expect(registry.built).toEqual(['iracing', 'lmu']));
-    expect(registry.stopped).toEqual(['iracing']);
-  });
-
-  it('leaves the bridge alone for an ordinary settings save', async () => {
-    const { iRacingSDKSetup } = await import('./setup');
-    const { emitDashboardUpdated } =
-      await import('../../storage/dashboardEvents');
-    await iRacingSDKSetup(overlayManager);
-
-    const readsBefore = storage.reads;
+    // Same profile id: an ordinary settings save must not tear the bridge down.
     emitDashboardUpdated({} as never);
     await Promise.resolve();
 
-    // Not even resolved: a settings save must not reach the bridge at all.
-    expect(storage.reads).toBe(readsBefore);
     expect(registry.built).toEqual(['iracing']);
     expect(registry.stopped).toEqual([]);
   });
 
-  it('keeps the bridge when the new profile resolves to the same sim', async () => {
-    // The reuse check is what stops a profile switch disconnecting overlays
-    // that were already on the right source.
-    storage.simulatorFor = { a: 'iracing', b: 'iracing' };
+  it('moves telemetry when the app preference changes', async () => {
     const { iRacingSDKSetup } = await import('./setup');
-    const { emitDashboardUpdated } =
-      await import('../../storage/dashboardEvents');
+    await iRacingSDKSetup(overlayManager);
+    dashboard.simulator = 'lmu';
+
+    await ipc.handlers.get('simulatorPreferenceChanged')?.();
+
+    expect(registry.built).toEqual(['iracing', 'lmu']);
+    expect(registry.stopped).toEqual(['iracing']);
+  });
+
+  it('keeps the bridge when the preference still resolves to the same sim', async () => {
+    const { iRacingSDKSetup } = await import('./setup');
     await iRacingSDKSetup(overlayManager);
 
-    const readsBefore = storage.reads;
-    storage.profileId = 'b';
-    emitDashboardUpdated({} as never);
+    await ipc.handlers.get('simulatorPreferenceChanged')?.();
 
-    // The reconcile ran and resolved the new profile...
-    await vi.waitFor(() => expect(storage.reads).toBeGreaterThan(readsBefore));
-    // ...and decided the live bridge was already the one it would have built.
     expect(registry.built).toEqual(['iracing']);
     expect(registry.stopped).toEqual([]);
   });

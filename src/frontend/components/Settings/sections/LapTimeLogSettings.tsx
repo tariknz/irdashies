@@ -102,6 +102,7 @@ export const LapTimeLogSettings = () => {
                     {settings.config.delta?.enabled && (
                       <SettingsSection>
                         <SettingProp path="delta.method" />
+                        <SettingProp path="delta.showOnCurrentLap" />
                       </SettingsSection>
                     )}
 
