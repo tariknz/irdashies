@@ -68,10 +68,13 @@ export const SettingsLayout = () => {
   useEffect(() => {
     if (appPage) lastApp.current = pathname;
     else if (toolPage) lastTool.current = pathname;
-    else if (pathname !== '/settings') lastOverlay.current = pathname;
   }, [appPage, toolPage, pathname]);
+  // Only a page that counts replaces the overlay to go back to and the one
+  // to reopen: passing through the Telemetry Inspector keeps both.
   useEffect(() => {
-    if (keepsWidgetPage) saveLastWidgetPage(pathname);
+    if (!keepsWidgetPage) return;
+    lastOverlay.current = pathname;
+    saveLastWidgetPage(pathname);
   }, [keepsWidgetPage, pathname]);
   const mainRef = useRef<HTMLElement>(null);
   const previousPath = useRef(pathname);

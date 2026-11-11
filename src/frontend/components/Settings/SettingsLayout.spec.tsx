@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -160,6 +161,31 @@ describe('SettingsLayout navigation', () => {
       expect(
         screen.getByRole('link', { name: 'Back to overlays' })
       ).toHaveAttribute('href', '/settings/relative');
+    });
+
+    it('goes back to the last widget page, past the Telemetry Inspector', () => {
+      dashboard.widgets = [{ id: 'telemetryinspector' }];
+      // Settings opened from an overlay's gear button.
+      let openFromOverlay: (widgetType: string) => void = () => undefined;
+      const previousBridge = window.dashboardBridge;
+      window.dashboardBridge = {
+        onNavigateToSettings: (callback: (widgetType: string) => void) => {
+          openFromOverlay = callback;
+          return () => undefined;
+        },
+      } as unknown as typeof window.dashboardBridge;
+      try {
+        renderLayout('/settings/relative');
+        fireEvent.click(screen.getByRole('link', { name: 'Standings' }));
+        act(() => openFromOverlay('telemetryinspector'));
+        expect(shownPage()).toHaveTextContent('telemetryinspector');
+        fireEvent.click(screen.getByRole('link', { name: 'Tools' }));
+        expect(
+          screen.getByRole('link', { name: 'Back to overlays' })
+        ).toHaveAttribute('href', '/settings/standings');
+      } finally {
+        window.dashboardBridge = previousBridge;
+      }
     });
 
     it('returns to the reopened page from App settings', () => {
