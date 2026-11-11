@@ -87,6 +87,28 @@ describe('SettingsLayout navigation', () => {
       expect(shownPage()).toHaveTextContent('relative');
     });
 
+    it('reopens a widget page opened with a trailing slash', () => {
+      const { unmount } = renderLayout('/settings/standings/');
+      unmount();
+      expect(localStorage.getItem('settingsLastWidgetPage')).toBe(
+        '/settings/standings'
+      );
+      renderLayout('/settings');
+      expect(shownPage()).toHaveTextContent('standings');
+    });
+
+    it('treats a tool page with a trailing slash as a tool page, not an overlay', () => {
+      renderLayout('/settings/profiles/');
+      expect(
+        screen.getByRole('navigation', { name: 'Tools pages' })
+      ).toBeInTheDocument();
+      // Not recorded as the overlay to go back to.
+      expect(
+        screen.getByRole('link', { name: 'Back to overlays' })
+      ).toHaveAttribute('href', '/settings/relative');
+      expect(localStorage.getItem('settingsLastWidgetPage')).toBeNull();
+    });
+
     it('returns to the reopened page from App settings', () => {
       localStorage.setItem('settingsLastWidgetPage', '/settings/standings');
       renderLayout('/settings/general');

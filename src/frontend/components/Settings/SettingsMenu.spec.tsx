@@ -288,6 +288,42 @@ describe('SettingsMenu', () => {
       expect(localStorage.getItem('settingsMenuSort')).toBe('activated');
     });
 
+    it('brings the current row back into view after changing a flat order', () => {
+      localStorage.setItem('settingsMenuSort', 'alpha');
+      renderMenu();
+      const scroller = document.querySelector<HTMLElement>(
+        '[data-overlay-scroll]'
+      );
+      assert(scroller);
+      const row = screen.getByRole('link', { name: 'Standings' });
+      // jsdom does no layout: give the list a height, put the current row
+      // below it, and keep what is scrolled.
+      let scrollTop = 0;
+      Object.defineProperty(scroller, 'clientHeight', {
+        configurable: true,
+        value: 100,
+      });
+      Object.defineProperty(scroller, 'scrollTop', {
+        configurable: true,
+        get: () => scrollTop,
+        set: (value: number) => {
+          scrollTop = value;
+        },
+      });
+      scroller.getBoundingClientRect = () =>
+        ({ top: 0, bottom: 100 }) as DOMRect;
+      row.getBoundingClientRect = () => ({ top: 150, bottom: 180 }) as DOMRect;
+
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Choose how overlays are sorted' })
+      );
+      fireEvent.click(screen.getByRole('option', { name: 'Activated first' }));
+
+      // The row is the same element, reordered: it is scrolled to again.
+      expect(screen.getByRole('link', { name: 'Standings' })).toBe(row);
+      expect(scrollTop).toBe(80);
+    });
+
     it('still filters by the search in a list without categories', () => {
       localStorage.setItem('settingsMenuSort', 'alpha');
       renderMenu();
@@ -360,6 +396,21 @@ describe('SettingsMenu', () => {
         ]);
         unmount();
       }
+    });
+
+    it('treats a tool page with a trailing slash as a tool page', () => {
+      render(
+        <MemoryRouter initialEntries={['/settings/profiles/']}>
+          <SettingsMenu returnTo="/settings/standings" />
+        </MemoryRouter>
+      );
+      expect(
+        screen.getByRole('navigation', { name: 'Tools pages' })
+      ).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Profiles' })).toHaveAttribute(
+        'aria-current',
+        'page'
+      );
     });
 
     it('has no Tools in the preview', () => {

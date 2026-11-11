@@ -21,6 +21,7 @@ import {
   menuHasToggle,
   type MenuItem,
 } from './menuItems';
+import { settingsPagePath } from './settingsPagePath';
 import { ToggleSwitch } from './components/ToggleSwitch';
 import { MenuSortControl } from './components/MenuSortControl';
 import {
@@ -40,6 +41,7 @@ const MenuLink = ({
   isNew,
   disabledReason,
   onNavigate,
+  revealKey,
 }: {
   item: MenuItem;
   pathname: string;
@@ -51,6 +53,11 @@ const MenuLink = ({
   /** Present when the row controls a widget that exists in the dashboard. */
   onToggle?: (enabled: boolean) => void;
   onNavigate?: () => void;
+  /**
+   * A change brings the current row back into view: the list was reordered
+   * under it, which keeps the row mounted and its scroll position stale.
+   */
+  revealKey?: string;
 }) => {
   const isActive = pathname.startsWith(`/settings${item.path}`);
   const linkRef = useRef<HTMLAnchorElement>(null);
@@ -84,7 +91,7 @@ const MenuLink = ({
           });
     observer?.observe(scroller);
     return () => observer?.disconnect();
-  }, [isActive]);
+  }, [isActive, revealKey]);
   return (
     <li
       title={disabledReason}
@@ -152,7 +159,7 @@ export const SettingsMenu = ({
   excludedWidgetTypes?: ReadonlySet<string>;
 }) => {
   const { status: releaseNotesStatus } = useReleaseNotesStatus();
-  const { pathname } = useLocation();
+  const pathname = settingsPagePath(useLocation().pathname);
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const simulator = useActiveSimulator();
   const supportConfig = useSimWidgetSupport();
@@ -251,6 +258,7 @@ export const SettingsMenu = ({
       key={item.path}
       item={item}
       pathname={asidePage ? overlayPath.current : pathname}
+      revealKey={sortMode}
       isEnabled={item.widgetType ? isItemEnabled(item) : undefined}
       disabledReason={unsupported(item) ?? undefined}
       onToggle={

@@ -20,6 +20,7 @@ import { SettingsLoader } from './SettingsLoader';
 import { SettingsMenu } from './SettingsMenu';
 import { HeaderProfilePicker } from './components/HeaderProfilePicker';
 import { generalItems, bottomItems, toolItems, widgetItems } from './menuItems';
+import { settingsPagePath } from './settingsPagePath';
 import {
   readLastWidgetPage,
   saveLastWidgetPage,
@@ -34,7 +35,7 @@ export const SettingsLayout = () => {
   const previewPanelWidth = useState(420);
   const { bridge, isDemoMode, toggleDemoMode, currentDashboard } =
     useDashboard();
-  const { pathname } = useLocation();
+  const pathname = settingsPagePath(useLocation().pathname);
   const appPage = [...generalItems, ...bottomItems].some(
     (item) => item.to === pathname
   );
