@@ -17,6 +17,9 @@ const dashboard = vi.hoisted(() => ({
   widgets: [] as { id: string; type?: string }[],
 }));
 const support = vi.hoisted(() => ({ config: undefined as unknown }));
+const simulator = vi.hoisted(() => ({
+  active: 'iracing' as 'iracing' | 'lmu' | null,
+}));
 
 vi.mock('@irdashies/context', () => ({
   useDashboard: () => ({
@@ -27,7 +30,7 @@ vi.mock('@irdashies/context', () => ({
     bridge: { toggleLockOverlays: vi.fn() },
     toggleDemoMode: vi.fn(),
   }),
-  useActiveSimulator: () => 'iracing',
+  useActiveSimulator: () => simulator.active,
   useRunningState: () => ({ running: true }),
   useSimWidgetSupport: () => support.config ?? DEFAULT_SIM_WIDGET_SUPPORT,
 }));
@@ -63,6 +66,7 @@ describe('SettingsLayout navigation', () => {
     localStorage.clear();
     dashboard.widgets = [];
     support.config = undefined;
+    simulator.active = 'iracing';
   });
 
   describe('reopening', () => {
@@ -203,6 +207,35 @@ describe('SettingsLayout navigation', () => {
       };
       renderLayout('/settings');
       expect(shownPage()).toHaveTextContent('relative');
+    });
+
+    it('leaves the reopened page for Relative when the sim, known late, cannot run it', () => {
+      localStorage.setItem('settingsLastWidgetPage', '/settings/standings');
+      support.config = {
+        message: 'Unavailable in this simulator',
+        disabledWidgets: { iracing: [], lmu: ['standings'] },
+      };
+      // The simulator is not known yet on the first render.
+      simulator.active = null;
+      const { rerender } = renderLayout('/settings');
+      expect(shownPage()).toHaveTextContent('standings');
+
+      simulator.active = 'lmu';
+      rerender(layoutAt('/settings'));
+      expect(shownPage()).toHaveTextContent('relative');
+    });
+
+    it('keeps a page the user opened when the sim, known late, cannot run it', () => {
+      support.config = {
+        message: 'Unavailable in this simulator',
+        disabledWidgets: { iracing: [], lmu: ['standings'] },
+      };
+      simulator.active = null;
+      const { rerender } = renderLayout('/settings/standings');
+
+      simulator.active = 'lmu';
+      rerender(layoutAt('/settings/standings'));
+      expect(shownPage()).toHaveTextContent('standings');
     });
 
     it('does not keep a page the sim connected now cannot run', () => {

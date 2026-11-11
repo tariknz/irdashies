@@ -23,6 +23,7 @@ import { HeaderProfilePicker } from './components/HeaderProfilePicker';
 import { settingsPageKind, type SettingsPageKind } from './settingsPageKind';
 import { widgetSettingsType } from './widgetSettingsType';
 import {
+  DEFAULT_WIDGET_PAGE,
   existingWidgetPage,
   readLastWidgetPage,
   saveLastWidgetPage,
@@ -35,6 +36,9 @@ import { SettingsPreviewPanelContext } from '@irdashies/domain/widgetPreview/set
 
 /** How many overlay pages Back to overlays can walk back through. */
 const VISITED_OVERLAYS = 20;
+
+/** Marks the history entry of the page Settings reopened at start. */
+const RESTORED = { restoredWidgetPage: true };
 
 const PAGE_HEADINGS: Record<SettingsPageKind, string> = {
   app: 'App settings',
@@ -53,7 +57,11 @@ export const SettingsLayout = () => {
   const { bridge, isDemoMode, toggleDemoMode, currentDashboard } =
     useDashboard();
   // Without a trailing slash: TrailingSlashRedirect at the route sees to it.
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
+  // Still on the page reopened at start: the user has not moved since.
+  const restored =
+    (location.state as typeof RESTORED | null)?.restoredWidgetPage === true;
   const pageKind = settingsPageKind(pathname);
   const appPage = pageKind === 'app';
   const toolPage = pageKind === 'tool';
@@ -110,6 +118,14 @@ export const SettingsLayout = () => {
     previousPath.current = pathname;
   }, [pathname]);
   const navigate = useNavigate();
+  // The simulator and the support file arrive after the first render, so the
+  // page reopened then can turn out to be one the sim cannot run. Its row is
+  // hidden from the menu: leave it for Relative. A page the user opened
+  // stays open.
+  useEffect(() => {
+    if (restored && !reopenablePage && pathname !== DEFAULT_WIDGET_PAGE)
+      navigate(DEFAULT_WIDGET_PAGE, { replace: true });
+  }, [restored, reopenablePage, pathname, navigate]);
   const [editModeAccelerator, setEditModeAccelerator] = useState('F6');
   const { running } = useRunningState();
   // The name says which sim is feeding the overlays, so it has no business
@@ -262,7 +278,9 @@ export const SettingsLayout = () => {
                 <Routes>
                   <Route
                     path="/"
-                    element={<Navigate to={startPage} replace />}
+                    element={
+                      <Navigate to={startPage} replace state={RESTORED} />
+                    }
                   />
                   <Route path="/:widgetId" element={<SettingsLoader />} />
                 </Routes>
