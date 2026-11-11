@@ -1,15 +1,21 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { startTransition, Suspense, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { defaultDashboard, type Session } from '@irdashies/types';
+import {
+  defaultDashboard,
+  type DashboardLayout,
+  type Session,
+} from '@irdashies/types';
 import { WidgetPreview } from './WidgetPreview';
 import { useWidgetPreviewSession } from './useWidgetPreviewSession';
 
 const save = vi.fn();
 const toggleDemo = vi.fn();
+/** A dashboard to preview instead of the default one. */
+let dashboard: DashboardLayout | undefined;
 vi.mock('@irdashies/context', () => ({
   useDashboard: () => ({
-    currentDashboard: defaultDashboard,
+    currentDashboard: dashboard ?? defaultDashboard,
     onDashboardUpdated: save,
     toggleDemoMode: toggleDemo,
   }),
@@ -36,6 +42,7 @@ beforeEach(() => {
   };
 });
 afterEach(() => {
+  dashboard = undefined;
   delete window.widgetPreviewBridge;
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -118,6 +125,42 @@ describe('settings widget preview', () => {
     expect(frame).toHaveStyle({ transform: 'scale(1)' });
     expect(save).not.toHaveBeenCalled();
     expect(toggleDemo).not.toHaveBeenCalled();
+  });
+
+  it('shows the saved size in whole pixels, also after switching widgets and back', () => {
+    // Edit mode saves layouts from pointer deltas, which on a scaled display
+    // are fractions of a CSS pixel.
+    dashboard = {
+      ...defaultDashboard,
+      widgets: defaultDashboard.widgets.map((widget) =>
+        widget.id === 'input'
+          ? {
+              ...widget,
+              layout: {
+                ...widget.layout,
+                width: 396.40000000000003,
+                height: 119.99999999999999,
+              },
+            }
+          : widget
+      ),
+    };
+    const sizeLabel = () => screen.getByText(/ × /).textContent;
+    const { rerender } = render(<WidgetPreview widgetId="input" />);
+    expect(sizeLabel()).toMatch(/^396 × 120 · \d+%$/);
+
+    rerender(<WidgetPreview widgetId="broadcastticker" />);
+    expect(sizeLabel()).toMatch(/^1920 × 72 · /);
+    rerender(<WidgetPreview widgetId="input" />);
+    expect(sizeLabel()).toMatch(/^396 × 120 · \d+%$/);
+    expect(screen.getByTitle('Input Traces demo')).toHaveStyle({
+      width: '396px',
+      height: '120px',
+    });
+    // The shown size is the saved one: nothing to reset.
+    expect(
+      screen.getByRole('button', { name: 'Reset preview size' })
+    ).toBeDisabled();
   });
 
   it('pans with the keyboard and recenters without changing the widget or demo', () => {

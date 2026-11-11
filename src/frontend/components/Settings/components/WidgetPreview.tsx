@@ -35,8 +35,13 @@ export const WidgetPreview = ({
     width: number;
     height: number;
   } | null>(null);
-  const width = frameSize?.width ?? widget?.layout.width ?? 1;
-  const height = frameSize?.height ?? widget?.layout.height ?? 1;
+  // The saved layout can be fractional: edit mode moves and resizes widgets
+  // by pointer deltas, which on a scaled display are fractions of a CSS
+  // pixel. The preview works in whole pixels, as its own resize does.
+  const savedWidth = Math.round(widget?.layout.width ?? 1);
+  const savedHeight = Math.round(widget?.layout.height ?? 1);
+  const width = frameSize?.width ?? savedWidth;
+  const height = frameSize?.height ?? savedHeight;
   const previewConfigDashboard = useMemo(() => {
     if (!currentDashboard || !widget || !frameSize) return currentDashboard;
     const selected = { ...widget, layout: { ...widget.layout, ...frameSize } };
@@ -338,9 +343,7 @@ export const WidgetPreview = ({
           className={button}
           aria-label="Reset preview size"
           title="Restore saved widget dimensions"
-          disabled={
-            width === widget.layout.width && height === widget.layout.height
-          }
+          disabled={width === savedWidth && height === savedHeight}
           onClick={() => {
             setFrameSize(null);
             setZoom('fit');
