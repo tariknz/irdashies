@@ -631,6 +631,54 @@ describe('SettingsMenu', () => {
     );
   });
 
+  it('opens the settings of an overlay switched on', () => {
+    assert(state.dashboard);
+    state.dashboard.widgets = [
+      ...state.dashboard.widgets,
+      {
+        id: 'twitchchat',
+        enabled: false,
+        layout: { x: 0, y: 200, width: 100, height: 100 },
+      },
+    ];
+    renderMenu();
+    fireEvent.click(screen.getByRole('switch', { name: 'Enable Twitch Chat' }));
+    expect(state.onDashboardUpdated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        widgets: expect.arrayContaining([
+          expect.objectContaining({ id: 'twitchchat', enabled: true }),
+        ]),
+      })
+    );
+    expect(screen.getByTestId('current-path')).toHaveTextContent(
+      '/settings/twitchchat'
+    );
+  });
+
+  it('stays on the page shown when an overlay is switched off', () => {
+    assert(state.dashboard);
+    state.dashboard.widgets = [
+      ...state.dashboard.widgets,
+      {
+        id: 'twitchchat',
+        enabled: true,
+        layout: { x: 0, y: 200, width: 100, height: 100 },
+      },
+    ];
+    renderMenu();
+    fireEvent.click(screen.getByRole('switch', { name: 'Enable Twitch Chat' }));
+    expect(state.onDashboardUpdated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        widgets: expect.arrayContaining([
+          expect.objectContaining({ id: 'twitchchat', enabled: false }),
+        ]),
+      })
+    );
+    expect(screen.getByTestId('current-path')).toHaveTextContent(
+      '/settings/standings'
+    );
+  });
+
   it('offers settings but no toggle for a widget absent from the dashboard', () => {
     renderMenu();
     expect(

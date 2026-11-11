@@ -5,7 +5,7 @@ import {
   MagnifyingGlassIcon,
   ToolboxIcon,
 } from '@phosphor-icons/react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useReleaseNotesStatus } from './ReleaseNotes/ReleaseNotesStatusContext';
 import {
   useActiveSimulator,
@@ -168,6 +168,7 @@ export const SettingsMenu = ({
   const { status: releaseNotesStatus } = useReleaseNotesStatus();
   // Without a trailing slash: TrailingSlashRedirect at the route sees to it.
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const simulator = useActiveSimulator();
   const supportConfig = useSimWidgetSupport();
@@ -229,6 +230,14 @@ export const SettingsMenu = ({
     });
   };
 
+  // Switching an overlay on opens its settings, to set it up straight away.
+  // Switching one off leaves the page shown as it is.
+  const toggleWidget =
+    (item: MenuItem, widgetType: string) => (enabled: boolean) => {
+      setWidgetEnabled(widgetType, enabled);
+      if (enabled && pathname !== item.to) navigate(item.to);
+    };
+
   // A grouped item is on while any widget sharing its page is.
   const isItemEnabled = (item: MenuItem) =>
     !!item.widgetType &&
@@ -262,8 +271,9 @@ export const SettingsMenu = ({
       : sortMenuItems(visibleItems, sortMode, isItemEnabled);
 
   // What moves the current row: a new order, or in Activated first its
-  // switch. A change re-runs its reveal; other rows ignore it. Searching or
-  // switching another overlay on leaves it, and the scroll, alone.
+  // switch. A change re-runs its reveal; other rows ignore it. Searching, or
+  // another overlay turned on by a dashboard update, leaves it and the
+  // scroll alone. Switching another overlay on here opens that one instead.
   const renderLink = (item: MenuItem) => (
     <MenuLink
       key={item.path}
@@ -274,7 +284,7 @@ export const SettingsMenu = ({
       disabledReason={unsupported(item) ?? undefined}
       onToggle={
         canToggle(item) && item.widgetType && !unsupported(item)
-          ? setWidgetEnabled.bind(null, item.widgetType)
+          ? toggleWidget(item, item.widgetType)
           : undefined
       }
     />
