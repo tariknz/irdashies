@@ -1,9 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { WidgetLayout } from '@irdashies/types';
 import { WidgetContainer } from './WidgetContainer';
 
 const dashboard = vi.hoisted(() => ({
   containerBoundsInfo: null as unknown,
+  currentDashboard: undefined as unknown,
 }));
 
 vi.mock('@irdashies/context', () => ({
@@ -55,7 +57,7 @@ describe('WidgetContainer center line', () => {
       .style.transform;
 
   /** A 400px-wide widget at x=100, its right edge 460px left of the middle. */
-  const renderWidget = () =>
+  const renderWidget = (siblingLayouts?: WidgetLayout[]) =>
     render(
       <WidgetContainer
         widget={{
@@ -63,6 +65,7 @@ describe('WidgetContainer center line', () => {
           enabled: true,
           layout: { x: 100, y: 40, width: 400, height: 300 },
         }}
+        siblingLayouts={siblingLayouts}
         editMode
         zIndex={1}
         onLayoutChange={vi.fn()}
@@ -82,6 +85,8 @@ describe('WidgetContainer center line', () => {
 
   afterEach(() => {
     dashboard.containerBoundsInfo = null;
+    dashboard.currentDashboard = undefined;
+    delete window.rendererPerfBridge;
   });
 
   it('shows the middle once an edge comes near it, until the button is released', () => {
@@ -127,6 +132,68 @@ describe('WidgetContainer center line', () => {
     dragTo(665, { shiftKey: true });
     expect(position()).toBe('translate(765px, 40px)');
     release();
+  });
+
+  it('ends the drag when the pointer is cancelled', () => {
+    dashboard.containerBoundsInfo = {
+      expected: DISPLAY,
+      displayBounds: DISPLAY,
+    };
+    renderWidget();
+    grab();
+    dragTo(450);
+    expect(guide()).not.toBeNull();
+
+    fireEvent.pointerCancel(window);
+    expect(guide()).toBeNull();
+    // Moves after a cancel, button up, no longer carry the widget.
+    dragTo(665);
+    expect(position()).toBe('translate(550px, 40px)');
+  });
+
+  it('keeps no grid edge lock taken while the center snap held the widget', () => {
+    dashboard.containerBoundsInfo = {
+      expected: DISPLAY,
+      displayBounds: DISPLAY,
+    };
+    dashboard.currentDashboard = {
+      generalSettings: { editMode: { snapToGrid: true } },
+    };
+    // A neighbour whose left edge is 4px inside the widget's right edge
+    // while the widget's center is 8px short of the middle.
+    renderWidget([{ x: 1148, y: 40, width: 300, height: 300 }]);
+    grab();
+
+    // Raw x 752: centered at 760, while the grid locks the right edge to
+    // the neighbour underneath.
+    dragTo(652);
+    expect(position()).toBe('translate(760px, 40px)');
+
+    // A quick move left, out of the center snap: the widget follows the
+    // grid, not that lock (which would hold it at 748).
+    dragTo(642);
+    expect(position()).toBe('translate(740px, 40px)');
+    release();
+  });
+
+  it('measures each move of a drag for the perf overlay', () => {
+    const recordMeasure = vi.fn();
+    window.rendererPerfBridge = { recordMeasure };
+    dashboard.containerBoundsInfo = {
+      expected: DISPLAY,
+      displayBounds: DISPLAY,
+    };
+    renderWidget();
+    grab();
+    dragTo(300);
+    dragTo(310);
+    release();
+
+    expect(recordMeasure).toHaveBeenCalledTimes(2);
+    expect(recordMeasure).toHaveBeenCalledWith(
+      'widgetDrag',
+      expect.any(Number)
+    );
   });
 
   it('shows nothing before the display is known', () => {

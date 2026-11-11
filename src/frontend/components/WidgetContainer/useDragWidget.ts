@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect, PointerEvent } from 'react';
 import type { WidgetLayout } from '@irdashies/types';
+import { perfMetrics } from '@irdashies/utils/perfMetrics';
 import {
   ViewportGridSnapOptions,
   ViewportGridSnapState,
@@ -19,6 +20,18 @@ interface UseDragWidgetOptions {
    */
   centerX?: number;
 }
+
+/**
+ * The grid state without its left and right edge locks. While the center snap
+ * places the widget, a lock the grid takes underneath is never seen; kept, it
+ * would hold the widget at that edge for a moment once the snap lets go.
+ */
+const withoutHorizontalLocks = (
+  state: ViewportGridSnapState
+): ViewportGridSnapState => ({
+  ...(state.top && { top: state.top }),
+  ...(state.bottom && { bottom: state.bottom }),
+});
 
 interface DragState {
   startX: number;
@@ -76,7 +89,7 @@ export function useDragWidget({
   useEffect(() => {
     if (!isDragging) return;
 
-    const handlePointerMove = (e: globalThis.PointerEvent) => {
+    const placeWidget = (e: globalThis.PointerEvent) => {
       if (!dragStateRef.current) return;
 
       const deltaX = e.clientX - dragStateRef.current.startX;
@@ -98,8 +111,12 @@ export function useDragWidget({
 
       let placed = snapped.layout;
       if (centerX !== undefined) {
-        if (!e.shiftKey)
+        if (!e.shiftKey) {
           placed = snapToDisplayCenter(placed, nextLayout, centerX);
+          if (placed !== snapped.layout) {
+            snapStateRef.current = withoutHorizontalLocks(snapped.state);
+          }
+        }
         if (
           !showCenterGuideRef.current &&
           isNearDisplayCenter(placed, centerX)
@@ -111,7 +128,13 @@ export function useDragWidget({
       onLayoutChange(placed);
     };
 
-    const handlePointerUp = () => {
+    // Runs on every pointer move of a drag (R13.1).
+    const handlePointerMove = (e: globalThis.PointerEvent) =>
+      perfMetrics.measure('widgetDrag', () => placeWidget(e));
+
+    // A cancelled pointer ends the drag as a release does: otherwise the line
+    // stays up and the next moves, button up, still carry the widget.
+    const endDrag = () => {
       dragStateRef.current = null;
       snapStateRef.current = {};
       showCenterGuideRef.current = false;
@@ -120,11 +143,13 @@ export function useDragWidget({
     };
 
     window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointercancel', endDrag);
 
     return () => {
       window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointerup', endDrag);
+      window.removeEventListener('pointercancel', endDrag);
     };
   }, [isDragging, onLayoutChange, snapOptions, centerX]);
 
