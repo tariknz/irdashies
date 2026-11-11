@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getWidgetDefaultConfig,
@@ -53,6 +53,40 @@ describe('StandingsSettings', () => {
     mocks.onDashboardUpdated.mockClear();
     localStorage.clear();
     mocks.dashboard = { widgets: [overlay, gantryLayout] };
+  });
+
+  it('indents the manufacturer count options under a bar, like the estimated laps one', () => {
+    const defaults = getWidgetDefaultConfig('standings');
+    const withManufacturers = (enabled: boolean): DashboardWidget => ({
+      ...overlay,
+      config: {
+        ...config(80),
+        classHeaderStyle: {
+          ...defaults.classHeaderStyle,
+          manufacturerStats: { enabled, cap: 5, showPlayerManufacturer: false },
+        },
+      } as unknown as Record<string, unknown>,
+    });
+
+    mocks.dashboard = { widgets: [withManufacturers(true)] };
+    const { unmount } = render(<StandingsSettings />);
+    fireEvent.click(screen.getByRole('button', { name: 'Styling' }));
+    const options = screen.getByTestId('manufacturer-counts-options');
+    for (const indent of ['ml-2', 'pl-4', 'border-l-2']) {
+      expect(options.classList).toContain(indent);
+    }
+    expect(within(options).getByText('Max manufacturers to show')).toBeTruthy();
+    expect(
+      within(options).getByText('Always show your manufacturer')
+    ).toBeTruthy();
+    unmount();
+
+    // Switched off: no sub-options.
+    mocks.dashboard = { widgets: [withManufacturers(false)] };
+    render(<StandingsSettings />);
+    fireEvent.click(screen.getByRole('button', { name: 'Styling' }));
+    expect(screen.queryByTestId('manufacturer-counts-options')).toBeNull();
+    expect(screen.queryByText('Max manufacturers to show')).toBeNull();
   });
 
   it('is the overlay page by default', () => {

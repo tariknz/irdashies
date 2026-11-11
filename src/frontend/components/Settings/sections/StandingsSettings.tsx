@@ -842,89 +842,96 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                           })
                         }
                       />
-                      <SettingToggleRow
-                        title="Show Manufacturer Counts"
-                        description="Show manufacturer icons with driver counts in the class header (multi-make classes only)"
-                        enabled={
-                          settings.config.classHeaderStyle?.manufacturerStats
-                            ?.enabled ?? false
-                        }
-                        onToggle={(newValue) =>
-                          handleConfigChange({
-                            classHeaderStyle: {
-                              ...settings.config.classHeaderStyle,
-                              manufacturerStats: {
-                                enabled: newValue,
-                                cap:
-                                  settings.config.classHeaderStyle
-                                    ?.manufacturerStats?.cap ?? 5,
-                                showPlayerManufacturer:
-                                  settings.config.classHeaderStyle
-                                    ?.manufacturerStats
-                                    ?.showPlayerManufacturer ?? false,
+                      <div className="space-y-3">
+                        <SettingToggleRow
+                          title="Show Manufacturer Counts"
+                          description="Show manufacturer icons with driver counts in the class header (multi-make classes only)"
+                          enabled={
+                            settings.config.classHeaderStyle?.manufacturerStats
+                              ?.enabled ?? false
+                          }
+                          onToggle={(newValue) =>
+                            handleConfigChange({
+                              classHeaderStyle: {
+                                ...settings.config.classHeaderStyle,
+                                manufacturerStats: {
+                                  enabled: newValue,
+                                  cap:
+                                    settings.config.classHeaderStyle
+                                      ?.manufacturerStats?.cap ?? 5,
+                                  showPlayerManufacturer:
+                                    settings.config.classHeaderStyle
+                                      ?.manufacturerStats
+                                      ?.showPlayerManufacturer ?? false,
+                                },
                               },
-                            },
-                          })
-                        }
-                      />
-                      {(settings.config.classHeaderStyle?.manufacturerStats
-                        ?.enabled ??
-                        false) && (
-                        <>
-                          <SettingSelectRow
-                            title="Max manufacturers to show"
-                            value={
-                              settings.config.classHeaderStyle?.manufacturerStats?.cap?.toString() ??
-                              'all'
-                            }
-                            options={[
-                              ...Array.from({ length: 10 }, (_, i) => ({
-                                label: (i + 1).toString(),
-                                value: (i + 1).toString(),
-                              })),
-                              { label: 'All', value: 'all' },
-                            ]}
-                            onChange={(v) =>
-                              handleConfigChange({
-                                classHeaderStyle: {
-                                  ...settings.config.classHeaderStyle,
-                                  manufacturerStats: {
-                                    enabled: true,
-                                    cap: v === 'all' ? null : parseInt(v),
-                                    showPlayerManufacturer:
-                                      settings.config.classHeaderStyle
-                                        ?.manufacturerStats
-                                        ?.showPlayerManufacturer ?? false,
+                            })
+                          }
+                        />
+                        {(settings.config.classHeaderStyle?.manufacturerStats
+                          ?.enabled ??
+                          false) && (
+                          // Indented under a bar, like Show Estimated Laps' own
+                          // sub-option.
+                          <div
+                            data-testid="manufacturer-counts-options"
+                            className="ml-2 pl-4 border-l-2 border-settings-boundary space-y-3"
+                          >
+                            <SettingSelectRow
+                              title="Max manufacturers to show"
+                              value={
+                                settings.config.classHeaderStyle?.manufacturerStats?.cap?.toString() ??
+                                'all'
+                              }
+                              options={[
+                                ...Array.from({ length: 10 }, (_, i) => ({
+                                  label: (i + 1).toString(),
+                                  value: (i + 1).toString(),
+                                })),
+                                { label: 'All', value: 'all' },
+                              ]}
+                              onChange={(v) =>
+                                handleConfigChange({
+                                  classHeaderStyle: {
+                                    ...settings.config.classHeaderStyle,
+                                    manufacturerStats: {
+                                      enabled: true,
+                                      cap: v === 'all' ? null : parseInt(v),
+                                      showPlayerManufacturer:
+                                        settings.config.classHeaderStyle
+                                          ?.manufacturerStats
+                                          ?.showPlayerManufacturer ?? false,
+                                    },
                                   },
-                                },
-                              })
-                            }
-                          />
-                          <SettingToggleRow
-                            title="Always show your manufacturer"
-                            description="If your manufacturer is outside the cap, it replaces the last shown entry"
-                            enabled={
-                              settings.config.classHeaderStyle
-                                ?.manufacturerStats?.showPlayerManufacturer ??
-                              false
-                            }
-                            onToggle={(newValue) =>
-                              handleConfigChange({
-                                classHeaderStyle: {
-                                  ...settings.config.classHeaderStyle,
-                                  manufacturerStats: {
-                                    enabled: true,
-                                    cap:
-                                      settings.config.classHeaderStyle
-                                        ?.manufacturerStats?.cap ?? 5,
-                                    showPlayerManufacturer: newValue,
+                                })
+                              }
+                            />
+                            <SettingToggleRow
+                              title="Always show your manufacturer"
+                              description="If your manufacturer is outside the cap, it replaces the last shown entry"
+                              enabled={
+                                settings.config.classHeaderStyle
+                                  ?.manufacturerStats?.showPlayerManufacturer ??
+                                false
+                              }
+                              onToggle={(newValue) =>
+                                handleConfigChange({
+                                  classHeaderStyle: {
+                                    ...settings.config.classHeaderStyle,
+                                    manufacturerStats: {
+                                      enabled: true,
+                                      cap:
+                                        settings.config.classHeaderStyle
+                                          ?.manufacturerStats?.cap ?? 5,
+                                      showPlayerManufacturer: newValue,
+                                    },
                                   },
-                                },
-                              })
-                            }
-                          />
-                        </>
-                      )}
+                                })
+                              }
+                            />
+                          </div>
+                        )}
+                      </div>
                       <div className="space-y-3">
                         <SettingProp path="classHeaderStyle.estimatedLaps.enabled" />
                         {(settings.config.classHeaderStyle?.estimatedLaps

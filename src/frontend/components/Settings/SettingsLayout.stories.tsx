@@ -367,6 +367,13 @@ export const StandingsDockedScale: Story = {
   },
 };
 
+export const StandingsStyling: Story = {
+  args: {
+    initialPath: '/settings/standings',
+    initialTab: { key: 'standingsTab', value: 'styling' },
+  },
+};
+
 export const ProfilesRoute: Story = {
   args: { initialPath: '/settings/profiles' },
 };
