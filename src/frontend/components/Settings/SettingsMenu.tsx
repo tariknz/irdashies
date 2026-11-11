@@ -21,6 +21,14 @@ import {
   type MenuItem,
 } from './menuItems';
 import { ToggleSwitch } from './components/ToggleSwitch';
+import { MenuSortControl } from './components/MenuSortControl';
+import {
+  MENU_SORT_LABELS,
+  readMenuSort,
+  saveMenuSort,
+  sortMenuItems,
+  type MenuSortMode,
+} from './menuSort';
 
 const MenuLink = ({
   item,
@@ -146,6 +154,12 @@ export const SettingsMenu = ({
   const supportConfig = useSimWidgetSupport();
   const [showHidden, setShowHidden] = useState(false);
   const [query, setQuery] = useState('');
+  // The order chosen last time, so the list comes back as it was left.
+  const [sortMode, setSortMode] = useState<MenuSortMode>(readMenuSort);
+  const changeSortMode = (mode: MenuSortMode) => {
+    setSortMode(mode);
+    saveMenuSort(mode);
+  };
   const appPage = [...generalItems, ...bottomItems].some(
     (item) => item.to === pathname
   );
@@ -220,6 +234,27 @@ export const SettingsMenu = ({
       items: visibleItems.filter((item) => item.category === category),
     }))
     .filter(({ items }) => items.length > 0);
+  // Without categories: one list, alphanumeric or activated first.
+  const sortedItems =
+    sortMode === 'category'
+      ? []
+      : sortMenuItems(visibleItems, sortMode, isItemEnabled);
+
+  const renderLink = (item: MenuItem) => (
+    <MenuLink
+      key={item.path}
+      item={item}
+      pathname={appPage ? overlayPath.current : pathname}
+      showIcon={item.category === 'Tools'}
+      isEnabled={item.widgetType ? isItemEnabled(item) : undefined}
+      disabledReason={unsupported(item) ?? undefined}
+      onToggle={
+        canToggle(item) && item.widgetType && !unsupported(item)
+          ? setWidgetEnabled.bind(null, item.widgetType)
+          : undefined
+      }
+    />
+  );
 
   useLayoutEffect(() => {
     const scroller = appPage ? appScroll.current : overlayScroll.current;
@@ -249,7 +284,7 @@ export const SettingsMenu = ({
       scroller.removeEventListener('scroll', updateFade);
       observer?.disconnect();
     };
-  }, [appPage, query, showHidden, visibleItems.length]);
+  }, [appPage, query, showHidden, visibleItems.length, sortMode]);
 
   return (
     <nav
@@ -288,8 +323,8 @@ export const SettingsMenu = ({
         className={appPage ? 'hidden' : 'flex min-h-0 flex-1 flex-col'}
         data-overlay-area
       >
-        <div className="shrink-0 bg-slate-950 px-1 pb-3 pt-3">
-          <label className="flex min-h-9 items-center gap-2 rounded-md border border-settings-boundary bg-slate-900 px-2 text-slate-400 focus-within:outline-2 focus-within:outline-offset-3 focus-within:outline-accent-400">
+        <div className="flex shrink-0 items-center gap-1.5 bg-slate-950 px-1 pb-3 pt-3">
+          <label className="flex min-h-9 min-w-0 flex-1 items-center gap-2 rounded-md border border-settings-boundary bg-slate-900 px-2 text-slate-400 focus-within:outline-2 focus-within:outline-offset-3 focus-within:outline-accent-400">
             <MagnifyingGlassIcon size={16} className="shrink-0" />
             <input
               type="search"
@@ -300,6 +335,7 @@ export const SettingsMenu = ({
               className="min-h-9 w-full min-w-0 bg-transparent text-sm text-slate-200 outline-none placeholder:text-slate-400 focus-visible:outline-none!"
             />
           </label>
+          <MenuSortControl mode={sortMode} onChange={changeSortMode} />
         </div>
 
         <div
@@ -324,34 +360,29 @@ export const SettingsMenu = ({
               </button>
             </div>
           )}
-          <div className="space-y-4 pb-3">
-            {categories.map(({ category, items }) => (
-              <section key={category} aria-label={category}>
-                <h3 className="px-2 pt-2 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  {category}
-                </h3>
-                <ul className="flex flex-col gap-0.5">
-                  {items.map((item) => (
-                    <MenuLink
-                      key={item.path}
-                      item={item}
-                      pathname={appPage ? overlayPath.current : pathname}
-                      showIcon={item.category === 'Tools'}
-                      isEnabled={
-                        item.widgetType ? isItemEnabled(item) : undefined
-                      }
-                      disabledReason={unsupported(item) ?? undefined}
-                      onToggle={
-                        canToggle(item) && item.widgetType && !unsupported(item)
-                          ? setWidgetEnabled.bind(null, item.widgetType)
-                          : undefined
-                      }
-                    />
-                  ))}
-                </ul>
-              </section>
-            ))}
-          </div>
+          {sortMode === 'category' ? (
+            <div className="space-y-4 pb-3">
+              {categories.map(({ category, items }) => (
+                <section key={category} aria-label={category}>
+                  <h3 className="px-2 pt-2 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    {category}
+                  </h3>
+                  <ul className="flex flex-col gap-0.5">
+                    {items.map(renderLink)}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          ) : (
+            sortedItems.length > 0 && (
+              <ul
+                aria-label={`Overlays, ${MENU_SORT_LABELS[sortMode].toLowerCase()}`}
+                className="flex flex-col gap-0.5 pt-2 pb-3"
+              >
+                {sortedItems.map(renderLink)}
+              </ul>
+            )
+          )}
           {visibleItems.length === 0 && (
             <p role="status" className="px-2 py-4 text-sm text-slate-400">
               No overlays match “{query}”.

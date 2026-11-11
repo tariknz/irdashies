@@ -111,6 +111,7 @@ describe('SettingsMenu', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     state.simulator = 'lmu';
     state.dashboard = {
       widgets: [
@@ -194,6 +195,106 @@ describe('SettingsMenu', () => {
       screen.queryByRole('switch', { name: 'Enable Wind' })
     ).not.toBeInTheDocument();
     expect(state.onDashboardUpdated).not.toHaveBeenCalled();
+  });
+
+  describe('sorting', () => {
+    const sortButton = () =>
+      screen.getByRole('button', { name: /^Sort overlays:/ });
+    const listedLinks = (name: RegExp) =>
+      within(screen.getByRole('list', { name }))
+        .getAllByRole('link')
+        .map((link) => link.textContent);
+    const categoryHeadings = () =>
+      screen.queryAllByRole('heading', { level: 3 });
+
+    it('is by category by default', () => {
+      renderMenu();
+      expect(sortButton()).toHaveAttribute(
+        'title',
+        'By category. Click for alphabetical'
+      );
+      expect(categoryHeadings().length).toBeGreaterThan(0);
+    });
+
+    it('lists the overlays alphabetically without categories, and remembers it', () => {
+      const { unmount } = renderMenu();
+      fireEvent.click(sortButton());
+
+      expect(categoryHeadings()).toHaveLength(0);
+      expect(listedLinks(/alphabetical/)).toEqual([
+        'Driver Tags',
+        'Profiles',
+        'Setup Comparison',
+        'Standings',
+        'Twitch Chat',
+      ]);
+      expect(localStorage.getItem('settingsMenuSort')).toBe('alpha');
+
+      // Next time the menu opens, it is as it was left.
+      unmount();
+      renderMenu();
+      expect(categoryHeadings()).toHaveLength(0);
+      expect(sortButton()).toHaveAttribute(
+        'title',
+        'Alphabetical. Click for activated first'
+      );
+    });
+
+    it('puts the activated overlays first, then the rest, each alphabetically', () => {
+      localStorage.setItem('settingsMenuSort', 'activated');
+      renderMenu();
+
+      expect(categoryHeadings()).toHaveLength(0);
+      // Standings is on; Twitch Chat is not in the dashboard, and tools have
+      // no switch.
+      expect(listedLinks(/activated first/)).toEqual([
+        'Standings',
+        'Driver Tags',
+        'Profiles',
+        'Setup Comparison',
+        'Twitch Chat',
+      ]);
+
+      // A click steps back round to categories.
+      fireEvent.click(sortButton());
+      expect(categoryHeadings().length).toBeGreaterThan(0);
+      expect(localStorage.getItem('settingsMenuSort')).toBe('category');
+    });
+
+    it('offers every order as an icon in the dropdown, each named by its tooltip', () => {
+      renderMenu();
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Choose how overlays are sorted' })
+      );
+      const options = within(
+        screen.getByRole('listbox', { name: 'Sort overlays' })
+      ).getAllByRole('option');
+      expect(options.map((o) => o.getAttribute('title'))).toEqual([
+        'By category',
+        'Alphabetical',
+        'Activated first',
+      ]);
+      expect(options[0]).toHaveAttribute('aria-selected', 'true');
+
+      fireEvent.click(options[2]);
+      expect(
+        screen.queryByRole('listbox', { name: 'Sort overlays' })
+      ).not.toBeInTheDocument();
+      expect(listedLinks(/activated first/)[0]).toBe('Standings');
+      expect(localStorage.getItem('settingsMenuSort')).toBe('activated');
+    });
+
+    it('still filters by the search in a list without categories', () => {
+      localStorage.setItem('settingsMenuSort', 'alpha');
+      renderMenu();
+      fireEvent.change(
+        screen.getByRole('searchbox', { name: 'Find an overlay' }),
+        {
+          target: { value: 'tw' },
+        }
+      );
+      expect(listedLinks(/alphabetical/)).toEqual(['Twitch Chat']);
+    });
   });
 
   it('lists supported widgets in categories without redundant live labels', () => {
