@@ -569,6 +569,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           <IratingChangeCell
             key="iratingChange"
             iratingChangeValue={iratingChangeValue}
+            compactMode={compactMode}
           />
         ),
       },
