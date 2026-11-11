@@ -7,6 +7,7 @@ import {
   snapLayoutPositionToViewportGrid,
 } from './snapToViewportGrid';
 import { isNearDisplayCenter, snapToDisplayCenter } from './displayCenter';
+import { roundLayout } from './roundLayout';
 
 interface UseDragWidgetOptions {
   layout: WidgetLayout;
@@ -125,7 +126,7 @@ export function useDragWidget({
           setShowCenterGuide(true);
         }
       }
-      onLayoutChange(placed);
+      onLayoutChange(roundLayout(placed));
     };
 
     // Runs on every pointer move of a drag (R13.1).
