@@ -259,6 +259,9 @@ async function setupBridge(
   try {
     const isTapeReplay = Boolean(process.env.IRDASHIES_TELEMETRY_REPLAY);
     const isLmuTapeReplay = Boolean(process.env.IRDASHIES_LMU_REPLAY);
+    // A recorded capture played through the isolated SDK addon: it looks like
+    // iRacing to the bridge, but is no more a sim in use than a tape.
+    const isIsolatedSdkReplay = process.env.IRDASHIES_IRSDK_REPLAY === '1';
     const isMock =
       isDemoMode ||
       (process.platform !== 'win32' && !isTapeReplay && !isLmuTapeReplay);
@@ -324,7 +327,7 @@ async function setupBridge(
     );
     watchConnection(
       currentBridge,
-      !isMock && !isTapeReplay && !isLmuTapeReplay
+      !isMock && !isTapeReplay && !isLmuTapeReplay && !isIsolatedSdkReplay
     );
 
     if (onBridgeChangedCallbacks.size > 0 && currentBridge) {

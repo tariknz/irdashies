@@ -244,6 +244,17 @@ describe('onConnectedSimulatorChanged', () => {
     expect(connected).not.toHaveBeenCalled();
   });
 
+  it('never counts an isolated SDK replay', async () => {
+    vi.stubEnv('IRDASHIES_IRSDK_REPLAY', '1');
+    bridges.running.iracing = true;
+    const { iRacingSDKSetup, onConnectedSimulatorChanged } =
+      await import('./setup');
+    const connected = vi.fn();
+    onConnectedSimulatorChanged(connected);
+    await iRacingSDKSetup(overlayManager);
+    expect(connected).not.toHaveBeenCalled();
+  });
+
   it('never counts demo mode, and ends the connection it replaced', async () => {
     bridges.running = { iracing: true, demo: true };
     const { iRacingSDKSetup, onConnectedSimulatorChanged } =
