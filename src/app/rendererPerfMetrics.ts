@@ -126,6 +126,7 @@ export function startRendererPerfMetrics(): void {
       standingsPlayerGapsMs: measured('standingsPlayerGaps'),
       lapTraceFrameMs: measured('lapTraceFrame'),
       lapTraceBrakeCueMs: measured('lapTraceBrakeCue'),
+      widgetDragMs: measured('widgetDrag'),
       telemetryWakeups: callbackTimes.summarize().count,
       channelWakeups: channelTimes.summarize().count,
       framesOver25Ms,
