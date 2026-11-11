@@ -859,6 +859,39 @@ describe('LastCornerPanel', () => {
       }
     });
 
+    it('keeps room for a wrapped name the single slot still shows after the hold', () => {
+      // The one slot keeps its corner after the hold, so the panel's own
+      // height has to count that corner's two lines, not the empty slot
+      // behind it, or the second line is clipped.
+      vi.useFakeTimers();
+      try {
+        const single = { ...defaultProps, count: 1, fontSize: 10 };
+        const { unmount } = render(
+          <LastCornerPanel
+            {...single}
+            entries={[withClock('Variante Tamburello A', Date.now())]}
+          />
+        );
+        const fresh = panel().style.height;
+        unmount();
+
+        render(
+          <LastCornerPanel
+            {...single}
+            entries={[
+              withClock('Variante Tamburello A', Date.now() - HERO_HOLD_MS - 1),
+            ]}
+          />
+        );
+        expect(isHero('Variante Tamburello A')).toBe(true);
+        // Two lines at 10px, and the gap after the row.
+        expect(fresh).toBe('27px');
+        expect(panel().style.height).toBe(fresh);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it('holds the corner indefinitely with only one slot to show it in', () => {
       // Retiring it there would leave the panel rendering nothing at all,
       // which reads as broken rather than as "that was a while ago".

@@ -645,11 +645,15 @@ export const LastCornerPanel = ({
   const naturalWidth = Math.ceil(
     latestFontSize * sideWidthEmFor(columns, labelEm)
   );
+  // Counted from the slots as they are drawn with every requested row: a
+  // single slot keeps its hero after the hold, so it measures that corner,
+  // not the empty one behind it.
+  const naturalOffset = heroExpired && requested > 1 ? 1 : 0;
   const naturalHeight = heightOfRows(
     requested,
     latestFontSize,
     fontSize,
-    (slot) => entries[slot - heroOffset]?.label,
+    (slot) => entries[slot - naturalOffset]?.label,
     labelEm
   );
 
