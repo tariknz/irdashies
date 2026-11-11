@@ -14,7 +14,7 @@ import {
   useActiveSimulator,
   useDashboard,
   useRunningState,
-  useSimWidgetSupport,
+  useSimWidgetSupportStatus,
 } from '@irdashies/context';
 import { simulatorDisplayName, widgetDisabledMessage } from '@irdashies/types';
 import { SettingsLoader, WIDGET_SETTINGS } from './SettingsLoader';
@@ -74,7 +74,8 @@ export const SettingsLayout = () => {
   // The overlay pages visited this session, oldest first.
   const visitedOverlays = useRef<string[]>([]);
   const activeSimulator = useActiveSimulator();
-  const supportConfig = useSimWidgetSupport();
+  const { config: supportConfig, loaded: supportLoaded } =
+    useSimWidgetSupportStatus();
   // A widget with a settings page of its own: a widget type, or a copy in
   // this layout, which resolves to its type. The Telemetry Inspector has
   // none (its settings are on Advanced).
@@ -118,10 +119,10 @@ export const SettingsLayout = () => {
     previousPath.current = pathname;
   }, [pathname]);
   const navigate = useNavigate();
-  // The simulator and the support file arrive after the first render, so the
-  // page reopened then can turn out to be one the sim cannot run. Its row is
-  // hidden from the menu: leave it for Relative. A page the user opened
-  // stays open.
+  // The simulator can arrive after the page is reopened, and turn out to be
+  // one that cannot run it. Its row is hidden from the menu: leave it for
+  // Relative. A page the user opened stays open. The support file is not a
+  // concern here: the page is reopened only once it has arrived.
   useEffect(() => {
     if (restored && !reopenablePage && pathname !== DEFAULT_WIDGET_PAGE)
       navigate(DEFAULT_WIDGET_PAGE, { replace: true });
@@ -279,7 +280,11 @@ export const SettingsLayout = () => {
                   <Route
                     path="/"
                     element={
-                      <Navigate to={startPage} replace state={RESTORED} />
+                      // The bundled defaults can disable a page the user's
+                      // support file allows: wait for the file.
+                      supportLoaded ? (
+                        <Navigate to={startPage} replace state={RESTORED} />
+                      ) : null
                     }
                   />
                   <Route path="/:widgetId" element={<SettingsLoader />} />

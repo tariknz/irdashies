@@ -16,7 +16,10 @@ import { TrailingSlashRedirect } from './TrailingSlashRedirect';
 const dashboard = vi.hoisted(() => ({
   widgets: [] as { id: string; type?: string }[],
 }));
-const support = vi.hoisted(() => ({ config: undefined as unknown }));
+const support = vi.hoisted(() => ({
+  config: undefined as unknown,
+  loaded: true,
+}));
 const simulator = vi.hoisted(() => ({
   active: 'iracing' as 'iracing' | 'lmu' | null,
 }));
@@ -33,6 +36,10 @@ vi.mock('@irdashies/context', () => ({
   useActiveSimulator: () => simulator.active,
   useRunningState: () => ({ running: true }),
   useSimWidgetSupport: () => support.config ?? DEFAULT_SIM_WIDGET_SUPPORT,
+  useSimWidgetSupportStatus: () => ({
+    config: support.config ?? DEFAULT_SIM_WIDGET_SUPPORT,
+    loaded: support.loaded,
+  }),
 }));
 vi.mock('./SettingsLoader', () => ({
   SettingsLoader: () => <h2>{useParams().widgetId}</h2>,
@@ -66,6 +73,7 @@ describe('SettingsLayout navigation', () => {
     localStorage.clear();
     dashboard.widgets = [];
     support.config = undefined;
+    support.loaded = true;
     simulator.active = 'iracing';
   });
 
@@ -223,6 +231,36 @@ describe('SettingsLayout navigation', () => {
       simulator.active = 'lmu';
       rerender(layoutAt('/settings'));
       expect(shownPage()).toHaveTextContent('relative');
+    });
+
+    it('waits for the support file before reopening, whatever arrives first', () => {
+      localStorage.setItem('settingsLastWidgetPage', '/settings/standings');
+      // The bundled defaults disable Standings in LMU; the user's file allows it.
+      support.config = {
+        message: 'Unavailable in this simulator',
+        disabledWidgets: { iracing: [], lmu: ['standings'] },
+      };
+      support.loaded = false;
+      simulator.active = null;
+      const { rerender } = renderLayout('/settings');
+      const main = screen.getByRole('main');
+      expect(within(main).queryByRole('heading')).not.toBeInTheDocument();
+
+      // The simulator answers first.
+      simulator.active = 'lmu';
+      rerender(layoutAt('/settings'));
+      expect(within(main).queryByRole('heading')).not.toBeInTheDocument();
+
+      support.config = {
+        message: 'Unavailable in this simulator',
+        disabledWidgets: { iracing: [], lmu: [] },
+      };
+      support.loaded = true;
+      rerender(layoutAt('/settings'));
+      expect(shownPage()).toHaveTextContent('standings');
+      expect(localStorage.getItem('settingsLastWidgetPage')).toBe(
+        '/settings/standings'
+      );
     });
 
     it('keeps a page the user opened when the sim, known late, cannot run it', () => {
