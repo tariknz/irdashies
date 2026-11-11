@@ -310,6 +310,28 @@ describe('publishLmuSDKEvents when stopped', () => {
     expect(lifecycle._onDisconnect).not.toHaveBeenCalled();
   });
 
+  it('stays out of the lifecycle when a running-state listener stops it as LMU starts', async () => {
+    sdkState.running = false;
+    const lifecycle = createLifecycle();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(createOverlayManager(), lifecycle);
+    let stoppedOnStart = false;
+    bridge.onRunningState((running) => {
+      if (!running) return;
+      stoppedOnStart = true;
+      bridge.stop();
+    });
+
+    sdkState.running = true;
+    await vi.waitFor(() => expect(stoppedOnStart).toBe(true), {
+      timeout: 5000,
+    });
+    // Time for the stopped iteration to have run on, had it not broken off.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(lifecycle._onEnter).not.toHaveBeenCalled();
+    expect(lifecycle._onTelemetry).not.toHaveBeenCalled();
+  });
+
   it('does not leave it twice after a failure already released it', async () => {
     const lifecycle = createLifecycle();
     const { publishLmuSDKEvents } = await import('./lmuSdkBridge');

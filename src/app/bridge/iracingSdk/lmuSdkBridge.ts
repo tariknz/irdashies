@@ -572,6 +572,10 @@ export async function publishLmuSDKEvents(
         restPoller.setActive(true);
         liveStandings?.setActive(true);
         publishRunningState(true);
+        // A running-state listener can stop this bridge as LMU comes up (a
+        // hand-over). Its stop() found nothing to leave yet, so entering the
+        // lifecycle now would leave a stopped bridge in it for good.
+        if (shouldStop) break;
         isLifecycleEntered = true;
         lifecycle?._onEnter({ replay: false });
       }
