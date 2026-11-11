@@ -7,13 +7,17 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SIM_WIDGET_SUPPORT } from '@irdashies/types';
 import { SettingsLayout } from './SettingsLayout';
 
+const dashboard = vi.hoisted(() => ({
+  widgets: [] as { id: string; type?: string }[],
+}));
+
 vi.mock('@irdashies/context', () => ({
   useDashboard: () => ({
-    currentDashboard: { widgets: [] },
+    currentDashboard: { widgets: dashboard.widgets },
     currentProfile: { id: 'default', name: 'Default' },
     profiles: [{ id: 'default', name: 'Default' }],
     switchProfile: vi.fn(),
@@ -39,6 +43,59 @@ function renderLayout(path = '/settings/relative') {
 }
 
 describe('SettingsLayout navigation', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    dashboard.widgets = [];
+  });
+
+  describe('reopening', () => {
+    const shownPage = () =>
+      within(screen.getByRole('main')).getByRole('heading', { level: 2 });
+
+    it('opens on the widget page left last', () => {
+      const { unmount } = renderLayout('/settings/standings');
+      unmount();
+      renderLayout('/settings');
+      expect(shownPage()).toHaveTextContent('standings');
+    });
+
+    it('keeps the last widget page, not an app or tool page visited after it', () => {
+      const { unmount } = renderLayout('/settings/weather');
+      fireEvent.click(screen.getByRole('link', { name: 'App settings' }));
+      expect(shownPage()).toHaveTextContent('general');
+      unmount();
+      renderLayout('/settings');
+      expect(shownPage()).toHaveTextContent('weather');
+    });
+
+    it('opens on Relative when the widget page left last is gone', () => {
+      localStorage.setItem('settingsLastWidgetPage', '/settings/removed');
+      renderLayout('/settings');
+      expect(shownPage()).toHaveTextContent('relative');
+    });
+
+    it("reopens a layout copy's page while the copy is in the layout", () => {
+      localStorage.setItem('settingsLastWidgetPage', '/settings/standings-g1');
+      dashboard.widgets = [{ id: 'standings-g1', type: 'standings' }];
+      const { unmount } = renderLayout('/settings');
+      expect(shownPage()).toHaveTextContent('standings-g1');
+      unmount();
+
+      // Gone, e.g. another profile active.
+      dashboard.widgets = [];
+      renderLayout('/settings');
+      expect(shownPage()).toHaveTextContent('relative');
+    });
+
+    it('returns to the reopened page from App settings', () => {
+      localStorage.setItem('settingsLastWidgetPage', '/settings/standings');
+      renderLayout('/settings/general');
+      expect(
+        screen.getByRole('link', { name: 'Back to overlays' })
+      ).toHaveAttribute('href', '/settings/standings');
+    });
+  });
+
   it('keeps app utilities in the menu and returns to the selected overlay from each page', () => {
     renderLayout('/settings/weather');
     fireEvent.click(screen.getByRole('link', { name: 'App settings' }));

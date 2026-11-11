@@ -19,7 +19,12 @@ import { simulatorDisplayName } from '@irdashies/types';
 import { SettingsLoader } from './SettingsLoader';
 import { SettingsMenu } from './SettingsMenu';
 import { HeaderProfilePicker } from './components/HeaderProfilePicker';
-import { generalItems, bottomItems, toolItems } from './menuItems';
+import { generalItems, bottomItems, toolItems, widgetItems } from './menuItems';
+import {
+  readLastWidgetPage,
+  saveLastWidgetPage,
+  startWidgetPage,
+} from './lastWidgetPage';
 import { ReleaseNotesStatusProvider } from './ReleaseNotes/ReleaseNotesStatusContext';
 import { ReleaseNotesAnnouncement } from './ReleaseNotes/ReleaseNotesAnnouncement';
 import { GitHubStarPrompt } from './GitHubStarPrompt/GitHubStarPrompt';
@@ -38,12 +43,16 @@ export const SettingsLayout = () => {
   const toolPage = toolItems.some((item) => item.to === pathname);
   const lastApp = useRef('/settings/general');
   const lastTool = useRef('/settings/profiles');
-  const lastOverlay = useRef('/settings/relative');
+  // The widget page open when irDashies last quit, read once at start.
+  const storedWidgetPage = useRef(readLastWidgetPage());
+  const lastOverlay = useRef<string | null>(null);
   useEffect(() => {
     if (appPage) lastApp.current = pathname;
     else if (toolPage) lastTool.current = pathname;
-    else if (pathname.replace(/\/$/, '') !== '/settings')
+    else if (pathname.replace(/\/$/, '') !== '/settings') {
       lastOverlay.current = pathname;
+      saveLastWidgetPage(pathname);
+    }
   }, [appPage, toolPage, pathname]);
   const mainRef = useRef<HTMLElement>(null);
   const previousPath = useRef(pathname);
@@ -83,6 +92,16 @@ export const SettingsLayout = () => {
   if (!currentDashboard) {
     return <>Loading...</>;
   }
+
+  // Settings open on the widget page left last, while it still exists: a
+  // widget in this layout (a copy has its own page) or a widget type.
+  const startPage = startWidgetPage(
+    storedWidgetPage.current,
+    (id) =>
+      currentDashboard.widgets.some((widget) => widget.id === id) ||
+      widgetItems.some((item) => item.path === `/${id}`)
+  );
+  const overlayReturn = lastOverlay.current ?? startPage;
 
   return (
     <ReleaseNotesStatusProvider>
@@ -179,7 +198,7 @@ export const SettingsLayout = () => {
           <SettingsMenu
             appTo={lastApp.current}
             toolsTo={lastTool.current}
-            returnTo={lastOverlay.current}
+            returnTo={overlayReturn}
           />
 
           {/* Right Column - Widget Settings */}
@@ -203,7 +222,7 @@ export const SettingsLayout = () => {
                 <Routes>
                   <Route
                     path="/"
-                    element={<Navigate to="/settings/relative" replace />}
+                    element={<Navigate to={startPage} replace />}
                   />
                   <Route path="/:widgetId" element={<SettingsLoader />} />
                 </Routes>
