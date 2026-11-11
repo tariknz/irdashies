@@ -1,3 +1,5 @@
+import { readLocalSetting, writeLocalSetting } from './localSetting';
+
 /** The settings page irDashies opens on when there is no widget page to restore. */
 export const DEFAULT_WIDGET_PAGE = '/settings/relative';
 
@@ -5,21 +7,11 @@ export const DEFAULT_WIDGET_PAGE = '/settings/relative';
 const STORAGE_KEY = 'settingsLastWidgetPage';
 
 /** The widget settings page open last, if one was saved. */
-export const readLastWidgetPage = (): string | null => {
-  try {
-    return localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
-};
+export const readLastWidgetPage = (): string | null =>
+  readLocalSetting(STORAGE_KEY);
 
-export const saveLastWidgetPage = (path: string): void => {
-  try {
-    localStorage.setItem(STORAGE_KEY, path);
-  } catch {
-    // Storage unavailable: the next start opens on the default page.
-  }
-};
+export const saveLastWidgetPage = (path: string): void =>
+  writeLocalSetting(STORAGE_KEY, path);
 
 /**
  * `path` while it is a widget page that still exists, else undefined. A

@@ -21,7 +21,7 @@ import {
   menuHasToggle,
   type MenuItem,
 } from './menuItems';
-import { settingsPagePath } from './settingsPagePath';
+import { settingsPageKind, type SettingsPageKind } from './settingsPageKind';
 import { ToggleSwitch } from './components/ToggleSwitch';
 import { MenuSortControl } from './components/MenuSortControl';
 import {
@@ -145,6 +145,12 @@ const MenuLink = ({
   );
 };
 
+const NAV_LABELS: Record<SettingsPageKind, string> = {
+  app: 'App settings pages',
+  tool: 'Tools pages',
+  overlay: 'Overlay settings',
+};
+
 export const SettingsMenu = ({
   appTo = '/settings/general',
   toolsTo = '/settings/profiles',
@@ -160,7 +166,8 @@ export const SettingsMenu = ({
   excludedWidgetTypes?: ReadonlySet<string>;
 }) => {
   const { status: releaseNotesStatus } = useReleaseNotesStatus();
-  const pathname = settingsPagePath(useLocation().pathname);
+  // Without a trailing slash: TrailingSlashRedirect at the route sees to it.
+  const { pathname } = useLocation();
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const simulator = useActiveSimulator();
   const supportConfig = useSimWidgetSupport();
@@ -172,13 +179,13 @@ export const SettingsMenu = ({
     setSortMode(mode);
     saveMenuSort(mode);
   };
-  const appPage = [...generalItems, ...bottomItems].some(
-    (item) => item.to === pathname
-  );
   // Tools are pages of their own, not overlays: like App settings, they
-  // have a menu that takes the overlay list's place.
-  const toolPage =
-    !previewMode && toolItems.some((item) => item.to === pathname);
+  // have a menu that takes the overlay list's place. The preview has none.
+  const kind = settingsPageKind(pathname);
+  const pageKind: SettingsPageKind =
+    previewMode && kind === 'tool' ? 'overlay' : kind;
+  const appPage = pageKind === 'app';
+  const toolPage = pageKind === 'tool';
   const asidePage = appPage || toolPage;
   const overlayPath = useRef(pathname);
   const overlayScroll = useRef<HTMLDivElement>(null);
@@ -254,14 +261,15 @@ export const SettingsMenu = ({
       ? []
       : sortMenuItems(visibleItems, sortMode, isItemEnabled);
 
-  // The order and the row's place in it: a change to either re-runs the
-  // current row's reveal. Other rows ignore it.
-  const renderLink = (item: MenuItem, index: number) => (
+  // What moves the current row: a new order, or in Activated first its
+  // switch. A change re-runs its reveal; other rows ignore it. Searching or
+  // switching another overlay on leaves it, and the scroll, alone.
+  const renderLink = (item: MenuItem) => (
     <MenuLink
       key={item.path}
       item={item}
       pathname={asidePage ? overlayPath.current : pathname}
-      revealKey={`${sortMode}:${index}`}
+      revealKey={`${sortMode}:${isItemEnabled(item)}`}
       isEnabled={item.widgetType ? isItemEnabled(item) : undefined}
       disabledReason={unsupported(item) ?? undefined}
       onToggle={
@@ -300,17 +308,11 @@ export const SettingsMenu = ({
       scroller.removeEventListener('scroll', updateFade);
       observer?.disconnect();
     };
-  }, [asidePage, query, showHidden, visibleItems.length, sortMode]);
+  }, [asidePage, pageKind, query, showHidden, visibleItems.length, sortMode]);
 
   return (
     <nav
-      aria-label={
-        appPage
-          ? 'App settings pages'
-          : toolPage
-            ? 'Tools pages'
-            : 'Overlay settings'
-      }
+      aria-label={NAV_LABELS[pageKind]}
       className="flex w-[232px] shrink-0 flex-col border-r border-slate-700 bg-slate-950 p-3 xl:w-[252px]"
     >
       {appPage && (

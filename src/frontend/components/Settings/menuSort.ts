@@ -1,4 +1,6 @@
 import type { MenuItem } from './menuItems';
+import { readLocalSetting, writeLocalSetting } from './localSetting';
+import { compareMenuLabels } from './menuLabelOrder';
 
 /** How the overlay list in the settings menu is ordered. */
 export type MenuSortMode = 'category' | 'alpha' | 'activated';
@@ -26,32 +28,20 @@ const isMenuSortMode = (value: unknown): value is MenuSortMode =>
 
 /** The order last chosen, or by category when none was or it is unknown. */
 export const readMenuSort = (): MenuSortMode => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return isMenuSortMode(stored) ? stored : DEFAULT_MENU_SORT;
-  } catch {
-    return DEFAULT_MENU_SORT;
-  }
+  const stored = readLocalSetting(STORAGE_KEY);
+  return isMenuSortMode(stored) ? stored : DEFAULT_MENU_SORT;
 };
 
-export const saveMenuSort = (mode: MenuSortMode): void => {
-  try {
-    localStorage.setItem(STORAGE_KEY, mode);
-  } catch {
-    // Storage unavailable: the order holds for this session only.
-  }
-};
+export const saveMenuSort = (mode: MenuSortMode): void =>
+  writeLocalSetting(STORAGE_KEY, mode);
 
 /** The order after `mode`, back to the first after the last. */
 export const nextMenuSort = (mode: MenuSortMode): MenuSortMode =>
   MENU_SORT_MODES[(MENU_SORT_MODES.indexOf(mode) + 1) % MENU_SORT_MODES.length];
 
-/** Alphanumeric, ignoring case, so "Lap Timer 2" comes before "Lap Timer 10". */
+/** The menu's label order: alphanumeric, ignoring case. */
 const byLabel = (a: MenuItem, b: MenuItem) =>
-  a.label.localeCompare(b.label, undefined, {
-    numeric: true,
-    sensitivity: 'base',
-  });
+  compareMenuLabels(a.label, b.label);
 
 /**
  * The items as one list, for the orders without categories: alphanumeric, or

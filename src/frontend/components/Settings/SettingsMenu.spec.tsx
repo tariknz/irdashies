@@ -8,13 +8,14 @@ import {
   it,
   vi,
 } from 'vitest';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import type {
   ActiveSimulator,
   DashboardLayout,
   SimWidgetSupportConfig,
 } from '@irdashies/types';
 import { SettingsMenu } from './SettingsMenu';
+import { TrailingSlashRedirect } from './TrailingSlashRedirect';
 
 const state = vi.hoisted(() => ({
   dashboard: undefined as DashboardLayout | undefined,
@@ -383,6 +384,67 @@ describe('SettingsMenu', () => {
       expect(scrollTop).toBe(80);
     });
 
+    it('leaves the scroll alone when searching or switching another overlay on', () => {
+      assert(state.dashboard);
+      // Standings and Twitch Chat off, current page Standings.
+      state.dashboard.widgets = [
+        ...state.dashboard.widgets.map((w) =>
+          (w.type ?? w.id) === 'standings' ? { ...w, enabled: false } : w
+        ),
+        {
+          id: 'twitchchat',
+          enabled: false,
+          layout: { x: 0, y: 200, width: 100, height: 100 },
+        },
+      ];
+      localStorage.setItem('settingsMenuSort', 'activated');
+      const { rerender } = renderMenu();
+      const scroller = document.querySelector<HTMLElement>(
+        '[data-overlay-scroll]'
+      );
+      assert(scroller);
+      let scrollTop = 0;
+      Object.defineProperty(scroller, 'clientHeight', {
+        configurable: true,
+        value: 100,
+      });
+      Object.defineProperty(scroller, 'scrollTop', {
+        configurable: true,
+        get: () => scrollTop,
+        set: (value: number) => {
+          scrollTop = value;
+        },
+      });
+      scroller.getBoundingClientRect = () =>
+        ({ top: 0, bottom: 100 }) as DOMRect;
+      screen.getByRole('link', { name: 'Standings' }).getBoundingClientRect =
+        () => ({ top: 150, bottom: 180 }) as DOMRect;
+
+      // Twitch Chat switched on moves ahead of the current row.
+      state.dashboard = {
+        ...state.dashboard,
+        widgets: state.dashboard.widgets.map((w) =>
+          w.id === 'twitchchat' ? { ...w, enabled: true } : w
+        ),
+      };
+      rerender(
+        <MemoryRouter initialEntries={['/settings/standings']}>
+          <SettingsMenu returnTo="/settings/standings" />
+          <CurrentPath />
+        </MemoryRouter>
+      );
+      expect(listedLinks(/activated first/)).toEqual([
+        'Twitch Chat',
+        'Standings',
+      ]);
+      // A search that moves the current row up the list.
+      fireEvent.change(
+        screen.getByRole('searchbox', { name: 'Find an overlay' }),
+        { target: { value: 'st' } }
+      );
+      expect(scrollTop).toBe(0);
+    });
+
     it('still filters by the search in a list without categories', () => {
       localStorage.setItem('settingsMenuSort', 'alpha');
       renderMenu();
@@ -460,7 +522,9 @@ describe('SettingsMenu', () => {
     it('treats a tool page with a trailing slash as a tool page', () => {
       render(
         <MemoryRouter initialEntries={['/settings/profiles/']}>
-          <SettingsMenu returnTo="/settings/standings" />
+          <TrailingSlashRedirect>
+            <SettingsMenu returnTo="/settings/standings" />
+          </TrailingSlashRedirect>
         </MemoryRouter>
       );
       expect(
@@ -470,6 +534,23 @@ describe('SettingsMenu', () => {
         'aria-current',
         'page'
       );
+    });
+
+    it('fades the Tools menu when coming straight from App settings', () => {
+      function GoTo({ to }: { to: string }) {
+        const navigate = useNavigate();
+        return <button onClick={() => navigate(to)}>go</button>;
+      }
+      render(
+        <MemoryRouter initialEntries={['/settings/general']}>
+          <SettingsMenu returnTo="/settings/standings" />
+          <GoTo to="/settings/profiles" />
+        </MemoryRouter>
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'go' }));
+      const tools = screen.getByRole('region', { name: 'Tool pages' });
+      // The edge fade is set up on the section shown, not the one left.
+      expect(tools.style.getPropertyValue('--scroll-fade-top')).toBe('0px');
     });
 
     it('has no Tools in the preview', () => {

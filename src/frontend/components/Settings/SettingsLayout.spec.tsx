@@ -11,10 +11,12 @@ import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SIM_WIDGET_SUPPORT } from '@irdashies/types';
 import { SettingsLayout } from './SettingsLayout';
+import { TrailingSlashRedirect } from './TrailingSlashRedirect';
 
 const dashboard = vi.hoisted(() => ({
   widgets: [] as { id: string; type?: string }[],
 }));
+const support = vi.hoisted(() => ({ config: undefined as unknown }));
 
 vi.mock('@irdashies/context', () => ({
   useDashboard: () => ({
@@ -27,7 +29,7 @@ vi.mock('@irdashies/context', () => ({
   }),
   useActiveSimulator: () => 'iracing',
   useRunningState: () => ({ running: true }),
-  useSimWidgetSupport: () => DEFAULT_SIM_WIDGET_SUPPORT,
+  useSimWidgetSupport: () => support.config ?? DEFAULT_SIM_WIDGET_SUPPORT,
 }));
 vi.mock('./SettingsLoader', () => ({
   SettingsLoader: () => <h2>{useParams().widgetId}</h2>,
@@ -36,20 +38,31 @@ vi.mock('./SettingsLoader', () => ({
   WIDGET_SETTINGS: { relative: {}, standings: {}, weather: {} },
 }));
 
+// Routed as the settings window routes it.
+const layoutAt = (path: string) => (
+  <MemoryRouter initialEntries={[path]}>
+    <Routes>
+      <Route
+        path="/settings/*"
+        element={
+          <TrailingSlashRedirect>
+            <SettingsLayout />
+          </TrailingSlashRedirect>
+        }
+      />
+    </Routes>
+  </MemoryRouter>
+);
+
 function renderLayout(path = '/settings/relative') {
-  return render(
-    <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route path="/settings/*" element={<SettingsLayout />} />
-      </Routes>
-    </MemoryRouter>
-  );
+  return render(layoutAt(path));
 }
 
 describe('SettingsLayout navigation', () => {
   beforeEach(() => {
     localStorage.clear();
     dashboard.widgets = [];
+    support.config = undefined;
   });
 
   describe('reopening', () => {
@@ -150,13 +163,7 @@ describe('SettingsLayout navigation', () => {
 
       // Another profile, without the copy: the layout stays mounted.
       dashboard.widgets = [];
-      rerender(
-        <MemoryRouter initialEntries={['/settings/standings-g1']}>
-          <Routes>
-            <Route path="/settings/*" element={<SettingsLayout />} />
-          </Routes>
-        </MemoryRouter>
-      );
+      rerender(layoutAt('/settings/standings-g1'));
       expect(shownPage()).toHaveTextContent('profiles');
       expect(
         screen.getByRole('link', { name: 'Back to overlays' })
@@ -186,6 +193,66 @@ describe('SettingsLayout navigation', () => {
       } finally {
         window.dashboardBridge = previousBridge;
       }
+    });
+
+    it('opens on Relative when the sim connected now cannot run the page left last', () => {
+      localStorage.setItem('settingsLastWidgetPage', '/settings/standings');
+      support.config = {
+        message: 'Unavailable in this simulator',
+        disabledWidgets: { iracing: ['standings'], lmu: [] },
+      };
+      renderLayout('/settings');
+      expect(shownPage()).toHaveTextContent('relative');
+    });
+
+    it('does not keep a page the sim connected now cannot run', () => {
+      support.config = {
+        message: 'Unavailable in this simulator',
+        disabledWidgets: { iracing: ['standings'], lmu: [] },
+      };
+      const { unmount } = renderLayout('/settings/weather');
+      unmount();
+      const { unmount: unmountHidden } = renderLayout('/settings/standings');
+      unmountHidden();
+      expect(localStorage.getItem('settingsLastWidgetPage')).toBe(
+        '/settings/weather'
+      );
+    });
+
+    it('goes back to the latest overlay page that still exists', () => {
+      dashboard.widgets = [{ id: 'standings-g1', type: 'standings' }];
+      let openFromOverlay: (widgetType: string) => void = () => undefined;
+      const previousBridge = window.dashboardBridge;
+      window.dashboardBridge = {
+        onNavigateToSettings: (callback: (widgetType: string) => void) => {
+          openFromOverlay = callback;
+          return () => undefined;
+        },
+      } as unknown as typeof window.dashboardBridge;
+      try {
+        const { rerender } = renderLayout('/settings/standings');
+        act(() => openFromOverlay('standings-g1'));
+        fireEvent.click(screen.getByRole('link', { name: 'Tools' }));
+        // The copy goes with a profile switch.
+        dashboard.widgets = [];
+        rerender(layoutAt('/settings/standings'));
+        expect(
+          screen.getByRole('link', { name: 'Back to overlays' })
+        ).toHaveAttribute('href', '/settings/standings');
+      } finally {
+        window.dashboardBridge = previousBridge;
+      }
+    });
+
+    it('reads the page left last once, not on every render', () => {
+      const getItem = vi.spyOn(Storage.prototype, 'getItem');
+      const { rerender } = renderLayout('/settings/relative');
+      rerender(layoutAt('/settings/relative'));
+      rerender(layoutAt('/settings/relative'));
+      expect(
+        getItem.mock.calls.filter(([key]) => key === 'settingsLastWidgetPage')
+      ).toHaveLength(1);
+      getItem.mockRestore();
     });
 
     it('returns to the reopened page from App settings', () => {

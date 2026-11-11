@@ -14,13 +14,14 @@ import {
   useActiveSimulator,
   useDashboard,
   useRunningState,
+  useSimWidgetSupport,
 } from '@irdashies/context';
-import { simulatorDisplayName } from '@irdashies/types';
+import { simulatorDisplayName, widgetDisabledMessage } from '@irdashies/types';
 import { SettingsLoader, WIDGET_SETTINGS } from './SettingsLoader';
 import { SettingsMenu } from './SettingsMenu';
 import { HeaderProfilePicker } from './components/HeaderProfilePicker';
-import { generalItems, bottomItems, toolItems } from './menuItems';
-import { settingsPagePath } from './settingsPagePath';
+import { settingsPageKind, type SettingsPageKind } from './settingsPageKind';
+import { widgetSettingsType } from './widgetSettingsType';
 import {
   existingWidgetPage,
   readLastWidgetPage,
@@ -32,50 +33,76 @@ import { ReleaseNotesAnnouncement } from './ReleaseNotes/ReleaseNotesAnnouncemen
 import { GitHubStarPrompt } from './GitHubStarPrompt/GitHubStarPrompt';
 import { SettingsPreviewPanelContext } from '@irdashies/domain/widgetPreview/settingsPreviewContext';
 
+/** How many overlay pages Back to overlays can walk back through. */
+const VISITED_OVERLAYS = 20;
+
+const PAGE_HEADINGS: Record<SettingsPageKind, string> = {
+  app: 'App settings',
+  tool: 'Tools',
+  overlay: 'Overlay Settings',
+};
+
+const MAIN_LABELS: Record<SettingsPageKind, string> = {
+  app: 'App settings page',
+  tool: 'Tools page',
+  overlay: 'Overlay settings page',
+};
+
 export const SettingsLayout = () => {
   const previewPanelWidth = useState(420);
   const { bridge, isDemoMode, toggleDemoMode, currentDashboard } =
     useDashboard();
-  const pathname = settingsPagePath(useLocation().pathname);
-  const appPage = [...generalItems, ...bottomItems].some(
-    (item) => item.to === pathname
-  );
+  // Without a trailing slash: TrailingSlashRedirect at the route sees to it.
+  const { pathname } = useLocation();
+  const pageKind = settingsPageKind(pathname);
+  const appPage = pageKind === 'app';
+  const toolPage = pageKind === 'tool';
+  const lastApp = useRef('/settings/general');
   // Tool pages are neither overlays nor app settings: they keep their own
   // last page, so Back to overlays never lands on one.
-  const toolPage = toolItems.some((item) => item.to === pathname);
-  const lastApp = useRef('/settings/general');
   const lastTool = useRef('/settings/profiles');
   // The widget page open when irDashies last quit, read once at start.
-  const storedWidgetPage = useRef(readLastWidgetPage());
-  const lastOverlay = useRef<string | null>(null);
+  const [storedWidgetPage] = useState(readLastWidgetPage);
+  // The overlay pages visited this session, oldest first.
+  const visitedOverlays = useRef<string[]>([]);
+  const activeSimulator = useActiveSimulator();
+  const supportConfig = useSimWidgetSupport();
   // A widget with a settings page of its own: a widget type, or a copy in
   // this layout, which resolves to its type. The Telemetry Inspector has
-  // none (its settings are on Advanced), so it is never kept or reopened.
-  const hasWidgetPage = (id: string) => {
-    const widget = currentDashboard?.widgets.find((w) => w.id === id);
-    return Object.hasOwn(
+  // none (its settings are on Advanced).
+  const hasWidgetPage = (id: string) =>
+    Object.hasOwn(
       WIDGET_SETTINGS,
-      widget ? (widget.type ?? widget.id) : id
+      widgetSettingsType(currentDashboard?.widgets, id)
     );
-  };
-  const pageId = pathname.match(/^\/settings\/([^/]+)$/)?.[1];
-  const keepsWidgetPage =
-    !appPage &&
-    !toolPage &&
-    !!currentDashboard &&
-    !!pageId &&
-    hasWidgetPage(pageId);
+  // Worth reopening at the next start: it has a page, and the sim connected
+  // now can run it. An unsupported widget's row is hidden from the menu, so
+  // Settings opens on Relative instead.
+  const canReopen = (id: string) =>
+    hasWidgetPage(id) &&
+    !widgetDisabledMessage(
+      supportConfig,
+      widgetSettingsType(currentDashboard?.widgets, id),
+      activeSimulator
+    );
+  const overlayPage = existingWidgetPage(pathname, hasWidgetPage);
+  const reopenablePage = existingWidgetPage(pathname, canReopen);
   useEffect(() => {
     if (appPage) lastApp.current = pathname;
     else if (toolPage) lastTool.current = pathname;
   }, [appPage, toolPage, pathname]);
-  // Only a page that counts replaces the overlay to go back to and the one
-  // to reopen: passing through the Telemetry Inspector keeps both.
+  // Only a page that counts goes on the way back or is kept to reopen:
+  // passing through the Telemetry Inspector changes neither.
   useEffect(() => {
-    if (!keepsWidgetPage) return;
-    lastOverlay.current = pathname;
-    saveLastWidgetPage(pathname);
-  }, [keepsWidgetPage, pathname]);
+    if (!overlayPage) return;
+    visitedOverlays.current = [
+      ...visitedOverlays.current.filter((path) => path !== overlayPage),
+      overlayPage,
+    ].slice(-VISITED_OVERLAYS);
+  }, [overlayPage]);
+  useEffect(() => {
+    if (reopenablePage) saveLastWidgetPage(reopenablePage);
+  }, [reopenablePage]);
   const mainRef = useRef<HTMLElement>(null);
   const previousPath = useRef(pathname);
   useEffect(() => {
@@ -84,7 +111,6 @@ export const SettingsLayout = () => {
   }, [pathname]);
   const navigate = useNavigate();
   const [editModeAccelerator, setEditModeAccelerator] = useState('F6');
-  const activeSimulator = useActiveSimulator();
   const { running } = useRunningState();
   // The name says which sim is feeding the overlays, so it has no business
   // being up when none is. The active simulator is deliberately not cleared on
@@ -115,12 +141,15 @@ export const SettingsLayout = () => {
     return <>Loading...</>;
   }
 
-  // Settings open on the widget page left last, while it still has one.
-  const startPage = startWidgetPage(storedWidgetPage.current, hasWidgetPage);
-  // Back to overlays: the overlay page visited last, while it still exists.
-  // A profile switch can take a layout copy away without remounting this.
+  // Settings open on the widget page left last, while it can be reopened.
+  const startPage = startWidgetPage(storedWidgetPage, canReopen);
+  // Back to overlays: the latest overlay page visited this session that
+  // still exists. A profile switch can take a layout copy away without
+  // remounting this, and then the one before it is the way back.
   const overlayReturn =
-    existingWidgetPage(lastOverlay.current, hasWidgetPage) ?? startPage;
+    visitedOverlays.current.findLast(
+      (path) => existingWidgetPage(path, hasWidgetPage) !== undefined
+    ) ?? startPage;
 
   return (
     <ReleaseNotesStatusProvider>
@@ -157,9 +186,7 @@ export const SettingsLayout = () => {
               'calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + 1rem)',
           }}
         >
-          <h1 className="sr-only">
-            {appPage ? 'App settings' : toolPage ? 'Tools' : 'Overlay Settings'}
-          </h1>
+          <h1 className="sr-only">{PAGE_HEADINGS[pageKind]}</h1>
           <div className="flex min-w-0 items-center gap-3">
             <img src={logo} alt="" className="h-7 w-7 shrink-0" />
             <span className="hidden shrink-0 text-lg font-semibold tracking-[-0.04em] text-white md:inline">
@@ -225,13 +252,7 @@ export const SettingsLayout = () => {
             id="settings-content"
             ref={mainRef}
             tabIndex={-1}
-            aria-label={
-              appPage
-                ? 'App settings page'
-                : toolPage
-                  ? 'Tools page'
-                  : 'Overlay settings page'
-            }
+            aria-label={MAIN_LABELS[pageKind]}
             className="min-w-0 flex-1 bg-slate-900 px-4 pt-4 pb-3 focus:outline-none lg:px-7 lg:pt-7"
           >
             <div
