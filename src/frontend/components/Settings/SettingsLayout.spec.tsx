@@ -290,6 +290,47 @@ describe('SettingsLayout navigation', () => {
       );
     });
 
+    it('keeps the page left last while the support file loads, when the file then disables the page opened', () => {
+      localStorage.setItem('settingsLastWidgetPage', '/settings/weather');
+      // The bundled defaults allow Standings; the user's file disables it.
+      support.config = {
+        message: 'Unavailable in this simulator',
+        disabledWidgets: { iracing: [], lmu: [] },
+      };
+      support.loaded = false;
+      const { rerender } = renderLayout('/settings/standings');
+      expect(localStorage.getItem('settingsLastWidgetPage')).toBe(
+        '/settings/weather'
+      );
+
+      support.config = {
+        message: 'Unavailable in this simulator',
+        disabledWidgets: { iracing: ['standings'], lmu: [] },
+      };
+      support.loaded = true;
+      rerender(layoutAt('/settings/standings'));
+      expect(shownPage()).toHaveTextContent('standings');
+      expect(localStorage.getItem('settingsLastWidgetPage')).toBe(
+        '/settings/weather'
+      );
+    });
+
+    it('keeps the page opened once the support file allows it', () => {
+      localStorage.setItem('settingsLastWidgetPage', '/settings/weather');
+      support.config = {
+        message: 'Unavailable in this simulator',
+        disabledWidgets: { iracing: [], lmu: [] },
+      };
+      support.loaded = false;
+      const { rerender } = renderLayout('/settings/standings');
+
+      support.loaded = true;
+      rerender(layoutAt('/settings/standings'));
+      expect(localStorage.getItem('settingsLastWidgetPage')).toBe(
+        '/settings/standings'
+      );
+    });
+
     it('goes back to the latest overlay page that still exists', () => {
       dashboard.widgets = [{ id: 'standings-g1', type: 'standings' }];
       let openFromOverlay: (widgetType: string) => void = () => undefined;

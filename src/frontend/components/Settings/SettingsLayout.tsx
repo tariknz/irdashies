@@ -109,9 +109,11 @@ export const SettingsLayout = () => {
       overlayPage,
     ].slice(-VISITED_OVERLAYS);
   }, [overlayPage]);
+  // Kept only against the support file: the bundled defaults can allow a
+  // page the file disables, and saving it would lose the page left last.
   useEffect(() => {
-    if (reopenablePage) saveLastWidgetPage(reopenablePage);
-  }, [reopenablePage]);
+    if (supportLoaded && reopenablePage) saveLastWidgetPage(reopenablePage);
+  }, [supportLoaded, reopenablePage]);
   const mainRef = useRef<HTMLElement>(null);
   const previousPath = useRef(pathname);
   useEffect(() => {
