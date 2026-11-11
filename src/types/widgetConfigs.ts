@@ -1154,13 +1154,6 @@ export interface LapTraceConfig {
   carLineColor: string;
   /** User-editable plot colours (reference/ghost traces, fills, ABS, markers, grid). */
   colors: LapTraceColors;
-  /**
-   * Compact row under the plot summarising the corner just completed against
-   * the reference lap. Appears on corner exit and clears on the next corner's
-   * entry. Needs the bundled track data for the circuit; silently absent
-   * without it.
-   */
-  showLastCorner: boolean;
   /** Corner time delta in the last-corner row. Negative (green) is faster. */
   showLastCornerTime: boolean;
   /**
@@ -1194,8 +1187,6 @@ export interface LapTraceConfig {
    * time to read the last one's result.
    */
   lastCornerCount: number;
-  /** Which edge of the graph the last-corner panel sits on. */
-  lastCornerPosition: 'top' | 'bottom' | 'left' | 'right';
   /**
    * Beeps 3, 2 and 1 seconds before the reference lap's brake point, and a
    * distinct tone at the point itself. Needs a reference lap carrying recorded
@@ -1216,26 +1207,33 @@ export interface LapTraceConfig {
   brakeCueLeadSec: number;
   /**
    * Peak brake pressure a reference application must reach to count as a braking
-   * zone, 0.05..0.25. Anything softer is treated as a stabilising brush and gets
-   * neither a countdown nor a brake-distance delta. Car-dependent (brake bias,
-   * pedal travel, and some cars log force rather than travel), hence a setting.
+   * zone, 0..0.25. Anything softer is treated as a stabilising brush and gets
+   * neither a countdown nor a brake-distance delta. At 0 every application that
+   * slows the car counts. Car-dependent (brake bias, pedal travel, and some cars
+   * log force rather than travel), hence a setting.
    */
   brakeCueMinPeak: number;
   /** Per-cue synthesis of the countdown tones (frequency/type/duration/peak). */
   sound: LapTraceSound;
-  /** A four-bar countdown strip on the edge of the widget. */
-  brakeCueBars: boolean;
-  /**
-   * Which edge of the widget the countdown strip sits on. 'left'/'right' are
-   * a vertical column of 4 discrete bars running the full height of the
-   * plot; 'top'/'bottom' are a single continuous bar running the full width.
-   */
-  brakeCueBarSide: 'left' | 'right' | 'top' | 'bottom';
   /**
    * Which end of the strip the final bar sits at — the one that turns red at
    * the brake point. 'top' drains downwards, 'bottom' drains upwards.
    */
   brakeCueLastBar: 'top' | 'bottom';
+  /**
+   * Where the plot ('plot'), the last-corner panel ('corners') and the
+   * countdown strip ('brakeCue') sit, as edited on the Layout tab. An element
+   * shows only while the layout holds it. The last-corner panel summarises
+   * each corner just completed against the reference lap, and needs the
+   * bundled track data for the circuit. The countdown strip runs as a column
+   * of 4 bars beside the trace, or one continuous bar above or below it.
+   *
+   * Replaced four settings (showLastCorner, lastCornerPosition, brakeCueBars,
+   * brakeCueBarSide): the dashboard-load migration builds a tree from them
+   * and drops them. Stored trees are still validated where they are read, and
+   * a damaged one falls back to the default.
+   */
+  layoutTree?: LayoutNode;
   background: { opacity: number };
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;

@@ -136,6 +136,32 @@ describe('deepMergeConfig', () => {
     });
   });
 
+  describe('layoutTree', () => {
+    it('keeps a saved tree whole instead of merging it into the default', () => {
+      const def = {
+        layoutTree: {
+          id: 'root',
+          type: 'split',
+          direction: 'col',
+          children: [
+            { id: 'a', type: 'box', direction: 'col', widgets: ['x'] },
+          ],
+        },
+      };
+      const saved = {
+        layoutTree: { id: 'b', type: 'box', direction: 'row', widgets: ['y'] },
+      };
+      const merged = deepMergeConfig(def, saved);
+      expect(merged.layoutTree).toEqual(saved.layoutTree);
+      expect(merged.layoutTree).not.toHaveProperty('children');
+    });
+
+    it('fills a missing tree from the default', () => {
+      const tree = { id: 'b', type: 'box', direction: 'row', widgets: ['y'] };
+      expect(deepMergeConfig({ layoutTree: tree }, {}).layoutTree).toBe(tree);
+    });
+  });
+
   describe('displayOrder merging', () => {
     it('preserves user order when all items present', () => {
       const def = { displayOrder: ['a', 'b', 'c'] };

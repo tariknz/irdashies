@@ -3,6 +3,7 @@ import {
   DEFAULT_LAP_TRACE_COLORS,
   DEFAULT_LAP_TRACE_SOUND,
 } from '../lapTrace';
+import { DEFAULT_LAP_TRACE_LAYOUT_TREE } from '../lapTraceLayout';
 import { defineWidgetManifest } from './types';
 
 export default defineWidgetManifest({
@@ -37,7 +38,6 @@ export default defineWidgetManifest({
     strokeWidth: 3,
     carLineColor: '#ffffff',
     colors: DEFAULT_LAP_TRACE_COLORS,
-    showLastCorner: false,
     showLastCornerTime: true,
     showLastCornerBrakeDelta: true,
     showLastCornerApexSpeed: true,
@@ -52,16 +52,21 @@ export default defineWidgetManifest({
     lastCornerFontSize: 10,
     lastCornerLatestScale: 1.4,
     lastCornerCount: 3,
-    lastCornerPosition: 'bottom',
     brakeCueAudio: false,
     brakeCueOutputDeviceId: DEFAULT_AUDIO_OUTPUT_DEVICE_ID,
     brakeCueVolume: 0.6,
     brakeCueLeadSec: 0,
-    brakeCueMinPeak: 0.12,
+    // BRAKE_CUE_MIN_PEAK_DEFAULT. Low, so a car that logs little pressure
+    // keeps its brake points; a light stabilising brush that slows the car
+    // can count too, and 10-15% keeps those out. Saved configs store their
+    // own, so this only reaches a new widget.
+    brakeCueMinPeak: 0.05,
     sound: DEFAULT_LAP_TRACE_SOUND,
-    brakeCueBars: false,
-    brakeCueBarSide: 'right',
     brakeCueLastBar: 'top',
+    // Configs saved before the layout editor get theirs from the
+    // dashboard-load migration, built from their old settings, before this
+    // default is merged in.
+    layoutTree: DEFAULT_LAP_TRACE_LAYOUT_TREE,
     background: { opacity: 0.7 },
     showOnlyWhenOnTrack: true,
     sessionVisibility: {
@@ -163,12 +168,6 @@ export default defineWidgetManifest({
       description:
         'Draw the reference throttle and brake as filled bars down to the axis instead of a line',
     },
-    showLastCorner: {
-      type: 'boolean',
-      label: 'Last Corner Panel',
-      description:
-        'Shows how the corners you just finished compared with the reference lap. Each result appears as you exit the corner and stays while the next few are driven, so a sequence of corners is still readable afterwards. The corner you are in holds an empty slot until you exit it. Needs the bundled track data for the circuit.',
-    },
     lastCornerLabelStyle: {
       type: 'enum',
       label: 'Corner Label',
@@ -190,19 +189,6 @@ export default defineWidgetManifest({
       ],
       control: 'select',
     },
-    lastCornerPosition: {
-      type: 'enum',
-      label: 'Panel Position',
-      description:
-        'Which edge of the graph the panel sits on. Left and right stack the corners in a column and take width from the trace, so they suit a wider widget.',
-      options: [
-        { value: 'bottom', label: 'Bottom' },
-        { value: 'top', label: 'Top' },
-        { value: 'left', label: 'Left' },
-        { value: 'right', label: 'Right' },
-      ],
-      control: 'select',
-    },
     lastCornerCount: {
       type: 'number',
       label: 'Corners Shown',
@@ -211,12 +197,6 @@ export default defineWidgetManifest({
       min: 1,
       max: 5,
       step: 1,
-    },
-    brakeCueBars: {
-      type: 'boolean',
-      label: 'Countdown Bar(s)',
-      description:
-        "Display bar(s) that drain before your reference lap braked. Turning red at the brake point itself. Follows the reference lap's brake points; light dabs of the brake are ignored.",
     },
     brakeCueLastBar: {
       type: 'enum',

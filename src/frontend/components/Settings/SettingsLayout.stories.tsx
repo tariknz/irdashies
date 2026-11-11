@@ -347,6 +347,13 @@ export const InputCustomScale: Story = {
   },
 };
 
+export const LapTraceLayout: Story = {
+  args: {
+    initialPath: '/settings/laptrace',
+    initialTab: { key: 'lapTraceTab', value: 'layout' },
+  },
+};
+
 export const StandingsDockedScale: Story = {
   args: {
     initialPath: '/settings/standings-review',

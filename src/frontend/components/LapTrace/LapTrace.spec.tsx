@@ -4,10 +4,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type {
   ChannelBridge,
   LapTraceSampleSnapshot,
+  LayoutNode,
+  Session,
   TrackStateSnapshot,
 } from '@irdashies/types';
 import { useLapTraceStore, useSessionStore } from '@irdashies/context';
 import { hydrateLapTrace } from '../../domain/lapTrace/hydrateLapTrace';
+import { lapTraceTreeFromLegacy } from '@irdashies/types';
 import { LapTrace } from './LapTrace';
 import { makeSyntheticLapTrace } from './fixtures/syntheticLap';
 
@@ -286,7 +289,13 @@ describe('LapTrace', () => {
     seedReference();
 
     const { container } = render(
-      <LapTrace {...baseProps} brakeCueBars brakeCueBarSide="right" />
+      <LapTrace
+        {...baseProps}
+        layoutTree={lapTraceTreeFromLegacy({
+          brakeCueBars: true,
+          brakeCueBarSide: 'right',
+        })}
+      />
     );
 
     const strip = screen.getByTestId('brake-cue-bars');
@@ -299,7 +308,8 @@ describe('LapTrace', () => {
   it('leaves the countdown out entirely when both cue outputs are off', () => {
     seedReference();
 
-    render(<LapTrace {...baseProps} />);
+    // The default layout holds the bars; the audio is off by default.
+    render(<LapTrace {...baseProps} layoutTree={lapTraceTreeFromLegacy({})} />);
 
     expect(screen.queryByTestId('brake-cue-bars')).toBeNull();
   });
@@ -312,8 +322,10 @@ describe('LapTrace', () => {
       render(
         <LapTrace
           {...baseProps}
-          showLastCorner
-          lastCornerPosition={position}
+          layoutTree={lapTraceTreeFromLegacy({
+            showLastCorner: true,
+            lastCornerPosition: position,
+          })}
           lastCornerCount={3}
         />
       );
@@ -356,10 +368,12 @@ describe('LapTrace', () => {
     const { container } = render(
       <LapTrace
         {...baseProps}
-        showLastCorner
-        lastCornerPosition="right"
-        brakeCueBars
-        brakeCueBarSide="right"
+        layoutTree={lapTraceTreeFromLegacy({
+          showLastCorner: true,
+          lastCornerPosition: 'right',
+          brakeCueBars: true,
+          brakeCueBarSide: 'right',
+        })}
       />
     );
 
@@ -378,24 +392,387 @@ describe('LapTrace', () => {
     render(
       <LapTrace
         {...baseProps}
-        showLastCorner
-        lastCornerPosition="right"
-        brakeCueBars
-        brakeCueBarSide="bottom"
+        layoutTree={lapTraceTreeFromLegacy({
+          showLastCorner: true,
+          lastCornerPosition: 'right',
+          brakeCueBars: true,
+          brakeCueBarSide: 'bottom',
+        })}
       />
     );
 
     const strip = screen.getByTestId('brake-cue-bars');
     const panel = screen.getByTestId('last-corner-panel');
     const svg = document.querySelector('svg');
-    const plotColumn = strip.parentElement;
+    // The innermost container the strip shares with the plot.
+    let plotColumn = strip.parentElement;
+    while (plotColumn && !plotColumn.contains(svg)) {
+      plotColumn = plotColumn.parentElement;
+    }
 
     // The horizontal strip shares the plot's column, so it spans only the
     // trace width — and that column excludes the side history panel, which
     // takes its own width from the row alongside the column.
     expect(svg).toBeTruthy();
-    expect(plotColumn?.contains(svg ?? null)).toBe(true);
+    expect(plotColumn?.className).toContain('flex-col');
     expect(plotColumn?.contains(panel)).toBe(false);
+  });
+
+  describe('with a layout from the editor', () => {
+    const box = (widget: string): LayoutNode => ({
+      id: `box-${widget}`,
+      type: 'box',
+      direction: 'col',
+      widgets: [widget],
+    });
+    const split = (
+      direction: 'row' | 'col',
+      children: LayoutNode[]
+    ): LayoutNode => ({
+      id: `split-${direction}-${children.map((c) => c.id).join('-')}`,
+      type: 'split',
+      direction,
+      children,
+    });
+
+    it('shows what the layout holds, and only that', () => {
+      seedReference();
+
+      const { unmount } = render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('row', [
+            box('plot'),
+            box('brakeCue'),
+            box('corners'),
+          ])}
+        />
+      );
+      expect(screen.getByTestId('last-corner-panel')).toBeTruthy();
+      expect(screen.getByTestId('brake-cue-bars')).toBeTruthy();
+      unmount();
+
+      render(
+        <LapTrace {...baseProps} layoutTree={split('col', [box('plot')])} />
+      );
+      expect(screen.queryByTestId('last-corner-panel')).toBeNull();
+      expect(screen.queryByTestId('brake-cue-bars')).toBeNull();
+      expect(document.querySelector('svg')).toBeTruthy();
+    });
+
+    it('says the corners are not available when the track and layout have none', () => {
+      const withTrack = (TrackName: string) =>
+        useSessionStore.setState({
+          session: { WeekendInfo: { TrackName } } as Session,
+        });
+      const message = () => screen.queryByTestId('last-corner-unavailable');
+      const tree = split('row', [box('corners'), box('plot')]);
+
+      // A track the bundled data does not know: said even before the first
+      // corner is driven, since no lap will ever bring the corners.
+      seedReference();
+      withTrack('no such track layout');
+      const { unmount } = render(<LapTrace {...baseProps} layoutTree={tree} />);
+      expect(message()).toBeTruthy();
+      unmount();
+
+      // A known track and layout: the rows, no message.
+      withTrack('lagunaseca');
+      const { unmount: unmountKnown } = render(
+        <LapTrace {...baseProps} layoutTree={tree} />
+      );
+      expect(screen.getByTestId('last-corner-panel')).toBeTruthy();
+      expect(message()).toBeNull();
+      unmountKnown();
+
+      // No session yet: nothing is known about the track, so nothing is said.
+      useSessionStore.getState().resetSession();
+      const { unmount: unmountNoSession } = render(
+        <LapTrace {...baseProps} layoutTree={tree} />
+      );
+      expect(message()).toBeNull();
+      unmountNoSession();
+
+      // Not in the layout: no panel, and no message.
+      withTrack('no such track layout');
+      render(
+        <LapTrace {...baseProps} layoutTree={split('col', [box('plot')])} />
+      );
+      expect(screen.queryByTestId('last-corner-panel')).toBeNull();
+      expect(message()).toBeNull();
+    });
+
+    it('runs the panel and the strip full height beside the trace, across it above or below', () => {
+      seedReference();
+
+      const { unmount } = render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('row', [
+            box('corners'),
+            box('plot'),
+            box('brakeCue'),
+          ])}
+        />
+      );
+      expect(screen.getByTestId('last-corner-panel').dataset.placement).toBe(
+        'left'
+      );
+      expect(screen.getByTestId('brake-cue-bars').dataset.side).toBe('right');
+      unmount();
+
+      render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('col', [
+            box('brakeCue'),
+            box('plot'),
+            box('corners'),
+          ])}
+        />
+      );
+      expect(screen.getByTestId('last-corner-panel').dataset.placement).toBe(
+        'bottom'
+      );
+      const strip = screen.getByTestId('brake-cue-bars');
+      expect(strip.dataset.side).toBe('top');
+      expect(strip.className).toContain('w-full');
+    });
+
+    it('gives the free room to the branch holding the trace', () => {
+      seedReference();
+
+      render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('row', [box('plot'), box('corners')])}
+        />
+      );
+      const panelBox = screen.getByTestId('last-corner-panel').parentElement;
+      const plotBox = document.querySelector('svg')?.closest('.flex-1');
+      expect(panelBox?.className).not.toContain('flex-1');
+      expect(plotBox?.contains(panelBox ?? null)).toBe(false);
+    });
+
+    it('keeps 40% of a row or 60% of a column for the trace, gives the panel the rest, and never squeezes the countdown', () => {
+      seedReference();
+      // Whether the layout entry holding the plot keeps this much room.
+      const plotKeeps = (minimum: string) => {
+        let node = document.querySelector('svg')?.parentElement;
+        while (node && !node.classList.contains(minimum)) {
+          node = node.parentElement;
+        }
+        return !!node;
+      };
+
+      // Three columns in the default 396px widget: a side panel sized for a
+      // long corner name is most of it by itself. Shrinking the countdown
+      // with it cut the meter in half, so the panel alone gives way.
+      const { unmount } = render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('row', [
+            box('corners'),
+            box('plot'),
+            box('brakeCue'),
+          ])}
+        />
+      );
+      expect(plotKeeps('min-w-[40%]')).toBe(true);
+      // Each sits straight in its box, which the row stretches to full
+      // height: the panel and the bars take their height from it.
+      const panelBox = screen.getByTestId('last-corner-panel').parentElement;
+      expect(panelBox?.className).toContain('flex-initial');
+      expect(panelBox?.className).toContain('min-w-0');
+      const barsBox = screen.getByTestId('brake-cue-bars').parentElement;
+      expect(barsBox?.className).toContain('flex-none');
+      expect(barsBox?.className).not.toContain('flex-initial');
+      unmount();
+
+      // Above or below, on height, and more of it: the plot's gear and
+      // distance labels do not shrink, and at 40% of the default 120px they
+      // left the trace itself a few pixels tall.
+      const { unmount: unmountStacked } = render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('col', [box('plot'), box('corners')])}
+        />
+      );
+      expect(plotKeeps('min-h-[60%]')).toBe(true);
+      unmountStacked();
+
+      // Without the trace there is nothing to keep room for.
+      const { container } = render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('row', [box('corners'), box('brakeCue')])}
+        />
+      );
+      expect(container.querySelector('.flex-initial')).toBeNull();
+    });
+
+    it('fills the widget with what is left when the trace is out of the layout', () => {
+      seedReference();
+
+      // The countdown alone runs the full height of the widget.
+      const { unmount } = render(
+        <LapTrace {...baseProps} layoutTree={split('col', [box('brakeCue')])} />
+      );
+      const barsBox = screen.getByTestId('brake-cue-bars').parentElement;
+      expect(barsBox?.className).toContain('flex-1');
+      // So does the layout's root, under the header.
+      expect(barsBox?.parentElement?.className).toContain('flex-1');
+      expect(screen.getByTestId('brake-cue-bars').dataset.side).toBe('right');
+      unmount();
+
+      // The panel alone has the whole widget to fit its rows into.
+      const { unmount: unmountPanel } = render(
+        <LapTrace {...baseProps} layoutTree={split('col', [box('corners')])} />
+      );
+      const panelBox = screen.getByTestId('last-corner-panel').parentElement;
+      expect(panelBox?.className).toContain('flex-1');
+      expect(panelBox?.parentElement?.className).toContain('flex-1');
+      unmountPanel();
+
+      // Side by side, the panel takes the free room and the bars keep theirs.
+      render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('row', [box('corners'), box('brakeCue')])}
+        />
+      );
+      expect(
+        screen.getByTestId('last-corner-panel').parentElement?.className
+      ).toContain('flex-1');
+      expect(
+        screen.getByTestId('brake-cue-bars').parentElement?.className
+      ).toContain('flex-none');
+    });
+
+    it('never squeezes the countdown below its width when it shares room with the panel', () => {
+      seedReference();
+      const entryOf = (testId: string, depth: number) => {
+        let node: HTMLElement | null = screen.getByTestId(testId);
+        for (let i = 0; i < depth; i += 1) node = node?.parentElement ?? null;
+        return node?.className ?? '';
+      };
+
+      // Stacked with the panel beside the trace: both are beside it, so the
+      // bars run as a column under the panel and take the height it leaves.
+      const { unmount } = render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('row', [
+            box('plot'),
+            split('col', [box('corners'), box('brakeCue')]),
+          ])}
+        />
+      );
+      expect(screen.getByTestId('brake-cue-bars').dataset.side).toBe('right');
+      expect(screen.getByTestId('last-corner-panel').dataset.placement).toBe(
+        'right'
+      );
+      // The column shrinks with the panel, never narrower than the bars.
+      const column = entryOf('brake-cue-bars', 2);
+      expect(column).toContain('flex-initial');
+      expect(column).toContain('min-w-16');
+      expect(entryOf('brake-cue-bars', 1)).toContain('flex-1');
+      expect(entryOf('last-corner-panel', 1)).toContain('flex-initial');
+      unmount();
+
+      // In one box beside the trace, the same rule applies to its entries.
+      const shared = (direction: 'row' | 'col'): LayoutNode => ({
+        id: `shared-${direction}`,
+        type: 'box',
+        direction,
+        widgets: ['corners', 'brakeCue'],
+      });
+      const { unmount: unmountColumn } = render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('row', [box('plot'), shared('col')])}
+        />
+      );
+      expect(entryOf('brake-cue-bars', 2)).toContain('min-w-16');
+      expect(entryOf('brake-cue-bars', 1)).toContain('flex-1');
+      unmountColumn();
+
+      render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('row', [box('plot'), shared('row')])}
+        />
+      );
+      expect(entryOf('brake-cue-bars', 2)).toContain('min-w-16');
+      // Side by side in the box, the bars keep their width and the panel
+      // takes what they leave, down to nothing.
+      expect(entryOf('brake-cue-bars', 1)).toContain('flex-none');
+      expect(entryOf('last-corner-panel', 1)).toContain('flex-1');
+      expect(entryOf('last-corner-panel', 1)).toContain('min-w-0');
+    });
+
+    it('keeps the strip across the trace from shrinking below its height', () => {
+      seedReference();
+
+      render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('col', [
+            split('row', [box('corners'), box('brakeCue')]),
+            box('plot'),
+          ])}
+        />
+      );
+      const strip = screen.getByTestId('brake-cue-bars');
+      // Above the trace, both run across.
+      expect(strip.dataset.side).toBe('top');
+      expect(screen.getByTestId('last-corner-panel').dataset.placement).toBe(
+        'top'
+      );
+      // The row of both never goes shorter than the bar across, and the bar
+      // takes the row's width.
+      expect(strip.parentElement?.parentElement?.className).toContain(
+        'min-h-5'
+      );
+      expect(strip.parentElement?.className).toContain('flex-1');
+    });
+
+    it('draws an element the layout holds twice only once', () => {
+      seedReference();
+
+      render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('row', [
+            box('brakeCue'),
+            box('plot'),
+            split('col', [box('brakeCue'), box('corners')]),
+          ])}
+        />
+      );
+      // One countdown, so one telemetry loop and one set of tones.
+      expect(screen.getAllByTestId('brake-cue-bars')).toHaveLength(1);
+      expect(screen.getByTestId('brake-cue-bars').dataset.side).toBe('left');
+      expect(screen.getAllByTestId('last-corner-panel')).toHaveLength(1);
+    });
+
+    it('places an element beside the trace that is drawn, not a repeated one', () => {
+      seedReference();
+
+      // The repeated trace above the strip is not drawn, so the strip sits
+      // beside the first trace: a column of bars, not one across.
+      render(
+        <LapTrace
+          {...baseProps}
+          layoutTree={split('row', [
+            box('plot'),
+            split('col', [box('plot'), box('brakeCue')]),
+          ])}
+        />
+      );
+      expect(screen.getAllByTestId('gear-labels')).toHaveLength(1);
+      expect(screen.getByTestId('brake-cue-bars').dataset.side).toBe('right');
+    });
   });
 
   it('caps a long imported lap name at half the header', () => {

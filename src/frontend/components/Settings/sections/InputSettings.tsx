@@ -21,7 +21,7 @@ import { LayoutVisualizer } from './LayoutVisualizer';
 import {
   INPUT_ELEMENTS,
   buildDefaultInputTree,
-  hasLayoutTree,
+  getInputLayoutTree,
   isEmptyLayoutTree,
 } from '../../Input/layout';
 import { SettingProps, settingPropFor } from '../components/SettingProp';
@@ -55,8 +55,8 @@ const generateId = () => Math.random().toString(36).substring(2, 9);
 const withLayoutTree = (
   config: InputWidgetSettings['config']
 ): InputWidgetSettings['config'] => {
-  if (hasLayoutTree(config.layoutTree)) return config;
-  return { ...config, layoutTree: buildDefaultInputTree(config) };
+  const layoutTree = getInputLayoutTree(config);
+  return layoutTree === config.layoutTree ? config : { ...config, layoutTree };
 };
 
 export const InputSettings = ({ widgetId }: { widgetId?: string }) => {
@@ -83,7 +83,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
   }));
 
   const currentTree = useMemo(
-    () => withLayoutTree(settings.config).layoutTree as LayoutNode,
+    () => getInputLayoutTree(settings.config),
     [settings.config]
   );
 
