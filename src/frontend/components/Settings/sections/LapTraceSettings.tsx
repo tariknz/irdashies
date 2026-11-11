@@ -301,13 +301,6 @@ export const LapTraceSettings = () => {
     setBrakeCueOutputDevice(selectedAudioDeviceId);
   }, [selectedAudioDeviceId]);
 
-  // Above or below the plot the panel runs across the width, where it is only
-  // as tall as its own lines and so can never show more than the corner just
-  // finished.
-  const lastCornerSide = lapTraceElementSide(currentTree, 'corners') ?? 'right';
-  const isLastCornerHorizontal =
-    lastCornerSide === 'top' || lastCornerSide === 'bottom';
-
   const audioDeviceOptions = useMemo(() => {
     const options = [
       { label: 'Default (Windows)', value: DEFAULT_AUDIO_OUTPUT_DEVICE_ID },
@@ -859,14 +852,9 @@ export const LapTraceSettings = () => {
 
                       <SettingProp path="lastCornerSpeedUnit" />
 
-                      {/* Above or below the trace the panel is only as tall as
-                        its own lines, so there is never room for history —
-                        only the corner just finished shows, whatever this is
-                        set to. Hidden rather than disabled: a control that
-                        changes nothing is worse than one that is not there. */}
-                      {!isLastCornerHorizontal && (
-                        <SettingProp path="lastCornerCount" />
-                      )}
+                      {/* In every placement: above or below the trace too, a
+                        tall enough widget shows each of these rows. */}
+                      <SettingProp path="lastCornerCount" />
                     </>
                   )}
                 </SettingsSection>
