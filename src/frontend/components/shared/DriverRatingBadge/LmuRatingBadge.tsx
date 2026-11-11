@@ -173,7 +173,7 @@ export const LmuRatingBadge = ({
   const chrome = lmuChipChrome(format);
 
   return (
-    <div className="flex gap-1 items-center justify-center mx-2">
+    <div className="flex gap-1 items-center justify-center">
       {driverRank &&
         (useArt ? (
           <Plate

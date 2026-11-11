@@ -122,7 +122,12 @@ export const DriverClassHeader = ({
       </span>
       <span className={`${classInfoStyle} px-2${py} flex items-center gap-1`}>
         {classHeaderStyle?.estimatedLaps?.enabled && estimatedLaps && (
-          <span className="flex items-center gap-1 mr-3">
+          // "44 / ≈55.38" has spaces: short of width, the header wrapped it
+          // onto two lines. It stays on one, unsqueezed.
+          <span
+            data-testid="class-estimated-laps"
+            className="flex shrink-0 items-center gap-1 mr-3 whitespace-nowrap"
+          >
             <TimerIcon />
             <span>
               {`${estimatedLaps.currentLap} / ${
