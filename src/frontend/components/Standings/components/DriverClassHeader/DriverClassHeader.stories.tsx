@@ -202,7 +202,7 @@ export const EstimatedLapsNarrow = {
     (Story: () => React.ReactNode) => (
       <tr>
         <td className="p-0">
-          <div className="w-[230px]">
+          <div className="w-[230px] overflow-hidden">
             <table className="w-full text-white text-sm">
               <tbody>
                 <Story />
