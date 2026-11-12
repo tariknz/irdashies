@@ -11,6 +11,7 @@ import {
   type PitLaneCalibration,
   type PitLaneTrackData,
   type CurrentTrackPitLaneInfo,
+  type RacePlanState,
   type SimWidgetSupportConfig,
   type TelemetryInspectorBridge,
   type Session,
@@ -74,6 +75,7 @@ export class WebSocketBridge
   private widgetToggleCallbacks = new Set<
     (widgetId: string, hide: boolean) => void
   >();
+  private racePlanCallbacks = new Set<(state: RacePlanState) => void>();
 
   constructor() {
     this.telemetryCallbacks = new Set();
@@ -293,6 +295,9 @@ export class WebSocketBridge
             this.publishWidgetToggle(data.widgetId, !!data.hide);
           }
           break;
+        case 'racePlanState':
+          if (data) this.publishRacePlanState(data);
+          break;
         case 'dashboard':
           this.lastDashboard = data;
           this.dashboardUpdateCallbacks.forEach((cb) => {
@@ -373,6 +378,13 @@ export class WebSocketBridge
           }
           if (this.sessionCallbacks.size > 0) {
             this.sendTelemetryInspectorSubscription('sessionData', true);
+          }
+          if (this.racePlanCallbacks.size > 0) {
+            // The plan may have changed while this browser was disconnected.
+            this.sendRacePlanSubscription(true);
+            void this.getRacePlanState().then((state) => {
+              if (state && this.socket === ws) this.publishRacePlanState(state);
+            });
           }
           if (this.channelCallbacks.has('pit-lane.reset')) {
             // A reset can happen while this browser is disconnected. Events
@@ -538,6 +550,41 @@ export class WebSocketBridge
     return () => this.runningCallbacks.delete(callback);
   }
 
+  /** Read-only race plan state for browser views; null when unavailable. */
+  getRacePlanState(): Promise<RacePlanState | null> {
+    return this.request<RacePlanState | null>('racePlan:getState', null);
+  }
+
+  onRacePlanState(callback: (state: RacePlanState) => void): () => void {
+    this.racePlanCallbacks.add(callback);
+    if (this.racePlanCallbacks.size === 1) this.sendRacePlanSubscription(true);
+    return () => {
+      if (!this.racePlanCallbacks.delete(callback)) return;
+      if (this.racePlanCallbacks.size === 0) {
+        this.sendRacePlanSubscription(false);
+      }
+    };
+  }
+
+  private sendRacePlanSubscription(subscribe: boolean): void {
+    if (this.socket?.readyState !== WebSocket.OPEN) return;
+    this.socket.send(
+      JSON.stringify({
+        type: subscribe ? 'racePlan:subscribe' : 'racePlan:unsubscribe',
+      })
+    );
+  }
+
+  private publishRacePlanState(state: RacePlanState): void {
+    this.racePlanCallbacks.forEach((callback) => {
+      try {
+        callback(state);
+      } catch (e) {
+        logger.error('Error in race plan callback:', e);
+      }
+    });
+  }
+
   stop(): void {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
@@ -555,6 +602,7 @@ export class WebSocketBridge
     this.dashboardUpdateCallbacks.clear();
     this.demoModeCallbacks.clear();
     this.simulatorCallbacks.clear();
+    this.racePlanCallbacks.clear();
   }
 
   private publishSimulator(simulator: ActiveSimulator | null): void {

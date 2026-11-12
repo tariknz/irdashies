@@ -6,7 +6,11 @@ import { HashRouter } from 'react-router-dom';
 import { DashboardView } from './frontend/components/DashboardView/DashboardView';
 import { ThemeManager } from './frontend/components/ThemeManager/ThemeManager';
 import { DashboardProvider, RunningStateProvider } from '@irdashies/context';
-import type { DashboardBridge, FuelCalculatorBridge } from '@irdashies/types';
+import type {
+  DashboardBridge,
+  FuelCalculatorBridge,
+  RacePlanBridge,
+} from '@irdashies/types';
 import { RendererDataProviders } from './frontend/components/RendererDataProviders/RendererDataProviders';
 import { LapTraceUpdater } from './frontend/components/OverlayContainer/LapTraceUpdater';
 
@@ -49,6 +53,23 @@ async function initializeDashboardView() {
     startNewLog: async () => undefined,
     logData: async () => undefined,
   } satisfies FuelCalculatorBridge;
+  // Read-only: the plan is chosen and the API key saved in the app's Settings.
+  const readOnly = () =>
+    Promise.reject(new Error('Race plan settings are only in the app'));
+  window.racePlanBridge = {
+    getState: async () => {
+      const state = await bridge.getRacePlanState();
+      if (!state) throw new Error('Race plan state is unavailable');
+      return state;
+    },
+    onStateChanged: (callback) => bridge.onRacePlanState(callback),
+    choosePlanning: readOnly,
+    setConfig: readOnly,
+    setApiKey: readOnly,
+    clearApiKey: readOnly,
+    listPlannings: readOnly,
+    refreshNow: readOnly,
+  } satisfies RacePlanBridge;
 
   const rootElement = document.getElementById('root');
   if (!rootElement) {

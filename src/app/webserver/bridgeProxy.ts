@@ -21,6 +21,7 @@ import { loadSimWidgetSupport } from '../storage/simWidgetSupport';
 import logger from '../logger';
 import { getHiddenWidgets, onWidgetHiddenChanged } from '../widgetVisibility';
 import type { ChannelBus } from '../bridge/channelBridge';
+import { getRacePlanState, onRacePlanState } from '../services/racePlanSource';
 
 // Export current state so it can be accessed by other parts of the app
 export let currentDashboard: DashboardLayout | null = null;
@@ -43,6 +44,7 @@ export function createBridgeProxy(
     WebSocket,
     Set<'telemetryInspector' | 'sessionData'>
   >();
+  const racePlanSubscriptions = new Map<WebSocket, () => void>();
   let nextChannelTargetId = -1;
   let currentTelemetry: Telemetry | null = null;
   let lastTelemetryBroadcastTime = Number.NEGATIVE_INFINITY;
@@ -260,6 +262,36 @@ export function createBridgeProxy(
               throw new Error('Invalid Telemetry Inspector unsubscribe');
             }
             inspectorStreams.get(ws)?.delete(stream);
+            break;
+          }
+          // Read-only: browser views show the plan but never change it.
+          case 'racePlan:getState': {
+            ws.send(
+              JSON.stringify({
+                type: parsed.type,
+                requestId: parsed.requestId,
+                data: await getRacePlanState(),
+              })
+            );
+            break;
+          }
+          case 'racePlan:subscribe': {
+            if (racePlanSubscriptions.has(ws)) break;
+            racePlanSubscriptions.set(
+              ws,
+              onRacePlanState((state) => {
+                if (ws.readyState === WebSocket.OPEN) {
+                  ws.send(
+                    JSON.stringify({ type: 'racePlanState', data: state })
+                  );
+                }
+              })
+            );
+            break;
+          }
+          case 'racePlan:unsubscribe': {
+            racePlanSubscriptions.get(ws)?.();
+            racePlanSubscriptions.delete(ws);
             break;
           }
           case 'channelSubscribe': {
@@ -485,6 +517,8 @@ export function createBridgeProxy(
     ws.on('close', () => {
       clients.delete(ws);
       inspectorStreams.delete(ws);
+      racePlanSubscriptions.get(ws)?.();
+      racePlanSubscriptions.delete(ws);
       channelBus?.removeRenderer(channelTarget.id);
 
       if (clients.size === 0) {
