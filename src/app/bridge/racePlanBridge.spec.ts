@@ -6,7 +6,7 @@ const handlers = new Map<string, (...args: unknown[]) => unknown>();
 vi.mock('electron', () => ({
   app: { getPath: vi.fn(() => '') },
   safeStorage: {},
-  webContents: { getAllWebContents: vi.fn(() => []) },
+  BrowserWindow: { getAllWindows: vi.fn(() => []) },
   ipcMain: {
     handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) =>
       handlers.set(channel, handler)
@@ -15,7 +15,8 @@ vi.mock('electron', () => ({
 }));
 vi.mock('../logger', () => ({ default: { info: vi.fn(), warn: vi.fn() } }));
 
-const { registerRacePlanHandlers } = await import('./racePlanBridge');
+const { createRacePlanBroadcast, registerRacePlanHandlers } =
+  await import('./racePlanBridge');
 
 const state = { hasApiKey: true } as RacePlanState;
 
@@ -70,5 +71,50 @@ describe('racePlanBridge', () => {
     unsubscribe();
     service.emit(state);
     expect(broadcast).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('createRacePlanBroadcast', () => {
+  const window = (id: number, visible = true) => ({
+    visible,
+    isDestroyed: () => false,
+    isVisible() {
+      return this.visible;
+    },
+    webContents: { id, send: vi.fn() },
+  });
+
+  it('sends only to visible windows that subscribed', () => {
+    const subscribed = window(1);
+    const other = window(2);
+    const hidden = window(3, false);
+    const broadcast = createRacePlanBroadcast(
+      (id) => id !== 2,
+      () => [subscribed, other, hidden]
+    );
+    broadcast.send(state);
+    expect(subscribed.webContents.send).toHaveBeenCalledWith(
+      'racePlan:state',
+      state
+    );
+    expect(other.webContents.send).not.toHaveBeenCalled();
+    expect(hidden.webContents.send).not.toHaveBeenCalled();
+  });
+
+  it('catches a hidden subscriber up when it is shown', () => {
+    const hidden = window(3, false);
+    const broadcast = createRacePlanBroadcast(
+      () => true,
+      () => [hidden]
+    );
+    broadcast.onShown(hidden);
+    expect(hidden.webContents.send).not.toHaveBeenCalled();
+    broadcast.send(state);
+    hidden.visible = true;
+    broadcast.onShown(hidden);
+    expect(hidden.webContents.send).toHaveBeenCalledWith(
+      'racePlan:state',
+      state
+    );
   });
 });

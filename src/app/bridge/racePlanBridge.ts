@@ -1,6 +1,7 @@
-import { app, ipcMain, safeStorage, webContents } from 'electron';
+import { app, BrowserWindow, ipcMain, safeStorage } from 'electron';
 import path from 'node:path';
 import type { RacePlanState } from '@irdashies/types';
+import { defineRendererSubscriptionBridge } from './defineBridge';
 import { createRacePlanStore } from '../storage/racePlanStore';
 import { createIracePlanClient } from '../services/iracePlanClient';
 import {
@@ -38,6 +39,44 @@ export function registerRacePlanHandlers(
   return service.onChange(broadcast);
 }
 
+/** A window as the broadcast sees it: BrowserWindow in the app. */
+export interface RacePlanWindow {
+  isDestroyed(): boolean;
+  isVisible(): boolean;
+  webContents: {
+    id: number;
+    send(channel: string, state: RacePlanState): void;
+  };
+}
+
+/**
+ * Sends the state only to visible windows that subscribed to it. A hidden
+ * subscriber is skipped and gets the latest state from `onShown`.
+ */
+export function createRacePlanBroadcast(
+  isSubscribed: (rendererId: number) => boolean,
+  windows: () => readonly RacePlanWindow[]
+) {
+  let latest: RacePlanState | undefined;
+  const deliver = (window: RacePlanWindow) => {
+    if (
+      latest &&
+      !window.isDestroyed() &&
+      window.isVisible() &&
+      isSubscribed(window.webContents.id)
+    ) {
+      window.webContents.send(RACE_PLAN_STATE_EVENT, latest);
+    }
+  };
+  return {
+    send(state: RacePlanState) {
+      latest = state;
+      windows().forEach(deliver);
+    },
+    onShown: deliver,
+  };
+}
+
 /** Must run after `app.whenReady()`: safeStorage needs the app ready. */
 export function setupRacePlanBridge() {
   const store = createRacePlanStore(
@@ -48,15 +87,29 @@ export function setupRacePlanBridge() {
     client: createIracePlanClient(),
     crypto: safeStorageCrypto,
   });
-  const unsubscribe = registerRacePlanHandlers(service, (state) => {
-    for (const contents of webContents.getAllWebContents()) {
-      if (!contents.isDestroyed()) contents.send(RACE_PLAN_STATE_EVENT, state);
-    }
+  const watchedWindows = new Set<number>();
+  const subscriptions = defineRendererSubscriptionBridge({
+    name: 'racePlan',
+    isValidKey: (value: unknown): value is 'state' => value === 'state',
+    onSubscribe: (sender) => {
+      const window = BrowserWindow.fromWebContents(sender);
+      if (!window || watchedWindows.has(window.id)) return;
+      const windowId = window.id;
+      watchedWindows.add(windowId);
+      window.on('show', () => broadcast.onShown(window));
+      window.once('closed', () => watchedWindows.delete(windowId));
+    },
   });
+  const broadcast = createRacePlanBroadcast(
+    (rendererId) => subscriptions.registry.has(rendererId, 'state'),
+    () => BrowserWindow.getAllWindows()
+  );
+  const unsubscribe = registerRacePlanHandlers(service, broadcast.send);
   return {
     service,
     dispose: () => {
       unsubscribe();
+      subscriptions.dispose();
       service.dispose();
     },
     flush: async () => {

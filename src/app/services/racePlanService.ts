@@ -227,6 +227,12 @@ export function createRacePlanService(options: {
 
   const ready = store.load().then((loaded) => {
     stored = loaded;
+    // A key this PC cannot decrypt (copied from another account, or corrupt)
+    // is dropped, so Settings asks for it again instead of showing it saved.
+    if (stored.encryptedApiKey && crypto.isAvailable() && !apiKey()) {
+      stored = { ...stored, encryptedApiKey: null };
+      store.save(stored);
+    }
     const cached = loaded.cache
       ? normalizeRacePlanning(loaded.cache.planning)
       : null;
@@ -254,9 +260,10 @@ export function createRacePlanService(options: {
       if (planningId !== null) {
         const key = apiKey();
         if (!key) return { status: 'unauthorized' };
+        const started = generation;
         const fetched = await fetchPlanning(key, planningId);
-        // A later choice replaced this one while it was loading.
-        if (disposed || choice !== latestChoice)
+        // A later choice, or a key change, replaced this one while it loaded.
+        if (disposed || choice !== latestChoice || generation !== started)
           return { status: 'ok', state: snapshot() };
         if (!fetched.ok) return { status: fetched.error };
         loaded = fetched;

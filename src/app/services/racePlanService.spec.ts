@@ -385,6 +385,50 @@ describe('racePlanService', () => {
     expect((await service.getState()).status).toBe('ok');
   });
 
+  it('drops a planning loaded with a key that was replaced meanwhile', async () => {
+    let answerOld: (value: IracePlanResponse) => void = () => undefined;
+    const client = stubClient((key, id) =>
+      key === KEY && id === OTHER_ID
+        ? new Promise<IracePlanResponse>((resolve) => (answerOld = resolve))
+        : Promise.resolve(okPlanning())
+    );
+    const service = make({
+      store: memoryStore(configured()),
+      client,
+      crypto: fakeCrypto(),
+    });
+    await service.refreshNow();
+    const choice = service.choosePlanning(OTHER_ID);
+    await vi.waitFor(() =>
+      expect(client.getPlanning).toHaveBeenCalledWith(KEY, OTHER_ID)
+    );
+    await service.setApiKey('new-key-456');
+    answerOld(planningWithId(OTHER_ID));
+    await choice;
+    const state = await service.getState();
+    expect(state.config.planningId).toBe(FIXTURE_PLANNING_ID);
+    expect(state.planning?.id).toBe(FIXTURE_PLANNING_ID);
+  });
+
+  it('drops a saved key this PC cannot decrypt', async () => {
+    const store = memoryStore(configured());
+    const client = stubClient();
+    const service = make({
+      store,
+      client,
+      crypto: {
+        ...fakeCrypto(),
+        decrypt: () => {
+          throw new Error('cannot decrypt');
+        },
+      },
+    });
+    const state = await service.getState();
+    expect(state.hasApiKey).toBe(false);
+    expect(store.current().encryptedApiKey).toBeNull();
+    expect(client.getPlanning).not.toHaveBeenCalled();
+  });
+
   it('rejects a planning id that is not a positive whole number', async () => {
     const service = make({
       store: memoryStore(configured()),

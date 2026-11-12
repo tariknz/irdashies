@@ -58,4 +58,19 @@ describe('race plan store', () => {
     expect(JSON.parse(await readFile(file, 'utf8'))).toEqual(state);
     expect(await createRacePlanStore(file).load()).toEqual(state);
   });
+
+  it('keeps a failed write pending, so the next flush saves it', async () => {
+    const dir = path.dirname(await target());
+    const blocked = path.join(dir, 'blocked');
+    await writeFile(blocked, '');
+    const file = path.join(blocked, 'race-plan.json');
+    const store = createRacePlanStore(file);
+    await store.load();
+    const state = { ...defaultRacePlanState(), encryptedApiKey: 'c2VjcmV0' };
+    store.save(state);
+    await store.flush();
+    await rm(blocked);
+    await store.flush();
+    expect(JSON.parse(await readFile(file, 'utf8'))).toEqual(state);
+  });
 });

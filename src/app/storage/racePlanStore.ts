@@ -132,6 +132,7 @@ export function createRacePlanStore(filePath: string): RacePlanStore {
       await fsp.writeFile(temp, JSON.stringify(state), 'utf8');
       await fsp.rename(temp, filePath);
     } catch (error) {
+      dirty = true;
       logger.warn(
         '[RacePlan] Failed to save race plan state',
         fileName,
