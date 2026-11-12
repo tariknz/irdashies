@@ -655,6 +655,29 @@ describe('SettingsMenu', () => {
     );
   });
 
+  it("stays on a layout copy's page when its type is switched on from its row", () => {
+    assert(state.dashboard);
+    const [primary, extra, wind] = state.dashboard.widgets;
+    state.dashboard = {
+      ...state.dashboard,
+      widgets: [
+        { ...primary, enabled: false },
+        { ...extra, enabled: false },
+        wind,
+      ],
+    };
+    render(
+      <MemoryRouter initialEntries={['/settings/standings-copy']}>
+        <SettingsMenu returnTo="/settings/standings" />
+        <CurrentPath />
+      </MemoryRouter>
+    );
+    fireEvent.click(screen.getByRole('switch', { name: 'Enable Standings' }));
+    expect(screen.getByTestId('current-path')).toHaveTextContent(
+      '/settings/standings-copy'
+    );
+  });
+
   it('stays on the page shown when an overlay is switched off', () => {
     assert(state.dashboard);
     state.dashboard.widgets = [

@@ -32,6 +32,10 @@ import {
   type MenuSortMode,
 } from './menuSort';
 
+/** Whether the row is the current one: its page, or a layout copy's of it. */
+const isMenuItemActive = (item: MenuItem, pathname: string) =>
+  pathname.startsWith(`/settings${item.path}`);
+
 const MenuLink = ({
   item,
   pathname,
@@ -60,7 +64,7 @@ const MenuLink = ({
    */
   revealKey?: string;
 }) => {
-  const isActive = pathname.startsWith(`/settings${item.path}`);
+  const isActive = isMenuItemActive(item, pathname);
   const linkRef = useRef<HTMLAnchorElement>(null);
   useEffect(() => {
     const link = linkRef.current;
@@ -203,12 +207,13 @@ export const SettingsMenu = ({
   }, [asidePage]);
   // Layout-editor copies of a widget share its menu entry: it is on while any
   // copy is, so a custom layout cannot hide behind a switched-off default.
-  const instancesOf = (widgetType: string) =>
-    (currentDashboard?.widgets ?? []).filter(
-      (w) => (w.type ?? w.id) === widgetType
-    );
-  const isWidgetEnabled = (widgetType: string) =>
-    instancesOf(widgetType).some((w) => w.enabled);
+  // Built once per render: the list asks for every row, several times over.
+  const enabledTypes = new Set(
+    (currentDashboard?.widgets ?? [])
+      .filter((w) => w.enabled)
+      .map((w) => w.type ?? w.id)
+  );
+  const isWidgetEnabled = (widgetType: string) => enabledTypes.has(widgetType);
 
   // The settings page toggles the widget whose id is the widget type, so the
   // menu does the same; extra instances keep their own state. Grouped items
@@ -231,11 +236,12 @@ export const SettingsMenu = ({
   };
 
   // Switching an overlay on opens its settings, to set it up straight away.
-  // Switching one off leaves the page shown as it is.
+  // Switching one off leaves the page shown as it is, and so does switching
+  // on the row already current (a layout copy's page shows its type's row).
   const toggleWidget =
     (item: MenuItem, widgetType: string) => (enabled: boolean) => {
       setWidgetEnabled(widgetType, enabled);
-      if (enabled && pathname !== item.to) navigate(item.to);
+      if (enabled && !isMenuItemActive(item, pathname)) navigate(item.to);
     };
 
   // A grouped item is on while any widget sharing its page is.

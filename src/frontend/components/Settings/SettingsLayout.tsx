@@ -127,11 +127,29 @@ export const SettingsLayout = () => {
   // The simulator can arrive after the page is reopened, and turn out to be
   // one that cannot run it. Its row is hidden from the menu: leave it for
   // Relative. A page the user opened stays open. The support file is not a
-  // concern here: the page is reopened only once it has arrived.
+  // concern here: the page is reopened only once it has arrived. Once the
+  // simulator is known and can run the page, the mark is dropped: the page
+  // is then the user's, and a sim change later leaves it open.
   useEffect(() => {
-    if (restored && !reopenablePage && pathname !== DEFAULT_WIDGET_PAGE)
-      navigate(DEFAULT_WIDGET_PAGE, { replace: true });
-  }, [restored, reopenablePage, pathname, navigate]);
+    if (!restored) return;
+    if (!reopenablePage) {
+      if (pathname !== DEFAULT_WIDGET_PAGE)
+        navigate(DEFAULT_WIDGET_PAGE, { replace: true });
+    } else if (simulatorLoaded) {
+      navigate(
+        { pathname, search: location.search, hash: location.hash },
+        { replace: true, state: null }
+      );
+    }
+  }, [
+    restored,
+    reopenablePage,
+    simulatorLoaded,
+    pathname,
+    location.search,
+    location.hash,
+    navigate,
+  ]);
   const [editModeAccelerator, setEditModeAccelerator] = useState('F6');
   const { running } = useRunningState();
   // The name says which sim is feeding the overlays, so it has no business

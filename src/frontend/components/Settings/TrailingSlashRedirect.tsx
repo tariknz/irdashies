@@ -16,6 +16,12 @@ export const TrailingSlashRedirect = ({
   const location = useLocation();
   const pathname = settingsPagePath(location.pathname);
   if (pathname !== location.pathname)
-    return <Navigate to={{ ...location, pathname }} replace />;
+    return (
+      <Navigate
+        to={{ pathname, search: location.search, hash: location.hash }}
+        state={location.state}
+        replace
+      />
+    );
   return children;
 };

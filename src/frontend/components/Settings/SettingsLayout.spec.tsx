@@ -242,6 +242,21 @@ describe('SettingsLayout navigation', () => {
       expect(shownPage()).toHaveTextContent('relative');
     });
 
+    it('keeps the reopened page once the sim is known, when a later sim cannot run it', () => {
+      localStorage.setItem('settingsLastWidgetPage', '/settings/standings');
+      support.config = {
+        message: 'Unavailable in this simulator',
+        disabledWidgets: { iracing: [], lmu: ['standings'] },
+      };
+      const { rerender } = renderLayout('/settings');
+      expect(shownPage()).toHaveTextContent('standings');
+
+      // Much later, another sim connects while the page is still open.
+      simulator.active = 'lmu';
+      rerender(layoutAt('/settings'));
+      expect(shownPage()).toHaveTextContent('standings');
+    });
+
     it('waits for the support file before reopening, whatever arrives first', () => {
       localStorage.setItem('settingsLastWidgetPage', '/settings/standings');
       // The bundled defaults disable Standings in LMU; the user's file allows it.
