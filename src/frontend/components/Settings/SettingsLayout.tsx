@@ -77,6 +77,10 @@ export const SettingsLayout = () => {
     useActiveSimulatorStatus();
   const { config: supportConfig, loaded: supportLoaded } =
     useSimWidgetSupportStatus();
+  // A sim not confirmed yet -- the one the store last knew, kept while it
+  // asks again -- counts as unknown: rejecting a page on it would open
+  // Relative and lose the page left last even when the answer can run it.
+  const knownSimulator = simulatorLoaded ? activeSimulator : null;
   // A widget with a settings page of its own: a widget type, or a copy in
   // this layout, which resolves to its type. The Telemetry Inspector has
   // none (its settings are on Advanced).
@@ -93,7 +97,7 @@ export const SettingsLayout = () => {
     !widgetDisabledMessage(
       supportConfig,
       widgetSettingsType(currentDashboard?.widgets, id),
-      activeSimulator
+      knownSimulator
     );
   const overlayPage = existingWidgetPage(pathname, hasWidgetPage);
   const reopenablePage = existingWidgetPage(pathname, canReopen);

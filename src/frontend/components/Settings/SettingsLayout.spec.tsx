@@ -242,6 +242,27 @@ describe('SettingsLayout navigation', () => {
       expect(shownPage()).toHaveTextContent('relative');
     });
 
+    it('reopens the page left last over a sim not confirmed since, when the answer can run it', () => {
+      localStorage.setItem('settingsLastWidgetPage', '/settings/standings');
+      support.config = {
+        message: 'Unavailable in this simulator',
+        disabledWidgets: { iracing: [], lmu: ['standings'] },
+      };
+      // The store reopened: it still holds the sim it last knew, unconfirmed.
+      simulator.active = 'lmu';
+      simulator.loaded = false;
+      const { rerender } = renderLayout('/settings');
+      expect(shownPage()).toHaveTextContent('standings');
+
+      simulator.active = 'iracing';
+      simulator.loaded = true;
+      rerender(layoutAt('/settings'));
+      expect(shownPage()).toHaveTextContent('standings');
+      expect(localStorage.getItem('settingsLastWidgetPage')).toBe(
+        '/settings/standings'
+      );
+    });
+
     it('keeps the reopened page once the sim is known, when a later sim cannot run it', () => {
       localStorage.setItem('settingsLastWidgetPage', '/settings/standings');
       support.config = {
