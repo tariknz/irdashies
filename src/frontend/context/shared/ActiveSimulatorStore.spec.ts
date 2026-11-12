@@ -211,6 +211,22 @@ describe('ActiveSimulatorStore', () => {
       expect(store.getStatus()).toEqual({ simulator: null, loaded: true });
     });
 
+    it('keeps the cached sim on reopening, but not as an answer until re-seeded', async () => {
+      // Changes while closed went unseen, so the cached sim may be stale.
+      const h = makeBridge();
+      const store = new ActiveSimulatorStore(h.bridge);
+      const first = store.subscribe(vi.fn());
+      h.emit('lmu');
+      first();
+
+      store.subscribe(vi.fn());
+      expect(store.getStatus()).toEqual({ simulator: 'lmu', loaded: false });
+
+      h.seed('iracing');
+      await Promise.resolve();
+      expect(store.getStatus()).toEqual({ simulator: 'iracing', loaded: true });
+    });
+
     it('keeps the same status object while nothing changes', () => {
       // useSyncExternalStore compares snapshots by identity.
       const h = makeBridge();

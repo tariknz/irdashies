@@ -61,6 +61,10 @@ export class ActiveSimulatorStore {
 
   private open(): void {
     const generation = ++this.generation;
+    // Changes while closed went unseen: the cached simulator is kept, so
+    // nothing flashes null, but it is no longer an answer until re-seeded.
+    if (this.status.loaded && this.bridge.getActiveSimulator)
+      this.status = { ...this.status, loaded: false };
     // Subscribed before the request is made, so a change that lands while it
     // is in flight is seen rather than missed.
     this.sawChange = false;
