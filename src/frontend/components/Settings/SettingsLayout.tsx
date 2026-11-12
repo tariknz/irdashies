@@ -11,7 +11,7 @@ import {
   useNavigate,
 } from 'react-router-dom';
 import {
-  useActiveSimulator,
+  useActiveSimulatorStatus,
   useDashboard,
   useRunningState,
   useSimWidgetSupportStatus,
@@ -73,7 +73,8 @@ export const SettingsLayout = () => {
   const [storedWidgetPage] = useState(readLastWidgetPage);
   // The overlay pages visited this session, oldest first.
   const visitedOverlays = useRef<string[]>([]);
-  const activeSimulator = useActiveSimulator();
+  const { simulator: activeSimulator, loaded: simulatorLoaded } =
+    useActiveSimulatorStatus();
   const { config: supportConfig, loaded: supportLoaded } =
     useSimWidgetSupportStatus();
   // A widget with a settings page of its own: a widget type, or a copy in
@@ -109,11 +110,13 @@ export const SettingsLayout = () => {
       overlayPage,
     ].slice(-VISITED_OVERLAYS);
   }, [overlayPage]);
-  // Kept only against the support file: the bundled defaults can allow a
-  // page the file disables, and saving it would lose the page left last.
+  // Kept only once the support file and the simulator have answered: until
+  // then the bundled defaults, or a sim not known yet, can allow a page that
+  // cannot be reopened, and saving it would lose the page left last.
   useEffect(() => {
-    if (supportLoaded && reopenablePage) saveLastWidgetPage(reopenablePage);
-  }, [supportLoaded, reopenablePage]);
+    if (supportLoaded && simulatorLoaded && reopenablePage)
+      saveLastWidgetPage(reopenablePage);
+  }, [supportLoaded, simulatorLoaded, reopenablePage]);
   const mainRef = useRef<HTMLElement>(null);
   const previousPath = useRef(pathname);
   useEffect(() => {

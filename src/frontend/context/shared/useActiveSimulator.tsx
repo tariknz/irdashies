@@ -1,11 +1,30 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { SIMULATOR_IDS, type ActiveSimulator } from '@irdashies/types';
 import { useDashboardBridge } from '../DashboardContext/DashboardContext';
-import { getActiveSimulatorStore } from './ActiveSimulatorStore';
+import {
+  getActiveSimulatorStore,
+  type ActiveSimulatorStatus,
+} from './ActiveSimulatorStore';
+
+export type { ActiveSimulatorStatus } from './ActiveSimulatorStore';
 
 /** Stable no-ops, so a missing bridge does not churn useSyncExternalStore. */
 const subscribeToNothing = () => () => undefined;
 const noSimulator = (): ActiveSimulator | null => null;
+// Without a bridge there is no answer coming: nothing to wait for.
+const NO_BRIDGE_STATUS: ActiveSimulatorStatus = {
+  simulator: null,
+  loaded: true,
+};
+const noBridgeStatus = () => NO_BRIDGE_STATUS;
+
+const useActiveSimulatorStore = () => {
+  const bridge = useDashboardBridge();
+  return useMemo(
+    () => (bridge ? getActiveSimulatorStore(bridge) : undefined),
+    [bridge]
+  );
+};
 
 /**
  * The simulator currently feeding telemetry, or null when none has been
@@ -21,16 +40,28 @@ const noSimulator = (): ActiveSimulator | null => null;
  * of flashing null while its own request is in flight.
  */
 export const useActiveSimulator = (): ActiveSimulator | null => {
-  const bridge = useDashboardBridge();
-  const store = useMemo(
-    () => (bridge ? getActiveSimulatorStore(bridge) : undefined),
-    [bridge]
-  );
+  const store = useActiveSimulatorStore();
 
   return useSyncExternalStore(
     store?.subscribe ?? subscribeToNothing,
     store?.getSnapshot ?? noSimulator,
     store?.getSnapshot ?? noSimulator
+  );
+};
+
+/**
+ * The running simulator and whether the main process has answered for it.
+ * `useActiveSimulator` reads null both before that answer and when no sim is
+ * running; this tells the two apart, for a caller that must not act on a sim
+ * it does not know yet.
+ */
+export const useActiveSimulatorStatus = (): ActiveSimulatorStatus => {
+  const store = useActiveSimulatorStore();
+
+  return useSyncExternalStore(
+    store?.subscribe ?? subscribeToNothing,
+    store?.getStatus ?? noBridgeStatus,
+    store?.getStatus ?? noBridgeStatus
   );
 };
 

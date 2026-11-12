@@ -22,6 +22,8 @@ const support = vi.hoisted(() => ({
 }));
 const simulator = vi.hoisted(() => ({
   active: 'iracing' as 'iracing' | 'lmu' | null,
+  // Whether the main process has answered; a null `active` is then none running.
+  loaded: true,
 }));
 
 vi.mock('@irdashies/context', () => ({
@@ -34,6 +36,10 @@ vi.mock('@irdashies/context', () => ({
     toggleDemoMode: vi.fn(),
   }),
   useActiveSimulator: () => simulator.active,
+  useActiveSimulatorStatus: () => ({
+    simulator: simulator.active,
+    loaded: simulator.loaded,
+  }),
   useRunningState: () => ({ running: true }),
   useSimWidgetSupport: () => support.config ?? DEFAULT_SIM_WIDGET_SUPPORT,
   useSimWidgetSupportStatus: () => ({
@@ -75,6 +81,7 @@ describe('SettingsLayout navigation', () => {
     support.config = undefined;
     support.loaded = true;
     simulator.active = 'iracing';
+    simulator.loaded = true;
   });
 
   describe('reopening', () => {
@@ -225,10 +232,12 @@ describe('SettingsLayout navigation', () => {
       };
       // The simulator is not known yet on the first render.
       simulator.active = null;
+      simulator.loaded = false;
       const { rerender } = renderLayout('/settings');
       expect(shownPage()).toHaveTextContent('standings');
 
       simulator.active = 'lmu';
+      simulator.loaded = true;
       rerender(layoutAt('/settings'));
       expect(shownPage()).toHaveTextContent('relative');
     });
@@ -242,12 +251,14 @@ describe('SettingsLayout navigation', () => {
       };
       support.loaded = false;
       simulator.active = null;
+      simulator.loaded = false;
       const { rerender } = renderLayout('/settings');
       const main = screen.getByRole('main');
       expect(within(main).queryByRole('heading')).not.toBeInTheDocument();
 
       // The simulator answers first.
       simulator.active = 'lmu';
+      simulator.loaded = true;
       rerender(layoutAt('/settings'));
       expect(within(main).queryByRole('heading')).not.toBeInTheDocument();
 
@@ -269,11 +280,52 @@ describe('SettingsLayout navigation', () => {
         disabledWidgets: { iracing: [], lmu: ['standings'] },
       };
       simulator.active = null;
+      simulator.loaded = false;
       const { rerender } = renderLayout('/settings/standings');
 
       simulator.active = 'lmu';
+      simulator.loaded = true;
       rerender(layoutAt('/settings/standings'));
       expect(shownPage()).toHaveTextContent('standings');
+    });
+
+    it('keeps the page left last until the simulator is known, when it then cannot run the page opened', () => {
+      localStorage.setItem('settingsLastWidgetPage', '/settings/weather');
+      support.config = {
+        message: 'Unavailable in this simulator',
+        disabledWidgets: { iracing: [], lmu: ['standings'] },
+      };
+      simulator.active = null;
+      simulator.loaded = false;
+      const { rerender } = renderLayout('/settings/standings');
+      expect(localStorage.getItem('settingsLastWidgetPage')).toBe(
+        '/settings/weather'
+      );
+
+      simulator.active = 'lmu';
+      simulator.loaded = true;
+      rerender(layoutAt('/settings/standings'));
+      expect(shownPage()).toHaveTextContent('standings');
+      expect(localStorage.getItem('settingsLastWidgetPage')).toBe(
+        '/settings/weather'
+      );
+    });
+
+    it('keeps the page opened once the main process answers that no sim is running', () => {
+      localStorage.setItem('settingsLastWidgetPage', '/settings/weather');
+      support.config = {
+        message: 'Unavailable in this simulator',
+        disabledWidgets: { iracing: [], lmu: ['standings'] },
+      };
+      simulator.active = null;
+      simulator.loaded = false;
+      const { rerender } = renderLayout('/settings/standings');
+
+      simulator.loaded = true;
+      rerender(layoutAt('/settings/standings'));
+      expect(localStorage.getItem('settingsLastWidgetPage')).toBe(
+        '/settings/standings'
+      );
     });
 
     it('does not keep a page the sim connected now cannot run', () => {
