@@ -205,12 +205,19 @@ const frame = (
 
 const create = (
   store = memoryStore(),
-  report: (report: PitStopReport) => void = vi.fn()
+  report: (report: PitStopReport) => void = vi.fn(),
+  lapTimes: number[] = []
 ) => {
   const processor = new PitStopEstimateProcessor({
     persistence: store,
     referenceLaps: () => references,
     fuel: () => undefined,
+    lapTimes: () => ({
+      lapTimes,
+      lapTimeHistory: [],
+      sessionNum: 0,
+      version: 1,
+    }),
     report,
   });
   processor.onLifecycle({ type: 'enter', replay: false });
@@ -299,6 +306,25 @@ describe('PitStopEstimateProcessor', () => {
       (sent.actualAheadGapSeconds ?? 0) + (sent.actualBehindGapSeconds ?? 0)
     ).toBeCloseTo(100, 0);
     expect(sent.predictedAheadGapSeconds).not.toBeNull();
+  });
+
+  it('moves other cars at their own pace in the predicted gaps', () => {
+    // Positive: the other car ahead of the rejoin point; negative: behind.
+    const signedGap = (lapTimes: number[]) => {
+      const report = vi.fn();
+      const processor = create(memoryStore(learnedFile()), report, lapTimes);
+      drive(processor, pittingCar, drivingCar(0.2));
+      const sent = report.mock.calls[0][0] as PitStopReport;
+      return (
+        sent.predictedAheadGapSeconds ??
+        -(sent.predictedBehindGapSeconds ?? NaN)
+      );
+    };
+    const samePace = signedGap([100, 100]);
+    const fasterCar = signedGap([100, 80]);
+    expect(Number.isFinite(samePace)).toBe(true);
+    expect(Number.isFinite(fasterCar)).toBe(true);
+    expect(Math.abs(fasterCar - samePace)).toBeGreaterThan(5);
   });
 
   it('flags a caution during the stop and reports no actual loss', () => {

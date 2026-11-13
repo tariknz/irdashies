@@ -6,6 +6,7 @@ import type {
   PitStopModelFile,
   PitStopReport,
   ReferenceLap,
+  LapTimesSnapshot,
   ReferenceLapsSnapshot,
   Session,
   SessionLifecycleEvent,
@@ -22,6 +23,7 @@ import {
   fuelStopNeeded,
   nearestAround,
   parseSpeedKph,
+  projectTraffic,
   parseTrackLengthMetres,
   rejoinOffset,
   resolveLaneLoss,
@@ -49,6 +51,8 @@ const CAUTION = GlobalFlags.Caution | GlobalFlags.CautionWaving;
 export interface PitStopEstimateDependencies {
   persistence: PitStopModelPersistence;
   referenceLaps: () => ReferenceLapsSnapshot | undefined;
+  /** Each car's recent pace, so cars move at their own speed during a stop. */
+  lapTimes?: () => LapTimesSnapshot | undefined;
   fuel: () => FuelProjectionSnapshot | undefined;
   /** Saved pit lane calibration, used until a stop has been seen here. */
   pitLane?: (trackId: string) => Promise<PitLaneTrackData | null>;
@@ -264,15 +268,11 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       surfaces[carIdx] !== TrackLocation.NotInWorld;
 
     if (events.playerEntered) {
-      const ghost =
-        this.lastOffsetPct !== null
-          ? (((pcts[this.playerCarIdx] - this.lastOffsetPct) % 1) + 1) % 1
-          : null;
       const lap = frame.CarIdxLap?.value?.[this.playerCarIdx];
       this.pendingPrediction = {
         breakdown: this.lastBreakdown,
         lap: typeof lap === 'number' && lap >= 0 ? lap : null,
-        ...this.around(ghost, pcts, include),
+        ...this.projectedTraffic(pcts, include),
       };
     }
     if (events.playerExited) {
@@ -296,6 +296,59 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       behind,
       aheadGap: ahead === null ? null : this.gapSeconds(pct, pcts[ahead]),
       behindGap: behind === null ? null : this.gapSeconds(pcts[behind], pct),
+    };
+  }
+
+  /**
+   * Cars around the rejoin point when the player gets there, each moved at its
+   * own pace: its recent laps, or its class estimate scaled to the player's
+   * pace against the player's class estimate.
+   */
+  private projectedTraffic(
+    pcts: readonly number[],
+    include: (carIdx: number) => boolean
+  ): Around {
+    const breakdown = this.lastBreakdown;
+    const offsetPct = this.lastOffsetPct;
+    const player = this.cars.get(this.playerCarIdx);
+    if (!breakdown || offsetPct === null || !player) return NO_AROUND;
+
+    const lapTimes = this.dependencies?.lapTimes?.()?.lapTimes ?? [];
+    const reference = this.referenceFor(this.playerCarIdx);
+    const playerPace =
+      (lapTimes[this.playerCarIdx] ?? 0) > 0
+        ? lapTimes[this.playerCarIdx]
+        : reference
+          ? reference.finishTime - reference.startTime
+          : player.classEstLapSeconds;
+    const scale =
+      player.classEstLapSeconds > 0
+        ? playerPace / player.classEstLapSeconds
+        : 1;
+    const deps = this.dependencies as PitStopEstimateDependencies;
+    const traffic = projectTraffic({
+      playerPct: pcts[this.playerCarIdx],
+      offsetPct,
+      lossSeconds: breakdown.lossSeconds,
+      exitPct: this.entryExit(deps.persistence.read()).exitPct,
+      reference,
+      playerLapSeconds: playerPace,
+      carPcts: pcts,
+      carLapSeconds: (carIdx) => {
+        const own = lapTimes[carIdx] ?? 0;
+        if (own > 0) return own;
+        const estimate = this.cars.get(carIdx)?.classEstLapSeconds ?? 0;
+        return estimate > 0 ? estimate * scale : 0;
+      },
+      include,
+    });
+    const round2 = (value: number | null) =>
+      value === null ? null : Number(value.toFixed(2));
+    return {
+      ahead: traffic.ahead,
+      behind: traffic.behind,
+      aheadGap: round2(traffic.aheadGap),
+      behindGap: round2(traffic.behindGap),
     };
   }
 
