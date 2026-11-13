@@ -1,6 +1,7 @@
 export * from './ChannelSnapshotStore';
 export * from './useChannelSnapshot';
 export * from './useFuelProjectionSnapshot';
+export * from './useRacePlanProgressSnapshot';
 export * from './useLapTimesSnapshot';
 export * from './useLapLogSnapshot';
 export * from './useLapHistorySnapshot';

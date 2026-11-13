@@ -164,6 +164,22 @@ describe('racePlanService', () => {
     });
   });
 
+  it('gives main-process consumers the planning with its strategy', async () => {
+    const service = make({
+      store: memoryStore(configured()),
+      client: stubClient(),
+      crypto: fakeCrypto(),
+    });
+    expect(service.getActivePlan()).toBeNull();
+    await service.refreshNow();
+    const active = service.getActivePlan();
+    expect(active?.planning.id).toBe(FIXTURE_PLANNING_ID);
+    expect(active?.strategy.id).toBe(FIXTURE_STRATEGY_ID);
+
+    await service.setConfig({ strategyId: 999 });
+    expect(service.getActivePlan()?.strategy.id).toBe(FIXTURE_STRATEGY_ID);
+  });
+
   it('refuses to save the key when the OS cannot encrypt it', async () => {
     const store = memoryStore();
     const service = make({
