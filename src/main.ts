@@ -79,6 +79,7 @@ import {
   LapHistoryRuntime,
   type LapHistoryPersistence,
 } from './app/processors/lapHistoryRuntime';
+import { watchLapHistoryDemand } from './app/lapHistoryDemand';
 import {
   flushLapHistoryOnShutdown,
   listArchivedLapHistorySessions,
@@ -233,8 +234,9 @@ let disposeRendererDataSubscriptions: (() => void) | undefined;
 /**
  * Hosts lap-history recording outside the ProcessorHost, the way the incident
  * runtime is hosted: an enabled Gantry keeps recording while its window is
- * closed. Gated on the Gantry widget, so a user who never enables it pays no
- * frame cost.
+ * closed. Gated on widgets whose manifest sets `usesLapHistory` and on live
+ * subscribers such as browser sources, so a user who uses none of them pays
+ * no frame cost.
  */
 function setupLapHistoryRuntime(
   initialDashboard: DashboardLayout,
@@ -257,12 +259,13 @@ function setupLapHistoryRuntime(
       loadArchivedLapHistory(sessionId, sessionNum),
   });
 
-  const applyDashboard = (layout: DashboardLayout | undefined) => {
-    const widget = layout?.widgets.find((w) => w.id === 'gantry');
-    runtime.updateEnabled(widget?.enabled ?? false);
-  };
-  applyDashboard(initialDashboard);
-  const unsubscribeDashboard = onDashboardUpdated(applyDashboard);
+  const unsubscribeDemand = watchLapHistoryDemand(
+    channelBus,
+    initialDashboard,
+    onDashboardUpdated,
+    (needed) => runtime.updateEnabled(needed),
+    (layout) => createPerfDashboard(layout, perfRun)
+  );
 
   let unsubscribeSession: (() => void) | undefined;
   let unsubscribeTelemetry: (() => void) | undefined;
@@ -299,7 +302,7 @@ function setupLapHistoryRuntime(
     unsubscribeSession = undefined;
     unsubscribeTelemetry = undefined;
     unsubscribeBridgeChanged?.();
-    unsubscribeDashboard?.();
+    unsubscribeDemand();
     unsubscribeSessionId?.();
     unsubscribeReplayContext();
     runtime.dispose();
@@ -310,8 +313,8 @@ function setupLapHistoryRuntime(
  * Hosts the replay context outside the ProcessorHost. It is created before the
  * incident and lap-history runtimes and wired to the bridge first, so a
  * replay file is recognised before they see its session. Frames are only read
- * while the Gantry is enabled; sessions are always read so this PC's user ids
- * are remembered.
+ * while lap history is recorded; sessions are always read so this PC's user
+ * ids are remembered.
  */
 function setupReplayContextRuntime(
   initialDashboard: DashboardLayout
@@ -331,13 +334,16 @@ function setupReplayContextRuntime(
     }
   );
 
-  let gantryEnabled = false;
-  const applyDashboard = (layout: DashboardLayout | undefined) => {
-    gantryEnabled =
-      layout?.widgets.find((w) => w.id === 'gantry')?.enabled ?? false;
-  };
-  applyDashboard(initialDashboard);
-  const unsubscribeDashboard = onDashboardUpdated(applyDashboard);
+  let readFrames = false;
+  const unsubscribeDemand = watchLapHistoryDemand(
+    channelBus,
+    initialDashboard,
+    onDashboardUpdated,
+    (needed) => {
+      readFrames = needed;
+    },
+    (layout) => createPerfDashboard(layout, perfRun)
+  );
 
   let unsubscribeSession: (() => void) | undefined;
   let unsubscribeTelemetry: (() => void) | undefined;
@@ -351,7 +357,7 @@ function setupReplayContextRuntime(
       undefined;
     unsubscribeTelemetry =
       bridge.onTelemetry((telemetry) => {
-        if (gantryEnabled) runtime.onFrame(telemetry);
+        if (readFrames) runtime.onFrame(telemetry);
       }) ?? undefined;
   };
   wireToTelemetryBridge();
@@ -363,7 +369,7 @@ function setupReplayContextRuntime(
     unsubscribeSession = undefined;
     unsubscribeTelemetry = undefined;
     unsubscribeBridgeChanged?.();
-    unsubscribeDashboard?.();
+    unsubscribeDemand();
     runtime.dispose();
   };
   return runtime;

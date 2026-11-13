@@ -145,22 +145,25 @@ describe('performance run configuration', () => {
     ).toBe('full');
   });
 
-  it('creates an empty dashboard without mutating the source', () => {
-    const result = createPerfDashboard(dashboard, {
-      enabled: true,
-      overlayMode: 'empty',
-      widgetTypes: [],
-      scenario: 'empty',
-      durationSeconds: 0,
-      telemetryDelivery: 'on',
-      telemetryPayload: 'allowlisted',
-      channelDelivery: 'on',
-      visibilityPhases: [],
-    });
+  it.each(['empty', 'observer'] as const)(
+    'disables saved widgets in %s mode without mutating the source',
+    (overlayMode) => {
+      const result = createPerfDashboard(dashboard, {
+        enabled: true,
+        overlayMode,
+        widgetTypes: [],
+        scenario: 'empty',
+        durationSeconds: 0,
+        telemetryDelivery: 'on',
+        telemetryPayload: 'allowlisted',
+        channelDelivery: 'on',
+        visibilityPhases: [],
+      });
 
-    expect(result.widgets.every((widget) => !widget.enabled)).toBe(true);
-    expect(dashboard.widgets.every((widget) => widget.enabled)).toBe(true);
-  });
+      expect(result.widgets.every((widget) => !widget.enabled)).toBe(true);
+      expect(dashboard.widgets.every((widget) => widget.enabled)).toBe(true);
+    }
+  );
 
   it('rejects visibility phases outside the shared duration bounds', () => {
     expect(

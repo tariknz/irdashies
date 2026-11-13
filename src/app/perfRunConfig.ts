@@ -185,7 +185,7 @@ export function createPerfDashboard(
     };
   }
 
-  if (config.overlayMode === 'empty') {
+  if (config.overlayMode === 'empty' || config.overlayMode === 'observer') {
     return {
       ...dashboard,
       widgets: dashboard.widgets.map((widget) => ({

@@ -3,6 +3,7 @@ import type { LapHistorySnapshot, Session, Telemetry } from '@irdashies/types';
 import { TrackLocation } from '@irdashies/types';
 import { ChannelBus } from '../bridge/channelBridge';
 import { createSessionLifecycle } from '../sessionLifecycle';
+import { watchLapHistoryDemand } from '../lapHistoryDemand';
 import {
   LapHistoryRuntime,
   type LapHistoryPersistence,
@@ -64,6 +65,79 @@ const writeCrossing = (
 };
 
 describe('LapHistoryRuntime', () => {
+  it('preserves tape replay state when a browser source starts demanding history', async () => {
+    const lifecycle = createSessionLifecycle();
+    const bus = new ChannelBus();
+    const persistence = newPersistence();
+    const runtime = new LapHistoryRuntime(
+      bus,
+      lifecycle,
+      newMetrics(),
+      persistence
+    );
+    const stopDemand = watchLapHistoryDemand(
+      bus,
+      { widgets: [] },
+      () => () => undefined,
+      (needed) => runtime.updateEnabled(needed)
+    );
+    const browserSource = {
+      id: 1,
+      isDestroyed: () => false,
+      isVisible: () => true,
+      send: vi.fn(),
+    };
+    try {
+      lifecycle._onEnter({ replay: true });
+      runtime.onSession(raceSession());
+      await settle();
+
+      bus.subscribe(browserSource, 'lap-history.snapshot');
+      runtime.onFrame(frame({ sessionTime: 100, laps: [4] }));
+      runtime.onFrame(frame({ sessionTime: 190, laps: [5] }));
+      bus.unsubscribe(browserSource.id, 'lap-history.snapshot');
+      lifecycle._onDisconnect();
+      expect(crossingCount(runtime.snapshot(), 0)).toBe(0);
+      expect(persistence.save).not.toHaveBeenCalled();
+      expect(persistence.seal).not.toHaveBeenCalled();
+
+      // Switching back to a live source must still resume normal recording.
+      lifecycle._onEnter({ replay: false });
+      runtime.onSession(raceSession(456));
+      await settle();
+      bus.subscribe(browserSource, 'lap-history.snapshot');
+      runtime.onFrame(frame({ sessionTime: 100, laps: [4] }));
+      runtime.onFrame(frame({ sessionTime: 190, laps: [5] }));
+      expect(crossingCount(runtime.snapshot(), 0)).toBe(1);
+      expect(persistence.save).toHaveBeenCalledWith('456', runtime.snapshot());
+    } finally {
+      stopDemand();
+      runtime.dispose();
+    }
+  });
+
+  it('preserves tape replay state when the replay-file pause ends', async () => {
+    const lifecycle = createSessionLifecycle();
+    const persistence = newPersistence();
+    const runtime = new LapHistoryRuntime(
+      new ChannelBus(),
+      lifecycle,
+      newMetrics(),
+      persistence
+    );
+    runtime.onSession(raceSession());
+    await settle();
+    lifecycle._onEnter({ replay: true });
+
+    runtime.updateReplayPaused(true);
+    runtime.updateReplayPaused(false);
+    runtime.onFrame(frame({ sessionTime: 100, laps: [4] }));
+    runtime.onFrame(frame({ sessionTime: 190, laps: [5] }));
+    expect(crossingCount(runtime.snapshot(), 0)).toBe(0);
+    expect(persistence.save).not.toHaveBeenCalled();
+    runtime.dispose();
+  });
+
   it('does not process or persist frames while Gantry is disabled', () => {
     const metrics = newMetrics();
     const persistence = newPersistence();
@@ -440,6 +514,31 @@ describe('LapHistoryRuntime', () => {
     runtime.onFrame(frame({ sessionTime: 990, laps: [10] }));
     expect(crossingCount(runtime.snapshot(), 0)).toBe(1);
     expect(runtime.snapshot().lap[0]).toBe(9);
+  });
+
+  it('keeps recorded laps but records no false crossing after a pause', async () => {
+    const runtime = new LapHistoryRuntime(
+      new ChannelBus(),
+      createSessionLifecycle(),
+      newMetrics(),
+      newPersistence()
+    );
+    runtime.onSession(raceSession());
+    await settle();
+    runtime.onFrame(frame({ sessionTime: 100, laps: [3] }));
+    runtime.onFrame(frame({ sessionTime: 190, laps: [4] }));
+    expect(crossingCount(runtime.snapshot(), 0)).toBe(1);
+
+    // Recording stops while the car runs laps 4 to 8.
+    runtime.updateEnabled(false);
+    runtime.updateEnabled(true);
+    runtime.onFrame(frame({ sessionTime: 900, laps: [9] }));
+    expect(crossingCount(runtime.snapshot(), 0)).toBe(1);
+
+    runtime.onFrame(frame({ sessionTime: 990, laps: [10] }));
+    expect(crossingCount(runtime.snapshot(), 0)).toBe(2);
+    expect(runtime.snapshot().lap[1]).toBe(9);
+    expect(runtime.snapshot().sessionTime[1]).toBe(990);
   });
 
   it('disposes lifecycle subscriptions so later events no longer reach it', async () => {
