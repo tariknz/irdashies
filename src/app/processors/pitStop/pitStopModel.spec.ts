@@ -12,6 +12,7 @@ import {
   modelLaneLoss,
   nearestAround,
   pctAtTime,
+  projectTraffic,
   rejoinOffset,
   resolveLaneLoss,
   resolveServiceRule,
@@ -448,5 +449,74 @@ describe('fuelStopNeeded', () => {
   it('is unknown without a race estimate or enough laps', () => {
     expect(fuelStopNeeded(20, 10, false, [lap(3), lap(3)])).toBeNull();
     expect(fuelStopNeeded(20, 10, true, [lap(3)])).toBeNull();
+  });
+});
+
+describe('projectTraffic', () => {
+  // Player at 0.5 on an even 100 s lap, rejoining 0.2 of a lap back at 0.3.
+  const base = {
+    playerPct: 0.5,
+    offsetPct: 0.2,
+    lossSeconds: 20,
+    exitPct: null,
+    reference: referenceLap(100),
+    playerLapSeconds: 100,
+    include: () => true,
+  };
+
+  it('matches plain positions when every car runs the player pace', () => {
+    const result = projectTraffic({
+      ...base,
+      carPcts: [0.35, 0.25],
+      carLapSeconds: () => 100,
+    });
+    expect(result).toMatchObject({ ahead: 0, behind: 1 });
+    expect(result.aheadGap).toBeCloseTo(5);
+    expect(result.behindGap).toBeCloseTo(5);
+  });
+
+  it('moves a faster class ahead and drops a slower car behind', () => {
+    // 60 s until rejoin. Car 1 at 90 s laps gains 6.7 s and passes the
+    // rejoin point; car 2 at 120 s laps loses 10 s.
+    const result = projectTraffic({
+      ...base,
+      lossSeconds: 60,
+      carPcts: [0.35, 0.25, 0.32],
+      carLapSeconds: (carIdx) => [100, 90, 120][carIdx],
+    });
+    expect(result.ahead).toBe(1);
+    expect(result.aheadGap).toBeCloseTo(1.67, 1);
+    expect(result.behind).toBe(2);
+    expect(result.behindGap).toBeCloseTo(8, 1);
+  });
+
+  it('counts the drive to pit exit as time for other cars to move', () => {
+    const near = projectTraffic({
+      ...base,
+      carPcts: [0.25],
+      carLapSeconds: () => 90,
+    });
+    const far = projectTraffic({
+      ...base,
+      exitPct: 0.9,
+      carPcts: [0.25],
+      carLapSeconds: () => 90,
+    });
+    // 20 s until rejoin keeps the faster car behind; 60 s takes it past.
+    expect(near.behind).toBe(0);
+    expect(near.behindGap).toBeCloseTo(2.78, 1);
+    expect(far.ahead).toBe(0);
+    expect(far.aheadGap).toBeCloseTo(1.67, 1);
+  });
+
+  it('uses the player pace for a car with no lap time', () => {
+    const result = projectTraffic({
+      ...base,
+      lossSeconds: 60,
+      carPcts: [0.25],
+      carLapSeconds: () => 0,
+    });
+    expect(result.behind).toBe(0);
+    expect(result.behindGap).toBeCloseTo(5);
   });
 });
