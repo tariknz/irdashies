@@ -257,6 +257,16 @@ export function createRacePlanService(options: {
         await refresh();
         if (disposed || choice !== latestChoice || generation !== started)
           return { status: 'superseded' };
+        if (planning?.id !== planningId) {
+          return {
+            status:
+              status === 'idle'
+                ? 'unauthorized'
+                : status === 'ok'
+                  ? 'invalid-response'
+                  : status,
+          };
+        }
         return { status: 'ok', state: snapshot() };
       }
       let loaded: LoadedPlanning | null = null;

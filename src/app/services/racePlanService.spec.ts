@@ -265,6 +265,52 @@ describe('racePlanService', () => {
   });
 
   it.each([
+    'network',
+    'not-found',
+    'unauthorized',
+    'invalid-response',
+  ] as const)(
+    'reports %s when the selected planning has no usable cache',
+    async (error) => {
+      const service = make({
+        store: memoryStore(configured()),
+        client: stubClient(async () => ({ ok: false, error })),
+        crypto: fakeCrypto(),
+      });
+      await service.refreshNow();
+      expect(await service.choosePlanning(FIXTURE_PLANNING_ID)).toEqual({
+        status: error,
+      });
+      expect((await service.getState()).planning).toBeNull();
+    }
+  );
+
+  it('reports unauthorized when the selected planning has no cache or API key', async () => {
+    const service = make({
+      store: memoryStore({ ...configured(), encryptedApiKey: null }),
+      client: stubClient(),
+      crypto: fakeCrypto(),
+    });
+    expect(await service.choosePlanning(FIXTURE_PLANNING_ID)).toEqual({
+      status: 'unauthorized',
+    });
+  });
+
+  it('can keep using the selected cached planning when its refresh fails', async () => {
+    const service = make({
+      store: memoryStore({
+        ...configured(),
+        cache: { planning: rawPlanningFixture().planning, fetchedAt: 1000 },
+      }),
+      client: stubClient(async () => ({ ok: false, error: 'network' })),
+      crypto: fakeCrypto(),
+    });
+    const result = await service.choosePlanning(FIXTURE_PLANNING_ID);
+    expect(result.status).toBe('ok');
+    expect((await service.getState()).planning?.id).toBe(FIXTURE_PLANNING_ID);
+  });
+
+  it.each([
     'not-found',
     'network',
     'invalid-response',

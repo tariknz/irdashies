@@ -54,6 +54,16 @@ const text = (value: unknown): string | null => {
 
 const isoTime = (value: unknown): number | null => {
   if (typeof value !== 'string' || value.length > 40) return null;
+  const match = value.match(
+    /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/i
+  );
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (day > days[month - 1]) return null;
   const ms = Date.parse(value);
   return Number.isFinite(ms) ? ms : null;
 };

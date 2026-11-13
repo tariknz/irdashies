@@ -19,6 +19,48 @@ const normalized = (value: unknown = rawPlanningFixture()) => {
 };
 
 describe('normalizeRacePlanning', () => {
+  it.each([
+    '1',
+    'June 1, 2030',
+    '2030-06-01',
+    '2030-06-01T12:00:00',
+    '2030-02-29T12:00:00Z',
+    '2030-04-31T12:00:00Z',
+    '2030-06-01T24:00:00Z',
+    '2030-06-01T12:00:00+99:00',
+  ])('rejects a malformed race timestamp: %s', (value) => {
+    const raw = rawPlanningFixture();
+    raw.planning.strategies[0].race_start_at = value;
+    expect(normalizeRacePlanning(raw)).toBeNull();
+  });
+
+  it.each([
+    '2030-06-01T12:00:00.123456Z',
+    '2030-06-01T14:30:00+02:30',
+    '2030-06-01T02:00:00-10:00',
+    '2028-02-29T12:00:00Z',
+  ])('accepts an ISO timestamp with a real calendar date: %s', (value) => {
+    const raw = rawPlanningFixture();
+    raw.planning.strategies[0].race_start_at = value;
+    expect(normalized(raw).strategies[0].raceStartMs).toBe(Date.parse(value));
+  });
+
+  it('rejects malformed stint times and drops malformed optional dates', () => {
+    const stint = rawPlanningFixture();
+    stint.planning.strategies[0].stints[0].start_at = '1';
+    expect(normalizeRacePlanning(stint)).toBeNull();
+
+    const optional = rawPlanningFixture();
+    optional.planning.driver_availabilities[0].periods[0].start_time = '1';
+    optional.planning.updated_at = '1';
+    optional.planning.strategies[0].updated_at = '1';
+    const planning = normalized(optional);
+    expect(planning.drivers[0].availability).toHaveLength(1);
+    expect(planning.updatedAt).toBe(
+      new Date(planning.strategies[0].raceStartMs).toISOString()
+    );
+  });
+
   it('converts a planning response to a RacePlanning', () => {
     const planning = normalizeRacePlanning(rawPlanningFixture());
     expect(planning).not.toBeNull();
@@ -168,6 +210,14 @@ describe('normalizeRacePlanList', () => {
     track: { iracing_id: 1, name: 'Test Circuit' },
     type: 'team',
   };
+
+  it('omits a listing date that is not an ISO timestamp', () => {
+    expect(
+      normalizeRacePlanList({
+        plannings: [{ ...entry, session: { ...entry.session, start_at: '1' } }],
+      })?.[0].startAt
+    ).toBeNull();
+  });
 
   it('reads the plannings list', () => {
     expect(
