@@ -11,6 +11,8 @@ interface SettingsPopoverProps {
   id?: string;
   role?: 'group' | 'listbox';
   matchAnchorWidth?: boolean;
+  /** Narrowest the panel is drawn, unless it matches its anchor. */
+  minWidth?: number;
   initialFocusRef?: RefObject<HTMLElement | null>;
 }
 
@@ -24,6 +26,7 @@ export function SettingsPopover({
   id,
   role = 'group',
   matchAnchorWidth = false,
+  minWidth = 200,
   initialFocusRef,
 }: SettingsPopoverProps) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -42,7 +45,7 @@ export function SettingsPopover({
     const maxHeight = Math.max(36, flip ? above : below);
     const width = Math.min(
       window.innerWidth - 16,
-      matchAnchorWidth ? anchor.width : Math.max(200, panel.width)
+      matchAnchorWidth ? anchor.width : Math.max(minWidth, panel.width)
     );
     setPosition({
       left: Math.max(8, Math.min(anchor.left, window.innerWidth - width - 8)),
@@ -52,7 +55,7 @@ export function SettingsPopover({
       width,
       maxHeight,
     });
-  }, [open, anchorRef, matchAnchorWidth]);
+  }, [open, anchorRef, matchAnchorWidth, minWidth]);
 
   useLayoutEffect(() => {
     if (!open || !panelRef.current || position.visibility === 'hidden') return;

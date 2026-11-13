@@ -164,6 +164,82 @@ describe('ActiveSimulatorStore', () => {
     expect(store.getSnapshot()).toBeNull();
     expect(() => unsubscribe()).not.toThrow();
   });
+
+  describe('loaded', () => {
+    it('is false until the seed answers, and an answer of none counts', async () => {
+      // Null before the answer is "not known yet"; null after it is "none
+      // running", and a caller like Settings acts on the second only.
+      const h = makeBridge();
+      const store = new ActiveSimulatorStore(h.bridge);
+      const listener = vi.fn();
+      store.subscribe(listener);
+      expect(store.getStatus()).toEqual({ simulator: null, loaded: false });
+
+      h.seed(null);
+      await Promise.resolve();
+
+      expect(store.getStatus()).toEqual({ simulator: null, loaded: true });
+      expect(listener).toHaveBeenCalledTimes(1);
+    });
+
+    it('counts a change event as the answer', () => {
+      const h = makeBridge();
+      const store = new ActiveSimulatorStore(h.bridge);
+      store.subscribe(vi.fn());
+
+      h.emit('lmu');
+
+      expect(store.getStatus()).toEqual({ simulator: 'lmu', loaded: true });
+    });
+
+    it('counts a failed seed as the answer, keeping what is known', async () => {
+      const h = makeBridge();
+      h.getActiveSimulator.mockImplementation(() =>
+        Promise.reject(new Error())
+      );
+      const store = new ActiveSimulatorStore(h.bridge);
+      store.subscribe(vi.fn());
+
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(store.getStatus()).toEqual({ simulator: null, loaded: true });
+    });
+
+    it('is true at once on a bridge that cannot be asked', () => {
+      const store = new ActiveSimulatorStore({} as DashboardBridge);
+      expect(store.getStatus()).toEqual({ simulator: null, loaded: true });
+    });
+
+    it('keeps the cached sim on reopening, but not as an answer until re-seeded', async () => {
+      // Changes while closed went unseen, so the cached sim may be stale.
+      const h = makeBridge();
+      const store = new ActiveSimulatorStore(h.bridge);
+      const first = store.subscribe(vi.fn());
+      h.emit('lmu');
+      first();
+
+      store.subscribe(vi.fn());
+      expect(store.getStatus()).toEqual({ simulator: 'lmu', loaded: false });
+
+      h.seed('iracing');
+      await Promise.resolve();
+      expect(store.getStatus()).toEqual({ simulator: 'iracing', loaded: true });
+    });
+
+    it('keeps the same status object while nothing changes', () => {
+      // useSyncExternalStore compares snapshots by identity.
+      const h = makeBridge();
+      const store = new ActiveSimulatorStore(h.bridge);
+      store.subscribe(vi.fn());
+      h.emit('lmu');
+      const status = store.getStatus();
+
+      h.emit('lmu');
+
+      expect(store.getStatus()).toBe(status);
+    });
+  });
 });
 
 describe('getActiveSimulatorStore', () => {

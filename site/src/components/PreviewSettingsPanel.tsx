@@ -7,6 +7,7 @@ import {
   useNavigate,
 } from 'react-router-dom';
 import { PreviewSettingsMenu } from './PreviewSettingsMenu';
+import { TrailingSlashRedirect } from '@irdashies/frontend/components/Settings/TrailingSlashRedirect';
 import {
   ArrowsOutSimple,
   GearSix,
@@ -415,7 +416,9 @@ export function PreviewSettingsButton({
             <Route
               path="/settings/:widgetId"
               element={
-                <SettingsContent onClose={handleClose} request={request} />
+                <TrailingSlashRedirect>
+                  <SettingsContent onClose={handleClose} request={request} />
+                </TrailingSlashRedirect>
               }
             />
           </Routes>

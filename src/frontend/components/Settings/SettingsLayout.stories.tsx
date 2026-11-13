@@ -23,10 +23,13 @@ interface StoryProps {
   initialPath: string;
   emptyFuel?: boolean;
   scaleInstances?: boolean;
-  initialTab?: {
-    key: 'fuelWidgetTab' | 'inputTab' | 'standingsTab' | 'lapTimeTab';
-    value: 'display' | 'options';
-  };
+  initialTab?:
+    | {
+        key: 'fuelWidgetTab' | 'inputTab' | 'standingsTab' | 'lapTimeTab';
+        value: 'display' | 'options';
+      }
+    // The overlay list's order, kept in local storage like a tab.
+    | { key: 'settingsMenuSort'; value: 'alpha' | 'activated' };
 
   profileChoices?: boolean;
   profileName?: string;
@@ -289,6 +292,20 @@ type Story = StoryObj<typeof SettingsLayout>;
 export const Default: Story = {
   args: {
     initialPath: '/settings',
+  },
+};
+
+export const OverlaysAlphabetical: Story = {
+  args: {
+    initialPath: '/settings/standings',
+    initialTab: { key: 'settingsMenuSort', value: 'alpha' },
+  },
+};
+
+export const OverlaysActivatedFirst: Story = {
+  args: {
+    initialPath: '/settings/standings',
+    initialTab: { key: 'settingsMenuSort', value: 'activated' },
   },
 };
 

@@ -3,8 +3,9 @@ import {
   ArrowLeftIcon,
   GearIcon,
   MagnifyingGlassIcon,
+  ToolboxIcon,
 } from '@phosphor-icons/react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useReleaseNotesStatus } from './ReleaseNotes/ReleaseNotesStatusContext';
 import {
   useActiveSimulator,
@@ -20,7 +21,20 @@ import {
   menuHasToggle,
   type MenuItem,
 } from './menuItems';
+import { settingsPageKind, type SettingsPageKind } from './settingsPageKind';
 import { ToggleSwitch } from './components/ToggleSwitch';
+import { MenuSortControl } from './components/MenuSortControl';
+import {
+  MENU_SORT_LABELS,
+  readMenuSort,
+  saveMenuSort,
+  sortMenuItems,
+  type MenuSortMode,
+} from './menuSort';
+
+/** Whether the row is the current one: its page, or a layout copy's of it. */
+const isMenuItemActive = (item: MenuItem, pathname: string) =>
+  pathname.startsWith(`/settings${item.path}`);
 
 const MenuLink = ({
   item,
@@ -31,6 +45,7 @@ const MenuLink = ({
   isNew,
   disabledReason,
   onNavigate,
+  revealKey,
 }: {
   item: MenuItem;
   pathname: string;
@@ -42,8 +57,14 @@ const MenuLink = ({
   /** Present when the row controls a widget that exists in the dashboard. */
   onToggle?: (enabled: boolean) => void;
   onNavigate?: () => void;
+  /**
+   * A change brings the current row back into view: the list was reordered
+   * under it (a new sort order, or a switch moving it to the other group in
+   * Activated first), which keeps the row mounted and its scroll stale.
+   */
+  revealKey?: string;
 }) => {
-  const isActive = pathname.startsWith(`/settings${item.path}`);
+  const isActive = isMenuItemActive(item, pathname);
   const linkRef = useRef<HTMLAnchorElement>(null);
   useEffect(() => {
     const link = linkRef.current;
@@ -75,7 +96,7 @@ const MenuLink = ({
           });
     observer?.observe(scroller);
     return () => observer?.disconnect();
-  }, [isActive]);
+  }, [isActive, revealKey]);
   return (
     <li
       title={disabledReason}
@@ -128,48 +149,71 @@ const MenuLink = ({
   );
 };
 
+const NAV_LABELS: Record<SettingsPageKind, string> = {
+  app: 'App settings pages',
+  tool: 'Tools pages',
+  overlay: 'Overlay settings',
+};
+
 export const SettingsMenu = ({
   appTo = '/settings/general',
+  toolsTo = '/settings/profiles',
   returnTo = '/settings/relative',
   previewMode = false,
   excludedWidgetTypes,
 }: {
   appTo?: string;
+  /** Where the Tools link goes: the tool page visited last. */
+  toolsTo?: string;
   returnTo?: string;
   previewMode?: boolean;
   excludedWidgetTypes?: ReadonlySet<string>;
 }) => {
   const { status: releaseNotesStatus } = useReleaseNotesStatus();
+  // Without a trailing slash: TrailingSlashRedirect at the route sees to it.
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const simulator = useActiveSimulator();
   const supportConfig = useSimWidgetSupport();
   const [showHidden, setShowHidden] = useState(false);
   const [query, setQuery] = useState('');
-  const appPage = [...generalItems, ...bottomItems].some(
-    (item) => item.to === pathname
-  );
+  // The order chosen last time, so the list comes back as it was left.
+  const [sortMode, setSortMode] = useState<MenuSortMode>(readMenuSort);
+  const changeSortMode = (mode: MenuSortMode) => {
+    setSortMode(mode);
+    saveMenuSort(mode);
+  };
+  // Tools are pages of their own, not overlays: like App settings, they
+  // have a menu that takes the overlay list's place. The preview has none.
+  const kind = settingsPageKind(pathname);
+  const pageKind: SettingsPageKind =
+    previewMode && kind === 'tool' ? 'overlay' : kind;
+  const appPage = pageKind === 'app';
+  const toolPage = pageKind === 'tool';
+  const asidePage = appPage || toolPage;
   const overlayPath = useRef(pathname);
   const overlayScroll = useRef<HTMLDivElement>(null);
-  const appScroll = useRef<HTMLElement>(null);
+  const asideScroll = useRef<HTMLElement>(null);
   const overlayScrollPosition = useRef(0);
-  const wasAppPage = useRef(appPage);
+  const wasAsidePage = useRef(asidePage);
   useEffect(() => {
-    if (!appPage) overlayPath.current = pathname;
-  }, [appPage, pathname]);
+    if (!asidePage) overlayPath.current = pathname;
+  }, [asidePage, pathname]);
   useLayoutEffect(() => {
-    if (wasAppPage.current && !appPage && overlayScroll.current)
+    if (wasAsidePage.current && !asidePage && overlayScroll.current)
       overlayScroll.current.scrollTop = overlayScrollPosition.current;
-    wasAppPage.current = appPage;
-  }, [appPage]);
+    wasAsidePage.current = asidePage;
+  }, [asidePage]);
   // Layout-editor copies of a widget share its menu entry: it is on while any
   // copy is, so a custom layout cannot hide behind a switched-off default.
-  const instancesOf = (widgetType: string) =>
-    (currentDashboard?.widgets ?? []).filter(
-      (w) => (w.type ?? w.id) === widgetType
-    );
-  const isWidgetEnabled = (widgetType: string) =>
-    instancesOf(widgetType).some((w) => w.enabled);
+  // Built once per render: the list asks for every row, several times over.
+  const enabledTypes = new Set(
+    (currentDashboard?.widgets ?? [])
+      .filter((w) => w.enabled)
+      .map((w) => w.type ?? w.id)
+  );
+  const isWidgetEnabled = (widgetType: string) => enabledTypes.has(widgetType);
 
   // The settings page toggles the widget whose id is the widget type, so the
   // menu does the same; extra instances keep their own state. Grouped items
@@ -191,18 +235,24 @@ export const SettingsMenu = ({
     });
   };
 
+  // Switching an overlay on opens its settings, to set it up straight away.
+  // Switching one off leaves the page shown as it is, and so does switching
+  // on the row already current (a layout copy's page shows its type's row).
+  const toggleWidget =
+    (item: MenuItem, widgetType: string) => (enabled: boolean) => {
+      setWidgetEnabled(widgetType, enabled);
+      if (enabled && !isMenuItemActive(item, pathname)) navigate(item.to);
+    };
+
   // A grouped item is on while any widget sharing its page is.
   const isItemEnabled = (item: MenuItem) =>
     !!item.widgetType &&
     (item.groupTypes ?? [item.widgetType]).some(isWidgetEnabled);
 
-  const menuItems = [
-    ...widgetItems.filter(
-      (item) =>
-        !item.hideInMenu && !excludedWidgetTypes?.has(item.widgetType ?? '')
-    ),
-    ...(previewMode ? [] : toolItems),
-  ];
+  const menuItems = widgetItems.filter(
+    (item) =>
+      !item.hideInMenu && !excludedWidgetTypes?.has(item.widgetType ?? '')
+  );
   const unsupported = (item: MenuItem) =>
     widgetDisabledMessage(supportConfig, item.widgetType, simulator);
   // Widgets the running sim cannot support are left out unless asked for.
@@ -214,15 +264,40 @@ export const SettingsMenu = ({
       item.label.toLowerCase().includes(searchQuery) ||
       item.category?.toLowerCase().includes(searchQuery)
   );
-  const categories = [...WIDGET_CATEGORIES, 'Tools']
+  const categories = [...WIDGET_CATEGORIES]
     .map((category) => ({
       category,
       items: visibleItems.filter((item) => item.category === category),
     }))
     .filter(({ items }) => items.length > 0);
+  // Without categories: one list, alphanumeric or activated first.
+  const sortedItems =
+    sortMode === 'category'
+      ? []
+      : sortMenuItems(visibleItems, sortMode, isItemEnabled);
+
+  // What moves the current row: a new order, or in Activated first its
+  // switch. A change re-runs its reveal; other rows ignore it. Searching, or
+  // another overlay turned on by a dashboard update, leaves it and the
+  // scroll alone. Switching another overlay on here opens that one instead.
+  const renderLink = (item: MenuItem) => (
+    <MenuLink
+      key={item.path}
+      item={item}
+      pathname={asidePage ? overlayPath.current : pathname}
+      revealKey={`${sortMode}:${isItemEnabled(item)}`}
+      isEnabled={item.widgetType ? isItemEnabled(item) : undefined}
+      disabledReason={unsupported(item) ?? undefined}
+      onToggle={
+        canToggle(item) && item.widgetType && !unsupported(item)
+          ? toggleWidget(item, item.widgetType)
+          : undefined
+      }
+    />
+  );
 
   useLayoutEffect(() => {
-    const scroller = appPage ? appScroll.current : overlayScroll.current;
+    const scroller = asidePage ? asideScroll.current : overlayScroll.current;
     if (!scroller) return;
     // Fade only the edges with more content, including after filtering or resize.
     const updateFade = () => {
@@ -249,16 +324,16 @@ export const SettingsMenu = ({
       scroller.removeEventListener('scroll', updateFade);
       observer?.disconnect();
     };
-  }, [appPage, query, showHidden, visibleItems.length]);
+  }, [asidePage, pageKind, query, showHidden, visibleItems.length, sortMode]);
 
   return (
     <nav
-      aria-label={appPage ? 'App settings pages' : 'Overlay settings'}
+      aria-label={NAV_LABELS[pageKind]}
       className="flex w-[232px] shrink-0 flex-col border-r border-slate-700 bg-slate-950 p-3 xl:w-[252px]"
     >
       {appPage && (
         <section
-          ref={appScroll}
+          ref={asideScroll}
           aria-label="App pages"
           className="settings-menu-scroll min-h-0 flex-1 overflow-y-auto pb-3"
         >
@@ -283,13 +358,34 @@ export const SettingsMenu = ({
           </ul>
         </section>
       )}
+      {toolPage && (
+        <section
+          ref={asideScroll}
+          aria-label="Tool pages"
+          className="settings-menu-scroll min-h-0 flex-1 overflow-y-auto pb-3"
+        >
+          <h2 className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+            Tools
+          </h2>
+          <ul className="space-y-0.5">
+            {toolItems.map((item) => (
+              <MenuLink
+                key={item.path}
+                item={item}
+                pathname={pathname}
+                showIcon
+              />
+            ))}
+          </ul>
+        </section>
+      )}
       <div
-        hidden={appPage}
-        className={appPage ? 'hidden' : 'flex min-h-0 flex-1 flex-col'}
+        hidden={asidePage}
+        className={asidePage ? 'hidden' : 'flex min-h-0 flex-1 flex-col'}
         data-overlay-area
       >
-        <div className="shrink-0 bg-slate-950 px-1 pb-3 pt-3">
-          <label className="flex min-h-9 items-center gap-2 rounded-md border border-settings-boundary bg-slate-900 px-2 text-slate-400 focus-within:outline-2 focus-within:outline-offset-3 focus-within:outline-accent-400">
+        <div className="flex shrink-0 items-center gap-1.5 bg-slate-950 px-1 pb-3 pt-3">
+          <label className="flex min-h-9 min-w-0 flex-1 items-center gap-2 rounded-md border border-settings-boundary bg-slate-900 px-2 text-slate-400 focus-within:outline-2 focus-within:outline-offset-3 focus-within:outline-accent-400">
             <MagnifyingGlassIcon size={16} className="shrink-0" />
             <input
               type="search"
@@ -300,12 +396,13 @@ export const SettingsMenu = ({
               className="min-h-9 w-full min-w-0 bg-transparent text-sm text-slate-200 outline-none placeholder:text-slate-400 focus-visible:outline-none!"
             />
           </label>
+          <MenuSortControl mode={sortMode} onChange={changeSortMode} />
         </div>
 
         <div
           ref={overlayScroll}
           onScroll={(event) => {
-            if (!appPage && event.currentTarget.clientHeight > 0)
+            if (!asidePage && event.currentTarget.clientHeight > 0)
               overlayScrollPosition.current = event.currentTarget.scrollTop;
           }}
           data-overlay-scroll
@@ -324,34 +421,29 @@ export const SettingsMenu = ({
               </button>
             </div>
           )}
-          <div className="space-y-4 pb-3">
-            {categories.map(({ category, items }) => (
-              <section key={category} aria-label={category}>
-                <h3 className="px-2 pt-2 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  {category}
-                </h3>
-                <ul className="flex flex-col gap-0.5">
-                  {items.map((item) => (
-                    <MenuLink
-                      key={item.path}
-                      item={item}
-                      pathname={appPage ? overlayPath.current : pathname}
-                      showIcon={item.category === 'Tools'}
-                      isEnabled={
-                        item.widgetType ? isItemEnabled(item) : undefined
-                      }
-                      disabledReason={unsupported(item) ?? undefined}
-                      onToggle={
-                        canToggle(item) && item.widgetType && !unsupported(item)
-                          ? setWidgetEnabled.bind(null, item.widgetType)
-                          : undefined
-                      }
-                    />
-                  ))}
-                </ul>
-              </section>
-            ))}
-          </div>
+          {sortMode === 'category' ? (
+            <div className="space-y-4 pb-3">
+              {categories.map(({ category, items }) => (
+                <section key={category} aria-label={category}>
+                  <h3 className="px-2 pt-2 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    {category}
+                  </h3>
+                  <ul className="flex flex-col gap-0.5">
+                    {items.map(renderLink)}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          ) : (
+            sortedItems.length > 0 && (
+              <ul
+                aria-label={`Overlays, ${MENU_SORT_LABELS[sortMode].toLowerCase()}`}
+                className="flex flex-col gap-0.5 pt-2 pb-3"
+              >
+                {sortedItems.map(renderLink)}
+              </ul>
+            )
+          )}
           {visibleItems.length === 0 && (
             <p role="status" className="px-2 py-4 text-sm text-slate-400">
               No overlays match “{query}”.
@@ -359,17 +451,26 @@ export const SettingsMenu = ({
           )}
         </div>
       </div>
-      <div className="shrink-0 pt-1">
+      <div className="shrink-0 space-y-0.5 pt-1">
+        {!asidePage && !previewMode && (
+          <Link
+            to={toolsTo}
+            className="flex min-h-9 items-center gap-2 rounded-md border-l-2 border-transparent px-2 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white"
+          >
+            <ToolboxIcon size={14} aria-hidden="true" />
+            Tools
+          </Link>
+        )}
         <Link
-          to={appPage ? returnTo : appTo}
+          to={asidePage ? returnTo : appTo}
           className="flex min-h-9 items-center gap-2 rounded-md border-l-2 border-transparent px-2 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white"
         >
-          {appPage ? (
+          {asidePage ? (
             <ArrowLeftIcon size={14} aria-hidden="true" />
           ) : (
             <GearIcon size={14} aria-hidden="true" />
           )}
-          {appPage ? 'Back to overlays' : 'App settings'}
+          {asidePage ? 'Back to overlays' : 'App settings'}
         </Link>
       </div>
     </nav>

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { ActiveSimulator } from '@irdashies/types';
 import {
   useActiveSimulator,
+  useActiveSimulatorStatus,
   useAvailableSimulators,
 } from './useActiveSimulator';
 
@@ -70,6 +71,34 @@ describe('useActiveSimulator', () => {
     setBridge({});
     const { result } = renderHook(() => useActiveSimulator());
     expect(result.current).toBeNull();
+  });
+});
+
+describe('useActiveSimulatorStatus', () => {
+  it('is not loaded until the main process answers, even with none running', async () => {
+    let resolveSnapshot: (value: ActiveSimulator | null) => void = () =>
+      undefined;
+    setBridge({
+      getActiveSimulator: () =>
+        new Promise<ActiveSimulator | null>((resolve) => {
+          resolveSnapshot = resolve;
+        }),
+      onSimulatorChanged: () => () => undefined,
+    });
+
+    const { result } = renderHook(() => useActiveSimulatorStatus());
+    expect(result.current).toEqual({ simulator: null, loaded: false });
+
+    await act(async () => {
+      resolveSnapshot(null);
+      await Promise.resolve();
+    });
+    expect(result.current).toEqual({ simulator: null, loaded: true });
+  });
+
+  it('has nothing to wait for without a bridge', () => {
+    const { result } = renderHook(() => useActiveSimulatorStatus());
+    expect(result.current).toEqual({ simulator: null, loaded: true });
   });
 });
 
