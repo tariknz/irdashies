@@ -1,217 +1,163 @@
+import { memo } from 'react';
 import {
   useDashboard,
   sessionBarSelectors,
   trackStateSelectors,
   useSessionBarSelector,
+  useSessionStore,
   useTrackStateSelector,
   useSessionVisibility,
-  useThrottledWeather,
   useActiveSimulator,
+  useThrottledWeather,
 } from '@irdashies/context';
-import { useTrackTemperature } from './hooks/useTrackTemperature';
+import { useStore } from 'zustand';
+import { speedFromMs } from '@irdashies/utils/units';
 import { useWindDemoData } from '../../domain/weather/useWindDemoData';
-import { WeatherTemp } from './WeatherTemp/WeatherTemp';
-import { WeatherTrackWetness } from './WeatherTrackWetness/WeatherTrackWetness';
-import { WeatherTrackRubbered } from './WeatherTrackRubbered/WeatherTrackRubbered';
-import { WindDirection } from './WindDirection/WindDirection';
-import { useTrackRubberedState } from '@irdashies/domain/weather/useTrackRubberedState';
+import { getWindIntensityClass } from '../../domain/weather/wind';
 import { useWeatherSettings } from './hooks/useWeatherSettings';
-import { WeatherHumidity } from './WeatherHumidity/WeatherHumidity';
-import { WeatherPrecipitation } from './WeatherPrecipitation/WeatherPrecipitation';
-import { useMemo } from 'react';
-import { RoadHorizonIcon, ThermometerIcon } from '@phosphor-icons/react';
+import { useWeatherForecast } from './hooks/useWeatherForecast';
+import {
+  DEMO_FORECAST,
+  formatRainAlertLead,
+  rainAlertIn,
+  rainTileClass,
+  surfaceStatus,
+  tempTrend,
+} from './hooks/weatherStatus';
+import { WindArrow } from './WindArrow';
 
-type WeatherColumnId =
-  | 'trackTemp'
-  | 'airTemp'
-  | 'wind'
-  | 'humidity'
-  | 'precipitation'
-  | 'wetness'
-  | 'trackState';
+const toDisplayTemp = (c: number, metric: boolean) =>
+  Math.round(metric ? c : (c * 9) / 5 + 32);
 
-export const Weather = () => {
+const hourLabel = (hour: number) => `${String(hour).padStart(2, '0')}:00`;
+
+export const Weather = memo(() => {
   const { isDemoMode } = useDashboard();
   const settings = useWeatherSettings();
   const displayUnits = useSessionBarSelector(sessionBarSelectors.displayUnits);
   const isOnTrack = useTrackStateSelector(trackStateSelectors.isOnTrack);
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
-  // LMU simulates no wind: its wind vector is always zero, so the cell could
-  // only ever show 0 with the arrow fixed on a headwind.
   const simulatesWind = useActiveSimulator() !== 'lmu';
+  const sessionSkies = useStore(
+    useSessionStore,
+    (state) => state.session?.WeekendInfo?.TrackSkies
+  );
+  const skies = sessionSkies ?? (isDemoMode ? 'Partly Cloudy' : undefined);
+  const temps = useSessionBarSelector(
+    (s) => [s.airTemp, s.trackTemp] as const,
+    { equality: (a, b) => a?.[0] === b?.[0] && a?.[1] === b?.[1] }
+  );
 
-  // Determine actual unit to use: auto uses iRacing's DisplayUnits setting
   const unitSetting = settings?.units ?? 'auto';
   const isMetric =
     unitSetting === 'auto' ? displayUnits === 1 : unitSetting === 'Metric';
-  const actualUnit = isMetric ? 'Metric' : 'Imperial';
 
-  // Weather telemetry - throttled to ~1 update/sec since weather data
-  // changes slowly and doesn't need 60 FPS updates
   const weather = useThrottledWeather();
+  const showForecast = settings?.forecast?.enabled !== false;
+  const liveForecast = useWeatherForecast(showForecast);
+  const forecast = isDemoMode ? DEMO_FORECAST : liveForecast;
+  const currentTimeOfDay = useSessionBarSelector((s) =>
+    s.sessionTimeOfDay === undefined
+      ? undefined
+      : Math.floor(s.sessionTimeOfDay / 60) * 60
+  );
 
-  const { trackTemp, airTemp } = useTrackTemperature({
-    airTempUnit: actualUnit,
-    trackTempUnit: actualUnit,
-  });
-  const trackRubbered = useTrackRubberedState();
-
-  // Derived values
-  const relativeWindDirection =
-    (weather.windDirection ?? 0) - (weather.windYaw ?? 0);
   const demoWind = useWindDemoData(isDemoMode, isMetric);
-  const windSpeedMs = demoWind?.speedMs ?? weather.windVelocity;
-  const windDirection = demoWind?.direction ?? relativeWindDirection;
+  const windMs = demoWind?.speedMs ?? weather.windVelocity;
+  const windRelative =
+    demoWind?.direction ??
+    (weather.windDirection === undefined
+      ? undefined
+      : weather.windDirection - (weather.windYaw ?? 0));
+  const windSpeed =
+    windMs === undefined
+      ? undefined
+      : speedFromMs(windMs, isMetric ? 'km/h' : 'mph');
 
-  // Column ordering: depends ONLY on settings, NOT on telemetry data.
-  // Settings change when the user edits config (very rare during a session).
-  const displayOrder = settings?.displayOrder as string[] | undefined;
-  const layout = settings?.layout ?? 'vertical';
-  const horizontalMode = settings?.horizontalMode ?? 'compact';
-  const componentVariant =
-    layout === 'vertical'
-      ? 'default'
-      : horizontalMode === 'compact'
-        ? 'compact'
-        : 'inline';
+  const [airTemp, trackTemp] = temps ?? [];
+  const surface = surfaceStatus(weather.trackMoisture);
+  const trend = tempTrend(airTemp, forecast);
+  const alertIn = showForecast
+    ? rainAlertIn(forecast, isDemoMode ? undefined : currentTimeOfDay)
+    : undefined;
 
-  const visibleColumnIds = useMemo(() => {
-    const allColumns: { id: WeatherColumnId; enabled: boolean }[] = [
-      { id: 'trackTemp', enabled: settings?.trackTemp?.enabled ?? true },
-      { id: 'airTemp', enabled: settings?.airTemp?.enabled ?? true },
-      {
-        id: 'wind',
-        enabled: simulatesWind && (settings?.wind?.enabled ?? true),
-      },
-      { id: 'humidity', enabled: settings?.humidity?.enabled ?? true },
-      {
-        id: 'precipitation',
-        enabled: settings?.precipitation?.enabled ?? true,
-      },
-      { id: 'wetness', enabled: settings?.wetness?.enabled ?? true },
-      { id: 'trackState', enabled: settings?.trackState?.enabled ?? true },
-    ];
-
-    const enabledColumns = allColumns.filter((c) => c.enabled);
-
-    if (!displayOrder) {
-      return enabledColumns.map((c) => c.id);
-    }
-
-    const ordered = displayOrder.filter((id): id is WeatherColumnId =>
-      enabledColumns.some((c) => c.id === id)
-    );
-
-    const remaining = enabledColumns
-      .filter((c) => !displayOrder.includes(c.id))
-      .map((c) => c.id);
-
-    return [...ordered, ...remaining];
-  }, [
-    settings?.trackTemp?.enabled,
-    settings?.airTemp?.enabled,
-    settings?.wind?.enabled,
-    simulatesWind,
-    settings?.humidity?.enabled,
-    settings?.precipitation?.enabled,
-    settings?.wetness?.enabled,
-    settings?.trackState?.enabled,
-    displayOrder,
-  ]);
-
-  // Maps column ID to its memoized sub-component.
-  // Sub-components are wrapped in React.memo(), so they bail out of
-  // re-rendering unless their specific primitive props have changed.
-  const renderColumn = (id: WeatherColumnId) => {
-    switch (id) {
-      case 'trackTemp':
-        return (
-          <WeatherTemp
-            key={id}
-            title="Track"
-            value={trackTemp}
-            icon={RoadHorizonIcon}
-            variant={componentVariant}
-          />
-        );
-      case 'airTemp':
-        return (
-          <WeatherTemp
-            key={id}
-            title="Air"
-            value={airTemp}
-            icon={ThermometerIcon}
-            variant={componentVariant}
-          />
-        );
-      case 'wind':
-        return (
-          <WindDirection
-            key={id}
-            speedMs={windSpeedMs}
-            direction={windDirection}
-            metric={isMetric}
-            variant={componentVariant}
-          />
-        );
-      case 'humidity':
-        return (
-          <WeatherHumidity
-            key={id}
-            humidity={weather.humidity}
-            variant={componentVariant}
-          />
-        );
-      case 'precipitation':
-        return (
-          <WeatherPrecipitation
-            key={id}
-            precipitation={weather.precipitation}
-            variant={componentVariant}
-          />
-        );
-      case 'wetness':
-        return (
-          <WeatherTrackWetness
-            key={id}
-            trackMoisture={weather.trackMoisture}
-            variant={componentVariant}
-          />
-        );
-      case 'trackState':
-        return (
-          <WeatherTrackRubbered
-            key={id}
-            trackRubbered={trackRubbered}
-            variant={componentVariant}
-          />
-        );
-    }
-  };
-
-  // Hide if showOnlyWhenOnTrack is enabled and player is not on track
-  if (settings?.showOnlyWhenOnTrack && !isOnTrack) {
-    return null;
-  }
-
+  if (settings?.showOnlyWhenOnTrack && !isOnTrack) return null;
   if (!isSessionVisible) return <></>;
 
   return (
-    <div
-      className="@container w-full rounded-sm p-2 bg-slate-800/(--bg-opacity)"
-      style={{
-        ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
-      }}
-    >
+    // pt-3 keeps the badge that overlaps the card's top edge inside the window
+    <div className="@container w-full pt-3">
       <div
-        className={
-          layout === 'horizontal'
-            ? 'flex flex-row flex-wrap w-full gap-1'
-            : 'flex flex-col w-full gap-2'
-        }
+        className="relative w-full rounded-[10px] p-2.5 bg-[#0f1319]/(--bg-opacity) text-white flex flex-col gap-2 font-[Barlow_Condensed,sans-serif]"
+        style={{
+          ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
+        }}
       >
-        {visibleColumnIds.map(renderColumn)}
+        {alertIn !== undefined && (
+          <div className="absolute -top-2.5 right-3 rounded-full bg-blue-600 px-2.5 py-0.5 text-xs font-bold tracking-wider">
+            RAIN IN ~{formatRainAlertLead(alertIn)}
+          </div>
+        )}
+        <div className="flex items-center gap-3">
+          <div
+            className={`rounded-lg px-3 py-1.5 text-center min-w-[76px] ${surface.className}`}
+          >
+            <div className="text-[30px] font-bold leading-none">
+              {surface.label}
+            </div>
+            {skies && (
+              <div className="text-[11px] font-semibold tracking-[.06em] whitespace-nowrap">
+                {skies}
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[46px] font-bold leading-none tabular-nums">
+              {airTemp === undefined
+                ? '--'
+                : `${toDisplayTemp(airTemp, isMetric)}°`}
+              <span className={`ml-1 text-2xl ${trend.className}`}>
+                {trend.arrow}
+              </span>
+            </div>
+            {trackTemp !== undefined && (
+              <div className="text-[13px] text-slate-400 tabular-nums">
+                track {toDisplayTemp(trackTemp, isMetric)}&deg;
+              </div>
+            )}
+          </div>
+          {simulatesWind && (
+            <div
+              className={`flex flex-col items-center ${getWindIntensityClass(windSpeed)}`}
+            >
+              <WindArrow relative={windRelative} />
+              <div className="text-[15px] font-semibold leading-none tabular-nums">
+                {windSpeed === undefined ? '--' : Math.round(windSpeed)}
+              </div>
+            </div>
+          )}
+        </div>
+        {showForecast && forecast.length > 0 && (
+          <div className="flex gap-1.5">
+            {forecast.map((h) => (
+              <div
+                key={h.hour}
+                className={`flex flex-1 items-baseline justify-between rounded-md px-2 py-1 text-[13px] ${rainTileClass(h.precipitationPct)}`}
+              >
+                <span className="opacity-80 tabular-nums">
+                  {hourLabel(h.hour)}
+                </span>
+                <b className="tabular-nums">
+                  {h.precipitationPct > 0
+                    ? `${h.precipitationPct}%`
+                    : `~${toDisplayTemp(h.airTemp, isMetric)}°`}
+                </b>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
-};
+});
+Weather.displayName = 'Weather';
