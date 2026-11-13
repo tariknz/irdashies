@@ -1010,3 +1010,55 @@ export const WithPlayerIconOnPitRoad: Story = {
     playerCircleSize: 60,
   },
 };
+
+const pitExitArgs = {
+  trackId: 1,
+  drivers: sampleData,
+  showCarNumbers: true,
+  invertTrackColors: false,
+  driverCircleSize: 40,
+  playerCircleSize: 40,
+  trackmapFontSize: 100,
+  trackLineWidth: 20,
+  trackOutlineWidth: 40,
+  highlightColor: undefined,
+};
+
+export const PitExitEstimate: Story = {
+  args: {
+    ...pitExitArgs,
+    pitExit: {
+      anchorCarIdx: 24,
+      offsetPct: 0.42,
+      nearPct: 0.4,
+      farPct: 0.44,
+      state: 'ok',
+    },
+  },
+};
+
+export const PitExitEstimateCalibrating: Story = {
+  args: {
+    ...pitExitArgs,
+    pitExit: {
+      anchorCarIdx: 24,
+      offsetPct: 0.42,
+      nearPct: 0.36,
+      farPct: 0.48,
+      state: 'calibrating',
+    },
+  },
+};
+
+export const PitExitEstimateUnreliable: Story = {
+  args: {
+    ...pitExitArgs,
+    pitExit: {
+      anchorCarIdx: 24,
+      offsetPct: 0.42,
+      nearPct: 0.39,
+      farPct: 0.45,
+      state: 'unreliable',
+    },
+  },
+};

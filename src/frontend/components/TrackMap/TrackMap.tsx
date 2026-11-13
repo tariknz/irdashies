@@ -5,6 +5,7 @@ import { useTrackMapSettings } from './hooks/useTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
 import { useGhostSectorColors } from './hooks/useGhostSectorColors';
 import { usePlayerIconImage } from './hooks/usePlayerIconImage';
+import { usePitExitMarker } from './hooks/usePitExitMarker';
 import { TrackCanvas } from './TrackCanvas';
 import { useDriverLivePositions } from '@irdashies/domain';
 import {
@@ -56,6 +57,7 @@ export const TrackMap = ({ embedded = false }: { embedded?: boolean }) => {
   const driverLivePositions = useDriverLivePositions({
     enabled: settings?.displayMode === 'livePosition',
   });
+  const pitExit = usePitExitMarker(settings?.pitExitEstimate);
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
@@ -98,6 +100,7 @@ export const TrackMap = ({ embedded = false }: { embedded?: boolean }) => {
         driverLivePositions={driverLivePositions}
         debug={debug}
         maxFps={embedded ? EMBEDDED_MAX_FPS : undefined}
+        pitExit={pitExit}
       />
     </div>
   );

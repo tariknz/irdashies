@@ -24,6 +24,8 @@ vi.mock('@irdashies/context', () => {
     useSessionStore: vi.fn(() => []),
     useSectorColors: vi.fn(() => []),
     useSectorTimingStore: vi.fn(() => 0),
+    usePitStopEstimateSnapshot: vi.fn(() => undefined),
+    useDriverCarIdx: vi.fn(() => 0),
   };
 });
 const canvasProps = vi.hoisted(() => [] as Record<string, unknown>[]);

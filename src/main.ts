@@ -54,6 +54,11 @@ import {
 import { flushLapTracesOnShutdown } from './app/storage/lapTraces';
 import { flushPitLaneDataOnShutdown } from './app/storage/pitLaneData';
 import {
+  flushPitStopModelOnShutdown,
+  loadPitStopModel,
+} from './app/storage/pitStopModel';
+import { flushPitStopReportsOnShutdown } from './app/storage/pitStopReports';
+import {
   flushGarage61SearchSessionOnShutdown,
   saveGarage61SearchSession,
 } from './app/storage/garage61SearchSession';
@@ -513,6 +518,7 @@ void app.whenReady().then(async () => {
     getSessionLifecycle(),
     channelBus
   );
+  void loadPitStopModel();
   await iRacingSDKSetup(overlayManager, channelBus);
   setupTapeReplayBridge(getCurrentBridge);
   if (process.env.IRDASHIES_TELEMETRY_REPLAY) createTapeReplayWindow();
@@ -761,6 +767,8 @@ const handleBeforeQuit = createBeforeQuitHandler({
     await Promise.all([
       flushLapTracesOnShutdown(),
       flushPitLaneDataOnShutdown(),
+      flushPitStopModelOnShutdown(),
+      flushPitStopReportsOnShutdown(),
       flushReferenceLapsOnShutdown(),
       fuelDatabase?.flush(),
       flushIncidentsOnShutdown(),

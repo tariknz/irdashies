@@ -17,9 +17,12 @@ import {
   drawDrivers,
   drawSectorColors,
   drawSectorDividers,
+  drawPitExitMarker,
+  drawPitExitRange,
   compareDriverDrawOrder,
   type PositionedTrackDriver,
 } from './trackDrawingUtils';
+import type { PitExitMarker } from './hooks/usePitExitMarker';
 import {
   progressToTrackPoint,
   useProgressAnimation,
@@ -66,6 +69,7 @@ export interface TrackProps {
   driverLivePositions?: Record<number, number>;
   /** Caps redraws, e.g. for a map docked in the Gantry. */
   maxFps?: number;
+  pitExit?: PitExitMarker | null;
 }
 
 export interface TrackDriver {
@@ -123,6 +127,7 @@ const LoadedTrackCanvas = ({
   playerIconDataUrl: rawPlayerIconDataUrl = null,
   driverLivePositions = {},
   maxFps,
+  pitExit = null,
   trackDrawing,
 }: TrackProps & { trackDrawing: TrackDrawing }) => {
   const playerIconDataUrl = useMemo(
@@ -155,6 +160,22 @@ const LoadedTrackCanvas = ({
   const totalLength = trackDrawing?.active?.totalLength;
   const sfDirection = trackDrawing?.startFinish?.direction;
   const sfIntersectionLength = trackDrawing?.startFinish?.point?.length;
+  const pitExitPointRef = useRef({ x: 0, y: 0 });
+  const projectProgress = useMemo(
+    () =>
+      trackPathPoints && totalLength && sfIntersectionLength !== undefined
+        ? (progress: number, output: { x: number; y: number }) =>
+            progressToTrackPoint(
+              progress,
+              trackPathPoints,
+              totalLength,
+              sfIntersectionLength,
+              sfDirection,
+              output
+            )
+        : null,
+    [trackPathPoints, totalLength, sfIntersectionLength, sfDirection]
+  );
   const path2DObjects = useMemo(() => {
     if (!insidePath || !startFinishLinePath) return null;
 
@@ -458,6 +479,23 @@ const LoadedTrackCanvas = ({
       const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
 
       setupCanvasContext(ctx, scale, offsetX, offsetY, isMinimalCar);
+      let pitExitAnchor = -1;
+      if (pitExit && projectProgress) {
+        for (const entry of positionedDrivers) {
+          if (entry.driver.CarIdx !== pitExit.anchorCarIdx) continue;
+          pitExitAnchor = entry.progress;
+          drawPitExitRange(
+            ctx,
+            pitExit,
+            pitExitAnchor,
+            projectProgress,
+            trackLineWidth,
+            invertTrackColors,
+            pitExitPointRef.current
+          );
+          break;
+        }
+      }
       const hasIconOverlay = !!playerIconDataUrl;
       drawDrivers(
         ctx,
@@ -474,6 +512,17 @@ const LoadedTrackCanvas = ({
         carIdxIsOnPitRoad,
         hasIconOverlay
       );
+      if (pitExit && projectProgress && pitExitAnchor >= 0) {
+        drawPitExitMarker(
+          ctx,
+          pitExit,
+          pitExitAnchor,
+          projectProgress,
+          playerCircleSize * 1.35,
+          playerCircleSize * 0.8 * (trackmapFontSize / 100),
+          pitExitPointRef.current
+        );
+      }
       ctx.restore();
 
       // Position the icon overlay imperatively — mutating transform/dimensions
