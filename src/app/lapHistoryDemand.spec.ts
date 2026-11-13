@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { DashboardLayout, DashboardWidget } from '@irdashies/types';
 import type { ChannelBus } from './bridge/channelBus';
 import { needsLapHistory, watchLapHistoryDemand } from './lapHistoryDemand';
+import { createPerfDashboard, getPerfRunConfig } from './perfRunConfig';
 
 const widget = (
   id: string,
@@ -79,6 +80,51 @@ const fakeDashboardEvents = () => {
 };
 
 describe('watchLapHistoryDemand', () => {
+  it.each([{ PERF_WIDGET_TYPES: 'standings' }, { PERF_OVERLAY_MODE: 'empty' }])(
+    'uses the perf workload at startup and on profile updates: %j',
+    (env) => {
+      const bus = fakeBus();
+      const events = fakeDashboardEvents();
+      const onChange = vi.fn();
+      const saved = layout(widget('battle', true), widget('standings', false));
+      const config = getPerfRunConfig({ PERF_METRICS: '1', ...env });
+      watchLapHistoryDemand(
+        bus,
+        saved,
+        events.onDashboardUpdated,
+        onChange,
+        (current) => createPerfDashboard(current, config)
+      );
+      expect(onChange.mock.calls).toEqual([[false]]);
+      events.emit(layout(widget('gantry', true), widget('standings', false)));
+      expect(onChange.mock.calls).toEqual([[false]]);
+      expect(saved.widgets[0].enabled).toBe(true);
+
+      // A real browser source is still demand, independently of persisted flags.
+      bus.setCount('lap-history.snapshot', 1);
+      bus.setCount('lap-history.snapshot', 0);
+      expect(onChange.mock.calls).toEqual([[false], [true], [false]]);
+    }
+  );
+
+  it('enables history for a perf-selected Battle even when saved disabled', () => {
+    const events = fakeDashboardEvents();
+    const onChange = vi.fn();
+    const config = getPerfRunConfig({
+      PERF_METRICS: '1',
+      PERF_WIDGET_TYPES: 'battle',
+    });
+    watchLapHistoryDemand(
+      fakeBus(),
+      layout(widget('battle', false)),
+      events.onDashboardUpdated,
+      onChange,
+      (current) => createPerfDashboard(current, config)
+    );
+    events.emit(layout(widget('battle-2', false, { type: 'battle' })));
+    expect(onChange.mock.calls).toEqual([[true]]);
+  });
+
   it('reports the dashboard demand straight away', () => {
     const onChange = vi.fn();
     watchLapHistoryDemand(

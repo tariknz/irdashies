@@ -251,7 +251,8 @@ function setupLapHistoryRuntime(
     channelBus,
     initialDashboard,
     onDashboardUpdated,
-    (needed) => runtime.updateEnabled(needed)
+    (needed) => runtime.updateEnabled(needed),
+    (layout) => createPerfDashboard(layout, perfRun)
   );
 
   let unsubscribeSession: (() => void) | undefined;
@@ -328,7 +329,8 @@ function setupReplayContextRuntime(
     onDashboardUpdated,
     (needed) => {
       readFrames = needed;
-    }
+    },
+    (layout) => createPerfDashboard(layout, perfRun)
   );
 
   let unsubscribeSession: (() => void) | undefined;

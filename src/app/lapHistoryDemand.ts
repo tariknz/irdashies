@@ -32,9 +32,12 @@ export const watchLapHistoryDemand = (
   onDashboardUpdated: (
     listener: (layout: DashboardLayout) => void
   ) => () => void,
-  onChange: (needed: boolean) => void
+  onChange: (needed: boolean) => void,
+  resolveLayout?: (layout: DashboardLayout) => DashboardLayout
 ): (() => void) => {
-  let fromLayout = needsLapHistory(initialLayout);
+  const layoutDemand = (layout: DashboardLayout | undefined) =>
+    needsLapHistory(layout && resolveLayout ? resolveLayout(layout) : layout);
+  let fromLayout = layoutDemand(initialLayout);
   let subscribed = bus.subscriberCount(CHANNEL) > 0;
   let needed: boolean | undefined;
   const update = () => {
@@ -45,7 +48,7 @@ export const watchLapHistoryDemand = (
   };
 
   const unsubscribeDashboard = onDashboardUpdated((layout) => {
-    fromLayout = needsLapHistory(layout);
+    fromLayout = layoutDemand(layout);
     update();
   });
   const unsubscribeBus = bus.onSubscriberCountChanged((channel, count) => {
