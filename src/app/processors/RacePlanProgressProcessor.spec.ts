@@ -401,6 +401,100 @@ describe('RacePlanProgressProcessor', () => {
     });
   });
 
+  it('infers a late join without inventing earlier stints or losing the plan position on restart', async () => {
+    const actual = await vi.importActual<typeof import('./racePlanRebaseline')>(
+      './racePlanRebaseline'
+    );
+    engine.mockImplementation(actual.rebaselinePlan);
+    const persistence = memoryPersistence();
+    const { sim, selection } = start({ green: false, persistence });
+    const slot = 3;
+    const startLap = selection.strategy.stints
+      .slice(0, slot)
+      .reduce((sum, stint) => sum + stint.laps, 0);
+    sim.laps = startLap + 10;
+    const planned = selection.strategy.stints[slot];
+    sim.time =
+      planned.startSec +
+      (10 * (planned.endSec - planned.startSec)) / planned.laps;
+    sim.fuelVisible = false;
+    sim.setDriver(planned.driverId ?? DRIVER_A);
+    sim.state = SessionState.Racing;
+    sim.processor.onFrame(sim.frame());
+
+    expect(lastInput().actual).toHaveLength(1);
+    expect(lastInput().actual[0]).toMatchObject({
+      planIndex: slot,
+      startLap,
+      startSec: planned.startSec,
+      endLap: null,
+    });
+    expect(sim.snapshot).toMatchObject({ lapsInStint: 10, stops: [] });
+    expect(sim.snapshot.stints[0]).toMatchObject({
+      number: slot + 1,
+      planNumber: planned.number,
+      startLap,
+      status: 'current',
+    });
+    expect(sim.snapshot.boxLap).toBeGreaterThan(sim.laps + 1);
+
+    const restarted = new RacePlanProgressProcessor({
+      getPlan: () => selection,
+      persistence,
+      now: () => CLOCK_BASE_MS + sim.time * 1000,
+    });
+    sim.processor = restarted;
+    restarted.init(makeSession(sim.sessionOptions));
+    sim.tick();
+    expect(sim.snapshot.stints[0].number).toBe(slot + 1);
+    expect(lastInput().actual[0].planIndex).toBe(slot);
+    sim.pit({ driverTo: DRIVER_B });
+    expect(lastInput().actual.at(-1)?.planIndex).toBe(slot + 1);
+  });
+
+  it('bounds the estimated stint start by observed laps and elapsed time', () => {
+    const { sim, selection } = start({ green: false });
+    sim.laps = 100;
+    sim.time = 6000;
+    sim.state = SessionState.Racing;
+    sim.processor.onFrame(sim.frame());
+    const current = lastInput().actual[0];
+    expect(current.planIndex).toBe(2);
+    expect(current.startLap).toBe(
+      selection.strategy.stints[0].laps + selection.strategy.stints[1].laps
+    );
+    expect(current.startSec).toBeGreaterThan(0);
+    expect(current.startSec).toBeLessThan(sim.snapshot.elapsedSec);
+  });
+
+  it.each([
+    { name: 'during the stall', swapInStall: true, sessionDelaySec: 0 },
+    { name: 'at the exit', swapInStall: false, sessionDelaySec: 0 },
+    { name: 'after the exit', swapInStall: false, sessionDelaySec: 5 },
+  ])(
+    'clears measured fuel and pace when a driver swap is reported $name',
+    (swap) => {
+      const { sim } = start();
+      sim.driveLaps(5, { lapSec: 60, fuelPerLap: 1 });
+      expect(sim.snapshot).toMatchObject({ fuelPerLap: 1, lapTimeSec: 60 });
+      sim.pit({ fuelAdd: 20, driverTo: DRIVER_B, ...swap });
+      expect(sim.snapshot).toMatchObject({
+        driverId: DRIVER_B,
+        fuelPerLap: null,
+        lapTimeSec: null,
+      });
+      expect(lastInput()).toMatchObject({ fuelPerLap: null, lapTimeSec: null });
+      // Ignore the out-lap, then wait for three clean laps by the new driver.
+      sim.driveLaps(3, { lapSec: 90, fuelPerLap: 1.5 });
+      expect(sim.snapshot).toMatchObject({
+        fuelPerLap: null,
+        lapTimeSec: null,
+      });
+      sim.lap({ lapSec: 90, fuelPerLap: 1.5 });
+      expect(sim.snapshot).toMatchObject({ fuelPerLap: 1.5, lapTimeSec: 90 });
+    }
+  );
+
   it('fills the box lap and current stint from the real engine', async () => {
     const actual = await vi.importActual<typeof import('./racePlanRebaseline')>(
       './racePlanRebaseline'

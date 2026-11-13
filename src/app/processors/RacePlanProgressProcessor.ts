@@ -320,7 +320,7 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
       if (sessionState < SessionState.Racing) {
         this.preGreenSessionNum = sessionNum;
       } else if (!this.race && sessionState === SessionState.Racing) {
-        this.goGreen(frame, sessionNum, sessionTime, teamLaps, fuel);
+        this.goGreen(frame, sessionNum, sessionTime, teamLaps, fuel, plan);
         event = true;
         persist = true;
       }
@@ -443,7 +443,8 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
     sessionNum: number,
     sessionTime: number,
     teamLaps: number,
-    fuel: number | null
+    fuel: number | null,
+    plan: RacePlanSelection | null
   ): void {
     const sawStart = this.preGreenSessionNum === sessionNum;
     const elapsedAtGreen = sawStart ? 0 : this.elapsedBeforeJoin(frame);
@@ -456,11 +457,11 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
     this.stints = [
       {
         driverId: this.driverId,
-        startLap: sawStart ? teamLaps : 0,
-        startSec: 0,
+        ...(sawStart
+          ? { startLap: teamLaps, startSec: 0, planIndex: 0 }
+          : this.inferJoinedStint(plan?.strategy, teamLaps, elapsedAtGreen)),
         endLap: null,
         endSec: null,
-        planIndex: 0,
         fueled: true,
       },
     ];
@@ -469,6 +470,38 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
     this.lastDriverId = this.driverId;
     // The start lap is not a clean lap.
     this.lap = { startFuel: fuel, dirty: true };
+  }
+
+  /** Estimates only the current stint; earlier stops were not observed. */
+  private inferJoinedStint(
+    strategy: RacePlanStrategy | undefined,
+    teamLaps: number,
+    elapsed: number
+  ): Pick<RacePlanHistoryStint, 'startLap' | 'startSec' | 'planIndex'> {
+    const stints = strategy?.stints ?? [];
+    let planIndex = 0;
+    let startLap = 0;
+    for (; planIndex < stints.length - 1; planIndex += 1) {
+      const endLap = startLap + stints[planIndex].laps;
+      if (teamLaps < endLap) break;
+      startLap = endLap;
+    }
+    const stint = stints[planIndex];
+    if (!stint) return { startLap: teamLaps, startSec: elapsed, planIndex: 0 };
+
+    // Lap count determines the planned tank. Scale its start to the observed
+    // race clock so different pace cannot put the start in the future.
+    const progress = Math.min(
+      1,
+      Math.max(0, (teamLaps - startLap) / Math.max(1, stint.laps))
+    );
+    const plannedElapsed =
+      stint.startSec + progress * (stint.endSec - stint.startSec);
+    const startSec =
+      plannedElapsed > 0
+        ? Math.min(elapsed, (elapsed * stint.startSec) / plannedElapsed)
+        : 0;
+    return { startLap, startSec: round(startSec, 1), planIndex };
   }
 
   /** Joined after the green: the race clock is the best guess of elapsed. */
@@ -557,6 +590,15 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
     let persist = false;
     let lapCompleted = false;
     const inStall = surface === TrackLocation.InPitStall;
+    const driverId = this.driverId;
+    if (
+      driverId !== null &&
+      this.lastDriverId !== null &&
+      driverId !== this.lastDriverId
+    ) {
+      this.resetMeasurements();
+      event = true;
+    }
 
     if (this.openStop) {
       if (inStall || surface === TrackLocation.NotInWorld) {
@@ -579,7 +621,6 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
       );
     }
 
-    const driverId = this.driverId;
     const current = this.stints.at(-1);
     if (driverId !== null && driverId !== this.lastDriverId) {
       if (current && current.driverId === null && this.lastDriverId === null) {

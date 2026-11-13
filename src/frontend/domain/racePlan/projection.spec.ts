@@ -176,6 +176,11 @@ describe('current and next stint', () => {
   it('counts stints still in the race', () => {
     expect(plannedStintCount(stints)).toBe(4);
   });
+
+  it('includes stints before a late join without requiring invented history', () => {
+    expect(plannedStintCount(stints.slice(2))).toBe(4);
+    expect(plannedStintCount([stint(5, 102, 'dropped')])).toBe(0);
+  });
 });
 
 describe('findMyNextStint', () => {

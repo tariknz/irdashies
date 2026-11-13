@@ -381,8 +381,11 @@ export const plannedElapsedAtLap = (
   return last.endSec + (lap - startLap) * lapSec;
 };
 
-const numbered = (stints: UnnumberedStint[]): RacePlanProjectedStint[] =>
-  stints.map((stint, i) => ({ number: i + 1, ...stint }));
+const numbered = (
+  stints: UnnumberedStint[],
+  offset = 0
+): RacePlanProjectedStint[] =>
+  stints.map((stint, i) => ({ number: offset + i + 1, ...stint }));
 
 const planAsIs = (ctx: Context): RebaselineResult => ({
   stints: numbered(
@@ -565,7 +568,7 @@ export function rebaselinePlan(input: RebaselineInput): RebaselineResult {
     hasCurrent && actual.length > 1 && current.startLap === teamLaps
   );
   return {
-    stints: numbered(stints),
+    stints: numbered(stints, planIndexOf(actual[0], 0)),
     boxLap,
     driftSec: plannedElapsed === null ? null : round2(elapsed - plannedElapsed),
   };

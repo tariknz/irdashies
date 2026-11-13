@@ -49,7 +49,7 @@ export type RacePlanStintStatus =
   | 'dropped';
 
 export interface RacePlanProjectedStint {
-  /** 1-based position in `stints`; a split stint makes later numbers shift. */
+  /** 1-based race stint number; earlier stints may be absent after a late join. */
   number: number;
   /** Number of the plan stint this stands for; null for an extra stint. */
   planNumber: number | null;

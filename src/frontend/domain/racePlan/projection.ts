@@ -120,10 +120,15 @@ export const nextStint = (
   return snapshot.stints.slice(from).find(isAhead) ?? null;
 };
 
-/** Stints still in the race: everything but dropped ones. */
+/** Last stint still in the race, including stints before a late join. */
 export const plannedStintCount = (
   stints: readonly RacePlanProjectedStint[]
-): number => stints.filter((stint) => stint.status !== 'dropped').length;
+): number =>
+  stints.reduce(
+    (last, stint) =>
+      stint.status === 'dropped' ? last : Math.max(last, stint.number),
+    0
+  );
 
 /**
  * The user's next stint that has not started yet; null when they have none
