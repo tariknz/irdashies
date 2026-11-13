@@ -80,32 +80,34 @@ const fakeDashboardEvents = () => {
 };
 
 describe('watchLapHistoryDemand', () => {
-  it.each([{ PERF_WIDGET_TYPES: 'standings' }, { PERF_OVERLAY_MODE: 'empty' }])(
-    'uses the perf workload at startup and on profile updates: %j',
-    (env) => {
-      const bus = fakeBus();
-      const events = fakeDashboardEvents();
-      const onChange = vi.fn();
-      const saved = layout(widget('battle', true), widget('standings', false));
-      const config = getPerfRunConfig({ PERF_METRICS: '1', ...env });
-      watchLapHistoryDemand(
-        bus,
-        saved,
-        events.onDashboardUpdated,
-        onChange,
-        (current) => createPerfDashboard(current, config)
-      );
-      expect(onChange.mock.calls).toEqual([[false]]);
-      events.emit(layout(widget('gantry', true), widget('standings', false)));
-      expect(onChange.mock.calls).toEqual([[false]]);
-      expect(saved.widgets[0].enabled).toBe(true);
+  it.each([
+    { PERF_WIDGET_TYPES: 'standings' },
+    { PERF_OVERLAY_MODE: 'empty' },
+    { PERF_OVERLAY_MODE: 'observer' },
+    { PERF_OVERLAY_MODE: 'observer', PERF_WIDGET_TYPES: 'battle' },
+  ])('uses the perf workload at startup and on profile updates: %j', (env) => {
+    const bus = fakeBus();
+    const events = fakeDashboardEvents();
+    const onChange = vi.fn();
+    const saved = layout(widget('battle', true), widget('standings', false));
+    const config = getPerfRunConfig({ PERF_METRICS: '1', ...env });
+    watchLapHistoryDemand(
+      bus,
+      saved,
+      events.onDashboardUpdated,
+      onChange,
+      (current) => createPerfDashboard(current, config)
+    );
+    expect(onChange.mock.calls).toEqual([[false]]);
+    events.emit(layout(widget('gantry', true), widget('standings', false)));
+    expect(onChange.mock.calls).toEqual([[false]]);
+    expect(saved.widgets[0].enabled).toBe(true);
 
-      // A real browser source is still demand, independently of persisted flags.
-      bus.setCount('lap-history.snapshot', 1);
-      bus.setCount('lap-history.snapshot', 0);
-      expect(onChange.mock.calls).toEqual([[false], [true], [false]]);
-    }
-  );
+    // A real browser source is still demand, independently of persisted flags.
+    bus.setCount('lap-history.snapshot', 1);
+    bus.setCount('lap-history.snapshot', 0);
+    expect(onChange.mock.calls).toEqual([[false], [true], [false]]);
+  });
 
   it('enables history for a perf-selected Battle even when saved disabled', () => {
     const events = fakeDashboardEvents();
