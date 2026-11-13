@@ -467,6 +467,106 @@ describe('RacePlanProgressProcessor', () => {
     expect(current.startSec).toBeLessThan(sim.snapshot.elapsedSec);
   });
 
+  it.each([false, true])(
+    'infers a late join when the first plan arrives later (restart: %s)',
+    async (restart) => {
+      const actual = await vi.importActual<
+        typeof import('./racePlanRebaseline')
+      >('./racePlanRebaseline');
+      engine.mockImplementation(actual.rebaselinePlan);
+      let plan: RacePlanSelection | null = null;
+      const persistence = memoryPersistence();
+      const { sim, selection } = start({
+        green: false,
+        persistence,
+        plan: () => plan,
+      });
+      sim.laps = 100;
+      sim.time = 6000;
+      sim.fuelVisible = false;
+      sim.state = SessionState.Racing;
+      sim.processor.onFrame(sim.frame());
+      expect(sim.snapshot.status).toBe('no-plan');
+      if (restart) {
+        sim.processor = new RacePlanProgressProcessor({
+          getPlan: () => plan,
+          persistence,
+          now: () => CLOCK_BASE_MS + sim.time * 1000,
+        });
+        sim.processor.init(makeSession());
+      }
+      sim.lap();
+      plan = selection;
+      sim.tick();
+      const startLap =
+        selection.strategy.stints[0].laps + selection.strategy.stints[1].laps;
+      expect(lastInput().actual).toHaveLength(1);
+      expect(lastInput().actual[0]).toMatchObject({
+        startLap,
+        planIndex: 2,
+        endLap: null,
+      });
+      expect(sim.snapshot).toMatchObject({
+        status: 'racing',
+        lapsInStint: 101 - startLap,
+        stops: [],
+      });
+      expect(sim.snapshot.stints[0]).toMatchObject({
+        number: 3,
+        planNumber: 3,
+      });
+      expect(sim.snapshot.boxLap).toBe(
+        startLap + selection.strategy.stints[2].laps
+      );
+      const inferred = lastInput().actual;
+      plan = null;
+      sim.lap();
+      plan = selection;
+      sim.tick();
+      expect(lastInput().actual).toEqual(inferred);
+    }
+  );
+
+  it('keeps an observed green flag when a plan is selected mid-race', () => {
+    let plan: RacePlanSelection | null = null;
+    const { sim, selection } = start({ plan: () => plan });
+    sim.driveLaps(100);
+    plan = selection;
+    sim.tick();
+    expect(lastInput().actual[0]).toMatchObject({
+      startLap: 0,
+      startSec: 0,
+      planIndex: 0,
+    });
+  });
+
+  it('keeps observed stops and stint boundaries when the first plan arrives', () => {
+    let plan: RacePlanSelection | null = null;
+    const persistence = memoryPersistence();
+    const { sim, selection } = start({
+      green: false,
+      persistence,
+      plan: () => plan,
+    });
+    sim.laps = 100;
+    sim.time = 6000;
+    sim.state = SessionState.Racing;
+    sim.processor.onFrame(sim.frame());
+    sim.pit({ driverTo: DRIVER_B });
+    const before = persistence.records.get(SUB_SESSION_ID);
+    expect(before?.stints).toHaveLength(2);
+    plan = selection;
+    sim.tick();
+    expect(sim.snapshot.stops).toEqual(before?.stops);
+    expect(lastInput().actual.map((stint) => stint.planIndex)).toEqual([2, 3]);
+    expect(lastInput().actual[0].endLap).toBe(before?.stints[0].endLap);
+    expect(lastInput().actual[0].endSec).toBe(before?.stints[0].endSec);
+    expect(lastInput().actual[1]).toEqual({
+      ...before?.stints[1],
+      planIndex: 3,
+    });
+  });
+
   it.each([
     { name: 'during the stall', swapInStall: true, sessionDelaySec: 0 },
     { name: 'at the exit', swapInStall: false, sessionDelaySec: 0 },
@@ -740,6 +840,43 @@ describe('RacePlanProgressProcessor', () => {
       DRIVER_B,
     ]);
   });
+
+  it.each([0, 5])(
+    'sees a swap reported before the first stall tick with %s litres added',
+    (fuelAdd) => {
+      const { sim } = start();
+      sim.driveLaps(5, { fuelPerLap: 1, lapSec: 60 });
+      expect(sim.snapshot).toMatchObject({ fuelPerLap: 1, lapTimeSec: 60 });
+      sim.pitRoad = true;
+      sim.surface = TrackLocation.ApproachingPits;
+      sim.tick();
+      sim.setDriver(DRIVER_B);
+      sim.surface = TrackLocation.InPitStall;
+      sim.tick();
+      sim.fuel += fuelAdd;
+      sim.tick(5);
+      sim.surface = TrackLocation.ApproachingPits;
+      sim.tick();
+      expect(sim.snapshot.stops).toMatchObject([
+        { driverChanged: true, fuelAdded: fuelAdd, unplanned: true },
+      ]);
+      expect(lastInput().actual).toHaveLength(2);
+      expect(lastInput().actual[0]).toMatchObject({
+        driverId: DRIVER_A,
+        endLap: 5,
+      });
+      expect(lastInput().actual[1]).toMatchObject({
+        driverId: DRIVER_B,
+        startLap: 5,
+        planIndex: 1,
+        fueled: fuelAdd > 0,
+      });
+      expect(sim.snapshot).toMatchObject({
+        fuelPerLap: null,
+        lapTimeSec: null,
+      });
+    }
+  );
 
   it('advances a double stint on a fuel stop with the same driver', () => {
     const { sim } = start();

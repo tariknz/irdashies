@@ -329,6 +329,11 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
     const race = this.race?.sessionNum === sessionNum ? this.race : null;
     const elapsed = race ? sessionTime - race.greenSessionTime : 0;
 
+    if (race && plan && this.resolveProvisionalStint(plan.strategy)) {
+      event = true;
+      persist = true;
+    }
+
     if (race && !race.finished) {
       if (sessionState >= SessionState.Checkered) {
         this.checkeredLaps ??= this.lastTeamLaps ?? teamLaps;
@@ -477,7 +482,10 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
     strategy: RacePlanStrategy | undefined,
     teamLaps: number,
     elapsed: number
-  ): Pick<RacePlanHistoryStint, 'startLap' | 'startSec' | 'planIndex'> {
+  ): Pick<
+    RacePlanHistoryStint,
+    'startLap' | 'startSec' | 'planIndex' | 'provisional'
+  > {
     const stints = strategy?.stints ?? [];
     let planIndex = 0;
     let startLap = 0;
@@ -487,7 +495,14 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
       startLap = endLap;
     }
     const stint = stints[planIndex];
-    if (!stint) return { startLap: teamLaps, startSec: elapsed, planIndex: 0 };
+    if (!stint) {
+      return {
+        startLap: teamLaps,
+        startSec: elapsed,
+        planIndex: 0,
+        provisional: true,
+      };
+    }
 
     // Lap count determines the planned tank. Scale its start to the observed
     // race clock so different pace cannot put the start in the future.
@@ -502,6 +517,23 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
         ? Math.min(elapsed, (elapsed * stint.startSec) / plannedElapsed)
         : 0;
     return { startLap, startSec: round(startSec, 1), planIndex };
+  }
+
+  private resolveProvisionalStint(strategy: RacePlanStrategy): boolean {
+    const first = this.stints[0];
+    if (!first?.provisional || strategy.stints.length === 0) return false;
+    // Infer from the original join, preserving any stops observed since then.
+    const inferred = this.inferJoinedStint(
+      strategy,
+      first.startLap,
+      first.startSec
+    );
+    const offset = inferred.planIndex - first.planIndex;
+    for (const stint of this.stints) stint.planIndex += offset;
+    first.startLap = inferred.startLap;
+    first.startSec = inferred.startSec;
+    delete first.provisional;
+    return true;
   }
 
   /** Joined after the green: the race clock is the best guess of elapsed. */
@@ -687,7 +719,7 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
       entryElapsed: elapsed,
       entryFuel,
       maxFuel: fuel,
-      driverId: this.driverId,
+      driverId: this.lastDriverId ?? this.driverId,
       compound,
       // No box call left means the stint runs to the flag: any stop is extra.
       unplanned:

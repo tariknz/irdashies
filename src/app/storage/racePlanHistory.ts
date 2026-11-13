@@ -25,6 +25,8 @@ export interface RacePlanHistoryStint {
   planIndex: number;
   /** Began with fuel added, or at the race start. */
   fueled: boolean;
+  /** Joined without a plan; the start and plan slot still need inference. */
+  provisional?: true;
 }
 
 export interface RacePlanHistoryRecord {
@@ -77,7 +79,8 @@ const sanitizeStint = (value: unknown): RacePlanHistoryStint | null => {
     !isLap(raw.startLap) ||
     !isFiniteNumber(raw.startSec) ||
     !isLap(raw.planIndex) ||
-    typeof raw.fueled !== 'boolean'
+    typeof raw.fueled !== 'boolean' ||
+    (raw.provisional !== undefined && raw.provisional !== true)
   )
     return null;
   return {
@@ -88,6 +91,7 @@ const sanitizeStint = (value: unknown): RacePlanHistoryStint | null => {
     endSec,
     planIndex: raw.planIndex,
     fueled: raw.fueled,
+    ...(raw.provisional === true ? { provisional: true } : {}),
   };
 };
 

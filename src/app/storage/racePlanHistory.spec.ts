@@ -110,6 +110,19 @@ describe('race plan history store', () => {
     expect(store.get(5)?.stops).toHaveLength(1);
   });
 
+  it('preserves provisional join information through a disk reload', async () => {
+    const store = createRacePlanHistoryStore(file);
+    await store.load();
+    const joined = record(77);
+    joined.stints[0].provisional = true;
+    store.save(joined);
+    await store.flush();
+
+    const reloaded = createRacePlanHistoryStore(file);
+    await reloaded.load();
+    expect(reloaded.get(77)).toEqual(joined);
+  });
+
   it(`keeps the ${MAX_RACE_PLAN_HISTORY_SESSIONS} most recently saved sessions`, async () => {
     let clock = 0;
     const store = createRacePlanHistoryStore(file, () => (clock += 1));
