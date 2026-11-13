@@ -4,6 +4,7 @@ export default {
   id: 'map',
   sessionData: true,
   channels: [
+    'pit-stop-estimate.snapshot',
     'reference-laps.snapshot',
     'sector-timing.snapshot',
     'standings.snapshot',

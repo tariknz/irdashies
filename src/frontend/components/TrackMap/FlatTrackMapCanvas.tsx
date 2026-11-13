@@ -5,7 +5,12 @@ import { TrackDriver, TrackDrawing } from './TrackCanvas';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
 import { useCarIdxOffTrack } from '@irdashies/context';
 import { progressToFlatX, useProgressAnimation } from './useProgressAnimation';
-import { getCachedTextVisualOffset } from './trackDrawingUtils';
+import {
+  drawPitExitMarker,
+  drawPitExitRange,
+  getCachedTextVisualOffset,
+} from './trackDrawingUtils';
+import type { PitExitMarker } from './hooks/usePitExitMarker';
 
 export interface FlatTrackMapCanvasProps {
   trackDrawing: TrackDrawing;
@@ -24,6 +29,7 @@ export interface FlatTrackMapCanvasProps {
   carIdxIsOnPitRoad?: readonly boolean[];
   /** Caps redraws, e.g. for a map docked in the Gantry. */
   maxFps?: number;
+  pitExit?: PitExitMarker | null;
 }
 
 const HORIZONTAL_PADDING = 40; // Fixed padding on each side
@@ -43,6 +49,7 @@ export const FlatTrackMapCanvas = ({
   driverLivePositions = [0, 0],
   carIdxIsOnPitRoad = [],
   maxFps,
+  pitExit = null,
 }: FlatTrackMapCanvasProps) => {
   const widgetScale = useWidgetScale();
   const canvasInvalidatedRef = useRef(false);
@@ -83,6 +90,16 @@ export const FlatTrackMapCanvas = ({
     });
     return colors;
   }, [drivers, isMultiClass, highlightColor]);
+
+  const pitExitPointRef = useRef({ x: 0, y: 0 });
+  const projectProgress = useMemo(() => {
+    const usableWidth = canvasSize.width - HORIZONTAL_PADDING * 2;
+    const centerY = canvasSize.height / 2;
+    return (progress: number, output: { x: number; y: number }) => {
+      output.x = progressToFlatX(progress, HORIZONTAL_PADDING, usableWidth);
+      output.y = centerY;
+    };
+  }, [canvasSize.width, canvasSize.height]);
 
   const orderedDrivers = useMemo(
     () =>
@@ -214,6 +231,25 @@ export const FlatTrackMapCanvas = ({
     ctx.lineWidth = 1;
     ctx.strokeRect(flagX, flagY, flagSize * 2, flagSize * 2);
 
+    let pitExitAnchor = -1;
+    if (pitExit) {
+      for (const entry of orderedDrivers) {
+        if (entry.driver.CarIdx !== pitExit.anchorCarIdx) continue;
+        if (entry.interpolationIndex >= count) break;
+        pitExitAnchor = progressValues[entry.interpolationIndex];
+        drawPitExitRange(
+          ctx,
+          pitExit,
+          pitExitAnchor,
+          projectProgress,
+          scaledTrackLineWidth,
+          invertTrackColors,
+          pitExitPointRef.current
+        );
+        break;
+      }
+    }
+
     // Draw drivers
     // Apply scale factor to match curved track map proportions
     for (const orderedDriver of orderedDrivers) {
@@ -296,6 +332,18 @@ export const FlatTrackMapCanvas = ({
           ctx.fillText(displayText, x, centerY + visualOffset);
         }
       }
+    }
+
+    if (pitExit && pitExitAnchor >= 0) {
+      drawPitExitMarker(
+        ctx,
+        pitExit,
+        pitExitAnchor,
+        projectProgress,
+        playerCircleSize * circleScale * 1.35,
+        playerCircleSize * circleScale * 0.8 * (trackmapFontSize / 100),
+        pitExitPointRef.current
+      );
     }
   };
   useProgressAnimation(drivers, drawFrame, maxFps, canvasInvalidatedRef);

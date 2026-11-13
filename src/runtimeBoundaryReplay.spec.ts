@@ -52,6 +52,7 @@ const SNAPSHOT_CHANNELS = [
   'fuel.projection',
   'lap-times.snapshot',
   'lap-log.snapshot',
+  'pit-stop-estimate.snapshot',
   'reference-laps.snapshot',
   'radar.snapshot',
   'radio.snapshot',

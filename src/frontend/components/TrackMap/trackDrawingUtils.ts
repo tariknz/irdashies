@@ -497,3 +497,106 @@ export const drawSectorColors = (
 
   ctx.restore();
 };
+
+const PIT_EXIT_BAND_STEPS = 32;
+const PIT_EXIT_LABEL = 'PIT';
+
+const wrapLap = (progress: number) => ((progress % 1) + 1) % 1;
+
+export interface PitExitDrawing {
+  offsetPct: number;
+  nearPct: number;
+  farPct: number;
+  state: 'ok' | 'calibrating' | 'unreliable';
+}
+
+type Project = (progress: number, output: { x: number; y: number }) => void;
+
+/**
+ * The likely rejoin range as a shaded stretch of the track, drawn under the
+ * cars. Dark on a light track and light on a dark one, so it never reads as a
+ * class colour.
+ */
+export const drawPitExitRange = (
+  ctx: CanvasRenderingContext2D,
+  marker: PitExitDrawing,
+  anchorProgress: number,
+  project: Project,
+  width: number,
+  trackIsDark: boolean,
+  scratch: { x: number; y: number }
+) => {
+  const from = wrapLap(anchorProgress - marker.farPct);
+  const span = wrapLap(marker.farPct - marker.nearPct);
+  if (span <= 0) return;
+
+  ctx.save();
+  ctx.shadowColor = 'transparent';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  let previous = -1;
+  for (let step = 0; step <= PIT_EXIT_BAND_STEPS; step++) {
+    const progress = wrapLap(from + (span * step) / PIT_EXIT_BAND_STEPS);
+    project(progress, scratch);
+    if (step === 0 || progress < previous) ctx.moveTo(scratch.x, scratch.y);
+    else ctx.lineTo(scratch.x, scratch.y);
+    previous = progress;
+  }
+  ctx.strokeStyle = trackIsDark
+    ? 'rgba(255, 255, 255, 0.55)'
+    : 'rgba(0, 0, 0, 0.45)';
+  ctx.lineWidth = width;
+  ctx.stroke();
+  ctx.restore();
+};
+
+/**
+ * The rejoin point as a white ring with a black edge and a "PIT" tag, drawn
+ * over the cars. It relies on shape and contrast, not colour, so it stands out
+ * from every class colour. Dashed while calibrating; dashed and faded under
+ * caution.
+ */
+export const drawPitExitMarker = (
+  ctx: CanvasRenderingContext2D,
+  marker: PitExitDrawing,
+  anchorProgress: number,
+  project: Project,
+  radius: number,
+  fontSize: number,
+  scratch: { x: number; y: number }
+) => {
+  project(wrapLap(anchorProgress - marker.offsetPct), scratch);
+  const { x, y } = scratch;
+  const dash = marker.state === 'ok' ? [] : [radius * 0.6, radius * 0.35];
+
+  ctx.save();
+  ctx.shadowColor = 'transparent';
+  ctx.globalAlpha = marker.state === 'unreliable' ? 0.6 : 1;
+  ctx.setLineDash(dash);
+
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = radius * 0.55;
+  ctx.stroke();
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = radius * 0.28;
+  ctx.stroke();
+
+  ctx.setLineDash([]);
+  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const padX = fontSize * 0.35;
+  const height = fontSize * 1.3;
+  const width = fontSize * 2.2 + padX * 2;
+  const top = y - radius - radius * 0.3 - height;
+  ctx.fillStyle = 'black';
+  ctx.beginPath();
+  ctx.roundRect(x - width / 2, top, width, height, height * 0.3);
+  ctx.fill();
+  ctx.fillStyle = 'white';
+  ctx.fillText(PIT_EXIT_LABEL, x, top + height / 2);
+  ctx.restore();
+};

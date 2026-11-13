@@ -16,6 +16,8 @@ vi.mock('@irdashies/context', () => {
     useTrackStateSnapshot: vi.fn(() => ({
       isOnTrack: useTelemetryValue('IsOnTrack'),
     })),
+    usePitStopEstimateSnapshot: vi.fn(() => undefined),
+    useDriverCarIdx: vi.fn(() => 0),
   };
 });
 vi.mock('./FlatTrackMapCanvas', () => ({

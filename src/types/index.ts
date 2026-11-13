@@ -6,6 +6,7 @@ export * from './widgetScale';
 export * from './session';
 export * from './telemetry';
 export * from './pitLane';
+export * from './pitStop';
 export * from './fuelCalculatorBridge';
 export * from './widgetId';
 export * from './referenceLaps';

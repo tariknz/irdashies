@@ -4,6 +4,7 @@ export * from './useFuelProjectionSnapshot';
 export * from './useRacePlanProgressSnapshot';
 export * from './useLapTimesSnapshot';
 export * from './useLapLogSnapshot';
+export * from './usePitStopEstimateSnapshot';
 export * from './useLapHistorySnapshot';
 export * from './usePitStopsSnapshot';
 export * from './useRelativeGapsSnapshot';
