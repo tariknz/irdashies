@@ -97,6 +97,7 @@ export function setupRacePlanBridge() {
       const windowId = window.id;
       watchedWindows.add(windowId);
       window.on('show', () => broadcast.onShown(window));
+      window.on('restore', () => broadcast.onShown(window));
       window.once('closed', () => watchedWindows.delete(windowId));
     },
   });

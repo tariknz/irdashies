@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type {
   RacePlanBridge,
   RacePlanFetchError,
@@ -89,6 +89,13 @@ const RacePlanSettingsContent = ({
   const [busy, setBusy] = useState(false);
   const [listings, setListings] = useState<RacePlanListing[] | null>(null);
   const [manualId, setManualId] = useState('');
+  const listingsRequest = useRef(0);
+
+  const invalidateListings = () => {
+    listingsRequest.current += 1;
+    setListings(null);
+    setPlanningError(null);
+  };
 
   const run = async (action: () => Promise<unknown>, failure: string) => {
     setBusy(true);
@@ -103,16 +110,28 @@ const RacePlanSettingsContent = ({
     }
   };
 
-  const saveKey = () =>
-    run(async () => {
+  const saveKey = () => {
+    invalidateListings();
+    return run(async () => {
       await bridge.setApiKey(apiKey);
       setApiKey('');
     }, 'Could not save the API key');
+  };
+
+  const clearKey = () => {
+    invalidateListings();
+    return run(() => bridge.clearApiKey(), 'Could not clear the API key');
+  };
 
   const loadListings = () => {
+    const request = ++listingsRequest.current;
     setPlanningError(null);
     return run(async () => {
-      const result = await bridge.listPlannings();
+      const result = await bridge.listPlannings().catch((err: unknown) => {
+        if (request !== listingsRequest.current) return null;
+        throw err;
+      });
+      if (!result || request !== listingsRequest.current) return;
       if (result.status !== 'ok') {
         setListings(null);
         setPlanningError(STATUS_TEXT[result.status]);
@@ -213,12 +232,7 @@ const RacePlanSettingsContent = ({
               title="API key"
               description="Saved and encrypted on this PC."
               label="Clear"
-              onClick={() =>
-                void run(
-                  () => bridge.clearApiKey(),
-                  'Could not clear the API key'
-                )
-              }
+              onClick={() => void clearKey()}
             />
           ) : (
             <div className="flex items-center justify-between gap-4">

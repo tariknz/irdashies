@@ -1,22 +1,36 @@
+import { EventEmitter } from 'node:events';
+import { BrowserWindow } from 'electron';
 import { describe, expect, it, vi } from 'vitest';
 import type { RacePlanState } from '@irdashies/types';
+import { createRacePlanService } from '../services/racePlanService';
 
 const handlers = new Map<string, (...args: unknown[]) => unknown>();
 
 vi.mock('electron', () => ({
   app: { getPath: vi.fn(() => '') },
   safeStorage: {},
-  BrowserWindow: { getAllWindows: vi.fn(() => []) },
+  BrowserWindow: {
+    getAllWindows: vi.fn(() => []),
+    fromWebContents: vi.fn(),
+  },
   ipcMain: {
     handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) =>
       handlers.set(channel, handler)
     ),
+    removeHandler: vi.fn(),
   },
 }));
 vi.mock('../logger', () => ({ default: { info: vi.fn(), warn: vi.fn() } }));
+vi.mock('../storage/racePlanStore', () => ({ createRacePlanStore: vi.fn() }));
+vi.mock('../services/racePlanService', () => ({
+  createRacePlanService: vi.fn(),
+}));
 
-const { createRacePlanBroadcast, registerRacePlanHandlers } =
-  await import('./racePlanBridge');
+const {
+  createRacePlanBroadcast,
+  registerRacePlanHandlers,
+  setupRacePlanBridge,
+} = await import('./racePlanBridge');
 
 const state = { hasApiKey: true } as RacePlanState;
 
@@ -71,6 +85,43 @@ describe('racePlanBridge', () => {
     unsubscribe();
     service.emit(state);
     expect(broadcast).toHaveBeenCalledTimes(1);
+  });
+
+  it('delivers the latest missed state when a minimized subscriber restores', () => {
+    const service = fakeService();
+    vi.mocked(createRacePlanService).mockReturnValue(service);
+    const sender = Object.assign(new EventEmitter(), { id: 1, send: vi.fn() });
+    const window = Object.assign(new EventEmitter(), {
+      id: 1,
+      visible: false,
+      isDestroyed: () => false,
+      isVisible: () => window.visible,
+      webContents: sender,
+    });
+    const browserWindow = window as unknown as BrowserWindow;
+    vi.mocked(BrowserWindow.fromWebContents).mockReturnValue(browserWindow);
+    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([browserWindow]);
+    const bridge = setupRacePlanBridge();
+    try {
+      handlers.get('racePlan:subscribe')?.({ sender }, 'state');
+      handlers.get('racePlan:subscribe')?.({ sender }, 'state');
+      service.emit(state);
+      const latest = { ...state, status: 'network' as const };
+      service.emit(latest);
+      expect(sender.send).not.toHaveBeenCalled();
+
+      window.visible = true;
+      window.emit('restore');
+      expect(sender.send).toHaveBeenCalledExactlyOnceWith(
+        'racePlan:state',
+        latest
+      );
+      window.emit('show');
+      expect(sender.send).toHaveBeenCalledTimes(2);
+    } finally {
+      bridge.dispose();
+      vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([]);
+    }
   });
 });
 
