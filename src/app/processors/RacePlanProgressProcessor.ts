@@ -204,6 +204,7 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
   private lastTeamLaps: number | null = null;
   /** Team laps when the checkered flag fell; the race ends on the next one. */
   private checkeredLaps: number | null = null;
+  private awaitingFinalLap = false;
   private lastDriverId: number | null = null;
   private lastCompound: number | null = null;
   private lastFuel: number | null = null;
@@ -297,6 +298,10 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
     const sessionState = numberAt(frame, 'SessionState') ?? 0;
     const car = this.teamCarIdx;
     const hasCar = car >= 0;
+    const isRace = hasCar && this.sessionTypes.get(sessionNum) === 'Race';
+    if (isRace && this.race && this.race.sessionNum !== sessionNum) {
+      this.resetRace();
+    }
     const teamLaps = hasCar ? this.teamLapsOf(frame, car, sessionNum) : 0;
     const surface = hasCar
       ? (numberAt(frame, 'CarIdxTrackSurface', car) ?? TrackLocation.NotInWorld)
@@ -314,9 +319,7 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
     let lapCompleted = false;
     let persist = false;
 
-    const isRace = hasCar && this.sessionTypes.get(sessionNum) === 'Race';
     if (isRace) {
-      if (this.race && this.race.sessionNum !== sessionNum) this.resetRace();
       if (sessionState < SessionState.Racing) {
         this.preGreenSessionNum = sessionNum;
       } else if (!this.race && sessionState === SessionState.Racing) {
@@ -342,6 +345,7 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
         this.checkeredLaps !== null && teamLaps > this.checkeredLaps;
       if (crossed || sessionState >= SessionState.CoolDown) {
         race.finished = true;
+        this.awaitingFinalLap = !crossed;
         this.openStop = null;
         this.lastTeamLaps = teamLaps;
         this.closeCurrentStint(teamLaps, elapsed);
@@ -362,8 +366,13 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
         persist ||= tracked.persist;
         lapCompleted = tracked.lapCompleted;
       }
-    } else if (race?.finished && teamLaps > (this.lastTeamLaps ?? teamLaps)) {
-      // The last lap is completed after the checkered flag.
+    } else if (
+      race?.finished &&
+      this.awaitingFinalLap &&
+      teamLaps > (this.lastTeamLaps ?? teamLaps)
+    ) {
+      // Finished at cool-down before crossing: the next lap is the last one.
+      this.awaitingFinalLap = false;
       this.lastTeamLaps = teamLaps;
       const last = this.stints.at(-1);
       if (last) {
@@ -967,6 +976,7 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
     this.lastStopExit = null;
     this.lastTeamLaps = null;
     this.checkeredLaps = null;
+    this.awaitingFinalLap = false;
     this.lastDriverId = null;
     this.lastCompound = null;
     this.lastFuel = null;

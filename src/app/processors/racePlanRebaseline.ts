@@ -260,6 +260,12 @@ const stretchedBox = (
   );
 };
 
+/** Laps a full tank covers; null when the capacity or the rate is unknown. */
+const tankLapsOf = (ctx: Context, fuelPerLap: number | null): number | null =>
+  ctx.capacity !== null && fuelPerLap !== null
+    ? Math.max(1, lapsOnFuel(ctx.capacity, fuelPerLap))
+    : null;
+
 /**
  * Laps in a full stint at plan index `index`: the plan's laps while they
  * still fit in the tank, otherwise what the tank holds. The plan's last stint
@@ -271,10 +277,7 @@ const fullStintLaps = (
   fuelPerLap: number | null
 ): number => {
   const stint = planAt(ctx, index);
-  const tankLaps =
-    ctx.capacity !== null && fuelPerLap !== null
-      ? Math.max(1, lapsOnFuel(ctx.capacity, fuelPerLap))
-      : null;
+  const tankLaps = tankLapsOf(ctx, fuelPerLap);
   const planLaps = stint && stint.laps > 0 ? stint.laps : null;
   const planFits =
     planLaps !== null &&
@@ -332,7 +335,9 @@ const planFields = (ctx: Context, index: number) => {
 
 /**
  * Last lap the tank of an unfueled stint (a driver swap with no fuel) was
- * good for: the stint that last took fuel, plus its full-tank laps.
+ * good for: the stint that last took fuel, plus what a full tank covers. A
+ * short planned stint ends for a driver change, not an empty tank, so the
+ * plan's laps are only used when the tank size or the rate is unknown.
  */
 const unfueledTankLimit = (
   ctx: Context,
@@ -345,13 +350,10 @@ const unfueledTankLimit = (
   const tank = actual[k];
   const index = planIndexOf(tank, k);
   const planned = planAt(ctx, index);
+  const fuelPerLap = fuelPerLapFor(ctx, planned, driverOf(tank, planned));
   return (
     tank.startLap +
-    fullStintLaps(
-      ctx,
-      index,
-      fuelPerLapFor(ctx, planned, driverOf(tank, planned))
-    )
+    (tankLapsOf(ctx, fuelPerLap) ?? fullStintLaps(ctx, index, fuelPerLap))
   );
 };
 

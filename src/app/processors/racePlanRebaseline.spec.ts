@@ -877,6 +877,32 @@ describe('rebaselinePlan after a driver swap with no fuel', () => {
   it('gives a fueled swap a full tank', () => {
     expect(rebaselinePlan(swapInput(true)).boxLap).toBe(54);
   });
+
+  it('runs the tank on after a short planned stint', () => {
+    const strategy: RacePlanStrategy = {
+      ...smallStrategy(),
+      stints: [
+        planStint(1, 101, 0, 10, 100),
+        planStint(2, 102, 1060, 20, 100),
+        planStint(3, 103, 3120, 20, 100),
+      ],
+    };
+    const result = rebaselinePlan(
+      makeInput({
+        strategy,
+        actual: [
+          ran(101, 0, 0, 0, { lap: 10, sec: 1000 }),
+          ran(102, 1, 10, 1060, null, false),
+        ],
+        teamLaps: 10,
+        elapsedSec: 1060,
+        remainingSec: 4000,
+        fuelLevel: 50 - 10 * 2.4,
+      })
+    );
+
+    expect(result.boxLap).toBe(20);
+  });
 });
 
 describe('rebaselinePlan once the race is finished', () => {

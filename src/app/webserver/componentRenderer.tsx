@@ -76,6 +76,8 @@ export class WebSocketBridge
     (widgetId: string, hide: boolean) => void
   >();
   private racePlanCallbacks = new Set<(state: RacePlanState) => void>();
+  /** Counts pushes so a reconnect seed older than a push is dropped. */
+  private racePlanPushCount = 0;
 
   constructor() {
     this.telemetryCallbacks = new Set();
@@ -296,7 +298,10 @@ export class WebSocketBridge
           }
           break;
         case 'racePlanState':
-          if (data) this.publishRacePlanState(data);
+          if (data) {
+            this.racePlanPushCount += 1;
+            this.publishRacePlanState(data);
+          }
           break;
         case 'dashboard':
           this.lastDashboard = data;
@@ -382,8 +387,15 @@ export class WebSocketBridge
           if (this.racePlanCallbacks.size > 0) {
             // The plan may have changed while this browser was disconnected.
             this.sendRacePlanSubscription(true);
+            const pushesBeforeSeed = this.racePlanPushCount;
             void this.getRacePlanState().then((state) => {
-              if (state && this.socket === ws) this.publishRacePlanState(state);
+              if (
+                state &&
+                this.socket === ws &&
+                this.racePlanPushCount === pushesBeforeSeed
+              ) {
+                this.publishRacePlanState(state);
+              }
             });
           }
           if (this.channelCallbacks.has('pit-lane.reset')) {

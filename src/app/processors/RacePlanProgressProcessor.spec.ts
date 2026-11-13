@@ -35,6 +35,7 @@ const TEAM_ID = 5001;
 const TRACK_ID = 166;
 const SUB_SESSION_ID = 880001;
 const RACE_SESSION = 1;
+const SECOND_RACE_SESSION = 2;
 const BOX_AFTER_LAPS = 33;
 const PLAN_LAP_SEC = 60;
 const CLOCK_BASE_MS = Date.parse('2030-06-01T11:58:00Z');
@@ -119,6 +120,7 @@ const makeSession = (options: SessionOptions = {}): Session =>
       Sessions: [
         { SessionNum: 0, SessionType: 'Practice' },
         { SessionNum: RACE_SESSION, SessionType: 'Race' },
+        { SessionNum: SECOND_RACE_SESSION, SessionType: 'Race' },
       ],
     },
   }) as unknown as Session;
@@ -144,6 +146,7 @@ interface PitOptions {
 /** A team car driven second by second; each tick is one processor frame. */
 class Sim {
   time = 500;
+  sessionNum = RACE_SESSION;
   laps = 0;
   fuel = 30;
   compound = 0;
@@ -169,7 +172,7 @@ class Sim {
   frame(): Telemetry {
     const values: Record<string, unknown> = {
       SessionTime: this.time,
-      SessionNum: RACE_SESSION,
+      SessionNum: this.sessionNum,
       SessionState: this.state,
       SessionFlags: this.flags,
       SessionTimeTotal: 86_400,
@@ -1166,6 +1169,49 @@ describe('RacePlanProgressProcessor', () => {
     sim.tick();
     expect(sim.snapshot.status).toBe('finished');
     expect(lastInput().actual[0]).toMatchObject({ endLap: 2 });
+  });
+
+  it('keeps the final stint at the crossing lap through the cool-down lap', () => {
+    const persistence = memoryPersistence();
+    const { sim } = start({ persistence });
+    sim.driveLaps(2);
+    sim.state = SessionState.Checkered;
+    sim.lap();
+    expect(lastInput().actual[0]).toMatchObject({ endLap: 3 });
+    sim.state = SessionState.CoolDown;
+    sim.driveLaps(2);
+    expect(lastInput().actual[0]).toMatchObject({ endLap: 3 });
+    expect(persistence.records.get(SUB_SESSION_ID)?.stints[0]).toMatchObject({
+      endLap: 3,
+    });
+  });
+
+  it('counts one lap after a cool-down finish, then stops', () => {
+    const { sim } = start();
+    sim.driveLaps(2);
+    sim.state = SessionState.Checkered;
+    sim.tick(10);
+    sim.state = SessionState.CoolDown;
+    sim.tick();
+    sim.driveLaps(2);
+    expect(lastInput().actual[0]).toMatchObject({ endLap: 3 });
+  });
+
+  it('starts a later race session from its own lap count', () => {
+    const { sim } = start();
+    sim.driveLaps(5);
+    sim.pit({ fuelAdd: 20 });
+    sim.driveLaps(2);
+    expect(lastInput().actual.at(-1)).toMatchObject({ startLap: 5 });
+
+    sim.sessionNum = SECOND_RACE_SESSION;
+    sim.laps = 0;
+    sim.processor.onLifecycle({ type: 'sessionNumChange' });
+    sim.tick();
+    expect(sim.snapshot.teamLaps).toBe(0);
+    expect(lastInput().teamLaps).toBe(0);
+    expect(lastInput().actual).toHaveLength(1);
+    expect(lastInput().actual[0]).toMatchObject({ startLap: 0 });
   });
 
   it('bumps the version only when something changed', () => {
