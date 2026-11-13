@@ -35,5 +35,7 @@ declare global {
     lapHistoryBridge?: LapHistoryBridge;
     rendererPerfBridge?: RendererPerfBridge;
     tapeReplayBridge?: import('./types/tapeReplay').TapeReplayBridge;
+    /** Absent outside the Electron preload, e.g. the browser server. */
+    racePlanBridge?: import('./types/racePlan').RacePlanBridge;
   }
 }
