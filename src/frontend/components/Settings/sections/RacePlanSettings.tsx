@@ -147,6 +147,7 @@ const RacePlanSettingsContent = ({
     let chosen = false;
     await run(async () => {
       const result = await bridge.choosePlanning(planningId);
+      if (result.status === 'superseded') return;
       if (result.status !== 'ok') {
         setPlanningError(chooseErrorText(result.status, planningId));
         return;

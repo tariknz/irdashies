@@ -124,7 +124,10 @@ export type RacePlanListResult =
 
 /** A planning is only switched to once it has loaded. */
 export type RacePlanChooseResult =
-  { status: 'ok'; state: RacePlanState } | { status: RacePlanFetchError };
+  | { status: 'ok'; state: RacePlanState }
+  | { status: RacePlanFetchError }
+  /** A newer choice or credential change cancelled this request. */
+  | { status: 'superseded' };
 
 export type RacePlanConfigPatch = Partial<
   Pick<RacePlanConfig, 'strategyId' | 'refreshMinutes'>

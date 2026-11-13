@@ -252,19 +252,21 @@ export function createRacePlanService(options: {
       const planningId = parsePlanningId(raw);
       await ready;
       const choice = ++latestChoice;
+      const started = generation;
       if (planningId !== null && planningId === stored.config.planningId) {
         await refresh();
+        if (disposed || choice !== latestChoice || generation !== started)
+          return { status: 'superseded' };
         return { status: 'ok', state: snapshot() };
       }
       let loaded: LoadedPlanning | null = null;
       if (planningId !== null) {
         const key = apiKey();
         if (!key) return { status: 'unauthorized' };
-        const started = generation;
         const fetched = await fetchPlanning(key, planningId);
         // A later choice, or a key change, replaced this one while it loaded.
         if (disposed || choice !== latestChoice || generation !== started)
-          return { status: 'ok', state: snapshot() };
+          return { status: 'superseded' };
         if (!fetched.ok) return { status: fetched.error };
         loaded = fetched;
       }

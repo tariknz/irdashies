@@ -353,7 +353,7 @@ describe('racePlanService', () => {
     const latest = service.choosePlanning(LATEST_ID);
     await vi.waitFor(() => expect(answers.size).toBe(2));
     answers.get(OTHER_ID)?.(planningWithId(OTHER_ID));
-    await first;
+    expect(await first).toEqual({ status: 'superseded' });
     answers.get(LATEST_ID)?.(planningWithId(LATEST_ID));
     await latest;
     const state = await service.getState();
@@ -385,29 +385,58 @@ describe('racePlanService', () => {
     expect((await service.getState()).status).toBe('ok');
   });
 
-  it('drops a planning loaded with a key that was replaced meanwhile', async () => {
+  it.each(['replaced', 'cleared'] as const)(
+    'cancels a planning loaded with a key that was %s meanwhile',
+    async (change) => {
+      let answerOld: (value: IracePlanResponse) => void = () => undefined;
+      const client = stubClient((key, id) =>
+        key === KEY && id === OTHER_ID
+          ? new Promise<IracePlanResponse>((resolve) => (answerOld = resolve))
+          : Promise.resolve(okPlanning())
+      );
+      const service = make({
+        store: memoryStore(configured()),
+        client,
+        crypto: fakeCrypto(),
+      });
+      await service.refreshNow();
+      const choice = service.choosePlanning(OTHER_ID);
+      await vi.waitFor(() =>
+        expect(client.getPlanning).toHaveBeenCalledWith(KEY, OTHER_ID)
+      );
+      if (change === 'replaced') await service.setApiKey('new-key-456');
+      else await service.clearApiKey();
+      answerOld(planningWithId(OTHER_ID));
+      expect(await choice).toEqual({ status: 'superseded' });
+      const state = await service.getState();
+      expect(state.config.planningId).toBe(FIXTURE_PLANNING_ID);
+      expect(state.planning?.id).toBe(FIXTURE_PLANNING_ID);
+    }
+  );
+
+  it('cancels an existing-planning refresh superseded by a different choice', async () => {
     let answerOld: (value: IracePlanResponse) => void = () => undefined;
-    const client = stubClient((key, id) =>
-      key === KEY && id === OTHER_ID
-        ? new Promise<IracePlanResponse>((resolve) => (answerOld = resolve))
-        : Promise.resolve(okPlanning())
+    const client = stubClient((_key, id) =>
+      id === FIXTURE_PLANNING_ID
+        ? new Promise<IracePlanResponse>((resolve) => {
+            answerOld = resolve;
+          })
+        : Promise.resolve(planningWithId(id))
     );
     const service = make({
       store: memoryStore(configured()),
       client,
       crypto: fakeCrypto(),
     });
-    await service.refreshNow();
-    const choice = service.choosePlanning(OTHER_ID);
+    await service.ready;
+    const old = service.choosePlanning(FIXTURE_PLANNING_ID);
     await vi.waitFor(() =>
-      expect(client.getPlanning).toHaveBeenCalledWith(KEY, OTHER_ID)
+      expect(client.getPlanning).toHaveBeenCalledWith(KEY, FIXTURE_PLANNING_ID)
     );
-    await service.setApiKey('new-key-456');
-    answerOld(planningWithId(OTHER_ID));
-    await choice;
-    const state = await service.getState();
-    expect(state.config.planningId).toBe(FIXTURE_PLANNING_ID);
-    expect(state.planning?.id).toBe(FIXTURE_PLANNING_ID);
+    await service.choosePlanning(OTHER_ID);
+    answerOld(okPlanning());
+    expect(await old).toEqual({ status: 'superseded' });
+    expect((await service.getState()).config.planningId).toBe(OTHER_ID);
   });
 
   it('drops a saved key this PC cannot decrypt', async () => {

@@ -185,6 +185,20 @@ describe('RacePlanSettings', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('keeps the typed ID without an error when its lookup was superseded', async () => {
+    render(
+      <RacePlanSettings
+        bridge={bridgeFor(async () => ({ status: 'superseded' }))}
+      />
+    );
+    await enterPlanningId('123');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Use' })).toBeEnabled()
+    );
+    expect(screen.getByLabelText('Planning ID')).toHaveValue('123');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('rejects an ID that is not a whole number without asking iRacePlan', async () => {
     const bridge = bridgeFor(async () => ({ status: 'not-found' }));
     render(<RacePlanSettings bridge={bridge} />);
