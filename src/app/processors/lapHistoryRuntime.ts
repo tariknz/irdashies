@@ -100,8 +100,7 @@ export class LapHistoryRuntime {
   updateEnabled(enabled: boolean): void {
     if (enabled === this.enabled) return;
     this.enabled = enabled;
-    // Re-baseline: lap counters moved on while recording was off.
-    this.processor.onLifecycle({ type: 'enter', replay: false });
+    // Re-baseline without overriding the source's lifecycle replay state.
     this.processor.rebaseline();
   }
 
@@ -113,7 +112,6 @@ export class LapHistoryRuntime {
     if (paused === this.replayPaused) return;
     this.replayPaused = paused;
     if (!paused) {
-      this.processor.onLifecycle({ type: 'enter', replay: false });
       this.processor.rebaseline();
     }
   }
