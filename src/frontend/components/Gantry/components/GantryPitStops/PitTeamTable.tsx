@@ -107,7 +107,20 @@ export const PitTeamTable = memo(
                 ].join(' ')}
               >
                 <td className="px-2 py-1 text-slate-400">
-                  {open ? <CaretDown size={14} /> : <CaretRight size={14} />}
+                  <button
+                    type="button"
+                    aria-expanded={open}
+                    aria-label={`${open ? 'Hide' : 'Show'} stops for ${
+                      car ? `#${car.carNumber}` : `car ${summary.carIdx}`
+                    }`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggle(summary.carIdx);
+                    }}
+                    className="flex rounded-sm p-0.5 hover:text-slate-200 focus-visible:outline-2 focus-visible:outline-accent-400"
+                  >
+                    {open ? <CaretDown size={14} /> : <CaretRight size={14} />}
+                  </button>
                 </td>
                 <td className="px-2 py-1">
                   {car?.classPosition ? `P${car.classPosition}` : '-'}

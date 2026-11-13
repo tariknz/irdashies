@@ -94,4 +94,20 @@ describe('pit stop history store', () => {
     expect(store.get(key)).toBeNull();
     expect(warn).toHaveBeenCalled();
   });
+
+  it('keeps a failed write pending, so the next flush saves it', async () => {
+    vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    const blocked = path.join(tmpDir, 'blocked');
+    fs.writeFileSync(blocked, '');
+    const target = path.join(blocked, 'pit-stop-history.json');
+    const store = createPitStopHistoryStore(target);
+    store.save(key, [stop()]);
+    await store.flush();
+    fs.rmSync(blocked);
+    await store.flush();
+
+    const reopened = createPitStopHistoryStore(target);
+    await reopened.load();
+    expect(reopened.get(key)).toEqual([stop()]);
+  });
 });

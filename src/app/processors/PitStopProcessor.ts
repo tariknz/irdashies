@@ -62,12 +62,15 @@ export class PitStopProcessor implements TelemetryProcessor<
   };
 
   init(session: Session): void {
-    const subSessionId = session?.WeekendInfo?.SubSessionID;
-    this.subSessionId =
-      typeof subSessionId === 'number' && subSessionId > 0
-        ? subSessionId
-        : null;
-    this.latest.subSessionId = this.subSessionId;
+    const rawId = session?.WeekendInfo?.SubSessionID;
+    const subSessionId = typeof rawId === 'number' && rawId > 0 ? rawId : null;
+    // A new event can reuse the session number, so the next frame would not
+    // reset; its stops must not carry over.
+    if (subSessionId !== this.subSessionId && this.sessionNum !== null) {
+      this.reset(null);
+    }
+    this.subSessionId = subSessionId;
+    this.latest.subSessionId = subSessionId;
 
     this.roster.clear();
     this.ignored.clear();
@@ -327,7 +330,7 @@ export class PitStopProcessor implements TelemetryProcessor<
     this.latest.sessionNum = this.sessionNum;
   }
 
-  private reset(sessionNum: number): void {
+  private reset(sessionNum: number | null): void {
     this.sessionNum = sessionNum;
     this.surface.fill(UNSEEN);
     this.onPitRoad.fill(false);

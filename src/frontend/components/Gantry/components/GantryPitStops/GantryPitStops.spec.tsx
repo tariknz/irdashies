@@ -63,6 +63,18 @@ describe('PitStopsView', () => {
     expect(screen.getAllByRole('table')).toHaveLength(2);
   });
 
+  it('expands a team from its caret button, for keyboard users', () => {
+    renderView({ mode: 'teams' });
+    const show = screen.getAllByRole('button', { name: /^Show stops for/ })[0];
+    expect(show.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(show);
+    expect(screen.getAllByRole('table')).toHaveLength(2);
+    const hide = screen.getByRole('button', { name: /^Hide stops for/ });
+    expect(hide.getAttribute('aria-expanded')).toBe('true');
+    fireEvent.click(hide);
+    expect(screen.getAllByRole('table')).toHaveLength(1);
+  });
+
   it('asks the Gantry to switch view', () => {
     const props = renderView();
     fireEvent.click(screen.getByRole('button', { name: 'Teams' }));

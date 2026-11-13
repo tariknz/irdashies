@@ -56,7 +56,13 @@ export class PitStopRuntime {
   }
 
   onSession(session: Session): void {
+    const previous = this.processor.snapshot().subSessionId;
     this.processor.init(session);
+    if (this.processor.snapshot().subSessionId !== previous) {
+      // A restore still loading belongs to the previous event.
+      this.restoreKey = '';
+      this.restorePending = false;
+    }
     this.publish(false);
   }
 
@@ -95,17 +101,22 @@ export class PitStopRuntime {
       : null;
   }
 
+  private currentKeyId(): string | null {
+    const key = this.currentKey();
+    return key ? `${key.subSessionId}:${key.sessionNum}` : null;
+  }
+
   private restoreIfNewSession(): void {
     const key = this.currentKey();
-    if (!key) return;
-    const id = `${key.subSessionId}:${key.sessionNum}`;
-    if (id === this.restoreKey) return;
+    const id = this.currentKeyId();
+    if (!key || !id || id === this.restoreKey) return;
     this.restoreKey = id;
     this.restorePending = true;
     this.persistence
       .load(key)
       .then((stops) => {
-        if (id !== this.restoreKey || !stops) return;
+        if (id !== this.restoreKey || id !== this.currentKeyId() || !stops)
+          return;
         if (this.processor.restore(stops)) {
           logger.info(
             `[PitStops] restored ${stops.length} stops for session ${id}`

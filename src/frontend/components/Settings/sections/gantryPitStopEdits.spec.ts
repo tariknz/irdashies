@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CLIO_PIT_PROFILE,
+  GANTRY_PIT_PROFILES_MAX,
   sanitizeGantryPitStops,
   type DashboardLayout,
 } from '@irdashies/types';
@@ -49,6 +50,36 @@ describe('gantry pit stop edits', () => {
       'renaultcliocup',
     ]);
     expect(result?.profiles[1].driverChangeSeconds).toBe(30);
+  });
+
+  it('only imports new cars while there is room, and says how many', () => {
+    const full = Array.from({ length: GANTRY_PIT_PROFILES_MAX }, (_, i) =>
+      newPitProfile(`car${i}`, `Car ${i}`)
+    );
+    const edited = { ...full[0], driverChangeSeconds: 30 };
+    const result = importPitProfiles(
+      full,
+      exportPitProfiles([edited, newPitProfile('newcar', 'New')])
+    );
+    expect(result?.imported).toBe(1);
+    expect(result?.skipped).toBe(1);
+    expect(result?.profiles).toHaveLength(GANTRY_PIT_PROFILES_MAX);
+    expect(result?.profiles.some((p) => p.carPath === 'newcar')).toBe(false);
+    expect(
+      result?.profiles.find((p) => p.carPath === 'car0')?.driverChangeSeconds
+    ).toBe(30);
+  });
+
+  it('counts a car listed twice in a file once', () => {
+    const result = importPitProfiles(
+      [],
+      exportPitProfiles([
+        newPitProfile('gt4car', 'GT4'),
+        newPitProfile('gt4car', 'GT4 again'),
+      ])
+    );
+    expect(result).toMatchObject({ imported: 1, skipped: 0 });
+    expect(result?.profiles.map((p) => p.name)).toEqual(['GT4']);
   });
 
   it('rejects a file that is not a pit timings export', () => {

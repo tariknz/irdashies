@@ -31,10 +31,11 @@ const frame = (
   }) as unknown as Telemetry;
 
 const session = (
-  drivers: { carIdx: number; userId: number; name: string; pace?: boolean }[]
+  drivers: { carIdx: number; userId: number; name: string; pace?: boolean }[],
+  subSessionId = 1001
 ): Session =>
   ({
-    WeekendInfo: { SubSessionID: 1001 },
+    WeekendInfo: { SubSessionID: subSessionId },
     DriverInfo: {
       Drivers: drivers.map((driver) => ({
         CarIdx: driver.carIdx,
@@ -255,6 +256,34 @@ describe('PitStopProcessor', () => {
     const snapshot = processor.snapshot();
     expect(snapshot.sessionNum).toBe(1);
     expect(snapshot.stops).toEqual([]);
+  });
+
+  it('starts again for a new event with the same session number', () => {
+    const processor = new PitStopProcessor();
+    processor.init(session(ROSTER));
+    processor.onFrame(frame(100, [onTrack(), onTrack()]));
+    processor.onFrame(frame(101, [onPitRoad(), onTrack()]));
+    processor.onFrame(frame(140, [onTrack(), onTrack()]));
+    expect(stopsOf(processor)).toHaveLength(1);
+
+    processor.init(session(ROSTER, 2002));
+    expect(processor.snapshot()).toMatchObject({
+      subSessionId: 2002,
+      sessionNum: null,
+      stops: [],
+    });
+    processor.onFrame(frame(10, [onTrack(), onTrack()]));
+    expect(processor.snapshot()).toMatchObject({ sessionNum: 0, stops: [] });
+  });
+
+  it('keeps stops through a roster update in the same event', () => {
+    const processor = new PitStopProcessor();
+    processor.init(session(ROSTER));
+    processor.onFrame(frame(100, [onTrack(), onTrack()]));
+    processor.onFrame(frame(101, [onPitRoad(), onTrack()]));
+    processor.onFrame(frame(140, [onTrack(), onTrack()]));
+    processor.init(session(ROSTER));
+    expect(stopsOf(processor)).toHaveLength(1);
   });
 
   it('keeps recorded stops after a disconnect', () => {

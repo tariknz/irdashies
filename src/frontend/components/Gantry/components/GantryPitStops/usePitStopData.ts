@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { usePitStopsSnapshot, useSessionDrivers } from '@irdashies/context';
 import {
   buildPitStopRows,
@@ -87,6 +87,17 @@ export const usePitStopData = (): PitStopData => {
     return { cars, classes, playerCarIdx };
   }, [standingsByClass, roster]);
 
+  // Stamped once per snapshot: a standings update must not restart timers.
+  const [stamp, setStamp] = useState(() => ({
+    snapshot,
+    at: performance.now(),
+  }));
+  let receivedAt = stamp.at;
+  if (stamp.snapshot !== snapshot) {
+    receivedAt = performance.now();
+    setStamp({ snapshot, at: receivedAt });
+  }
+
   return useMemo(() => {
     const rows = snapshot
       ? buildPitStopRows(snapshot, cars, profiles, snapshot.sessionTime)
@@ -102,8 +113,8 @@ export const usePitStopData = (): PitStopData => {
         playerClass !== undefined
           ? String(playerClass)
           : (classes[0]?.id ?? null),
-      receivedAt: performance.now(),
+      receivedAt,
       sessionNum: snapshot?.sessionNum ?? null,
     };
-  }, [snapshot, cars, classes, playerCarIdx, profiles]);
+  }, [snapshot, cars, classes, playerCarIdx, profiles, receivedAt]);
 };

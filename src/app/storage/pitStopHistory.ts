@@ -201,6 +201,7 @@ export function createPitStopHistoryStore(
       await fsp.writeFile(temp, JSON.stringify(payload), 'utf8');
       await fsp.rename(temp, filePath);
     } catch (error) {
+      dirty = true;
       logger.warn(
         '[PitStops] Failed to save pit stop history',
         fileName,

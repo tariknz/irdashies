@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   DownloadSimpleIcon,
   PlusIcon,
@@ -7,6 +7,7 @@ import {
 } from '@phosphor-icons/react';
 import { useDashboard, useSessionDrivers } from '@irdashies/context';
 import {
+  GANTRY_PIT_PROFILES_MAX,
   PIT_PROFILE_LIMITS,
   type PitServiceProfile,
   type PitTyreChange,
@@ -40,15 +41,25 @@ const ProfileEditor = ({
 }) => {
   const { tyreSeconds, fuelRate, driverChangeSeconds, fuelPerLap, tankLitres } =
     PIT_PROFILE_LIMITS;
+  // The saved name is trimmed, so the field shows what was typed, spaces
+  // included, and only follows the saved name when it changes elsewhere.
+  const [name, setName] = useState(profile.name);
+  const [savedName, setSavedName] = useState(profile.name);
+  if (profile.name !== savedName) {
+    setSavedName(profile.name);
+    if (name.trim() && profile.name !== name.trim()) setName(profile.name);
+  }
   return (
     <div className="space-y-3 rounded-lg border border-settings-hover bg-settings-control/40 p-4">
       <div className="flex items-center gap-2">
         <input
           aria-label="Profile name"
-          value={profile.name}
-          onChange={(event) =>
-            onChange({ ...profile, name: event.target.value })
-          }
+          value={name}
+          onChange={(event) => {
+            setName(event.target.value);
+            onChange({ ...profile, name: event.target.value });
+          }}
+          onBlur={() => setName(profile.name)}
           className="settings-field flex-1"
         />
         <span className="font-mono text-xs text-slate-400">
@@ -133,6 +144,7 @@ export const GantryPitStopSettings = () => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const drivers = useSessionDrivers();
   const [message, setMessage] = useState('');
+  const fileInput = useRef<HTMLInputElement>(null);
 
   const pitStops = readGantryPitStops(currentDashboard);
   const sessionCars = useMemo(() => {
@@ -201,32 +213,43 @@ export const GantryPitStopSettings = () => {
           <DownloadSimpleIcon size={16} />
           Export
         </button>
-        <label className="settings-button cursor-pointer">
+        <button
+          type="button"
+          onClick={() => fileInput.current?.click()}
+          className="settings-button"
+        >
           <UploadSimpleIcon size={16} />
           Import
-          <input
-            type="file"
-            accept="application/json,.json"
-            className="hidden"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              event.target.value = '';
-              if (!file) return;
-              file
-                .text()
-                .then((text) => {
-                  const result = importPitProfiles(pitStops.profiles, text);
-                  if (!result)
-                    return setMessage('That file is not a pit timings export.');
-                  commit(result.profiles);
-                  setMessage(
-                    `Imported ${result.imported} car${result.imported === 1 ? '' : 's'}.`
-                  );
-                })
-                .catch(() => setMessage('That file could not be read.'));
-            }}
-          />
-        </label>
+        </button>
+        <input
+          ref={fileInput}
+          type="file"
+          accept="application/json,.json"
+          aria-label="Pit timings file"
+          className="hidden"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = '';
+            if (!file) return;
+            file
+              .text()
+              .then((text) => {
+                const result = importPitProfiles(pitStops.profiles, text);
+                if (!result)
+                  return setMessage('That file is not a pit timings export.');
+                commit(result.profiles);
+                const cars = (count: number) =>
+                  `${count} car${count === 1 ? '' : 's'}`;
+                setMessage(
+                  `Imported ${cars(result.imported)}.` +
+                    (result.skipped > 0
+                      ? ` Skipped ${cars(result.skipped)}: the limit is ${GANTRY_PIT_PROFILES_MAX}.`
+                      : '')
+                );
+              })
+              .catch(() => setMessage('That file could not be read.'));
+          }}
+        />
         {message && <span className="text-sm text-slate-400">{message}</span>}
       </div>
 

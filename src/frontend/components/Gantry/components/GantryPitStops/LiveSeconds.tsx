@@ -1,5 +1,8 @@
-import { memo, useEffect, useState } from 'react';
+import { createContext, memo, useContext, useEffect, useState } from 'react';
 import { formatStopSeconds } from './pitStopFormat';
+
+/** True while no new stop data can arrive, such as a loaded replay file. */
+export const PitTimersPaused = createContext(false);
 
 interface LiveSecondsProps {
   /** Seconds when the data arrived. */
@@ -16,15 +19,17 @@ interface LiveSecondsProps {
  */
 export const LiveSeconds = memo(
   ({ seconds, running, since }: LiveSecondsProps) => {
+    const paused = useContext(PitTimersPaused);
+    const ticking = running && !paused;
     const [now, setNow] = useState(() => performance.now());
     useEffect(() => {
-      if (!running) return;
+      if (!ticking) return;
       setNow(performance.now());
       const timer = setInterval(() => setNow(performance.now()), 500);
       return () => clearInterval(timer);
-    }, [running, since]);
+    }, [ticking, since]);
     const shown =
-      seconds !== null && running
+      seconds !== null && ticking
         ? seconds + Math.max(0, now - since) / 1000
         : seconds;
     return (

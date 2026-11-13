@@ -4,6 +4,7 @@ import type {
   PitServiceProfile,
 } from '@irdashies/types';
 import {
+  GANTRY_PIT_PROFILES_MAX,
   sanitizeGantryPitStops,
   sanitizePitServiceProfile,
 } from '@irdashies/types';
@@ -61,12 +62,18 @@ export const exportPitProfiles = (
 
 /**
  * Reads an exported file. An imported car replaces the profile for the same
- * car; the rest are kept. Returns null for a file that is not pit timings.
+ * car; the rest are kept. New cars are added only while there is room, and
+ * the ones left out are counted in `skipped`. Returns null for a file that is
+ * not pit timings.
  */
 export const importPitProfiles = (
   current: readonly PitServiceProfile[],
   text: string
-): { profiles: PitServiceProfile[]; imported: number } | null => {
+): {
+  profiles: PitServiceProfile[];
+  imported: number;
+  skipped: number;
+} | null => {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -80,15 +87,27 @@ export const importPitProfiles = (
     !Array.isArray((parsed as { profiles?: unknown }).profiles)
   )
     return null;
-  const incoming = ((parsed as { profiles: unknown[] }).profiles ?? [])
-    .map(sanitizePitServiceProfile)
-    .filter((profile): profile is PitServiceProfile => profile !== null);
-  const replaced = new Set(incoming.map((profile) => profile.carPath));
+  const incoming = new Map<string, PitServiceProfile>();
+  for (const raw of (parsed as { profiles: unknown[] }).profiles) {
+    const profile = sanitizePitServiceProfile(raw);
+    if (profile && !incoming.has(profile.carPath))
+      incoming.set(profile.carPath, profile);
+  }
+  const existing = new Set(current.map((profile) => profile.carPath));
+  let room = GANTRY_PIT_PROFILES_MAX - current.length;
+  const accepted = [...incoming.values()].filter((profile) => {
+    if (existing.has(profile.carPath)) return true;
+    if (room <= 0) return false;
+    room -= 1;
+    return true;
+  });
+  const replaced = new Set(accepted.map((profile) => profile.carPath));
   return {
     profiles: [
       ...current.filter((profile) => !replaced.has(profile.carPath)),
-      ...incoming,
+      ...accepted,
     ],
-    imported: incoming.length,
+    imported: accepted.length,
+    skipped: incoming.size - accepted.length,
   };
 };
