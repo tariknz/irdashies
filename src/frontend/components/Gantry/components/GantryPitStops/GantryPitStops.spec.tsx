@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { PitStopsView } from './GantryPitStops';
 import { demoPitStopData } from './pitStopsDemo';
 
@@ -63,15 +64,19 @@ describe('PitStopsView', () => {
     expect(screen.getAllByRole('table')).toHaveLength(2);
   });
 
-  it('expands a team from its caret button, for keyboard users', () => {
+  it('expands a team from its caret button with the keyboard', async () => {
+    const user = userEvent.setup();
     renderView({ mode: 'teams' });
     const show = screen.getAllByRole('button', { name: /^Show stops for/ })[0];
     expect(show.getAttribute('aria-expanded')).toBe('false');
-    fireEvent.click(show);
+    expect(show.tabIndex).toBe(0);
+    show.focus();
+    await user.keyboard('{Enter}');
     expect(screen.getAllByRole('table')).toHaveLength(2);
     const hide = screen.getByRole('button', { name: /^Hide stops for/ });
     expect(hide.getAttribute('aria-expanded')).toBe('true');
-    fireEvent.click(hide);
+    expect(document.activeElement).toBe(hide);
+    await user.keyboard(' ');
     expect(screen.getAllByRole('table')).toHaveLength(1);
   });
 
