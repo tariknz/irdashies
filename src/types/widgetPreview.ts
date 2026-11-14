@@ -4,26 +4,45 @@ import type { Session } from './session';
 import type { Telemetry } from './telemetry';
 
 /**
- * Why the settings preview is held paused, whatever its own Pause button says.
- * Its demo is stopped while either is true and comes back once both clear.
- * Only the preview: the Demo Mode that feeds the overlays is not affected.
+ * What main reports to a settings window about its widget preview.
+ *
+ * Main pauses the window's demo in place, so a resumed preview carries on
+ * from where it stopped. It owns every reason to pause except the page's own
+ * (its Pause button, and the page being hidden), which the page reports with
+ * `setPaused`. Only the preview: the Demo Mode that feeds the overlays is not
+ * affected.
  */
-export interface WidgetPreviewHold {
+export interface WidgetPreviewStatus {
   /** The settings window is minimised or closed to the tray. */
   windowHidden: boolean;
-  /** The player is in the car, so the demo would only compete with the sim. */
+  /** The player is in the car. */
   driving: boolean;
+  /**
+   * Play was pressed while the player was in the car: the preview runs until
+   * they get out. Kept per window, so it holds across widget pages.
+   */
+  playInCar: boolean;
+  /**
+   * The window's connected demo is advancing. False while it is paused and
+   * while no demo is connected. A demo connected while paused runs briefly
+   * first, so the frame has a picture to keep.
+   */
+  running: boolean;
 }
 
-export const isWidgetPreviewHold = (
+export const isWidgetPreviewStatus = (
   value: unknown
-): value is WidgetPreviewHold =>
+): value is WidgetPreviewStatus =>
   !!value &&
   typeof value === 'object' &&
   'windowHidden' in value &&
   typeof value.windowHidden === 'boolean' &&
   'driving' in value &&
-  typeof value.driving === 'boolean';
+  typeof value.driving === 'boolean' &&
+  'playInCar' in value &&
+  typeof value.playInCar === 'boolean' &&
+  'running' in value &&
+  typeof value.running === 'boolean';
 
 /** A separate demo source; never changes the simulator feeding live overlays. */
 export interface WidgetPreviewBridge extends ChannelBridge {
@@ -31,8 +50,15 @@ export interface WidgetPreviewBridge extends ChannelBridge {
   disconnect(): Promise<void>;
   /** Only requested while the raw telemetry inspector is being previewed. */
   getTelemetry(): Promise<Telemetry | null>;
-  /** Reports the current hold at once, then every change to it. */
-  onHold(callback: (hold: WidgetPreviewHold) => void): () => void;
+  /** Reports the current status at once, then every change to it. */
+  onStatus(callback: (status: WidgetPreviewStatus) => void): () => void;
+  /**
+   * The page's own reasons to pause: its Pause button, or the page being
+   * hidden. Kept per window and applied to the demo connected next as well.
+   */
+  setPaused(paused: boolean): Promise<void>;
+  /** Play pressed in the car. Main ignores it unless the player is in it. */
+  playInCar(): Promise<void>;
 }
 
 export const WIDGET_PREVIEW_IPC = {
@@ -42,11 +68,13 @@ export const WIDGET_PREVIEW_IPC = {
   unsubscribe: 'widget-preview:unsubscribe',
   delivery: 'widget-preview:delivery',
   telemetry: 'widget-preview:telemetry',
-  hold: 'widget-preview:hold',
+  status: 'widget-preview:status',
+  setPaused: 'widget-preview:set-paused',
+  playInCar: 'widget-preview:play-in-car',
 } as const;
 
-/** The per-window subscription that asks main for hold updates. */
-export const WIDGET_PREVIEW_HOLD_SUBSCRIPTION = 'widget-preview-hold';
+/** The per-window subscription that asks main for status updates. */
+export const WIDGET_PREVIEW_STATUS_SUBSCRIPTION = 'widget-preview-status';
 
 export interface WidgetPreviewConfig {
   widgetId: string;
@@ -73,4 +101,8 @@ export type WidgetPreviewMessage =
       type: 'preview:snapshot';
       channel: ChannelName;
       payload: ChannelPayloads[ChannelName];
-    };
+    }
+  /** The demo stopped: hold the frame's animation loops on its last picture. */
+  | { type: 'preview:pause' }
+  /** The demo is advancing again: let the held animation loops run. */
+  | { type: 'preview:resume' };

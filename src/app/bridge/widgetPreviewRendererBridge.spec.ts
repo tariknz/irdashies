@@ -27,58 +27,70 @@ vi.mock('electron', () => ({
 }));
 import { exposeWidgetPreviewBridge } from './widgetPreviewRendererBridge';
 
-const holdListeners = () =>
-  mock.listeners.get(WIDGET_PREVIEW_IPC.hold) ?? new Set();
+const statusListeners = () =>
+  mock.listeners.get(WIDGET_PREVIEW_IPC.status) ?? new Set();
+
+const STATUS = {
+  windowHidden: true,
+  driving: false,
+  playInCar: false,
+  running: true,
+};
 
 beforeEach(() => {
   mock.listeners.clear();
   vi.clearAllMocks();
 });
 
-it('passes on only well-formed holds and unsubscribes after the last consumer', () => {
+it('passes on only well-formed statuses and unsubscribes after the last consumer', () => {
   const bridge = exposeWidgetPreviewBridge();
   const first = vi.fn();
   const second = vi.fn();
-  const removeFirst = bridge.onHold(first);
-  const removeSecond = bridge.onHold(second);
-  expect(mock.invoke).toHaveBeenCalledWith(
-    'widget-preview-hold:subscribe',
-    'hold'
-  );
-  for (const callback of holdListeners()) {
-    callback({}, { windowHidden: 'yes', driving: false });
-    callback({}, { windowHidden: true });
+  const removeFirst = bridge.onStatus(first);
+  const removeSecond = bridge.onStatus(second);
+  // Each consumer subscribes: main answers with the current status.
+  expect(mock.invoke.mock.calls).toEqual([
+    ['widget-preview-status:subscribe', 'status'],
+    ['widget-preview-status:subscribe', 'status'],
+  ]);
+  for (const callback of statusListeners()) {
+    callback({}, { ...STATUS, windowHidden: 'yes' });
+    callback({}, { windowHidden: true, driving: false });
     callback({}, null);
-    callback({}, { windowHidden: true, driving: false, extra: 1 });
+    callback({}, { ...STATUS, extra: 1 });
   }
-  expect(first).toHaveBeenCalledExactlyOnceWith({
-    windowHidden: true,
-    driving: false,
-  });
-  expect(second).toHaveBeenCalledExactlyOnceWith({
-    windowHidden: true,
-    driving: false,
-  });
+  expect(first).toHaveBeenCalledExactlyOnceWith(STATUS);
+  expect(second).toHaveBeenCalledExactlyOnceWith(STATUS);
   mock.invoke.mockClear();
   removeFirst();
   removeFirst();
   expect(mock.invoke).not.toHaveBeenCalled();
   removeSecond();
   expect(mock.invoke).toHaveBeenCalledExactlyOnceWith(
-    'widget-preview-hold:unsubscribe',
-    'hold'
+    'widget-preview-status:unsubscribe',
+    'status'
   );
-  expect(holdListeners().size).toBe(0);
+  expect(statusListeners().size).toBe(0);
 });
 
 it('logs a failed subscription instead of dropping the rejection', async () => {
   mock.invoke.mockRejectedValueOnce(new Error('closed'));
-  const cleanup = exposeWidgetPreviewBridge().onHold(vi.fn());
+  const cleanup = exposeWidgetPreviewBridge().onStatus(vi.fn());
   await Promise.resolve();
   expect(mock.send).toHaveBeenCalledWith(
     'log',
     'warn',
-    '[WidgetPreview] Hold subscription failed'
+    '[WidgetPreview] Status subscription failed'
   );
   cleanup();
+});
+
+it('sends the page pause and Play in the car to main', async () => {
+  const bridge = exposeWidgetPreviewBridge();
+  await bridge.setPaused(true);
+  await bridge.playInCar();
+  expect(mock.invoke.mock.calls).toEqual([
+    [WIDGET_PREVIEW_IPC.setPaused, true],
+    [WIDGET_PREVIEW_IPC.playInCar],
+  ]);
 });

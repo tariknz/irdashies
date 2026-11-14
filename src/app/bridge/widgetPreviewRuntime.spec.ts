@@ -54,4 +54,40 @@ describe('widget preview runtime', () => {
     second.dispose();
     expect(vi.getTimerCount()).toBe(0);
   });
+
+  it('pauses in place: no frames while paused, then carries on from the same session time', async () => {
+    vi.useFakeTimers();
+    const metrics = { markStart: vi.fn(), markEnd: vi.fn() };
+    const runtime = createWidgetPreviewRuntime(
+      { id: 1, isDestroyed: () => false, isVisible: () => true, send: vi.fn() },
+      metrics,
+      vi.fn()
+    );
+    const sessionTime = () =>
+      runtime.getTelemetry()?.SessionTime.value[0] ?? Number.NaN;
+    await vi.advanceTimersByTimeAsync(500);
+    const beforePause = sessionTime();
+    // The demo starts ten minutes in.
+    expect(beforePause).toBeGreaterThan(600);
+
+    runtime.setRunning(false);
+    runtime.setRunning(false);
+    const framesAtPause = metrics.markStart.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(metrics.markStart.mock.calls.length).toBe(framesAtPause);
+    expect(sessionTime()).toBe(beforePause);
+    // The generator's own timers are stopped, not just ignored.
+    expect(vi.getTimerCount()).toBe(0);
+
+    runtime.setRunning(true);
+    runtime.setRunning(true);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(sessionTime()).toBeGreaterThan(beforePause);
+    expect(sessionTime()).toBeLessThan(beforePause + 1);
+    expect(runtime.getSession().DriverInfo.Drivers.length).toBeGreaterThan(0);
+
+    runtime.dispose();
+    runtime.setRunning(true);
+    expect(vi.getTimerCount()).toBe(0);
+  });
 });

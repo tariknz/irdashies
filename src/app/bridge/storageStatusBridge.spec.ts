@@ -50,6 +50,7 @@ it('validates subscriptions, sends initial status and deduplicates OS notificati
   const sender = {
     id: 1,
     send: mocks.send,
+    on: vi.fn(),
     once: vi.fn(),
     removeListener: vi.fn(),
   };
