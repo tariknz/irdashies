@@ -5,7 +5,7 @@ export type AnimationFrames = Pick<
 >;
 
 export interface AnimationGate {
-  /** Holds every animation frame asked for from now on. */
+  /** Holds every animation loop's next frame from now on. */
   pause(): void;
   /** Schedules the held frames, and lets new ones through again. */
   resume(): void;
@@ -19,21 +19,35 @@ const nothing = () => undefined;
  * picture.
  *
  * A loop asks for its next frame from inside the current one, so holding
- * those requests stops it after the frame it is drawing, and nothing runs
- * while paused. Resuming schedules what was held, so every loop carries on.
- * While running, requests and cancellations go straight to the window.
+ * the requests made inside a frame stops it after the frame it is drawing.
+ * A frame asked for from outside one (a settings change, a resize, a newly
+ * mounted widget) still draws once while paused, so the held picture keeps
+ * up with what the user changes; a loop it starts is held after that frame.
+ * Resuming schedules what was held, so every loop carries on.
  */
 export function installAnimationGate(target: AnimationFrames): AnimationGate {
   const request = target.requestAnimationFrame.bind(target);
   const cancel = target.cancelAnimationFrame.bind(target);
   let paused = false;
+  /** Set while a frame's callback runs. */
+  let inFrame = false;
   /** Asked for while paused, by the id handed out for it. */
   const held = new Map<number, FrameRequestCallback>();
   /** Scheduled by a resume and not run yet: the handed-out id's real one. */
   const released = new Map<number, number>();
 
+  const run = (callback: FrameRequestCallback, time: number) => {
+    const outer = inFrame;
+    inFrame = true;
+    try {
+      callback(time);
+    } finally {
+      inFrame = outer;
+    }
+  };
+
   target.requestAnimationFrame = (callback) => {
-    if (!paused) return request(callback);
+    if (!paused || !inFrame) return request((time) => run(callback, time));
     // An id the window never hands out again, so it cannot be mistaken for
     // another request's. Cancelled at once, it runs nothing.
     const id = request(nothing);
@@ -66,7 +80,7 @@ export function installAnimationGate(target: AnimationFrames): AnimationGate {
           id,
           request((time) => {
             released.delete(id);
-            callback(time);
+            run(callback, time);
           })
         );
     },

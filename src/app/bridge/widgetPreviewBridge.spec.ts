@@ -91,7 +91,10 @@ const client = (id: number) => {
       sender.listenerCount('destroyed') +
       sender.listenerCount('did-start-navigation'),
     navigate: (isMainFrame = true, isInPlace = false) =>
-      sender.emit('did-start-navigation', {}, 'x', isInPlace, isMainFrame),
+      sender.emit('did-start-navigation', {
+        isMainFrame,
+        isSameDocument: isInPlace,
+      }),
   };
 };
 type Client = ReturnType<typeof client>;

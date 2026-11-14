@@ -33,8 +33,8 @@ describe('preview animation gate', () => {
     const gate = installAnimationGate(frames.target);
     const callback = vi.fn();
     const id = frames.target.requestAnimationFrame(callback);
-    expect(frames.request).toHaveBeenCalledWith(callback);
-    expect(frames.pending.get(id)).toBe(callback);
+    expect(frames.request).toHaveBeenCalledOnce();
+    expect(frames.pending.has(id)).toBe(true);
     frames.tick(42);
     expect(callback).toHaveBeenCalledWith(42);
 
@@ -47,22 +47,28 @@ describe('preview animation gate', () => {
     expect(gate.paused).toBe(false);
   });
 
-  it('holds frames asked for while paused, with ids no other request has', () => {
+  it('holds the frames a frame asks for while paused, with ids no other request has', () => {
     const frames = fakeWindow();
     const gate = installAnimationGate(frames.target);
     const before = frames.target.requestAnimationFrame(vi.fn());
-    gate.pause();
     const held = vi.fn();
-    const first = frames.target.requestAnimationFrame(held);
-    const second = frames.target.requestAnimationFrame(held);
-    expect(frames.pending.size).toBe(1);
+    const ids: number[] = [];
+    frames.target.requestAnimationFrame(() => {
+      ids.push(
+        frames.target.requestAnimationFrame(held),
+        frames.target.requestAnimationFrame(held)
+      );
+    });
+    gate.pause();
+    frames.tick();
+    expect(frames.pending.size).toBe(0);
     frames.tick();
     expect(held).not.toHaveBeenCalled();
-    expect(new Set([before, first, second]).size).toBe(3);
+    expect(new Set([before, ...ids]).size).toBe(3);
     // Later requests do not get a held id either.
     gate.resume();
     const after = frames.target.requestAnimationFrame(vi.fn());
-    expect([first, second]).not.toContain(after);
+    expect(ids).not.toContain(after);
   });
 
   it('stops an animation loop on the frame it was drawing and carries it on when resumed', () => {
@@ -88,18 +94,42 @@ describe('preview animation gate', () => {
     expect(painted).toBe(4);
   });
 
+  it('still draws a frame asked for from outside one while paused, then holds its loop', () => {
+    const frames = fakeWindow();
+    const gate = installAnimationGate(frames.target);
+    gate.pause();
+    let painted = 0;
+    const paint = () => {
+      painted++;
+      frames.target.requestAnimationFrame(paint);
+    };
+    // A settings change, a resize or a newly mounted widget asks for one.
+    frames.target.requestAnimationFrame(paint);
+    frames.tick();
+    frames.tick();
+    expect(painted).toBe(1);
+    expect(frames.pending.size).toBe(0);
+    gate.resume();
+    frames.tick();
+    expect(painted).toBe(2);
+  });
+
   it('cancels a held frame, and a frame scheduled before the pause', () => {
     const frames = fakeWindow();
     const gate = installAnimationGate(frames.target);
     const early = vi.fn();
-    const earlyId = frames.target.requestAnimationFrame(early);
-    gate.pause();
     const held = vi.fn();
     const kept = vi.fn();
-    const heldId = frames.target.requestAnimationFrame(held);
-    frames.target.requestAnimationFrame(kept);
-    frames.target.cancelAnimationFrame(heldId);
+    let heldId = 0;
+    const earlyId = frames.target.requestAnimationFrame(early);
+    frames.target.requestAnimationFrame(() => {
+      heldId = frames.target.requestAnimationFrame(held);
+      frames.target.requestAnimationFrame(kept);
+    });
+    gate.pause();
     frames.target.cancelAnimationFrame(earlyId);
+    frames.tick();
+    frames.target.cancelAnimationFrame(heldId);
     gate.resume();
     frames.tick();
     expect(early).not.toHaveBeenCalled();
@@ -110,13 +140,20 @@ describe('preview animation gate', () => {
   it('schedules held frames in order on resume, still cancellable by their ids', () => {
     const frames = fakeWindow();
     const gate = installAnimationGate(frames.target);
-    gate.pause();
     const order: string[] = [];
-    frames.target.requestAnimationFrame(() => order.push('first'));
-    const dropped = frames.target.requestAnimationFrame(() =>
-      order.push('dropped')
-    );
-    frames.target.requestAnimationFrame((time) => order.push(`third@${time}`));
+    let dropped = 0;
+    frames.target.requestAnimationFrame(() => {
+      frames.target.requestAnimationFrame(() => order.push('first'));
+      dropped = frames.target.requestAnimationFrame(() =>
+        order.push('dropped')
+      );
+      frames.target.requestAnimationFrame((time) =>
+        order.push(`third@${time}`)
+      );
+    });
+    gate.pause();
+    frames.tick();
+    expect(frames.pending.size).toBe(0);
     gate.resume();
     expect(frames.pending.size).toBe(3);
     frames.target.cancelAnimationFrame(dropped);
@@ -136,7 +173,11 @@ describe('preview animation gate', () => {
     gate.pause();
     expect(gate.paused).toBe(true);
     const held = vi.fn();
-    frames.target.requestAnimationFrame(held);
+    frames.target.requestAnimationFrame(() =>
+      frames.target.requestAnimationFrame(held)
+    );
+    frames.tick();
+    expect(held).not.toHaveBeenCalled();
     gate.resume();
     gate.resume();
     expect(gate.paused).toBe(false);

@@ -124,12 +124,9 @@ export const onRendererPageGone = (
   onGone: () => void
 ): (() => void) => {
   const onNavigate = (
-    _event: Electron.Event,
-    _url: string,
-    isInPlace: boolean,
-    isMainFrame: boolean
+    details: Electron.Event<Electron.WebContentsDidStartNavigationEventParams>
   ) => {
-    if (isMainFrame && !isInPlace) gone();
+    if (details.isMainFrame && !details.isSameDocument) gone();
   };
   const detach = () => {
     contents.removeListener('destroyed', gone);

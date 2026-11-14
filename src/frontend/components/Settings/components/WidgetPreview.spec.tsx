@@ -529,6 +529,26 @@ describe('settings widget preview', () => {
     expect(getTelemetry).toHaveBeenCalledTimes(2);
   });
 
+  it('reads inspector telemetry for a first picture when it connects held', async () => {
+    vi.useFakeTimers();
+    getTelemetry.mockResolvedValueOnce(null).mockResolvedValue({} as Telemetry);
+    render(<WidgetPreview widgetId="telemetryinspector" />);
+    status({ driving: true, running: false });
+    const frame = screen.getByTitle(
+      'Telemetry Inspector demo'
+    ) as HTMLIFrameElement;
+    const posted = watchFrame(frame);
+    await act(async () => request(frame, { type: 'preview:ready' }));
+    // The demo had no frame yet: asked again until there is a picture.
+    expect(getTelemetry).toHaveBeenCalledOnce();
+    await act(async () => vi.advanceTimersByTime(1000));
+    expect(getTelemetry).toHaveBeenCalledTimes(2);
+    expect(posted('preview:telemetry')).toHaveLength(1);
+    // Then held, like the rest of the paused demo.
+    await act(async () => vi.advanceTimersByTime(3000));
+    expect(getTelemetry).toHaveBeenCalledTimes(2);
+  });
+
   it('stops a timed-out attempt and ignores its late result after a successful retry', async () => {
     vi.useFakeTimers();
     let resolveSession!: (value: Session) => void;

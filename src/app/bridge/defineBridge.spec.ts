@@ -88,7 +88,10 @@ describe('defineRendererSubscriptionBridge', () => {
     [
       'a main-frame navigation',
       (sender: FakeSender) =>
-        sender.emit('did-start-navigation', {}, 'x', false, true),
+        sender.emit('did-start-navigation', {
+          isMainFrame: true,
+          isSameDocument: false,
+        }),
     ],
   ])('cleans renderer state on %s', (_name, leave) => {
     const bridge = setup();
@@ -108,8 +111,14 @@ describe('defineRendererSubscriptionBridge', () => {
 
     // Chromium fires did-start-loading for iframe loads as well.
     sender.emit('did-start-loading');
-    sender.emit('did-start-navigation', {}, 'preview.html', false, false);
-    sender.emit('did-start-navigation', {}, '#/settings/map', true, true);
+    sender.emit('did-start-navigation', {
+      isMainFrame: false,
+      isSameDocument: false,
+    });
+    sender.emit('did-start-navigation', {
+      isMainFrame: true,
+      isSameDocument: true,
+    });
 
     expect(bridge.registry.has(10, 'sessionData')).toBe(true);
   });

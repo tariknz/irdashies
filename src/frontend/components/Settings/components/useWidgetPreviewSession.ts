@@ -177,13 +177,17 @@ export function useWidgetPreviewSession(
               config.widgetId
             );
             if (selected?.type === 'telemetryinspector') {
+              // Until the frame has a picture, also while paused: main keeps
+              // the paused demo's last frame, which the frame then holds.
+              let pictured = false;
               const poll = () => {
-                if (!latest.current.running) return;
+                if (pictured && !latest.current.running) return;
                 void bridge
                   .getTelemetry()
                   .then((telemetry) => {
-                    if (telemetry)
-                      send({ type: 'preview:telemetry', telemetry });
+                    if (!telemetry) return;
+                    pictured = true;
+                    send({ type: 'preview:telemetry', telemetry });
                   })
                   .catch((reason: unknown) =>
                     logger.warn(
