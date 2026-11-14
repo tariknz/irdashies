@@ -130,12 +130,18 @@ async function main() {
     throw new Error('Expected status|save-original|save-start|restore|run');
   const runId = process.argv[3];
   const duration = Number(process.argv[4] || 420);
+  // Alternate isolated seeds let the same replay protocol cover widgets that
+  // were disabled or session-hidden in the saved-profile reference.
+  const seedName = process.argv[5] || 'full-profile-seed';
   if (!/^[a-z0-9-]+$/.test(runId || '') || ![90, 420].includes(duration))
     throw new Error('Expected safe run ID and 90 or 420 seconds');
+  if (!/^[a-z0-9-]+$/.test(seedName))
+    throw new Error('Expected a seed directory name inside perf-results');
+  const seedDirectory = path.join(out, seedName);
   const start = read('full-start.json');
   const reset = await seek(start);
   const profile = path.join(out, `${runId}.profile`);
-  fs.cpSync(path.join(out, 'full-profile-seed'), profile, {
+  fs.cpSync(seedDirectory, profile, {
     recursive: true,
     errorOnExist: true,
     force: false,
@@ -155,6 +161,7 @@ async function main() {
     duration,
     reset,
     profile: path.basename(profile),
+    seed: seedName,
     controllerAddonSha256: sha256(controlAddon),
     gitHead: execFileSync('git', ['rev-parse', 'HEAD'], {
       cwd,
@@ -177,7 +184,7 @@ async function main() {
       '--user-data-dir',
       profile,
       '--scenario',
-      `${provenance.gitHead.slice(0, 8)}-full-saved-profile-actual-replay`,
+      `${provenance.gitHead.slice(0, 8)}-${seedName === 'full-profile-seed' ? 'full-saved-profile' : seedName}-actual-replay`,
       '--run-id',
       runId,
       '--duration-seconds',
@@ -256,7 +263,7 @@ async function main() {
         path.join(cwd, '.vite/build/Release/irsdk_node.node')
       );
       provenance.seedConfigSha256 = sha256(
-        path.join(out, 'full-profile-seed/config.json')
+        path.join(seedDirectory, 'config.json')
       );
       provenance.versions = {
         node: process.version,

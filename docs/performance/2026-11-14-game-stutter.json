@@ -1,0 +1,1846 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-14",
+  "sourceRevision": "711552a1598a0d3258eb61a5d94e34a37f85547d",
+  "target": "Development Electron/Forge/Vite full saved profile; no application process in off conditions",
+  "presentMonVersion": "2.6.0",
+  "presentMonCaptureApplicationSha256": "4e0c6fd1f216f63e23fb53f3c4c1e254d1873839d85cb8a945e1f1915d136300",
+  "presentMonConsoleStatus": "Unavailable to this token: trace-session access denied; installed GUI/service used successfully",
+  "durationSeconds": 420,
+  "analysisWindowSeconds": [60, 410],
+  "order": ["game-off-a1", "game-on-b1", "game-on-b2", "game-off-a2"],
+  "simulatorGraphicsSha256": "1f8c44edd8f43466787204e86f9b7bc8198391d03ba1da14bca5652b15d712ce",
+  "runtimeSourceUnmodified": true,
+  "foregroundPolicy": "iRacing activated before capture; positive keyboard-focus checks during each pass; no other app UI actions during measured windows",
+  "definitions": {
+    "present": "MsBetweenPresents",
+    "display": "MsBetweenDisplayChange; only finite positive display intervals",
+    "meanFps": "1000 / arithmetic mean frame interval in milliseconds",
+    "lowFps": "1000 / mean of slowest ceil(N*fraction) frame intervals",
+    "percentiles": "Nearest rank: ceil(N*p)-1 in ascending order",
+    "unavailableDisplayTiming": "NA remains missing; not counted as zero intervals or as a game stutter",
+    "window": "CSV TimeInSeconds >=60 and <410; warmup and shutdown edges excluded"
+  },
+  "averages": {
+    "off": {
+      "presentFps": 75.1681980735458,
+      "presentOnePercentLowFps": 49.961716629517426,
+      "presentP99Ms": 18.81525,
+      "displayFps": 59.71807279061609,
+      "displayOnePercentLowFps": 43.15188380305223,
+      "displayOver25PerMinute": 13.542857142857143,
+      "displayOver50": 3,
+      "displayOver100": 0,
+      "presentOver100": 0
+    },
+    "on": {
+      "presentFps": 73.89347905106716,
+      "presentOnePercentLowFps": 48.84353503524853,
+      "presentP99Ms": 19.1913,
+      "displayFps": 59.61234463556696,
+      "displayOnePercentLowFps": 38.30039281330626,
+      "displayOver25PerMinute": 19.97142857142857,
+      "displayOver50": 3,
+      "displayOver100": 0,
+      "presentOver100": 0
+    }
+  },
+  "delta": {
+    "presentedFpsLossPercent": 1.6958222428472067,
+    "presentedFpsLoss": 1.274719022478635,
+    "displayOver25PerMinuteIncrease": 6.428571428571429
+  },
+  "runs": [
+    {
+      "runId": "game-off-a1",
+      "condition": "off",
+      "sourceRevision": "711552a1598a0d3258eb61a5d94e34a37f85547d",
+      "captureName": "pmcap-iRacingSim64DX11.exe-261114-175819.csv",
+      "captureSha256": "9f46f79b617ae68e1cdf88fa4a1c5a335788972ada9ab6145cdfaad253443816",
+      "captureBytes": 12809808,
+      "seedConfigSha256": null,
+      "mainBundleSha256": null,
+      "nativeAddonSha256": null,
+      "controllerAddonSha256": null,
+      "captureTrigger": {
+        "captureHotkeyBefore": "2026-11-14T04:58:18.978Z",
+        "captureHotkeyAfter": "2026-11-14T04:58:19.011Z",
+        "foreground": "0 window iRacing.com Simulator Secondary Actions: Raise"
+      },
+      "playCommand": "2026-11-14T04:58:19.463Z",
+      "playCommandAfterHotkeyMs": 452,
+      "activeWidgetTypes": [],
+      "replayIntegrity": {
+        "verified": true,
+        "sampleCount": 70,
+        "firstFrame": 132875,
+        "lastFrame": 153610,
+        "maxGapSeconds": 5.015
+      },
+      "foregroundChecks": [
+        {
+          "timestamp": "2026-11-14T04:58:19.011Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+        },
+        {
+          "timestamp": "2026-11-14T05:00:24.682Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+        },
+        {
+          "timestamp": "2026-11-14T05:03:08.748Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+        }
+      ],
+      "allForegroundChecksPassed": true,
+      "overlayRenderer": null,
+      "schemaVersion": 1,
+      "analysisWindowSeconds": [60, 410],
+      "durationSeconds": 350,
+      "processName": "iRacingSim64DX11.exe",
+      "primarySwapChain": "19272:0x2BFFE570",
+      "swapChains": [
+        {
+          "key": "19272:0x2BFFE570",
+          "frameCount": 31753
+        }
+      ],
+      "frameRows": 26305,
+      "displayTimingUnavailableRows": 5400,
+      "present": {
+        "sampleCount": 26305,
+        "meanFps": 75.16657548922511,
+        "onePercentLowFps": 50.289701061634624,
+        "pointOnePercentLowFps": 42.60280411656695,
+        "meanMs": 13.303785538870889,
+        "p99Ms": 18.7919,
+        "p999Ms": 21.0019,
+        "maximumMs": 46.4961,
+        "slowFrames": [
+          {
+            "thresholdMs": 25,
+            "count": 2,
+            "percent": 0.007603117278084015,
+            "perMinute": 0.34285714285714286
+          },
+          {
+            "thresholdMs": 33.333333333333336,
+            "count": 2,
+            "percent": 0.007603117278084015,
+            "perMinute": 0.34285714285714286
+          },
+          {
+            "thresholdMs": 50,
+            "count": 0,
+            "percent": 0,
+            "perMinute": 0
+          },
+          {
+            "thresholdMs": 100,
+            "count": 0,
+            "percent": 0,
+            "perMinute": 0
+          }
+        ]
+      },
+      "display": {
+        "sampleCount": 20905,
+        "meanFps": 59.73807104490075,
+        "onePercentLowFps": 44.21111083321269,
+        "pointOnePercentLowFps": 29.26099272794662,
+        "meanMs": 16.739743726381338,
+        "p99Ms": 16.7538,
+        "p999Ms": 33.3682,
+        "maximumMs": 50.0597,
+        "slowFrames": [
+          {
+            "thresholdMs": 25,
+            "count": 73,
+            "percent": 0.3491987562784023,
+            "perMinute": 12.514285714285714
+          },
+          {
+            "thresholdMs": 33.333333333333336,
+            "count": 68,
+            "percent": 0.325281033245635,
+            "perMinute": 11.657142857142857
+          },
+          {
+            "thresholdMs": 50,
+            "count": 1,
+            "percent": 0.004783544606553456,
+            "perMinute": 0.17142857142857143
+          },
+          {
+            "thresholdMs": 100,
+            "count": 0,
+            "percent": 0,
+            "perMinute": 0
+          }
+        ]
+      },
+      "presentModes": ["Composed: Flip"],
+      "frameTypes": ["Application"],
+      "captureSpanSeconds": [0, 420],
+      "evidence": {
+        "fullAnalysisWindowAvailable": true,
+        "longEnough": true
+      }
+    },
+    {
+      "runId": "game-on-b1",
+      "condition": "on",
+      "sourceRevision": "711552a1598a0d3258eb61a5d94e34a37f85547d",
+      "captureName": "pmcap-iRacingSim64DX11.exe-261114-180839.csv",
+      "captureSha256": "13d5a9331db2c6c25ccc8ba0bdf14e11fafbfaf99f2e1f2d99d2e10e48a89183",
+      "captureBytes": 12645970,
+      "seedConfigSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+      "mainBundleSha256": "a95e8f7cf74c9c0f5a077d236cb957d58d2beb62dfb5b38333676f0df7fd72c9",
+      "nativeAddonSha256": "2e4d9fcacab35252e6bf9bac6db4c8923b839250621c899afc63068f4ed89357",
+      "controllerAddonSha256": "b5cecd1fffb4968bb988a65ed4df6b3bfd13a887cc1688a7103e2bf7ba5d7d46",
+      "captureTrigger": {
+        "captureHotkeyBefore": "2026-11-14T05:08:39.091Z",
+        "captureHotkeyAfter": "2026-11-14T05:08:39.126Z",
+        "foreground": "0 window iRacing.com Simulator Secondary Actions: Raise"
+      },
+      "playCommand": "2026-11-14T05:08:39.379Z",
+      "playCommandAfterHotkeyMs": 253,
+      "activeWidgetTypes": [
+        "battle",
+        "blindspotmonitor",
+        "cornername",
+        "fastercarsfrombehind",
+        "flag",
+        "fuel",
+        "gantry",
+        "input",
+        "laptimelog",
+        "laptrace",
+        "map",
+        "pitlanehelper",
+        "radar",
+        "rejoin",
+        "relative",
+        "sectordelta",
+        "slowcarahead",
+        "standings",
+        "tachometer",
+        "weather"
+      ],
+      "replayIntegrity": {
+        "verified": true,
+        "sampleCount": 70,
+        "firstFrame": 132874,
+        "lastFrame": 153603,
+        "maxGapSeconds": 5.016
+      },
+      "foregroundChecks": [
+        {
+          "timestamp": "2026-11-14T05:08:39.126Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+        },
+        {
+          "timestamp": "2026-11-14T05:11:00.496Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+        },
+        {
+          "timestamp": "2026-11-14T05:13:55.914Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+        }
+      ],
+      "allForegroundChecksPassed": true,
+      "overlayRenderer": {
+        "sampleCount": 207,
+        "frameTimeP99MeanMs": 131.449758454107,
+        "framesOver50MsPercent": 18.079498504060407
+      },
+      "schemaVersion": 1,
+      "analysisWindowSeconds": [60, 410],
+      "durationSeconds": 350,
+      "processName": "iRacingSim64DX11.exe",
+      "primarySwapChain": "19272:0x2BFFE570",
+      "swapChains": [
+        {
+          "key": "19272:0x2BFFE570",
+          "frameCount": 31263
+        }
+      ],
+      "frameRows": 25900,
+      "displayTimingUnavailableRows": 5027,
+      "present": {
+        "sampleCount": 25900,
+        "meanFps": 74.00861549094668,
+        "onePercentLowFps": 49.10534051102997,
+        "pointOnePercentLowFps": 40.75715507533176,
+        "meanMs": 13.51194037837835,
+        "p99Ms": 19.0913,
+        "p999Ms": 21.5412,
+        "maximumMs": 55.3705,
+        "slowFrames": [
+          {
+            "thresholdMs": 25,
+            "count": 2,
+            "percent": 0.007722007722007722,
+            "perMinute": 0.34285714285714286
+          },
+          {
+            "thresholdMs": 33.333333333333336,
+            "count": 2,
+            "percent": 0.007722007722007722,
+            "perMinute": 0.34285714285714286
+          },
+          {
+            "thresholdMs": 50,
+            "count": 1,
+            "percent": 0.003861003861003861,
+            "perMinute": 0.17142857142857143
+          },
+          {
+            "thresholdMs": 100,
+            "count": 0,
+            "percent": 0,
+            "perMinute": 0
+          }
+        ]
+      },
+      "display": {
+        "sampleCount": 20873,
+        "meanFps": 59.64377838085775,
+        "onePercentLowFps": 39.5834990142667,
+        "pointOnePercentLowFps": 28.596211955123014,
+        "meanMs": 16.766208096584016,
+        "p99Ms": 16.761,
+        "p999Ms": 33.3692,
+        "maximumMs": 50.0561,
+        "slowFrames": [
+          {
+            "thresholdMs": 25,
+            "count": 105,
+            "percent": 0.5030422076366597,
+            "perMinute": 18
+          },
+          {
+            "thresholdMs": 33.333333333333336,
+            "count": 90,
+            "percent": 0.431179035117137,
+            "perMinute": 15.428571428571427
+          },
+          {
+            "thresholdMs": 50,
+            "count": 2,
+            "percent": 0.009581756335936378,
+            "perMinute": 0.34285714285714286
+          },
+          {
+            "thresholdMs": 100,
+            "count": 0,
+            "percent": 0,
+            "perMinute": 0
+          }
+        ]
+      },
+      "presentModes": ["Composed: Flip"],
+      "frameTypes": ["Application"],
+      "captureSpanSeconds": [0, 419.9],
+      "evidence": {
+        "fullAnalysisWindowAvailable": true,
+        "longEnough": true
+      }
+    },
+    {
+      "runId": "game-on-b2",
+      "condition": "on",
+      "sourceRevision": "711552a1598a0d3258eb61a5d94e34a37f85547d",
+      "captureName": "pmcap-iRacingSim64DX11.exe-261114-181817.csv",
+      "captureSha256": "b3fc657c410259b785c762064ff6ff861746beba23874af5721ab0db5382c520",
+      "captureBytes": 12515907,
+      "seedConfigSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+      "mainBundleSha256": "a95e8f7cf74c9c0f5a077d236cb957d58d2beb62dfb5b38333676f0df7fd72c9",
+      "nativeAddonSha256": "f0baef2c0066edf2e3b4886d26492ccf290f4a5f9c5d37b9f5a3f4b71bb67369",
+      "controllerAddonSha256": "2e4d9fcacab35252e6bf9bac6db4c8923b839250621c899afc63068f4ed89357",
+      "captureTrigger": {
+        "captureHotkeyBefore": "2026-11-14T05:18:17.881Z",
+        "captureHotkeyAfter": "2026-11-14T05:18:17.917Z",
+        "foreground": "0 window iRacing.com Simulator Secondary Actions: Raise"
+      },
+      "playCommand": "2026-11-14T05:18:18.043Z",
+      "playCommandAfterHotkeyMs": 126,
+      "activeWidgetTypes": [
+        "battle",
+        "blindspotmonitor",
+        "cornername",
+        "fastercarsfrombehind",
+        "flag",
+        "fuel",
+        "gantry",
+        "input",
+        "laptimelog",
+        "laptrace",
+        "map",
+        "pitlanehelper",
+        "radar",
+        "rejoin",
+        "relative",
+        "sectordelta",
+        "slowcarahead",
+        "standings",
+        "tachometer",
+        "weather"
+      ],
+      "replayIntegrity": {
+        "verified": true,
+        "sampleCount": 70,
+        "firstFrame": 132873,
+        "lastFrame": 153596,
+        "maxGapSeconds": 5.016
+      },
+      "foregroundChecks": [
+        {
+          "timestamp": "2026-11-14T05:18:17.917Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+        },
+        {
+          "timestamp": "2026-11-14T05:20:58.915Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+        },
+        {
+          "timestamp": "2026-11-14T05:24:19.142Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+        }
+      ],
+      "allForegroundChecksPassed": true,
+      "overlayRenderer": {
+        "sampleCount": 210,
+        "frameTimeP99MeanMs": 116.06666666666888,
+        "framesOver50MsPercent": 19.225195291788907
+      },
+      "schemaVersion": 1,
+      "analysisWindowSeconds": [60, 410],
+      "durationSeconds": 350,
+      "processName": "iRacingSim64DX11.exe",
+      "primarySwapChain": "19272:0x2BFFE570",
+      "swapChains": [
+        {
+          "key": "19272:0x2BFFE570",
+          "frameCount": 30939
+        }
+      ],
+      "frameRows": 25819,
+      "displayTimingUnavailableRows": 4968,
+      "present": {
+        "sampleCount": 25819,
+        "meanFps": 73.77834261118764,
+        "onePercentLowFps": 48.581729559467085,
+        "pointOnePercentLowFps": 41.38056383564722,
+        "meanMs": 13.554113098880613,
+        "p99Ms": 19.2913,
+        "p999Ms": 21.9181,
+        "maximumMs": 48.6735,
+        "slowFrames": [
+          {
+            "thresholdMs": 25,
+            "count": 4,
+            "percent": 0.015492466788024324,
+            "perMinute": 0.6857142857142857
+          },
+          {
+            "thresholdMs": 33.333333333333336,
+            "count": 1,
+            "percent": 0.003873116697006081,
+            "perMinute": 0.17142857142857143
+          },
+          {
+            "thresholdMs": 50,
+            "count": 0,
+            "percent": 0,
+            "perMinute": 0
+          },
+          {
+            "thresholdMs": 100,
+            "count": 0,
+            "percent": 0,
+            "perMinute": 0
+          }
+        ]
+      },
+      "display": {
+        "sampleCount": 20851,
+        "meanFps": 59.58091089027617,
+        "onePercentLowFps": 37.01728661234582,
+        "pointOnePercentLowFps": 29.24877040258426,
+        "meanMs": 16.783899155915787,
+        "p99Ms": 16.7639,
+        "p999Ms": 33.3776,
+        "maximumMs": 50.0226,
+        "slowFrames": [
+          {
+            "thresholdMs": 25,
+            "count": 128,
+            "percent": 0.6138794302431537,
+            "perMinute": 21.942857142857143
+          },
+          {
+            "thresholdMs": 33.333333333333336,
+            "count": 115,
+            "percent": 0.5515323006090835,
+            "perMinute": 19.714285714285715
+          },
+          {
+            "thresholdMs": 50,
+            "count": 1,
+            "percent": 0.0047959330487746385,
+            "perMinute": 0.17142857142857143
+          },
+          {
+            "thresholdMs": 100,
+            "count": 0,
+            "percent": 0,
+            "perMinute": 0
+          }
+        ]
+      },
+      "presentModes": ["Composed: Flip"],
+      "frameTypes": ["Application"],
+      "captureSpanSeconds": [0, 419.9],
+      "evidence": {
+        "fullAnalysisWindowAvailable": true,
+        "longEnough": true
+      }
+    },
+    {
+      "runId": "game-off-a2",
+      "condition": "off",
+      "sourceRevision": "711552a1598a0d3258eb61a5d94e34a37f85547d",
+      "captureName": "pmcap-iRacingSim64DX11.exe-261114-182624.csv",
+      "captureSha256": "0c3d830aa370eeaba1a55b9732527aeaed17075a663156ddc3d810b0d917adf9",
+      "captureBytes": 12838174,
+      "seedConfigSha256": null,
+      "mainBundleSha256": null,
+      "nativeAddonSha256": null,
+      "controllerAddonSha256": "f0baef2c0066edf2e3b4886d26492ccf290f4a5f9c5d37b9f5a3f4b71bb67369",
+      "captureTrigger": {
+        "captureHotkeyBefore": "2026-11-14T05:26:24.466Z",
+        "captureHotkeyAfter": "2026-11-14T05:26:24.498Z",
+        "foreground": "0 window iRacing.com Simulator Secondary Actions: Raise"
+      },
+      "playCommand": "2026-11-14T05:26:24.996Z",
+      "playCommandAfterHotkeyMs": 498,
+      "activeWidgetTypes": [],
+      "replayIntegrity": {
+        "verified": true,
+        "sampleCount": 70,
+        "firstFrame": 132874,
+        "lastFrame": 153600,
+        "maxGapSeconds": 5.016
+      },
+      "foregroundChecks": [
+        {
+          "timestamp": "2026-11-14T05:26:24.498Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+        },
+        {
+          "timestamp": "2026-11-14T05:29:17.907Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+        }
+      ],
+      "allForegroundChecksPassed": true,
+      "overlayRenderer": null,
+      "schemaVersion": 1,
+      "analysisWindowSeconds": [60, 410],
+      "durationSeconds": 350,
+      "processName": "iRacingSim64DX11.exe",
+      "primarySwapChain": "19272:0x2BFFE570",
+      "swapChains": [
+        {
+          "key": "19272:0x2BFFE570",
+          "frameCount": 31763
+        }
+      ],
+      "frameRows": 26306,
+      "displayTimingUnavailableRows": 5414,
+      "present": {
+        "sampleCount": 26306,
+        "meanFps": 75.16982065786647,
+        "onePercentLowFps": 49.63373219740023,
+        "pointOnePercentLowFps": 40.186584824950216,
+        "meanMs": 13.303211198966068,
+        "p99Ms": 18.8386,
+        "p999Ms": 21.341,
+        "maximumMs": 54.5801,
+        "slowFrames": [
+          {
+            "thresholdMs": 25,
+            "count": 5,
+            "percent": 0.019007070630274462,
+            "perMinute": 0.8571428571428571
+          },
+          {
+            "thresholdMs": 33.333333333333336,
+            "count": 2,
+            "percent": 0.007602828252109785,
+            "perMinute": 0.34285714285714286
+          },
+          {
+            "thresholdMs": 50,
+            "count": 2,
+            "percent": 0.007602828252109785,
+            "perMinute": 0.34285714285714286
+          },
+          {
+            "thresholdMs": 100,
+            "count": 0,
+            "percent": 0,
+            "perMinute": 0
+          }
+        ]
+      },
+      "display": {
+        "sampleCount": 20892,
+        "meanFps": 59.69807453633144,
+        "onePercentLowFps": 42.09265677289176,
+        "pointOnePercentLowFps": 27.952462179320374,
+        "meanMs": 16.750959017805734,
+        "p99Ms": 16.7553,
+        "p999Ms": 33.3753,
+        "maximumMs": 66.7396,
+        "slowFrames": [
+          {
+            "thresholdMs": 25,
+            "count": 85,
+            "percent": 0.40685429829599845,
+            "perMinute": 14.571428571428571
+          },
+          {
+            "thresholdMs": 33.333333333333336,
+            "count": 80,
+            "percent": 0.3829216925138809,
+            "perMinute": 13.714285714285714
+          },
+          {
+            "thresholdMs": 50,
+            "count": 2,
+            "percent": 0.009573042312847023,
+            "perMinute": 0.34285714285714286
+          },
+          {
+            "thresholdMs": 100,
+            "count": 0,
+            "percent": 0,
+            "perMinute": 0
+          }
+        ]
+      },
+      "presentModes": ["Composed: Flip"],
+      "frameTypes": ["Application"],
+      "captureSpanSeconds": [0, 420],
+      "evidence": {
+        "fullAnalysisWindowAvailable": true,
+        "longEnough": true
+      }
+    }
+  ],
+  "limitations": [
+    "Two repetitions per condition are descriptive, not a statistical equivalence test",
+    "Current on/off cost is measured; historical game-frame regression cannot be assessed without an older matched PresentMon capture",
+    "20 saved enabled widgets; hidden Lap Trace and replay-limited control/fuel/event/device paths remain as documented in the widget audit",
+    "Development/performance-instrumented application; not a packaged-release acceptance test",
+    "Capture hotkey and replay play command are separated by recorded sub-second delays; capture-relative analysis is not exact frame-locked alignment",
+    "First off run lacks controller/bundle fingerprint fields added to later capture provenance; runtime source revision and game process/swap chain are retained"
+  ],
+  "exclusions": [
+    {
+      "capture": "pmcap-iRacingSim64DX11.exe-261114-175247.csv",
+      "reason": "10-second GUI setup smoke test, outside replay comparison"
+    }
+  ],
+  "validation": {
+    "analyzerTestsPassed": 6,
+    "targetedTestsPassed": 46,
+    "targetedTestFiles": 5,
+    "lint": "passed",
+    "lintCommand": "npm run lint -- --ignore-pattern perf-results/**"
+  },
+  "restoration": {
+    "original": {
+      "IsReplayPlaying": 1,
+      "ReplayFrameNum": 77786,
+      "ReplayFrameNumEnd": 700317,
+      "ReplayPlaySpeed": 1,
+      "ReplaySessionTime": 1012.8632893880208,
+      "SessionNum": 1,
+      "CamCarIdx": 37,
+      "CamGroupNumber": 9,
+      "CamCameraNumber": 1,
+      "FrameRate": 84.40560150146484
+    },
+    "restored": {
+      "IsReplayPlaying": 1,
+      "ReplayFrameNum": 77816,
+      "ReplayFrameNumEnd": 700287,
+      "ReplayPlaySpeed": 1,
+      "ReplaySessionTime": 1013.3633138020832,
+      "SessionNum": 1,
+      "CamCarIdx": 37,
+      "CamGroupNumber": 9,
+      "CamCameraNumber": 1,
+      "FrameRate": 81.6606674194336
+    },
+    "userConfigUnchanged": true,
+    "userConfigSha256": "e23e6ffad33d1ab53713b81dc1cff15bfe3ed86a0e5cd7e9c6954b5b090885ff",
+    "presentMonDurationSettingsRestored": true,
+    "presentMonCaptureTarget": "iRacingSim64DX11.exe remains selected",
+    "replayVerified": true
+  },
+  "sourceGameFrameFollowUp": {
+    "date": "2026-11-14",
+    "method": "PresentMon 2.6.0 GUI/service primary iRacing swap chain; exact old/current/current/old source/runtime order; development performance-instrumented apps; no WPR recorder running.",
+    "playbackSeconds": 122,
+    "analysisPlaybackSeconds": [30, 120],
+    "alignment": "CSV window shifted by recorded capture-hotkey-after to replay-play-command delay. GUI capture latency remains unmeasured; not exact frame alignment.",
+    "definitions": "MsBetweenPresents measures game submission cadence. MsBetweenDisplayChange measures visible display updates; composition is near 60 Hz here and is separate from rendered-game FPS.",
+    "averages": {
+      "baseline": {
+        "repeats": 2,
+        "measuredSeconds": 180,
+        "appCpuPercent": 6.178201490173599,
+        "gpuProcessCpuPercent": 3.1501658704767594,
+        "presentedFps": 76.52831101212334,
+        "presentOnePercentLowFps": 56.73174275730879,
+        "presentP99Ms": 16.24405,
+        "presentOver50": 1,
+        "presentOver100": 0,
+        "displayOver25": 9,
+        "displayOver50": 0,
+        "displayOver100": 0,
+        "gpuUtilizationPercent": 98.80097822549172,
+        "gpuTemperatureC": 82.9522643452467,
+        "gpuFrequencyMHz": 1765.3683329169826
+      },
+      "current": {
+        "repeats": 2,
+        "measuredSeconds": 180,
+        "appCpuPercent": 5.9015936207506705,
+        "gpuProcessCpuPercent": 3.3562961743901782,
+        "presentedFps": 77.07243907511352,
+        "presentOnePercentLowFps": 58.51344884658303,
+        "presentP99Ms": 15.805499999999999,
+        "presentOver50": 1,
+        "presentOver100": 0,
+        "displayOver25": 5,
+        "displayOver50": 1,
+        "displayOver100": 0,
+        "gpuUtilizationPercent": 98.86004278217274,
+        "gpuTemperatureC": 82.96934594240423,
+        "gpuFrequencyMHz": 1766.481470001845
+      }
+    },
+    "delta": {
+      "appCpuPercentagePoints": -0.2766078694229286,
+      "appCpuRelativePercent": -4.47715843944022,
+      "presentedFps": 0.5441280629901826,
+      "presentedFpsPercent": 0.7110153821426657
+    },
+    "runs": [
+      {
+        "runId": "game-source-old-1",
+        "source": "baseline",
+        "sourceRevision": "a5200766d2d47b5088e6c73436baa4e62cc79faf",
+        "electron": "45.2.0",
+        "seedConfigSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+        "mainBundleSha256": "d5f757c02d7d4b73bdf08899edec0324f9b0167cbc7c64991c0bdf1d012224a2",
+        "runtimeExeSha256": "010ea51bfb528c8143513439aa93fb40754403daa2023f9decd4517da71706ab",
+        "sourceLogSha256": "76248d4909a635e2caebca82feedfbf146c9d8c8c741f428d0f3efd4070e63e3",
+        "captureName": "pmcap-iRacingSim64DX11.exe-261114-231449.csv",
+        "captureBytes": 4128354,
+        "captureSha256": "82bb483172764b164600b1310588ae555f522b7bec38f27e77e65c5dcad6b9c3",
+        "playCommand": "2026-11-14T10:14:50.055Z",
+        "hotkeyToPlaySeconds": 0.108,
+        "game": {
+          "schemaVersion": 1,
+          "analysisWindowSeconds": [30.108, 120.108],
+          "durationSeconds": 90,
+          "processName": "iRacingSim64DX11.exe",
+          "primarySwapChain": "19272:0x2BFFE570",
+          "swapChains": [
+            {
+              "key": "19272:0x2BFFE570",
+              "frameCount": 10191
+            }
+          ],
+          "frameRows": 6901,
+          "displayTimingUnavailableRows": 1508,
+          "present": {
+            "sampleCount": 6901,
+            "meanFps": 76.64417560862765,
+            "onePercentLowFps": 56.377322141629485,
+            "pointOnePercentLowFps": 41.72485794176045,
+            "meanMs": 13.047305839733403,
+            "p99Ms": 16.2303,
+            "p999Ms": 21.597,
+            "maximumMs": 26.1875,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 1,
+                "percent": 0.014490653528474135,
+                "perMinute": 0.6666666666666667
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 50,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "display": {
+            "sampleCount": 5393,
+            "meanFps": 59.89396112356855,
+            "onePercentLowFps": 54.63413844493031,
+            "pointOnePercentLowFps": 32.670823484441335,
+            "meanMs": 16.696174058965276,
+            "p99Ms": 16.7554,
+            "p999Ms": 16.8084,
+            "maximumMs": 33.3888,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 5,
+                "percent": 0.09271277582050806,
+                "perMinute": 3.333333333333333
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 5,
+                "percent": 0.09271277582050806,
+                "perMinute": 3.333333333333333
+              },
+              {
+                "thresholdMs": 50,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "presentModes": ["Composed: Flip"],
+          "frameTypes": ["Application"],
+          "captureSpanSeconds": [0, 133.5],
+          "evidence": {
+            "fullAnalysisWindowAvailable": true,
+            "longEnough": false
+          }
+        },
+        "app": {
+          "averageCpuPercent": 6.2765766360397475,
+          "averageRendererCpuPercent": 2.603515678356028,
+          "averageMainCpuPercent": 0.4610605834032969,
+          "averageGpuCpuPercent": 3.201328578900789,
+          "peakMemoryMB": 4914.1484375,
+          "averageRendererMemoryMB": 3802.5412326388887,
+          "averageMainMemoryMB": 351.1985677083333,
+          "averageGpuMemoryMB": 349.93858506944446,
+          "peakPrivateMemoryMB": 3437.43359375,
+          "averageRendererPrivateMemoryMB": 2881.362847222222,
+          "averageMainPrivateMemoryMB": 121.99327256944444,
+          "averageGpuPrivateMemoryMB": 250.41710069444446,
+          "peakRendererMemoryMB": 3947.90625,
+          "peakMainMemoryMB": 353.6015625,
+          "peakGpuMemoryMB": 367.23828125,
+          "rendererProcessCount": 4,
+          "memorySlopeMBPerMinute": 100.7985192805788,
+          "privateMemorySlopeMBPerMinute": 102.3025636715623
+        },
+        "overlay": {
+          "sampleCount": 54,
+          "frameTimeP99MeanMs": 74.15447396386912,
+          "worstFrameMs": 216.79999999998836,
+          "telemetryCallbackRateHz": 0,
+          "channelCallbackRateHz": 65.77821693293595,
+          "totalWakeupRateHz": 65.77821693293595,
+          "telemetryCallbackP99MeanMs": 0,
+          "telemetryCallbackP99WorstMs": 0,
+          "trackMapAnimationFrameRateHz": 10.692061949517825,
+          "trackMapAnimationFrameP99MeanMs": 0.20000000190664668,
+          "trackMapAnimationFrameP99WorstMs": 0.20000000298023224,
+          "inputTraceFrameRateHz": 0,
+          "inputTraceFrameP99MeanMs": 0,
+          "inputTraceFrameP99WorstMs": 0,
+          "radarFrameRateHz": 0,
+          "radarFrameP99MeanMs": 0,
+          "radarFrameP99WorstMs": 0,
+          "lapTraceFrameRateHz": 0,
+          "lapTraceFrameP99MeanMs": 0,
+          "lapTraceFrameP99WorstMs": 0,
+          "lapTraceBrakeCueRateHz": 0,
+          "lapTraceBrakeCueP99MeanMs": 0,
+          "lapTraceBrakeCueP99WorstMs": 0,
+          "framesOver25MsPercent": 46.59936238044634,
+          "framesOver50MsPercent": 10.839532412327312
+        },
+        "workloadEvidence": {
+          "runOriginAvailable": true,
+          "privateMemoryAvailable": true,
+          "privateMemorySampleCount": 18,
+          "privateMemorySpanSeconds": 85.081,
+          "privateMemoryMaxGapSeconds": 5.014,
+          "privateMemorySamplingAdequate": true,
+          "scenarioMetadataConsistent": true,
+          "inputCoverageAvailable": true,
+          "inputCoverageComplete": false,
+          "durationSufficient": false,
+          "conclusive": false,
+          "inconclusiveReasons": [
+            "analysis duration is shorter than five minutes",
+            "one or more visibility phases violated workload expectations"
+          ]
+        },
+        "foregroundStart": {
+          "captureHotkeyBefore": "2026-11-14T10:14:49.894Z",
+          "captureHotkeyAfter": "2026-11-14T10:14:49.947Z",
+          "foreground": "0 window iRacing.com Simulator Secondary Actions: Raise",
+          "captureFilesBefore": [
+            "pmcap-iRacingSim64DX11.exe-261114-175247-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175247.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624.csv"
+          ]
+        },
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T10:15:41.310Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:16:05.374Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:16:29.446Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:16:53.497Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ],
+        "replay": {
+          "verified": true,
+          "samples": 18,
+          "firstFrame": 131071,
+          "lastFrame": 136176
+        },
+        "gpuMetrics": {
+          "GPUUtilization": {
+            "samples": 6901,
+            "mean": 98.77916244022606,
+            "max": 99
+          },
+          "GPUBusy": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUFrequency": {
+            "samples": 6901,
+            "mean": 1765.3398058252428,
+            "max": 1800
+          },
+          "GPUTemperature": {
+            "samples": 6901,
+            "mean": 82.94305173163309,
+            "max": 83
+          },
+          "GPUPower": {
+            "samples": 6901,
+            "mean": 189.30798319084164,
+            "max": 205.897
+          },
+          "GPUPowerLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUTemperatureLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          }
+        },
+        "auditedFrameRateCorrection": {
+          "original": {
+            "trackMapAnimationFrameRateHz": 10.692061949517825
+          },
+          "corrected": {
+            "trackMapAnimationFrameRateHz": 32.07403580693364
+          },
+          "method": "Exclude zero-only renderer counters, retain idle intervals in observed painting renderers."
+        }
+      },
+      {
+        "runId": "game-source-current-1",
+        "source": "current",
+        "sourceRevision": "711552a1598a0d3258eb61a5d94e34a37f85547d",
+        "electron": "45.3.2",
+        "seedConfigSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+        "mainBundleSha256": "a95e8f7cf74c9c0f5a077d236cb957d58d2beb62dfb5b38333676f0df7fd72c9",
+        "runtimeExeSha256": "7ae7a76540172dba12a731974dac752be374ca1c35b3d0833ce7db60a07c8a3d",
+        "sourceLogSha256": "1b839393182e6bd8339667e9967dd2e77fb7ec07ccb102017942b5ec0d28fec5",
+        "captureName": "pmcap-iRacingSim64DX11.exe-261114-231843.csv",
+        "captureBytes": 4445056,
+        "captureSha256": "3be1de8ac219c2cce4c98e96cf3bc49408c45d9dcae2d9e04cd966da26d93733",
+        "playCommand": "2026-11-14T10:18:43.743Z",
+        "hotkeyToPlaySeconds": 0.281,
+        "game": {
+          "schemaVersion": 1,
+          "analysisWindowSeconds": [30.281, 120.281],
+          "durationSeconds": 90,
+          "processName": "iRacingSim64DX11.exe",
+          "primarySwapChain": "19272:0x2BFFE570",
+          "swapChains": [
+            {
+              "key": "19272:0x2BFFE570",
+              "frameCount": 10978
+            }
+          ],
+          "frameRows": 6941,
+          "displayTimingUnavailableRows": 1549,
+          "present": {
+            "sampleCount": 6941,
+            "meanFps": 77.14148916626904,
+            "onePercentLowFps": 60.06228630696563,
+            "pointOnePercentLowFps": 49.81936920138128,
+            "meanMs": 12.963192839648485,
+            "p99Ms": 15.7678,
+            "p999Ms": 17.9731,
+            "maximumMs": 22.492,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 50,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "display": {
+            "sampleCount": 5392,
+            "meanFps": 59.927293278115016,
+            "onePercentLowFps": 57.541543929132686,
+            "pointOnePercentLowFps": 44.79356883801003,
+            "meanMs": 16.686887481454,
+            "p99Ms": 16.7498,
+            "p999Ms": 16.7811,
+            "maximumMs": 33.3918,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 2,
+                "percent": 0.0370919881305638,
+                "perMinute": 1.3333333333333335
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 2,
+                "percent": 0.0370919881305638,
+                "perMinute": 1.3333333333333335
+              },
+              {
+                "thresholdMs": 50,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "presentModes": ["Composed: Flip"],
+          "frameTypes": ["Application"],
+          "captureSpanSeconds": [0, 142.7],
+          "evidence": {
+            "fullAnalysisWindowAvailable": true,
+            "longEnough": false
+          }
+        },
+        "app": {
+          "averageCpuPercent": 5.7286851578113955,
+          "averageRendererCpuPercent": 2.1136844453255974,
+          "averageMainCpuPercent": 0.4078931880537451,
+          "averageGpuCpuPercent": 3.206581764617973,
+          "peakMemoryMB": 2681.5390625,
+          "averageRendererMemoryMB": 1714.1521381578948,
+          "averageMainMemoryMB": 341.64473684210526,
+          "averageGpuMemoryMB": 341.0100740131579,
+          "peakPrivateMemoryMB": 1221.8125,
+          "averageRendererPrivateMemoryMB": 784.2767269736842,
+          "averageMainPrivateMemoryMB": 119.09333881578948,
+          "averageGpuPrivateMemoryMB": 244.40439967105263,
+          "peakRendererMemoryMB": 1728.1640625,
+          "peakMainMemoryMB": 367.16796875,
+          "peakGpuMemoryMB": 350.12109375,
+          "rendererProcessCount": 4,
+          "memorySlopeMBPerMinute": 34.959489667887055,
+          "privateMemorySlopeMBPerMinute": 74.2345367755801
+        },
+        "overlay": {
+          "sampleCount": 56,
+          "frameTimeP99MeanMs": 82.99319774011487,
+          "worstFrameMs": 250.3000000000029,
+          "telemetryCallbackRateHz": 0,
+          "channelCallbackRateHz": 67.97643502632847,
+          "totalWakeupRateHz": 67.97643502632847,
+          "telemetryCallbackP99MeanMs": 0,
+          "telemetryCallbackP99WorstMs": 0,
+          "trackMapAnimationFrameRateHz": 31.63431751209933,
+          "trackMapAnimationFrameP99MeanMs": 0.18394801828749857,
+          "trackMapAnimationFrameP99WorstMs": 0.20000000298023224,
+          "inputTraceFrameRateHz": 15.483134855895194,
+          "inputTraceFrameP99MeanMs": 0.1986403836736381,
+          "inputTraceFrameP99WorstMs": 0.20000000298023224,
+          "radarFrameRateHz": 25.89293796431147,
+          "radarFrameP99MeanMs": 0.46914634261795174,
+          "radarFrameP99WorstMs": 0.7000000029802322,
+          "lapTraceFrameRateHz": 0,
+          "lapTraceFrameP99MeanMs": 0,
+          "lapTraceFrameP99WorstMs": 0,
+          "lapTraceBrakeCueRateHz": 0,
+          "lapTraceBrakeCueP99MeanMs": 0,
+          "lapTraceBrakeCueP99WorstMs": 0,
+          "framesOver25MsPercent": 52.19209039548023,
+          "framesOver50MsPercent": 15.785310734463277
+        },
+        "workloadEvidence": {
+          "runOriginAvailable": true,
+          "privateMemoryAvailable": true,
+          "privateMemorySampleCount": 18,
+          "privateMemorySpanSeconds": 85.087,
+          "privateMemoryMaxGapSeconds": 5.015,
+          "privateMemorySamplingAdequate": true,
+          "scenarioMetadataConsistent": true,
+          "inputCoverageAvailable": true,
+          "inputCoverageComplete": false,
+          "durationSufficient": false,
+          "conclusive": false,
+          "inconclusiveReasons": [
+            "analysis duration is shorter than five minutes",
+            "one or more visibility phases violated workload expectations"
+          ]
+        },
+        "foregroundStart": {
+          "captureHotkeyBefore": "2026-11-14T10:18:43.425Z",
+          "captureHotkeyAfter": "2026-11-14T10:18:43.462Z",
+          "foreground": "0 window iRacing.com Simulator Secondary Actions: Raise",
+          "captureFilesBefore": [
+            "pmcap-iRacingSim64DX11.exe-261114-175247-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175247.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231449-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231449.csv"
+          ]
+        },
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T10:19:20.824Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:19:44.895Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:20:08.946Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:20:32.998Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:20:57.044Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ],
+        "replay": {
+          "verified": true,
+          "samples": 18,
+          "firstFrame": 131072,
+          "lastFrame": 136177
+        },
+        "gpuMetrics": {
+          "GPUUtilization": {
+            "samples": 6941,
+            "mean": 98.92623541276473,
+            "max": 99
+          },
+          "GPUBusy": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUFrequency": {
+            "samples": 6941,
+            "mean": 1766.4796138884888,
+            "max": 1785
+          },
+          "GPUTemperature": {
+            "samples": 6941,
+            "mean": 82.97723670940786,
+            "max": 83
+          },
+          "GPUPower": {
+            "samples": 6941,
+            "mean": 191.21937934015352,
+            "max": 200.192
+          },
+          "GPUPowerLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUTemperatureLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          }
+        }
+      },
+      {
+        "runId": "game-source-current-2",
+        "source": "current",
+        "sourceRevision": "711552a1598a0d3258eb61a5d94e34a37f85547d",
+        "electron": "45.3.2",
+        "seedConfigSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+        "mainBundleSha256": "a95e8f7cf74c9c0f5a077d236cb957d58d2beb62dfb5b38333676f0df7fd72c9",
+        "runtimeExeSha256": "7ae7a76540172dba12a731974dac752be374ca1c35b3d0833ce7db60a07c8a3d",
+        "sourceLogSha256": "5f45de2ca89f61b062a4261a2fde029d5564d6bdbb4f4c8907cb1f1d5ef9306c",
+        "captureName": "pmcap-iRacingSim64DX11.exe-261114-232223.csv",
+        "captureBytes": 4251077,
+        "captureSha256": "7ba0e0bb416e80877199476c9183ec3672445a89ffc6340c2a715d5de95774e7",
+        "playCommand": "2026-11-14T10:22:24.119Z",
+        "hotkeyToPlaySeconds": 0.294,
+        "game": {
+          "schemaVersion": 1,
+          "analysisWindowSeconds": [30.294, 120.294],
+          "durationSeconds": 90,
+          "processName": "iRacingSim64DX11.exe",
+          "primarySwapChain": "19272:0x2BFFE570",
+          "swapChains": [
+            {
+              "key": "19272:0x2BFFE570",
+              "frameCount": 10497
+            }
+          ],
+          "frameRows": 6927,
+          "displayTimingUnavailableRows": 1538,
+          "present": {
+            "sampleCount": 6927,
+            "meanFps": 77.00338898395799,
+            "onePercentLowFps": 56.96461138620044,
+            "pointOnePercentLowFps": 38.9007320006313,
+            "meanMs": 12.986441417641094,
+            "p99Ms": 15.8432,
+            "p999Ms": 20.8719,
+            "maximumMs": 51.8539,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 1,
+                "percent": 0.014436263894903998,
+                "perMinute": 0.6666666666666667
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 1,
+                "percent": 0.014436263894903998,
+                "perMinute": 0.6666666666666667
+              },
+              {
+                "thresholdMs": 50,
+                "count": 1,
+                "percent": 0.014436263894903998,
+                "perMinute": 0.6666666666666667
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "display": {
+            "sampleCount": 5389,
+            "meanFps": 59.90511927294883,
+            "onePercentLowFps": 55.54981197931695,
+            "pointOnePercentLowFps": 35.88059655079825,
+            "meanMs": 16.69306416774913,
+            "p99Ms": 16.7555,
+            "p999Ms": 16.8072,
+            "maximumMs": 50.0379,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 3,
+                "percent": 0.0556689552792726,
+                "perMinute": 2
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 3,
+                "percent": 0.0556689552792726,
+                "perMinute": 2
+              },
+              {
+                "thresholdMs": 50,
+                "count": 1,
+                "percent": 0.018556318426424197,
+                "perMinute": 0.6666666666666667
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "presentModes": ["Composed: Flip"],
+          "frameTypes": ["Application"],
+          "captureSpanSeconds": [0, 136.7],
+          "evidence": {
+            "fullAnalysisWindowAvailable": true,
+            "longEnough": false
+          }
+        },
+        "app": {
+          "averageCpuPercent": 6.074502083689946,
+          "averageRendererCpuPercent": 2.171006428753954,
+          "averageMainCpuPercent": 0.3971232935000611,
+          "averageGpuCpuPercent": 3.5060105841623836,
+          "peakMemoryMB": 2693.24609375,
+          "averageRendererMemoryMB": 1698.8807565789473,
+          "averageMainMemoryMB": 360.7724095394737,
+          "averageGpuMemoryMB": 341.9029605263158,
+          "peakPrivateMemoryMB": 1220.1875,
+          "averageRendererPrivateMemoryMB": 768.6416529605264,
+          "averageMainPrivateMemoryMB": 138.37397203947367,
+          "averageGpuPrivateMemoryMB": 240.3801398026316,
+          "peakRendererMemoryMB": 1720.74609375,
+          "peakMainMemoryMB": 362.546875,
+          "peakGpuMemoryMB": 353.12890625,
+          "rendererProcessCount": 4,
+          "memorySlopeMBPerMinute": 50.96522113782761,
+          "privateMemorySlopeMBPerMinute": 75.14713797630071
+        },
+        "overlay": {
+          "sampleCount": 54,
+          "frameTimeP99MeanMs": 75.64668967681538,
+          "worstFrameMs": 166.69999999998254,
+          "telemetryCallbackRateHz": 0,
+          "channelCallbackRateHz": 66.84934672987056,
+          "totalWakeupRateHz": 66.84934672987056,
+          "telemetryCallbackP99MeanMs": 0,
+          "telemetryCallbackP99WorstMs": 0,
+          "trackMapAnimationFrameRateHz": 31.53126628365265,
+          "trackMapAnimationFrameP99MeanMs": 0.19630021516855878,
+          "trackMapAnimationFrameP99WorstMs": 0.30000001192092896,
+          "inputTraceFrameRateHz": 15.046567682329005,
+          "inputTraceFrameP99MeanMs": 0.21484490608359016,
+          "inputTraceFrameP99WorstMs": 0.29999999701976776,
+          "radarFrameRateHz": 28.959642082828204,
+          "radarFrameP99MeanMs": 0.4554489672824409,
+          "radarFrameP99WorstMs": 0.7000000029802322,
+          "lapTraceFrameRateHz": 0,
+          "lapTraceFrameP99MeanMs": 0,
+          "lapTraceFrameP99WorstMs": 0,
+          "lapTraceBrakeCueRateHz": 0,
+          "lapTraceBrakeCueP99MeanMs": 0,
+          "lapTraceBrakeCueP99WorstMs": 0,
+          "framesOver25MsPercent": 44.535090471707974,
+          "framesOver50MsPercent": 10.448697834954503
+        },
+        "workloadEvidence": {
+          "runOriginAvailable": true,
+          "privateMemoryAvailable": true,
+          "privateMemorySampleCount": 18,
+          "privateMemorySpanSeconds": 85.118,
+          "privateMemoryMaxGapSeconds": 5.013,
+          "privateMemorySamplingAdequate": true,
+          "scenarioMetadataConsistent": true,
+          "inputCoverageAvailable": true,
+          "inputCoverageComplete": false,
+          "durationSufficient": false,
+          "conclusive": false,
+          "inconclusiveReasons": [
+            "analysis duration is shorter than five minutes",
+            "one or more visibility phases violated workload expectations"
+          ]
+        },
+        "foregroundStart": {
+          "captureHotkeyBefore": "2026-11-14T10:22:23.786Z",
+          "captureHotkeyAfter": "2026-11-14T10:22:23.825Z",
+          "foreground": "0 window iRacing.com Simulator Secondary Actions: Raise",
+          "captureFilesBefore": [
+            "pmcap-iRacingSim64DX11.exe-261114-175247-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175247.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231449-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231449.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231843-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231843.csv"
+          ]
+        },
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T10:22:53.766Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:23:17.815Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:23:41.862Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:24:05.914Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:24:29.967Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ],
+        "replay": {
+          "verified": true,
+          "samples": 18,
+          "firstFrame": 131071,
+          "lastFrame": 136178
+        },
+        "gpuMetrics": {
+          "GPUUtilization": {
+            "samples": 6927,
+            "mean": 98.79385015158077,
+            "max": 99
+          },
+          "GPUBusy": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUFrequency": {
+            "samples": 6927,
+            "mean": 1766.4833261152014,
+            "max": 1830
+          },
+          "GPUTemperature": {
+            "samples": 6927,
+            "mean": 82.9614551754006,
+            "max": 83
+          },
+          "GPUPower": {
+            "samples": 6927,
+            "mean": 190.77416471777158,
+            "max": 202.143
+          },
+          "GPUPowerLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUTemperatureLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          }
+        }
+      },
+      {
+        "runId": "game-source-old-2",
+        "source": "baseline",
+        "sourceRevision": "a5200766d2d47b5088e6c73436baa4e62cc79faf",
+        "electron": "45.2.0",
+        "seedConfigSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+        "mainBundleSha256": "d5f757c02d7d4b73bdf08899edec0324f9b0167cbc7c64991c0bdf1d012224a2",
+        "runtimeExeSha256": "010ea51bfb528c8143513439aa93fb40754403daa2023f9decd4517da71706ab",
+        "sourceLogSha256": "f1bdde5441ed9b56bae499a9369832ac53198fe37f272a4fef560a349e6c2108",
+        "captureName": "pmcap-iRacingSim64DX11.exe-261114-232546.csv",
+        "captureBytes": 4417809,
+        "captureSha256": "f077410b7b89083c557479ddc3e8dfc6cd03c023b9138065e5d865d7925e8782",
+        "playCommand": "2026-11-14T10:25:47.138Z",
+        "hotkeyToPlaySeconds": 0.226,
+        "game": {
+          "schemaVersion": 1,
+          "analysisWindowSeconds": [30.226, 120.226],
+          "durationSeconds": 90,
+          "processName": "iRacingSim64DX11.exe",
+          "primarySwapChain": "19272:0x2BFFE570",
+          "swapChains": [
+            {
+              "key": "19272:0x2BFFE570",
+              "frameCount": 10906
+            }
+          ],
+          "frameRows": 6879,
+          "displayTimingUnavailableRows": 1486,
+          "present": {
+            "sampleCount": 6879,
+            "meanFps": 76.41244641561902,
+            "onePercentLowFps": 57.08616337298809,
+            "pointOnePercentLowFps": 40.2992739222247,
+            "meanMs": 13.08687323738919,
+            "p99Ms": 16.2578,
+            "p999Ms": 18.2944,
+            "maximumMs": 51.4006,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 1,
+                "percent": 0.014536996656490768,
+                "perMinute": 0.6666666666666667
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 1,
+                "percent": 0.014536996656490768,
+                "perMinute": 0.6666666666666667
+              },
+              {
+                "thresholdMs": 50,
+                "count": 1,
+                "percent": 0.014536996656490768,
+                "perMinute": 0.6666666666666667
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "display": {
+            "sampleCount": 5393,
+            "meanFps": 59.905065078777696,
+            "onePercentLowFps": 55.53487852619482,
+            "pointOnePercentLowFps": 35.7880346285023,
+            "meanMs": 16.69307926942334,
+            "p99Ms": 16.7549,
+            "p999Ms": 16.8345,
+            "maximumMs": 33.4228,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 4,
+                "percent": 0.07417022065640645,
+                "perMinute": 2.666666666666667
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 4,
+                "percent": 0.07417022065640645,
+                "perMinute": 2.666666666666667
+              },
+              {
+                "thresholdMs": 50,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "presentModes": ["Composed: Flip"],
+          "frameTypes": ["Application"],
+          "captureSpanSeconds": [0, 142.7],
+          "evidence": {
+            "fullAnalysisWindowAvailable": true,
+            "longEnough": false
+          }
+        },
+        "app": {
+          "averageCpuPercent": 6.079826344307452,
+          "averageRendererCpuPercent": 2.512493266465998,
+          "averageMainCpuPercent": 0.45807690212351215,
+          "averageGpuCpuPercent": 3.09900316205273,
+          "peakMemoryMB": 4837.8125,
+          "averageRendererMemoryMB": 3717.6163194444443,
+          "averageMainMemoryMB": 338.85394965277777,
+          "averageGpuMemoryMB": 350.8098958333333,
+          "peakPrivateMemoryMB": 3331.26953125,
+          "averageRendererPrivateMemoryMB": 2796.1334635416665,
+          "averageMainPrivateMemoryMB": 115.91753472222223,
+          "averageGpuPrivateMemoryMB": 252.00282118055554,
+          "peakRendererMemoryMB": 3867.79296875,
+          "peakMainMemoryMB": 342.828125,
+          "peakGpuMemoryMB": 366.53515625,
+          "rendererProcessCount": 4,
+          "memorySlopeMBPerMinute": 189.13049742848244,
+          "privateMemorySlopeMBPerMinute": 185.15084415136218
+        },
+        "overlay": {
+          "sampleCount": 54,
+          "frameTimeP99MeanMs": 80.10515430427816,
+          "worstFrameMs": 150.10000000000582,
+          "telemetryCallbackRateHz": 0,
+          "channelCallbackRateHz": 65.76076932136671,
+          "totalWakeupRateHz": 65.76076932136671,
+          "telemetryCallbackP99MeanMs": 0,
+          "telemetryCallbackP99WorstMs": 0,
+          "trackMapAnimationFrameRateHz": 10.148381185048986,
+          "trackMapAnimationFrameP99MeanMs": 0.19620438219204436,
+          "trackMapAnimationFrameP99WorstMs": 0.20000000298023224,
+          "inputTraceFrameRateHz": 0,
+          "inputTraceFrameP99MeanMs": 0,
+          "inputTraceFrameP99WorstMs": 0,
+          "radarFrameRateHz": 0,
+          "radarFrameP99MeanMs": 0,
+          "radarFrameP99WorstMs": 0,
+          "lapTraceFrameRateHz": 0,
+          "lapTraceFrameP99MeanMs": 0,
+          "lapTraceFrameP99WorstMs": 0,
+          "lapTraceBrakeCueRateHz": 0,
+          "lapTraceBrakeCueP99MeanMs": 0,
+          "lapTraceBrakeCueP99WorstMs": 0,
+          "framesOver25MsPercent": 45.38170005414185,
+          "framesOver50MsPercent": 12.636708175419601
+        },
+        "workloadEvidence": {
+          "runOriginAvailable": true,
+          "privateMemoryAvailable": true,
+          "privateMemorySampleCount": 18,
+          "privateMemorySpanSeconds": 85.085,
+          "privateMemoryMaxGapSeconds": 5.013,
+          "privateMemorySamplingAdequate": true,
+          "scenarioMetadataConsistent": true,
+          "inputCoverageAvailable": true,
+          "inputCoverageComplete": false,
+          "durationSufficient": false,
+          "conclusive": false,
+          "inconclusiveReasons": [
+            "analysis duration is shorter than five minutes",
+            "one or more visibility phases violated workload expectations"
+          ]
+        },
+        "foregroundStart": {
+          "captureHotkeyBefore": "2026-11-14T10:25:46.852Z",
+          "captureHotkeyAfter": "2026-11-14T10:25:46.912Z",
+          "foreground": "0 window iRacing.com Simulator Secondary Actions: Raise",
+          "captureFilesBefore": [
+            "pmcap-iRacingSim64DX11.exe-261114-175247-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175247.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231449-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231449.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231843-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231843.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232223-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232223.csv"
+          ]
+        },
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T10:26:21.184Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:26:45.253Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:27:09.317Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:27:33.946Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:27:58.000Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ],
+        "replay": {
+          "verified": true,
+          "samples": 18,
+          "firstFrame": 131070,
+          "lastFrame": 136175
+        },
+        "gpuMetrics": {
+          "GPUUtilization": {
+            "samples": 6879,
+            "mean": 98.82279401075738,
+            "max": 99
+          },
+          "GPUBusy": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUFrequency": {
+            "samples": 6879,
+            "mean": 1765.3968600087221,
+            "max": 1815
+          },
+          "GPUTemperature": {
+            "samples": 6879,
+            "mean": 82.9614769588603,
+            "max": 84
+          },
+          "GPUPower": {
+            "samples": 6879,
+            "mean": 188.96986684110942,
+            "max": 198.798
+          },
+          "GPUPowerLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUTemperatureLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          }
+        },
+        "auditedFrameRateCorrection": {
+          "original": {
+            "trackMapAnimationFrameRateHz": 10.148381185048986
+          },
+          "corrected": {
+            "trackMapAnimationFrameRateHz": 30.4455607816721
+          },
+          "method": "Exclude zero-only renderer counters, retain idle intervals in observed painting renderers."
+        }
+      }
+    ],
+    "controllerSha256": "36662d0a9b1e5d218360adaa2e881e27844ba7dd773993f3a87149ab56339fdb",
+    "analyzerSha256": "e72a49600dae9a1023d377dbf278a82c48f21ceb99cc2a0f5483234f10926aeb",
+    "followUpAnalyzerSha256": "3594dcb1263a2c11d34cf3e24c965654b353511f8e5a5439d6f1fd8455108f0a",
+    "restoration": {
+      "original": {
+        "snapshot": {
+          "IsReplayPlaying": 1,
+          "ReplayFrameNum": 472234,
+          "ReplayPlaySpeed": 1,
+          "ReplaySessionTime": 5775.963020833333,
+          "SessionNum": 2,
+          "CamCarIdx": 37,
+          "CamGroupNumber": 9,
+          "CamCameraNumber": 1,
+          "FrameRate": 84.3896484375
+        },
+        "userConfigSha256": "e23e6ffad33d1ab53713b81dc1cff15bfe3ed86a0e5cd7e9c6954b5b090885ff",
+        "graphicsSha256": "1f8c44edd8f43466787204e86f9b7bc8198391d03ba1da14bca5652b15d712ce"
+      },
+      "restored": {
+        "snapshot": {
+          "IsReplayPlaying": 1,
+          "ReplayFrameNum": 472264,
+          "ReplayPlaySpeed": 1,
+          "ReplaySessionTime": 5776.463411458331,
+          "SessionNum": 2,
+          "CamCarIdx": 37,
+          "CamGroupNumber": 9,
+          "CamCameraNumber": 1,
+          "FrameRate": 81.6347427368164
+        },
+        "userConfigSha256": "e23e6ffad33d1ab53713b81dc1cff15bfe3ed86a0e5cd7e9c6954b5b090885ff",
+        "graphicsSha256": "1f8c44edd8f43466787204e86f9b7bc8198391d03ba1da14bca5652b15d712ce"
+      },
+      "userConfigUnchanged": true,
+      "graphicsUnchanged": true
+    },
+    "limitations": [
+      "Two short repeats, 180 measured seconds per build, below the five-minute per-capture gate. No statistical equivalence test.",
+      "Each build has one present interval over 50 ms. Only current has one displayed interval over 50 ms. Low counts do not establish regression or equivalence.",
+      "GPU utilization is near 99% and temperature near 83 C on both builds; limitation flags are unavailable, so thermal throttling is not diagnosed.",
+      "Same enabled widget seed, with existing hidden/replay/event/device coverage limits. Old/current includes runtime/dependency differences together.",
+      "Rare six-second overlay stall and private-memory growth remain separate open findings. Packaged release and driving-session acceptance are not tested."
+    ],
+    "conclusion": "No increase in current aggregate app CPU or loss of average presented FPS is observed in these short repeats. The suspected aggregate CPU regression is not reproduced in this workload. Existing presentation cost and the rare overlay stall remain open separately; no widget fix is retained."
+  },
+  "reviewAudit": {
+    "date": "2026-11-15",
+    "status": "Same-session source controls did not reproduce an aggregate CPU/FPS regression. Historical cross-date drift, presentation cost, private growth, limited widget coverage and the rare overlay stall remain distinct findings. Neither canvas variant is retained.",
+    "foregroundScope": "iRacing was activated before capture and checked periodically through the UI. These point observations and the absence of other automated UI inputs support the intended foreground protocol; continuous OS foreground state was not recorded.",
+    "details": "2026-11-14-widget-regressions.json#reviewAudit"
+  },
+  "evidenceExport": {
+    "omitted": ["Per-second PresentMon timing timelines"],
+    "regeneration": "tools/perf/analyze-game.ts regenerates timelines from the fingerprinted local CSVs; distributions, slow-frame counts, capture windows and provenance are retained here."
+  }
+}

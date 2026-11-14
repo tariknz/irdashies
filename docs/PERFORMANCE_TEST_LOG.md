@@ -27,17 +27,25 @@ This document tracks every PerfMetrics-based performance test run against irDash
 
 ## Current baseline register
 
-Updated **1 November 2026**. A reference records an observed workload; it does
+Updated **15 November 2026**. A reference records an observed workload; it does
 not imply that performance gates passed. Keep the `<5 MiB/min` private-memory
 target unchanged when updating a reference.
 
-| Scope                                                            | Reference                                                                                                                                                                                                   | Status                                                                                                                                                                                                                                                                                                                                                    |
-| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pinned local-main full saved-profile development baseline        | `a520-full-r1` and `a520-full-r2`; unmodified runtime at `a5200766`, actual 59-car/two-class replay, 20 saved enabled instances, three display overlays plus Gantry, 420 seconds / 60-second warmup         | Fuel/Radar visibly verified. CPU 4.483–4.604%; simulator FPS 72.760–72.872; private growth 20.320–43.683 MiB/min, above target. Missing event inputs; formal gates inconclusive. Predates Input #857; remote `ddf3f69e` unmeasured. [Report](./performance/2026-11-01-main-full-profile.md), [evidence](./performance/2026-11-01-main-full-profile.json). |
-| Latest located packaged full-dashboard reference                 | `f189c2ee`, `post-phase4-1-f189c2ee-full-r2-long`; 40-car `.irdt`, 17 widget types, three display renderers, 60-second analysis warmup                                                                      | Archived August capture, newly attached below. Qualified reference: missing event-driven inputs; private-memory target unmet. [Evidence](./performance/2026-08-09-packaged-reference.json).                                                                                                                                                               |
-| Scoped six-instance development replay / shared-window reference | `live-visible-display-a1` and `live-visible-display-a2`; base `a5200766` plus uncommitted experiment, actual 59-car replay, six widget instances, two shared display renderers, replay visibility overrides | Scoped November reference; both repeat runs retained. Blind-spot input idle; private-memory target unmet. [Report](./performance/2026-11-01-window-mode.md), [evidence](./performance/2026-11-01-window-mode.json).                                                                                                                                       |
-| Individual-window experiment                                     | `live-visible-widget-b1` and `live-visible-widget-b2`, same source and workload as the November shared reference, six renderers                                                                             | Comparison candidate only; not the default or a replacement release baseline.                                                                                                                                                                                                                                                                             |
-| Current-main release drift since August                          | No matched packaged capture of current `main`                                                                                                                                                               | **Unmeasured.** November development/subset/actual-replay numbers cannot establish release drift against August packaged/full-dashboard/tape numbers.                                                                                                                                                                                                     |
+| Scope                                                            | Reference                                                                                                                                                                                                   | Status                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Short game-frame source repeats                                  | Exact a5200766 / 711552a1 / 711552a1 / a5200766; four 122-second foreground PresentMon captures, playback 30-120 measured                                                                                   | Mean app CPU 6.178% old / 5.902% current (-0.277 points); presented FPS 76.53 / 77.07 (0.71% higher current). One present interval >50 ms per build. No aggregate regression observed in short repeats; rare overlay stall remains open. [Report](./performance/2026-11-14-game-stutter.md), [evidence](./performance/2026-11-14-game-stutter.json).                                                                                                                            |
+| Radar canvas context controls                                    | Six stock/low-latency/software foreground passes with PresentMon; final pair measures playback 60-420 seconds                                                                                               | Long stock/software app CPU 5.745% / 5.167%, Radar 27.89 / 25.07 Hz, overlay p99 87.73 / 100.04 ms. CPU saving fails cadence/pacing acceptance; both variants reverted. Benchmark denominator corrected. [Report](./performance/2026-11-14-radar-gpu-trace.md), [evidence](./performance/2026-11-14-radar-gpu-trace.json).                                                                                                                                                      |
+| Radar GPU-process trace                                          | 711552a1; matched Radar-on/off foreground passes; Electron contentTracing and Perfetto; central 13-second windows                                                                                           | DXGI Present accounts for 94.5% of added CrGpuMain task CPU. Presentation/compositor bottleneck localized; exact driver/source cause open. Traced evidence is separate from CPU baselines. [Report](./performance/2026-11-14-radar-gpu-trace.md), [evidence](./performance/2026-11-14-radar-gpu-trace.json).                                                                                                                                                                    |
+| Radar marginal-cost and paint-loop follow-up                     | a5200766 Radar off; current 711552a1 uncapped-loop variant; two accepted 90-second foreground passes                                                                                                        | Old-source Radar-off saving 12.5% versus current 28.4%; larger current contribution remains unattributed. Removing the cap does not save CPU. Source and settings restored. [Report](./performance/2026-11-14-cpu-sniff.md#radar-marginal-cost-and-paint-loop-controls), [evidence](./performance/2026-11-14-cpu-sniff.json#/radarControlsFollowUp).                                                                                                                            |
+| Code-directed full-window source control                         | Exact a5200766 versus 711552a1; one 422-second pass per source, playback seconds 60-420                                                                                                                     | Aggregate CPU increase does not reproduce: 5.471% old versus 5.268% current. Input Trace SVG isolate does not remove high GPU-process CPU. Both show poor overlay pacing; current has a large renderer stall. Not an overall performance clearance. [Report](./performance/2026-11-14-cpu-sniff.md), [evidence](./performance/2026-11-14-cpu-sniff.json).                                                                                                                       |
+| Short foreground CPU source/runtime controls                     | a5200766 and 711552a1; five accepted 90-second passes, 30-90-second analysis                                                                                                                                | No aggregate source regression reproduced: old source 6.576% CPU versus current 6.528%. Radar off saves 28.4% of current CPU; older Electron does not remove the cost. Historical long-window drift remains open. [Report](./performance/2026-11-14-cpu-sniff.md), [evidence](./performance/2026-11-14-cpu-sniff.json).                                                                                                                                                         |
+| Direct iRacing game-frame on/off reference                       | `711552a1`; PresentMon 2.6.0 GUI/service, off/on/on/off; same 20-widget saved profile and actual replay; 420-second captures, analysis 60–410 seconds, iRacing foreground                                   | Mean presented FPS 75.168 off / 73.893 on (1.70% cost). Display intervals >25 ms: 13.543 / 19.971 per minute. Over 700 analyzed seconds per condition, >50 ms counts 3 / 3 and >100 ms counts 0 / 0. Qualified development reference; the November 1 reference has no game-frame stream. Later short source controls are listed above. [Report](./performance/2026-11-14-game-stutter.md), [evidence](./performance/2026-11-14-game-stutter.json).                              |
+| Latest-main saved profile and all-widget replay audit            | `711552a1`; `main-711552a1-full-r1/r2`, plus three individual-window coverage groups; actual 59-car/two-class replay, 420 seconds / 60-second warmup                                                        | All 37 widget IDs recorded, with idle/unsupported conditions listed. Full-profile CPU 6.143–6.300%; renderer p99 72.470–74.162 ms versus 16.8 ms reference; sampled game FPS 73.925–74.295. Private growth 18.398–32.936 MiB/min, above target. Direct game-frame follow-up is recorded above. [Report](./performance/2026-11-14-widget-regressions.md), [evidence](./performance/2026-11-14-widget-regressions.json), [findings](./performance/2026-11-14-widget-findings.md). |
+| Pinned local-main full saved-profile development baseline        | `a520-full-r1` and `a520-full-r2`; unmodified runtime at `a5200766`, actual 59-car/two-class replay, 20 saved enabled instances, three display overlays plus Gantry, 420 seconds / 60-second warmup         | Fuel/Radar visibly verified. CPU 4.483–4.604%; simulator FPS 72.760–72.872; private growth 20.320–43.683 MiB/min, above target. Missing event inputs; formal gates inconclusive. Predates Input #857; remote `ddf3f69e` unmeasured. [Report](./performance/2026-11-01-main-full-profile.md), [evidence](./performance/2026-11-01-main-full-profile.json).                                                                                                                       |
+| Latest located packaged full-dashboard reference                 | `f189c2ee`, `post-phase4-1-f189c2ee-full-r2-long`; 40-car `.irdt`, 17 widget types, three display renderers, 60-second analysis warmup                                                                      | Archived August capture, newly attached below. Qualified reference: missing event-driven inputs; private-memory target unmet. [Evidence](./performance/2026-08-09-packaged-reference.json).                                                                                                                                                                                                                                                                                     |
+| Scoped six-instance development replay / shared-window reference | `live-visible-display-a1` and `live-visible-display-a2`; base `a5200766` plus uncommitted experiment, actual 59-car replay, six widget instances, two shared display renderers, replay visibility overrides | Scoped November reference; both repeat runs retained. Blind-spot input idle; private-memory target unmet. [Report](./performance/2026-11-01-window-mode.md), [evidence](./performance/2026-11-01-window-mode.json).                                                                                                                                                                                                                                                             |
+| Individual-window experiment                                     | `live-visible-widget-b1` and `live-visible-widget-b2`, same source and workload as the November shared reference, six renderers                                                                             | Comparison candidate only; not the default or a replacement release baseline.                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Current-main release drift since August                          | No matched packaged capture of current `main`                                                                                                                                                               | **Unmeasured.** November development/subset/actual-replay numbers cannot establish release drift against August packaged/full-dashboard/tape numbers.                                                                                                                                                                                                                                                                                                                           |
 
 **Tracking drift:** Compare the same target, simulator/tape and start segment,
 widget instances/configuration, visible content, display geometry, capture
@@ -104,6 +112,146 @@ When new scenarios are added (e.g. to test specific findings), document them her
 ---
 
 ## 3. Test Entries
+
+### 15 November 2026 - Reviewed source, game-frame and canvas follow-ups
+
+The [reviewed queue](./performance/2026-11-14-widget-findings.md) separates
+current observations, unsupported attribution and completed controls.
+Same-session full-window CPU is 5.471% old / 5.268% current; short repeated
+source game-frame captures show 76.53 / 77.07 presented FPS. These do not
+reproduce an aggregate CPU/FPS regression or prove equivalence.
+
+The matched long canvas pair has 5.745 / 5.167% CPU but 27.89 / 25.07 Radar
+paints/s and 87.73 / 100.04 ms overlay p99 mean. Both candidates are reverted
+because acceptance requires cadence/pacing as well as CPU. Actual game FPS
+is 73.539 / 73.514. Details, raw fingerprints and limitations are in the
+[trace/canvas report](./performance/2026-11-14-radar-gpu-trace.md).
+
+Private growth remains above target: saved-profile +18.398 / +32.936 MiB/min
+(Pearson r 0.820 / 0.730). These short trends are not persistent-leak diagnoses.
+Zero-only renderer counters are corrected in benchmark rate denominators;
+a retired swap chain cannot displace the measured game stream.
+
+Offline validation: 6,950 tests passed, 5 skipped; 579 test files passed,
+5 skipped. TypeScript/ESLint passes with private artifacts excluded. No widget
+optimization is retained, and replay/settings were restored before handback.
+
+### 14 November 2026 — Foreground Radar GPU-process trace
+
+Two current-main passes keep the saved profile and replay matched except
+Radar enabled/disabled. Electron contentTracing records approximately 15
+seconds after 40 seconds of replay play; analysis uses complete slices in
+matched central 13-second trace windows. CrGpuMain depth-0 task CPU is 7.758
+seconds on / 3.017 off. DXGI Present scopes contribute 6.925 / 2.444 seconds,
+accounting for 94.5% of the added task CPU. Raster work is much smaller.
+
+This localizes added presentation-path thread CPU in one pair without identifying a driver
+fault or proving a historical source regression. Tracing overhead keeps this
+evidence separate from untraced CPU benchmarks. Native stacks are unresolved;
+one off-trace callstack/parser error does not affect the independent slice
+CPU accounting. Foreground/replay checks pass, source and user settings are
+unchanged, and replay state is restored. No production fix is retained.
+[Report](./performance/2026-11-14-radar-gpu-trace.md),
+[evidence](./performance/2026-11-14-radar-gpu-trace.json).
+
+### 14 November 2026 — Old-source Radar cost and paint-loop control
+
+Two additional accepted foreground 90-second passes analyze replay-play
+seconds 30–90. Old-source Radar-off CPU is 5.752% versus the earlier matched
+Radar-on 6.576% (12.5% saving). Current main's saving is 28.4%. An existing
+Radar cost is established; the larger observed current contribution remains
+unattributed and needs repeated pairs before a source-level regression claim.
+
+A temporary current-main variant restores uncapped per-rAF Radar painting
+while retaining instrumentation. CPU is 6.835% versus stock 6.528% mean, so
+removing the cap does not remove the cost. Two archived-build preflights are
+excluded because Radar never draws; the accepted established-build variant
+checks drawing before the foreground play gate. The temporary source is
+restored exactly, user configuration and graphics are unchanged, and replay
+state is restored. No fix is retained and no full source bisect is claimed.
+[Report](./performance/2026-11-14-cpu-sniff.md#radar-marginal-cost-and-paint-loop-controls),
+[evidence](./performance/2026-11-14-cpu-sniff.json#/radarControlsFollowUp).
+
+### 14 November 2026 — Short foreground CPU source/runtime and Radar controls
+
+Five accepted 90-second passes analyze replay-play seconds 30–90. Exact old
+source `a5200766` on Electron 45.2.0 uses 6.576% app CPU; current `711552a1`
+on 45.3.2 averages 6.528% across two repeats. The current-source CPU regression
+does not reproduce in this short window. The later full-window source pair above also does not reproduce the
+aggregate increase. The cross-date host/graphics drift remains unattributed.
+
+Current main on older Electron remains at 6.438%. Disabling only Radar lowers
+current app CPU to 4.671% (28.4% saving), with GPU-process CPU 2.161% versus
+3.932% full-profile mean. Re-enabling Radar returns app CPU to 6.489%.
+This scopes a useful optimization target without attributing a new Radar fault.
+
+All recorded foreground checks pass. The first old-source attempt is excluded
+because its legacy launcher ignored profile isolation; the corrected run
+verifies the private-profile argument and matched widget IDs. Regular user
+configuration is restored to its exact pre-test hash, replay state is restored,
+and simulator graphics are unchanged. Runtime application source is unchanged.
+[Report](./performance/2026-11-14-cpu-sniff.md),
+[evidence](./performance/2026-11-14-cpu-sniff.json),
+[findings](./performance/2026-11-14-widget-findings.md).
+
+### 14 November 2026 — Direct iRacing frame timing, foreground off/on comparison
+
+After the widget audit, the user installed PresentMon 2.6.0. Its GUI/service
+captured the simulator's main swap chain in off/on/on/off order. Each pass
+uses the same replay frame/camera and unchanged graphics configuration;
+iRacing is activated before each capture and checked periodically. Captures last 420 seconds and
+analysis uses seconds 60–410, excluding warmup and shutdown edges. The on
+condition is the same isolated 20-widget saved profile; off has no irDashies
+application process. PresentMon collection is active in both conditions.
+
+Presented FPS averages 75.168 off / 73.893 on, a 1.70% (1.27 FPS) cost. Both
+off repeats are nearly identical. Display intervals over 25 ms average
+13.543 off / 19.971 on per minute. Over 700 analyzed seconds per condition,
+display intervals over 50 ms total 3 / 3, and none exceed 100 ms. This supports
+a modest present-rate/pacing cost in the measured workload, not a clear
+increase in severe hitches. Renderer RAF p99 is a separate metric.
+
+The [report](./performance/2026-11-14-game-stutter.md) and
+[evidence](./performance/2026-11-14-game-stutter.json) retain definitions,
+timing tails, hashes and foreground/replay checks. Per-second timelines can be regenerated from the local CSVs with the analyzer.
+The historical November reference has no PresentMon stream; later short
+old/current controls are recorded above. The
+development/replay limitations remain explicit. Six new analyzer tests bring
+targeted validation to 46 passing tests; full-project lint passes with private
+capture artifacts excluded. The user's replay state and capture-duration
+settings are restored, and irDashies user configuration is unchanged.
+
+### 14 November 2026 — Latest main and every registered widget, actual replay
+
+Runtime source `711552a1` matches fetched `origin/main`. Two 420-second runs
+retain the 1 November frozen profile, graphics configuration, replay frame,
+camera and 60–420-second analysis window. Full-profile CPU averages 6.222%
+versus 4.544% historically (+36.9%), mainly in the GPU process. Renderer
+frame-time p99 averages 73.316 ms versus 16.806 ms. Both repeats reproduce
+the drift. Sampled simulator FPS is slightly higher; this is not direct
+game-frame evidence or an overlay-off/on game-FPS comparison.
+
+Private-memory peaks fall to 1379.45/1474.70 MiB, while growth remains above
+the unchanged <5 MiB/min target at +18.398/+32.936 MiB/min. Its range overlaps
+the reference, so a new growth regression is not established.
+
+Three more 420-second captures add the 17 widget types missing from the
+historical saved profile and inspect its Race-hidden Lap Trace. Every one of
+the 37 registered IDs appears in an accepted capture. Hardware, external chat,
+clean reference laps, strategy progress and several event/alert states remain
+unexercised; neither activation nor channel traffic is treated as proof of
+visible workload. New per-widget process/timing baselines and separate
+follow-up findings are retained in the
+[report](./performance/2026-11-14-widget-regressions.md),
+[evidence](./performance/2026-11-14-widget-regressions.json) and
+[findings queue](./performance/2026-11-14-widget-findings.md).
+
+All five accepted runs have 72 app/private-memory and 72 native replay
+observations per analysis window. Two preparation captures are excluded, not
+promoted to results. Forty targeted tests and lint (excluding ignored private
+capture scripts) pass. User configuration is unchanged and the original
+Practice/camera/playback state is restored. PresentMon was absent; the user
+will install it before the separate direct-game-stutter series.
 
 ### 1 November 2026 — Pinned local-main full saved profile, actual replay
 
@@ -1329,6 +1477,13 @@ There are two possible interpretations for why Standings still leaks while other
 
 ## 4. Current Status of Architecture Findings
 
+**15 November review:** Aggregate source CPU/FPS regression is not reproduced
+in the controlled workload. Presentation cost, private growth and the rare
+large overlay stall remain open. Widget activation is not full functional
+coverage, and periodic focus checks are not continuous OS foreground tracing.
+The retained fixes concern measurement isolation, rate denominators and
+game-stream selection; historical validations below keep their own scope.
+
 Live record of which architecture review findings have empirical support. Update as new tests resolve open questions.
 
 **Current performance watch items (1 November 2026):** The scoped window-mode
@@ -1414,6 +1569,10 @@ unmeasured; historical validations below retain their original workload scope.
 ---
 
 ## 5. Targets and Goals
+
+**15 November review:** Keep the <5 MiB/min private-growth target. Reject a
+CPU optimization that loses widget cadence or worsens pacing. Short source
+controls do not replace long-duration, live-event or packaged-release gates.
 
 Empirical baselines and post-remediation targets. Updated as targets are met.
 
