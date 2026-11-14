@@ -85,7 +85,7 @@ The dominant game swap chain is selected by frame count within the measured
 window. A startup/retired chain outside that window cannot displace it. Raw CSVs remain in
 Documents/PresentMon/Captures and ignored perf-results copies. The
 [sanitized evidence](./2026-11-14-game-stutter.json) includes hashes, exact
-distributions, 1-second timing timelines, swap-chain/mode metadata, replay
+distributions, swap-chain/mode metadata, replay
 observations, focus checks and individual run provenance. The 10-second
 setup smoke capture is excluded from results.
 
@@ -162,3 +162,5 @@ match. The parser selects the primary stream within the measured window,
 rejects nonfinite windows/durations and avoids argument-count limits when
 finding capture bounds. Existing captures are numerically unchanged. The
 full suite passes 6,950 tests with 5 skipped; TypeScript/ESLint passes.
+
+Per-second timelines are omitted from the committed summaries. The analyzer regenerates them from the fingerprinted local CSVs; frame distributions and slow-frame counts are retained. Source-repeat evidence is stored once here and referenced by the CPU evidence.
