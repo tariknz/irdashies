@@ -18,14 +18,14 @@ export interface WidgetPreviewStatus {
   /** The player is in the car. */
   driving: boolean;
   /**
-   * Play was pressed while the player was in the car: the preview runs until
-   * they get out. Kept per window, so it holds across widget pages.
+   * Play was pressed while the player was in the car: this widget's preview
+   * runs until they get out. Another widget's preview arrives held again.
    */
   playInCar: boolean;
   /**
    * The window's connected demo is advancing. False while it is paused and
-   * while no demo is connected. A demo connected while paused runs briefly
-   * first, so the frame has a picture to keep.
+   * while no demo is connected. A demo connected while paused does not run
+   * until it is let go, so it has no picture before then.
    */
   running: boolean;
 }

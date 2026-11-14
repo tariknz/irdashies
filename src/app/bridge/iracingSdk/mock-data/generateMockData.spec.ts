@@ -36,6 +36,24 @@ describe('generateMockData', () => {
     bridge.stop();
   });
 
+  it('moves the raw pedals with the processed ones, as a car without assists would', () => {
+    const bridge = generateMockData();
+    const frames: Telemetry[] = [];
+    bridge.onTelemetry((frame) => frames.push(frame));
+    vi.advanceTimersByTime(1000);
+    const value = (frame: Telemetry, key: keyof Telemetry) =>
+      (frame[key] as { value: number[] }).value[0];
+    for (const frame of frames) {
+      expect(value(frame, 'ThrottleRaw')).toBe(value(frame, 'Throttle'));
+      expect(value(frame, 'BrakeRaw')).toBe(value(frame, 'Brake'));
+      expect(value(frame, 'ClutchRaw')).toBe(value(frame, 'Clutch'));
+    }
+    // Moving, not stuck at the recording's 0.
+    const brakes = new Set(frames.map((frame) => value(frame, 'BrakeRaw')));
+    expect(brakes.size).toBeGreaterThan(1);
+    bridge.stop();
+  });
+
   it('preserves explicit recording state instead of applying demo defaults', () => {
     const telemetry = structuredClone(
       recordedTelemetry

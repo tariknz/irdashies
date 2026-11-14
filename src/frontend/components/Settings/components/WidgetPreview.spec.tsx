@@ -171,11 +171,14 @@ describe('settings widget preview', () => {
     unmount();
   });
 
-  it('keeps the initial iframe paint hidden until its document styles have loaded', () => {
+  it('keeps the initial iframe paint hidden until its document styles have loaded and its demo runs', async () => {
     render(<WidgetPreview widgetId="input" />);
-    const frame = screen.getByTitle('Input Traces demo');
+    const frame = screen.getByTitle('Input Traces demo') as HTMLIFrameElement;
     expect(frame).toHaveClass('invisible');
     fireEvent.load(frame);
+    // Loaded, but nothing to show before it has a running demo.
+    expect(frame).toHaveClass('invisible');
+    await connectedFrame('Input Traces demo');
     expect(frame).not.toHaveClass('invisible');
     // Pausing keeps the loaded frame, so it never has to be hidden again.
     fireEvent.click(pauseButton());
@@ -434,14 +437,59 @@ describe('settings widget preview', () => {
     expect(connect).toHaveBeenCalledTimes(2);
   });
 
-  it('connects in the car, so the frame has a first picture, and waits for Play', async () => {
-    render(<WidgetPreview widgetId="input" />);
+  it('shows nothing for a demo held from the start, until Play runs it', async () => {
+    // Moving to another widget page in the car: the new demo never runs.
+    render(<WidgetPreview widgetId="laptrace" />);
     status({ driving: true, running: false });
-    const frame = await connectedFrame('Input Traces demo');
+    const frame = await connectedFrame('Lap Trace demo');
     fireEvent.load(frame);
+    expect(frame).toHaveClass('invisible');
+    expect(playButton()).toBeVisible();
     expect(screen.queryByText('Loading preview…')).toBeNull();
+    expect(screen.queryByText(/paused/i)).toBeNull();
+
+    fireEvent.click(playButton());
+    expect(playInCar).toHaveBeenCalledOnce();
+    status({ driving: true, playInCar: true, running: true });
+    expect(frame).not.toHaveClass('invisible');
+    expect(pauseButton()).toBeVisible();
+  });
+
+  it('shows the loading text only for a preview that will play, once main has said so', () => {
+    const loading = () => screen.queryByText('Loading preview…');
+    const { unmount } = render(<WidgetPreview widgetId="laptrace" />);
+    // Before main's first status: it may be held, so nothing yet.
+    expect(loading()).toBeNull();
+    status({ driving: true, running: false });
+    expect(loading()).toBeNull();
+    status({ windowHidden: true, running: false });
+    expect(loading()).toBeNull();
+    status({ running: false });
+    expect(loading()).not.toBeNull();
+    fireEvent.click(pauseButton());
+    expect(loading()).toBeNull();
+    unmount();
+  });
+
+  it('keeps the picture of a demo that has run, when it is held later', async () => {
+    render(<WidgetPreview widgetId="laptrace" />);
+    const frame = await connectedFrame('Lap Trace demo');
+    fireEvent.load(frame);
+    expect(frame).not.toHaveClass('invisible');
+    status({ driving: true, running: false });
     expect(frame).not.toHaveClass('invisible');
     expect(playButton()).toBeVisible();
+  });
+
+  it('hides a reloaded frame document again until its demo runs', async () => {
+    render(<WidgetPreview widgetId="laptrace" />);
+    const frame = await connectedFrame('Lap Trace demo');
+    fireEvent.load(frame);
+    status({ driving: true, running: false });
+    await act(async () => request(frame, { type: 'preview:ready' }));
+    expect(frame).toHaveClass('invisible');
+    status({ driving: true, playInCar: true, running: true });
+    expect(frame).not.toHaveClass('invisible');
   });
 
   it('plays in the car once main agrees, and pauses again the next time they get in', async () => {

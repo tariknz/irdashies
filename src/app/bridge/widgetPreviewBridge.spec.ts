@@ -55,7 +55,6 @@ vi.mock('./widgetPreviewRuntime', () => ({
   },
 }));
 import {
-  PREVIEW_PRIMING_MS,
   setupWidgetPreviewBridge,
   type PreviewDrivingSource,
 } from './widgetPreviewBridge';
@@ -355,7 +354,6 @@ describe('pausing the demo in place', () => {
     subscribe(paused);
     invoke('connect', paused);
     invoke('connect', other);
-    vi.advanceTimersByTime(PREVIEW_PRIMING_MS);
     expect(runs(0)).toEqual([false]);
     expect(runs(1)).toEqual([]);
     expect(latest(paused)?.running).toBe(false);
@@ -365,14 +363,13 @@ describe('pausing the demo in place', () => {
     invoke('setPaused', paused, true);
     invoke('disconnect', paused);
     invoke('connect', paused);
-    vi.advanceTimersByTime(PREVIEW_PRIMING_MS);
     expect(runtimes).toHaveLength(3);
     expect(runs(2)).toEqual([false]);
   });
 });
 
-describe('priming a demo connected while paused', () => {
-  it('runs it briefly for a first picture, then holds it, reporting both', () => {
+describe('a demo connected while held', () => {
+  it('stays held from the start, with no warm-up, until it is let go', () => {
     setup();
     const page = client(1);
     subscribe(page);
@@ -380,62 +377,49 @@ describe('priming a demo connected while paused', () => {
     invoke('connect', page);
     // One demo, decided at connect: never created and then replaced.
     expect(runtimes).toHaveLength(1);
-    expect(latest(page)?.running).toBe(true);
-    vi.advanceTimersByTime(PREVIEW_PRIMING_MS - 1);
-    expect(runs(0)).toEqual([]);
-    // A change that keeps it paused leaves the first picture to finish.
-    page.window.emit('focus');
-    vi.advanceTimersByTime(1);
     expect(runs(0)).toEqual([false]);
     expect(latest(page)?.running).toBe(false);
+    vi.advanceTimersByTime(10_000);
+    expect(runs(0)).toEqual([false]);
+    expect(vi.getTimerCount()).toBe(0);
+
+    invoke('setPaused', page, false);
+    expect(runs(0)).toEqual([false, true]);
+    expect(latest(page)?.running).toBe(true);
     expect(runtimes[0].dispose).not.toHaveBeenCalled();
   });
 
-  it('waits for the window to be on screen, and stops when it is hidden again', () => {
+  it("holds the next widget page's demo in the car until Play", () => {
+    const sim = lifecycle(true);
+    setup(sim.source);
+    const page = client(1);
+    subscribe(page);
+    invoke('connect', page);
+    // Another widget page: the preview remounts with a new demo.
+    invoke('disconnect', page);
+    invoke('connect', page);
+    expect(runs(1)).toEqual([false]);
+    expect(latest(page)).toMatchObject({ driving: true, running: false });
+
+    invoke('playInCar', page);
+    expect(runs(1)).toEqual([false, true]);
+    expect(latest(page)).toMatchObject({ playInCar: true, running: true });
+  });
+
+  it('starts a demo connected in a hidden window once the window is shown', () => {
     setup();
     const page = client(1);
     page.window.visible = false;
     subscribe(page);
-    invoke('setPaused', page, true);
     invoke('connect', page);
     expect(runs(0)).toEqual([false]);
-    expect(latest(page)?.running).toBe(false);
-    vi.advanceTimersByTime(PREVIEW_PRIMING_MS * 2);
-
     page.window.emit('show');
     expect(runs(0)).toEqual([false, true]);
-    page.window.emit('hide');
-    expect(runs(0)).toEqual([false, true, false]);
-    page.window.emit('show');
-    vi.advanceTimersByTime(PREVIEW_PRIMING_MS);
-    expect(runs(0)).toEqual([false, true, false, true, false]);
-    // Pictured now: hiding and showing again does not prime it again.
-    page.window.emit('minimize');
-    page.window.emit('restore');
-    expect(runs(0)).toHaveLength(5);
-  });
-
-  it('keeps running when it should run by then, and leaves no timer behind', () => {
-    setup();
-    const page = client(1);
-    invoke('setPaused', page, true);
-    invoke('connect', page);
-    invoke('setPaused', page, false);
-    vi.advanceTimersByTime(PREVIEW_PRIMING_MS);
-    expect(runs(0)).toEqual([]);
-
-    invoke('setPaused', page, true);
-    expect(runs(0)).toEqual([false]);
-    invoke('disconnect', page);
-    invoke('connect', page);
-    expect(vi.getTimerCount()).toBe(1);
-    invoke('disconnect', page);
-    expect(vi.getTimerCount()).toBe(0);
   });
 });
 
 describe('Play in the car', () => {
-  it('only works while the player is in the car, for that window, across its previews', () => {
+  it("only works while the player is in the car, for that window's current widget", () => {
     const sim = lifecycle();
     setup(sim.source);
     const first = client(1);
@@ -453,14 +437,24 @@ describe('Play in the car', () => {
     expect(latest(second)).toMatchObject({ playInCar: false, running: false });
     expect(runs(0)).toEqual([false, true]);
 
-    // The page moves to another widget: its preview unmounts and remounts.
+    // The page moves to another widget: its preview unmounts and remounts,
+    // and the new widget arrives held while the player is still in the car.
     unsubscribe(first);
     invoke('disconnect', first);
     expect(first.window.listenerTotal()).toBe(0);
     subscribe(first);
     invoke('connect', first);
+    expect(latest(first)).toMatchObject({ playInCar: false, running: false });
+    expect(runs(2)).toEqual([false]);
+    invoke('playInCar', first);
     expect(latest(first)).toMatchObject({ playInCar: true, running: true });
-    expect(runs(2)).toEqual([]);
+
+    // A Play pressed on the next widget before its frame connects counts.
+    invoke('disconnect', first);
+    invoke('playInCar', first);
+    invoke('connect', first);
+    expect(latest(first)).toMatchObject({ playInCar: true, running: true });
+    expect(runs(3)).toEqual([]);
 
     // Getting out ends it, for every window; the next time in pauses again.
     sim.drive(false);

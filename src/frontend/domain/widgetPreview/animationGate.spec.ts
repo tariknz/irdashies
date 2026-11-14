@@ -1,8 +1,11 @@
-import { describe, expect, it, vi } from 'vitest';
-import { installAnimationGate } from './animationGate';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { installAnimationGate, type AnimationClock } from './animationGate';
 
-/** A window's animation frames, run one frame at a time with `tick`. */
-function fakeWindow() {
+/**
+ * A window's animation frames, run one frame at a time with `tick`, and its
+ * timers, which are Vitest's fake ones.
+ */
+function fakeWindow(document?: Document) {
   let next = 0;
   const pending = new Map<number, FrameRequestCallback>();
   const request = vi.fn((callback: FrameRequestCallback) => {
@@ -13,11 +16,21 @@ function fakeWindow() {
   const cancel = vi.fn((id: number) => {
     pending.delete(id);
   });
-  const target = {
+  const target: AnimationClock = {
     requestAnimationFrame: request as (
       callback: FrameRequestCallback
     ) => number,
     cancelAnimationFrame: cancel as (id: number) => void,
+    setTimeout: globalThis.setTimeout.bind(
+      globalThis
+    ) as unknown as AnimationClock['setTimeout'],
+    clearTimeout: globalThis.clearTimeout.bind(
+      globalThis
+    ) as unknown as AnimationClock['clearTimeout'],
+    setInterval: globalThis.setInterval.bind(
+      globalThis
+    ) as unknown as AnimationClock['setInterval'],
+    document,
   };
   const tick = (time = 16) => {
     const due = [...pending.values()];
@@ -26,6 +39,128 @@ function fakeWindow() {
   };
   return { target, pending, request, cancel, tick };
 }
+
+beforeEach(() => {
+  vi.useFakeTimers();
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe('preview animation gate: timers and CSS', () => {
+  it('skips an interval while paused and carries it on when resumed', () => {
+    const { target } = fakeWindow();
+    const gate = installAnimationGate(target);
+    const tick = vi.fn();
+    const id = target.setInterval(tick, 50);
+    vi.advanceTimersByTime(100);
+    expect(tick).toHaveBeenCalledTimes(2);
+    gate.pause();
+    vi.advanceTimersByTime(500);
+    expect(tick).toHaveBeenCalledTimes(2);
+    gate.resume();
+    vi.advanceTimersByTime(100);
+    // Ticks missed while paused are not made up.
+    expect(tick).toHaveBeenCalledTimes(4);
+    globalThis.clearInterval(id);
+  });
+
+  it('holds a timeout chain while paused and resumes it where it stopped', () => {
+    const { target } = fakeWindow();
+    const gate = installAnimationGate(target);
+    let steps = 0;
+    const step = () => {
+      steps++;
+      target.setTimeout(step, 100);
+    };
+    target.setTimeout(step, 100);
+    vi.advanceTimersByTime(200);
+    expect(steps).toBe(2);
+    gate.pause();
+    vi.advanceTimersByTime(1000);
+    // The step already scheduled from the running chain is held when due.
+    expect(steps).toBe(2);
+    gate.resume();
+    vi.advanceTimersByTime(0);
+    expect(steps).toBe(3);
+    vi.advanceTimersByTime(100);
+    expect(steps).toBe(4);
+  });
+
+  it('still runs a one-off timeout while paused, and holds what it schedules', () => {
+    const { target } = fakeWindow();
+    const gate = installAnimationGate(target);
+    gate.pause();
+    const debounced = vi.fn();
+    const next = vi.fn();
+    // A resize debounce, scheduled from an effect or an event.
+    target.setTimeout(() => {
+      debounced();
+      target.setTimeout(next, 10);
+    }, 50);
+    vi.advanceTimersByTime(100);
+    expect(debounced).toHaveBeenCalledOnce();
+    expect(next).not.toHaveBeenCalled();
+    gate.resume();
+    vi.advanceTimersByTime(0);
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  it('cancels a held timeout, and one rescheduled by a resume before it runs', () => {
+    const { target } = fakeWindow();
+    const gate = installAnimationGate(target);
+    const held = vi.fn();
+    const released = vi.fn();
+    const ids: number[] = [];
+    target.setTimeout(() => {
+      ids.push(target.setTimeout(held, 10), target.setTimeout(released, 10));
+    }, 0);
+    vi.advanceTimersByTime(0);
+    gate.pause();
+    vi.advanceTimersByTime(50);
+    target.clearTimeout(ids[0]);
+    gate.resume();
+    target.clearTimeout(ids[1]);
+    vi.advanceTimersByTime(50);
+    expect(held).not.toHaveBeenCalled();
+    expect(released).not.toHaveBeenCalled();
+  });
+
+  it('draws a frame a timer asks for while paused, but holds a timeout a frame schedules', () => {
+    const frames = fakeWindow();
+    const gate = installAnimationGate(frames.target);
+    gate.pause();
+    const drawn = vi.fn();
+    const later = vi.fn();
+    frames.target.setTimeout(() => {
+      frames.target.requestAnimationFrame(() => {
+        drawn();
+        frames.target.setTimeout(later, 0);
+      });
+    }, 0);
+    vi.advanceTimersByTime(0);
+    frames.tick();
+    vi.advanceTimersByTime(100);
+    expect(drawn).toHaveBeenCalledOnce();
+    expect(later).not.toHaveBeenCalled();
+    gate.resume();
+    vi.advanceTimersByTime(0);
+    expect(later).toHaveBeenCalledOnce();
+  });
+
+  it('pauses CSS animations with one rule while paused', () => {
+    const gate = installAnimationGate(fakeWindow(document).target);
+    const rules = () =>
+      [...document.head.querySelectorAll('style')].filter((style) =>
+        style.textContent?.includes('animation-play-state: paused')
+      );
+    gate.pause();
+    gate.pause();
+    expect(rules()).toHaveLength(1);
+    gate.resume();
+    expect(rules()).toHaveLength(0);
+  });
+});
 
 describe('preview animation gate', () => {
   it('passes requests and cancellations straight through while running', () => {

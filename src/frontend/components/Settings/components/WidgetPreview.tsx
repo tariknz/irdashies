@@ -290,7 +290,7 @@ export const WidgetPreview = ({
                 sandbox="allow-scripts allow-same-origin"
                 tabIndex={-1}
                 inert
-                className={`absolute left-0 top-0 origin-top-left border-0 bg-transparent ${preview.loaded ? '' : 'invisible'}`}
+                className={`absolute left-0 top-0 origin-top-left border-0 bg-transparent ${preview.loaded && preview.pictured ? '' : 'invisible'}`}
                 style={{
                   width,
                   height,

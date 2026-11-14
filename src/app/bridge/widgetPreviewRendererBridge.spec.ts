@@ -56,6 +56,7 @@ it('passes on only well-formed statuses and unsubscribes after the last consumer
   for (const callback of statusListeners()) {
     callback({}, { ...STATUS, windowHidden: 'yes' });
     callback({}, { windowHidden: true, driving: false });
+    callback({}, { ...STATUS, running: undefined });
     callback({}, null);
     callback({}, { ...STATUS, extra: 1 });
   }

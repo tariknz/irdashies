@@ -48,6 +48,10 @@ export function useWidgetPreviewSession(
   const [status, setStatus] = useState(UNHELD);
   const [ready, setReady] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // The frame's demo has run since the frame got its session. One connected
+  // while held (in the car, say) does not run until Play, so it has no
+  // picture to keep and stays out of sight rather than half drawn.
+  const [pictured, setPictured] = useState(false);
   const [error, setError] = useState('');
   const renderFrame = !!bridge && !error;
   const pagePaused = userPaused || documentHidden;
@@ -70,6 +74,7 @@ export function useWidgetPreviewSession(
   const ref = useCallback((element: HTMLIFrameElement | null) => {
     setLoaded(false);
     setReady(false);
+    setPictured(false);
     setFrame(element);
   }, []);
 
@@ -80,7 +85,17 @@ export function useWidgetPreviewSession(
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
 
-  useEffect(() => bridge?.onStatus(setStatus), [bridge]);
+  // Main answers the subscription at once. Until it has, the page cannot
+  // tell whether the preview is held (in the car, say).
+  const [statusKnown, setStatusKnown] = useState(false);
+  useEffect(
+    () =>
+      bridge?.onStatus((next) => {
+        setStatus(next);
+        setStatusKnown(true);
+      }),
+    [bridge]
+  );
 
   useEffect(() => {
     void bridge
@@ -112,8 +127,9 @@ export function useWidgetPreviewSession(
     };
     /** Only a frame that has had its session runs animations to hold. */
     const tell = (running: boolean) => {
-      if (connected)
-        send({ type: running ? 'preview:resume' : 'preview:pause' });
+      if (!connected) return;
+      send({ type: running ? 'preview:resume' : 'preview:pause' });
+      if (running) setPictured(true);
     };
     const stopSubscriptions = () => {
       if (telemetryTimer) clearInterval(telemetryTimer);
@@ -157,6 +173,7 @@ export function useWidgetPreviewSession(
         connecting = true;
         connected = false;
         setReady(false);
+        setPictured(false);
         stopSubscriptions();
         startTimeout();
         void bridge
@@ -280,9 +297,13 @@ export function useWidgetPreviewSession(
   return {
     ref,
     loaded,
-    loading: renderFrame && (!ready || !loaded),
+    // Not while held: nothing would appear after it, and the Play button
+    // already says the preview is paused. Nor before main has said whether
+    // it is held, or it flashes on every widget page opened in the car.
+    loading: renderFrame && statusKnown && playing && (!ready || !loaded),
     renderFrame,
     playing,
+    pictured,
     error,
     onLoad: () => setLoaded(true),
     togglePlaying: () => {
