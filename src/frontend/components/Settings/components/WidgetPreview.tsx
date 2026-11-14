@@ -315,7 +315,9 @@ export const WidgetPreview = ({
             {preview.error ||
               (!preview.available
                 ? 'Preview is available in the desktop app.'
-                : 'Preview paused.')}
+                : preview.heldWhileDriving
+                  ? 'Preview paused while you are in the car.'
+                  : 'Preview paused.')}
             {preview.error && (
               <button type="button" className={button} onClick={preview.retry}>
                 Try again

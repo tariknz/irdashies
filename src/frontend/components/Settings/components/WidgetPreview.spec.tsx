@@ -5,6 +5,7 @@ import {
   defaultDashboard,
   type DashboardLayout,
   type Session,
+  type WidgetPreviewHold,
 } from '@irdashies/types';
 import { WidgetPreview } from './WidgetPreview';
 import { useWidgetPreviewSession } from './useWidgetPreviewSession';
@@ -26,6 +27,16 @@ const connect = vi.fn(async () => session);
 const disconnect = vi.fn(async () => undefined);
 const stop = vi.fn();
 const subscribe = vi.fn(() => stop);
+/** Pushes a hold the way main does; set while a preview is listening. */
+let sendHold: ((hold: WidgetPreviewHold) => void) | undefined;
+const onHold = vi.fn((callback: (hold: WidgetPreviewHold) => void) => {
+  sendHold = callback;
+  return () => {
+    sendHold = undefined;
+  };
+});
+const hold = (value: Partial<WidgetPreviewHold>) =>
+  act(() => sendHold?.({ windowHidden: false, driving: false, ...value }));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -39,6 +50,7 @@ beforeEach(() => {
     disconnect,
     subscribe,
     getTelemetry: async () => null,
+    onHold,
   };
 });
 afterEach(() => {
@@ -255,6 +267,39 @@ describe('settings widget preview', () => {
     expect(disconnect).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole('button', { name: 'Play preview' }));
     expect(screen.getByTitle('Input Traces demo')).toBeInTheDocument();
+  });
+
+  it('pauses while the settings window is minimised or in the tray, and comes back with a fresh frame', () => {
+    const { unmount } = render(<WidgetPreview widgetId="input" />);
+    const original = screen.getByTitle('Input Traces demo');
+    hold({ windowHidden: true });
+    expect(screen.queryByTitle('Input Traces demo')).toBeNull();
+    expect(screen.getByText('Preview paused.')).toBeInTheDocument();
+    expect(disconnect).toHaveBeenCalledOnce();
+    hold({ windowHidden: false });
+    const resumed = screen.getByTitle('Input Traces demo');
+    expect(resumed).not.toBe(original);
+    expect(screen.getByRole('button', { name: 'Pause preview' })).toBeVisible();
+    // Only the preview: the overlays' Demo Mode is left as it was.
+    expect(toggleDemo).not.toHaveBeenCalled();
+    unmount();
+    expect(sendHold).toBeUndefined();
+  });
+
+  it('pauses while the player is in the car, says why, and keeps a manual pause after they get out', () => {
+    render(<WidgetPreview widgetId="input" />);
+    hold({ driving: true });
+    expect(screen.queryByTitle('Input Traces demo')).toBeNull();
+    expect(
+      screen.getByText('Preview paused while you are in the car.')
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Pause preview' }));
+    expect(screen.getByText('Preview paused.')).toBeInTheDocument();
+    hold({ driving: false });
+    expect(screen.queryByTitle('Input Traces demo')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Play preview' }));
+    expect(screen.getByTitle('Input Traces demo')).toBeInTheDocument();
+    expect(toggleDemo).not.toHaveBeenCalled();
   });
 
   it('hides each replacement iframe until its own load event after visibility resumes', () => {

@@ -2,13 +2,19 @@ import { BrowserWindow, ipcMain } from 'electron';
 import { channelRegistry } from '@irdashies/types';
 import { WIDGET_PREVIEW_IPC } from '../../types/widgetPreview';
 import { createWidgetPreviewRuntime } from './widgetPreviewRuntime';
+import {
+  setupWidgetPreviewHold,
+  type PreviewDrivingSource,
+} from './widgetPreviewHold';
 import { TelemetryPerfMetrics } from '../perfMetrics';
 import logger from '../logger';
 import type { ProcessorMetrics } from '../processors/ProcessorHost';
 
 export function setupWidgetPreviewBridge(
-  metrics: ProcessorMetrics = new TelemetryPerfMetrics()
+  metrics: ProcessorMetrics = new TelemetryPerfMetrics(),
+  driving?: PreviewDrivingSource
 ) {
+  const disposeHold = setupWidgetPreviewHold(driving);
   const clients = new Map<
     number,
     { runtime: ReturnType<typeof createWidgetPreviewRuntime>; cleanup(): void }
@@ -97,6 +103,7 @@ export function setupWidgetPreviewBridge(
     clients.get(event.sender.id)?.runtime.unsubscribe(validateChannel(channel));
   });
   return () => {
+    disposeHold();
     for (const client of clients.values()) client.cleanup();
     for (const name of [
       'connect',

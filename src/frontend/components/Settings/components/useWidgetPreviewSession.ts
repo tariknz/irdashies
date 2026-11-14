@@ -9,11 +9,14 @@ import { useDashboard } from '@irdashies/context';
 import type {
   ChannelName,
   DashboardLayout,
+  WidgetPreviewHold,
   WidgetPreviewMessage,
 } from '@irdashies/types';
 import { parsePreviewRequest } from '@irdashies/domain/widgetPreview/protocol';
 import { resolvePreviewWidget } from '@irdashies/domain/widgetPreview/presentation';
 import logger from '@irdashies/utils/logger';
+
+const NO_HOLD: WidgetPreviewHold = { windowHidden: false, driving: false };
 
 /** Owns the disposable frame and connection, including every failure path. */
 export function useWidgetPreviewSession(
@@ -27,10 +30,15 @@ export function useWidgetPreviewSession(
   const [visible, setVisible] = useState(
     () => document.visibilityState !== 'hidden'
   );
+  // Held by main while the window is minimised or in the tray, and while the
+  // player is in the car. Separate from `playing`, so a preview the user
+  // paused stays paused when the hold lifts, and one left playing resumes.
+  const [hold, setHold] = useState(NO_HOLD);
+  const held = hold.windowHidden || hold.driving;
   const [ready, setReady] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState('');
-  const renderFrame = playing && visible && !!bridge && !error;
+  const renderFrame = playing && visible && !held && !!bridge && !error;
   const latest = useRef({ widgetId, dashboard, dashboardBridge });
   useLayoutEffect(() => {
     latest.current = { widgetId, dashboard, dashboardBridge };
@@ -47,6 +55,8 @@ export function useWidgetPreviewSession(
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
+
+  useEffect(() => bridge?.onHold(setHold), [bridge]);
 
   useEffect(() => {
     if (!renderFrame || !frame || !bridge) return;
@@ -221,6 +231,8 @@ export function useWidgetPreviewSession(
     renderFrame,
     available: !!bridge,
     playing,
+    /** Paused for the player being in the car, not by the Pause button. */
+    heldWhileDriving: hold.driving && playing && !error,
     error,
     onLoad: () => setLoaded(true),
     togglePlaying: () => setPlaying((previous) => !previous),
