@@ -112,14 +112,16 @@ export class InputTraceDrawing {
     current.absStyle = settings.absStyle ?? 'overlay';
     current.strokeWidth = settings.strokeWidth ?? 3;
     const requested = settings.maxSamples ?? 400;
-    current.maxSamples = Number.isFinite(requested)
-      ? Math.max(2, Math.min(MAX_TRACE_SAMPLES, Math.floor(requested)))
-      : 400;
-    if (this.indices.length === current.maxSamples) return;
+    const count = !Number.isFinite(requested)
+      ? 400
+      : requested > MAX_TRACE_SAMPLES
+        ? MAX_TRACE_SAMPLES
+        : Math.max(2, Math.floor(requested));
+    current.maxSamples = count;
+    if (this.indices.length === count) return;
 
     // Capacity is fixed between configuration changes; all channels reset
     // together so changing capacity never reuses an old time axis.
-    const count = current.maxSamples;
     this.brake = Array<number>(count).fill(0);
     this.abs = Array<boolean>(count).fill(false);
     this.throttle = Array<number>(count).fill(0);
