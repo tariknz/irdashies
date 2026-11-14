@@ -18,7 +18,16 @@ import logger from '@irdashies/utils/logger';
 
 const NO_HOLD: WidgetPreviewHold = { windowHidden: false, driving: false };
 
-/** Owns the disposable frame and connection, including every failure path. */
+/**
+ * Owns the disposable frame and connection, including every failure path.
+ *
+ * Pausing stops the demo but keeps the frame, which goes on showing its last
+ * picture. It happens with the Pause button, while the page or the window is
+ * hidden (minimised or in the tray), and when the player gets in the car.
+ * Play always works, in the car too: the preview then runs until the player
+ * gets out, and pauses again the next time they get in. Resuming reconnects
+ * the same frame: a new demo session, with the channels the frame asked for.
+ */
 export function useWidgetPreviewSession(
   widgetId: string,
   dashboard: DashboardLayout | null | undefined
@@ -26,19 +35,20 @@ export function useWidgetPreviewSession(
   const { bridge: dashboardBridge } = useDashboard();
   const bridge = window.widgetPreviewBridge;
   const [frame, setFrame] = useState<HTMLIFrameElement | null>(null);
-  const [playing, setPlaying] = useState(true);
+  const [userPaused, setUserPaused] = useState(false);
   const [visible, setVisible] = useState(
     () => document.visibilityState !== 'hidden'
   );
-  // Held by main while the window is minimised or in the tray, and while the
-  // player is in the car. Separate from `playing`, so a preview the user
-  // paused stays paused when the hold lifts, and one left playing resumes.
   const [hold, setHold] = useState(NO_HOLD);
-  const held = hold.windowHidden || hold.driving;
+  const [playInCar, setPlayInCar] = useState(false);
   const [ready, setReady] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState('');
-  const renderFrame = playing && visible && !held && !!bridge && !error;
+  const paused =
+    userPaused || !visible || hold.windowHidden || (hold.driving && !playInCar);
+  // Not tied to pausing: the frame stays, showing its last picture.
+  const renderFrame = !!bridge && !error;
+  const live = renderFrame && !paused;
   const latest = useRef({ widgetId, dashboard, dashboardBridge });
   useLayoutEffect(() => {
     latest.current = { widgetId, dashboard, dashboardBridge };
@@ -56,15 +66,46 @@ export function useWidgetPreviewSession(
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
 
-  useEffect(() => bridge?.onHold(setHold), [bridge]);
+  useEffect(
+    () =>
+      bridge?.onHold((next) => {
+        setHold(next);
+        if (!next.driving) setPlayInCar(false);
+      }),
+    [bridge]
+  );
+
+  // Declared before the frame's effect, so that effect starts from the
+  // current value; afterwards, changes reach the running frame through this.
+  const liveRef = useRef(live);
+  const setFrameLive = useRef<((live: boolean) => void) | null>(null);
+  useEffect(() => {
+    liveRef.current = live;
+    setFrameLive.current?.(live);
+  }, [live]);
 
   useEffect(() => {
     if (!renderFrame || !frame || !bridge) return;
     let disposed = false;
+    let isLive = liveRef.current;
+    /** The frame's document has announced itself and waits for a session. */
+    let frameReady = false;
+    /** The frame has had a session, so it has a picture and a config. */
+    let initialized = false;
     let connecting = false;
     let connected = false;
+    /** Moves on with every connect and stop, so a late answer is dropped. */
+    let attempt = 0;
+    /** A demo session has been started since going live and not stopped. */
+    let sessionOpen = false;
     let timeout: ReturnType<typeof setTimeout> | undefined;
     let telemetryTimer: ReturnType<typeof setInterval> | undefined;
+    /**
+     * The channels the frame's widgets asked for, kept while paused. The
+     * widgets stay subscribed inside the frame and do not ask again, so a
+     * resumed session reopens these itself.
+     */
+    const requested = new Map<ChannelName, number | undefined>();
     const subscriptions = new Map<
       ChannelName,
       { unsubscribe(): void; rate?: number }
@@ -72,23 +113,49 @@ export function useWidgetPreviewSession(
     const send = (message: WidgetPreviewMessage) => {
       if (!disposed) frame.contentWindow?.postMessage(message, '*');
     };
-    const stopSubscriptions = () => {
+    const closeSubscriptions = () => {
       if (telemetryTimer) clearInterval(telemetryTimer);
+      telemetryTimer = undefined;
       for (const subscription of subscriptions.values())
         subscription.unsubscribe();
       subscriptions.clear();
     };
-    const dispose = () => {
-      if (disposed) return;
-      disposed = true;
+    const open = (channel: ChannelName, rate: number | undefined) => {
+      const previous = subscriptions.get(channel);
+      if (previous && previous.rate === rate) return;
+      const unsubscribe = bridge.subscribe(
+        channel,
+        (payload) =>
+          send({
+            type: 'preview:snapshot',
+            channel,
+            payload,
+          }),
+        rate
+      );
+      previous?.unsubscribe();
+      subscriptions.set(channel, { unsubscribe, rate });
+    };
+    const stopSession = () => {
+      attempt++;
+      connecting = false;
+      connected = false;
       clearTimeout(timeout);
-      stopSubscriptions();
-      window.removeEventListener('message', receive);
+      closeSubscriptions();
+      if (!sessionOpen) return;
+      sessionOpen = false;
       void bridge
         .disconnect()
         .catch((reason: unknown) =>
           logger.warn('Could not stop widget preview', reason)
         );
+    };
+    const dispose = () => {
+      if (disposed) return;
+      disposed = true;
+      if (setFrameLive.current === setLive) setFrameLive.current = null;
+      stopSession();
+      window.removeEventListener('message', receive);
     };
     const fail = (message: string) => {
       if (disposed) return;
@@ -102,60 +169,84 @@ export function useWidgetPreviewSession(
         15000
       );
     };
+    const connect = () => {
+      if (connecting) return;
+      const current = ++attempt;
+      connecting = true;
+      connected = false;
+      closeSubscriptions();
+      startTimeout();
+      void bridge
+        .connect()
+        .then((session) => {
+          if (disposed || current !== attempt || !latest.current.dashboard)
+            return;
+          connected = true;
+          connecting = false;
+          initialized = true;
+          clearTimeout(timeout);
+          const config = {
+            widgetId: latest.current.widgetId,
+            dashboard: latest.current.dashboard,
+          };
+          send({ type: 'preview:init', session, config });
+          const selected = resolvePreviewWidget(
+            config.dashboard,
+            config.widgetId
+          );
+          if (selected?.type === 'telemetryinspector') {
+            const poll = () => {
+              void bridge
+                .getTelemetry()
+                .then((telemetry) => {
+                  if (telemetry) send({ type: 'preview:telemetry', telemetry });
+                })
+                .catch((reason: unknown) =>
+                  logger.warn('Could not read demo inspector telemetry', reason)
+                );
+            };
+            poll();
+            telemetryTimer = setInterval(poll, 1000);
+          }
+          for (const [channel, rate] of requested) open(channel, rate);
+          setReady(true);
+        })
+        .catch((reason: unknown) => {
+          if (disposed || current !== attempt) return;
+          logger.error('Could not start widget preview', reason);
+          fail('The demo could not start. Try again.');
+        });
+    };
+    function setLive(next: boolean) {
+      if (disposed || next === isLive) return;
+      isLive = next;
+      if (!next) {
+        stopSession();
+        return;
+      }
+      sessionOpen = true;
+      if (frameReady) connect();
+      // Still waiting for the document to announce itself.
+      else startTimeout();
+    }
     const receive = (event: MessageEvent<unknown>) => {
       if (event.source !== frame.contentWindow) return;
       const request = parsePreviewRequest(event.data);
       if (!request) return;
       if (request.type === 'preview:ready') {
         if (connecting) return;
-        connecting = true;
-        connected = false;
+        // A newly loaded document: what the previous one asked for is gone.
+        frameReady = true;
+        initialized = false;
+        requested.clear();
         setReady(false);
-        stopSubscriptions();
-        startTimeout();
-        void bridge
-          .connect()
-          .then((session) => {
-            if (disposed || !latest.current.dashboard) return;
-            connected = true;
-            connecting = false;
-            clearTimeout(timeout);
-            const config = {
-              widgetId: latest.current.widgetId,
-              dashboard: latest.current.dashboard,
-            };
-            send({ type: 'preview:init', session, config });
-            const selected = resolvePreviewWidget(
-              config.dashboard,
-              config.widgetId
-            );
-            if (selected?.type === 'telemetryinspector') {
-              const poll = () => {
-                void bridge
-                  .getTelemetry()
-                  .then((telemetry) => {
-                    if (telemetry)
-                      send({ type: 'preview:telemetry', telemetry });
-                  })
-                  .catch((reason: unknown) =>
-                    logger.warn(
-                      'Could not read demo inspector telemetry',
-                      reason
-                    )
-                  );
-              };
-              poll();
-              telemetryTimer = setInterval(poll, 1000);
-            }
-            setReady(true);
-          })
-          .catch((reason: unknown) => {
-            if (disposed) return;
-            logger.error('Could not start widget preview', reason);
-            fail('The demo could not start. Try again.');
-          });
+        if (isLive) connect();
+        else {
+          clearTimeout(timeout);
+          closeSubscriptions();
+        }
       } else if (request.type === 'preview:asset') {
-        if (!connected) return;
+        if (!initialized) return;
         const config =
           latest.current.dashboard &&
           resolvePreviewWidget(
@@ -186,32 +277,21 @@ export function useWidgetPreviewSession(
               dataUrl,
             })
           );
-      } else if (connected) {
-        const previous = subscriptions.get(request.channel);
-        if (request.type === 'preview:unsubscribe') {
-          previous?.unsubscribe();
-          subscriptions.delete(request.channel);
-        } else if (!previous || previous.rate !== request.rate) {
-          const unsubscribe = bridge.subscribe(
-            request.channel,
-            (payload) =>
-              send({
-                type: 'preview:snapshot',
-                channel: request.channel,
-                payload,
-              }),
-            request.rate
-          );
-          previous?.unsubscribe();
-          subscriptions.set(request.channel, {
-            unsubscribe,
-            rate: request.rate,
-          });
-        }
+      } else if (request.type === 'preview:unsubscribe') {
+        requested.delete(request.channel);
+        subscriptions.get(request.channel)?.unsubscribe();
+        subscriptions.delete(request.channel);
+      } else {
+        requested.set(request.channel, request.rate);
+        if (connected) open(request.channel, request.rate);
       }
     };
-    startTimeout();
+    setFrameLive.current = setLive;
     window.addEventListener('message', receive);
+    if (isLive) {
+      sessionOpen = true;
+      startTimeout();
+    }
     return dispose;
   }, [renderFrame, frame, bridge]);
 
@@ -227,15 +307,20 @@ export function useWidgetPreviewSession(
   return {
     ref,
     loaded,
-    loading: renderFrame && (!ready || !loaded),
+    loading: live && (!ready || !loaded),
     renderFrame,
     available: !!bridge,
-    playing,
-    /** Paused for the player being in the car, not by the Pause button. */
-    heldWhileDriving: hold.driving && playing && !error,
+    playing: !paused,
     error,
     onLoad: () => setLoaded(true),
-    togglePlaying: () => setPlaying((previous) => !previous),
+    togglePlaying: () => {
+      if (!paused) {
+        setUserPaused(true);
+        return;
+      }
+      setUserPaused(false);
+      if (hold.driving) setPlayInCar(true);
+    },
     retry: () => setError(''),
   };
 }

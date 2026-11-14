@@ -312,12 +312,7 @@ export const WidgetPreview = ({
             className="flex h-full items-center justify-center gap-3 p-6 text-center text-sm text-slate-400"
             role="status"
           >
-            {preview.error ||
-              (!preview.available
-                ? 'Preview is available in the desktop app.'
-                : preview.heldWhileDriving
-                  ? 'Preview paused while you are in the car.'
-                  : 'Preview paused.')}
+            {preview.error || 'Preview is available in the desktop app.'}
             {preview.error && (
               <button type="button" className={button} onClick={preview.retry}>
                 Try again

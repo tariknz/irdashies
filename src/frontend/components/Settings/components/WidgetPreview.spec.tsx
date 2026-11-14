@@ -37,6 +37,22 @@ const onHold = vi.fn((callback: (hold: WidgetPreviewHold) => void) => {
 });
 const hold = (value: Partial<WidgetPreviewHold>) =>
   act(() => sendHold?.({ windowHidden: false, driving: false, ...value }));
+const requireWindow = (frame: HTMLIFrameElement) => {
+  if (!frame.contentWindow) throw new Error('Expected a preview frame window');
+  return frame.contentWindow;
+};
+/** Posts a request as the frame's document would. */
+const request = (frame: HTMLIFrameElement, data: unknown) =>
+  window.dispatchEvent(
+    new MessageEvent('message', { data, source: frame.contentWindow })
+  );
+/** The frame, once its document has announced itself and got a session. */
+const connectedFrame = async (title: string) => {
+  const frame = screen.getByTitle(title) as HTMLIFrameElement;
+  await act(async () => request(frame, { type: 'preview:ready' }));
+  expect(connect).toHaveBeenCalledOnce();
+  return frame;
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -123,9 +139,11 @@ describe('settings widget preview', () => {
     expect(frame).toHaveClass('invisible');
     fireEvent.load(frame);
     expect(frame).not.toHaveClass('invisible');
+    // Pausing keeps the loaded frame, so it never has to be hidden again.
     fireEvent.click(screen.getByRole('button', { name: 'Pause preview' }));
     fireEvent.click(screen.getByRole('button', { name: 'Play preview' }));
-    expect(screen.getByTitle('Input Traces demo')).toHaveClass('invisible');
+    expect(screen.getByTitle('Input Traces demo')).toBe(frame);
+    expect(frame).not.toHaveClass('invisible');
   });
 
   it('fits the original frame without changing saved layout or global demo mode', () => {
@@ -259,26 +277,53 @@ describe('settings widget preview', () => {
     expect(disconnect).toHaveBeenCalledOnce();
   });
 
-  it('stops the demo when paused and recreates its isolated frame on resume', () => {
+  it('stops the demo when paused but keeps the last picture, and resumes the same frame with its channels', async () => {
     render(<WidgetPreview widgetId="input" />);
+    const frame = await connectedFrame('Input Traces demo');
+    const post = vi.spyOn(requireWindow(frame), 'postMessage');
+    request(frame, {
+      type: 'preview:subscribe',
+      channel: 'driver-controls.snapshot',
+      rate: 25,
+    });
+    expect(subscribe).toHaveBeenCalledOnce();
+
     fireEvent.click(screen.getByRole('button', { name: 'Pause preview' }));
-    expect(screen.getByText('Preview paused.')).toBeInTheDocument();
-    expect(screen.queryByTitle('Input Traces demo')).not.toBeInTheDocument();
+    expect(screen.getByTitle('Input Traces demo')).toBe(frame);
+    expect(stop).toHaveBeenCalledOnce();
     expect(disconnect).toHaveBeenCalledOnce();
-    fireEvent.click(screen.getByRole('button', { name: 'Play preview' }));
-    expect(screen.getByTitle('Input Traces demo')).toBeInTheDocument();
+    expect(screen.queryByText(/paused/i)).toBeNull();
+    // Asked for while paused: remembered, opened on resume.
+    request(frame, {
+      type: 'preview:subscribe',
+      channel: 'track-state.snapshot',
+    });
+    expect(subscribe).toHaveBeenCalledOnce();
+
+    await act(async () =>
+      fireEvent.click(screen.getByRole('button', { name: 'Play preview' }))
+    );
+    expect(screen.getByTitle('Input Traces demo')).toBe(frame);
+    expect(connect).toHaveBeenCalledTimes(2);
+    expect(
+      post.mock.calls.filter(([message]) => message.type === 'preview:init')
+    ).toHaveLength(1);
+    expect(subscribe.mock.calls.map((call) => (call as unknown[])[0])).toEqual([
+      'driver-controls.snapshot',
+      'driver-controls.snapshot',
+      'track-state.snapshot',
+    ]);
   });
 
-  it('pauses while the settings window is minimised or in the tray, and comes back with a fresh frame', () => {
+  it('pauses while the settings window is minimised or in the tray, keeping its picture, and resumes on restore', async () => {
     const { unmount } = render(<WidgetPreview widgetId="input" />);
-    const original = screen.getByTitle('Input Traces demo');
+    const frame = await connectedFrame('Input Traces demo');
     hold({ windowHidden: true });
-    expect(screen.queryByTitle('Input Traces demo')).toBeNull();
-    expect(screen.getByText('Preview paused.')).toBeInTheDocument();
+    expect(screen.getByTitle('Input Traces demo')).toBe(frame);
     expect(disconnect).toHaveBeenCalledOnce();
-    hold({ windowHidden: false });
-    const resumed = screen.getByTitle('Input Traces demo');
-    expect(resumed).not.toBe(original);
+    expect(screen.getByRole('button', { name: 'Play preview' })).toBeVisible();
+    await act(async () => sendHold?.({ windowHidden: false, driving: false }));
+    expect(connect).toHaveBeenCalledTimes(2);
     expect(screen.getByRole('button', { name: 'Pause preview' })).toBeVisible();
     // Only the preview: the overlays' Demo Mode is left as it was.
     expect(toggleDemo).not.toHaveBeenCalled();
@@ -286,39 +331,67 @@ describe('settings widget preview', () => {
     expect(sendHold).toBeUndefined();
   });
 
-  it('pauses while the player is in the car, says why, and keeps a manual pause after they get out', () => {
+  it('pauses when the player gets in the car, still plays on request, and pauses again the next time', async () => {
     render(<WidgetPreview widgetId="input" />);
+    const frame = await connectedFrame('Input Traces demo');
     hold({ driving: true });
-    expect(screen.queryByTitle('Input Traces demo')).toBeNull();
-    expect(
-      screen.getByText('Preview paused while you are in the car.')
-    ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Pause preview' }));
-    expect(screen.getByText('Preview paused.')).toBeInTheDocument();
+    expect(screen.getByTitle('Input Traces demo')).toBe(frame);
+    expect(disconnect).toHaveBeenCalledOnce();
+    expect(screen.queryByText(/paused/i)).toBeNull();
+
+    await act(async () =>
+      fireEvent.click(screen.getByRole('button', { name: 'Play preview' }))
+    );
+    expect(connect).toHaveBeenCalledTimes(2);
+    // A repeated report of the same state does not undo the request.
+    hold({ driving: true });
+    expect(screen.getByRole('button', { name: 'Pause preview' })).toBeVisible();
+
     hold({ driving: false });
-    expect(screen.queryByTitle('Input Traces demo')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Play preview' }));
-    expect(screen.getByTitle('Input Traces demo')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pause preview' })).toBeVisible();
+    hold({ driving: true });
+    expect(screen.getByRole('button', { name: 'Play preview' })).toBeVisible();
+    expect(disconnect).toHaveBeenCalledTimes(2);
     expect(toggleDemo).not.toHaveBeenCalled();
   });
 
-  it('hides each replacement iframe until its own load event after visibility resumes', () => {
+  it('keeps a manual pause after the player gets out of the car', async () => {
+    render(<WidgetPreview widgetId="input" />);
+    await connectedFrame('Input Traces demo');
+    fireEvent.click(screen.getByRole('button', { name: 'Pause preview' }));
+    hold({ driving: true });
+    hold({ driving: false });
+    expect(screen.getByRole('button', { name: 'Play preview' })).toBeVisible();
+    expect(connect).toHaveBeenCalledOnce();
+  });
+
+  it('opened in the car, waits for Play before starting the demo', async () => {
+    render(<WidgetPreview widgetId="input" />);
+    hold({ driving: true });
+    const frame = screen.getByTitle('Input Traces demo') as HTMLIFrameElement;
+    await act(async () => request(frame, { type: 'preview:ready' }));
+    expect(connect).not.toHaveBeenCalled();
+    expect(screen.queryByText('Loading preview…')).toBeNull();
+    await act(async () =>
+      fireEvent.click(screen.getByRole('button', { name: 'Play preview' }))
+    );
+    expect(connect).toHaveBeenCalledOnce();
+  });
+
+  it('pauses while the page is hidden and resumes the same frame when it shows again', async () => {
     vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
     render(<WidgetPreview widgetId="input" />);
-    const original = screen.getByTitle('Input Traces demo');
-    fireEvent.load(original);
-    expect(original).not.toHaveClass('invisible');
+    const frame = await connectedFrame('Input Traces demo');
+    fireEvent.load(frame);
     vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
     fireEvent(document, new Event('visibilitychange'));
-    expect(screen.queryByTitle('Input Traces demo')).toBeNull();
+    expect(screen.getByTitle('Input Traces demo')).toBe(frame);
     expect(disconnect).toHaveBeenCalledOnce();
     vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
-    fireEvent(document, new Event('visibilitychange'));
-    const resumed = screen.getByTitle('Input Traces demo');
-    expect(resumed).not.toBe(original);
-    expect(resumed).toHaveClass('invisible');
-    fireEvent.load(resumed);
-    expect(resumed).not.toHaveClass('invisible');
+    await act(async () => fireEvent(document, new Event('visibilitychange')));
+    expect(screen.getByTitle('Input Traces demo')).toBe(frame);
+    expect(frame).not.toHaveClass('invisible');
+    expect(connect).toHaveBeenCalledTimes(2);
   });
 
   it('stops a timed-out attempt and ignores its late result after a successful retry', async () => {
