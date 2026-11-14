@@ -74,11 +74,11 @@ describe('Radar painting cadence', () => {
     delete window.rendererPerfBridge;
   });
 
-  const refresh = (time: number) => {
-    now = time;
+  const refresh = (time: number, callbackDelay = 0) => {
+    now = time + callbackDelay;
     const callbacks = [...pending.values()];
     pending.clear();
-    act(() => callbacks.forEach((callback) => callback(now)));
+    act(() => callbacks.forEach((callback) => callback(time)));
   };
 
   it.each([60, 120, 144, 240])(
@@ -96,12 +96,51 @@ describe('Radar painting cadence', () => {
     }
   );
 
+  it.each([59.94, 60])(
+    'keeps pace at %s Hz when animation callbacks have varying delays',
+    (hz) => {
+      // Mount between refreshes, then vary callback delivery independently
+      // of the browser's animation-frame timestamp.
+      now = 0.2;
+      render(<RadarDisplay {...props} />);
+      for (let index = 1; index <= 600; index++) {
+        refresh((index * 1000) / hz, index % 2 ? 0.4 : 0);
+      }
+      // The first refresh can precede the initial paint's deadline.
+      expect(draw.mock.calls.length).toBeGreaterThanOrEqual(600);
+      expect(draw.mock.calls.length).toBeLessThanOrEqual(601);
+    }
+  );
+
+  it('keeps pace when fractional refresh timestamps straddle a deadline', () => {
+    render(<RadarDisplay {...props} />);
+    for (let index = 1; index <= 600; index++) {
+      refresh((index * 1000) / 59.94 + (index % 2 ? 0.2 : -0.2));
+    }
+    // A few refreshes can fall before the deadline, but its phase must not
+    // reset after each miss and lock painting to every other refresh.
+    expect(draw.mock.calls.length).toBeGreaterThanOrEqual(590);
+    expect(draw.mock.calls.length).toBeLessThanOrEqual(601);
+  });
+
   it('paints each available frame below 60 Hz without catch-up bursts', () => {
     render(<RadarDisplay {...props} />);
     for (let index = 1; index <= 30; index++) refresh((index * 1000) / 30);
     expect(draw).toHaveBeenCalledTimes(31);
     refresh(5000);
     expect(draw).toHaveBeenCalledTimes(32);
+    expect(pending.size).toBe(1);
+  });
+
+  it('skips missed paint slots after a stall without a catch-up burst', () => {
+    render(<RadarDisplay {...props} />);
+    refresh(5001);
+    expect(draw).toHaveBeenCalledTimes(2);
+    refresh(5001 + 1000 / 240);
+    refresh(5001 + 2000 / 240);
+    expect(draw).toHaveBeenCalledTimes(2);
+    refresh(5001 + 4000 / 240);
+    expect(draw).toHaveBeenCalledTimes(3);
     expect(pending.size).toBe(1);
   });
 
