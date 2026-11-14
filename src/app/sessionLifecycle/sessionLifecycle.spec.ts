@@ -417,6 +417,26 @@ describe('sessionLifecycle', () => {
       ['in the garage', { IsOnTrack: true, IsInGarage: true }, false],
       ['watching a replay', { IsOnTrack: true, IsReplayPlaying: true }, false],
       ['spotting for a team-mate', { IsOnTrack: false }, false],
+      [
+        'LMU, at the monitor with the car left in its pit box',
+        { PlayerCarInPitStall: true, LmuOutOfCar: true },
+        false,
+      ],
+      [
+        'LMU, at the monitor with the car left on pit road',
+        { OnPitRoad: true, LmuOutOfCar: true },
+        false,
+      ],
+      [
+        'LMU, in the car in its pit box',
+        { PlayerCarInPitStall: true, LmuOutOfCar: false },
+        true,
+      ],
+      [
+        'LMU, on track whatever the out-of-car flag says',
+        { IsOnTrack: true, LmuOutOfCar: true },
+        true,
+      ],
     ];
 
     it.each(drivingCases)(
