@@ -560,7 +560,10 @@ void app.whenReady().then(async () => {
   // Setup IPC bridges
   setupLogBridge();
   setupStorageStatusBridge();
-  const disposeWidgetPreviews = setupWidgetPreviewBridge(runtimePerfMetrics);
+  const disposeWidgetPreviews = setupWidgetPreviewBridge(
+    runtimePerfMetrics,
+    getSessionLifecycle()
+  );
   app.once('will-quit', disposeWidgetPreviews);
   fuelDatabase = setupFuelCalculatorBridge();
   const pitLaneBridge = setupPitLaneBridge(overlayManager, channelBus);

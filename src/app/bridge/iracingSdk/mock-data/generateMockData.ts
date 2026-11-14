@@ -138,6 +138,7 @@ export function generateMockData(sessionData?: {
             const throttleValue = prevTelemetry.Throttle.value[0];
             const brakeValue = prevTelemetry.Brake.value[0];
             const jitteredBrakeValue = jitterValue(brakeValue);
+            const jitteredThrottleValue = jitterValue(throttleValue);
 
             // Simulate RPM and gear changes for demo mode
             // Check if we're at or above shift RPM
@@ -269,7 +270,23 @@ export function generateMockData(sessionData?: {
               },
               Throttle: {
                 ...prevTelemetry.Throttle,
-                value: [jitterValue(throttleValue)],
+                value: [jitteredThrottleValue],
+              },
+              // The demo drives with no assists, so the raw pedals are the
+              // processed ones. Left as recorded they stayed at 0, and every
+              // widget set to Use Raw Inputs (and the lap trace, which reads
+              // raw pedals first) showed the pedals untouched.
+              BrakeRaw: {
+                ...prevTelemetry.BrakeRaw,
+                value: [jitteredBrakeValue],
+              },
+              ThrottleRaw: {
+                ...prevTelemetry.ThrottleRaw,
+                value: [jitteredThrottleValue],
+              },
+              ClutchRaw: {
+                ...prevTelemetry.ClutchRaw,
+                value: [prevTelemetry.Clutch.value[0]],
               },
               Gear: {
                 ...prevTelemetry.Gear,

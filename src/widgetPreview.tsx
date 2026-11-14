@@ -23,6 +23,7 @@ import type {
   WidgetPreviewMessage,
   WidgetPreviewRequest,
 } from './types/widgetPreview';
+import { installAnimationGate } from '@irdashies/domain/widgetPreview/animationGate';
 import { createPreviewFrameBridge } from '@irdashies/domain/widgetPreview/frameBridge';
 import { createPreviewDashboardBridge } from '@irdashies/domain/widgetPreview/dashboardBridge';
 import { createPreviewStorage } from '@irdashies/domain/widgetPreview/previewStorage';
@@ -40,6 +41,10 @@ const GantryPreview = lazy(() =>
     default: module.GantryContent,
   }))
 );
+
+// Before any widget runs: while the host's demo is paused, the widgets'
+// animation loops stop on their last picture instead of painting on.
+const animation = installAnimationGate(window);
 
 // This entry has no preload. Its only data source is its owning preview host.
 const send = (request: WidgetPreviewRequest) =>
@@ -192,6 +197,8 @@ window.addEventListener('message', (event: MessageEvent<unknown>) => {
     renderPreview(message.config, message.session);
   else if (message.type === 'preview:config' && dashboard)
     renderPreview(message.config);
+  else if (message.type === 'preview:pause') animation.pause();
+  else if (message.type === 'preview:resume') animation.resume();
   else if (
     message.type === 'preview:snapshot' &&
     Object.hasOwn(channelRegistry, message.channel)

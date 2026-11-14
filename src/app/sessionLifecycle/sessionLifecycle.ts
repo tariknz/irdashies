@@ -156,8 +156,13 @@ export function createSessionLifecycle(): SessionLifecycle {
 
     // Mirrors the renderer's useDrivingState: in the car counts even when
     // stationary in the pit box, while the garage and replay playback do not.
-    const inCar =
-      flag('IsOnTrack') || flag('PlayerCarInPitStall') || flag('OnPitRoad');
+    // LMU keeps the pit flags set for a car left in the pit lane while the
+    // player watches from the monitor, and says so with LmuOutOfCar, so the
+    // pit flags only count while it is not set. iRacing never publishes it.
+    const pitted =
+      !flag('LmuOutOfCar') &&
+      (flag('PlayerCarInPitStall') || flag('OnPitRoad'));
+    const inCar = flag('IsOnTrack') || pitted;
     const isDriving = inCar && !flag('IsInGarage') && !flag('IsReplayPlaying');
 
     if (isDriving === lastIsDriving) return;
