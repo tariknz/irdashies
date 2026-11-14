@@ -289,20 +289,23 @@ export const RadarDisplay = memo(
       };
       const intervalMs = 1000 / 60;
       let nextPaintAt = performance.now();
-      const paint = () => {
-        const now = performance.now();
+      const paint = (now: number) => {
         if (now + 1e-6 >= nextPaintAt) {
-          // Carry the deadline so 144 Hz displays average 60 paints, rather
-          // than rounding every interval up to three refreshes (48 paints).
-          nextPaintAt =
-            now - nextPaintAt >= intervalMs
-              ? now + intervalMs
-              : nextPaintAt + intervalMs;
+          // Keep the deadline's phase even across missed frames. Resetting
+          // it to now + intervalMs can skip every other refresh near 60 Hz.
+          // Advance past missed slots without issuing catch-up paints.
+          nextPaintAt +=
+            Math.max(
+              1,
+              Math.floor((now - nextPaintAt + 1e-6) / intervalMs) + 1
+            ) * intervalMs;
           perfMetrics.measure('radarFrame', drawFrame);
         }
+        // Use the refresh timestamp so callback delivery delays cannot move
+        // the paint schedule. drawFrame still measures actual elapsed time.
         if (active) handle = requestAnimationFrame(paint);
       };
-      paint();
+      paint(performance.now());
       return () => cancelAnimationFrame(handle);
     }, [size, active, widgetScale]);
 
