@@ -3,6 +3,11 @@ import { GantryTabBar } from './components/GantryTabBar/GantryTabBar';
 import { GantryStandings } from './components/GantryStandings/GantryStandings';
 import { GantryIncidents } from './components/GantryIncidents/GantryIncidents';
 import { LapGraphView } from './components/LapGraph/LapGraphView';
+import {
+  GantryPitStops,
+  type PitStopsClassFilter,
+  type PitStopsMode,
+} from './components/GantryPitStops/GantryPitStops';
 import { SplitPane } from './components/SplitPane/SplitPane';
 import { GantryPanel } from './components/GantryPanel/GantryPanel';
 import { useGantryAlwaysOnTop } from './hooks/useGantryAlwaysOnTop';
@@ -20,7 +25,7 @@ import {
 import type { LapGraphMode } from '@irdashies/domain';
 import { simulatorDisplayName, type LapGraphAxisFit } from '@irdashies/types';
 
-type GantryView = 'standings-incidents' | 'lap-graph';
+type GantryView = 'standings-incidents' | 'lap-graph' | 'pit-stops';
 
 /** Where the standings/incidents divider sits. A UI preference, not config. */
 const SPLIT_STORAGE_KEY = 'gantryStandingsSplitPercent';
@@ -55,6 +60,10 @@ const GantryInner = memo(({ dock, standings }: GantryProps) => {
   const [lapGraphPins, setLapGraphPins] = useState<readonly number[] | null>(
     null
   );
+  const [pitClassFilter, setPitClassFilter] =
+    useState<PitStopsClassFilter | null>(null);
+  const [pitMode, setPitMode] = useState<PitStopsMode>('stops');
+  const [pitTeamFilter, setPitTeamFilter] = useState<number | null>(null);
 
   useReplayContextUpdater();
   useRaceControlBridge(); // subscribe to incidents on mount
@@ -142,6 +151,19 @@ const GantryInner = memo(({ dock, standings }: GantryProps) => {
               onAxisFitChange={setLapGraphAxisFit}
               chosenPins={lapGraphPins}
               onPinsChange={setLapGraphPins}
+            />
+          </div>
+        )}
+        {activeView === 'pit-stops' && (
+          <div className="flex-1 min-h-0 overflow-hidden p-3">
+            <GantryPitStops
+              followedCarIdx={followedCarIdx}
+              classFilter={pitClassFilter}
+              onClassFilterChange={setPitClassFilter}
+              mode={pitMode}
+              onModeChange={setPitMode}
+              teamFilter={pitTeamFilter}
+              onTeamFilterChange={setPitTeamFilter}
             />
           </div>
         )}

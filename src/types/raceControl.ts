@@ -154,6 +154,15 @@ export interface CarIncidentState {
   hasPrevFrame: boolean;
 }
 
+export interface PitStopReplayTarget {
+  sessionNum: number;
+  /** When the car reached its pit box, or entered the pit lane without one. */
+  sessionTime: number;
+  carNumber: string;
+  carIdx: number;
+  driverName: string;
+}
+
 export interface RaceControlBridge {
   getIncidents: () => Promise<{
     /** SubSessionID used to select the persisted incident file. */
@@ -161,6 +170,8 @@ export interface RaceControlBridge {
     incidents: Incident[];
   }>;
   replayIncident: (incident: Incident, seconds: number) => Promise<void>;
+  /** Jumps the replay to a pit stop, always on the Far Chase camera. */
+  replayPitStop: (stop: PitStopReplayTarget, seconds: number) => Promise<void>;
   /** Points the sim's camera at a car, without moving the replay position. */
   focusDriver: (carNumber: string) => Promise<void>;
   clearIncidents: () => Promise<void>;

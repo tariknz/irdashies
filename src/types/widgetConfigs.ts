@@ -1,4 +1,5 @@
 import type { DashboardWidget } from './dashboardLayout';
+import type { GantryPitStopsConfig } from './gantryPitStops';
 import type { CornerNameOverlayConfig } from './cornerName';
 import type { LapTraceColors, LapTraceSound, LapTraceSource } from './lapTrace';
 import type { LmuBadgeFormat } from './lmu';
@@ -1343,6 +1344,8 @@ export interface GantryConfig {
   dock: GantryDockConfig;
   /** Which standings the left pane shows. Sanitise with sanitizeGantryStandings. */
   standings: GantryStandingsConfig;
+  /** Pit service timings per car. Sanitise with sanitizeGantryPitStops. */
+  pitStops: GantryPitStopsConfig;
 }
 
 export interface GantryWindowConfig {
@@ -1600,7 +1603,8 @@ export type SettingsTabType =
   | 'braking'
   | 'help'
   | 'dock'
-  | 'standings';
+  | 'standings'
+  | 'pitstops';
 
 /** Available widgets for the Fuel Calculator */
 export type FuelWidgetType =

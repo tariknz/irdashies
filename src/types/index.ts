@@ -13,6 +13,7 @@ export * from './raceControl';
 export * from './widgetConfigs';
 export * from './gantryDock';
 export * from './gantryStandings';
+export * from './gantryPitStops';
 export * from './defaultDashboard';
 export * from './widgetPreview';
 export * from './cornerName';
