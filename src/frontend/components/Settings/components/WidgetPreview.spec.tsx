@@ -331,6 +331,7 @@ describe('settings widget preview', () => {
   it('pauses and plays without touching the frame or its connection', async () => {
     render(<WidgetPreview widgetId="broadcastticker" />);
     const frame = await connectedFrame('Broadcast Ticker demo');
+    fireEvent.load(frame);
     const posted = watchFrame(frame);
     request(frame, {
       type: 'preview:subscribe',
@@ -344,7 +345,9 @@ describe('settings widget preview', () => {
     expect(screen.getByTitle('Broadcast Ticker demo')).toBe(frame);
     expect(stop).not.toHaveBeenCalled();
     expect(disconnect).not.toHaveBeenCalled();
-    expect(screen.queryByText(/paused/i)).toBeNull();
+    // Said over the frame, which keeps its picture.
+    expect(screen.getByText('Preview paused')).toBeVisible();
+    expect(frame).not.toHaveClass('invisible');
     // Still connected: a widget asking for a channel gets it, and settings
     // changes reach the paused frame.
     request(frame, {
@@ -367,6 +370,7 @@ describe('settings widget preview', () => {
     // Asked anyway; main ignores it outside the car.
     expect(playInCar).toHaveBeenCalledOnce();
     expect(disconnect).not.toHaveBeenCalled();
+    expect(screen.queryByText('Preview paused')).toBeNull();
   });
 
   it("reports only the page's own reasons to pause", async () => {
@@ -446,7 +450,8 @@ describe('settings widget preview', () => {
     expect(frame).toHaveClass('invisible');
     expect(playButton()).toBeVisible();
     expect(screen.queryByText('Loading preview…')).toBeNull();
-    expect(screen.queryByText(/paused/i)).toBeNull();
+    // The empty stage says why.
+    expect(screen.getByText('Preview paused')).toBeVisible();
 
     fireEvent.click(playButton());
     expect(playInCar).toHaveBeenCalledOnce();
@@ -479,6 +484,18 @@ describe('settings widget preview', () => {
     status({ driving: true, running: false });
     expect(frame).not.toHaveClass('invisible');
     expect(playButton()).toBeVisible();
+    expect(screen.getByText('Preview paused')).toBeVisible();
+  });
+
+  it('says the preview is paused while the window is minimised or in the tray', async () => {
+    render(<WidgetPreview widgetId="input" />);
+    const frame = await connectedFrame('Input Traces demo');
+    expect(screen.queryByText('Preview paused')).toBeNull();
+    status({ windowHidden: true, running: false });
+    expect(screen.getByText('Preview paused')).toBeVisible();
+    expect(screen.getByTitle('Input Traces demo')).toBe(frame);
+    status({ running: true });
+    expect(screen.queryByText('Preview paused')).toBeNull();
   });
 
   it('hides a reloaded frame document again until its demo runs', async () => {
@@ -497,7 +514,7 @@ describe('settings widget preview', () => {
     const frame = await connectedFrame('Input Traces demo');
     status({ driving: true, running: false });
     expect(screen.getByTitle('Input Traces demo')).toBe(frame);
-    expect(screen.queryByText(/paused/i)).toBeNull();
+    expect(screen.getByText('Preview paused')).toBeVisible();
 
     fireEvent.click(playButton());
     expect(playInCar).toHaveBeenCalledOnce();
@@ -506,6 +523,7 @@ describe('settings widget preview', () => {
     expect(playButton()).toBeVisible();
     status({ driving: true, playInCar: true, running: true });
     expect(pauseButton()).toBeVisible();
+    expect(screen.queryByText('Preview paused')).toBeNull();
 
     // A pause and play while it runs in the car is the page's own.
     fireEvent.click(pauseButton());

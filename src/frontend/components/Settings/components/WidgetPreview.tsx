@@ -328,6 +328,19 @@ export const WidgetPreview = ({
             Loading preview…
           </div>
         )}
+        {/* Over the frame, which keeps the paused picture underneath: paused
+            by the button, in the car, or with the window minimised or in the
+            tray. */}
+        {preview.renderFrame && !preview.playing && (
+          <div
+            className="pointer-events-none absolute inset-x-0 top-2 flex justify-center"
+            role="status"
+          >
+            <span className="rounded-md bg-slate-800/90 px-2 py-1 text-xs text-slate-300 shadow">
+              Preview paused
+            </span>
+          </div>
+        )}
       </div>
       <div className="flex shrink-0 items-center gap-2 border-t border-slate-700 px-3 py-1.5 text-xs text-slate-400">
         <p className="flex-1">
