@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, type RefObject } from 'react';
 import { perfMetrics } from '@irdashies/utils/perfMetrics';
 
 export const TRACK_POSITION_INTERVAL_MS = 1000 / 25;
@@ -156,40 +156,34 @@ export class ProgressInterpolator {
   }
 }
 
-/** `maxFps` caps redraws, for maps that do not need the full refresh rate. */
+/**
+ * Coalesce positional snapshots into RAF draws. Canvas owners mark invalidation
+ * before this hook's layout effect when a resize/static rebuild clears pixels;
+ * those commits and appearance-only commits must repaint before presentation.
+ */
 export const useProgressAnimation = (
   drivers: ProgressSource,
   draw: DrawProgress,
-  maxFps?: number
+  maxFps?: number,
+  canvasInvalidatedRef?: RefObject<boolean>
 ) => {
   const interpolatorRef = useRef<ProgressInterpolator | null>(null);
   const drawRef = useRef(draw);
   const frameRef = useRef(0);
   const lastDrawRef = useRef(0);
   const previousDriversRef = useRef<ProgressSource | null>(null);
+  const scheduleRef = useRef<() => void>(() => undefined);
   const minFrameMs = maxFps && maxFps > 0 ? 1000 / maxFps : 0;
 
   if (!interpolatorRef.current) {
     interpolatorRef.current = new ProgressInterpolator();
   }
 
-  // Commit the latest draw callback before target updates or RAF work. Skip
-  // the repaint when the target effect below will paint this same commit.
-  useLayoutEffect(() => {
-    drawRef.current = draw;
-    if (previousDriversRef.current !== drivers) return;
-    const interpolator = interpolatorRef.current;
-    if (!interpolator) return;
-    const drawCommittedAppearance = () =>
-      draw(interpolator.getValues(), interpolator.getCount());
-    perfMetrics.measure('trackMapAnimationFrame', drawCommittedAppearance);
-  });
-
+  // Keep a single pending frame across snapshots. Only a cap change or unmount
+  // replaces the scheduler; position updates never restart the cap's clock.
   useLayoutEffect(() => {
     const interpolator = interpolatorRef.current;
     if (!interpolator) return;
-    previousDriversRef.current = drivers;
-
     let frameTime = 0;
     const measuredFrame = () => {
       const active = interpolator.advance(frameTime);
@@ -197,36 +191,59 @@ export const useProgressAnimation = (
       return active;
     };
     const frame = (now: number) => {
+      frameRef.current = 0;
       if (minFrameMs > 0 && now - lastDrawRef.current < minFrameMs) {
-        frameRef.current = requestAnimationFrame(frame);
+        scheduleRef.current();
         return;
       }
       frameTime = now;
       lastDrawRef.current = now;
-      const active = perfMetrics.measure(
-        'trackMapAnimationFrame',
-        measuredFrame
-      );
-      frameRef.current = active ? requestAnimationFrame(frame) : 0;
+      if (perfMetrics.measure('trackMapAnimationFrame', measuredFrame)) {
+        scheduleRef.current();
+      }
     };
-
-    // Always paint in this commit: other layout effects may have just cleared
-    // the canvas. The cap only limits the frames in between.
-    const now = performance.now();
-    const active = interpolator.setTargets(drivers, now);
-    lastDrawRef.current = now;
-    const drawSnapshot = () =>
-      drawRef.current(interpolator.getValues(), interpolator.getCount());
-    perfMetrics.measure('trackMapAnimationFrame', drawSnapshot);
-    if (active && frameRef.current === 0) {
-      frameRef.current = requestAnimationFrame(frame);
-    }
-
+    scheduleRef.current = () => {
+      if (frameRef.current === 0) {
+        frameRef.current = requestAnimationFrame(frame);
+      }
+    };
     return () => {
       if (frameRef.current !== 0) {
         cancelAnimationFrame(frameRef.current);
         frameRef.current = 0;
       }
     };
-  }, [drivers, minFrameMs]);
+  }, [minFrameMs]);
+
+  useLayoutEffect(() => {
+    // Publish data only at commit so an interrupted render cannot leak into RAF.
+    drawRef.current = draw;
+    const interpolator = interpolatorRef.current;
+    if (!interpolator) return;
+    const firstCommit = previousDriversRef.current === null;
+    const changed = previousDriversRef.current !== drivers;
+    const now = performance.now();
+    const active = changed
+      ? interpolator.setTargets(drivers, now)
+      : interpolator.advance(now);
+    previousDriversRef.current = drivers;
+
+    if (firstCommit || !changed || canvasInvalidatedRef?.current) {
+      // The cap applies to animation, never to restoring a cleared canvas or
+      // changing appearance while idle (including simultaneous new targets).
+      if (canvasInvalidatedRef) canvasInvalidatedRef.current = false;
+      lastDrawRef.current = now;
+      perfMetrics.measure('trackMapAnimationFrame', () =>
+        draw(interpolator.getValues(), interpolator.getCount())
+      );
+      if (!active && frameRef.current !== 0) {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = 0;
+      }
+    } else {
+      // Even a settled snapshot can change the roster, labels or pit state.
+      scheduleRef.current();
+    }
+    if (active) scheduleRef.current();
+  });
 };

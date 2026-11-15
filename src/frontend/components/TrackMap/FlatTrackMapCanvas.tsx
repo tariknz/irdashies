@@ -44,6 +44,7 @@ export const FlatTrackMapCanvas = ({
   maxFps,
 }: FlatTrackMapCanvasProps) => {
   const widgetScale = useWidgetScale();
+  const canvasInvalidatedRef = useRef(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const driversOffTrack = useCarIdxOffTrack();
@@ -100,6 +101,7 @@ export const FlatTrackMapCanvas = ({
     const resize = () => {
       const dpr = (window.devicePixelRatio || 1) * widgetScale;
       const { clientWidth: width, clientHeight: height } = canvas;
+      canvasInvalidatedRef.current = true;
       canvas.width = width * dpr;
       canvas.height = height * dpr;
 
@@ -140,7 +142,7 @@ export const FlatTrackMapCanvas = ({
     };
   }, [widgetScale]);
 
-  useProgressAnimation(drivers, (progressValues, count) => {
+  const drawFrame = (progressValues: Float64Array, count: number) => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx || canvasSize.width === 0) return;
@@ -293,7 +295,8 @@ export const FlatTrackMapCanvas = ({
         }
       }
     }
-  }, maxFps);
+  };
+  useProgressAnimation(drivers, drawFrame, maxFps, canvasInvalidatedRef);
 
   return (
     <div className="w-full h-full">

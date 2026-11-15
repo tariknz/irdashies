@@ -83,6 +83,12 @@ export interface TurnLabels {
 
 const TRACK_DRAWING_WIDTH = 1920;
 const TRACK_DRAWING_HEIGHT = 1080;
+const DEFAULT_TURN_LABELS: TurnLabels = {
+  enabled: false,
+  labelType: 'both',
+  highContrast: true,
+  labelFontSize: 100,
+};
 
 /** Mount canvas effects only once the requested drawing is available. */
 export const TrackCanvas = (props: TrackProps) => {
@@ -96,12 +102,7 @@ const LoadedTrackCanvas = ({
   trackId,
   drivers,
   driverIdentities,
-  turnLabels = {
-    enabled: false,
-    labelType: 'both',
-    highContrast: true,
-    labelFontSize: 100,
-  },
+  turnLabels = DEFAULT_TURN_LABELS,
   showCarNumbers = true,
   displayMode = 'carNumber',
   invertTrackColors = false,
@@ -129,6 +130,7 @@ const LoadedTrackCanvas = ({
   );
   const widgetScale = useWidgetScale();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasInvalidatedRef = useRef(false);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const debounceResizeRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined
@@ -240,6 +242,7 @@ const LoadedTrackCanvas = ({
       const { clientWidth: width, clientHeight: height } = canvas;
 
       // Set the actual canvas size in memory (scaled up for high-DPI)
+      canvasInvalidatedRef.current = true;
       canvas.width = width * dpr;
       canvas.height = height * dpr;
 
@@ -368,6 +371,8 @@ const LoadedTrackCanvas = ({
 
     cacheCtx.restore();
 
+    // The static blit clears cars too; restore the dynamic layer this commit.
+    canvasInvalidatedRef.current = true;
     // Blit to main canvas so static-only changes are visible immediately
     const ctx = canvas.getContext('2d');
     if (ctx) {
@@ -509,7 +514,8 @@ const LoadedTrackCanvas = ({
         }
       }
     },
-    maxFps
+    maxFps,
+    canvasInvalidatedRef
   );
 
   const renderIconOverlay = () =>
