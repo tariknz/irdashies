@@ -1,14 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ReplayDevelopmentControls } from './ReplayDevelopmentControls';
+import { RecordingCoverage } from './RecordingCoverage';
 
 const meta = {
-  component: ReplayDevelopmentControls,
+  component: RecordingCoverage,
   parameters: { layout: 'padded' },
   args: {
-    busy: false,
-    onCommand: () => undefined,
-    onSave: () => undefined,
-    onRestore: () => undefined,
     status: {
       file: 'session.ibt',
       playback: {
@@ -43,10 +39,10 @@ const meta = {
       },
     },
   },
-} satisfies Meta<typeof ReplayDevelopmentControls>;
+} satisfies Meta<typeof RecordingCoverage>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const PausedLoop: Story = {};
+export const MissingFields: Story = {};
 export const Capturing: Story = {
   args: {
     status: {

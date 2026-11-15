@@ -1,10 +1,13 @@
+import { PresentMonCapture, validatePresentMonConsole } from './presentMon';
+import { LiveTelemetryRecorder } from './liveRecorder';
 import { createIbtInspectorScenarioStore } from '../storage/ibtInspectorScenario';
-import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import path from 'node:path';
 import type { OverlayManager } from '../overlayManager';
 import type { ChannelBus } from '../bridge/channelBridge';
 import {
   getCurrentBridge,
+  onConnectedSimulatorChanged,
   reconfigureTelemetrySource,
 } from '../bridge/iracingSdk/setup';
 import { getCurrentProfileId, getDashboard } from '../storage/dashboards';
@@ -40,8 +43,31 @@ export function setupIbtInspector(manager: OverlayManager, bus: ChannelBus) {
   const scenarioStore = createIbtInspectorScenarioStore(
     path.join(app.getPath('userData'), 'ibt-inspector')
   );
+  let liveSession = false;
+  let liveIRacing = false;
+  const offConnection = onConnectedSimulatorChanged((simulator) => {
+    liveSession = simulator !== undefined;
+    liveIRacing = simulator === 'iracing';
+  });
+  let presentMonExecutable: string | undefined;
   const service = new IbtInspectorService({
+    createPresentMon: () => {
+      if (!presentMonExecutable)
+        throw new Error('Select the PresentMon console executable first');
+      return new PresentMonCapture(presentMonExecutable);
+    },
+    createRecorder: () => {
+      if (!liveIRacing)
+        throw new Error('Replayable live telemetry currently requires iRacing');
+      return new LiveTelemetryRecorder(
+        app.isPackaged
+          ? path.join(process.resourcesPath, 'irsdk_replay.exe')
+          : path.join(app.getAppPath(), 'build/Release/irsdk_replay.exe'),
+        path.join(app.getPath('documents'), 'iRacing', 'telemetry')
+      );
+    },
     getProfileId: getCurrentProfileId,
+    isLiveSession: () => liveSession,
     saveScenario: scenarioStore.save,
     directory: path.join(app.getPath('documents'), 'iRacing', 'telemetry'),
     workDirectory: path.join(app.getPath('userData'), 'ibt-inspector'),
@@ -176,7 +202,52 @@ export function setupIbtInspector(manager: OverlayManager, bus: ChannelBus) {
     return service.command(command);
   });
   ipcMain.handle('ibtInspector:stop', () => service.stop());
-  ipcMain.handle('ibtInspector:startCapture', () => service.startCapture());
+  ipcMain.handle('ibtInspector:selectPresentMon', async () => {
+    if (!enabled()) throw new Error('Enable Dev Tool in General settings');
+    if (process.platform !== 'win32')
+      throw new Error('PresentMon capture requires Windows');
+    const result = await dialog.showOpenDialog({
+      title: 'Select PresentMon console executable',
+      filters: [{ name: 'PresentMon console', extensions: ['exe'] }],
+      properties: ['openFile'],
+    });
+    if (result.canceled || !result.filePaths[0]) return false;
+    if (
+      !/^presentmon(?:[-_.a-z0-9]*)?\.exe$/i.test(
+        path.basename(result.filePaths[0])
+      ) ||
+      /service|application/i.test(path.basename(result.filePaths[0]))
+    )
+      throw new Error(
+        'Select the PresentMon console executable, not the GUI or service'
+      );
+    await validatePresentMonConsole(result.filePaths[0]);
+    presentMonExecutable = result.filePaths[0];
+    return true;
+  });
+  const captureOptions = (raw: unknown) => {
+    if (raw === undefined) return {};
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw))
+      throw new Error('Invalid capture options');
+    const options = raw as Record<string, unknown>;
+    if (
+      Object.keys(options).some(
+        (key) => !['presentMon', 'recordTelemetry'].includes(key)
+      ) ||
+      Object.values(options).some((value) => typeof value !== 'boolean')
+    )
+      throw new Error('Invalid capture options');
+    return {
+      presentMon: options.presentMon === true,
+      recordTelemetry: options.recordTelemetry === true,
+    };
+  };
+  ipcMain.handle('ibtInspector:startCapture', (_event, options: unknown) =>
+    service.startCapture(false, captureOptions(options))
+  );
+  ipcMain.handle('ibtInspector:startLiveCapture', (_event, options: unknown) =>
+    service.startCapture(true, captureOptions(options))
+  );
   ipcMain.handle('ibtInspector:stopCapture', () => service.stopCapture());
   ipcMain.handle('ibtInspector:memoryCheckpoint', () =>
     service.checkpointMemory()
@@ -204,6 +275,7 @@ export function setupIbtInspector(manager: OverlayManager, bus: ChannelBus) {
   reconcile();
   return async () => {
     off();
+    offConnection();
     closing = true;
     window?.destroy();
     await service.stop();

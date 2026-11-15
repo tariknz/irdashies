@@ -28,9 +28,28 @@ export interface IbtInspectorRendererHeapSample {
   totalHeapMB: number | null;
 }
 
+export interface IbtInspectorFrameMetrics {
+  timingSource?: 'present' | 'cpu-frame';
+  frames: number;
+  fps: number;
+  frameTimeMs: number;
+  p95FrameTimeMs: number;
+  p99FrameTimeMs: number;
+  low5Fps: number | null;
+  low1Fps: number | null;
+  cpuBusyMs: number | null;
+  gpuTimeMs: number | null;
+}
+
+export interface IbtInspectorCaptureOptions {
+  presentMon?: boolean;
+  recordTelemetry?: boolean;
+}
+
 export interface IbtInspectorTelemetrySample {
   elapsedSeconds: number;
   intervalSeconds: number;
+  gameFrames?: IbtInspectorFrameMetrics | null;
   appCpuPercent: number | null;
   appWorkingSetMB: number | null;
   appPrivateMemoryMB: number | null;
@@ -144,6 +163,9 @@ export interface IbtInspectorBaselineCapture {
 
 export interface IbtInspectorCaptureStatus {
   active: boolean;
+  mode?: 'replay' | 'live';
+  telemetryPath?: string | null;
+  presentMonError?: string | null;
   samples: number;
   reportPath: string | null;
   error: string | null;
@@ -177,7 +199,9 @@ export interface IbtInspectorBridge {
   load: (name: string, speed: number | 'max') => Promise<void>;
   command: (command: TapeReplayCommand) => Promise<void>;
   stop: () => Promise<void>;
-  startCapture: () => Promise<void>;
+  selectPresentMon: () => Promise<boolean>;
+  startCapture: (options?: IbtInspectorCaptureOptions) => Promise<void>;
+  startLiveCapture: (options?: IbtInspectorCaptureOptions) => Promise<void>;
   stopCapture: () => Promise<void>;
   checkpointMemory: () => Promise<void>;
   showReport: () => Promise<void>;

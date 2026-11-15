@@ -211,6 +211,19 @@ export function onPerfReport(callback: (report: PerfReport) => void) {
   };
 }
 
+const metricInstances = new Set<TelemetryPerfMetrics>();
+let inspectorCollection = false;
+
+/** Temporarily enables reports on existing SDK bridges without resetting the session. */
+export function startInspectorCollection(): () => void {
+  inspectorCollection = true;
+  for (const metrics of [...metricInstances]) metrics.startReporting(1000);
+  return () => {
+    inspectorCollection = false;
+    for (const metrics of [...metricInstances]) metrics.restoreReporting();
+  };
+}
+
 export class TelemetryPerfMetrics {
   private sections = new Map<string, SectionBuffer>();
   private tickIntervals = new FixedSampleBuffer();
@@ -240,12 +253,14 @@ export class TelemetryPerfMetrics {
   }
 
   get enabled(): boolean {
-    return this._enabled;
+    return this._enabled || inspectorCollection;
   }
 
   startReporting(intervalMs: number = DEFAULT_REPORT_INTERVAL_MS): void {
-    if (!this._enabled) return;
+    metricInstances.add(this);
+    if (!this.enabled) return;
     this.stopReporting();
+    metricInstances.add(this);
     const configuredInterval = Number(process.env.PERF_REPORT_INTERVAL_MS);
     const effectiveInterval =
       Number.isFinite(configuredInterval) && configuredInterval >= 1000
@@ -253,6 +268,17 @@ export class TelemetryPerfMetrics {
         : intervalMs;
     this.lastReportTime = performance.now();
     this.lastTickTime = 0;
+    this.tickCount = 0;
+    for (const buffer of [
+      this.tickIntervals,
+      this.iracingFrameRate,
+      this.iracingCpuForeground,
+      this.iracingCpuBackground,
+      this.iracingGpuUsage,
+    ])
+      buffer.reset();
+    for (const section of this.sections.values()) section.reset();
+    this.eventLoopDelay.reset();
     this.lastCpuUsage = process.cpuUsage();
     this.eventLoopDelay.enable();
     const channelMetrics = this.channelMetricsSource?.metricsSnapshot();
@@ -275,7 +301,13 @@ export class TelemetryPerfMetrics {
     setActivePerfMetrics(this);
   }
 
+  restoreReporting(): void {
+    this.stopReporting();
+    this.startReporting();
+  }
+
   stopReporting(): void {
+    metricInstances.delete(this);
     if (this.reportTimer) {
       clearInterval(this.reportTimer);
       this.reportTimer = null;
@@ -286,17 +318,17 @@ export class TelemetryPerfMetrics {
   }
 
   markStart(label: string): void {
-    if (!this._enabled) return;
+    if (!this.enabled) return;
     this.getOrCreateSection(label).markStart();
   }
 
   markEnd(label: string): void {
-    if (!this._enabled) return;
+    if (!this.enabled) return;
     this.getOrCreateSection(label).markEnd();
   }
 
   tick(telemetry?: Telemetry | null): void {
-    if (!this._enabled) return;
+    if (!this.enabled) return;
     const now = performance.now();
     if (this.lastTickTime > 0) {
       this.tickIntervals.add(now - this.lastTickTime);

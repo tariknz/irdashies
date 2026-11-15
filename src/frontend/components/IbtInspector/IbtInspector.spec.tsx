@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import { IbtInspector, IbtInspectorView } from './IbtInspector';
 import type { IbtInspectorBridge, IbtInspectorStatus } from '@irdashies/types';
-it('lists recordings, loads selected source paused, and starts capture with playback', async () => {
+it('plays the selected recording with capture and a whole-file loop', async () => {
   const status: IbtInspectorStatus = {
     file: null,
     playback: null,
@@ -48,50 +48,72 @@ it('lists recordings, loads selected source paused, and starts capture with play
       };
     }),
     command: vi.fn(async () => undefined),
-    stop: vi.fn(),
-    startCapture: vi.fn(),
-    stopCapture: vi.fn(),
+    stop: vi.fn(async () => {
+      status.file = null;
+      status.playback = null;
+    }),
+    startCapture: vi.fn(async () => {
+      status.capture.active = true;
+      status.capture.mode = 'replay';
+    }),
+    startLiveCapture: vi.fn(async () => {
+      status.capture.active = true;
+      status.capture.mode = 'live';
+    }),
+    selectPresentMon: vi.fn(async () => true),
+    stopCapture: vi.fn(async () => {
+      status.capture.active = false;
+    }),
     checkpointMemory: vi.fn(),
     showReport: vi.fn(),
   };
   render(<IbtInspector bridge={bridge} />);
   await screen.findByRole('option', { name: /race.ibt/ });
-  fireEvent.click(screen.getByRole('button', { name: 'Load recording' }));
+  expect(
+    screen.queryByRole('button', { name: 'Load recording' })
+  ).not.toBeInTheDocument();
+  expect(screen.queryByLabelText('Seek position')).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Save scenario' })
+  ).not.toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole('checkbox', { name: 'Loop entire recording' })
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Play' }));
   await waitFor(() => expect(bridge.load).toHaveBeenCalledWith('race.ibt', 1));
-  await screen.findByRole('button', { name: 'Play' });
-  fireEvent.click(screen.getByRole('button', { name: 'Next frame' }));
   await waitFor(() =>
-    expect(bridge.command).toHaveBeenCalledWith({ type: 'step' })
+    expect(bridge.startCapture).toHaveBeenCalledWith({ presentMon: false })
   );
-  await waitFor(() =>
-    expect(screen.getByRole('button', { name: 'Seek' })).toBeDisabled()
-  );
-  fireEvent.change(screen.getByLabelText('Seek position'), {
-    target: { value: '3.25' },
+  expect(bridge.command).toHaveBeenCalledWith({
+    type: 'loop',
+    range: { start: 0, end: 10 },
   });
-  fireEvent.click(screen.getByRole('button', { name: 'Seek' }));
+  expect(bridge.command).toHaveBeenCalledWith({ type: 'pause', paused: false });
+  await screen.findByRole('button', { name: 'Stop' });
+  fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+  await waitFor(() => expect(bridge.stopCapture).toHaveBeenCalledOnce());
+  expect(bridge.stop).toHaveBeenCalledOnce();
   await waitFor(() =>
-    expect(bridge.command).toHaveBeenCalledWith({ type: 'seek', seconds: 3.25 })
+    expect(screen.getByRole('button', { name: 'Live Capture' })).toBeEnabled()
   );
-  await waitFor(() =>
-    expect(screen.getByRole('button', { name: 'Loop A–B' })).toBeEnabled()
+  fireEvent.change(
+    screen.getByRole('combobox', { name: 'Live capture contents' }),
+    { target: { value: 'telemetry' } }
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Loop A–B' }));
-  await waitFor(() =>
-    expect(bridge.command).toHaveBeenCalledWith({
-      type: 'loop',
-      range: { start: 0, end: 10 },
+  fireEvent.click(
+    screen.getByRole('checkbox', {
+      name: 'Capture iRacing frame metrics with PresentMon',
     })
   );
+  await waitFor(() => expect(bridge.selectPresentMon).toHaveBeenCalled());
   await waitFor(() =>
-    expect(screen.getByRole('button', { name: 'Start capture' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Live Capture' })).toBeEnabled()
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Start capture' }));
-  await waitFor(() => expect(bridge.startCapture).toHaveBeenCalled());
+  fireEvent.click(screen.getByRole('button', { name: 'Live Capture' }));
   await waitFor(() =>
-    expect(bridge.command).toHaveBeenCalledWith({
-      type: 'pause',
-      paused: false,
+    expect(bridge.startLiveCapture).toHaveBeenCalledWith({
+      presentMon: true,
+      recordTelemetry: true,
     })
   );
 });

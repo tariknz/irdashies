@@ -323,9 +323,7 @@ export function PerformanceTelemetry({
       values: memoryCheckpoints.map(
         (checkpoint) => checkpoint.appPrivateMemoryMB
       ),
-      times: memoryCheckpoints.map(
-        (checkpoint) => checkpoint.elapsedSeconds
-      ),
+      times: memoryCheckpoints.map((checkpoint) => checkpoint.elapsedSeconds),
       dashed: true,
     },
   ];
@@ -445,9 +443,7 @@ export function PerformanceTelemetry({
             checkpoint.rendererHeaps.find((heap) => heap.key === key)
               ?.usedHeapMB ?? null
         ),
-        times: memoryCheckpoints.map(
-          (checkpoint) => checkpoint.elapsedSeconds
-        ),
+        times: memoryCheckpoints.map((checkpoint) => checkpoint.elapsedSeconds),
       });
     }
   }
@@ -583,9 +579,7 @@ export function PerformanceTelemetry({
             checkpoint.processes.find((process) => process.key === key)
               ?.privateMemoryMB ?? null
         ),
-        times: memoryCheckpoints.map(
-          (checkpoint) => checkpoint.elapsedSeconds
-        ),
+        times: memoryCheckpoints.map((checkpoint) => checkpoint.elapsedSeconds),
       });
     }
   }
@@ -682,6 +676,91 @@ export function PerformanceTelemetry({
 
       {samples.length ? (
         <>
+          {samples.some((sample) => sample.gameFrames) && (
+            <section className="mt-4 space-y-3">
+              <h3 className="text-sm font-semibold">iRacing · PresentMon</h3>
+              <p className="text-xs text-slate-400">
+                Each point covers one report interval. 5%/1% low = 1000 divided
+                by the mean of the slowest 5%/1% frame times; requires at least
+                20/100 frames. Timings describe the busiest game swap chain.
+                Missing CPU/GPU metrics remain unavailable.
+              </p>
+              {samples.some(
+                (sample) => sample.gameFrames?.timingSource === 'cpu-frame'
+              ) && (
+                <p className="text-xs text-amber-300">
+                  This PresentMon schema reports CPU frame cadence. FPS and lows
+                  use CPU FrameTime rather than present-to-present intervals.
+                </p>
+              )}
+              <div className="grid gap-3 md:grid-cols-2">
+                <TelemetryLineChart
+                  title="Game FPS and lows"
+                  unit="FPS"
+                  samples={samples}
+                  series={[
+                    {
+                      label: 'FPS',
+                      color: 'text-sky-400',
+                      values: samples.map((s) => s.gameFrames?.fps ?? null),
+                    },
+                    {
+                      label: '5% low',
+                      color: 'text-amber-400',
+                      values: samples.map((s) => s.gameFrames?.low5Fps ?? null),
+                    },
+                    {
+                      label: '1% low',
+                      color: 'text-red-400',
+                      values: samples.map((s) => s.gameFrames?.low1Fps ?? null),
+                    },
+                  ]}
+                />
+                <TelemetryLineChart
+                  title="Game frame time"
+                  unit="ms"
+                  samples={samples}
+                  series={[
+                    {
+                      label: 'Mean',
+                      color: 'text-sky-400',
+                      values: samples.map(
+                        (s) => s.gameFrames?.frameTimeMs ?? null
+                      ),
+                    },
+                    {
+                      label: 'p95',
+                      color: 'text-amber-400',
+                      values: samples.map(
+                        (s) => s.gameFrames?.p95FrameTimeMs ?? null
+                      ),
+                    },
+                    {
+                      label: 'p99',
+                      color: 'text-red-400',
+                      values: samples.map(
+                        (s) => s.gameFrames?.p99FrameTimeMs ?? null
+                      ),
+                    },
+                    {
+                      label: 'CPU busy',
+                      color: 'text-violet-400',
+                      values: samples.map(
+                        (s) => s.gameFrames?.cpuBusyMs ?? null
+                      ),
+                    },
+                    {
+                      label: 'GPU time',
+                      color: 'text-emerald-400',
+                      values: samples.map(
+                        (s) => s.gameFrames?.gpuTimeMs ?? null
+                      ),
+                    },
+                  ]}
+                />
+              </div>
+            </section>
+          )}
           <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-5">
             <Stat
               label="Latest app CPU"

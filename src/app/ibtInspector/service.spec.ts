@@ -22,6 +22,7 @@ const metrics = vi.hoisted(() => ({
   listener: undefined as ((report: PerfReport) => void) | undefined,
 }));
 vi.mock('../perfMetrics', () => ({
+  startInspectorCollection: vi.fn(() => vi.fn()),
   onPerfReport: (listener: (report: PerfReport) => void) => {
     metrics.listener = listener;
     return () => {
@@ -79,7 +80,6 @@ it.each([
   '../race.ibt',
   'C:\\race.ibt',
   '/race.ibt',
-  'race.irdt',
   'race.ibt/other',
   'a\0.ibt',
 ])('rejects unsafe file name %s', (name) =>
@@ -452,4 +452,48 @@ it('prevents steps and loop/speed changes from contaminating an active capture',
     type: 'loop',
     range: { start: 0, end: 2 },
   });
+});
+
+it('captures a live session without loading a recording and stops its optional collectors', async () => {
+  const stopPresentMon = vi.fn(async () => undefined);
+  const stopRecorder = vi.fn(async () => undefined);
+  const startRecorder = vi.fn(async () => undefined);
+  deps.isLiveSession = () => true;
+  deps.createPresentMon = () => ({
+    start: vi.fn(async () => undefined),
+    sample: () => null,
+    stop: stopPresentMon,
+    getError: () => null,
+  });
+  deps.createRecorder = () => ({
+    start: startRecorder,
+    stop: stopRecorder,
+    getError: () => null,
+  });
+  await service.startCapture(true, { presentMon: true, recordTelemetry: true });
+  expect(service.status().capture).toMatchObject({
+    active: true,
+    mode: 'live',
+  });
+  expect(service.status().playback).toBeNull();
+  expect(deps.switchSource).not.toHaveBeenCalled();
+  expect(startRecorder).toHaveBeenCalledWith(
+    expect.stringMatching(/irdashies-live-\d+\.irdt$/)
+  );
+  await service.stopCapture();
+  expect(stopPresentMon).toHaveBeenCalledOnce();
+  expect(stopRecorder).toHaveBeenCalledOnce();
+  const reportPath = service.status().capture.reportPath;
+  if (!reportPath) throw new Error('Missing capture report');
+  const report = JSON.parse(await readFile(reportPath, 'utf8'));
+  expect(report.source).toBe('live');
+});
+
+it('requires a live simulator and rejects a second capture without stopping the first', async () => {
+  deps.isLiveSession = () => false;
+  await expect(service.startCapture(true)).rejects.toThrow('running simulator');
+  deps.isLiveSession = () => true;
+  await service.startCapture(true);
+  await expect(service.startCapture(true)).rejects.toThrow('already running');
+  expect(service.status().capture.active).toBe(true);
 });

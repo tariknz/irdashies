@@ -1,20 +1,17 @@
-import { ReplayDevelopmentControls } from './ReplayDevelopmentControls';
+import { RecordingCoverage } from './RecordingCoverage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowClockwiseIcon,
   BugIcon,
   FileTextIcon,
   FolderOpenIcon,
-  PauseIcon,
   PlayIcon,
-  RecordIcon,
   StopIcon,
 } from '@phosphor-icons/react';
 import type {
   IbtFile,
   IbtInspectorBridge,
   IbtInspectorStatus,
-  TapeReplayCommand,
 } from '@irdashies/types';
 import { PerformanceTelemetry } from './PerformanceTelemetry';
 
@@ -49,20 +46,16 @@ export interface IbtInspectorViewProps {
   busy: boolean;
   error: string | null;
   truncated?: boolean;
+  presentMon?: boolean;
+  recordTelemetry?: boolean;
+  onPresentMon?: (enabled: boolean) => void;
+  onRecordTelemetry?: (enabled: boolean) => void;
   onSelect: (name: string) => void;
   onSpeed: (speed: string) => void;
-  onCommand?: (command: TapeReplayCommand) => void;
+  onLoop?: (enabled: boolean) => void;
   onAction: (
     action:
-      | 'refresh'
-      | 'load'
-      | 'pause'
-      | 'stop'
-      | 'capture'
-      | 'memoryCheckpoint'
-      | 'report'
-      | 'saveScenario'
-      | 'restoreScenario'
+      'refresh' | 'capture' | 'liveCapture' | 'memoryCheckpoint' | 'report'
   ) => void;
 }
 
@@ -75,12 +68,17 @@ export function IbtInspectorView({
   busy,
   error,
   truncated,
+  presentMon = false,
+  recordTelemetry = false,
+  onPresentMon,
+  onRecordTelemetry,
   onSelect,
   onSpeed,
   onAction,
-  onCommand,
+  onLoop,
 }: IbtInspectorViewProps) {
   const playback = status.playback;
+  const [loop, setLoop] = useState(false);
   return (
     <main className="flex min-h-screen flex-col gap-5 bg-slate-900 p-6 font-sans text-slate-100">
       <header className="flex items-start justify-between gap-4">
@@ -111,7 +109,7 @@ export function IbtInspectorView({
         </div>
         <div
           role="listbox"
-          aria-label="IBT recordings"
+          aria-label="Telemetry recordings"
           className="max-h-64 overflow-y-auto"
         >
           {files.length ? (
@@ -121,7 +119,7 @@ export function IbtInspectorView({
                 type="button"
                 role="option"
                 aria-selected={selected === file.name}
-                disabled={busy}
+                disabled={busy || status.capture.active}
                 onClick={() => onSelect(file.name)}
                 className={`flex w-full items-center gap-3 border-b border-slate-700/60 px-4 py-3 text-left last:border-0 hover:bg-slate-700/50 ${selected === file.name ? 'bg-sky-500/10 text-sky-200' : 'text-slate-200'}`}
               >
@@ -140,8 +138,8 @@ export function IbtInspectorView({
             ))
           ) : (
             <p className="p-6 text-sm text-slate-400">
-              No IBT files found. Record telemetry in iRacing, then refresh this
-              list.
+              No recordings found. Record telemetry in iRacing, then refresh
+              this list.
             </p>
           )}
         </div>
@@ -154,12 +152,30 @@ export function IbtInspectorView({
       </section>
       <section className="rounded-lg border border-slate-700 p-4">
         <div className="flex flex-wrap items-end gap-3">
+          <button
+            className={`${button} border-sky-500/50 bg-sky-500/15 text-sky-200`}
+            disabled={
+              busy ||
+              (status.capture.active && status.capture.mode === 'live') ||
+              (!selected && !status.capture.active)
+            }
+            onClick={() => onAction('capture')}
+          >
+            {status.capture.active && status.capture.mode !== 'live' ? (
+              <StopIcon size={16} />
+            ) : (
+              <PlayIcon size={16} weight="fill" />
+            )}
+            {status.capture.active && status.capture.mode !== 'live'
+              ? 'Stop'
+              : 'Play'}
+          </button>
           <label className="text-xs text-slate-400">
             Load speed
             <select
               aria-label="Load speed"
               value={speed}
-              disabled={busy}
+              disabled={busy || status.capture.active}
               onChange={(event) => onSpeed(event.target.value)}
               className="mt-1 block rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-white"
             >
@@ -170,34 +186,18 @@ export function IbtInspectorView({
               ))}
             </select>
           </label>
-          <button
-            className={`${button} border-sky-500/50 bg-sky-500/15 text-sky-200`}
-            disabled={busy || !selected || status.capture.active}
-            onClick={() => onAction('load')}
-          >
-            <PlayIcon size={16} weight="fill" />
-            Load recording
-          </button>
-          <button
-            className={button}
-            disabled={busy || !playback || playback.ended}
-            onClick={() => onAction('pause')}
-          >
-            {playback?.paused ? (
-              <PlayIcon size={16} />
-            ) : (
-              <PauseIcon size={16} />
-            )}{' '}
-            {playback?.paused ? 'Play' : 'Pause'}
-          </button>
-          <button
-            className={button}
-            disabled={busy || !playback}
-            onClick={() => onAction('stop')}
-          >
-            <StopIcon size={16} />
-            Stop replay
-          </button>
+          <label className="flex items-center gap-2 py-2 text-sm text-slate-300">
+            <input
+              type="checkbox"
+              checked={loop}
+              disabled={busy || status.capture.active}
+              onChange={(event) => {
+                setLoop(event.target.checked);
+                onLoop?.(event.target.checked);
+              }}
+            />
+            Loop entire recording
+          </label>
         </div>
         <div className="mt-4 flex items-center justify-between gap-3 text-xs text-slate-400">
           <span className="truncate">
@@ -223,13 +223,7 @@ export function IbtInspectorView({
             {playback.framesConsumed?.toLocaleString() ?? 'unavailable'}
           </p>
         )}
-        <ReplayDevelopmentControls
-          status={status}
-          busy={busy}
-          onCommand={onCommand}
-          onSave={() => onAction('saveScenario')}
-          onRestore={() => onAction('restoreScenario')}
-        />
+        <RecordingCoverage status={status} />
       </section>
       <section className="rounded-lg border border-slate-700 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -242,19 +236,29 @@ export function IbtInspectorView({
             </p>
           </div>
           <div className="flex gap-2">
+            <select
+              aria-label="Live capture contents"
+              disabled={busy || status.capture.active}
+              value={recordTelemetry ? 'telemetry' : 'metrics'}
+              onChange={(event) =>
+                onRecordTelemetry?.(event.target.value === 'telemetry')
+              }
+              className="rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm"
+            >
+              <option value="metrics">Performance metrics only</option>
+              <option value="telemetry">Metrics + replayable telemetry</option>
+            </select>
             <button
               className={button}
               disabled={
-                busy || !playback || (!status.capture.active && playback.ended)
+                busy ||
+                (status.capture.active && status.capture.mode !== 'live')
               }
-              onClick={() => onAction('capture')}
+              onClick={() => onAction('liveCapture')}
             >
-              {status.capture.active ? (
-                <StopIcon size={16} />
-              ) : (
-                <RecordIcon size={16} className="text-red-400" />
-              )}
-              {status.capture.active ? 'Stop capture' : 'Start capture'}
+              {status.capture.active && status.capture.mode === 'live'
+                ? 'Stop Live Capture'
+                : 'Live Capture'}
             </button>
             {status.capture.active && (
               <button
@@ -281,6 +285,25 @@ export function IbtInspectorView({
             </button>
           </div>
         </div>
+        <label className="mt-3 flex items-center gap-2 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            checked={presentMon}
+            disabled={busy || status.capture.active}
+            onChange={(event) => onPresentMon?.(event.target.checked)}
+          />
+          Capture iRacing frame metrics with PresentMon
+        </label>
+        <p className="mt-1 text-xs text-slate-500">
+          Select the PresentMon console executable when enabling. FPS, frame
+          time, 5%/1% low and available CPU/GPU timings are saved with each
+          performance sample.
+        </p>
+        {status.capture.presentMonError && (
+          <p role="alert" className="mt-2 text-xs text-amber-300">
+            PresentMon: {status.capture.presentMonError}
+          </p>
+        )}
         <p className="mt-3 text-xs leading-relaxed text-slate-400">
           Captures application and per-process CPU/memory, main and renderer V8
           heap, event-loop delay, processing sections and channel counters.
@@ -288,12 +311,15 @@ export function IbtInspectorView({
           sampling uses CDP and may add diagnostic overhead. The optional
           checkpoint forces GC in attached renderer windows only; the main
           process remains live. Renderer draw timings, GPU-engine utilization
-          and game FPS are not measured. Maximum speed tests throughput.
+          are not measured. PresentMon optionally measures game frames on
+          Windows. Maximum speed tests throughput.
         </p>
         <p className="mt-2 text-xs text-slate-500">
-          Keeps the 10 most recent captures, up to 64 MB or one hour each.
-          Post-GC checkpoints affect renderers only; main heap and OS process
-          memory remain live measurements.
+          Keeps the 10 most recent performance captures, up to 64 MB or one hour
+          each. Live telemetry recordings keep up to 10 files, 512 MB or one
+          hour each, in the telemetry directory. Post-GC checkpoints affect
+          renderers only; main heap and OS process memory remain live
+          measurements.
         </p>
         {status.capture.reportPath && !status.capture.active && (
           <p className="mt-2 break-all text-xs text-slate-400">
@@ -342,6 +368,9 @@ export function IbtInspector({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [truncated, setTruncated] = useState(false);
+  const [presentMon, setPresentMon] = useState(false);
+  const [recordTelemetry, setRecordTelemetry] = useState(false);
+  const loopEnabled = useRef(false);
   const pending = useRef(false);
   const revision = useRef(0);
   const refresh = useCallback(async () => {
@@ -385,8 +414,7 @@ export function IbtInspector({
     };
   }, [bridge]);
   const action = async (
-    name: Parameters<IbtInspectorViewProps['onAction']>[0] | 'command',
-    command?: TapeReplayCommand
+    name: Parameters<IbtInspectorViewProps['onAction']>[0]
   ) => {
     if (!bridge || pending.current) return;
     pending.current = true;
@@ -394,36 +422,35 @@ export function IbtInspector({
     setBusy(true);
     setError(null);
     try {
-      if (name === 'command' && command) await bridge.command(command);
-      if (name === 'saveScenario') await bridge.saveScenario();
-      if (name === 'restoreScenario') {
-        const scenario = await bridge.getScenario();
-        if (!scenario)
-          throw new Error(
-            'No saved scenario. Load a recording and save it first.'
-          );
-        await bridge.load(scenario.file, scenario.speed);
-        await bridge.command({ type: 'seek', seconds: scenario.position });
-        if (scenario.loop)
-          await bridge.command({ type: 'loop', range: scenario.loop });
-        setSelected(scenario.file);
-        setSpeed(String(scenario.speed));
-      }
       if (name === 'refresh') await refresh();
-      if (name === 'load')
-        await bridge.load(selected, speed === 'max' ? 'max' : Number(speed));
-      if (name === 'pause')
-        await bridge.command({
-          type: 'pause',
-          paused: !status.playback?.paused,
-        });
-      if (name === 'stop') await bridge.stop();
       if (name === 'capture') {
-        if (status.capture.active) await bridge.stopCapture();
-        else {
-          await bridge.startCapture();
-          await bridge.command({ type: 'pause', paused: false });
+        if (status.capture.active) {
+          await bridge.stopCapture();
+          await bridge.stop();
+        } else {
+          await bridge.load(selected, speed === 'max' ? 'max' : Number(speed));
+          if (loopEnabled.current) {
+            const loaded = await bridge.status();
+            if (loaded.playback && loaded.playback.duration > 0)
+              await bridge.command({
+                type: 'loop',
+                range: { start: 0, end: loaded.playback.duration },
+              });
+          }
+          try {
+            await bridge.startCapture({ presentMon });
+            await bridge.command({ type: 'pause', paused: false });
+          } catch (error) {
+            await bridge.stop();
+            throw error;
+          }
         }
+      }
+      if (name === 'liveCapture') {
+        if (status.capture.active) {
+          await bridge.stopCapture();
+          await refresh();
+        } else await bridge.startLiveCapture({ presentMon, recordTelemetry });
       }
       if (name === 'memoryCheckpoint') await bridge.checkpointMemory();
       if (name === 'report') await bridge.showReport();
@@ -445,9 +472,27 @@ export function IbtInspector({
       busy={busy}
       error={error}
       truncated={truncated}
+      presentMon={presentMon}
+      recordTelemetry={recordTelemetry}
+      onRecordTelemetry={setRecordTelemetry}
+      onPresentMon={(enabled) => {
+        if (!enabled) {
+          setPresentMon(false);
+          return;
+        }
+        if (!bridge) return;
+        setBusy(true);
+        void bridge
+          .selectPresentMon()
+          .then(setPresentMon)
+          .catch((error) => setError(String(error)))
+          .finally(() => setBusy(false));
+      }}
       onSelect={setSelected}
       onSpeed={setSpeed}
-      onCommand={(command) => void action('command', command)}
+      onLoop={(enabled) => {
+        loopEnabled.current = enabled;
+      }}
       onAction={(name) => void action(name)}
     />
   );

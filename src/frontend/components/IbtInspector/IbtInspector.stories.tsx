@@ -98,7 +98,7 @@ const meta = {
     files,
     selected: files[0].name,
     speed: '1',
-    onCommand: () => undefined,
+    onLoop: () => undefined,
     busy: false,
     error: null,
     status: {
@@ -287,6 +287,38 @@ export const Completed: Story = {
             deliveries: 3840,
           },
         ],
+      },
+    },
+  },
+};
+
+export const LiveCapture: Story = {
+  args: {
+    presentMon: true,
+    recordTelemetry: true,
+    status: {
+      ...meta.args.status,
+      file: null,
+      playback: null,
+      coverage: [],
+      capture: {
+        ...meta.args.status.capture,
+        active: true,
+        mode: 'live',
+        telemetry: chartSamples.map((sample, index) => ({
+          ...sample,
+          gameFrames: {
+            frames: 120,
+            fps: 120 - index * 2,
+            frameTimeMs: 8.3 + index * 0.2,
+            p95FrameTimeMs: 12 + index * 0.4,
+            p99FrameTimeMs: 16 + index * 0.5,
+            low5Fps: 84 - index,
+            low1Fps: 65 - index,
+            cpuBusyMs: 4 + index * 0.1,
+            gpuTimeMs: 7 + index * 0.2,
+          },
+        })),
       },
     },
   },

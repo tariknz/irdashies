@@ -282,6 +282,7 @@ int recordTelemetry(const std::vector<std::wstring>& arguments) {
     return 2;
   }
 
+  const auto stopFile = optionValue(arguments, L"--stop-file");
   double durationSeconds = 0;
   std::string error;
   const auto durationOption = optionValue(arguments, L"--duration");
@@ -296,6 +297,7 @@ int recordTelemetry(const std::vector<std::wstring>& arguments) {
 
   MappingReader reader(kIRacingObjectNames);
   while (!stopRequested.load() && !reader.connect()) {
+    if (stopFile.has_value() && std::filesystem::exists(*stopFile)) return 130;
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
   }
   if (stopRequested.load()) {
@@ -306,6 +308,7 @@ int recordTelemetry(const std::vector<std::wstring>& arguments) {
       reinterpret_cast<const irsdk_header*>(reader.mapping);
   while (!stopRequested.load() &&
          (sharedHeader->status & irsdk_stConnected) == 0) {
+    if (stopFile.has_value() && std::filesystem::exists(*stopFile)) return 130;
     WaitForSingleObject(reader.eventHandle, 250);
   }
   if (stopRequested.load()) {
@@ -415,7 +418,21 @@ int recordTelemetry(const std::vector<std::wstring>& arguments) {
   std::array<Candidate, IRSDK_MAX_BUFS> candidates{};
 
   bool disconnected = false;
+  auto nextControlCheck = std::chrono::steady_clock::now();
   while (!stopRequested.load()) {
+    bool requestedStop = false;
+    const auto controlNow = std::chrono::steady_clock::now();
+    if (stopFile.has_value() && controlNow >= nextControlCheck) {
+      std::error_code stopError;
+      requestedStop = std::filesystem::exists(*stopFile, stopError);
+      nextControlCheck = controlNow + std::chrono::milliseconds(250);
+    }
+    if (requestedStop ||
+        writer.bytesWritten() + replay::kMaxPayloadSize +
+            IRSDK_MAX_BUFS * (static_cast<std::uint64_t>(header.bufLen) + 40) + 80 >=
+            512ULL * 1024ULL * 1024ULL) {
+      break;
+    }
     if (durationSeconds > 0) {
       const auto elapsedSeconds =
           static_cast<double>(elapsedCounter(start)) /

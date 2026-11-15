@@ -85,6 +85,10 @@ class TapeWriter {
 
   bool finish(std::uint64_t mappingSize, std::string& error);
 
+  std::uint64_t bytesWritten() {
+    return static_cast<std::uint64_t>(stream_.tellp());
+  }
+
   std::uint64_t recordCount() const {
     return header_.recordCount;
   }

@@ -2,6 +2,7 @@ import type { IbtInspectorScenario } from '../../types/ibtInspectorScenario';
 import { replayWidgetCoverage } from '../../types/replayCoverage';
 import { createWriteStream, type WriteStream } from 'node:fs';
 import {
+  copyFile,
   lstat,
   mkdir,
   readFile,
@@ -18,6 +19,7 @@ import { randomUUID } from 'node:crypto';
 import { summarizeIbtInspectorTrend } from '../../types';
 import type {
   IbtInspectorChannelTotal,
+  IbtInspectorCaptureOptions,
   IbtInspectorMemoryCheckpoint,
   IbtInspectorProcessSample,
   IbtInspectorRendererHeapSample,
@@ -27,8 +29,12 @@ import type {
   TapeReplayCommand,
   TapeReplayStatus,
 } from '../../types';
-import { importIbt, type ReplayInputInfo } from './importIbt';
-import { onPerfReport, type PerfReport } from '../perfMetrics';
+import { importIbt, inspectLiveTape, type ReplayInputInfo } from './importIbt';
+import {
+  onPerfReport,
+  startInspectorCollection,
+  type PerfReport,
+} from '../perfMetrics';
 
 const MAX_CHART_TELEMETRY_POINTS = 240;
 const MAX_MEMORY_CHECKPOINTS = 240;
@@ -62,9 +68,9 @@ export function validateIbtName(name: unknown): asserts name is string {
     name.includes(':') ||
     name.includes('\0') ||
     path.basename(name) !== name ||
-    !name.toLowerCase().endsWith('.ibt')
+    !/\.(ibt|irdt)$/i.test(name)
   )
-    throw new Error('Select an IBT file from the telemetry directory');
+    throw new Error('Select a recording from the telemetry directory');
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -103,11 +109,26 @@ const isChannelTotal = (value: unknown): value is IbtInspectorChannelTotal =>
   isFiniteNumber(value.publications) &&
   isFiniteNumber(value.deliveries);
 
+const isGameFrames = (value: unknown): boolean =>
+  value === undefined ||
+  value === null ||
+  (isRecord(value) &&
+    (value.timingSource === undefined ||
+      value.timingSource === 'present' ||
+      value.timingSource === 'cpu-frame') &&
+    ['frames', 'fps', 'frameTimeMs', 'p95FrameTimeMs', 'p99FrameTimeMs'].every(
+      (key) => isFiniteNumber(value[key])
+    ) &&
+    ['low5Fps', 'low1Fps', 'cpuBusyMs', 'gpuTimeMs'].every((key) =>
+      isNullableNumber(value[key])
+    ));
+
 const isTelemetrySample = (
   value: unknown
 ): value is IbtInspectorTelemetrySample =>
   isRecord(value) &&
   isFiniteNumber(value.elapsedSeconds) &&
+  isGameFrames(value.gameFrames) &&
   isFiniteNumber(value.intervalSeconds) &&
   isNullableNumber(value.appCpuPercent) &&
   isNullableNumber(value.appWorkingSetMB) &&
@@ -228,6 +249,18 @@ export const parseCaptureReport = (
 
 interface InspectorDependencies {
   directory: string;
+  createPresentMon?: () => {
+    start: () => Promise<void>;
+    sample: () => IbtInspectorTelemetrySample['gameFrames'];
+    getError: () => string | null;
+    stop: () => Promise<void>;
+  };
+  createRecorder?: () => {
+    start: (output: string) => Promise<void>;
+    getError: () => string | null;
+    stop: () => Promise<void>;
+  };
+  isLiveSession?: () => boolean;
   getProfileId?: () => string;
   saveScenario?: (scenario: IbtInspectorScenario) => Promise<void>;
   getWidgetTypes?: () => string[];
@@ -266,6 +299,14 @@ export class IbtInspectorService {
   };
   private writer: WriteStream | null = null;
   private unsubscribe?: () => void;
+  private stopCollection?: () => void;
+  private liveCapture = false;
+  private presentMon?: ReturnType<
+    NonNullable<InspectorDependencies['createPresentMon']>
+  >;
+  private recorder?: ReturnType<
+    NonNullable<InspectorDependencies['createRecorder']>
+  >;
   private captureStart: TapeReplayStatus | null = null;
   private started = 0;
   private bytes = 0;
@@ -308,7 +349,7 @@ export class IbtInspectorService {
       throw error;
     }
     const candidates = entries
-      .filter((e) => e.isFile() && e.name.toLowerCase().endsWith('.ibt'))
+      .filter((e) => e.isFile() && /\.(ibt|irdt)$/i.test(e.name))
       .sort((a, b) => a.name.localeCompare(b.name));
     const files = await Promise.all(
       candidates.slice(0, 500).map(async (entry) => {
@@ -475,7 +516,11 @@ export class IbtInspectorService {
       );
       let switchAttempted = false;
       try {
-        const info = await importIbt(input, path.join(temporary, 'input.irdt'));
+        const info = name.toLowerCase().endsWith('.irdt')
+          ? await inspectLiveTape(input)
+          : await importIbt(input, path.join(temporary, 'input.irdt'));
+        if (info.format === 'irdt')
+          await copyFile(input, path.join(temporary, 'input.irdt'));
         this.requireEnabled();
         await this.stopInternal();
         switchAttempted = true;
@@ -558,10 +603,15 @@ export class IbtInspectorService {
     }
     if (captureError) throw captureError;
   }
-  startCapture() {
+  startCapture(live = false, options: IbtInspectorCaptureOptions = {}) {
     return this.serial(async () => {
       this.requireEnabled();
-      if (!this.file || !this.deps.getPlayback())
+      if (this.capture.active) throw new Error('Capture is already running');
+      if (live) {
+        await this.stopInternal();
+        if (!this.deps.isLiveSession?.())
+          throw new Error('Connect to a running simulator session first');
+      } else if (!this.file || !this.deps.getPlayback())
         throw new Error('Load an IBT first');
       if (this.capture.active) throw new Error('Capture is already running');
       const runs = path.join(this.deps.workDirectory, 'runs');
@@ -596,7 +646,42 @@ export class IbtInspectorService {
         hottestSections: [],
         channelActivity: [],
       };
-      this.captureStart = this.deps.getPlayback();
+      this.capture.mode = live ? 'live' : 'replay';
+      try {
+        if (options.presentMon) {
+          if (!this.deps.createPresentMon)
+            throw new Error('Select the PresentMon console executable first');
+          this.presentMon = this.deps.createPresentMon();
+          await this.presentMon.start();
+        }
+        if (live && options.recordTelemetry) {
+          if (!this.deps.createRecorder)
+            throw new Error('Telemetry recorder is unavailable');
+          this.recorder = this.deps.createRecorder();
+          await mkdir(this.deps.directory, { recursive: true });
+          this.capture.telemetryPath = path.join(
+            this.deps.directory,
+            `irdashies-live-${Date.now()}.irdt`
+          );
+          await this.recorder.start(this.capture.telemetryPath);
+        }
+      } catch (error) {
+        await Promise.allSettled([
+          this.presentMon?.stop(),
+          this.recorder?.stop(),
+        ]);
+        this.capture.reportPath = null;
+        this.capture.telemetryPath = null;
+        this.presentMon = undefined;
+        this.recorder = undefined;
+        this.capture.active = false;
+        this.capture.error =
+          error instanceof Error ? error.message : String(error);
+        throw error;
+      }
+      this.liveCapture = live;
+      if (live) this.stopCollection = startInspectorCollection();
+      this.captureStart = live ? null : this.deps.getPlayback();
       this.started = performance.now();
       this.bytes = 0;
       this.cpuSum = 0;
@@ -661,8 +746,13 @@ export class IbtInspectorService {
       publications: channelMetrics?.publications[name] ?? 0,
       deliveries: channelMetrics?.deliveries[name] ?? 0,
     }));
+    const gameFrames = this.presentMon?.sample() ?? null;
+    this.capture.presentMonError = this.presentMon?.getError() ?? null;
+    const recorderError = this.recorder?.getError();
+    if (recorderError) this.capture.error = recorderError;
     const line =
       JSON.stringify({
+        gameFrames,
         ...report,
         inspectorMemory: {
           elapsedSeconds,
@@ -684,6 +774,7 @@ export class IbtInspectorService {
     this.writer.write(line);
     this.capture.samples++;
     this.telemetrySamples.push({
+      gameFrames,
       elapsedSeconds,
       intervalSeconds:
         Number.isFinite(report.intervalMs) && report.intervalMs > 0
@@ -750,7 +841,7 @@ export class IbtInspectorService {
         this.channelTotals.set(name, total);
       }
     }
-    const playback = this.deps.getPlayback();
+    const playback = this.liveCapture ? null : this.deps.getPlayback();
     if (playback?.failed)
       this.capture.error = playback.error || 'Replay source failed';
     if (playback?.ended || playback?.failed)
@@ -968,6 +1059,20 @@ export class IbtInspectorService {
     await this.reportQueue;
     this.capture.active = false;
     this.deps.rendererHeapSampler?.stop();
+    this.stopCollection?.();
+    this.stopCollection = undefined;
+    const stopped = await Promise.allSettled([
+      this.presentMon?.stop(),
+      this.recorder?.stop(),
+    ]);
+    for (const result of stopped) {
+      if (result.status === 'rejected')
+        this.capture.error ??= String(result.reason);
+    }
+    this.capture.presentMonError = this.presentMon?.getError() ?? null;
+    this.capture.error ??= this.recorder?.getError() ?? null;
+    this.presentMon = undefined;
+    this.recorder = undefined;
     clearTimeout(this.timer);
     const writer = this.writer;
     this.writer = null;
@@ -989,7 +1094,9 @@ export class IbtInspectorService {
           {
             schemaVersion: 2,
             file: this.file,
-            source: 'ibt',
+            source: this.liveCapture ? 'live' : 'ibt',
+            telemetryPath: this.capture.telemetryPath,
+            presentMonError: this.capture.presentMonError,
             input: this.input,
             coverage: this.input
               ? replayWidgetCoverage(
@@ -1019,7 +1126,7 @@ export class IbtInspectorService {
             limitations: [
               'Periodic process reports include Inspector/Settings overhead and interval boundaries.',
               'Live V8 samples do not force GC or provide retaining paths. Manual checkpoints force GC in renderers only; main-process heap and all private-memory values remain live samples.',
-              'No renderer draw timings, GPU-engine utilization or game FPS measured.',
+              'No renderer draw timings or GPU-engine utilization measured. Optional PresentMon reports game present intervals; low FPS values are per report interval.',
               'SDK frame counts do not prove one draw per sample. IBT contains one session snapshot.',
               'CPU average is over valid process samples; process churn can make coverage incomplete.',
             ],

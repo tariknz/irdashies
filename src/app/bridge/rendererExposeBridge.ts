@@ -60,7 +60,12 @@ export function exposeBridge() {
         ipcRenderer.invoke('ibtInspector:load', name, speed),
       command: (command) => ipcRenderer.invoke('ibtInspector:command', command),
       stop: () => ipcRenderer.invoke('ibtInspector:stop'),
-      startCapture: () => ipcRenderer.invoke('ibtInspector:startCapture'),
+      selectPresentMon: () =>
+        ipcRenderer.invoke('ibtInspector:selectPresentMon'),
+      startCapture: (options) =>
+        ipcRenderer.invoke('ibtInspector:startCapture', options),
+      startLiveCapture: (options) =>
+        ipcRenderer.invoke('ibtInspector:startLiveCapture', options),
       stopCapture: () => ipcRenderer.invoke('ibtInspector:stopCapture'),
       checkpointMemory: () =>
         ipcRenderer.invoke('ibtInspector:memoryCheckpoint'),

@@ -13,6 +13,8 @@ import {
   resolvePerfSimulatorMode,
   sumCompletePrivateMemoryMB,
   TelemetryPerfMetrics,
+  startInspectorCollection,
+  getActivePerfMetrics,
 } from './perfMetrics';
 
 afterEach(() => {
@@ -203,4 +205,21 @@ describe('per-window channel attribution', () => {
       '7:track': 0,
     });
   });
+});
+
+it('enables the existing bridge collector for live capture and restores it without replacing the source', () => {
+  const metrics = new TelemetryPerfMetrics(false);
+  metrics.startReporting();
+  expect(metrics.enabled).toBe(false);
+  const stop = startInspectorCollection();
+  try {
+    expect(metrics.enabled).toBe(true);
+    expect(getActivePerfMetrics()).toBe(metrics);
+    metrics.tick();
+  } finally {
+    stop();
+    expect(metrics.enabled).toBe(false);
+    expect(getActivePerfMetrics()).toBeNull();
+    metrics.stopReporting();
+  }
 });
