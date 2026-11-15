@@ -1,4 +1,4 @@
-import { TrackLocation } from '@irdashies/types';
+import { TrackLocation, type PitStopTaintReason } from '@irdashies/types';
 import { PitSvFlags } from '../../irsdk/types/enums';
 import { forwardPct } from './pitStopModel';
 
@@ -54,17 +54,32 @@ export interface CompletedStop {
   windowEndPct: number;
   windowSeconds: number;
   stationarySeconds: number;
-  /** Caution, tow, driver swap, or a very long stop: not a clean sample. */
+  /** Caution, tow, lost position, or a very long stop: not a clean sample. */
   tainted: boolean;
+  /** Each reason once, in the order first seen. */
+  taintReasons: PitStopTaintReason[];
+  /** Seconds after entry when the stop was first tainted. */
+  firstTaintSeconds: number | null;
   /** A caution came out at some point between the window start and end. */
   caution: boolean;
   service: ServiceObservation | null;
 }
 
+/** The player's stop in progress, from pit entry to the window end. */
+export interface PlayerStopProgress {
+  entryTime: number;
+  entryPct: number;
+  /** NaN when the approach was not seen. */
+  windowStartTime: number;
+  windowStartPct: number;
+  stationarySeconds: number;
+  /** Service has run and finished. */
+  serviceDone: boolean;
+}
+
 export interface DetectorEvents {
   completed: CompletedStop[];
   playerEntered: boolean;
-  playerExited: boolean;
 }
 
 interface CarStop {
@@ -76,9 +91,16 @@ interface CarStop {
   exitTime: number;
   exitPct: number;
   stationary: number;
-  tainted: boolean;
+  taintReasons: PitStopTaintReason[];
+  firstTaintSeconds: number | null;
   caution: boolean;
 }
+
+const taint = (stop: CarStop, reason: PitStopTaintReason, time: number) => {
+  if (stop.taintReasons.includes(reason)) return;
+  stop.taintReasons.push(reason);
+  stop.firstTaintSeconds ??= Math.max(0, time - stop.entryTime);
+};
 
 interface ServiceState {
   active: boolean;
@@ -107,7 +129,6 @@ export class PitStopDetector {
   private readonly events: DetectorEvents = {
     completed: [],
     playerEntered: false,
-    playerExited: false,
   };
 
   constructor(private readonly maxCars = 64) {
@@ -148,7 +169,6 @@ export class PitStopDetector {
     const events = this.events;
     events.completed.length = 0;
     events.playerEntered = false;
-    events.playerExited = false;
 
     const dt =
       Number.isFinite(this.lastTime) && frame.time > this.lastTime
@@ -178,10 +198,15 @@ export class PitStopDetector {
     const valid = pct >= 0 && surface !== TrackLocation.NotInWorld;
 
     if (stop) {
-      if (frame.caution) stop.caution = true;
-      if (frame.caution || !valid || (isPlayer && frame.playerTowing)) {
-        stop.tainted = true;
+      if (frame.caution) {
+        stop.caution = true;
+        taint(stop, 'caution', frame.time);
       }
+      if (!(pct >= 0)) taint(stop, 'noPosition', frame.time);
+      if (surface === TrackLocation.NotInWorld) {
+        taint(stop, 'notInWorld', frame.time);
+      }
+      if (isPlayer && frame.playerTowing) taint(stop, 'towed', frame.time);
       if (surface === TrackLocation.InPitStall) stop.stationary += dt;
     }
 
@@ -196,7 +221,7 @@ export class PitStopDetector {
       if (approached) {
         const windowStartPct = wrap01(entryPct - frame.beforePct);
         const windowStartTime = this.timeAt(carIdx, windowStartPct);
-        this.stops.set(carIdx, {
+        const created: CarStop = {
           phase: 'inLane',
           entryTime: frame.time,
           entryPct,
@@ -206,11 +231,16 @@ export class PitStopDetector {
           exitPct: NaN,
           stationary: 0,
           caution: frame.caution,
-          tainted:
-            !Number.isFinite(windowStartTime) ||
-            windowStartTime > frame.time ||
-            frame.time - windowStartTime > MAX_APPROACH_SECONDS,
-        });
+          taintReasons: [],
+          firstTaintSeconds: null,
+        };
+        if (frame.caution) taint(created, 'caution', frame.time);
+        if (!Number.isFinite(windowStartTime) || windowStartTime > frame.time) {
+          taint(created, 'approachNotSeen', frame.time);
+        } else if (frame.time - windowStartTime > MAX_APPROACH_SECONDS) {
+          taint(created, 'approachTooOld', frame.time);
+        }
+        this.stops.set(carIdx, created);
         if (isPlayer) {
           this.events.playerEntered = true;
           this.service = this.freshService();
@@ -223,8 +253,6 @@ export class PitStopDetector {
       current.phase = 'exiting';
       current.exitTime = frame.time;
       current.exitPct = valid ? pct : this.prevPct[carIdx];
-      if (!valid) current.tainted = true;
-      if (isPlayer) this.events.playerExited = true;
     }
 
     if (current?.phase === 'exiting' && valid) {
@@ -265,6 +293,9 @@ export class PitStopDetector {
     this.stops.delete(carIdx);
     const service = isPlayer ? this.service.result : null;
     if (isPlayer) this.service = this.freshService();
+    if (stop.stationary > MAX_STATIONARY_SECONDS) {
+      taint(stop, 'longStop', crossing);
+    }
     this.events.completed.push({
       carIdx,
       entryPct: stop.entryPct,
@@ -274,9 +305,28 @@ export class PitStopDetector {
       windowSeconds: crossing - stop.windowStartTime,
       stationarySeconds: stop.stationary,
       caution: stop.caution,
-      tainted: stop.tainted || stop.stationary > MAX_STATIONARY_SECONDS,
+      tainted: stop.taintReasons.length > 0,
+      taintReasons: stop.taintReasons,
+      firstTaintSeconds:
+        stop.firstTaintSeconds === null
+          ? null
+          : Number(stop.firstTaintSeconds.toFixed(1)),
       service,
     });
+  }
+
+  /** The player's stop in progress, or null outside one. */
+  playerStop(playerCarIdx: number): PlayerStopProgress | null {
+    const stop = this.stops.get(playerCarIdx);
+    if (!stop) return null;
+    return {
+      entryTime: stop.entryTime,
+      entryPct: stop.entryPct,
+      windowStartTime: stop.windowStartTime,
+      windowStartPct: stop.windowStartPct,
+      stationarySeconds: stop.stationary,
+      serviceDone: this.service.result !== null,
+    };
   }
 
   private recordPassing(carIdx: number, pct: number, time: number) {

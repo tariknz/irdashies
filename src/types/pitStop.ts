@@ -100,9 +100,27 @@ export interface PitStopEstimateSnapshot {
   lossSeconds: number | null;
   /** True when a fuel stop is still needed to finish; null if unknown. */
   fuelStopNeeded: boolean | null;
+  /** The player is making a stop: the rejoin point counts down the loss left. */
+  inStop: boolean;
+  /** The nearest cars each side of the rejoin point when the player gets there. */
+  aheadCarIdx: number | null;
+  /** Seconds on the player's reference lap, to one decimal place. */
+  aheadGapSeconds: number | null;
+  behindCarIdx: number | null;
+  behindGapSeconds: number | null;
   sessionNum: number | null;
   version: number;
 }
+
+/** Why a stop was left out of the learned data. */
+export type PitStopTaintReason =
+  | 'caution'
+  | 'towed'
+  | 'noPosition'
+  | 'notInWorld'
+  | 'approachNotSeen'
+  | 'approachTooOld'
+  | 'longStop';
 
 export interface PitStopEstimateBreakdown {
   lossSeconds: number;
@@ -132,6 +150,10 @@ export interface PitStopReport {
   /** The player's lap when entering the pit lane. */
   lap: number | null;
   cautionDuringStop: boolean;
+  /** Empty for a clean stop, which is learned from. */
+  taintReasons: PitStopTaintReason[];
+  /** Seconds after pit entry when the stop was first tainted. */
+  firstTaintSeconds: number | null;
   trackId: number;
   carId: number;
   carClassId: number;
@@ -149,7 +171,7 @@ export interface PitStopReport {
   predictedBehindCarIdx: number | null;
   actualAheadCarIdx: number | null;
   actualBehindCarIdx: number | null;
-  /** Reference-lap seconds to those cars, at pit entry for the prediction and at the exit line for the actual. */
+  /** Reference-lap seconds to those cars: predicted at pit entry, actual at the end of the measuring window. */
   predictedAheadGapSeconds: number | null;
   predictedBehindGapSeconds: number | null;
   actualAheadGapSeconds: number | null;

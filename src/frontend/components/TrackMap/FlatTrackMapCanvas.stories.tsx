@@ -503,6 +503,8 @@ export const PitExitEstimate: Story = {
       nearPct: 0.4,
       farPct: 0.44,
       state: 'ok',
+      ahead: { carIdx: 30, gapSeconds: 6.1 },
+      behind: { carIdx: 22, gapSeconds: 2.3 },
     },
   },
 };
@@ -516,6 +518,8 @@ export const PitExitEstimateCalibrating: Story = {
       nearPct: 0.36,
       farPct: 0.48,
       state: 'calibrating',
+      ahead: null,
+      behind: null,
     },
   },
 };
@@ -529,6 +533,8 @@ export const PitExitEstimateUnreliable: Story = {
       nearPct: 0.39,
       farPct: 0.45,
       state: 'unreliable',
+      ahead: null,
+      behind: null,
     },
   },
 };

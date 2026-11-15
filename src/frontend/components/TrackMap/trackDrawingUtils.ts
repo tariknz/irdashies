@@ -553,9 +553,9 @@ export const drawPitExitRange = (
 
 /**
  * The rejoin point as a white ring with a black edge and a "PIT" tag, drawn
- * over the cars. It relies on shape and contrast, not colour, so it stands out
- * from every class colour. Dashed while calibrating; dashed and faded under
- * caution.
+ * over the cars, with the cars either side listed below it. It relies on shape
+ * and contrast, not colour, so it stands out from every class colour. Dashed
+ * while calibrating; dashed and faded under caution.
  */
 export const drawPitExitMarker = (
   ctx: CanvasRenderingContext2D,
@@ -564,7 +564,8 @@ export const drawPitExitMarker = (
   project: Project,
   radius: number,
   fontSize: number,
-  scratch: { x: number; y: number }
+  scratch: { x: number; y: number },
+  trafficLines: readonly string[] = []
 ) => {
   project(wrapLap(anchorProgress - marker.offsetPct), scratch);
   const { x, y } = scratch;
@@ -598,5 +599,34 @@ export const drawPitExitMarker = (
   ctx.fill();
   ctx.fillStyle = 'white';
   ctx.fillText(PIT_EXIT_LABEL, x, top + height / 2);
+
+  if (trafficLines.length > 0) {
+    const lineHeight = fontSize * 1.2;
+    let widest = 0;
+    for (const line of trafficLines) {
+      widest = Math.max(widest, ctx.measureText(line).width);
+    }
+    const boxWidth = widest + padX * 2;
+    const boxHeight = lineHeight * trafficLines.length + fontSize * 0.3;
+    const boxTop = y + radius + radius * 0.3;
+    ctx.fillStyle = 'black';
+    ctx.beginPath();
+    ctx.roundRect(
+      x - boxWidth / 2,
+      boxTop,
+      boxWidth,
+      boxHeight,
+      lineHeight * 0.3
+    );
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    trafficLines.forEach((line, index) => {
+      ctx.fillText(
+        line,
+        x,
+        boxTop + fontSize * 0.15 + lineHeight * (index + 0.5)
+      );
+    });
+  }
   ctx.restore();
 };

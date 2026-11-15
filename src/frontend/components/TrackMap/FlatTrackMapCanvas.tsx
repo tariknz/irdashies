@@ -10,7 +10,10 @@ import {
   drawPitExitRange,
   getCachedTextVisualOffset,
 } from './trackDrawingUtils';
-import type { PitExitMarker } from './hooks/usePitExitMarker';
+import {
+  pitExitTrafficLines,
+  type PitExitMarker,
+} from './hooks/usePitExitMarker';
 
 export interface FlatTrackMapCanvasProps {
   trackDrawing: TrackDrawing;
@@ -92,6 +95,17 @@ export const FlatTrackMapCanvas = ({
   }, [drivers, isMultiClass, highlightColor]);
 
   const pitExitPointRef = useRef({ x: 0, y: 0 });
+  // One line: the strip has little room below the track.
+  const pitExitTraffic = useMemo(() => {
+    if (!pitExit) return [];
+    const lines = pitExitTrafficLines(
+      pitExit,
+      (carIdx) =>
+        drivers.find((entry) => entry.driver.CarIdx === carIdx)?.driver
+          .CarNumber
+    );
+    return lines.length > 0 ? [lines.join('  |  ')] : [];
+  }, [pitExit, drivers]);
   const projectProgress = useMemo(() => {
     const usableWidth = canvasSize.width - HORIZONTAL_PADDING * 2;
     const centerY = canvasSize.height / 2;
@@ -342,7 +356,8 @@ export const FlatTrackMapCanvas = ({
         projectProgress,
         playerCircleSize * circleScale * 1.35,
         playerCircleSize * circleScale * 0.8 * (trackmapFontSize / 100),
-        pitExitPointRef.current
+        pitExitPointRef.current,
+        pitExitTraffic
       );
     }
   };

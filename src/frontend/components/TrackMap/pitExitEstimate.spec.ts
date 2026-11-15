@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { PitStopEstimateSnapshot } from '@irdashies/types';
 import { drawPitExitMarker, drawPitExitRange } from './trackDrawingUtils';
-import { toPitExitMarker } from './hooks/usePitExitMarker';
+import { pitExitTrafficLines, toPitExitMarker } from './hooks/usePitExitMarker';
 
 const snapshot = (
   overrides: Partial<PitStopEstimateSnapshot> = {}
@@ -13,6 +13,11 @@ const snapshot = (
   lapsLost: 0,
   lossSeconds: 40,
   fuelStopNeeded: true,
+  inStop: false,
+  aheadCarIdx: null,
+  aheadGapSeconds: null,
+  behindCarIdx: null,
+  behindGapSeconds: null,
   sessionNum: 0,
   version: 1,
   ...overrides,
@@ -28,7 +33,35 @@ describe('toPitExitMarker', () => {
       nearPct: 0.38,
       farPct: 0.42,
       state: 'ok',
+      ahead: null,
+      behind: null,
     });
+  });
+
+  it('carries the cars either side of the rejoin point', () => {
+    const marker = toPitExitMarker(
+      snapshot({
+        aheadCarIdx: 3,
+        aheadGapSeconds: 1.4,
+        behindCarIdx: 9,
+        behindGapSeconds: 2,
+      }),
+      7,
+      on
+    );
+    expect(marker?.ahead).toEqual({ carIdx: 3, gapSeconds: 1.4 });
+    expect(marker?.behind).toEqual({ carIdx: 9, gapSeconds: 2 });
+  });
+
+  it('stays up during a stop after refuelling clears "fuel stop needed"', () => {
+    const fuelOnly = { enabled: true, showWhen: 'fuelStopNeeded' as const };
+    expect(
+      toPitExitMarker(
+        snapshot({ fuelStopNeeded: false, inStop: true }),
+        7,
+        fuelOnly
+      )
+    ).not.toBeNull();
   });
 
   it('shows nothing when switched off, hidden, or without a position', () => {
@@ -54,6 +87,38 @@ describe('toPitExitMarker', () => {
   });
 });
 
+describe('pitExitTrafficLines', () => {
+  const numbers: Record<number, string> = { 3: '12', 9: '7' };
+  const carNumber = (carIdx: number) => numbers[carIdx];
+
+  it('lists the car ahead then the car behind, with the gaps', () => {
+    expect(
+      pitExitTrafficLines(
+        {
+          ahead: { carIdx: 3, gapSeconds: 1.4 },
+          behind: { carIdx: 9, gapSeconds: 2 },
+        },
+        carNumber
+      )
+    ).toEqual(['#12 1.4s ahead', '#7 2.0s behind']);
+  });
+
+  it('leaves out a side with no car, or a car it cannot name', () => {
+    expect(
+      pitExitTrafficLines(
+        { ahead: null, behind: { carIdx: 9, gapSeconds: 0.3 } },
+        carNumber
+      )
+    ).toEqual(['#7 0.3s behind']);
+    expect(
+      pitExitTrafficLines(
+        { ahead: { carIdx: 99, gapSeconds: 1 }, behind: null },
+        carNumber
+      )
+    ).toEqual([]);
+  });
+});
+
 describe('pit exit drawing', () => {
   const context = () => {
     const moves: number[] = [];
@@ -68,6 +133,7 @@ describe('pit exit drawing', () => {
       roundRect: vi.fn(),
       fill: vi.fn(),
       fillText: vi.fn(),
+      measureText: vi.fn((text: string) => ({ width: text.length * 5 })),
       setLineDash: vi.fn(),
       stroke: vi.fn(function (this: { strokeStyle: string }) {
         strokes.push(this.strokeStyle);
@@ -106,6 +172,26 @@ describe('pit exit drawing', () => {
       expect.closeTo(0.3, 6),
       expect.any(Number)
     );
+  });
+
+  it('lists the cars either side below the ring, one per line', () => {
+    const { ctx } = context();
+    drawPitExitMarker(ctx, marker, 0.5, flat, 10, 8, scratch(), [
+      '#12 1.4s ahead',
+      '#7 2.0s behind',
+    ]);
+    const texts = vi.mocked(ctx.fillText).mock.calls;
+    const ahead = texts.find(([text]) => text === '#12 1.4s ahead');
+    const behind = texts.find(([text]) => text === '#7 2.0s behind');
+    expect(ahead?.[2]).toBeGreaterThan(10);
+    expect(behind?.[2]).toBeGreaterThan(ahead?.[2] ?? Infinity);
+    expect(ctx.roundRect).toHaveBeenCalledTimes(2);
+  });
+
+  it('draws no traffic box without traffic', () => {
+    const { ctx } = context();
+    drawPitExitMarker(ctx, marker, 0.5, flat, 10, 8, scratch());
+    expect(ctx.roundRect).toHaveBeenCalledTimes(1);
   });
 
   it('dashes the ring while calibrating and fades it under caution', () => {

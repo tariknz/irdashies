@@ -22,7 +22,10 @@ import {
   compareDriverDrawOrder,
   type PositionedTrackDriver,
 } from './trackDrawingUtils';
-import type { PitExitMarker } from './hooks/usePitExitMarker';
+import {
+  pitExitTrafficLines,
+  type PitExitMarker,
+} from './hooks/usePitExitMarker';
 import {
   progressToTrackPoint,
   useProgressAnimation,
@@ -161,6 +164,18 @@ const LoadedTrackCanvas = ({
   const sfDirection = trackDrawing?.startFinish?.direction;
   const sfIntersectionLength = trackDrawing?.startFinish?.point?.length;
   const pitExitPointRef = useRef({ x: 0, y: 0 });
+  const pitExitTraffic = useMemo(
+    () =>
+      pitExit
+        ? pitExitTrafficLines(
+            pitExit,
+            (carIdx) =>
+              drivers.find((entry) => entry.driver.CarIdx === carIdx)?.driver
+                .CarNumber
+          )
+        : [],
+    [pitExit, drivers]
+  );
   const projectProgress = useMemo(
     () =>
       trackPathPoints && totalLength && sfIntersectionLength !== undefined
@@ -520,7 +535,8 @@ const LoadedTrackCanvas = ({
           projectProgress,
           playerCircleSize * 1.35,
           playerCircleSize * 0.8 * (trackmapFontSize / 100),
-          pitExitPointRef.current
+          pitExitPointRef.current,
+          pitExitTraffic
         );
       }
       ctx.restore();
