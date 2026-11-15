@@ -41,11 +41,29 @@ import {
   RENDERER_DATA_SUBSCRIPTION_BRIDGE,
   type RendererDataStream,
 } from './rendererDataSubscriptions';
-import { createSubscriptionBridgeClient, defineBridge } from './defineBridge';
+import {
+  createSharedSubscription,
+  createSubscriptionBridgeClient,
+  defineBridge,
+} from './defineBridge';
 import type { TapeReplayBridge } from '@irdashies/types';
 // The module itself, not the barrel: preload needs this one list, not every
 // default the types package exports.
 import { RENDERER_PERF_MEASURE_NAMES } from '../../types/performance';
+
+/** The shape the race plan settings read before anything else. */
+const isRacePlanState = (value: unknown): value is RacePlanState =>
+  !!value &&
+  typeof value === 'object' &&
+  'config' in value &&
+  !!value.config &&
+  typeof value.config === 'object' &&
+  'hasApiKey' in value &&
+  typeof value.hasApiKey === 'boolean' &&
+  'canStoreApiKey' in value &&
+  typeof value.canStoreApiKey === 'boolean' &&
+  'status' in value &&
+  typeof value.status === 'string';
 
 export function exposeBridge() {
   defineBridge<TapeReplayBridge>('tapeReplayBridge', {
@@ -60,10 +78,6 @@ export function exposeBridge() {
     setAutoShow: (enabled) =>
       ipcRenderer.invoke('releaseNotes:autoShow', enabled),
   });
-  // Consumers share one per-window subscription; main only sends to subscribers.
-  const racePlanSubscription =
-    createSubscriptionBridgeClient<'state'>('racePlan');
-  let racePlanConsumers = 0;
   defineBridge<RacePlanBridge>('racePlanBridge', {
     getState: () => ipcRenderer.invoke('racePlan:getState'),
     choosePlanning: (planningId) =>
@@ -73,23 +87,15 @@ export function exposeBridge() {
     clearApiKey: () => ipcRenderer.invoke('racePlan:clearApiKey'),
     listPlannings: () => ipcRenderer.invoke('racePlan:listPlannings'),
     refreshNow: () => ipcRenderer.invoke('racePlan:refreshNow'),
-    onStateChanged: (callback) => {
-      const handler = (_: Electron.IpcRendererEvent, state: RacePlanState) =>
-        callback(state);
-      ipcRenderer.on('racePlan:state', handler);
-      if (racePlanConsumers++ === 0) {
-        void racePlanSubscription.subscribe('state');
-      }
-      let active = true;
-      return () => {
-        if (!active) return;
-        active = false;
-        ipcRenderer.removeListener('racePlan:state', handler);
-        if (--racePlanConsumers === 0) {
-          void racePlanSubscription.unsubscribe('state');
-        }
-      };
-    },
+    // Main only sends to subscribed windows, and only changes: consumers
+    // read the current state with getState.
+    onStateChanged: createSharedSubscription({
+      name: 'racePlan',
+      key: 'state',
+      channel: 'racePlan:state',
+      parse: (value) => (isRacePlanState(value) ? value : undefined),
+      label: '[RacePlan] State',
+    }),
   });
   if (isRendererPerfMetricsEnabled()) {
     defineBridge<RendererPerfBridge>('rendererPerfBridge', {
