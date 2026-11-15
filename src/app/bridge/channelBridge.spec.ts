@@ -249,6 +249,31 @@ describe('ChannelBus', () => {
     expect(bus.subscriberCount('snapshot')).toBe(0);
   });
 
+  it('snapshots current subscription identity, effective rates and cleanup', () => {
+    const { bus } = createBus();
+    const target = createTarget(9);
+    bus.subscribe(target, 'snapshot', 1000);
+    bus.subscribe(target, 'event');
+    expect(bus.subscriptionSnapshot()).toEqual([
+      { rendererId: 9, channel: 'snapshot', rateHz: 60, active: true },
+      { rendererId: 9, channel: 'event', rateHz: 'event', active: true },
+    ]);
+    bus.rendererBecameHidden(9);
+    expect(
+      bus.subscriptionSnapshot().find((s) => s.channel === 'snapshot')?.active
+    ).toBe(false);
+    bus.unsubscribe(9, 'snapshot');
+    expect(bus.subscriptionSnapshot()).toHaveLength(1);
+    bus.publish('event', 'fact');
+    bus.removeRenderer(9);
+    expect(bus.subscriptionSnapshot()).toEqual([]);
+    expect(bus.metricsSnapshot()).toMatchObject({
+      publications: {},
+      deliveries: {},
+      channelDeliveries: { event: 1 },
+    });
+  });
+
   it('tracks publication and delivery counts per renderer and channel', () => {
     const { bus } = createBus();
     const target = createTarget(9);

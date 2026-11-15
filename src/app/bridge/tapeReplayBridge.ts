@@ -7,6 +7,21 @@ export function isTapeReplayCommand(
   if (!value || typeof value !== 'object') return false;
   const command = value as Record<string, unknown>;
   switch (command.type) {
+    case 'step':
+      return true;
+    case 'loop': {
+      if (command.range === null) return true;
+      if (!command.range || typeof command.range !== 'object') return false;
+      const range = command.range as Record<string, unknown>;
+      return (
+        typeof range.start === 'number' &&
+        Number.isFinite(range.start) &&
+        range.start >= 0 &&
+        typeof range.end === 'number' &&
+        Number.isFinite(range.end) &&
+        range.end > range.start
+      );
+    }
     case 'pause':
       return typeof command.paused === 'boolean';
     case 'seek':

@@ -6,6 +6,8 @@ const mockWaitForData = vi.hoisted(() => vi.fn());
 const mockReady = vi.hoisted(() => vi.fn());
 const mockGetTelemetry = vi.hoisted(() => vi.fn());
 const mockStopReporting = vi.hoisted(() => vi.fn());
+const mockMarkStart = vi.hoisted(() => vi.fn());
+const mockMarkEnd = vi.hoisted(() => vi.fn());
 const mockStopSDK = vi.hoisted(() => vi.fn());
 const mockSdkState = vi.hoisted(() => ({
   sessionVersion: 1,
@@ -35,8 +37,8 @@ vi.mock('../../perfMetrics', () => ({
   TelemetryPerfMetrics: class {
     startReporting = vi.fn();
     stopReporting = mockStopReporting;
-    markStart = vi.fn();
-    markEnd = vi.fn();
+    markStart = mockMarkStart;
+    markEnd = mockMarkEnd;
     tick = vi.fn();
   },
 }));
@@ -70,6 +72,8 @@ describe('publishIRacingSDKEvents session polling', () => {
     mockReady.mockReset().mockResolvedValue(true);
     mockGetTelemetry.mockReset().mockReturnValue(null);
     mockStopReporting.mockReset();
+    mockMarkStart.mockReset();
+    mockMarkEnd.mockReset();
     vi.mocked(logger.error).mockClear();
     offOverlayReady.mockClear();
     mockSdkState.sessionVersion = 1;
@@ -110,6 +114,73 @@ describe('publishIRacingSDKEvents session polling', () => {
       ['runningState', true],
     ]);
 
+    bridge.stop();
+  });
+
+  it('closes SDK wait and poll timings on a timeout iteration', async () => {
+    mockWaitForData.mockReturnValue(false);
+    const bridge = await publishIRacingSDKEvents(
+      createOverlayManager() as never
+    );
+
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(mockMarkStart.mock.calls).toContainEqual(['sdkWaitForData']);
+    expect(mockMarkEnd.mock.calls).toContainEqual(['sdkWaitForData']);
+    expect(mockMarkStart.mock.calls).toContainEqual(['sdkPollIteration']);
+    expect(mockMarkEnd.mock.calls).toContainEqual(['sdkPollIteration']);
+    bridge.stop();
+  });
+
+  it('closes SDK wait and poll timings when the SDK disconnects', async () => {
+    mockSdkState.sessionStatusOK = false;
+    mockWaitForData.mockReturnValue(false);
+    const bridge = await publishIRacingSDKEvents(
+      createOverlayManager() as never
+    );
+
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(mockMarkStart.mock.calls).toContainEqual(['sdkWaitForData']);
+    expect(mockMarkEnd.mock.calls).toContainEqual(['sdkWaitForData']);
+    expect(mockMarkStart.mock.calls).toContainEqual(['sdkPollIteration']);
+    expect(mockMarkEnd.mock.calls).toContainEqual(['sdkPollIteration']);
+    bridge.stop();
+  });
+
+  it('closes SDK wait and poll timings for a normal frame', async () => {
+    const bridge = await publishIRacingSDKEvents(
+      createOverlayManager() as never
+    );
+
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(mockMarkStart.mock.calls).toContainEqual(['sdkWaitForData']);
+    expect(mockMarkEnd.mock.calls).toContainEqual(['sdkWaitForData']);
+    expect(mockMarkStart.mock.calls).toContainEqual(['sdkPollIteration']);
+    expect(mockMarkEnd.mock.calls).toContainEqual(['sdkPollIteration']);
+    expect(mockMarkEnd.mock.calls).toContainEqual(['processTelemetry']);
+    bridge.stop();
+  });
+
+  it('closes SDK wait and poll timings when waitForData throws', async () => {
+    mockWaitForData.mockImplementationOnce(() => {
+      throw new Error('wait failed');
+    });
+    const bridge = await publishIRacingSDKEvents(
+      createOverlayManager() as never
+    );
+
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(mockMarkStart.mock.calls).toContainEqual(['sdkWaitForData']);
+    expect(mockMarkEnd.mock.calls).toContainEqual(['sdkWaitForData']);
+    expect(mockMarkStart.mock.calls).toContainEqual(['sdkPollIteration']);
+    expect(mockMarkEnd.mock.calls).toContainEqual(['sdkPollIteration']);
+    expect(logger.error).toHaveBeenCalledWith(
+      '[iracingSdkBridge] Telemetry poll failed; retrying',
+      expect.any(Error)
+    );
     bridge.stop();
   });
 

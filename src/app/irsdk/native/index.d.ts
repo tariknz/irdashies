@@ -21,6 +21,8 @@ export interface INativeSDK {
   getTapeReplayStatus?: () => TapeReplayStatus;
   seekTapeReplay?: (seconds: number) => boolean;
   setTapeReplaySpeed?: (speed: number) => boolean;
+  stepTapeReplay?: () => boolean;
+  setTapeReplayLoop?: (start: number, end: number) => boolean;
   setTapeReplayPaused?: (paused: boolean) => boolean;
   readonly currDataVersion: number;
   enableLogging: boolean;
@@ -107,6 +109,8 @@ export class NativeSDK implements INativeSDK {
   public getTapeReplayStatus?: () => TapeReplayStatus;
   public seekTapeReplay?: (seconds: number) => boolean;
   public setTapeReplaySpeed?: (speed: number) => boolean;
+  public stepTapeReplay?: () => boolean;
+  public setTapeReplayLoop?: (start: number, end: number) => boolean;
   public setTapeReplayPaused?: (paused: boolean) => boolean;
   public readonly currDataVersion: number;
 

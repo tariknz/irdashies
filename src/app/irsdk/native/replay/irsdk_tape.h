@@ -143,8 +143,18 @@ struct irsdk_tape_status {
   double speed;
   bool paused;
   bool ended;
+  bool maximumSpeed;
+  bool frameByFrame;
+  bool failed;
+  std::uint64_t framesConsumed;
+  std::uint64_t framesDelivered;
+  std::string error;
+  double loopStart;
+  double loopEnd;
 };
 irsdk_tape_status irsdk_tape_getStatus();
+bool irsdk_tape_step();
+bool irsdk_tape_setLoop(double start, double end);
 bool irsdk_tape_seek(double seconds);
 bool irsdk_tape_setSpeed(double speed);
 bool irsdk_tape_setPaused(bool paused);

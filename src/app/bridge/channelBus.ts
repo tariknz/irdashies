@@ -170,6 +170,13 @@ export class ChannelBus {
     for (const channel of this.subscriptions.keys()) {
       this.remove(channel, rendererId);
     }
+    // Per-renderer diagnostics have no owner after destruction. Aggregate
+    // channel totals retain the deliveries; do not retain an unbounded PID history.
+    const prefix = `${rendererId}:`;
+    for (const counters of [this.publicationCounts, this.deliveryCounts]) {
+      for (const key of counters.keys())
+        if (key.startsWith(prefix)) counters.delete(key);
+    }
   }
 
   publish<K extends ChannelName>(channel: K, payload: ChannelPayloads[K]): void;
@@ -289,6 +296,25 @@ export class ChannelBus {
   onSubscriberCountChanged(listener: SubscriberCountListener): () => void {
     this.subscriberCountListeners.add(listener);
     return () => this.subscriberCountListeners.delete(listener);
+  }
+
+  /** Current demand only: no retained history for destroyed/unsubscribed targets. */
+  subscriptionSnapshot(): {
+    rendererId: number;
+    channel: string;
+    rateHz: number | 'event';
+    active: boolean;
+  }[] {
+    return [...this.subscriptions].flatMap(([channel, subscribers]) =>
+      [...subscribers.values()]
+        .filter((s) => !s.target.isDestroyed())
+        .map((s) => ({
+          rendererId: s.target.id,
+          channel,
+          rateHz: s.rateHz,
+          active: s.active,
+        }))
+    );
   }
 
   metricsSnapshot(): ChannelBusMetricsSnapshot {

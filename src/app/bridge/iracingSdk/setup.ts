@@ -17,6 +17,7 @@ import {
 } from './simSelection';
 import { getCurrentProfileId, getDashboard } from '../../storage/dashboards';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
+import { updatePerfSourceMetadata } from '../../perfRunConfig';
 
 let isDemoMode = false;
 let currentBridge: IrSdkSourceBridge | undefined;
@@ -305,6 +306,16 @@ async function setupBridge(
         : simulator
           ? `[setup] Switching telemetry source to ${simulator}`
           : `[setup] No pinned simulator; auto-detecting among [${available.join(', ')}]`
+    );
+
+    updatePerfSourceMetadata(
+      isMock
+        ? 'mock'
+        : isTapeReplay || isLmuTapeReplay
+          ? 'tape'
+          : isIsolatedSdkReplay
+            ? 'sdk-replay'
+            : 'live'
     );
 
     const publishIRacingSDKEvents = isMock

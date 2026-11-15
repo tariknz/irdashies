@@ -30,6 +30,8 @@ Napi::Object iRacingSdkNode::Init(Napi::Env env, Napi::Object exports)
     InstanceMethod("broadcast", &iRacingSdkNode::BroadcastMessage),
 #ifdef IRDASHIES_TAPE_CONTROLS
     InstanceMethod("getTapeReplayStatus", &iRacingSdkNode::GetTapeReplayStatus),
+    InstanceMethod("stepTapeReplay", &iRacingSdkNode::StepTapeReplay),
+    InstanceMethod("setTapeReplayLoop", &iRacingSdkNode::SetTapeReplayLoop),
     InstanceMethod("seekTapeReplay", &iRacingSdkNode::SeekTapeReplay),
     InstanceMethod("setTapeReplaySpeed", &iRacingSdkNode::SetTapeReplaySpeed),
     InstanceMethod("setTapeReplayPaused", &iRacingSdkNode::SetTapeReplayPaused),
@@ -155,12 +157,37 @@ Napi::Value iRacingSdkNode::GetTapeReplayStatus(const Napi::CallbackInfo &info)
 {
   const auto status = irsdk_tape_getStatus();
   auto result = Napi::Object::New(info.Env());
+  result.Set("canStep", true);
+  if (status.loopStart >= 0) {
+    auto range = Napi::Object::New(info.Env());
+    range.Set("start", status.loopStart);
+    range.Set("end", status.loopEnd);
+    result.Set("loop", range);
+  } else result.Set("loop", info.Env().Null());
   result.Set("position", status.position);
   result.Set("duration", status.duration);
   result.Set("speed", status.speed);
   result.Set("paused", status.paused);
   result.Set("ended", status.ended);
+  result.Set("maximumSpeed", status.maximumSpeed);
+  result.Set("frameByFrame", status.frameByFrame);
+  result.Set("failed", status.failed);
+  result.Set("error", status.error);
+  result.Set("framesConsumed", static_cast<double>(status.framesConsumed));
+  result.Set("framesDelivered", static_cast<double>(status.framesDelivered));
   return result;
+}
+
+Napi::Value iRacingSdkNode::StepTapeReplay(const Napi::CallbackInfo &info)
+{
+  return Napi::Boolean::New(info.Env(), irsdk_tape_step());
+}
+
+Napi::Value iRacingSdkNode::SetTapeReplayLoop(const Napi::CallbackInfo &info)
+{
+  const bool valid = info.Length() >= 2 && info[0].IsNumber() && info[1].IsNumber();
+  return Napi::Boolean::New(info.Env(), valid && irsdk_tape_setLoop(
+      info[0].As<Napi::Number>().DoubleValue(), info[1].As<Napi::Number>().DoubleValue()));
 }
 
 Napi::Value iRacingSdkNode::SeekTapeReplay(const Napi::CallbackInfo &info)

@@ -7,8 +7,19 @@ export const PERF_REPLAY_READY_LOG_MARKER =
   '[PerfRun] Ready for replay publisher';
 export const PERF_VISIBILITY_LOG_PREFIX = '[PerfVisibility:JSON] ';
 export const PERF_CAPTURE_ORIGIN_LOG_PREFIX = '[PerfRunOrigin:JSON] ';
+export const PERF_RUNTIME_TOPOLOGY_LOG_PREFIX = '[PerfRunTopology:JSON] ';
 
 export type PerfOverlayMode = 'full' | 'empty' | 'observer';
+export type PerfSourceKind = 'mock' | 'tape' | 'sdk-replay' | 'live';
+
+/** Record the source selected by the bridge that actually feeds the run. */
+export function updatePerfSourceMetadata(
+  sourceKind: PerfSourceKind,
+  env: NodeJS.ProcessEnv = process.env
+): void {
+  if (env.PERF_METRICS !== '1') return;
+  env.PERF_SOURCE_KIND = sourceKind;
+}
 
 /**
  * Simulator a perf:run child should use. A publisher replay only starts once
@@ -133,6 +144,11 @@ export function updatePerfDashboardMetadata(
 ): void {
   env.PERF_ACTIVE_WIDGET_TYPES = JSON.stringify(
     activePerfWidgetTypes(dashboard)
+  );
+  env.PERF_ACTIVE_WIDGET_INSTANCES = JSON.stringify(
+    dashboard.widgets
+      .filter((widget) => widget.enabled)
+      .map((widget) => ({ id: widget.id, type: widget.type ?? widget.id }))
   );
   env.PERF_ACTIVE_WINDOW_MODE =
     dashboard.generalSettings?.overlayWindowMode === 'widget'

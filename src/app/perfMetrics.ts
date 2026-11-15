@@ -5,7 +5,8 @@
  * using ring buffers to avoid per-tick allocations. Reports summary stats
  * (avg, max, p99) and per-process resource usage at a configurable interval.
  *
- * Enabled via PERF_METRICS=1 environment variable.
+ * Enabled via PERF_METRICS=1. PERF_METRICS_COLLECTION=off disables optional
+ * collection/reporting while keeping the capture bootstrap and workload intact.
  */
 
 import { monitorEventLoopDelay, performance } from 'node:perf_hooks';
@@ -14,6 +15,9 @@ import type { NumericSampleStats, Telemetry } from '@irdashies/types';
 import type { ChannelBusMetricsSnapshot } from './bridge/channelBridge';
 import { FixedSampleBuffer } from '../shared/performanceSamples';
 import logger from './logger';
+import { ProcessCpuTimeTracker } from './processCpuTime';
+import type { PerfSourceKind } from './perfRunConfig';
+import { isPerfCollectionEnabled } from './perfCollectionConfig';
 
 export interface SectionStats {
   count: number;
@@ -26,11 +30,16 @@ export interface SectionStats {
 
 export interface ProcessMetrics {
   pid: number;
+  creationTime?: number;
   type: string;
   name?: string;
   cpuPercent: number;
   memoryMB: number;
   privateMemoryMB?: number;
+  /** Available only after two valid samples for this exact PID lifetime. */
+  cpuTimeMs?: number;
+  cpuTimeMsPerSecond?: number;
+  cpuSampleIntervalMs?: number;
 }
 
 export interface PerfReport {
@@ -61,15 +70,33 @@ export interface PerfReport {
   totalAppMemoryMB?: number;
   totalAppPrivateMemoryMB?: number;
   scenarioMetadata?: Record<string, unknown>;
+  runtimeWindows?: {
+    windowId: number;
+    webContentsId: number;
+    pid: number;
+    route: string;
+    visible: boolean;
+  }[];
   channelMetrics?: {
     processorExecutions: Record<string, number>;
     publications: Record<string, number>;
     deliveries: Record<string, number>;
+    rendererPublications: Record<string, number>;
+    rendererDeliveries: Record<string, number>;
+    subscriptions?: {
+      rendererId: number;
+      channel: string;
+      rateHz: number | 'event';
+      active: boolean;
+    }[];
   };
 }
 
 interface ChannelMetricsSource {
   metricsSnapshot(): ChannelBusMetricsSnapshot;
+  subscriptionSnapshot?(): NonNullable<
+    PerfReport['channelMetrics']
+  >['subscriptions'];
 }
 
 const PROCESSOR_CHANNELS: Readonly<Record<string, string>> = {
@@ -93,6 +120,35 @@ const PROCESSOR_CHANNELS: Readonly<Record<string, string>> = {
 
 const DEFAULT_REPORT_INTERVAL_MS = 10_000;
 export const PERF_MAIN_LOG_PREFIX = '[PerfMetrics:JSON] ';
+
+export const parsePerfSourceKind = (
+  value: string | undefined
+): PerfSourceKind | undefined =>
+  value === 'mock' ||
+  value === 'tape' ||
+  value === 'sdk-replay' ||
+  value === 'live'
+    ? value
+    : undefined;
+
+export const isSyntheticPerfSource = (
+  sourceKind: PerfSourceKind | undefined
+): boolean =>
+  sourceKind === 'mock' || sourceKind === 'tape' || sourceKind === 'sdk-replay';
+
+export const resolvePerfSimulatorMode = (
+  sourceKind: PerfSourceKind | undefined,
+  requestedMode: unknown
+): unknown => {
+  if (sourceKind === 'mock') return 'mock';
+  if (sourceKind === 'tape' || sourceKind === 'sdk-replay') return 'replay';
+  if (sourceKind === 'live') {
+    return requestedMode === 'replay' || requestedMode === 'live'
+      ? requestedMode
+      : 'live';
+  }
+  return requestedMode;
+};
 
 export const sumCompletePrivateMemoryMB = (
   privateBytes: readonly (number | undefined)[]
@@ -146,6 +202,15 @@ const setActivePerfMetrics = (instance: TelemetryPerfMetrics | null): void => {
 export const getActivePerfMetrics = (): TelemetryPerfMetrics | null =>
   activePerfMetrics;
 
+const reportListeners = new Set<(report: PerfReport) => void>();
+/** Main-process capture sinks; subscribers must dispose after bounded captures. */
+export function onPerfReport(callback: (report: PerfReport) => void) {
+  reportListeners.add(callback);
+  return () => {
+    reportListeners.delete(callback);
+  };
+}
+
 export class TelemetryPerfMetrics {
   private sections = new Map<string, SectionBuffer>();
   private tickIntervals = new FixedSampleBuffer();
@@ -160,14 +225,18 @@ export class TelemetryPerfMetrics {
   private lastCpuUsage: NodeJS.CpuUsage = { user: 0, system: 0 };
   private tickCount = 0;
   private _enabled: boolean;
+  private previousRendererPublications: Readonly<Record<string, number>> = {};
+  private previousRendererDeliveries: Readonly<Record<string, number>> = {};
   private previousChannelPublications: Readonly<Record<string, number>> = {};
   private previousChannelDeliveries: Readonly<Record<string, number>> = {};
+  private processCpuTime = new ProcessCpuTimeTracker();
+  private lastSourceKind: string | undefined;
 
   constructor(
     enabled?: boolean,
     private readonly channelMetricsSource?: ChannelMetricsSource
   ) {
-    this._enabled = enabled ?? process.env.PERF_METRICS === '1';
+    this._enabled = enabled ?? isPerfCollectionEnabled();
   }
 
   get enabled(): boolean {
@@ -187,12 +256,21 @@ export class TelemetryPerfMetrics {
     this.lastCpuUsage = process.cpuUsage();
     this.eventLoopDelay.enable();
     const channelMetrics = this.channelMetricsSource?.metricsSnapshot();
+    this.previousRendererPublications = channelMetrics?.publications ?? {};
+    this.previousRendererDeliveries = channelMetrics?.deliveries ?? {};
     this.previousChannelPublications =
       channelMetrics?.channelPublications ?? {};
     this.previousChannelDeliveries = channelMetrics?.channelDeliveries ?? {};
     this.reportTimer = setInterval(() => {
       const report = this.report();
       this.logReport(report);
+      for (const listener of reportListeners) {
+        try {
+          listener(report);
+        } catch (error) {
+          logger.error('[PerfMetrics] Capture listener failed', error);
+        }
+      }
     }, effectiveInterval);
     setActivePerfMetrics(this);
   }
@@ -203,6 +281,7 @@ export class TelemetryPerfMetrics {
       this.reportTimer = null;
     }
     this.eventLoopDelay.disable();
+    this.processCpuTime.reset();
     if (activePerfMetrics === this) setActivePerfMetrics(null);
   }
 
@@ -224,12 +303,14 @@ export class TelemetryPerfMetrics {
     }
     this.lastTickTime = now;
     this.tickCount++;
+    const sourceKind = this.syncSourceKind();
     if (telemetry) {
-      this.observeIRacing(telemetry);
+      if (!isSyntheticPerfSource(sourceKind)) this.observeIRacing(telemetry);
     }
   }
 
   report(): PerfReport {
+    this.syncSourceKind();
     const now = performance.now();
 
     const cpuUsage = process.cpuUsage(this.lastCpuUsage);
@@ -279,6 +360,7 @@ export class TelemetryPerfMetrics {
       totalAppPrivateMemoryMB: totalPrivateMemory,
       scenarioMetadata: this.scenarioMetadata(),
       channelMetrics: this.channelMetrics(sections),
+      runtimeWindows: this.runtimeWindows(),
     };
 
     this.lastReportTime = now;
@@ -306,6 +388,22 @@ export class TelemetryPerfMetrics {
     return buf;
   }
 
+  private runtimeWindows(): PerfReport['runtimeWindows'] {
+    try {
+      return BrowserWindow.getAllWindows()
+        .filter((win) => !win.isDestroyed())
+        .map((win) => ({
+          windowId: win.id,
+          webContentsId: win.webContents.id,
+          pid: win.webContents.getOSProcessId(),
+          route: win.webContents.getURL(),
+          visible: win.isVisible(),
+        }));
+    } catch {
+      return undefined;
+    }
+  }
+
   private scenarioMetadata(): Record<string, unknown> | undefined {
     try {
       const configured = JSON.parse(
@@ -318,8 +416,30 @@ export class TelemetryPerfMetrics {
       const activeWidgetTypes = JSON.parse(
         process.env.PERF_ACTIVE_WIDGET_TYPES ?? '[]'
       ) as unknown;
+      const configuredWidgetInstances: unknown = JSON.parse(
+        process.env.PERF_ACTIVE_WIDGET_INSTANCES ?? 'null'
+      );
+      const sourceKind = this.sourceKind();
       return {
         ...metadata,
+        ...(sourceKind
+          ? {
+              sourceKind,
+              simulatorMode: resolvePerfSimulatorMode(
+                sourceKind,
+                metadata.simulatorMode
+              ),
+            }
+          : {}),
+        configuredWidgetInstances: Array.isArray(configuredWidgetInstances)
+          ? configuredWidgetInstances.filter(
+              (value): value is { id: string; type: string } =>
+                typeof value === 'object' &&
+                value !== null &&
+                typeof value.id === 'string' &&
+                typeof value.type === 'string'
+            )
+          : undefined,
         overlayWindowMode: process.env.PERF_ACTIVE_WINDOW_MODE ?? 'display',
         activeWidgetTypes: Array.isArray(activeWidgetTypes)
           ? activeWidgetTypes.filter(
@@ -330,6 +450,22 @@ export class TelemetryPerfMetrics {
     } catch {
       return undefined;
     }
+  }
+
+  private sourceKind(): PerfSourceKind | undefined {
+    return parsePerfSourceKind(process.env.PERF_SOURCE_KIND);
+  }
+
+  private syncSourceKind(): PerfSourceKind | undefined {
+    const sourceKind = this.sourceKind();
+    if (sourceKind !== this.lastSourceKind) {
+      this.iracingFrameRate.reset();
+      this.iracingCpuForeground.reset();
+      this.iracingCpuBackground.reset();
+      this.iracingGpuUsage.reset();
+      this.lastSourceKind = sourceKind;
+    }
+    return sourceKind;
   }
 
   private channelMetrics(
@@ -355,6 +491,17 @@ export class TelemetryPerfMetrics {
       current.channelDeliveries,
       this.previousChannelDeliveries
     );
+    const subscriptions = this.channelMetricsSource.subscriptionSnapshot?.();
+    const rendererPublications = difference(
+      current.publications,
+      this.previousRendererPublications
+    );
+    const rendererDeliveries = difference(
+      current.deliveries,
+      this.previousRendererDeliveries
+    );
+    this.previousRendererPublications = current.publications;
+    this.previousRendererDeliveries = current.deliveries;
     this.previousChannelPublications = current.channelPublications;
     this.previousChannelDeliveries = current.channelDeliveries;
     return {
@@ -366,6 +513,9 @@ export class TelemetryPerfMetrics {
       ),
       publications,
       deliveries,
+      rendererPublications,
+      rendererDeliveries,
+      subscriptions,
     };
   }
 
@@ -389,6 +539,14 @@ export class TelemetryPerfMetrics {
       const processes: ProcessMetrics[] = [];
       let totalCpu = 0;
       let totalMemory = 0;
+      const cpuDeltas = this.processCpuTime.observe(
+        metrics.map((metric) => ({
+          pid: metric.pid,
+          creationTime: metric.creationTime,
+          cumulativeCPUUsage: metric.cpu.cumulativeCPUUsage,
+        })),
+        performance.now()
+      );
       const totalPrivateMemory = sumCompletePrivateMemoryMB(
         metrics.map((metric) => metric.memory.privateBytes)
       );
@@ -432,11 +590,13 @@ export class TelemetryPerfMetrics {
 
         processes.push({
           pid: metric.pid,
+          creationTime: metric.creationTime,
           type: metric.type,
           name,
           cpuPercent,
           memoryMB,
           privateMemoryMB,
+          ...cpuDeltas.get(metric.pid),
         });
       }
 
@@ -449,6 +609,7 @@ export class TelemetryPerfMetrics {
         totalPrivateMemory,
       };
     } catch {
+      this.processCpuTime.observe([], performance.now());
       return {
         processes: [],
         totalCpu: 0,

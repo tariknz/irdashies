@@ -7,6 +7,7 @@ import {
   parsePerfVisibilityPhases,
   perfRunSimulator,
   updatePerfDashboardMetadata,
+  updatePerfSourceMetadata,
 } from './perfRunConfig';
 
 const dashboard: DashboardLayout = {
@@ -29,6 +30,9 @@ describe('performance run configuration', () => {
   it('refreshes mode and widget metadata when a different profile is applied', () => {
     const env: NodeJS.ProcessEnv = {};
     updatePerfDashboardMetadata(dashboard, env);
+    expect(JSON.parse(env.PERF_ACTIVE_WIDGET_INSTANCES ?? 'null')).toEqual(
+      dashboard.widgets.map((w) => ({ id: w.id, type: w.type ?? w.id }))
+    );
     expect(env.PERF_ACTIVE_WINDOW_MODE).toBe('display');
     expect(JSON.parse(env.PERF_ACTIVE_WIDGET_TYPES ?? '')).toEqual([
       'relative',
@@ -43,6 +47,9 @@ describe('performance run configuration', () => {
       },
       env
     );
+    expect(JSON.parse(env.PERF_ACTIVE_WIDGET_INSTANCES ?? 'null')).toEqual([
+      { id: 'relative', type: 'relative' },
+    ]);
     expect(env.PERF_ACTIVE_WINDOW_MODE).toBe('widget');
     expect(JSON.parse(env.PERF_ACTIVE_WIDGET_TYPES ?? '')).toEqual([
       'relative',
@@ -211,5 +218,22 @@ describe('perfRunSimulator', () => {
   it('passes the caller choice through for live runs', () => {
     expect(perfRunSimulator('lmu', false)).toEqual({ simulator: 'lmu' });
     expect(perfRunSimulator(undefined, false)).toEqual({});
+  });
+});
+
+describe('updatePerfSourceMetadata', () => {
+  it.each(['mock', 'tape', 'sdk-replay', 'live'] as const)(
+    'records the selected %s source in perf runs',
+    (sourceKind) => {
+      const env: NodeJS.ProcessEnv = { PERF_METRICS: '1' };
+      updatePerfSourceMetadata(sourceKind, env);
+      expect(env.PERF_SOURCE_KIND).toBe(sourceKind);
+    }
+  );
+
+  it('does not publish source metadata outside perf runs', () => {
+    const env: NodeJS.ProcessEnv = { PERF_SOURCE_KIND: 'existing' };
+    updatePerfSourceMetadata('mock', env);
+    expect(env.PERF_SOURCE_KIND).toBe('existing');
   });
 });

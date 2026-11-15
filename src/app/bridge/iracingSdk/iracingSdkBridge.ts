@@ -172,6 +172,10 @@ export async function publishIRacingSDKEvents(
   logger.info('[iracingSdkBridge] Loading iRacing SDK bridge...');
   const isTapeReplay = Boolean(process.env.IRDASHIES_TELEMETRY_REPLAY);
   const sourceName = isTapeReplay ? 'telemetry replay' : 'iRacing';
+  const frameByFrameReplay =
+    isTapeReplay &&
+    (process.env.IRDASHIES_TELEMETRY_REPLAY_SPEED === 'max' ||
+      process.env.IRDASHIES_TELEMETRY_REPLAY_EVERY_FRAME === '1');
 
   const perfMetrics = new TelemetryPerfMetrics(undefined, channelBus);
   let shouldStop = false;
@@ -376,103 +380,139 @@ export async function publishIRacingSDKEvents(
         try {
           while (!shouldStop) {
             const pollStartedAt = performance.now();
-            const hasNewData = sdk.waitForData(WAIT_TIMEOUT);
-            if (!hasNewData) {
-              // A paused replay remains connected but does not advance the SDK's
-              // telemetry buffer. Keep the current session and channel snapshots
-              // until either playback resumes or the SDK actually disconnects.
-              if (sdk.sessionStatusOK) {
-                // A seek remounts widgets after the disconnect. Their processors
-                // may activate after the single destination frame was consumed.
-                // Seed that new demand once, even when the tape stays paused.
-                if (replayRefreshPending) {
-                  replayRefreshPending = false;
-                  if (latestSession && sdk.getTapeReplayStatus()?.paused) {
-                    perfMetrics.markStart('tapeReplayRefresh');
-                    processorHost?.onFrame(sdk.getTelemetry());
-                    perfMetrics.markEnd('tapeReplayRefresh');
+            let hasNewData = false;
+            let isSdkConnected = false;
+            perfMetrics.markStart('sdkPollIteration');
+            try {
+              perfMetrics.markStart('sdkWaitForData');
+              try {
+                hasNewData = sdk.waitForData(WAIT_TIMEOUT);
+              } finally {
+                perfMetrics.markEnd('sdkWaitForData');
+              }
+
+              if (!hasNewData) {
+                // A paused replay remains connected but does not advance the
+                // SDK's telemetry buffer. Keep current snapshots until playback
+                // resumes or the SDK disconnects.
+                isSdkConnected = sdk.sessionStatusOK;
+                if (isSdkConnected) {
+                  // A seek remounts widgets after the disconnect. Their
+                  // processors may activate after the destination frame was
+                  // consumed. Seed that demand once, even while paused.
+                  if (replayRefreshPending) {
+                    replayRefreshPending = false;
+                    if (latestSession && sdk.getTapeReplayStatus()?.paused) {
+                      perfMetrics.markStart('tapeReplayRefresh');
+                      processorHost?.onFrame(sdk.getTelemetry());
+                      perfMetrics.markEnd('tapeReplayRefresh');
+                    }
                   }
                 }
-                const remainingDelay = Math.max(
-                  0,
-                  1000 / 25 - (performance.now() - pollStartedAt)
-                );
-                await delay(remainingDelay);
+              } else {
+                // This frame already satisfies pending subscriber demand.
+                replayRefreshPending = false;
+                if (!hadLifecycleEntry) {
+                  logger.info(`[iracingSdkBridge] ${sourceName} is running`);
+                  hadLifecycleEntry = true;
+                  isLifecycleEntered = true;
+                  pollingFailed = false;
+                  // sessionStatusOK can still read false when the bridge seeds it, so
+                  // the arrival of real data is the earliest reliable proof the sim is
+                  // up. Without this the overlays wait out the 5s poll before showing
+                  // anything.
+                  publishRunningState(true);
+                  lifecycle?._onEnter({ replay: isTapeReplay });
+                }
+                perfMetrics.markStart('processTelemetry');
+                perfMetrics.markStart('sdkTelemetryRead');
+                const telemetry = sdk.getTelemetry();
+                perfMetrics.markEnd('sdkTelemetryRead');
+                const tickTime = performance.now();
+                let session: Session | null = null;
+                if (tickTime - lastSessionPollTime >= SESSION_POLL_INTERVAL) {
+                  lastSessionPollTime = tickTime;
+                  perfMetrics.markStart('sdkSessionRead');
+                  session = sdk.getSessionData();
+                  perfMetrics.markEnd('sdkSessionRead');
+                }
+
+                // Initialise processors before the frame: a paused seek may only
+                // publish this one frame until the user resumes playback.
+                if (session && sdk.currDataVersion !== lastSessionVersion) {
+                  perfMetrics.markStart('sessionPublish');
+                  lastSessionVersion = sdk.currDataVersion;
+                  latestSession = session;
+                  lifecycle?._onSession(session);
+                  processorHost?.onSession(session);
+                  overlayManager.publishMessage('sessionData', session);
+                  sessionCallbacks.forEach((callback) =>
+                    notify(callback, session)
+                  );
+                  perfMetrics.markEnd('sessionPublish');
+                }
+
+                if (telemetry) {
+                  perfMetrics.markStart('lifecycleTelemetry');
+                  lifecycle?._onTelemetry(telemetry);
+                  perfMetrics.markEnd('lifecycleTelemetry');
+                  processorHost?.onFrame(telemetry);
+                  if (
+                    perfTelemetryDeliveryEnabled &&
+                    overlayManager.hasTelemetryInspectorSubscribers() &&
+                    tickTime - lastInspectorTelemetryPublishTime >=
+                      1000 / TELEMETRY_INSPECTOR_RATE_HZ
+                  ) {
+                    lastInspectorTelemetryPublishTime = tickTime;
+                    perfMetrics.markStart('telemetryProjection');
+                    const rendererTelemetry = telemetryForRenderer(telemetry);
+                    perfMetrics.markEnd('telemetryProjection');
+                    perfMetrics.markStart('broadcast');
+                    overlayManager.publishMessage(
+                      'telemetryInspector:telemetry',
+                      rendererTelemetry
+                    );
+                    perfMetrics.markEnd('broadcast');
+                  }
+                  perfMetrics.markStart('telemetryCallbacks');
+                  telemetryCallbacks.forEach((callback) =>
+                    notify(callback, telemetry)
+                  );
+                  perfMetrics.markEnd('telemetryCallbacks');
+                }
+
+                perfMetrics.markEnd('processTelemetry');
+                perfMetrics.tick(telemetry);
+              }
+            } finally {
+              // Excludes the planned sleep, including timeout/replay-refresh
+              // iterations, and closes even when an SDK or subscriber throws.
+              perfMetrics.markEnd('sdkPollIteration');
+            }
+
+            if (!hasNewData) {
+              if (!isSdkConnected) break;
+              if (
+                frameByFrameReplay &&
+                sdk.getTapeReplayStatus()?.paused === false
+              ) {
+                await new Promise<void>((resolve) => setImmediate(resolve));
                 continue;
               }
-              break;
-            }
-            // This frame already satisfies pending subscriber demand.
-            replayRefreshPending = false;
-            if (!hadLifecycleEntry) {
-              logger.info(`[iracingSdkBridge] ${sourceName} is running`);
-              hadLifecycleEntry = true;
-              isLifecycleEntered = true;
-              pollingFailed = false;
-              // sessionStatusOK can still read false when the bridge seeds it, so
-              // the arrival of real data is the earliest reliable proof the sim is
-              // up. Without this the overlays wait out the 5s poll before showing
-              // anything.
-              publishRunningState(true);
-              lifecycle?._onEnter({ replay: isTapeReplay });
-            }
-            perfMetrics.markStart('processTelemetry');
-            perfMetrics.markStart('sdkTelemetryRead');
-            const telemetry = sdk.getTelemetry();
-            perfMetrics.markEnd('sdkTelemetryRead');
-            const tickTime = performance.now();
-            let session: Session | null = null;
-            if (tickTime - lastSessionPollTime >= SESSION_POLL_INTERVAL) {
-              lastSessionPollTime = tickTime;
-              perfMetrics.markStart('sdkSessionRead');
-              session = sdk.getSessionData();
-              perfMetrics.markEnd('sdkSessionRead');
-            }
-
-            // Initialise processors before the frame: a paused seek may only
-            // publish this one frame until the user resumes playback.
-            if (session && sdk.currDataVersion !== lastSessionVersion) {
-              perfMetrics.markStart('sessionPublish');
-              lastSessionVersion = sdk.currDataVersion;
-              latestSession = session;
-              lifecycle?._onSession(session);
-              processorHost?.onSession(session);
-              overlayManager.publishMessage('sessionData', session);
-              sessionCallbacks.forEach((callback) => notify(callback, session));
-              perfMetrics.markEnd('sessionPublish');
-            }
-
-            if (telemetry) {
-              perfMetrics.markStart('lifecycleTelemetry');
-              lifecycle?._onTelemetry(telemetry);
-              perfMetrics.markEnd('lifecycleTelemetry');
-              processorHost?.onFrame(telemetry);
-              if (
-                perfTelemetryDeliveryEnabled &&
-                overlayManager.hasTelemetryInspectorSubscribers() &&
-                tickTime - lastInspectorTelemetryPublishTime >=
-                  1000 / TELEMETRY_INSPECTOR_RATE_HZ
-              ) {
-                lastInspectorTelemetryPublishTime = tickTime;
-                perfMetrics.markStart('telemetryProjection');
-                const rendererTelemetry = telemetryForRenderer(telemetry);
-                perfMetrics.markEnd('telemetryProjection');
-                perfMetrics.markStart('broadcast');
-                overlayManager.publishMessage(
-                  'telemetryInspector:telemetry',
-                  rendererTelemetry
-                );
-                perfMetrics.markEnd('broadcast');
-              }
-              perfMetrics.markStart('telemetryCallbacks');
-              telemetryCallbacks.forEach((callback) =>
-                notify(callback, telemetry)
+              const remainingDelay = Math.max(
+                0,
+                1000 / 25 - (performance.now() - pollStartedAt)
               );
-              perfMetrics.markEnd('telemetryCallbacks');
+              await delay(remainingDelay);
+              continue;
             }
 
-            perfMetrics.markEnd('processTelemetry');
-            perfMetrics.tick(telemetry);
+            // Frame-by-frame tape runs keep every source frame, yielding to IPC
+            // and window work instead of applying the live polling cadence.
+            if (frameByFrameReplay) {
+              await new Promise<void>((resolve) => setImmediate(resolve));
+              continue;
+            }
 
             // Demand-driven poll rate: 25 Hz to save system resources, raised to
             // the sim's native 60 Hz only while a visible window is subscribed to

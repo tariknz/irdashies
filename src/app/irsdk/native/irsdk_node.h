@@ -25,6 +25,8 @@ private:
     Napi::Value BroadcastMessage(const Napi::CallbackInfo &info);
 #ifdef IRDASHIES_TAPE_CONTROLS
     Napi::Value GetTapeReplayStatus(const Napi::CallbackInfo &info);
+    Napi::Value StepTapeReplay(const Napi::CallbackInfo &info);
+    Napi::Value SetTapeReplayLoop(const Napi::CallbackInfo &info);
     Napi::Value SeekTapeReplay(const Napi::CallbackInfo &info);
     Napi::Value SetTapeReplaySpeed(const Napi::CallbackInfo &info);
     Napi::Value SetTapeReplayPaused(const Napi::CallbackInfo &info);

@@ -386,6 +386,16 @@ export class IRacingSDK {
   public controlTapeReplay(command: TapeReplayCommand): TapeReplayStatus {
     let accepted = false;
     switch (command.type) {
+      case 'step':
+        accepted = this._sdk?.stepTapeReplay?.() ?? false;
+        break;
+      case 'loop':
+        accepted =
+          this._sdk?.setTapeReplayLoop?.(
+            command.range?.start ?? -1,
+            command.range?.end ?? -1
+          ) ?? false;
+        break;
       case 'seek':
         accepted = this._sdk?.seekTapeReplay?.(command.seconds) ?? false;
         if (accepted) this.resetSessionData();
