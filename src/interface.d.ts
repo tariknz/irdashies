@@ -16,6 +16,7 @@ import type { ChannelBridge } from '@irdashies/types';
 
 declare global {
   interface Window {
+    ibtInspectorBridge?: import('./types/ibtInspector').IbtInspectorBridge;
     widgetPreviewBridge?: import('./types/widgetPreview').WidgetPreviewBridge;
     storageStatusBridge?: import('./types/storageStatus').StorageStatusBridge;
     channelBridge: ChannelBridge;

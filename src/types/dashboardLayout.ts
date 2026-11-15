@@ -104,6 +104,7 @@ export type FontSize =
   | '9xl';
 
 export interface GeneralSettingsType {
+  devTool?: boolean;
   fontType?: FontType;
   fontSize?: FontSize;
   fontWeight?:

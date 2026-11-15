@@ -48,6 +48,25 @@ import type { TapeReplayBridge } from '@irdashies/types';
 import { RENDERER_PERF_MEASURE_NAMES } from '../../types/performance';
 
 export function exposeBridge() {
+  defineBridge<import('../../types/ibtInspector').IbtInspectorBridge>(
+    'ibtInspectorBridge',
+    {
+      getScenario: () => ipcRenderer.invoke('ibtInspector:getScenario'),
+      saveScenario: () => ipcRenderer.invoke('ibtInspector:saveScenario'),
+      open: () => ipcRenderer.invoke('ibtInspector:open'),
+      list: () => ipcRenderer.invoke('ibtInspector:list'),
+      status: () => ipcRenderer.invoke('ibtInspector:status'),
+      load: (name, speed) =>
+        ipcRenderer.invoke('ibtInspector:load', name, speed),
+      command: (command) => ipcRenderer.invoke('ibtInspector:command', command),
+      stop: () => ipcRenderer.invoke('ibtInspector:stop'),
+      startCapture: () => ipcRenderer.invoke('ibtInspector:startCapture'),
+      stopCapture: () => ipcRenderer.invoke('ibtInspector:stopCapture'),
+      checkpointMemory: () =>
+        ipcRenderer.invoke('ibtInspector:memoryCheckpoint'),
+      showReport: () => ipcRenderer.invoke('ibtInspector:showReport'),
+    }
+  );
   defineBridge<TapeReplayBridge>('tapeReplayBridge', {
     getStatus: () => ipcRenderer.invoke('tapeReplay:status'),
     command: (command) => ipcRenderer.invoke('tapeReplay:command', command),

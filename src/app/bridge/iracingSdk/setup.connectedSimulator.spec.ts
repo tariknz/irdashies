@@ -109,6 +109,27 @@ describe('onConnectedSimulatorChanged', () => {
     Object.defineProperty(process, 'platform', { value: realPlatform });
   });
 
+  it.each([
+    ['linux', undefined, undefined, 'mock'],
+    ['win32', undefined, undefined, 'live'],
+    ['win32', '/tmp/capture.irdt', undefined, 'tape'],
+    ['win32', undefined, '1', 'sdk-replay'],
+  ])(
+    'records the source actually selected on %s',
+    async (platform, tape, sdkReplay, expected) => {
+      Object.defineProperty(process, 'platform', { value: platform });
+      vi.stubEnv('PERF_METRICS', '1');
+      vi.stubEnv('PERF_SOURCE_KIND', '');
+      vi.stubEnv('IRDASHIES_TELEMETRY_REPLAY', tape);
+      vi.stubEnv('IRDASHIES_IRSDK_REPLAY', sdkReplay);
+      const { iRacingSDKSetup } = await import('./setup');
+
+      await iRacingSDKSetup(overlayManager);
+
+      expect(process.env.PERF_SOURCE_KIND).toBe(expected);
+    }
+  );
+
   it('reports a simulator that was already running as irdashies started', async () => {
     bridges.running.iracing = true;
     const { iRacingSDKSetup, onConnectedSimulatorChanged } =

@@ -102,6 +102,7 @@ import {
 } from './app/storage/lapHistoryStorage';
 import { ReplayContextRuntime } from './app/processors/replayContextRuntime';
 import { setupTapeReplayBridge } from './app/bridge/tapeReplayBridge';
+import { setupIbtInspector } from './app/ibtInspector/runtime';
 import { createTapeReplayWindow } from './app/tapeReplayWindow';
 import type { ArchiveIndex } from './app/processors/ReplayContextProcessor';
 import { flushRadarPoleSideOverrides } from './app/storage/radarPoleSideOverrides';
@@ -163,6 +164,7 @@ if (app.getName() === 'irdashies') {
 
 const overlayManager = new OverlayManager();
 const analytics = new Analytics();
+let disposeIbtInspector: (() => Promise<void>) | undefined;
 const perfRun = getPerfRunConfig();
 analytics.setupLogTransport(overlayManager.getVersion());
 // Before any bridge exists, so the first connect is heard even when the sim
@@ -550,6 +552,7 @@ void app.whenReady().then(async () => {
   );
   await iRacingSDKSetup(overlayManager, channelBus);
   setupTapeReplayBridge(getCurrentBridge);
+  disposeIbtInspector = setupIbtInspector(overlayManager, channelBus);
   if (process.env.IRDASHIES_TELEMETRY_REPLAY) createTapeReplayWindow();
 
   // Perform one-time cleanup of old reference laps
@@ -777,6 +780,11 @@ const SHUTDOWN_FLUSH_TIMEOUT_MS = 5_000;
 const handleBeforeQuit = createBeforeQuitHandler({
   prepareToQuit: () => overlayManager.markQuitting(),
   shutdown: async () => {
+    try {
+      await disposeIbtInspector?.();
+    } catch (error) {
+      log.error('[IBT Inspector] Shutdown cleanup failed', error);
+    }
     flushSettingsWindowMovementOnShutdown();
     keybindingManager?.stopGamepad();
     disconnectLifecycleChannel?.();

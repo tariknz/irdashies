@@ -14,30 +14,44 @@ const TapeReplay = lazy(() =>
   )
 );
 
+const IbtInspector = lazy(() =>
+  import('./components/IbtInspector/IbtInspector').then((module) => ({
+    default: module.IbtInspector,
+  }))
+);
+
 const App = () => {
   const hash = window.location.hash;
+  const isInspector = hash.startsWith('#/ibt-inspector');
   const isTape = hash.startsWith('#/tape-replay');
   const isGantry = hash.startsWith('#/gantry');
   const isSettings = hash.startsWith('#/settings');
   const isIndividual = hash === '#/overlay-widget';
-  const Content = isTape
-    ? TapeReplay
-    : isGantry
-      ? GantryWindow
-      : isSettings
-        ? SettingsWindow
-        : isIndividual
-          ? IndividualWidgetWindow
-          : OverlayWindow;
-  const label = isTape
-    ? 'tape replay'
-    : isGantry
-      ? 'gantry'
-      : isSettings
-        ? 'settings'
-        : 'overlay';
+  const Content = isInspector
+    ? IbtInspector
+    : isTape
+      ? TapeReplay
+      : isGantry
+        ? GantryWindow
+        : isSettings
+          ? SettingsWindow
+          : isIndividual
+            ? IndividualWidgetWindow
+            : OverlayWindow;
+  const label = isInspector
+    ? 'IBT inspector'
+    : isTape
+      ? 'tape replay'
+      : isGantry
+        ? 'gantry'
+        : isSettings
+          ? 'settings'
+          : 'overlay';
   return (
-    <ErrorBoundary label={label} resetAfterMs={isTape ? undefined : 2000}>
+    <ErrorBoundary
+      label={label}
+      resetAfterMs={isTape || isInspector ? undefined : 2000}
+    >
       <Suspense fallback={null}>
         <Content />
       </Suspense>

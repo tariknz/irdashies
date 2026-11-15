@@ -81,7 +81,9 @@ interface GeneralSettingsProps {
 export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
   const { bridge, currentDashboard, onDashboardUpdated } = useDashboard();
   const availableSimulators = useAvailableSimulators();
+  const [devToolError, setDevToolError] = useState<string>();
   const [settings, setSettings] = useState<GeneralSettingsType>({
+    devTool: currentDashboard?.generalSettings?.devTool ?? false,
     fontType: currentDashboard?.generalSettings?.fontType ?? 'lato',
     fontSize: currentDashboard?.generalSettings?.fontSize ?? 'sm',
     fontWeight: currentDashboard?.generalSettings?.fontWeight ?? 'normal',
@@ -594,6 +596,48 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
               Application &amp; connectivity
             </h3>
             <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h4
+                    id="dev-tool-label"
+                    className="text-md font-medium text-slate-200"
+                  >
+                    Dev Tool
+                  </h4>
+                  <p className="text-sm text-slate-400">
+                    Enable IBT Inspector to replay iRacing recordings in your
+                    current overlays and collect performance data.
+                  </p>
+                  {settings.devTool && (
+                    <button
+                      type="button"
+                      className="mt-2 text-sm text-sky-400 hover:text-sky-300"
+                      onClick={() => {
+                        void window.ibtInspectorBridge
+                          ?.open()
+                          .catch((error) => setDevToolError(String(error)));
+                      }}
+                    >
+                      Open IBT Inspector
+                    </button>
+                  )}
+                  {devToolError && (
+                    <p role="alert" className="text-sm text-red-300">
+                      {devToolError}
+                    </p>
+                  )}
+                </div>
+                <ToggleSwitch
+                  enabled={settings.devTool ?? false}
+                  ariaLabelledBy="dev-tool-label"
+                  onToggle={(enabled) => {
+                    const next = { ...settings, devTool: enabled };
+                    setSettings(next);
+                    updateDashboard(next);
+                  }}
+                />
+              </div>
+
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <h4

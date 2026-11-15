@@ -156,4 +156,19 @@ describe('simulator selection across profiles', () => {
     expect(registry.built).toEqual(['iracing']);
     expect(registry.stopped).toEqual([]);
   });
+
+  it('rebuilds the current source through the shared queue even when its simulator ID is unchanged', async () => {
+    const { iRacingSDKSetup, reconfigureTelemetrySource } =
+      await import('./setup');
+    await iRacingSDKSetup(overlayManager);
+    const bus = {} as import('../channelBridge').ChannelBus;
+    await reconfigureTelemetrySource(overlayManager, bus, () => {
+      vi.stubEnv('IRDASHIES_TELEMETRY_REPLAY', 'inspector.irdt');
+    });
+    await reconfigureTelemetrySource(overlayManager, bus, () => {
+      vi.stubEnv('IRDASHIES_TELEMETRY_REPLAY', '');
+    });
+    expect(registry.built).toEqual(['iracing', 'iracing', 'iracing']);
+    expect(registry.stopped).toEqual(['iracing', 'iracing']);
+  });
 });
