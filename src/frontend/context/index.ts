@@ -37,3 +37,5 @@ export * from './TrackTemperatureStore/TrackTemperatureStore';
 export * from './TrackTemperatureStore/TrackTemperatureStoreUpdater';
 export * from './SessionBestLapStore/SessionBestLapStore';
 export * from './SessionBestLapStore/SessionBestLapStoreUpdater';
+
+export { useNativeWindowVisibility } from './shared/useNativeWindowVisibility';

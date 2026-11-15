@@ -1,3 +1,5 @@
+import { RadarRingsLayer } from '../radarDrawRings';
+import { useNativeWindowVisibility } from '@irdashies/context';
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { perfMetrics } from '@irdashies/utils/perfMetrics';
 import { useWidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
@@ -111,6 +113,7 @@ export const RadarDisplay = memo(
     dive = NO_DIVES,
   }: RadarDisplayProps) => {
     const widgetScale = useWidgetScale();
+    const nativeVisible = useNativeWindowVisibility();
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [size, setSize] = useState(0);
@@ -150,6 +153,7 @@ export const RadarDisplay = memo(
     }, []);
 
     useEffect(() => {
+      if (!nativeVisible) return;
       const canvas = canvasRef.current;
       const ctx = canvas?.getContext('2d');
       if (!canvas || !ctx || size <= 0) return;
@@ -157,6 +161,7 @@ export const RadarDisplay = memo(
       canvas.width = Math.round(size * ratio);
       canvas.height = Math.round(size * ratio);
 
+      const ringsLayer = new RadarRingsLayer(ratio);
       const cars: RadarDrawCar[] = [];
       const follow: RadarDrawFollow = { carIdx: null, dist: 0, label: '' };
       const dives = new DiveTracker();
@@ -268,23 +273,27 @@ export const RadarDisplay = memo(
         }
 
         ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-        drawRadar(ctx, {
-          size,
-          geometry: current.geometry,
-          trackLength: snap.trackLength,
-          playerPct,
-          cars,
-          follow: followTarget,
-          style: look,
-          time: started / 1000,
-          travelled,
-          frameMs,
-          dives: diveHints,
-          laneWidth,
-          hazards,
-          poleSideNotice: snap.poleSideNotice,
-          roadLane,
-        });
+        drawRadar(
+          ctx,
+          {
+            size,
+            geometry: current.geometry,
+            trackLength: snap.trackLength,
+            playerPct,
+            cars,
+            follow: followTarget,
+            style: look,
+            time: started / 1000,
+            travelled,
+            frameMs,
+            dives: diveHints,
+            laneWidth,
+            hazards,
+            poleSideNotice: snap.poleSideNotice,
+            roadLane,
+          },
+          ringsLayer
+        );
         frameMs = performance.now() - started;
       };
       const intervalMs = 1000 / 60;
@@ -306,8 +315,11 @@ export const RadarDisplay = memo(
         if (active) handle = requestAnimationFrame(paint);
       };
       paint(performance.now());
-      return () => cancelAnimationFrame(handle);
-    }, [size, active, widgetScale]);
+      return () => {
+        cancelAnimationFrame(handle);
+        ringsLayer.dispose();
+      };
+    }, [size, active, widgetScale, nativeVisible]);
 
     return (
       <div

@@ -198,7 +198,13 @@ export const useProgressAnimation = (
       }
       frameTime = now;
       lastDrawRef.current = now;
-      if (perfMetrics.measure('trackMapAnimationFrame', measuredFrame)) {
+      if (
+        perfMetrics.measure(
+          'trackMapAnimationFrame',
+          measuredFrame,
+          'trackMapRafDraw'
+        )
+      ) {
         scheduleRef.current();
       }
     };
@@ -233,8 +239,10 @@ export const useProgressAnimation = (
       // changing appearance while idle (including simultaneous new targets).
       if (canvasInvalidatedRef) canvasInvalidatedRef.current = false;
       lastDrawRef.current = now;
-      perfMetrics.measure('trackMapAnimationFrame', () =>
-        draw(interpolator.getValues(), interpolator.getCount())
+      perfMetrics.measure(
+        'trackMapAnimationFrame',
+        () => draw(interpolator.getValues(), interpolator.getCount()),
+        'trackMapCommitDraw'
       );
       if (!active && frameRef.current !== 0) {
         cancelAnimationFrame(frameRef.current);
