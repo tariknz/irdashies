@@ -230,9 +230,10 @@ const drive = (
   player: (t: number) => CarState,
   opponent: (t: number) => CarState,
   until = 110,
-  caution: boolean | ((t: number) => boolean) = false
+  caution: boolean | ((t: number) => boolean) = false,
+  from = 0
 ) => {
-  for (let i = 0; i <= until * 10; i++) {
+  for (let i = Math.round(from * 10); i <= until * 10; i++) {
     const t = i / 10;
     processor.onFrame(
       frame(t, player(t), opponent(t), {
@@ -297,6 +298,8 @@ describe('PitStopEstimateProcessor', () => {
       sessionType: 'Race',
       lap: 3,
       cautionDuringStop: false,
+      taintReasons: [],
+      firstTaintSeconds: null,
       actualAheadCarIdx: 1,
       actualBehindCarIdx: 1,
     });
@@ -333,7 +336,67 @@ describe('PitStopEstimateProcessor', () => {
     drive(processor, pittingCar, drivingCar(0.2), 110, (t) => t >= 60);
     const sent = report.mock.calls[0][0] as PitStopReport;
     expect(sent.cautionDuringStop).toBe(true);
+    expect(sent.taintReasons).toEqual(['caution']);
+    expect(sent.firstTaintSeconds).toBeCloseTo(20, 1);
     expect(sent.actualLossSeconds).toBeNull();
+  });
+
+  it('measures the actual gaps at the window end, back at racing speed', () => {
+    // Twice the player's pace: 15 s behind at the exit line (t 90), 5 s
+    // behind at the window end (t 100).
+    const fast = (t: number): CarState => ({
+      pct: (0.1 + t * 2 * TRACK_SPEED) % 1,
+      onPitRoad: false,
+      surface: TrackLocation.OnTrack,
+    });
+    const report = vi.fn();
+    const processor = create(memoryStore(learnedFile()), report);
+    drive(processor, pittingCar, fast);
+    const sent = report.mock.calls[0][0] as PitStopReport;
+    expect(sent.actualBehindCarIdx).toBe(1);
+    expect(sent.actualBehindGapSeconds).toBeCloseTo(5, 0);
+  });
+
+  it('keeps the rejoin point through the stop, counting down the loss', () => {
+    const processor = create(memoryStore(learnedFile()));
+    let next = 0;
+    const at = (t: number) => {
+      drive(processor, pittingCar, drivingCar(0.2), t, false, next);
+      next = t + 0.1;
+      return processor.snapshot();
+    };
+    // Window start 0.84 at 34 s. At 45 s: 11 s gone, 8.5 s on the
+    // reference, so 2.5 s of the planned 61.5 s are lost.
+    const inLane = at(45);
+    expect(inLane).toMatchObject({
+      state: 'ok',
+      inStop: true,
+      lossSeconds: 59,
+    });
+    expect(inLane.offsetPct).toBeCloseTo(0.59, 2);
+    // 10 s into a stall planned at 46.5 s: still the plan.
+    expect(at(60).lossSeconds).toBeCloseTo(46.5, 1);
+    // Service done after 20 s: 15 s lane + 20 s stall, 27.5 s lost so far.
+    expect(at(75).lossSeconds).toBeCloseTo(7.5, 1);
+    // Rejoined: the full 35 s is lost.
+    expect(at(95)).toMatchObject({ inStop: true, lossSeconds: 0 });
+    // Past the window end: the estimate for the next stop.
+    const after = at(101);
+    expect(after.inStop).toBe(false);
+    expect(after.lossSeconds).toBeGreaterThan(30);
+  });
+
+  it('shows the cars either side of the rejoin point', () => {
+    const processor = create(memoryStore(learnedFile()));
+    drive(processor, drivingCar(0.7), drivingCar(0.2), 1);
+    // Rejoin point 61.5 s behind 0.71, at 0.095; the other car is at 0.21.
+    expect(processor.snapshot()).toMatchObject({
+      aheadCarIdx: OPPONENT,
+      aheadGapSeconds: 11.5,
+      behindCarIdx: null,
+      behindGapSeconds: null,
+      inStop: false,
+    });
   });
 
   it('places the rejoin point lane loss plus service behind the player', () => {

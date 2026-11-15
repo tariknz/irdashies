@@ -17,10 +17,14 @@ import { PitSvFlags } from '../irsdk/types/enums';
 import type { PitStopModelPersistence } from '../storage/pitStopModel';
 import type { TelemetryProcessor } from './TelemetryProcessor';
 import { PitStopDetector } from './pitStop/PitStopDetector';
-import type { CompletedStop } from './pitStop/PitStopDetector';
+import type {
+  CompletedStop,
+  PlayerStopProgress,
+} from './pitStop/PitStopDetector';
 import {
   circularMedian,
   fuelStopNeeded,
+  lapSeconds,
   nearestAround,
   parseSpeedKph,
   projectTraffic,
@@ -81,6 +85,15 @@ interface CarInfo {
   ignored: boolean;
 }
 
+/** The estimate as it stood at pit entry, counted down during the stop. */
+interface StopPlan {
+  lane: Estimate;
+  service: Estimate;
+  weak: boolean;
+}
+
+type Include = (carIdx: number) => boolean;
+
 const numberAt = (frame: Telemetry, key: keyof Telemetry): number | null => {
   const value = frame[key]?.value?.[0];
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
@@ -88,6 +101,8 @@ const numberAt = (frame: Telemetry, key: keyof Telemetry): number | null => {
 
 const booleanAt = (frame: Telemetry, key: keyof Telemetry): boolean =>
   frame[key]?.value?.[0] === true;
+
+const wrap01 = (value: number) => ((value % 1) + 1) % 1;
 
 const round = (value: number | null, places: number) =>
   value === null ? null : Number(value.toFixed(places));
@@ -100,6 +115,11 @@ const hiddenSnapshot = (version: number): PitStopEstimateSnapshot => ({
   lapsLost: 0,
   lossSeconds: null,
   fuelStopNeeded: null,
+  inStop: false,
+  aheadCarIdx: null,
+  aheadGapSeconds: null,
+  behindCarIdx: null,
+  behindGapSeconds: null,
   sessionNum: null,
   version,
 });
@@ -158,19 +178,15 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
   private classLaps = new Map<number, ReferenceLap>();
 
   private lastBreakdown: PitStopEstimateBreakdown | null = null;
-  private lastOffsetPct: number | null = null;
+  private lastPlan: StopPlan | null = null;
+  private lastTraffic: Around = NO_AROUND;
+  private stopPlan: StopPlan | null = null;
   private pendingPrediction:
     | ({
         breakdown: PitStopEstimateBreakdown | null;
         lap: number | null;
       } & Around)
     | null = null;
-  private actualAround: Around = {
-    ahead: null,
-    behind: null,
-    aheadGap: null,
-    behindGap: null,
-  };
 
   constructor(
     private readonly dependencies: PitStopEstimateDependencies | null
@@ -237,6 +253,7 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       this.sessionNum = sessionNum;
       this.detector.reset();
       this.pendingPrediction = null;
+      this.stopPlan = null;
     }
 
     const flags = numberAt(frame, 'SessionFlags') ?? 0;
@@ -261,7 +278,7 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
     });
 
     this.refreshReferenceLaps();
-    const include = (carIdx: number) =>
+    const include: Include = (carIdx) =>
       carIdx !== this.playerCarIdx &&
       !this.cars.get(carIdx)?.ignored &&
       onPitRoad[carIdx] !== true &&
@@ -272,15 +289,22 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       this.pendingPrediction = {
         breakdown: this.lastBreakdown,
         lap: typeof lap === 'number' && lap >= 0 ? lap : null,
-        ...this.projectedTraffic(pcts, include),
+        ...this.lastTraffic,
       };
+      this.stopPlan = this.lastPlan;
     }
-    if (events.playerExited) {
-      this.actualAround = this.around(pcts[this.playerCarIdx], pcts, include);
-    }
-    for (const stop of events.completed) this.recordStop(stop);
+    for (const stop of events.completed) this.recordStop(stop, pcts, include);
 
-    this.predict(frame, pcts, onPitRoad, surfaces, caution, pitSvFlags);
+    this.predict(
+      frame,
+      time,
+      pcts,
+      include,
+      onPitRoad,
+      surfaces,
+      caution,
+      pitSvFlags
+    );
   }
 
   /** The nearest cars each side of `pct` and the reference-lap time to them. */
@@ -306,12 +330,13 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
    */
   private projectedTraffic(
     pcts: readonly number[],
-    include: (carIdx: number) => boolean
+    include: Include,
+    offsetPct: number | null,
+    lossSeconds: number,
+    rejoinPct: number | null
   ): Around {
-    const breakdown = this.lastBreakdown;
-    const offsetPct = this.lastOffsetPct;
     const player = this.cars.get(this.playerCarIdx);
-    if (!breakdown || offsetPct === null || !player) return NO_AROUND;
+    if (offsetPct === null || !player) return NO_AROUND;
 
     const lapTimes = this.dependencies?.lapTimes?.()?.lapTimes ?? [];
     const reference = this.referenceFor(this.playerCarIdx);
@@ -325,12 +350,11 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       player.classEstLapSeconds > 0
         ? playerPace / player.classEstLapSeconds
         : 1;
-    const deps = this.dependencies as PitStopEstimateDependencies;
     const traffic = projectTraffic({
       playerPct: pcts[this.playerCarIdx],
       offsetPct,
-      lossSeconds: breakdown.lossSeconds,
-      exitPct: this.entryExit(deps.persistence.read()).exitPct,
+      lossSeconds,
+      exitPct: rejoinPct,
       reference,
       playerLapSeconds: playerPace,
       carPcts: pcts,
@@ -390,11 +414,16 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
     );
   }
 
-  private recordStop(stop: CompletedStop) {
+  private recordStop(
+    stop: CompletedStop,
+    pcts: readonly number[],
+    include: Include
+  ) {
     const deps = this.dependencies;
     const car = this.cars.get(stop.carIdx);
     if (!deps || !car || car.ignored) return;
     const isPlayer = stop.carIdx === this.playerCarIdx;
+    if (isPlayer) this.stopPlan = null;
     const reference = this.referenceFor(stop.carIdx);
     const referenceSeconds = reference
       ? spanSeconds(reference, stop.windowStartPct, stop.windowEndPct)
@@ -451,6 +480,8 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
 
     const prediction = this.pendingPrediction;
     this.pendingPrediction = null;
+    // The car is at the window end, back to racing speed.
+    const actual = this.around(pcts[this.playerCarIdx], pcts, include);
     deps.report?.({
       at: Date.now(),
       seriesId: this.seriesId,
@@ -460,6 +491,8 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
           : undefined) ?? '',
       lap: prediction?.lap ?? null,
       cautionDuringStop: stop.caution,
+      taintReasons: stop.taintReasons,
+      firstTaintSeconds: stop.firstTaintSeconds,
       trackId: this.trackId,
       carId: car.carId,
       carClassId: car.carClassId,
@@ -481,14 +514,13 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       actualTyres: tyreCount(service?.tyresChanged ?? 0),
       predictedAheadCarIdx: prediction?.ahead ?? null,
       predictedBehindCarIdx: prediction?.behind ?? null,
-      actualAheadCarIdx: this.actualAround.ahead,
-      actualBehindCarIdx: this.actualAround.behind,
+      actualAheadCarIdx: actual.ahead,
+      actualBehindCarIdx: actual.behind,
       predictedAheadGapSeconds: prediction?.aheadGap ?? null,
       predictedBehindGapSeconds: prediction?.behindGap ?? null,
-      actualAheadGapSeconds: this.actualAround.aheadGap,
-      actualBehindGapSeconds: this.actualAround.behindGap,
+      actualAheadGapSeconds: actual.aheadGap,
+      actualBehindGapSeconds: actual.behindGap,
     });
-    this.actualAround = NO_AROUND;
   }
 
   private entryExit(file: PitStopModelFile): {
@@ -550,7 +582,9 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
 
   private predict(
     frame: Telemetry,
+    time: number,
     pcts: readonly number[],
+    include: Include,
     onPitRoad: readonly boolean[],
     surfaces: readonly number[],
     caution: boolean,
@@ -558,6 +592,8 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
   ) {
     const player = this.cars.get(this.playerCarIdx);
     const playerPct = pcts[this.playerCarIdx];
+    const progress = this.detector.playerStop(this.playerCarIdx);
+    const plan = progress ? this.stopPlan : null;
     const visible =
       !!player &&
       !this.watchingReplay &&
@@ -565,15 +601,44 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       this.sessionTypes.get(this.sessionNum) === 'Race' &&
       booleanAt(frame, 'IsOnTrack') &&
       playerPct >= 0 &&
-      onPitRoad[this.playerCarIdx] !== true &&
+      (plan !== null || onPitRoad[this.playerCarIdx] !== true) &&
       surfaces[this.playerCarIdx] !== TrackLocation.NotInWorld;
     if (!visible || !player) {
-      this.lastOffsetPct = null;
+      this.lastBreakdown = null;
+      this.lastPlan = null;
+      this.lastTraffic = NO_AROUND;
       this.publish(hiddenSnapshot(0));
       return;
     }
 
     const reference = this.referenceFor(this.playerCarIdx);
+    const fallbackLap =
+      player.classEstLapSeconds > 0 ? player.classEstLapSeconds : null;
+    const fuel = this.dependencies?.fuel();
+    const stopNeeded = fuel
+      ? fuelStopNeeded(
+          fuel.fuelLevel,
+          fuel.estimatedLapsRemaining,
+          fuel.hasValidRaceEstimate,
+          fuel.completedLaps
+        )
+      : null;
+
+    if (plan && progress) {
+      this.publishStop(
+        plan,
+        progress,
+        time,
+        pcts,
+        include,
+        reference,
+        fallbackLap,
+        caution,
+        stopNeeded
+      );
+      return;
+    }
+
     this.resolve(player, reference);
     const lane = this.resolvedLane;
     const service = this.resolvedService as ResolvedServiceRule;
@@ -593,19 +658,11 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
           : Math.max(0, numberAt(frame, 'PitRepairLeft') ?? 0),
     };
     const serviceTime = serviceEstimate(service, request);
-    const fuel = this.dependencies?.fuel();
-    const stopNeeded = fuel
-      ? fuelStopNeeded(
-          fuel.fuelLevel,
-          fuel.estimatedLapsRemaining,
-          fuel.hasValidRaceEstimate,
-          fuel.completedLaps
-        )
-      : null;
 
     if (!lane) {
-      this.lastOffsetPct = null;
       this.lastBreakdown = null;
+      this.lastPlan = null;
+      this.lastTraffic = NO_AROUND;
       this.publish({
         ...hiddenSnapshot(0),
         state: 'calibrating',
@@ -618,11 +675,6 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
     const loss = lane.seconds + serviceTime.seconds;
     const near = lane.nearSeconds + serviceTime.nearSeconds;
     const far = lane.farSeconds + serviceTime.farSeconds;
-    const fallbackLap =
-      player.classEstLapSeconds > 0 ? player.classEstLapSeconds : null;
-    const mid = rejoinOffset(playerPct, loss, reference, fallbackLap);
-    const nearOffset = rejoinOffset(playerPct, near, reference, fallbackLap);
-    const farOffset = rejoinOffset(playerPct, far, reference, fallbackLap);
 
     this.lastBreakdown = {
       lossSeconds: loss,
@@ -645,20 +697,124 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       tableRow: service.tableRow,
       ruleFamily: service.family,
     };
-    this.lastOffsetPct = mid?.offsetPct ?? null;
 
     const weak =
       lane.source === 'model' ||
       (request.fuelLitres > 0 && service.fuelRateSource === 'generic') ||
       (request.tyres > 0 && service.tyreSource === 'generic');
-    this.publish({
+    this.lastPlan = { lane, service: serviceTime, weak };
+    this.publishRejoin({
+      losses: { mid: loss, near, far },
+      pcts,
+      include,
+      reference,
+      fallbackLap,
+      rejoinPct: this.entryExit(
+        (this.dependencies as PitStopEstimateDependencies).persistence.read()
+      ).exitPct,
       state: caution ? 'unreliable' : weak ? 'calibrating' : 'ok',
+      stopNeeded,
+      inStop: false,
+    });
+  }
+
+  /**
+   * During a stop: the loss planned at pit entry, less the time already lost
+   * since the window start. Service time is the real stall time once it runs
+   * longer than planned or has finished.
+   */
+  private publishStop(
+    plan: StopPlan,
+    progress: PlayerStopProgress,
+    time: number,
+    pcts: readonly number[],
+    include: Include,
+    reference: ReferenceLap | null,
+    fallbackLap: number | null,
+    caution: boolean,
+    stopNeeded: boolean | null
+  ) {
+    const playerPct = pcts[this.playerCarIdx];
+    const anchored = Number.isFinite(progress.windowStartTime);
+    const startTime = anchored ? progress.windowStartTime : progress.entryTime;
+    const startPct = anchored ? progress.windowStartPct : progress.entryPct;
+    const driven = reference
+      ? (spanSeconds(reference, startPct, playerPct) ??
+        forwardPct(startPct, playerPct) * lapSeconds(reference))
+      : forwardPct(startPct, playerPct) * (fallbackLap ?? 0);
+    const lostSoFar = time - startTime - driven;
+    const stall = progress.stationarySeconds;
+    const service = (planned: number) =>
+      progress.serviceDone ? stall : Math.max(planned, stall);
+    const left = (lane: number, planned: number) =>
+      Math.max(0, lane + service(planned) - lostSoFar);
+
+    const { exitPct } = this.entryExit(
+      (this.dependencies as PitStopEstimateDependencies).persistence.read()
+    );
+    const windowEnd =
+      exitPct === null ? null : wrap01(exitPct + this.windowPct().after);
+    const rejoinPct =
+      windowEnd !== null && forwardPct(playerPct, windowEnd) < 0.5
+        ? windowEnd
+        : playerPct;
+
+    this.publishRejoin({
+      losses: {
+        mid: left(plan.lane.seconds, plan.service.seconds),
+        near: left(plan.lane.nearSeconds, plan.service.nearSeconds),
+        far: left(plan.lane.farSeconds, plan.service.farSeconds),
+      },
+      pcts,
+      include,
+      reference,
+      fallbackLap,
+      rejoinPct,
+      state: caution ? 'unreliable' : plan.weak ? 'calibrating' : 'ok',
+      stopNeeded,
+      inStop: true,
+    });
+  }
+
+  private publishRejoin(input: {
+    losses: { mid: number; near: number; far: number };
+    pcts: readonly number[];
+    include: Include;
+    reference: ReferenceLap | null;
+    fallbackLap: number | null;
+    rejoinPct: number | null;
+    state: PitStopEstimateSnapshot['state'];
+    stopNeeded: boolean | null;
+    inStop: boolean;
+  }) {
+    const { losses, pcts, reference, fallbackLap } = input;
+    const playerPct = pcts[this.playerCarIdx];
+    const offset = (loss: number) =>
+      rejoinOffset(playerPct, loss, reference, fallbackLap);
+    const mid = offset(losses.mid);
+    const near = offset(losses.near);
+    const far = offset(losses.far);
+    const traffic = this.projectedTraffic(
+      pcts,
+      input.include,
+      mid?.offsetPct ?? null,
+      losses.mid,
+      input.rejoinPct
+    );
+    this.lastTraffic = traffic;
+    this.publish({
+      state: input.state,
       offsetPct: round(mid?.offsetPct ?? null, 4),
-      offsetNearPct: round(nearOffset?.offsetPct ?? null, 4),
-      offsetFarPct: round(farOffset?.offsetPct ?? null, 4),
+      offsetNearPct: round(near?.offsetPct ?? null, 4),
+      offsetFarPct: round(far?.offsetPct ?? null, 4),
       lapsLost: mid?.lapsLost ?? 0,
-      lossSeconds: round(loss, 1),
-      fuelStopNeeded: stopNeeded,
+      lossSeconds: round(losses.mid, 1),
+      fuelStopNeeded: input.stopNeeded,
+      inStop: input.inStop,
+      aheadCarIdx: traffic.ahead,
+      aheadGapSeconds: round(traffic.aheadGap, 1),
+      behindCarIdx: traffic.behind,
+      behindGapSeconds: round(traffic.behindGap, 1),
       sessionNum: this.sessionNum,
       version: 0,
     });
@@ -674,6 +830,11 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       current.lapsLost === next.lapsLost &&
       current.lossSeconds === next.lossSeconds &&
       current.fuelStopNeeded === next.fuelStopNeeded &&
+      current.inStop === next.inStop &&
+      current.aheadCarIdx === next.aheadCarIdx &&
+      current.aheadGapSeconds === next.aheadGapSeconds &&
+      current.behindCarIdx === next.behindCarIdx &&
+      current.behindGapSeconds === next.behindGapSeconds &&
       current.sessionNum === next.sessionNum
     ) {
       return;
@@ -688,13 +849,16 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       this.detector.reset();
       this.sessionNum = null;
       this.pendingPrediction = null;
-      this.lastOffsetPct = null;
+      this.stopPlan = null;
       this.lastBreakdown = null;
+      this.lastPlan = null;
+      this.lastTraffic = NO_AROUND;
       this.publish(hiddenSnapshot(0));
     }
     if (event.type === 'sessionNumChange') {
       this.detector.reset();
       this.pendingPrediction = null;
+      this.stopPlan = null;
     }
   }
 

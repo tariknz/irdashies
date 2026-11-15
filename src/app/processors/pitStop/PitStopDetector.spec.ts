@@ -53,15 +53,17 @@ const fuelAt = (t: number) => (t < 52 ? 10 : t < 68 ? 10 + 2 * (t - 52) : 42);
 const run = (options: {
   stall?: number;
   cautionAt?: number;
+  towedAt?: number;
   until?: number;
   car?: (t: number) => CarState;
+  /** Called after each frame, for looking at a stop in progress. */
+  onFrame?: (t: number, detector: PitStopDetector) => void;
 }) => {
   const stall = options.stall ?? 20;
   const car = options.car ?? ((t: number) => pittingCar(t, stall));
   const detector = new PitStopDetector(2);
   const completed = [];
   let entered = false;
-  let exited = false;
   const frames = Math.round((options.until ?? 110) * 10);
   for (let i = 0; i <= frames; i++) {
     const t = i / 10;
@@ -77,26 +79,30 @@ const run = (options: {
       fuelLevel: fuelAt(t),
       pitSvFlags: 0b1111 | 0x10,
       repairLeft: 0,
-      playerTowing: false,
+      playerTowing:
+        options.towedAt !== undefined &&
+        t >= options.towedAt &&
+        t < options.towedAt + 1,
       beforePct: 0.02,
       afterPct: 0.02,
     };
     const events = detector.update(frame);
     completed.push(...events.completed.map((stop) => ({ ...stop })));
     entered ||= events.playerEntered;
-    exited ||= events.playerExited;
+    options.onFrame?.(t, detector);
   }
-  return { completed, entered, exited };
+  return { completed, entered };
 };
 
 describe('PitStopDetector', () => {
   it('measures the window, stall time and lane positions of a stop', () => {
-    const { completed, entered, exited } = run({});
+    const { completed, entered } = run({});
     expect(entered).toBe(true);
-    expect(exited).toBe(true);
     expect(completed).toHaveLength(1);
     const stop = completed[0];
     expect(stop.tainted).toBe(false);
+    expect(stop.taintReasons).toEqual([]);
+    expect(stop.firstTaintSeconds).toBeNull();
     expect(stop.entryPct).toBeCloseTo(0.9, 2);
     expect(stop.exitPct).toBeCloseTo(0.05, 2);
     expect(stop.windowStartPct).toBeCloseTo(0.88, 2);
@@ -122,12 +128,65 @@ describe('PitStopDetector', () => {
     expect(stop.windowSeconds).toBeCloseTo(34, 0);
   });
 
-  it('taints a stop made under caution', () => {
-    expect(run({ cautionAt: 60 }).completed[0].tainted).toBe(true);
+  it('taints a stop made under caution, and says when', () => {
+    const stop = run({ cautionAt: 60 }).completed[0];
+    expect(stop.tainted).toBe(true);
+    expect(stop.taintReasons).toEqual(['caution']);
+    expect(stop.firstTaintSeconds).toBeCloseTo(20, 1);
   });
 
   it('taints a very long stop', () => {
-    expect(run({ stall: 700, until: 800 }).completed[0].tainted).toBe(true);
+    const stop = run({ stall: 700, until: 800 }).completed[0];
+    expect(stop.tainted).toBe(true);
+    expect(stop.taintReasons).toEqual(['longStop']);
+  });
+
+  it('taints a stop while the player is towed', () => {
+    const stop = run({ towedAt: 55 }).completed[0];
+    expect(stop.taintReasons).toEqual(['towed']);
+    expect(stop.firstTaintSeconds).toBeCloseTo(15, 1);
+  });
+
+  it('names a lost position in the stall, once per reason', () => {
+    const blinks = (t: number): CarState =>
+      t >= 60 && t < 61
+        ? { pct: -1, onPitRoad: true, surface: TrackLocation.NotInWorld }
+        : pittingCar(t, 20);
+    const stop = run({ car: blinks }).completed[0];
+    expect(stop.taintReasons).toEqual(['noPosition', 'notInWorld']);
+    expect(stop.firstTaintSeconds).toBeCloseTo(20, 1);
+  });
+
+  it('names an approach it never saw', () => {
+    // Joins just before the window start, so the start was never passed.
+    const late = (t: number): CarState =>
+      t < 1
+        ? { pct: -1, onPitRoad: false, surface: TrackLocation.NotInWorld }
+        : pittingCar(t + 38.5, 20);
+    const stop = run({ car: late }).completed[0];
+    expect(stop.taintReasons).toEqual(['approachNotSeen']);
+    expect(stop.firstTaintSeconds).toBe(0);
+  });
+
+  it('reports the player stop in progress until the window end', () => {
+    const seen: Record<number, ReturnType<PitStopDetector['playerStop']>> = {};
+    run({
+      onFrame: (t, detector) => {
+        if ([30, 45, 60, 75, 95].includes(t)) seen[t] = detector.playerStop(0);
+      },
+    });
+    expect(seen[30]).toBeNull();
+    expect(seen[45]).toMatchObject({
+      entryTime: 40,
+      windowStartTime: expect.closeTo(38, 0),
+      stationarySeconds: 0,
+      serviceDone: false,
+    });
+    expect(seen[60]?.stationarySeconds).toBeCloseTo(10, 0);
+    expect(seen[60]?.serviceDone).toBe(false);
+    expect(seen[75]?.stationarySeconds).toBeCloseTo(20, 0);
+    expect(seen[75]?.serviceDone).toBe(true);
+    expect(seen[95]).toBeNull();
   });
 
   it('ignores a car that appears in its stall, as after a tow or reset', () => {
