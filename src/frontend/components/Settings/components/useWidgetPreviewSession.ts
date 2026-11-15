@@ -10,12 +10,21 @@ import type {
   ChannelName,
   DashboardLayout,
   WidgetPreviewMessage,
+  WidgetPreviewStatus,
 } from '@irdashies/types';
 import { parsePreviewRequest } from '@irdashies/domain/widgetPreview/protocol';
 import { resolvePreviewWidget } from '@irdashies/domain/widgetPreview/presentation';
 import logger from '@irdashies/utils/logger';
 
-/** Owns the disposable frame and connection, including every failure path. */
+/**
+ * Owns the disposable frame and connection, including every failure path.
+ *
+ * Pausing stops the preview: the frame goes, and with it the demo, which
+ * main disposes on disconnect. Play starts a new frame and demo. The preview
+ * is paused by the Pause button, while the page is hidden, and by main's
+ * status: while the window is minimised or in the tray, and while the player
+ * is in the car, where Play still starts it until they get out.
+ */
 export function useWidgetPreviewSession(
   widgetId: string,
   dashboard: DashboardLayout | null | undefined
@@ -23,14 +32,24 @@ export function useWidgetPreviewSession(
   const { bridge: dashboardBridge } = useDashboard();
   const bridge = window.widgetPreviewBridge;
   const [frame, setFrame] = useState<HTMLIFrameElement | null>(null);
-  const [playing, setPlaying] = useState(true);
+  const [userPaused, setUserPaused] = useState(false);
   const [visible, setVisible] = useState(
     () => document.visibilityState !== 'hidden'
   );
+  /** Main's status; null until it has answered the subscription. */
+  const [status, setStatus] = useState<WidgetPreviewStatus | null>(null);
+  // Play pressed in the car. Kept by this widget's preview only, so another
+  // widget arrives paused, and dropped when the player gets out, so the next
+  // time in pauses again.
+  const [playInCar, setPlayInCar] = useState(false);
   const [ready, setReady] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState('');
-  const renderFrame = playing && visible && !!bridge && !error;
+  const heldInCar = !!status?.driving && !playInCar;
+  const playing = !userPaused && visible && !status?.windowHidden && !heldInCar;
+  // Not before main has said whether the preview is held: a demo started
+  // only to be stopped a moment later would be work for nothing.
+  const renderFrame = playing && status !== null && !!bridge && !error;
   const latest = useRef({ widgetId, dashboard, dashboardBridge });
   useLayoutEffect(() => {
     latest.current = { widgetId, dashboard, dashboardBridge };
@@ -47,6 +66,15 @@ export function useWidgetPreviewSession(
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
+
+  useEffect(
+    () =>
+      bridge?.onStatus((next) => {
+        setStatus(next);
+        if (!next.driving) setPlayInCar(false);
+      }),
+    [bridge]
+  );
 
   useEffect(() => {
     if (!renderFrame || !frame || !bridge) return;
@@ -221,9 +249,18 @@ export function useWidgetPreviewSession(
     renderFrame,
     available: !!bridge,
     playing,
+    /** Stopped by a pause, rather than by an error or a missing app. */
+    paused: !!bridge && !error && !playing,
     error,
     onLoad: () => setLoaded(true),
-    togglePlaying: () => setPlaying((previous) => !previous),
+    togglePlaying: () => {
+      if (playing) {
+        setUserPaused(true);
+        return;
+      }
+      setUserPaused(false);
+      if (status?.driving) setPlayInCar(true);
+    },
     retry: () => setError(''),
   };
 }

@@ -562,7 +562,10 @@ void app.whenReady().then(async () => {
   setupLogBridge();
   setupStorageStatusBridge();
   setupWindowVisibilityBridge();
-  const disposeWidgetPreviews = setupWidgetPreviewBridge(runtimePerfMetrics);
+  const disposeWidgetPreviews = setupWidgetPreviewBridge(
+    runtimePerfMetrics,
+    getSessionLifecycle()
+  );
   app.once('will-quit', disposeWidgetPreviews);
   fuelDatabase = setupFuelCalculatorBridge();
   const pitLaneBridge = setupPitLaneBridge(overlayManager, channelBus);

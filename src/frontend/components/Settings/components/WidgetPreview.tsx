@@ -313,9 +313,8 @@ export const WidgetPreview = ({
             role="status"
           >
             {preview.error ||
-              (!preview.available
-                ? 'Preview is available in the desktop app.'
-                : 'Preview paused.')}
+              (!preview.available &&
+                'Preview is available in the desktop app.')}
             {preview.error && (
               <button type="button" className={button} onClick={preview.retry}>
                 Try again
@@ -329,6 +328,18 @@ export const WidgetPreview = ({
             role="status"
           >
             Loading preview…
+          </div>
+        )}
+        {/* Stopped by the Pause button, in the car, or with the window
+            minimised or in the tray; Play starts a new demo. */}
+        {preview.paused && (
+          <div
+            className="pointer-events-none absolute inset-x-0 top-2 flex justify-center"
+            role="status"
+          >
+            <span className="rounded-md bg-slate-800/90 px-2 py-1 text-xs text-slate-300 shadow">
+              Preview paused
+            </span>
           </div>
         )}
       </div>
