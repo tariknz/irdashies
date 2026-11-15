@@ -372,6 +372,7 @@ npm run package        # Create installer
 
 ### Code Quality
 
+- Do not add code comments unless the user explicitly requests them. Prefer clear names and straightforward code.
 - ESLint before committing
 - Prettier: single quotes, 80 chars, trailing commas (ES5)
 
