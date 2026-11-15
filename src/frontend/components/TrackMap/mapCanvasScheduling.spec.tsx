@@ -133,6 +133,31 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+it('coalesces positional commits when turn labels are omitted', () => {
+  const view = render(
+    <TrackCanvas trackId={1} drivers={drivers(0.1)} maxFps={30} />
+  );
+  const canvas = view.container.querySelector('canvas');
+  expect(events(canvas).at(-1)).toBe('text:7');
+  events(canvas).length = 0;
+
+  now = 10;
+  view.rerender(<TrackCanvas trackId={1} drivers={drivers(0.3)} maxFps={30} />);
+  expect(events(canvas)).toEqual([]);
+  expect(callbacks.size).toBe(1);
+  now = 20;
+  view.rerender(<TrackCanvas trackId={1} drivers={drivers(0.5)} maxFps={30} />);
+  expect(events(canvas)).toEqual([]);
+  expect(callbacks.size).toBe(1);
+
+  frame(32);
+  expect(events(canvas)).toEqual([]);
+  expect(callbacks.size).toBe(1);
+  frame(40);
+  expect(events(canvas).filter((event) => event === 'text:7')).toHaveLength(1);
+  expect(callbacks.size).toBe(0);
+});
+
 describe.each(['track', 'flat', 'both'] as const)(
   '%s canvas scheduling',
   (kind) => {
@@ -181,8 +206,10 @@ describe.each(['track', 'flat', 'both'] as const)(
       for (const canvas of canvases) expect(events(canvas)).toEqual([]);
       frame(40);
       expect(callbacks.size).toBe(0);
-      for (const canvas of canvases)
+      for (const canvas of canvases) {
         expect(events(canvas).at(-1)).toBe('text:7');
+        events(canvas).length = 0;
+      }
 
       width = 720;
       act(() => {
@@ -194,6 +221,7 @@ describe.each(['track', 'flat', 'both'] as const)(
         expect(events(canvas).at(-1)).toBe('text:7');
       }
       // Scaling clears the backing store even at the same logical dimensions.
+      for (const canvas of canvases) events(canvas).length = 0;
       view.rerender(<Harness source={source} scale={150} />);
       for (const canvas of canvases) {
         expect(canvas.width).toBe(1080);
@@ -205,6 +233,8 @@ describe.each(['track', 'flat', 'both'] as const)(
     it('restores appearance changes in the commit, including a static rebuild with new targets', () => {
       const source = drivers(0.1);
       const view = render(<Harness source={source} />);
+      for (const canvas of view.container.querySelectorAll('canvas'))
+        events(canvas).length = 0;
       view.rerender(<Harness source={source} inverted />);
       for (const canvas of view.container.querySelectorAll('canvas'))
         expect(events(canvas).at(-1)).toBe('text:7');

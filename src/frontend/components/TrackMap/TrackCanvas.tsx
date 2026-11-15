@@ -83,6 +83,12 @@ export interface TurnLabels {
 
 const TRACK_DRAWING_WIDTH = 1920;
 const TRACK_DRAWING_HEIGHT = 1080;
+const DEFAULT_TURN_LABELS: TurnLabels = {
+  enabled: false,
+  labelType: 'both',
+  highContrast: true,
+  labelFontSize: 100,
+};
 
 /** Mount canvas effects only once the requested drawing is available. */
 export const TrackCanvas = (props: TrackProps) => {
@@ -96,12 +102,7 @@ const LoadedTrackCanvas = ({
   trackId,
   drivers,
   driverIdentities,
-  turnLabels = {
-    enabled: false,
-    labelType: 'both',
-    highContrast: true,
-    labelFontSize: 100,
-  },
+  turnLabels = DEFAULT_TURN_LABELS,
   showCarNumbers = true,
   displayMode = 'carNumber',
   invertTrackColors = false,
