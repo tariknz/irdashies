@@ -2,6 +2,7 @@ import { RadarRingsLayer } from '../radarDrawRings';
 import { useNativeWindowVisibility } from '@irdashies/context';
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { perfMetrics } from '@irdashies/utils/perfMetrics';
+import { advanceFrameDeadline } from '@irdashies/utils/frameDeadline';
 import { useWidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import type { TrackGeometry } from '@irdashies/domain/track';
 import {
@@ -299,15 +300,12 @@ export const RadarDisplay = memo(
       const intervalMs = 1000 / 60;
       let nextPaintAt = performance.now();
       const paint = (now: number) => {
-        if (now + 1e-6 >= nextPaintAt) {
+        const next = advanceFrameDeadline(now, nextPaintAt, intervalMs);
+        if (next !== nextPaintAt) {
           // Keep the deadline's phase even across missed frames. Resetting
           // it to now + intervalMs can skip every other refresh near 60 Hz.
           // Advance past missed slots without issuing catch-up paints.
-          nextPaintAt +=
-            Math.max(
-              1,
-              Math.floor((now - nextPaintAt + 1e-6) / intervalMs) + 1
-            ) * intervalMs;
+          nextPaintAt = next;
           perfMetrics.measure('radarFrame', drawFrame);
         }
         // Use the refresh timestamp so callback delivery delays cannot move

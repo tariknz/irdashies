@@ -225,6 +225,109 @@ describe('useProgressAnimation', () => {
     expect(latestDraw).toHaveBeenCalledTimes(1);
   });
 
+  it.each([
+    [60, 30, 0],
+    [60, 30, 0.2],
+    [59.94, 30, 0.2],
+    [75, 30, 0],
+    [144, 30, 0],
+    [240, 30, 0],
+    [60, 60, 0],
+    [30, 30, 0],
+  ])(
+    'keeps the %i Hz refresh stream at its %i Hz cap with %s ms jitter',
+    (hz, cap, jitter) => {
+      const paints: number[] = [];
+      const buffers = new Set<Float64Array>();
+      const Harness = ({ source }: { source: ReturnType<typeof drivers> }) => {
+        useProgressAnimation(
+          source,
+          (values) => {
+            paints.push(now);
+            buffers.add(values);
+          },
+          cap
+        );
+        return null;
+      };
+      const view = render(<Harness source={drivers(0.1)} />);
+      let nextSnapshot = 40;
+      for (let index = 1; index <= Math.floor(hz * 10); index++) {
+        const time = (index * 1000) / hz + (index % 2 ? jitter : -jitter);
+        // Real positional snapshots keep arriving at 25 Hz while RAF runs
+        // independently. Repeated targets must not restart the paint phase.
+        while (nextSnapshot <= time) {
+          commitAt(nextSnapshot);
+          view.rerender(
+            <Harness source={drivers(0.1 + nextSnapshot * 0.00001)} />
+          );
+          nextSnapshot += 40;
+        }
+        frame(time);
+        expect(callbacks.size).toBeLessThanOrEqual(1);
+      }
+      expect(paints.length).toBeGreaterThanOrEqual(cap * 10 - 1);
+      expect(paints.length).toBeLessThanOrEqual(cap * 10 + 1);
+      const intervals = paints.slice(1).map((time, i) => time - paints[i]);
+      intervals.sort((a, b) => a - b);
+      expect(intervals[Math.ceil(intervals.length * 0.99) - 1]).toBeLessThan(
+        1000 / cap + 1000 / hz + jitter * 2 + 1e-6
+      );
+      expect(buffers.size).toBe(1);
+    }
+  );
+
+  it('skips stalled slots once, settles at the latest target and stays idle until new data', () => {
+    const values: number[] = [];
+    const Harness = ({ source }: { source: ReturnType<typeof drivers> }) => {
+      useProgressAnimation(source, (progress) => values.push(progress[0]), 30);
+      return null;
+    };
+    const view = render(<Harness source={drivers(0.1)} />);
+    commitAt(40);
+    view.rerender(<Harness source={drivers(0.3)} />);
+    frame(50);
+    expect(values.at(-1)).toBeCloseTo(0.15);
+    frame(5001);
+    expect(values.at(-1)).toBeCloseTo(0.3);
+    expect(values).toHaveLength(3);
+    expect(callbacks.size).toBe(0);
+    frame(5010);
+    expect(values).toHaveLength(3);
+
+    commitAt(6000);
+    view.rerender(<Harness source={drivers(0.4)} />);
+    frame(6001);
+    expect(values.at(-1)).toBeCloseTo(0.301);
+    expect(values).toHaveLength(4);
+    expect(callbacks.size).toBe(1);
+    frame(6005);
+    expect(values).toHaveLength(4);
+    frame(6101);
+    expect(values.at(-1)).toBeCloseTo(0.4);
+    expect(callbacks.size).toBe(0);
+  });
+
+  it('repaints capped appearance changes immediately without starving the pending animation', () => {
+    const values: number[] = [];
+    const Harness = ({ source }: { source: ReturnType<typeof drivers> }) => {
+      useProgressAnimation(source, (progress) => values.push(progress[0]), 30);
+      return null;
+    };
+    const moving = drivers(0.3);
+    const view = render(<Harness source={drivers(0.1)} />);
+    view.rerender(<Harness source={moving} />);
+    commitAt(5);
+    view.rerender(<Harness source={moving} />);
+    expect(values.at(-1)).toBeCloseTo(0.125);
+    expect(callbacks.size).toBe(1);
+    frame(38);
+    expect(values).toHaveLength(2);
+    frame(40);
+    expect(values.at(-1)).toBeCloseTo(0.3);
+    expect(callbacks.size).toBe(0);
+  });
+
   it('repaints appearance-only commits immediately while idle or animating', () => {
     const draw = vi.fn();
     const source = drivers(0.1);

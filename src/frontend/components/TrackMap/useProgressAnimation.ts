@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, type RefObject } from 'react';
 import { perfMetrics } from '@irdashies/utils/perfMetrics';
+import { advanceFrameDeadline } from '@irdashies/utils/frameDeadline';
 
 export const TRACK_POSITION_INTERVAL_MS = 1000 / 25;
 const MIN_POSITION_INTERVAL_MS = 1000 / 60;
@@ -171,6 +172,7 @@ export const useProgressAnimation = (
   const drawRef = useRef(draw);
   const frameRef = useRef(0);
   const lastDrawRef = useRef(0);
+  const nextDrawRef = useRef(0);
   const previousDriversRef = useRef<ProgressSource | null>(null);
   const scheduleRef = useRef<() => void>(() => undefined);
   const minFrameMs = maxFps && maxFps > 0 ? 1000 / maxFps : 0;
@@ -184,6 +186,7 @@ export const useProgressAnimation = (
   useLayoutEffect(() => {
     const interpolator = interpolatorRef.current;
     if (!interpolator) return;
+    nextDrawRef.current = lastDrawRef.current + minFrameMs;
     let frameTime = 0;
     const measuredFrame = () => {
       const active = interpolator.advance(frameTime);
@@ -192,9 +195,13 @@ export const useProgressAnimation = (
     };
     const frame = (now: number) => {
       frameRef.current = 0;
-      if (minFrameMs > 0 && now - lastDrawRef.current < minFrameMs) {
-        scheduleRef.current();
-        return;
+      if (minFrameMs > 0) {
+        const next = advanceFrameDeadline(now, nextDrawRef.current, minFrameMs);
+        if (next === nextDrawRef.current) {
+          scheduleRef.current();
+          return;
+        }
+        nextDrawRef.current = next;
       }
       frameTime = now;
       lastDrawRef.current = now;
@@ -239,6 +246,7 @@ export const useProgressAnimation = (
       // changing appearance while idle (including simultaneous new targets).
       if (canvasInvalidatedRef) canvasInvalidatedRef.current = false;
       lastDrawRef.current = now;
+      nextDrawRef.current = now + minFrameMs;
       perfMetrics.measure(
         'trackMapAnimationFrame',
         () => draw(interpolator.getValues(), interpolator.getCount()),
