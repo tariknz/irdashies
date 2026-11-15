@@ -3,11 +3,14 @@ import type {
   RendererPerfMeasureName,
   RendererPerfSample,
 } from '@irdashies/types';
-import { RENDERER_PERF_MEASURE_NAMES } from '../types/performance';
+import {
+  RENDERER_PERF_MEASURE_NAMES,
+  PERF_RENDERER_LOG_PREFIX,
+} from '../types/performance';
 import { FixedSampleBuffer } from '../shared/performanceSamples';
 import { readRendererPerfArguments } from './perfRendererArguments';
 
-export const PERF_RENDERER_LOG_PREFIX = '[PerfRenderer:JSON] ';
+export { PERF_RENDERER_LOG_PREFIX } from '../types/performance';
 
 let telemetryCallbackTimes: FixedSampleBuffer | undefined;
 let channelCallbackTimes: FixedSampleBuffer | undefined;
@@ -114,12 +117,21 @@ export function startRendererPerfMetrics(): void {
       scenario: config.scenario,
       pid: process.pid,
       route: window.location.hash || window.location.pathname,
+      widgetDomIds: [
+        ...new Set(
+          [...document.querySelectorAll('[data-widget-id]')]
+            .map((element) => element.getAttribute('data-widget-id'))
+            .filter((id): id is string => id !== null)
+        ),
+      ],
       visibilityState: document.visibilityState,
       intervalMs: now - intervalStart,
       frameTimeMs: stats,
       telemetryCallbackMs: callbackTimes.summarize(),
       channelCallbackMs: channelTimes.summarize(),
       trackMapAnimationFrameMs: measured('trackMapAnimationFrame'),
+      trackMapCommitDrawMs: measured('trackMapCommitDraw'),
+      trackMapRafDrawMs: measured('trackMapRafDraw'),
       inputTraceFrameMs: measured('inputTraceFrame'),
       radarFrameMs: measured('radarFrame'),
       standingsFinalTimingMs: measured('standingsFinalTiming'),

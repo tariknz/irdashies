@@ -39,13 +39,35 @@ describe('renderer perf samples', () => {
       onFrame = cb;
       return 1;
     });
-    vi.stubGlobal('document', { visibilityState: 'visible' });
+    vi.stubGlobal('document', {
+      visibilityState: 'visible',
+      querySelectorAll: () => [],
+    });
     vi.stubGlobal('window', { location: { hash: '#/laptrace' } });
   });
 
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+  });
+
+  it('reports current DOM IDs without accumulating removed wrappers', async () => {
+    let ids = ['instance-a', 'instance-a', 'instance-b'];
+    vi.stubGlobal('document', {
+      visibilityState: 'visible',
+      querySelectorAll: () => ids.map((id) => ({ getAttribute: () => id })),
+    });
+    const { startRendererPerfMetrics } = await import('./rendererPerfMetrics');
+    startRendererPerfMetrics();
+    frame();
+    frame();
+    vi.advanceTimersByTime(1000);
+    expect(reported()[0].widgetDomIds).toEqual(['instance-a', 'instance-b']);
+    ids = ['instance-b'];
+    frame();
+    frame();
+    vi.advanceTimersByTime(1000);
+    expect(reported()[1].widgetDomIds).toEqual(['instance-b']);
   });
 
   // The analyzer takes a measure's rate over the windows that report it. A
@@ -64,6 +86,25 @@ describe('renderer perf samples', () => {
     expect(reported()[0].radarFrameMs?.avg).toBeCloseTo(0.6);
   });
 
+  it('reports commit and rAF Track Map draw breakdowns separately', async () => {
+    const { recordRendererMeasure, startRendererPerfMetrics } =
+      await import('./rendererPerfMetrics');
+    startRendererPerfMetrics();
+
+    frame();
+    frame();
+    recordRendererMeasure('trackMapAnimationFrame', 0.4);
+    recordRendererMeasure('trackMapCommitDraw', 0.4);
+    recordRendererMeasure('trackMapAnimationFrame', 0.2);
+    recordRendererMeasure('trackMapRafDraw', 0.2);
+    vi.advanceTimersByTime(1000);
+
+    const [active] = reported();
+    expect(active.trackMapAnimationFrameMs?.count).toBe(2);
+    expect(active.trackMapCommitDrawMs).toMatchObject({ count: 1, avg: 0.4 });
+    expect(active.trackMapRafDrawMs).toMatchObject({ count: 1, avg: 0.2 });
+  });
+
   it('reports a measure only from a window that has run it', async () => {
     const { recordRendererMeasure, startRendererPerfMetrics } =
       await import('./rendererPerfMetrics');
@@ -72,6 +113,7 @@ describe('renderer perf samples', () => {
     frame();
     frame();
     recordRendererMeasure('lapTraceFrame', 0.5);
+    recordRendererMeasure('trackMapRafDraw', 0.25);
     vi.advanceTimersByTime(1000);
 
     // Then an interval in which the loop is idle.
@@ -86,6 +128,7 @@ describe('renderer perf samples', () => {
     expect(running).not.toHaveProperty('trackMapAnimationFrameMs');
     // Still this window's loop while idle, so its time still counts.
     expect(idle.lapTraceFrameMs?.count).toBe(0);
+    expect(idle.trackMapRafDrawMs?.count).toBe(0);
     expect(idle).not.toHaveProperty('lapTraceBrakeCueMs');
   });
 });

@@ -72,6 +72,7 @@ describe('Radar painting cadence', () => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     delete window.rendererPerfBridge;
+    delete window.windowVisibilityBridge;
   });
 
   const refresh = (time: number, callbackDelay = 0) => {
@@ -153,6 +154,37 @@ describe('Radar painting cadence', () => {
     expect(pending.size).toBe(1);
     view.unmount();
     expect(pending.size).toBe(0);
+  });
+
+  it('stops native-hidden work even when document visibility stays visible and resumes immediately', () => {
+    let onVisible: ((visible: boolean) => void) | undefined;
+    const unsubscribe = vi.fn();
+    window.windowVisibilityBridge = {
+      onVisibilityChanged: (callback) => {
+        onVisible = callback;
+        return unsubscribe;
+      },
+    };
+    const view = render(<RadarDisplay {...props} />);
+    expect(pending.size).toBe(1);
+    const before = draw.mock.calls.length;
+    act(() => onVisible?.(false));
+    expect(pending.size).toBe(0);
+    refresh(1000);
+    expect(draw).toHaveBeenCalledTimes(before);
+    view.rerender(
+      <RadarDisplay
+        {...props}
+        frame={{ ...props.frame, playerSpeed: 60, playerPct: 0.5 }}
+      />
+    );
+    expect(draw).toHaveBeenCalledTimes(before);
+    act(() => onVisible?.(true));
+    expect(draw).toHaveBeenCalledTimes(before + 1);
+    expect(draw.mock.calls.at(-1)?.[1].playerPct).toBeCloseTo(0.5);
+    expect(pending.size).toBe(1);
+    view.unmount();
+    expect(unsubscribe).toHaveBeenCalledOnce();
   });
 
   it('draws the latest snapshot on the next due paint without resetting the clock', () => {

@@ -1,3 +1,5 @@
+import { isPerfCollectionEnabled } from './perfCollectionConfig';
+
 export interface RendererPerfConfig {
   enabled: boolean;
   runId: string;
@@ -18,7 +20,7 @@ function safeValue(value: string | undefined, fallback: string): string {
 export function createRendererPerfArguments(
   env: NodeJS.ProcessEnv = process.env
 ): string[] {
-  if (env.PERF_METRICS !== '1') return [];
+  if (!isPerfCollectionEnabled(env)) return [];
 
   const interval = Number(env.PERF_REPORT_INTERVAL_MS);
   const reportIntervalMs =

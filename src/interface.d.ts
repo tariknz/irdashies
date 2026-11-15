@@ -19,6 +19,7 @@ declare global {
     widgetPreviewBridge?: import('./types/widgetPreview').WidgetPreviewBridge;
     storageStatusBridge?: import('./types/storageStatus').StorageStatusBridge;
     channelBridge: ChannelBridge;
+    windowVisibilityBridge?: import('./types/windowVisibility').WindowVisibilityBridge;
     irsdkBridge: IrSdkBridge;
     telemetryInspectorBridge: TelemetryInspectorBridge;
     dashboardBridge: DashboardBridge;
