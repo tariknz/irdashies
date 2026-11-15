@@ -33,7 +33,8 @@ export function setupWidgetPreviewBridge(
       {
         id: sender.id,
         isDestroyed: () => sender.isDestroyed(),
-        isVisible: () => window?.isVisible() ?? false,
+        isVisible: () =>
+          !!window && window.isVisible() && !window.isMinimized(),
         send: (_ipc, channel, payload) =>
           sender.send(WIDGET_PREVIEW_IPC.delivery, channel, payload),
       },

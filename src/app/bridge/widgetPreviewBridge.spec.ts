@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WIDGET_PREVIEW_IPC } from '../../types/widgetPreview';
+import type { RendererTarget } from './channelBus';
 
 const handlers = vi.hoisted(
   () => new Map<string, (...args: unknown[]) => unknown>()
@@ -12,9 +13,13 @@ const runtimes = vi.hoisted(
       subscribe: ReturnType<typeof vi.fn>;
       hide: ReturnType<typeof vi.fn>;
       show: ReturnType<typeof vi.fn>;
+      isVisible: RendererTarget['isVisible'];
     }[]
 );
-const window = new EventEmitter();
+const window = Object.assign(new EventEmitter(), {
+  isVisible: (): boolean => true,
+  isMinimized: (): boolean => false,
+});
 vi.mock('electron', () => ({
   ipcMain: {
     handle: (name: string, callback: (...args: unknown[]) => unknown) =>
@@ -26,7 +31,7 @@ vi.mock('electron', () => ({
 vi.mock('../perfMetrics', () => ({ TelemetryPerfMetrics: vi.fn() }));
 vi.mock('../logger', () => ({ default: { error: vi.fn() } }));
 vi.mock('./widgetPreviewRuntime', () => ({
-  createWidgetPreviewRuntime: () => {
+  createWidgetPreviewRuntime: (target: RendererTarget) => {
     const runtime = {
       dispose: vi.fn(),
       subscribe: vi.fn(),
@@ -34,6 +39,7 @@ vi.mock('./widgetPreviewRuntime', () => ({
       show: vi.fn(),
       hide: vi.fn(),
       getSession: () => ({ DriverInfo: {} }),
+      isVisible: target.isVisible,
     };
     runtimes.push(runtime);
     return runtime;
@@ -46,7 +52,10 @@ beforeEach(() => {
   runtimes.length = 0;
   dispose = setupWidgetPreviewBridge();
 });
-afterEach(() => dispose());
+afterEach(() => {
+  dispose();
+  vi.restoreAllMocks();
+});
 
 const client = (id: number) => {
   const sender = Object.assign(new EventEmitter(), {
@@ -61,6 +70,32 @@ const invoke = (method: keyof typeof WIDGET_PREVIEW_IPC, ...args: unknown[]) =>
   handlers.get(WIDGET_PREVIEW_IPC[method])?.(...args);
 
 describe('widget preview IPC', () => {
+  it('treats minimized connections as hidden even if isVisible remains true', () => {
+    vi.spyOn(window, 'isMinimized').mockReturnValue(true);
+    invoke('connect', client(1));
+    expect(runtimes[0].isVisible()).toBe(false);
+    vi.spyOn(window, 'isMinimized').mockReturnValue(false);
+    expect(runtimes[0].isVisible()).toBe(true);
+    vi.spyOn(window, 'isVisible').mockReturnValue(false);
+    expect(runtimes[0].isVisible()).toBe(false);
+  });
+
+  it('uses native hide/minimize and show/restore signals and removes listeners', () => {
+    const event = client(1);
+    invoke('connect', event);
+    window.emit('hide');
+    window.emit('minimize');
+    expect(runtimes[0].hide).toHaveBeenCalledTimes(2);
+    window.emit('show');
+    window.emit('restore');
+    expect(runtimes[0].show).toHaveBeenCalledTimes(2);
+    invoke('disconnect', event);
+    for (const name of ['hide', 'minimize', 'show', 'restore'])
+      expect(window.listenerCount(name)).toBe(0);
+    window.emit('restore');
+    expect(runtimes[0].show).toHaveBeenCalledTimes(2);
+  });
+
   it('requires the main frame and validates channel names and rate types', () => {
     const event = client(1);
     expect(() => invoke('connect', { ...event, senderFrame: {} })).toThrow(

@@ -20,16 +20,28 @@ export function createWidgetPreviewRuntime(
   const source = generateMockData();
   let session: Session | undefined;
   let telemetry: Telemetry | null = null;
-  source.onSessionData((value) => {
-    session = value;
-    host.onSession(value);
-  });
-  source.onTelemetry((frame) => {
-    metrics.markStart('widgetPreviewProcessing');
-    host.onFrame(frame);
-    telemetry = frame;
-    metrics.markEnd('widgetPreviewProcessing');
-  });
+  let paused = false;
+  let disposed = false;
+  const startSource = () => {
+    source.onSessionData((value) => {
+      session = value;
+      host.onSession(value);
+    });
+    source.onTelemetry((frame) => {
+      metrics.markStart('widgetPreviewProcessing');
+      host.onFrame(frame);
+      telemetry = frame;
+      metrics.markEnd('widgetPreviewProcessing');
+    });
+  };
+  const pauseSource = () => {
+    paused = true;
+    // This private demo has no live session to collect while hidden. stop()
+    // clears its timers/listeners, preserving the generator's playback state.
+    source.stop();
+  };
+  startSource(); // Session data is synchronous, including for a hidden connect.
+  if (!target.isVisible()) pauseSource();
 
   return {
     getTelemetry: () => telemetry,
@@ -40,9 +52,20 @@ export function createWidgetPreviewRuntime(
     subscribe: (channel: string, rate?: number) =>
       bus.subscribe(target, channel, rate),
     unsubscribe: (channel: string) => bus.unsubscribe(target.id, channel),
-    show: () => bus.rendererBecameVisible(target.id),
-    hide: () => bus.rendererBecameHidden(target.id),
+    show: () => {
+      if (disposed || !target.isVisible()) return;
+      if (paused) {
+        paused = false;
+        startSource();
+      }
+      bus.rendererBecameVisible(target.id);
+    },
+    hide: () => {
+      bus.rendererBecameHidden(target.id);
+      pauseSource();
+    },
     dispose: () => {
+      disposed = true;
       source.stop();
       host.dispose();
       bus.dispose();
