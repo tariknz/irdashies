@@ -21,16 +21,8 @@ export const exposeWidgetPreviewBridge = () =>
       // Rebuilt, so nothing but the status crosses into the page.
       parse: (value) =>
         isWidgetPreviewStatus(value)
-          ? {
-              windowHidden: value.windowHidden,
-              driving: value.driving,
-              playInCar: value.playInCar,
-              running: value.running,
-            }
+          ? { windowHidden: value.windowHidden, driving: value.driving }
           : undefined,
       label: '[WidgetPreview] Status',
     }),
-    setPaused: (paused) =>
-      ipcRenderer.invoke(WIDGET_PREVIEW_IPC.setPaused, paused),
-    playInCar: () => ipcRenderer.invoke(WIDGET_PREVIEW_IPC.playInCar),
   });

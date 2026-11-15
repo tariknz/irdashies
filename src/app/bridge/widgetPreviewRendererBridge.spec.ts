@@ -30,12 +30,7 @@ import { exposeWidgetPreviewBridge } from './widgetPreviewRendererBridge';
 const statusListeners = () =>
   mock.listeners.get(WIDGET_PREVIEW_IPC.status) ?? new Set();
 
-const STATUS = {
-  windowHidden: true,
-  driving: false,
-  playInCar: false,
-  running: true,
-};
+const STATUS = { windowHidden: true, driving: false };
 
 beforeEach(() => {
   mock.listeners.clear();
@@ -55,8 +50,8 @@ it('passes on only well-formed statuses and unsubscribes after the last consumer
   ]);
   for (const callback of statusListeners()) {
     callback({}, { ...STATUS, windowHidden: 'yes' });
-    callback({}, { windowHidden: true, driving: false });
-    callback({}, { ...STATUS, running: undefined });
+    callback({}, { windowHidden: true });
+    callback({}, { ...STATUS, driving: undefined });
     callback({}, null);
     callback({}, { ...STATUS, extra: 1 });
   }
@@ -84,14 +79,4 @@ it('logs a failed subscription instead of dropping the rejection', async () => {
     '[WidgetPreview] Status subscription failed'
   );
   cleanup();
-});
-
-it('sends the page pause and Play in the car to main', async () => {
-  const bridge = exposeWidgetPreviewBridge();
-  await bridge.setPaused(true);
-  await bridge.playInCar();
-  expect(mock.invoke.mock.calls).toEqual([
-    [WIDGET_PREVIEW_IPC.setPaused, true],
-    [WIDGET_PREVIEW_IPC.playInCar],
-  ]);
 });

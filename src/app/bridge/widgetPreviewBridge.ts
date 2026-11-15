@@ -31,50 +31,34 @@ interface WindowVisibility {
 }
 
 /**
- * One settings page's preview, keyed by its webContents.
- *
- * The page's own pause lasts as long as the page. Play in the car is for the
- * widget it was pressed on: it ends when that widget's demo disconnects, as
- * it does when the page moves to another widget, so the next one arrives
- * held while the player is still in the car. Everything else,
- * the window's listeners included, lasts only while the page subscribes to
- * the status or has a demo connected.
+ * One settings page, keyed by its webContents: its demo while connected, and
+ * the watch on its window while it subscribes to the status. Released once it
+ * has neither, or when the page goes.
  */
 interface PreviewPage {
   readonly contents: WebContents;
-  pagePaused: boolean;
-  playInCar: boolean;
   statusSubscribed: boolean;
-  /** Unset while not in use, or when the page has no window to watch. */
+  /** Unset while not subscribed, or when the page has no window to watch. */
   visibility?: WindowVisibility;
   runtime?: PreviewRuntime;
-  /** What the runtime was last told; false without one. */
-  running: boolean;
   /** The status last sent, so only changes are sent. */
   sent?: WidgetPreviewStatus;
   stopWatchingPage(): void;
 }
 
-const sameStatus = (a: WidgetPreviewStatus, b: WidgetPreviewStatus) =>
-  a.windowHidden === b.windowHidden &&
-  a.driving === b.driving &&
-  a.playInCar === b.playInCar &&
-  a.running === b.running;
-
 /**
- * Serves the settings windows' widget previews: one demo per window, which
- * main pauses in place, so a resumed preview carries on where it stopped.
+ * Serves the settings windows' widget previews: one demo per window, created
+ * when its page connects and disposed when it disconnects.
  *
- * A window's demo runs unless its page paused it (the Pause button, or the
- * page being hidden), the window is minimised or closed to the tray, or the
- * player is in the car and Play was not pressed there. Main tells the page
- * which through the status subscription.
+ * The page stops its preview, demo and frame both, while it is paused, and
+ * starts a new one on Play. Main tells it the two reasons only main can see,
+ * through the status subscription: its window being minimised or closed to
+ * the tray, and the player being in the car.
  *
- * The window's visibility comes from its own events, here only. Settings
- * windows run with backgroundThrottling off, which Electron documents as
- * also affecting the Page Visibility API, so the page can keep reporting
- * itself visible while minimised or hidden. The demo's channel delivery
- * follows whether it runs, so nothing reaches a paused preview's frame.
+ * The window's visibility comes from its own events. Settings windows run
+ * with backgroundThrottling off, which Electron documents as also affecting
+ * the Page Visibility API, so the page can keep reporting itself visible
+ * while minimised or hidden.
  *
  * Being in the car comes from the session lifecycle, which every simulator
  * feeds and Demo Mode does not. Stopping a simulator's bridge reports a
@@ -91,18 +75,18 @@ export function setupWidgetPreviewBridge(
   const isHidden = (page: PreviewPage) =>
     !!page.visibility &&
     (page.visibility.minimized || page.visibility.trayHidden);
-  const shouldRun = (page: PreviewPage) =>
-    !page.pagePaused && !isHidden(page) && !(isDriving && !page.playInCar);
 
   const report = (page: PreviewPage) => {
     if (!page.statusSubscribed || page.contents.isDestroyed()) return;
     const status: WidgetPreviewStatus = {
       windowHidden: isHidden(page),
       driving: isDriving,
-      playInCar: page.playInCar,
-      running: page.running,
     };
-    if (page.sent && sameStatus(page.sent, status)) return;
+    if (
+      page.sent?.windowHidden === status.windowHidden &&
+      page.sent.driving === status.driving
+    )
+      return;
     page.sent = status;
     page.contents.send(WIDGET_PREVIEW_IPC.status, status);
   };
@@ -110,7 +94,6 @@ export function setupWidgetPreviewBridge(
   const closeDemo = (page: PreviewPage) => {
     page.runtime?.dispose();
     page.runtime = undefined;
-    page.running = false;
   };
 
   const release = (page: PreviewPage) => {
@@ -132,7 +115,7 @@ export function setupWidgetPreviewBridge(
     const minimized = window.isMinimized();
     const set = (next: { minimized?: boolean; trayHidden?: boolean }) => {
       Object.assign(visibility, next);
-      update(page);
+      report(page);
     };
     const onMinimize = () => set({ minimized: true });
     const onRestore = () => set({ minimized: false });
@@ -159,49 +142,25 @@ export function setupWidgetPreviewBridge(
     return visibility;
   };
 
-  /**
-   * Brings the page's window watch, demo and status in line with its state;
-   * called after every change to it.
-   */
-  function update(page: PreviewPage) {
-    if (!page.statusSubscribed && !page.runtime) {
+  /** Brings the page's window watch and record in line with its use. */
+  const update = (page: PreviewPage) => {
+    if (!page.statusSubscribed) {
       page.visibility?.stop();
       page.visibility = undefined;
       page.sent = undefined;
-      // Kept while it holds a choice the page made for its next preview.
-      if (!page.pagePaused && !page.playInCar) release(page);
+      if (!page.runtime) release(page);
       return;
     }
     page.visibility ??= watchWindow(page);
-    const { runtime } = page;
-    if (runtime) {
-      // A demo connected while held does not run at all until it is let go:
-      // no picture beats one that moves while the preview shows Play.
-      const next = shouldRun(page);
-      if (next !== page.running) {
-        page.running = next;
-        runtime.setRunning(next);
-        // The bus delivers only while the demo runs, whatever paused it: a
-        // rate-limited snapshot already pending when the Pause button is
-        // pressed or the player gets in the car would otherwise still reach
-        // the frame and change the paused picture. Told after `running`
-        // changes, since the bus reads it through the target's isVisible.
-        if (next) runtime.show();
-        else runtime.hide();
-      }
-    }
     report(page);
-  }
+  };
 
   const open = (contents: WebContents): PreviewPage => {
     const existing = pages.get(contents.id);
     if (existing) return existing;
     const page: PreviewPage = {
       contents,
-      pagePaused: false,
-      playInCar: false,
       statusSubscribed: false,
-      running: false,
       stopWatchingPage: onRendererPageGone(contents, () => release(page)),
     };
     pages.set(contents.id, page);
@@ -230,11 +189,7 @@ export function setupWidgetPreviewBridge(
   const setDriving = (value: boolean) => {
     if (value === isDriving) return;
     isDriving = value;
-    for (const page of [...pages.values()]) {
-      // Play in the car lasts until the player gets out.
-      if (!value) page.playInCar = false;
-      update(page);
-    }
+    for (const page of pages.values()) report(page);
   };
   const stopDrivingChanges = driving?.onDrivingStateChange(setDriving);
   // A disconnect while driving resets the lifecycle without reporting the
@@ -265,9 +220,9 @@ export function setupWidgetPreviewBridge(
         {
           id: sender.id,
           isDestroyed: () => sender.isDestroyed(),
-          // Delivery follows the run state, which is false whenever the
-          // window is hidden as well as when the demo is paused otherwise.
-          isVisible: () => page.running,
+          // The page stops its demo whenever the preview is not shown, so a
+          // connected demo is always one being shown.
+          isVisible: () => true,
           send: (_ipc, channel, payload) =>
             sender.send(WIDGET_PREVIEW_IPC.delivery, channel, payload),
         },
@@ -279,12 +234,7 @@ export function setupWidgetPreviewBridge(
       update(page);
       throw error;
     }
-    // Decided here, once: a demo that should be paused is held before its
-    // first frame, never created and then replaced. A new runtime starts
-    // running, and is stopped below before its generator's first tick.
     page.runtime = runtime;
-    page.running = true;
-    update(page);
     return runtime.getSession();
   });
   ipcMain.handle(WIDGET_PREVIEW_IPC.disconnect, (event) => {
@@ -292,10 +242,6 @@ export function setupWidgetPreviewBridge(
     const page = pages.get(event.sender.id);
     if (!page) return;
     closeDemo(page);
-    // Play in the car was for this widget's preview. Ended here, not when
-    // the next demo connects, so a Play pressed on the next widget before
-    // its frame has connected still counts.
-    page.playInCar = false;
     update(page);
   });
   ipcMain.handle(WIDGET_PREVIEW_IPC.telemetry, (event) => {
@@ -322,22 +268,6 @@ export function setupWidgetPreviewBridge(
     const name = validateChannel(channel);
     pages.get(event.sender.id)?.runtime?.unsubscribe(name);
   });
-  ipcMain.handle(WIDGET_PREVIEW_IPC.setPaused, (event, paused: unknown) => {
-    requireMainFrame(event);
-    if (typeof paused !== 'boolean') throw new Error('Invalid preview pause');
-    const page = open(event.sender);
-    page.pagePaused = paused;
-    update(page);
-  });
-  ipcMain.handle(WIDGET_PREVIEW_IPC.playInCar, (event) => {
-    requireMainFrame(event);
-    // Main's own state, not the status the page last saw: Play pressed just
-    // as the player got out must not run the preview the next time in.
-    if (!isDriving) return;
-    const page = open(event.sender);
-    page.playInCar = true;
-    update(page);
-  });
 
   return () => {
     stopDrivingChanges?.();
@@ -350,8 +280,6 @@ export function setupWidgetPreviewBridge(
       'subscribe',
       'unsubscribe',
       'telemetry',
-      'setPaused',
-      'playInCar',
     ] as const)
       ipcMain.removeHandler(WIDGET_PREVIEW_IPC[name]);
   };

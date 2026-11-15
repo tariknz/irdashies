@@ -290,7 +290,7 @@ export const WidgetPreview = ({
                 sandbox="allow-scripts allow-same-origin"
                 tabIndex={-1}
                 inert
-                className={`absolute left-0 top-0 origin-top-left border-0 bg-transparent ${preview.loaded && preview.pictured ? '' : 'invisible'}`}
+                className={`absolute left-0 top-0 origin-top-left border-0 bg-transparent ${preview.loaded ? '' : 'invisible'}`}
                 style={{
                   width,
                   height,
@@ -312,7 +312,9 @@ export const WidgetPreview = ({
             className="flex h-full items-center justify-center gap-3 p-6 text-center text-sm text-slate-400"
             role="status"
           >
-            {preview.error || 'Preview is available in the desktop app.'}
+            {preview.error ||
+              (!preview.available &&
+                'Preview is available in the desktop app.')}
             {preview.error && (
               <button type="button" className={button} onClick={preview.retry}>
                 Try again
@@ -328,10 +330,9 @@ export const WidgetPreview = ({
             Loading preview…
           </div>
         )}
-        {/* Over the frame, which keeps the paused picture underneath: paused
-            by the button, in the car, or with the window minimised or in the
-            tray. */}
-        {preview.renderFrame && !preview.playing && (
+        {/* Stopped by the Pause button, in the car, or with the window
+            minimised or in the tray; Play starts a new demo. */}
+        {preview.paused && (
           <div
             className="pointer-events-none absolute inset-x-0 top-2 flex justify-center"
             role="status"

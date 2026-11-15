@@ -16,23 +16,14 @@ import { parsePreviewRequest } from '@irdashies/domain/widgetPreview/protocol';
 import { resolvePreviewWidget } from '@irdashies/domain/widgetPreview/presentation';
 import logger from '@irdashies/utils/logger';
 
-/** Until main reports, nothing holds the preview. */
-const UNHELD: WidgetPreviewStatus = {
-  windowHidden: false,
-  driving: false,
-  playInCar: false,
-  running: true,
-};
-
 /**
  * Owns the disposable frame and connection, including every failure path.
  *
- * Pausing never touches the connection: main pauses the window's demo in
- * place and the frame holds its animation loops, so it goes on showing its
- * last picture and carries on from there. The page reports its own reasons
- * (the Pause button, and being hidden); main adds the window being hidden
- * and the player being in the car, where Play still starts the preview
- * until they get out.
+ * Pausing stops the preview: the frame goes, and with it the demo, which
+ * main disposes on disconnect. Play starts a new frame and demo. The preview
+ * is paused by the Pause button, while the page is hidden, and by main's
+ * status: while the window is minimised or in the tray, and while the player
+ * is in the car, where Play still starts it until they get out.
  */
 export function useWidgetPreviewSession(
   widgetId: string,
@@ -42,74 +33,48 @@ export function useWidgetPreviewSession(
   const bridge = window.widgetPreviewBridge;
   const [frame, setFrame] = useState<HTMLIFrameElement | null>(null);
   const [userPaused, setUserPaused] = useState(false);
-  const [documentHidden, setDocumentHidden] = useState(
-    () => document.visibilityState === 'hidden'
+  const [visible, setVisible] = useState(
+    () => document.visibilityState !== 'hidden'
   );
-  const [status, setStatus] = useState(UNHELD);
+  /** Main's status; null until it has answered the subscription. */
+  const [status, setStatus] = useState<WidgetPreviewStatus | null>(null);
+  // Play pressed in the car. Kept by this widget's preview only, so another
+  // widget arrives paused, and dropped when the player gets out, so the next
+  // time in pauses again.
+  const [playInCar, setPlayInCar] = useState(false);
   const [ready, setReady] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  // The frame's demo has run since the frame got its session. One connected
-  // while held (in the car, say) does not run until Play, so it has no
-  // picture to keep and stays out of sight rather than half drawn.
-  const [pictured, setPictured] = useState(false);
   const [error, setError] = useState('');
-  const renderFrame = !!bridge && !error;
-  const pagePaused = userPaused || documentHidden;
-  const heldInCar = status.driving && !status.playInCar;
-  const playing = !pagePaused && !status.windowHidden && !heldInCar;
-  const latest = useRef({
-    widgetId,
-    dashboard,
-    dashboardBridge,
-    running: status.running,
-  });
+  const heldInCar = !!status?.driving && !playInCar;
+  const playing = !userPaused && visible && !status?.windowHidden && !heldInCar;
+  // Not before main has said whether the preview is held: a demo started
+  // only to be stopped a moment later would be work for nothing.
+  const renderFrame = playing && status !== null && !!bridge && !error;
+  const latest = useRef({ widgetId, dashboard, dashboardBridge });
   useLayoutEffect(() => {
-    latest.current = {
-      widgetId,
-      dashboard,
-      dashboardBridge,
-      running: status.running,
-    };
-  }, [widgetId, dashboard, dashboardBridge, status.running]);
+    latest.current = { widgetId, dashboard, dashboardBridge };
+  }, [widgetId, dashboard, dashboardBridge]);
   const ref = useCallback((element: HTMLIFrameElement | null) => {
     setLoaded(false);
     setReady(false);
-    setPictured(false);
     setFrame(element);
   }, []);
 
   useEffect(() => {
     const onVisibility = () =>
-      setDocumentHidden(document.visibilityState === 'hidden');
+      setVisible(document.visibilityState !== 'hidden');
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
 
-  // Main answers the subscription at once. Until it has, the page cannot
-  // tell whether the preview is held (in the car, say).
-  const [statusKnown, setStatusKnown] = useState(false);
   useEffect(
     () =>
       bridge?.onStatus((next) => {
         setStatus(next);
-        setStatusKnown(true);
+        if (!next.driving) setPlayInCar(false);
       }),
     [bridge]
   );
-
-  useEffect(() => {
-    void bridge
-      ?.setPaused(pagePaused)
-      .catch((reason: unknown) =>
-        logger.warn('Could not pause widget preview', reason)
-      );
-  }, [bridge, pagePaused]);
-
-  /** Tells the connected frame whether the demo is advancing. */
-  const tellFrame = useRef<((running: boolean) => void) | null>(null);
-  useEffect(() => {
-    tellFrame.current?.(status.running);
-  }, [status.running]);
 
   useEffect(() => {
     if (!renderFrame || !frame || !bridge) return;
@@ -125,15 +90,8 @@ export function useWidgetPreviewSession(
     const send = (message: WidgetPreviewMessage) => {
       if (!disposed) frame.contentWindow?.postMessage(message, '*');
     };
-    /** Only a frame that has had its session runs animations to hold. */
-    const tell = (running: boolean) => {
-      if (!connected) return;
-      send({ type: running ? 'preview:resume' : 'preview:pause' });
-      if (running) setPictured(true);
-    };
     const stopSubscriptions = () => {
       if (telemetryTimer) clearInterval(telemetryTimer);
-      telemetryTimer = undefined;
       for (const subscription of subscriptions.values())
         subscription.unsubscribe();
       subscriptions.clear();
@@ -141,7 +99,6 @@ export function useWidgetPreviewSession(
     const dispose = () => {
       if (disposed) return;
       disposed = true;
-      if (tellFrame.current === tell) tellFrame.current = null;
       clearTimeout(timeout);
       stopSubscriptions();
       window.removeEventListener('message', receive);
@@ -169,11 +126,9 @@ export function useWidgetPreviewSession(
       if (!request) return;
       if (request.type === 'preview:ready') {
         if (connecting) return;
-        // A newly loaded document: what the previous one asked for is gone.
         connecting = true;
         connected = false;
         setReady(false);
-        setPictured(false);
         stopSubscriptions();
         startTimeout();
         void bridge
@@ -188,23 +143,17 @@ export function useWidgetPreviewSession(
               dashboard: latest.current.dashboard,
             };
             send({ type: 'preview:init', session, config });
-            tell(latest.current.running);
             const selected = resolvePreviewWidget(
               config.dashboard,
               config.widgetId
             );
             if (selected?.type === 'telemetryinspector') {
-              // Until the frame has a picture, also while paused: main keeps
-              // the paused demo's last frame, which the frame then holds.
-              let pictured = false;
               const poll = () => {
-                if (pictured && !latest.current.running) return;
                 void bridge
                   .getTelemetry()
                   .then((telemetry) => {
-                    if (!telemetry) return;
-                    pictured = true;
-                    send({ type: 'preview:telemetry', telemetry });
+                    if (telemetry)
+                      send({ type: 'preview:telemetry', telemetry });
                   })
                   .catch((reason: unknown) =>
                     logger.warn(
@@ -279,7 +228,6 @@ export function useWidgetPreviewSession(
         }
       }
     };
-    tellFrame.current = tell;
     startTimeout();
     window.addEventListener('message', receive);
     return dispose;
@@ -297,13 +245,12 @@ export function useWidgetPreviewSession(
   return {
     ref,
     loaded,
-    // Not while held: nothing would appear after it, and the Play button
-    // already says the preview is paused. Nor before main has said whether
-    // it is held, or it flashes on every widget page opened in the car.
-    loading: renderFrame && statusKnown && playing && (!ready || !loaded),
+    loading: renderFrame && (!ready || !loaded),
     renderFrame,
+    available: !!bridge,
     playing,
-    pictured,
+    /** Stopped by a pause, rather than by an error or a missing app. */
+    paused: !!bridge && !error && !playing,
     error,
     onLoad: () => setLoaded(true),
     togglePlaying: () => {
@@ -312,16 +259,7 @@ export function useWidgetPreviewSession(
         return;
       }
       setUserPaused(false);
-      // Asked whatever the last status said: main ignores it unless the
-      // player is in the car by its latest state, so a status that has not
-      // caught up neither swallows this press nor leaves the flag set for
-      // their next drive.
-      if (!status.playInCar)
-        void bridge
-          ?.playInCar()
-          .catch((reason: unknown) =>
-            logger.warn('Could not play widget preview in the car', reason)
-          );
+      if (status?.driving) setPlayInCar(true);
     },
     retry: () => setError(''),
   };
