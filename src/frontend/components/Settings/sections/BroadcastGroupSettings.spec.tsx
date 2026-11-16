@@ -48,26 +48,12 @@ const renderAt = (
   );
 
 describe('BroadcastGroupSettings', () => {
-  it("shows the active module's settings under one tab per module", () => {
+  it("shows only the active module's settings, the Broadcast menu listing the rest", () => {
     renderAt('broadcastticker');
 
     expect(screen.getByText('ticker settings')).toBeInTheDocument();
     expect(screen.queryByText('tower settings')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Events/ })).toHaveAttribute(
-      'href',
-      '/settings/broadcastevents'
-    );
-  });
-
-  it('marks which modules are switched on', () => {
-    renderAt('broadcast');
-
-    expect(screen.getByRole('link', { name: /Tower/ })).toContainHTML(
-      'title="On"'
-    );
-    expect(screen.getByRole('link', { name: /Ticker/ })).toContainHTML(
-      'title="Off"'
-    );
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 
   it('the master switch turns every module off, leaving other widgets', () => {
@@ -88,17 +74,19 @@ describe('BroadcastGroupSettings', () => {
     });
   });
 
-  it('marks a changed module and resets it to the defaults', () => {
+  it('offers no reset for a module at its defaults', () => {
+    renderAt('broadcast');
+
+    expect(
+      screen.queryByRole('button', { name: 'Reset module' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('resets a changed module to the defaults', () => {
     onDashboardUpdated.mockClear();
     renderAt('broadcastticker');
 
-    expect(screen.getByRole('link', { name: /Ticker/ })).toContainHTML(
-      'title="Changed"'
-    );
-    expect(screen.getByRole('link', { name: /Tower/ })).not.toContainHTML(
-      'title="Changed"'
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'Reset section' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset module' }));
 
     const saved = onDashboardUpdated.mock.calls[0][0].widgets.find(
       (w: { id: string }) => w.id === 'broadcastticker'

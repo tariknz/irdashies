@@ -43,12 +43,14 @@ const RESTORED = { restoredWidgetPage: true };
 const PAGE_HEADINGS: Record<SettingsPageKind, string> = {
   app: 'App settings',
   tool: 'Tools',
+  broadcast: 'Broadcast Settings',
   overlay: 'Overlay Settings',
 };
 
 const MAIN_LABELS: Record<SettingsPageKind, string> = {
   app: 'App settings page',
   tool: 'Tools page',
+  broadcast: 'Broadcast settings page',
   overlay: 'Overlay settings page',
 };
 
@@ -65,10 +67,13 @@ export const SettingsLayout = () => {
   const pageKind = settingsPageKind(pathname);
   const appPage = pageKind === 'app';
   const toolPage = pageKind === 'tool';
+  const broadcastPage = pageKind === 'broadcast';
   const lastApp = useRef('/settings/general');
   // Tool pages are neither overlays nor app settings: they keep their own
   // last page, so Back to overlays never lands on one.
   const lastTool = useRef('/settings/profiles');
+  // The Broadcast row reopens the broadcast module visited last.
+  const lastBroadcast = useRef('/settings/broadcast');
   // The widget page open when irDashies last quit, read once at start.
   const [storedWidgetPage] = useState(readLastWidgetPage);
   // The overlay pages visited this session, oldest first.
@@ -104,7 +109,8 @@ export const SettingsLayout = () => {
   useEffect(() => {
     if (appPage) lastApp.current = pathname;
     else if (toolPage) lastTool.current = pathname;
-  }, [appPage, toolPage, pathname]);
+    else if (broadcastPage) lastBroadcast.current = pathname;
+  }, [appPage, toolPage, broadcastPage, pathname]);
   // Only a page that counts goes on the way back or is kept to reopen:
   // passing through the Telemetry Inspector changes neither.
   useEffect(() => {
@@ -189,11 +195,16 @@ export const SettingsLayout = () => {
   const startPage = startWidgetPage(storedWidgetPage, canReopen);
   // Back to overlays: the latest overlay page visited this session that
   // still exists. A profile switch can take a layout copy away without
-  // remounting this, and then the one before it is the way back.
+  // remounting this, and then the one before it is the way back. From a
+  // broadcast page it leaves the Broadcast menu, so it skips broadcast pages.
+  const leavesForOverlays = (path: string) =>
+    !broadcastPage || settingsPageKind(path) !== 'broadcast';
   const overlayReturn =
     visitedOverlays.current.findLast(
-      (path) => existingWidgetPage(path, hasWidgetPage) !== undefined
-    ) ?? startPage;
+      (path) =>
+        existingWidgetPage(path, hasWidgetPage) !== undefined &&
+        leavesForOverlays(path)
+    ) ?? (leavesForOverlays(startPage) ? startPage : DEFAULT_WIDGET_PAGE);
 
   return (
     <ReleaseNotesStatusProvider>
@@ -288,6 +299,7 @@ export const SettingsLayout = () => {
           <SettingsMenu
             appTo={lastApp.current}
             toolsTo={lastTool.current}
+            broadcastTo={lastBroadcast.current}
             returnTo={overlayReturn}
           />
 

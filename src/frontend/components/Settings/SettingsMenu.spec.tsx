@@ -16,6 +16,7 @@ import type {
 } from '@irdashies/types';
 import { SettingsMenu } from './SettingsMenu';
 import { TrailingSlashRedirect } from './TrailingSlashRedirect';
+import { widgetItems } from './menuItems';
 
 const state = vi.hoisted(() => ({
   dashboard: undefined as DashboardLayout | undefined,
@@ -64,6 +65,20 @@ vi.mock('./menuItems', () => ({
       path: '/car-setup',
       label: 'Setup Comparison',
       category: 'Tools',
+    },
+  ],
+  broadcastItems: [
+    {
+      to: '/settings/broadcast',
+      path: '/broadcast',
+      label: 'Tower',
+      widgetType: 'broadcast',
+    },
+    {
+      to: '/settings/broadcastticker',
+      path: '/broadcastticker',
+      label: 'Ticker',
+      widgetType: 'broadcastticker',
     },
   ],
   bottomItems: [{ to: '/settings/about', path: '/about', label: 'About' }],
@@ -883,5 +898,130 @@ describe('SettingsMenu', () => {
     expect(screen.getByTestId('current-path')).toHaveTextContent(
       '/settings/standings'
     );
+  });
+
+  describe('Broadcast', () => {
+    const broadcastRow = {
+      to: '/settings/broadcast',
+      path: '/broadcast',
+      label: 'Broadcast',
+      widgetType: 'broadcast',
+      category: 'Broadcast & Streaming' as const,
+      groupTypes: ['broadcast', 'broadcastticker'],
+    };
+    const renderAt = (path: string, broadcastTo?: string) =>
+      render(
+        <MemoryRouter initialEntries={[path]}>
+          <SettingsMenu
+            returnTo="/settings/standings"
+            broadcastTo={broadcastTo}
+          />
+          <CurrentPath />
+        </MemoryRouter>
+      );
+    const modules = () =>
+      within(screen.getByRole('region', { name: 'Broadcast modules' }));
+
+    beforeEach(() => {
+      widgetItems.push(broadcastRow);
+      state.dashboard?.widgets.push(
+        {
+          id: 'broadcast',
+          enabled: true,
+          layout: { x: 0, y: 0, width: 100, height: 100 },
+        },
+        {
+          id: 'broadcastticker',
+          enabled: false,
+          config: { secondsPerEntry: 9 },
+          layout: { x: 0, y: 0, width: 100, height: 100 },
+        }
+      );
+    });
+
+    afterEach(() => {
+      widgetItems.splice(widgetItems.indexOf(broadcastRow), 1);
+    });
+
+    it('opens Broadcast as a menu of its own, a page per module', () => {
+      renderAt('/settings/standings');
+      expect(
+        screen.queryByRole('switch', { name: 'Enable Broadcast' })
+      ).toBeNull();
+
+      fireEvent.click(screen.getByRole('link', { name: 'Broadcast' }));
+      expect(screen.getByTestId('current-path')).toHaveTextContent(
+        '/settings/broadcast'
+      );
+      expect(
+        screen.getByRole('navigation', { name: 'Broadcast pages' })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { level: 2, name: 'Broadcast' }).classList
+      ).toContain('uppercase');
+      expect(modules().getByRole('link', { name: 'Tower' })).toHaveAttribute(
+        'aria-current',
+        'page'
+      );
+      expect(
+        modules().getByRole('link', { name: 'Ticker' })
+      ).not.toHaveAttribute('aria-current');
+      expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Tools' })).toBeNull();
+
+      fireEvent.click(screen.getByRole('link', { name: 'Back to overlays' }));
+      expect(screen.getByTestId('current-path')).toHaveTextContent(
+        '/settings/standings'
+      );
+      expect(screen.getByRole('searchbox')).toBeInTheDocument();
+    });
+
+    it('opens the module visited last from the Broadcast row', () => {
+      renderAt('/settings/standings', '/settings/broadcastticker');
+      expect(screen.getByRole('link', { name: 'Broadcast' })).toHaveAttribute(
+        'href',
+        '/settings/broadcastticker'
+      );
+    });
+
+    it('switches each module from its row and marks the changed one', () => {
+      renderAt('/settings/broadcast');
+      expect(
+        screen.getByRole('switch', { name: 'Enable Tower' })
+      ).toBeChecked();
+      expect(
+        screen.getByRole('switch', { name: 'Enable Ticker' })
+      ).not.toBeChecked();
+      expect(modules().getByRole('link', { name: 'Ticker' })).toContainHTML(
+        'title="Changed"'
+      );
+      expect(modules().getByRole('link', { name: 'Tower' })).not.toContainHTML(
+        'title="Changed"'
+      );
+
+      fireEvent.click(screen.getByRole('switch', { name: 'Enable Ticker' }));
+      const saved = state.onDashboardUpdated.mock.calls[0][0].widgets;
+      expect(
+        saved.find((w: { id: string }) => w.id === 'broadcastticker').enabled
+      ).toBe(true);
+      expect(screen.getByTestId('current-path')).toHaveTextContent(
+        '/settings/broadcastticker'
+      );
+    });
+
+    it('keeps the Broadcast menu in the preview', () => {
+      render(
+        <MemoryRouter initialEntries={['/settings/broadcastticker']}>
+          <SettingsMenu previewMode returnTo="/settings/standings" />
+        </MemoryRouter>
+      );
+      expect(modules().getByRole('link', { name: 'Ticker' })).toHaveAttribute(
+        'aria-current',
+        'page'
+      );
+      expect(
+        screen.getByRole('link', { name: 'Back to overlays' })
+      ).toHaveAttribute('href', '/settings/standings');
+    });
   });
 });

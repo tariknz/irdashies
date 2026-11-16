@@ -16,11 +16,16 @@ import { WIDGET_CATEGORIES, widgetDisabledMessage } from '@irdashies/types';
 import {
   generalItems,
   toolItems,
+  broadcastItems,
   widgetItems,
   bottomItems,
   menuHasToggle,
   type MenuItem,
 } from './menuItems';
+import {
+  broadcastModuleChanged,
+  isBroadcastModuleType,
+} from './broadcastModules';
 import { settingsPageKind, type SettingsPageKind } from './settingsPageKind';
 import { ToggleSwitch } from './components/ToggleSwitch';
 import { MenuSortControl } from './components/MenuSortControl';
@@ -32,9 +37,15 @@ import {
   type MenuSortMode,
 } from './menuSort';
 
-/** Whether the row is the current one: its page, or a layout copy's of it. */
-const isMenuItemActive = (item: MenuItem, pathname: string) =>
-  pathname.startsWith(`/settings${item.path}`);
+/**
+ * Whether the row is the current one: its page, or a layout copy's of it.
+ * An exact row is current on its own page only: a broadcast module's path
+ * begins another's (/broadcast, /broadcastticker).
+ */
+const isMenuItemActive = (item: MenuItem, pathname: string, exact = false) =>
+  exact
+    ? pathname === `/settings${item.path}`
+    : pathname.startsWith(`/settings${item.path}`);
 
 const MenuLink = ({
   item,
@@ -43,6 +54,8 @@ const MenuLink = ({
   isEnabled,
   onToggle,
   isNew,
+  changed,
+  exact = false,
   disabledReason,
   onNavigate,
   revealKey,
@@ -52,6 +65,9 @@ const MenuLink = ({
   showIcon?: boolean;
   isEnabled?: boolean;
   isNew?: boolean;
+  /** Its settings differ from the defaults. */
+  changed?: boolean;
+  exact?: boolean;
   /** Set for a widget the running sim cannot support: listed, dimmed, no switch. */
   disabledReason?: string;
   /** Present when the row controls a widget that exists in the dashboard. */
@@ -64,7 +80,7 @@ const MenuLink = ({
    */
   revealKey?: string;
 }) => {
-  const isActive = isMenuItemActive(item, pathname);
+  const isActive = isMenuItemActive(item, pathname, exact);
   const linkRef = useRef<HTMLAnchorElement>(null);
   useEffect(() => {
     const link = linkRef.current;
@@ -136,6 +152,12 @@ const MenuLink = ({
             New
           </span>
         )}
+        {changed && (
+          <span
+            title="Changed"
+            className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-400"
+          />
+        )}
       </Link>
       {onToggle && (
         <ToggleSwitch
@@ -152,12 +174,14 @@ const MenuLink = ({
 const NAV_LABELS: Record<SettingsPageKind, string> = {
   app: 'App settings pages',
   tool: 'Tools pages',
+  broadcast: 'Broadcast pages',
   overlay: 'Overlay settings',
 };
 
 export const SettingsMenu = ({
   appTo = '/settings/general',
   toolsTo = '/settings/profiles',
+  broadcastTo = '/settings/broadcast',
   returnTo = '/settings/relative',
   previewMode = false,
   excludedWidgetTypes,
@@ -165,6 +189,8 @@ export const SettingsMenu = ({
   appTo?: string;
   /** Where the Tools link goes: the tool page visited last. */
   toolsTo?: string;
+  /** Where the Broadcast row goes: the broadcast page visited last. */
+  broadcastTo?: string;
   returnTo?: string;
   previewMode?: boolean;
   excludedWidgetTypes?: ReadonlySet<string>;
@@ -186,12 +212,15 @@ export const SettingsMenu = ({
   };
   // Tools are pages of their own, not overlays: like App settings, they
   // have a menu that takes the overlay list's place. The preview has none.
+  // The broadcast widgets share a menu of their own too, opened from the
+  // Broadcast row.
   const kind = settingsPageKind(pathname);
   const pageKind: SettingsPageKind =
     previewMode && kind === 'tool' ? 'overlay' : kind;
   const appPage = pageKind === 'app';
   const toolPage = pageKind === 'tool';
-  const asidePage = appPage || toolPage;
+  const broadcastPage = pageKind === 'broadcast';
+  const asidePage = appPage || toolPage || broadcastPage;
   const overlayPath = useRef(pathname);
   const overlayScroll = useRef<HTMLDivElement>(null);
   const asideScroll = useRef<HTMLElement>(null);
@@ -220,7 +249,9 @@ export const SettingsMenu = ({
   // share a page and have no single widget to switch.
   const widgetIds = currentDashboard?.widgets.map((w) => w.id) ?? [];
   const canToggle = (item: MenuItem) =>
-    !!item.widgetType && menuHasToggle(item.widgetType, widgetIds);
+    !!item.widgetType &&
+    !item.groupTypes &&
+    menuHasToggle(item.widgetType, widgetIds);
 
   // Off switches every copy off; on revives only the primary widget.
   const setWidgetEnabled = (widgetType: string, enabled: boolean) => {
@@ -239,9 +270,11 @@ export const SettingsMenu = ({
   // Switching one off leaves the page shown as it is, and so does switching
   // on the row already current (a layout copy's page shows its type's row).
   const toggleWidget =
-    (item: MenuItem, widgetType: string) => (enabled: boolean) => {
+    (item: MenuItem, widgetType: string, exact = false) =>
+    (enabled: boolean) => {
       setWidgetEnabled(widgetType, enabled);
-      if (enabled && !isMenuItemActive(item, pathname)) navigate(item.to);
+      if (enabled && !isMenuItemActive(item, pathname, exact))
+        navigate(item.to);
     };
 
   // A grouped item is on while any widget sharing its page is.
@@ -280,10 +313,15 @@ export const SettingsMenu = ({
   // switch. A change re-runs its reveal; other rows ignore it. Searching, or
   // another overlay turned on by a dashboard update, leaves it and the
   // scroll alone. Switching another overlay on here opens that one instead.
+  // The Broadcast row opens the broadcast page visited last, as Tools does.
   const renderLink = (item: MenuItem) => (
     <MenuLink
       key={item.path}
-      item={item}
+      item={
+        settingsPageKind(item.to) === 'broadcast'
+          ? { ...item, to: broadcastTo }
+          : item
+      }
       pathname={asidePage ? overlayPath.current : pathname}
       revealKey={`${sortMode}:${isItemEnabled(item)}`}
       isEnabled={item.widgetType ? isItemEnabled(item) : undefined}
@@ -374,6 +412,44 @@ export const SettingsMenu = ({
                 item={item}
                 pathname={pathname}
                 showIcon
+              />
+            ))}
+          </ul>
+        </section>
+      )}
+      {broadcastPage && (
+        <section
+          ref={asideScroll}
+          aria-label="Broadcast modules"
+          className="settings-menu-scroll min-h-0 flex-1 overflow-y-auto pb-3"
+        >
+          <h2 className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+            Broadcast
+          </h2>
+          <ul className="space-y-0.5">
+            {broadcastItems.map((item) => (
+              <MenuLink
+                key={item.path}
+                item={item}
+                pathname={pathname}
+                showIcon
+                exact
+                isEnabled={isItemEnabled(item)}
+                changed={
+                  isBroadcastModuleType(item.widgetType) &&
+                  broadcastModuleChanged(
+                    item.widgetType,
+                    currentDashboard?.widgets.find(
+                      (w) => (w.type ?? w.id) === item.widgetType
+                    )?.config
+                  )
+                }
+                disabledReason={unsupported(item) ?? undefined}
+                onToggle={
+                  canToggle(item) && item.widgetType && !unsupported(item)
+                    ? toggleWidget(item, item.widgetType, true)
+                    : undefined
+                }
               />
             ))}
           </ul>

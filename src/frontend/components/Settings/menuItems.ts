@@ -8,6 +8,11 @@ import {
   InfoIcon,
   NewspaperIcon,
   FlagCheckeredIcon,
+  ListNumbersIcon,
+  SubtitlesIcon,
+  MegaphoneIcon,
+  CloudSunIcon,
+  TrophyIcon,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { WIDGET_MANIFESTS } from '@irdashies/types';
@@ -82,19 +87,63 @@ export const widgetItems: MenuItem[] = WIDGET_MANIFESTS.map(
 ).sort((a, b) => compareMenuLabels(a.label, b.label));
 
 /**
+ * The broadcast widgets, each a page of its own in the Broadcast menu. The
+ * overlay list has one Broadcast row that opens it.
+ */
+export const broadcastItems: MenuItem[] = [
+  {
+    to: '/settings/broadcast',
+    path: '/broadcast',
+    label: 'Tower',
+    widgetType: 'broadcast',
+    icon: ListNumbersIcon,
+  },
+  {
+    to: '/settings/broadcastticker',
+    path: '/broadcastticker',
+    label: 'Ticker',
+    widgetType: 'broadcastticker',
+    icon: SubtitlesIcon,
+  },
+  {
+    to: '/settings/broadcastevents',
+    path: '/broadcastevents',
+    label: 'Events',
+    widgetType: 'broadcastevents',
+    icon: MegaphoneIcon,
+  },
+  {
+    to: '/settings/broadcastweather',
+    path: '/broadcastweather',
+    label: 'Weather',
+    widgetType: 'broadcastweather',
+    icon: CloudSunIcon,
+  },
+  {
+    to: '/settings/broadcastpodium',
+    path: '/broadcastpodium',
+    label: 'Podium',
+    widgetType: 'broadcastpodium',
+    icon: TrophyIcon,
+  },
+];
+
+/**
  * Whether the settings menu offers a switch for this widget: it is listed
- * there on its own and exists in the dashboard. The widget's page leaves its
- * own switch out then, so there is one place to flip it.
+ * there on its own, in the overlay list or the Broadcast menu, and exists in
+ * the dashboard. The widget's page leaves its own switch out then, so there
+ * is one place to flip it.
  */
 export const menuHasToggle = (
   widgetType: string,
   dashboardWidgetIds: readonly string[]
 ): boolean =>
   dashboardWidgetIds.includes(widgetType) &&
-  widgetItems.some(
+  (widgetItems.some(
     (item) =>
       item.widgetType === widgetType && !item.hideInMenu && !item.groupTypes
-  );
+  ) ||
+    broadcastItems.some((item) => item.widgetType === widgetType));
 
 export const bottomItems: MenuItem[] = [
   {

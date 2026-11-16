@@ -434,6 +434,28 @@ export const WeatherRoute: Story = {
   },
 };
 
+/** The Broadcast menu, with the Tower's Look tab. */
+export const BroadcastTowerRoute: Story = {
+  args: {
+    initialPath: '/settings/broadcast',
+    initialTab: { key: 'broadcastTab', value: 'look' },
+  },
+};
+
+export const BroadcastTowerOptions: Story = {
+  args: {
+    initialPath: '/settings/broadcast',
+    initialTab: { key: 'broadcastTab', value: 'options' },
+  },
+};
+
+export const BroadcastEventsRoute: Story = {
+  args: {
+    initialPath: '/settings/broadcastevents',
+    initialTab: { key: 'broadcasteventsTab', value: 'events' },
+  },
+};
+
 export const FlatTrackMapRoute: Story = {
   args: {
     initialPath: '/settings/flatmap',

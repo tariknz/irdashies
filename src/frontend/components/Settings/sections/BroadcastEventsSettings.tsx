@@ -5,6 +5,8 @@ import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SessionVisibility } from '../components/SessionVisibility';
+import { TabButton } from '../components/TabButton';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { useDashboard } from '@irdashies/context';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import type {
@@ -31,6 +33,16 @@ const KIND_LABELS: Record<keyof BroadcastEventsConfig['kinds'], string> = {
   checkered: 'Checkered flag with winner',
 };
 
+type ModuleTab = 'options' | 'events' | 'visibility';
+
+const TABS: { id: ModuleTab; label: string }[] = [
+  { id: 'options', label: 'Options' },
+  { id: 'events', label: 'Events' },
+  { id: 'visibility', label: 'Visibility' },
+];
+
+const TAB_IDS = TABS.map((tab) => tab.id);
+
 export const BroadcastEventsSettings = () => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
@@ -41,6 +53,7 @@ export const BroadcastEventsSettings = () => {
     enabled: savedSettings?.enabled ?? false,
     config: { ...defaultConfig, ...savedSettings?.config },
   });
+  const [tab, setTab] = useStoredTab(`${SETTING_ID}Tab`, TAB_IDS);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -67,65 +80,87 @@ export const BroadcastEventsSettings = () => {
         );
         return (
           <div className="space-y-4">
-            <SettingsSection title="Widget options" scaleWidgetId={SETTING_ID}>
-              {mark(
-                ['background'],
-                <SettingSliderRow
-                  title="Background Opacity"
-                  value={config.background.opacity}
-                  units="%"
-                  min={0}
-                  max={100}
-                  step={1}
-                  onChange={(v) =>
-                    handleConfigChange({ background: { opacity: v } })
-                  }
-                />
-              )}
-              {mark(
-                ['showSeconds'],
-                <SettingSliderRow
-                  title="Show Each Event For"
-                  value={config.showSeconds}
-                  units="s"
-                  min={3}
-                  max={20}
-                  step={1}
-                  onChange={(v) => handleConfigChange({ showSeconds: v })}
-                />
-              )}
-            </SettingsSection>
-
-            <SettingsSection title="Events">
-              {(
-                Object.keys(
-                  KIND_LABELS
-                ) as (keyof BroadcastEventsConfig['kinds'])[]
-              ).map((kind) => (
-                <Fragment key={kind}>
-                  {markKind(
-                    [kind],
-                    <SettingToggleRow
-                      title={KIND_LABELS[kind]}
-                      enabled={kinds[kind]}
-                      onToggle={(v) =>
-                        handleConfigChange({ kinds: { ...kinds, [kind]: v } })
-                      }
-                    />
-                  )}
-                </Fragment>
+            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+              {TABS.map(({ id, label }) => (
+                <TabButton
+                  key={id}
+                  id={id}
+                  activeTab={tab}
+                  setActiveTab={setTab}
+                >
+                  {label}
+                </TabButton>
               ))}
-            </SettingsSection>
+            </div>
 
-            <SettingsSection title="Visibility">
-              {mark(
-                ['sessionVisibility'],
-                <SessionVisibility
-                  sessionVisibility={config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
-              )}
-            </SettingsSection>
+            {tab === 'options' && (
+              <SettingsSection
+                title="Widget options"
+                scaleWidgetId={SETTING_ID}
+              >
+                {mark(
+                  ['background'],
+                  <SettingSliderRow
+                    title="Background Opacity"
+                    value={config.background.opacity}
+                    units="%"
+                    min={0}
+                    max={100}
+                    step={1}
+                    onChange={(v) =>
+                      handleConfigChange({ background: { opacity: v } })
+                    }
+                  />
+                )}
+                {mark(
+                  ['showSeconds'],
+                  <SettingSliderRow
+                    title="Show Each Event For"
+                    value={config.showSeconds}
+                    units="s"
+                    min={3}
+                    max={20}
+                    step={1}
+                    onChange={(v) => handleConfigChange({ showSeconds: v })}
+                  />
+                )}
+              </SettingsSection>
+            )}
+
+            {tab === 'events' && (
+              <SettingsSection title="Events">
+                {(
+                  Object.keys(
+                    KIND_LABELS
+                  ) as (keyof BroadcastEventsConfig['kinds'])[]
+                ).map((kind) => (
+                  <Fragment key={kind}>
+                    {markKind(
+                      [kind],
+                      <SettingToggleRow
+                        title={KIND_LABELS[kind]}
+                        enabled={kinds[kind]}
+                        onToggle={(v) =>
+                          handleConfigChange({ kinds: { ...kinds, [kind]: v } })
+                        }
+                      />
+                    )}
+                  </Fragment>
+                ))}
+              </SettingsSection>
+            )}
+
+            {tab === 'visibility' && (
+              <SettingsSection title="Visibility">
+                {mark(
+                  ['sessionVisibility'],
+                  <SessionVisibility
+                    sessionVisibility={config.sessionVisibility}
+                    handleConfigChange={handleConfigChange}
+                  />
+                )}
+              </SettingsSection>
+            )}
           </div>
         );
       }}
