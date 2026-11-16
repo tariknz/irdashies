@@ -17,6 +17,13 @@ import type { TapeReplayStatus } from '@irdashies/types';
 
 type TelemetryTypesDict = Record<string, number>;
 
+/** Raw byte views share one immutable, owned frame buffer. */
+export type NativeTelemetryDataView = {
+  [K in keyof TelemetryVarList]: Omit<TelemetryVarList[K], 'value'> & {
+    value: Uint8Array;
+  };
+};
+
 export interface INativeSDK {
   getTapeReplayStatus?: () => TapeReplayStatus;
   seekTapeReplay?: (seconds: number) => boolean;
@@ -35,6 +42,7 @@ export interface INativeSDK {
   waitForData(timeout?: number): boolean;
   getSessionData(): string; // full yaml
   getTelemetryData(): TelemetryVarList;
+  getTelemetryDataView?: () => NativeTelemetryDataView;
 
   getTelemetryVariable<T extends boolean | number | string>(
     indexOrName: number | string
@@ -128,6 +136,7 @@ export class NativeSDK implements INativeSDK {
   public getSessionData(): string; // full yaml
 
   public getTelemetryData(): TelemetryVarList;
+  public getTelemetryDataView?: () => NativeTelemetryDataView;
 
   public getTelemetryVariable<T extends number | boolean | string>(
     indexOrName: number | string

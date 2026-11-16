@@ -280,8 +280,14 @@ export class OverlayManager {
         }
       }
 
-      // Always create a window for the primary display (fallback for unmatched widgets)
-      displaysWithWidgets.add(primaryDisplay.id);
+      // Keep a primary fallback for enabled widgets outside known displays,
+      // and the edit-mode controls. An empty locked profile needs no renderer.
+      if (
+        !this.isLocked ||
+        dashboardLayout.widgets.some((widget) => this.isOnOverlay(widget))
+      ) {
+        displaysWithWidgets.add(primaryDisplay.id);
+      }
 
       for (const display of allDisplays) {
         if (!displaysWithWidgets.has(display.id)) {
@@ -815,6 +821,10 @@ export class OverlayManager {
       this.forceRefreshOverlays(this.currentDashboard, {
         createSettingsWindow: false,
       });
+    } else if (this.currentDashboard) {
+      // Entering edit mode must restore its controls even for an empty profile;
+      // locking again releases those otherwise unused renderer resources.
+      this.ensureDisplayWindows(this.currentDashboard);
     }
 
     if (!this.isLocked) {
@@ -1053,8 +1063,8 @@ export class OverlayManager {
   /**
    * Create windows for any displays that need them but don't have one yet.
    * Uses widget center-point assignment (same logic as createOverlays) to
-   * determine which displays are required. Safe to call during drag operations
-   * since it never destroys existing windows.
+   * determine which displays are required. Safe to call during drag operations.
+   * Empty displays are released while locked; edit mode retains its windows.
    */
   public ensureDisplayWindows(dashboardLayout: DashboardLayout): void {
     dashboardLayout = this.windowLayoutOverride ?? dashboardLayout;
@@ -1093,7 +1103,23 @@ export class OverlayManager {
         }
       }
     }
-    displaysWithWidgets.add(primaryDisplay.id);
+    if (
+      !this.isLocked ||
+      dashboardLayout.widgets.some((widget) => this.isOnOverlay(widget))
+    ) {
+      displaysWithWidgets.add(primaryDisplay.id);
+    }
+
+    if (this.isLocked) {
+      for (const [displayId, window] of this.displayWindows) {
+        if (typeof displayId !== 'number' || displaysWithWidgets.has(displayId))
+          continue;
+        this.displayWindows.delete(displayId);
+        this.displayBoundsInfo.delete(displayId);
+        this.displayFullBounds.delete(displayId);
+        if (!window.isDestroyed()) window.close();
+      }
+    }
 
     for (const display of allDisplays) {
       if (!displaysWithWidgets.has(display.id)) continue;
@@ -1111,7 +1137,8 @@ export class OverlayManager {
 
   /**
    * Ensure at least one overlay window exists per active display.
-   * Widget visibility is handled by the React OverlayContainer.
+   * Enabled widgets determine renderer lifetime; transient widget visibility is
+   * handled by the React OverlayContainer.
    */
   public closeOrCreateWindows(dashboardLayout?: DashboardLayout): void {
     if (dashboardLayout) {
@@ -1121,7 +1148,7 @@ export class OverlayManager {
       this.syncGantryWindow(dashboardLayout);
       return;
     }
-    if (this.individualWindows && this.currentDashboard) {
+    if (this.currentDashboard) {
       this.ensureDisplayWindows(this.currentDashboard);
       return;
     }

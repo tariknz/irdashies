@@ -293,6 +293,54 @@ describe('tape-backed native SDK', () => {
     await rm(temporaryDirectory, { recursive: true, force: true });
   });
 
+  it('shares one owned frame across byte views without changing earlier frames', async () => {
+    await writeFile(tapePath, createTapeFixture());
+    process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
+    process.env.IRDASHIES_TELEMETRY_REPLAY_SPEED = '100';
+    const sdk = new (loadAddon().iRacingSdkNode)();
+    const readFrame = sdk.getTelemetryDataView?.bind(sdk);
+    if (!readFrame) throw new Error('Native frame views are unavailable');
+    try {
+      expect(readFrame()).toEqual({});
+      expect(sdk.startSDK()).toBe(true);
+      expect(sdk.waitForData(0)).toBe(true);
+      const first = readFrame();
+      expect(first).toBeDefined();
+      const variables = Object.values(first ?? {});
+      expect(variables.length).toBeGreaterThan(1);
+      expect(variables.every(({ value }) => value instanceof Uint8Array)).toBe(
+        true
+      );
+      expect(new Set(variables.map(({ value }) => value.buffer)).size).toBe(1);
+      const independent = sdk.getTelemetryData();
+      for (const [name, variable] of Object.entries(first ?? {})) {
+        const original = independent[name as keyof typeof independent].value;
+        expect([...variable.value]).toEqual([
+          ...new Uint8Array(original as unknown as ArrayBuffer),
+        ]);
+      }
+      const speed = first.Speed.value;
+      const readSpeed = () =>
+        new DataView(
+          speed.buffer,
+          speed.byteOffset,
+          speed.byteLength
+        ).getFloat32(0, true);
+      expect(readSpeed()).toBe(50);
+      expect(sdk.waitForData(0)).toBe(true);
+      const next = readFrame();
+      expect(next.Speed.value.buffer).not.toBe(speed.buffer);
+      expect(readSpeed()).toBe(50);
+      // The existing public API still returns independent ArrayBuffers.
+      expect(sdk.getTelemetryData().Speed.value).toBeInstanceOf(ArrayBuffer);
+      sdk.stopSDK();
+      expect(readSpeed()).toBe(50);
+      expect(readFrame()).toEqual({});
+    } finally {
+      sdk.stopSDK();
+    }
+  });
+
   it.each([
     // Names from the 7 November 2026 F7 captures, before double decoding.
     ['captured Catalan name', Buffer.from('Jaime Perpinyà'), 'Jaime Perpinyà'],
