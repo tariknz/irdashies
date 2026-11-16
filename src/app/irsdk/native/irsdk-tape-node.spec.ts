@@ -295,50 +295,53 @@ describe('tape-backed native SDK', () => {
 
   it('shares one owned frame across byte views without changing earlier frames', async () => {
     await writeFile(tapePath, createTapeFixture());
-    process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
-    process.env.IRDASHIES_TELEMETRY_REPLAY_LOOP = '1';
-    process.env.IRDASHIES_TELEMETRY_REPLAY_SPEED = '100';
-    const sdk = new (loadAddon().iRacingSdkNode)();
-    const readFrame = sdk.getTelemetryDataView?.bind(sdk);
-    if (!readFrame) throw new Error('Native frame views are unavailable');
-    try {
-      expect(readFrame()).toEqual({});
-      expect(sdk.startSDK()).toBe(true);
-      expect(sdk.waitForData(100)).toBe(true);
-      const first = readFrame();
-      expect(first).toBeDefined();
-      const variables = Object.values(first ?? {});
-      expect(variables.length).toBeGreaterThan(1);
-      expect(variables.every(({ value }) => value instanceof Uint8Array)).toBe(
-        true
-      );
-      expect(new Set(variables.map(({ value }) => value.buffer)).size).toBe(1);
-      const independent = sdk.getTelemetryData();
-      for (const [name, variable] of Object.entries(first ?? {})) {
-        const original = independent[name as keyof typeof independent].value;
-        expect([...variable.value]).toEqual([
-          ...new Uint8Array(original as unknown as ArrayBuffer),
-        ]);
+    const script = `
+      const assert = require('node:assert/strict');
+      const { iRacingSdkNode } = require(process.argv[1]);
+      const sdk = new iRacingSdkNode();
+      const readFrame = sdk.getTelemetryDataView?.bind(sdk);
+      assert.ok(readFrame);
+      try {
+        assert.deepEqual(readFrame(), {});
+        assert.equal(sdk.startSDK(), true);
+        assert.equal(sdk.waitForData(100), true);
+        const first = readFrame();
+        const variables = Object.values(first);
+        assert.ok(variables.length > 1);
+        assert.ok(variables.every(({ value }) => value instanceof Uint8Array));
+        assert.equal(new Set(variables.map(({ value }) => value.buffer)).size, 1);
+        const independent = sdk.getTelemetryData();
+        for (const [name, variable] of Object.entries(first)) {
+          assert.deepEqual(
+            [...variable.value],
+            [...new Uint8Array(independent[name].value)]
+          );
+        }
+        const speed = first.Speed.value;
+        const readSpeed = () =>
+          new DataView(speed.buffer, speed.byteOffset, speed.byteLength).getFloat32(0, true);
+        const retainedSpeed = readSpeed();
+        assert.equal(sdk.waitForData(100), true);
+        const next = readFrame();
+        assert.notEqual(next.Speed.value.buffer, speed.buffer);
+        assert.equal(readSpeed(), retainedSpeed);
+        assert.ok(sdk.getTelemetryData().Speed.value instanceof ArrayBuffer);
+        sdk.stopSDK();
+        assert.equal(readSpeed(), retainedSpeed);
+        assert.deepEqual(readFrame(), {});
+      } finally {
+        sdk.stopSDK();
       }
-      const speed = first.Speed.value;
-      const readSpeed = () =>
-        new DataView(
-          speed.buffer,
-          speed.byteOffset,
-          speed.byteLength
-        ).getFloat32(0, true);
-      const retainedSpeed = readSpeed();
-      expect(sdk.waitForData(100)).toBe(true);
-      const next = readFrame();
-      expect(next.Speed.value.buffer).not.toBe(speed.buffer);
-      expect(readSpeed()).toBe(retainedSpeed);
-      expect(sdk.getTelemetryData().Speed.value).toBeInstanceOf(ArrayBuffer);
-      sdk.stopSDK();
-      expect(readSpeed()).toBe(retainedSpeed);
-      expect(readFrame()).toEqual({});
-    } finally {
-      sdk.stopSDK();
-    }
+    `;
+    await execFileAsync(process.execPath, ['-e', script, addonPath], {
+      env: {
+        ...process.env,
+        IRDASHIES_TELEMETRY_REPLAY: tapePath,
+        IRDASHIES_TELEMETRY_REPLAY_LOOP: '1',
+        IRDASHIES_TELEMETRY_REPLAY_SPEED: '100',
+      },
+      timeout: 5000,
+    });
   });
 
   it.each([
