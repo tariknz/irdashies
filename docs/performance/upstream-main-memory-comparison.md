@@ -14,8 +14,9 @@ settle near **274 MiB private memory** after collection. Disabling every widget
 releases the overlay renderer only in the fixed build, reducing the remaining
 application footprint in the separate lifecycle check.
 
-These are Linux replay results, not live Windows/iRacing validation or proof
-that a long-session memory leak has been eliminated.
+These benchmark results are from Linux replay. The Windows build was checked
+separately, but this comparison contains no Windows performance measurement and
+does not prove that a long-session memory leak has been eliminated.
 
 ## Method
 
@@ -102,8 +103,10 @@ estimate of expected savings across machines and profiles.
 ## Validation and artifacts
 
 - `npm run lint` passed after the upstream merge.
-- 213 tests passed across SDK/native, overlay lifecycle, canvas cleanup, colors,
-  Radar display and capped map-animation suites.
+- The full test suite passed: 588 test files passed, 9 skipped; 7,031 tests
+  passed, 41 skipped.
+- The Windows build was checked separately; the benchmark results above remain
+  Linux-only.
 - Both instrumented production builds packaged successfully. Temporary source
   changes are removed before the final production rebuild.
 - Raw logs, per-process/heap checkpoints, profile, ASAR/native hashes,

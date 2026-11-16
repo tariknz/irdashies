@@ -36,6 +36,7 @@ closed its overlay renderer and ended at 177.0 MiB versus 231.3 MiB upstream.
 
 The max-speed scheduler and forced-GC hooks were temporary, identical test
 instrumentation in both builds. They are absent from the final product build.
-The measured throughput gain cannot be assumed for normal, rate-limited live
-telemetry. Live Windows/iRacing behavior remains unverified, and these results
-do not establish that a long-session memory leak has been eliminated.
+The Windows build was checked separately, but no Windows performance
+measurement is included here. The measured throughput gain cannot be assumed for
+normal, rate-limited live telemetry, and these results do not establish that a
+long-session memory leak has been eliminated.
