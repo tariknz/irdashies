@@ -72,7 +72,6 @@ export const SettingsLayout = () => {
   // Tool pages are neither overlays nor app settings: they keep their own
   // last page, so Back to overlays never lands on one.
   const lastTool = useRef('/settings/profiles');
-  // The Broadcast row reopens the broadcast module visited last.
   const lastBroadcast = useRef('/settings/broadcast');
   // The widget page open when irDashies last quit, read once at start.
   const [storedWidgetPage] = useState(readLastWidgetPage);
@@ -195,8 +194,7 @@ export const SettingsLayout = () => {
   const startPage = startWidgetPage(storedWidgetPage, canReopen);
   // Back to overlays: the latest overlay page visited this session that
   // still exists. A profile switch can take a layout copy away without
-  // remounting this, and then the one before it is the way back. From a
-  // broadcast page it leaves the Broadcast menu, so it skips broadcast pages.
+  // remounting this, and then the one before it is the way back.
   const leavesForOverlays = (path: string) =>
     !broadcastPage || settingsPageKind(path) !== 'broadcast';
   const overlayReturn =

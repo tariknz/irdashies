@@ -37,11 +37,7 @@ import {
   type MenuSortMode,
 } from './menuSort';
 
-/**
- * Whether the row is the current one: its page, or a layout copy's of it.
- * An exact row is current on its own page only: a broadcast module's path
- * begins another's (/broadcast, /broadcastticker).
- */
+/** Whether the row is the current one: its page, or a layout copy's of it. */
 const isMenuItemActive = (item: MenuItem, pathname: string, exact = false) =>
   exact
     ? pathname === `/settings${item.path}`
@@ -65,7 +61,6 @@ const MenuLink = ({
   showIcon?: boolean;
   isEnabled?: boolean;
   isNew?: boolean;
-  /** Its settings differ from the defaults. */
   changed?: boolean;
   exact?: boolean;
   /** Set for a widget the running sim cannot support: listed, dimmed, no switch. */
@@ -189,7 +184,6 @@ export const SettingsMenu = ({
   appTo?: string;
   /** Where the Tools link goes: the tool page visited last. */
   toolsTo?: string;
-  /** Where the Broadcast row goes: the broadcast page visited last. */
   broadcastTo?: string;
   returnTo?: string;
   previewMode?: boolean;
@@ -212,8 +206,6 @@ export const SettingsMenu = ({
   };
   // Tools are pages of their own, not overlays: like App settings, they
   // have a menu that takes the overlay list's place. The preview has none.
-  // The broadcast widgets share a menu of their own too, opened from the
-  // Broadcast row.
   const kind = settingsPageKind(pathname);
   const pageKind: SettingsPageKind =
     previewMode && kind === 'tool' ? 'overlay' : kind;
@@ -313,7 +305,6 @@ export const SettingsMenu = ({
   // switch. A change re-runs its reveal; other rows ignore it. Searching, or
   // another overlay turned on by a dashboard update, leaves it and the
   // scroll alone. Switching another overlay on here opens that one instead.
-  // The Broadcast row opens the broadcast page visited last, as Tools does.
   const renderLink = (item: MenuItem) => (
     <MenuLink
       key={item.path}

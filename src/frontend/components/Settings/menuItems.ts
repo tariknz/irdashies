@@ -86,10 +86,6 @@ export const widgetItems: MenuItem[] = WIDGET_MANIFESTS.map(
   })
 ).sort((a, b) => compareMenuLabels(a.label, b.label));
 
-/**
- * The broadcast widgets, each a page of its own in the Broadcast menu. The
- * overlay list has one Broadcast row that opens it.
- */
 export const broadcastItems: MenuItem[] = [
   {
     to: '/settings/broadcast',
