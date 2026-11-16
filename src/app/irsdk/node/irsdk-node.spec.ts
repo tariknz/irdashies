@@ -101,7 +101,6 @@ describe('irsdk-node', () => {
     bytes.setFloat32(20, 42.25, true);
     bytes.setInt32(24, 1234, true);
     bytes.setInt8(28, 1);
-    // Exercise an unaligned numeric range as well as normal SDK alignment.
     bytes.setFloat32(33, 0.75, true);
     const variable = (offset: number, length: number, varType: number) => ({
       value: new Uint8Array(buffer, offset, length),

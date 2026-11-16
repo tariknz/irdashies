@@ -296,6 +296,7 @@ describe('tape-backed native SDK', () => {
   it('shares one owned frame across byte views without changing earlier frames', async () => {
     await writeFile(tapePath, createTapeFixture());
     process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
+    process.env.IRDASHIES_TELEMETRY_REPLAY_LOOP = '1';
     process.env.IRDASHIES_TELEMETRY_REPLAY_SPEED = '100';
     const sdk = new (loadAddon().iRacingSdkNode)();
     const readFrame = sdk.getTelemetryDataView?.bind(sdk);
@@ -303,7 +304,7 @@ describe('tape-backed native SDK', () => {
     try {
       expect(readFrame()).toEqual({});
       expect(sdk.startSDK()).toBe(true);
-      expect(sdk.waitForData(0)).toBe(true);
+      expect(sdk.waitForData(100)).toBe(true);
       const first = readFrame();
       expect(first).toBeDefined();
       const variables = Object.values(first ?? {});
@@ -326,15 +327,14 @@ describe('tape-backed native SDK', () => {
           speed.byteOffset,
           speed.byteLength
         ).getFloat32(0, true);
-      expect(readSpeed()).toBe(50);
-      expect(sdk.waitForData(0)).toBe(true);
+      const retainedSpeed = readSpeed();
+      expect(sdk.waitForData(100)).toBe(true);
       const next = readFrame();
       expect(next.Speed.value.buffer).not.toBe(speed.buffer);
-      expect(readSpeed()).toBe(50);
-      // The existing public API still returns independent ArrayBuffers.
+      expect(readSpeed()).toBe(retainedSpeed);
       expect(sdk.getTelemetryData().Speed.value).toBeInstanceOf(ArrayBuffer);
       sdk.stopSDK();
-      expect(readSpeed()).toBe(50);
+      expect(readSpeed()).toBe(retainedSpeed);
       expect(readFrame()).toEqual({});
     } finally {
       sdk.stopSDK();

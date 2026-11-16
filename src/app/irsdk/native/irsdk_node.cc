@@ -525,8 +525,6 @@ Napi::Value iRacingSdkNode::GetTelemetryDataView(const Napi::CallbackInfo &info)
   auto result = Napi::Object::New(env);
   if (!this->_capture.valid) return result;
 
-  // One owned copy per frame, rather than an external backing store for every
-  // SDK variable. Views keep this frame alive, never the mutable SDK capture.
   auto frameBuffer = Napi::ArrayBuffer::New(env, this->_capture.data.size());
   std::memcpy(frameBuffer.Data(), this->_capture.data.data(), this->_capture.data.size());
   for (std::size_t i = 0; i < this->_capture.variables.size(); ++i) {

@@ -1,10 +1,5 @@
 import { useLayoutEffect, type RefObject } from 'react';
 
-/**
- * Detached canvases can outlive their widget until React/Chromium collects the
- * old tree. Release their native pixel buffers at unmount, not at that later GC.
- * Clearing pixels alone leaves the backing store allocated.
- */
 export function useCanvasCleanup(
   ref: RefObject<HTMLCanvasElement | null>,
   cacheRef?: RefObject<HTMLCanvasElement | null>

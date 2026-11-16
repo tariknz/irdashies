@@ -280,8 +280,6 @@ export class OverlayManager {
         }
       }
 
-      // Keep a primary fallback for enabled widgets outside known displays,
-      // and the edit-mode controls. An empty locked profile needs no renderer.
       if (
         !this.isLocked ||
         dashboardLayout.widgets.some((widget) => this.isOnOverlay(widget))
@@ -822,8 +820,6 @@ export class OverlayManager {
         createSettingsWindow: false,
       });
     } else if (this.currentDashboard) {
-      // Entering edit mode must restore its controls even for an empty profile;
-      // locking again releases those otherwise unused renderer resources.
       this.ensureDisplayWindows(this.currentDashboard);
     }
 
@@ -1060,12 +1056,6 @@ export class OverlayManager {
     app.quit();
   }
 
-  /**
-   * Create windows for any displays that need them but don't have one yet.
-   * Uses widget center-point assignment (same logic as createOverlays) to
-   * determine which displays are required. Safe to call during drag operations.
-   * Empty displays are released while locked; edit mode retains its windows.
-   */
   public ensureDisplayWindows(dashboardLayout: DashboardLayout): void {
     dashboardLayout = this.windowLayoutOverride ?? dashboardLayout;
     const individual =
@@ -1137,8 +1127,7 @@ export class OverlayManager {
 
   /**
    * Ensure at least one overlay window exists per active display.
-   * Enabled widgets determine renderer lifetime; transient widget visibility is
-   * handled by the React OverlayContainer.
+   * Widget visibility is handled by the React OverlayContainer.
    */
   public closeOrCreateWindows(dashboardLayout?: DashboardLayout): void {
     if (dashboardLayout) {

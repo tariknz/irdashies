@@ -49,7 +49,6 @@ function padCarNum(carNumber: string): number {
 
 type NumericView = Int8Array | Int32Array | Float32Array | Float64Array;
 
-/** Decode a variable's byte range without allocating another backing store. */
 function telemetryView<T extends NumericView>(
   View: {
     new (values: ArrayLike<number>): T;
@@ -59,8 +58,6 @@ function telemetryView<T extends NumericView>(
   value: unknown
 ): T {
   if (value instanceof Uint8Array) {
-    // SDK layouts normally align numeric values. Malformed/legacy layouts
-    // still need a bounded copy rather than an unaligned TypedArray exception.
     const bytes =
       value.byteOffset % View.BYTES_PER_ELEMENT === 0 ? value : value.slice();
     return new View(

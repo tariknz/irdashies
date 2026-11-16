@@ -55,19 +55,11 @@ const LMU_CLASS_COLOR_HEX: Record<number, string> = Object.fromEntries(
 );
 
 type ColorStyleDefinition = Omit<TailwindStyles, 'canvasFill'> & {
-  /** A theme colour token, or an exact hex value for LMU. */
   canvasColor: string;
 };
 
-// Keep static classes here; resolve only the selected colour against the live
-// theme. Eagerly resolving the whole table creates 20 CSSStyleDeclaration
-// objects per lookup, even when the caller only needs a class name.
 const CLASS_COLOR_STYLES: Record<string, ColorStyleDefinition> = {
-  // Le Mans Ultimate class liveries. Exact values, so these use arbitrary
-  // Tailwind colours rather than palette names; the icon background is the
-  // same hue held back to 30% so the border still reads against it.
   '#ff000a': {
-    // Hypercar
     driverIcon: 'bg-[#ff000a]/30 border-[#ff000a]',
     classHeader: 'bg-[#ff000a] border-[#ff000a]',
     fill: 'fill-[#ff000a]',
@@ -75,7 +67,6 @@ const CLASS_COLOR_STYLES: Record<string, ColorStyleDefinition> = {
     borderColor: 'border-[#ff000a]',
   },
   '#0690ff': {
-    // LMP2
     driverIcon: 'bg-[#0690ff]/30 border-[#0690ff]',
     classHeader: 'bg-[#0690ff] border-[#0690ff]',
     fill: 'fill-[#0690ff]',
@@ -83,7 +74,6 @@ const CLASS_COLOR_STYLES: Record<string, ColorStyleDefinition> = {
     borderColor: 'border-[#0690ff]',
   },
   '#763993': {
-    // LMP3
     driverIcon: 'bg-[#763993]/30 border-[#763993]',
     classHeader: 'bg-[#763993] border-[#763993]',
     fill: 'fill-[#763993]',
@@ -91,7 +81,6 @@ const CLASS_COLOR_STYLES: Record<string, ColorStyleDefinition> = {
     borderColor: 'border-[#763993]',
   },
   '#00ff6a': {
-    // LMGT3
     driverIcon: 'bg-[#00ff6a]/30 border-[#00ff6a]',
     classHeader: 'bg-[#00ff6a] border-[#00ff6a]',
     fill: 'fill-[#00ff6a]',
@@ -99,7 +88,6 @@ const CLASS_COLOR_STYLES: Record<string, ColorStyleDefinition> = {
     borderColor: 'border-[#00ff6a]',
   },
   '#fff600': {
-    // LMGTE
     driverIcon: 'bg-[#fff600]/30 border-[#fff600]',
     classHeader: 'bg-[#fff600] border-[#fff600]',
     fill: 'fill-[#fff600]',
@@ -302,7 +290,5 @@ export const getColor = (color?: string, value = 500) => {
       style: getComputedStyle(root),
     };
   }
-  // Computed style declarations are live: keep reading the current property,
-  // while reusing one declaration instead of allocating one for every car/frame.
   return rootColorStyle.style.getPropertyValue(`--color-${color}-${value}`);
 };
