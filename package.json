@@ -40,6 +40,7 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test": "vitest --coverage",
+    "perf": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/perf/cli.ts",
     "perf:run": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/perf/run.ts",
     "perf:analyze": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/perf/analyze.ts",
     "ensure-tracks": "npx tsx ./tools/ensure-tracks.ts",

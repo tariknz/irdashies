@@ -207,14 +207,17 @@ if (options.target === 'packaged') {
 if (options.target === 'packaged' && userDataDirectory) {
   childArguments.push(`--user-data-dir=${path.resolve(userDataDirectory)}`);
 }
-let build = 'unknown';
-try {
-  build = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
-    encoding: 'utf8',
-  }).trim();
-} catch {
-  // A build identifier is useful but not required for a local run.
-}
+const gitValue = (args: string[]): string | undefined => {
+  try {
+    return execFileSync('git', args, { encoding: 'utf8' }).trim();
+  } catch {
+    return undefined;
+  }
+};
+const sourceCommit = gitValue(['rev-parse', 'HEAD']) ?? 'unknown';
+const gitStatus = gitValue(['status', '--porcelain']);
+const sourceDirty = gitStatus === undefined ? null : gitStatus.length > 0;
+const build = sourceCommit === 'unknown' ? 'unknown' : sourceCommit.slice(0, 8);
 
 process.stdout.write(
   [
@@ -222,6 +225,7 @@ process.stdout.write(
     `Scenario: ${options.scenario}`,
     `Overlay mode: ${options.mode}`,
     `Target: ${options.target}`,
+    `Source: ${sourceCommit} (${sourceDirty === null ? 'worktree state unknown' : sourceDirty ? 'dirty worktree' : 'clean worktree'})`,
     `Window mode: ${options.windowMode ?? 'saved profile setting'}`,
     `Replay widget visibility override: ${options.replayVisibleWidgets}`,
     `Telemetry delivery: ${options.telemetryDelivery}`,
@@ -284,6 +288,8 @@ const child = spawn(childCommand, childArguments, {
       telemetryDelivery: options.telemetryDelivery,
       telemetryPayload: options.telemetryPayload,
       replayVisibleWidgets: options.replayVisibleWidgets,
+      sourceCommit,
+      sourceDirty,
       widgetInputRequirements,
     }),
     IRDASHIES_IRSDK_REPLAY: replayInputPath

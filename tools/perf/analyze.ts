@@ -1227,6 +1227,42 @@ function percentChange(baseline: number, candidate: number): number {
   return ((candidate - baseline) / baseline) * 100;
 }
 
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+  if (typeof value === 'object' && value !== null) {
+    return `{${Object.entries(value)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, item]) => `${JSON.stringify(key)}:${stableJson(item)}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(value) ?? 'undefined';
+}
+
+function workloadMetadata(summary: PerfSummary): string | undefined {
+  if (
+    !summary.evidence.scenarioMetadataConsistent ||
+    Object.keys(summary.scenarioMetadata).length === 0
+  )
+    return undefined;
+  const metadata = Object.fromEntries(
+    Object.entries(summary.scenarioMetadata).filter(
+      ([key]) => key !== 'sourceCommit' && key !== 'sourceDirty'
+    )
+  );
+  return stableJson({ overlayMode: summary.overlayMode, metadata });
+}
+
+function workloadMetadataMatch(
+  baseline: PerfSummary,
+  candidate: PerfSummary
+): boolean | undefined {
+  const baselineMetadata = workloadMetadata(baseline);
+  const candidateMetadata = workloadMetadata(candidate);
+  if (baselineMetadata === undefined || candidateMetadata === undefined)
+    return undefined;
+  return baselineMetadata === candidateMetadata;
+}
+
 /** Compute candidate-minus-baseline deltas for the summary metrics. */
 export function compareSummaries(
   baseline: PerfSummary,
@@ -1240,8 +1276,11 @@ export function compareSummaries(
     baseline.iracing.meanOnePercentLowFps,
     candidate.iracing.meanOnePercentLowFps
   );
+  const workloadMatch = workloadMetadataMatch(baseline, candidate);
   const comparisonConclusive =
-    baseline.evidence.conclusive && candidate.evidence.conclusive;
+    baseline.evidence.conclusive &&
+    candidate.evidence.conclusive &&
+    workloadMatch === true;
   const verdict = (passed: boolean): boolean | null =>
     comparisonConclusive ? passed : null;
   const evidenceTarget = (target: string): string =>
@@ -1254,6 +1293,11 @@ export function compareSummaries(
           ...candidate.evidence.inconclusiveReasons.map(
             (reason) => `candidate ${reason}`
           ),
+          ...(workloadMatch === false
+            ? ['baseline and candidate workload metadata differ']
+            : workloadMatch === undefined
+              ? ['workload metadata is unavailable or inconsistent']
+              : []),
         ].join('; ')}`;
 
   return {
@@ -1302,6 +1346,16 @@ export function compareSummaries(
         baseline.renderer.lapTraceBrakeCueP99MeanMs,
     },
     checks: [
+      {
+        name: 'Matched workload metadata',
+        passed: workloadMatch ?? null,
+        actual:
+          workloadMatch === undefined ? Number.NaN : Number(!workloadMatch),
+        target:
+          workloadMatch === undefined
+            ? 'n/a: workload metadata unavailable or inconsistent'
+            : 'same scenario settings, excluding source commit and worktree state',
+      },
       {
         name: 'iRacing average FPS regression',
         passed: verdict(averageFpsPercent >= -2),
@@ -1483,11 +1537,38 @@ ${processes}
 `;
 }
 
+function sourceProvenance(summary: PerfSummary): string {
+  const commit = summary.scenarioMetadata.sourceCommit;
+  const dirty = summary.scenarioMetadata.sourceDirty;
+  const revision = typeof commit === 'string' ? commit : 'not recorded';
+  const worktree =
+    typeof dirty === 'boolean' ? (dirty ? 'dirty' : 'clean') : 'unknown';
+  return `${revision} (${worktree} worktree)`;
+}
+
+function workloadConditions(summary: PerfSummary): string {
+  const metadata = Object.fromEntries(
+    Object.entries(summary.scenarioMetadata).filter(
+      ([key]) => key !== 'sourceCommit' && key !== 'sourceDirty'
+    )
+  );
+  return stableJson({
+    scenario: summary.scenario,
+    overlayMode: summary.overlayMode,
+    metadata,
+  });
+}
+
 /** Format the comparison as a Markdown table. */
 export function comparisonMarkdown(comparison: PerfComparison): string {
   const { baseline, candidate, delta } = comparison;
+  const workloadMatch = comparison.checks.find(
+    (check) => check.name === 'Matched workload metadata'
+  )?.passed;
   const evidenceStatus =
-    baseline.evidence.conclusive && candidate.evidence.conclusive
+    baseline.evidence.conclusive &&
+    candidate.evidence.conclusive &&
+    workloadMatch === true
       ? 'CONCLUSIVE'
       : 'INCONCLUSIVE';
   const checks = comparison.checks
@@ -1502,6 +1583,14 @@ export function comparisonMarkdown(comparison: PerfComparison): string {
 - Baseline: \`${baseline.runId}\` (${baseline.scenario})
 - Candidate: \`${candidate.runId}\` (${candidate.scenario})
 - Evidence: **${evidenceStatus}**
+
+## Provenance and workload
+
+- Baseline source: \`${sourceProvenance(baseline)}\`
+- Candidate source: \`${sourceProvenance(candidate)}\`
+- Workload metadata excluding source revision/state: **${workloadMatch === true ? 'MATCH' : workloadMatch === false ? 'DIFFERENT' : 'UNAVAILABLE'}**
+- Baseline conditions: \`${workloadConditions(baseline)}\`
+- Candidate conditions: \`${workloadConditions(candidate)}\`
 
 | Delta | Result |
 | --- | ---: |
@@ -1557,10 +1646,14 @@ async function writeAnalysis(
   const summaryPath = `${outputBase}.summary.json`;
   const markdownPath = `${outputBase}.summary.md`;
   let baseline: PerfSummary | undefined;
+  let workloadMatch: boolean | null | undefined;
 
   if (baselinePath) {
     baseline = await readSummary(baselinePath, warmupSeconds, analysisWindow);
     const comparison = compareSummaries(baseline, candidate);
+    workloadMatch = comparison.checks.find(
+      (check) => check.name === 'Matched workload metadata'
+    )?.passed;
     await Promise.all([
       fs.writeFile(summaryPath, JSON.stringify(comparison, null, 2), 'utf8'),
       fs.writeFile(markdownPath, comparisonMarkdown(comparison), 'utf8'),
@@ -1576,7 +1669,8 @@ async function writeAnalysis(
   if (
     requireConclusive &&
     (!candidate.evidence.conclusive ||
-      (baseline !== undefined && !baseline.evidence.conclusive))
+      (baseline !== undefined &&
+        (!baseline.evidence.conclusive || workloadMatch !== true)))
   ) {
     const reasons = [
       ...candidate.evidence.inconclusiveReasons.map(
@@ -1585,6 +1679,9 @@ async function writeAnalysis(
       ...(baseline?.evidence.inconclusiveReasons ?? []).map(
         (reason) => `baseline: ${reason}`
       ),
+      ...(baseline !== undefined && workloadMatch !== true
+        ? ['baseline and candidate workload metadata differ or are unavailable']
+        : []),
     ];
     throw new Error(
       `Performance evidence is inconclusive: ${reasons.join('; ')}`

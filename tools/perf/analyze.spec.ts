@@ -355,7 +355,11 @@ describe('performance analysis', () => {
 
     const comparison = compareSummaries(baseline, candidate);
     expect(comparison.delta.averageFpsPercent).toBe(-10);
-    expect(comparison.checks[0].passed).toBe(false);
+    expect(
+      comparison.checks.find(
+        (check) => check.name === 'iRacing average FPS regression'
+      )?.passed
+    ).toBe(false);
   });
 
   it('anchors fixed windows to the explicit origin and includes overlapping intervals', () => {
@@ -407,8 +411,53 @@ describe('performance analysis', () => {
 
     expect(summary.evidence.privateMemoryAvailable).toBe(false);
     expect(summary.evidence.conclusive).toBe(false);
-    expect(comparison.checks.every((check) => check.passed === null)).toBe(
-      true
+    expect(
+      comparison.checks
+        .filter((check) => check.name !== 'Matched workload metadata')
+        .every((check) => check.passed === null)
+    ).toBe(true);
+    expect(
+      comparison.checks.find(
+        (check) => check.name === 'Matched workload metadata'
+      )?.passed
+    ).toBe(true);
+  });
+
+  it('compares matched workload metadata while allowing source revisions to differ', () => {
+    const baseline = summarizeCapture(capture(conclusiveSamples()), 0);
+    const candidate = summarizeCapture(capture(conclusiveSamples()), 0);
+    baseline.scenarioMetadata.sourceCommit = 'baseline-commit';
+    baseline.scenarioMetadata.sourceDirty = false;
+    candidate.scenarioMetadata.sourceCommit = 'candidate-commit';
+    candidate.scenarioMetadata.sourceDirty = true;
+
+    const matching = compareSummaries(baseline, candidate);
+    const workloadCheck = matching.checks.find(
+      ({ name }) => name === 'Matched workload metadata'
+    );
+    const markdown = comparisonMarkdown(matching);
+
+    expect(workloadCheck?.passed).toBe(true);
+    expect(markdown).toContain('baseline-commit (clean worktree)');
+    expect(markdown).toContain('candidate-commit (dirty worktree)');
+    expect(markdown).toContain(
+      'Workload metadata excluding source revision/state: **MATCH**'
+    );
+
+    candidate.scenarioMetadata.activeWidgetTypes = ['radar'];
+    const mismatched = compareSummaries(baseline, candidate);
+    const mismatchCheck = mismatched.checks.find(
+      ({ name }) => name === 'Matched workload metadata'
+    );
+
+    expect(mismatchCheck?.passed).toBe(false);
+    expect(
+      mismatched.checks
+        .filter(({ name }) => name !== 'Matched workload metadata')
+        .every(({ passed }) => passed === null)
+    ).toBe(true);
+    expect(comparisonMarkdown(mismatched)).toContain(
+      'Workload metadata excluding source revision/state: **DIFFERENT**'
     );
   });
 

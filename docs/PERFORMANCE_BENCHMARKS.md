@@ -280,8 +280,45 @@ is missing or inconsistent, or a visibility phase violates its workload
 expectations. Use `--allow-inconclusive` only for exploratory inspection of a
 partial run.
 
-The analyzer writes adjacent `.summary.json` and `.summary.md` files. Its
-initial regression gates are:
+The analyzer writes adjacent `.summary.json` and `.summary.md` files. For a
+concise follow-up checklist, diagnose a raw log, analyzer summary, or analyzer
+comparison:
+
+```powershell
+npm run perf -- diagnose perf-results/<candidate>.log --warmup-seconds 60
+npm run perf -- diagnose perf-results/<candidate>.summary.json
+```
+
+This writes adjacent `.diagnosis.json` and `.diagnosis.md` files. Before a
+benchmark, check prerequisites without launching the app:
+
+```powershell
+npm run perf -- doctor --input perf-results/<recording>.irdt
+npm run perf -- doctor --target packaged
+```
+
+`doctor` reports missing runtime dependencies, native replay addons, inaccessible
+recordings/results directories, build provenance, and target availability. Warnings
+such as a dirty worktree do not block the check; hard failures return a non-zero
+exit code. It does not connect to iRacing or modify files. Live iRacing SDK and
+game-frame measurements still require a supported Windows/iRacing setup.
+
+The diagnosis reuses the analyzer's evidence and project gates to highlight investigation
+leads and suggest next measurements. It does not identify root causes, and an
+inconclusive run remains inconclusive; use the full analyzer report for detailed
+metrics and baseline comparisons. Warmup and analysis-window options apply only
+to raw `.log` inputs. The diagnosis ranks main-process sections separately by
+interval p99 and estimated accumulated work; nested-section values overlap and
+must not be summed. Instrumented renderer callbacks are ranked by p99. These
+rankings are leads, not proof of root cause or complete React/game-frame cost.
+
+Comparison reports include each run's source commit and worktree state, plus
+workload metadata with source identity excluded. A workload-metadata mismatch
+makes performance gates inconclusive; source revisions are expected to differ
+in a before/after optimization test. Older captures without provenance are
+marked as not recorded.
+
+The analyzer's initial regression gates are:
 
 | Metric                                  |              Gate |
 | --------------------------------------- | ----------------: |
