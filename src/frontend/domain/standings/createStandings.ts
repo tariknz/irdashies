@@ -926,6 +926,92 @@ export const augmentStandingsWithPlayerGap = (
 };
 
 /**
+ * Live intervals use the preceding car directly. Leader gaps wrap within one
+ * lap, so subtracting them loses whole laps and can reverse a near-lap gap.
+ */
+interface LiveIntervalTiming {
+  useLivePositionStandings: boolean;
+  carIdxOnPitRoad: boolean[];
+  carIdxEstTime: number[];
+}
+
+const calculateLiveRaceInterval = (
+  ahead: Standings,
+  behind: Standings,
+  laps: number[],
+  pcts: number[],
+  showLapDifferences: boolean,
+  timing: LiveIntervalTiming,
+  refLapStore: ReturnType<typeof useReferenceLapStore.getState>
+): number | Gap | undefined => {
+  const aheadLap = laps[ahead.carIdx];
+  const behindLap = laps[behind.carIdx];
+  const aheadPct = pcts[ahead.carIdx];
+  const behindPct = pcts[behind.carIdx];
+  if (
+    !ahead.onTrack ||
+    !behind.onTrack ||
+    !Number.isInteger(aheadLap) ||
+    aheadLap < 0 ||
+    !Number.isInteger(behindLap) ||
+    behindLap < 0 ||
+    !Number.isFinite(aheadPct) ||
+    aheadPct < 0 ||
+    aheadPct >= 1 ||
+    !Number.isFinite(behindPct) ||
+    behindPct < 0 ||
+    behindPct >= 1
+  )
+    return undefined;
+
+  // Use integer lap counts for the whole-lap part to avoid rounding a nearly
+  // complete lap up at the boundary. The fractional part always looks forward
+  // from the lower-ranked car to the higher-ranked car.
+  const wholeLaps = aheadLap - behindLap - (aheadPct < behindPct ? 1 : 0);
+  if (wholeLaps < 0) return undefined;
+  if (showLapDifferences && wholeLaps > 0)
+    return { value: undefined, laps: -wholeLaps };
+
+  const refLap = refLapStore.getReferenceLap(
+    behind.carIdx,
+    behind.carClass.id,
+    (behind.lap ?? -1) <= 1
+  );
+  const refLapTime = refLap.finishTime - refLap.startTime;
+  let lapTime: number;
+  let fractionTime: number;
+  if (
+    !timing.carIdxOnPitRoad[ahead.carIdx] &&
+    !timing.carIdxOnPitRoad[behind.carIdx] &&
+    refLap.finishTime >= 0 &&
+    Number.isFinite(refLapTime) &&
+    refLapTime > 0
+  ) {
+    lapTime = refLapTime;
+    fractionTime = calculateReferenceGap(refLap, aheadPct, behindPct);
+  } else {
+    lapTime = behind.carClass.estLapTime;
+    if (!Number.isFinite(lapTime) || lapTime <= 0) return undefined;
+    const aheadEstTime = timing.carIdxEstTime[ahead.carIdx];
+    const behindEstTime = timing.carIdxEstTime[behind.carIdx];
+    fractionTime =
+      Number.isFinite(aheadEstTime) &&
+      aheadEstTime >= 0 &&
+      Number.isFinite(behindEstTime) &&
+      behindEstTime >= 0 &&
+      Number.isFinite(ahead.carClass.estLapTime) &&
+      ahead.carClass.estLapTime > 0
+        ? calculateClassEstimatedGap(
+            getStats(aheadEstTime, ahead),
+            getStats(behindEstTime, behind)
+          )
+        : (aheadPct - behindPct + (aheadPct < behindPct ? 1 : 0)) * lapTime;
+  }
+  const interval = wholeLaps * lapTime + fractionTime;
+  return Number.isFinite(interval) && interval >= 0 ? interval : undefined;
+};
+
+/**
  * Interval shows the gap to the preceding car in the same class.
  * When enabled, whole lap differences use the signed class-leader gap convention.
  * The class leader has no interval.
@@ -934,12 +1020,16 @@ export const augmentStandingsWithInterval = (
   groupedStandings: [string, Standings[]][],
   carIdxLap: number[] = [],
   carIdxLapDistPct: number[] = [],
-  showLapDifferences = false
+  showLapDifferences = false,
+  liveTiming?: LiveIntervalTiming
 ): [string, Standings[]][] => {
+  const refLapStore = liveTiming?.useLivePositionStandings
+    ? useReferenceLapStore.getState()
+    : undefined;
   return groupedStandings.map(([classId, classStandings]) => {
     const augmentedClassStandings = classStandings.map(
       (driverStanding, index) => {
-        // The driver physically in front of this one in the standings
+        // The preceding car in class race order, regardless of track proximity.
         const driverAhead = classStandings[index - 1];
 
         let interval: number | Gap | undefined = undefined;
@@ -966,6 +1056,20 @@ export const augmentStandingsWithInterval = (
         // If there's no one ahead (P1 in class), the interval is typically undefined or 0
         if (!driverAhead) {
           interval = undefined;
+        } else if (
+          isRace &&
+          liveTiming?.useLivePositionStandings &&
+          refLapStore
+        ) {
+          interval = calculateLiveRaceInterval(
+            driverAhead,
+            driverStanding,
+            carIdxLap,
+            carIdxLapDistPct,
+            showLapDifferences,
+            liveTiming,
+            refLapStore
+          );
         } else if (
           lapsBehind > 0 &&
           driverStanding.onTrack &&
