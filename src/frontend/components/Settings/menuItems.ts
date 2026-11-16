@@ -28,7 +28,7 @@ export interface MenuItem {
   /** Widgets that share this item's page; it shows On while any of them is. */
   groupTypes?: string[];
   icon?: Icon;
-  /** Reached through a tab on another item's page rather than the menu. */
+  /** Left out of the overlay list: reached through the Broadcast menu. */
   hideInMenu?: boolean;
 }
 
