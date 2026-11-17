@@ -456,9 +456,9 @@ export const BroadcastEventsRoute: Story = {
   },
 };
 
-export const BroadcastTransitionRoute: Story = {
+export const BroadcastSettingsRoute: Story = {
   args: {
-    initialPath: '/settings/broadcast-transition',
+    initialPath: '/settings/broadcast-settings',
   },
 };
 

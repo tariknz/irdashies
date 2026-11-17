@@ -66,9 +66,12 @@ describe('BroadcastGroupSettings', () => {
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 
-  it('has no switch for all modules and no transition', () => {
+  it('has no Broadcast heading, no switch for all modules and no transition', () => {
     renderAt('broadcast');
 
+    expect(
+      screen.queryByRole('heading', { name: 'Broadcast' })
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole('switch')).not.toBeInTheDocument();
     expect(
       screen.queryByRole('combobox', { name: 'Transition' })

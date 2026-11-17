@@ -81,12 +81,12 @@ vi.mock('./menuItems', () => ({
       widgetType: 'broadcastticker',
     },
     {
-      to: '/settings/broadcast-transition',
-      path: '/broadcast-transition',
-      label: 'Transition',
+      to: '/settings/broadcast-settings',
+      path: '/broadcast-settings',
+      label: 'Settings',
     },
   ],
-  BROADCAST_TRANSITION_PAGE: '/settings/broadcast-transition',
+  BROADCAST_SETTINGS_PAGE: '/settings/broadcast-settings',
   bottomItems: [{ to: '/settings/about', path: '/about', label: 'About' }],
   menuHasToggle: (widgetType: string, ids: string[]) =>
     ids.includes(widgetType),
@@ -1015,22 +1015,22 @@ describe('SettingsMenu', () => {
       );
     });
 
-    it('opens the Transition page, with no switch and a changed dot when set', () => {
+    it('opens the Settings page, with no switch and a changed dot when the transition is set', () => {
       const tower = state.dashboard?.widgets.find((w) => w.id === 'broadcast');
       assert(tower);
       tower.config = { pageTransition: 'wipe' };
       renderAt('/settings/broadcast');
-      const transition = modules().getByRole('link', { name: 'Transition' });
-      expect(transition).toContainHTML('title="Changed"');
+      const settings = modules().getByRole('link', { name: 'Settings' });
+      expect(settings).toContainHTML('title="Changed"');
       expect(
-        screen.queryByRole('switch', { name: 'Enable Transition' })
+        screen.queryByRole('switch', { name: 'Enable Settings' })
       ).toBeNull();
 
-      fireEvent.click(transition);
+      fireEvent.click(settings);
       expect(screen.getByTestId('current-path')).toHaveTextContent(
-        '/settings/broadcast-transition'
+        '/settings/broadcast-settings'
       );
-      expect(transition).toHaveAttribute('aria-current', 'page');
+      expect(settings).toHaveAttribute('aria-current', 'page');
       expect(
         modules().getByRole('link', { name: 'Tower' })
       ).not.toHaveAttribute('aria-current');

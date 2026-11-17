@@ -45,7 +45,6 @@ export const BroadcastWeatherSettings = ({ obsUrl }: { obsUrl?: string }) => {
   return (
     <BaseSettingsSection
       disableInternalScroll
-      headingLevel="h3"
       title="Broadcast Weather"
       description={
         <BroadcastModuleDescription obsUrl={obsUrl}>

@@ -39,7 +39,6 @@ export const BroadcastPodiumSettings = ({ obsUrl }: { obsUrl?: string }) => {
   return (
     <BaseSettingsSection
       disableInternalScroll
-      headingLevel="h3"
       title="Broadcast Podium"
       description={
         <BroadcastModuleDescription obsUrl={obsUrl}>

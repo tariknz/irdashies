@@ -6,7 +6,6 @@ import { BroadcastEventsSettings } from './BroadcastEventsSettings';
 import { BroadcastWeatherSettings } from './BroadcastWeatherSettings';
 import { BroadcastPodiumSettings } from './BroadcastPodiumSettings';
 import { BroadcastPreview } from './BroadcastPreview';
-import { BroadcastHeading } from './BroadcastHeading';
 import { SettingsPreviewContext } from '@irdashies/domain/widgetPreview/settingsPreviewContext';
 import { SettingsPreviewLayout } from '../components/SettingsPreviewLayout';
 import {
@@ -87,7 +86,9 @@ export const BroadcastGroupSettings = ({
             </div>
           )}
           <div className="min-w-0">
-            <Section key={`${active}-${resets}`} obsUrl={obsUrl} />
+            <SettingsPreviewContext value={undefined}>
+              <Section key={`${active}-${resets}`} obsUrl={obsUrl} />
+            </SettingsPreviewContext>
           </div>
         </div>
         {!sharedPreview && (
@@ -107,7 +108,6 @@ export const BroadcastGroupSettings = ({
           : 'h-full space-y-5 overflow-y-auto pr-1 [scrollbar-gutter:stable]'
       }
     >
-      <BroadcastHeading />
       {sharedPreview ? (
         <SettingsPreviewLayout widgetId={sharedPreview}>
           {content}

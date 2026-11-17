@@ -33,6 +33,9 @@ describe('BroadcastTransitionSettings', () => {
   it('shows the transition with its description, Random by default', () => {
     render(<BroadcastTransitionSettings />);
 
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Settings' })
+    ).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Transition' })).toHaveValue(
       'random'
     );

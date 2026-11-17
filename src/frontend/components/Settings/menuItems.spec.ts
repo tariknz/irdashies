@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BROADCAST_TRANSITION_PAGE,
+  BROADCAST_SETTINGS_PAGE,
   broadcastItems,
   toolItems,
   widgetItems,
@@ -34,10 +34,10 @@ describe('broadcastItems', () => {
     }
   });
 
-  it('ends with the Transition page, shared by every module', () => {
-    const transition = broadcastItems.at(-1);
-    expect(transition?.label).toBe('Transition');
-    expect(transition?.to).toBe(BROADCAST_TRANSITION_PAGE);
-    expect(transition?.widgetType).toBeUndefined();
+  it('ends with the Settings page, shared by every module', () => {
+    const settings = broadcastItems.at(-1);
+    expect(settings?.label).toBe('Settings');
+    expect(settings?.to).toBe(BROADCAST_SETTINGS_PAGE);
+    expect(settings?.widgetType).toBeUndefined();
   });
 });

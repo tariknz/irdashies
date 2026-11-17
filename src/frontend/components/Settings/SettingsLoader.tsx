@@ -113,8 +113,7 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
   if (widgetId === 'driver-tags') return <DriverTagsSettings />;
   if (widgetId === 'keybindings') return <KeybindingsSettings />;
   if (widgetId === 'race-plan') return <RacePlanSettings />;
-  if (widgetId === 'broadcast-transition')
-    return <BroadcastTransitionSettings />;
+  if (widgetId === 'broadcast-settings') return <BroadcastTransitionSettings />;
 
   // 2. Find specific widget instance (may be undefined if widgetId is a type name)
   const widget = currentDashboard?.widgets.find((w) => w.id === widgetId);

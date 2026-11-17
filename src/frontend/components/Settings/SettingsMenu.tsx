@@ -17,7 +17,7 @@ import {
   generalItems,
   toolItems,
   broadcastItems,
-  BROADCAST_TRANSITION_PAGE,
+  BROADCAST_SETTINGS_PAGE,
   widgetItems,
   bottomItems,
   menuHasToggle,
@@ -277,7 +277,7 @@ export const SettingsMenu = ({
   const broadcastItemChanged = (item: MenuItem) =>
     isBroadcastModuleType(item.widgetType)
       ? broadcastModuleChanged(item.widgetType, widgetConfig(item.widgetType))
-      : item.to === BROADCAST_TRANSITION_PAGE &&
+      : item.to === BROADCAST_SETTINGS_PAGE &&
         broadcastTransitionChanged(widgetConfig('broadcast'));
 
   // A grouped item is on while any widget sharing its page is.
