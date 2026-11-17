@@ -7,8 +7,10 @@ const meta = {
   component: TapeReplayControls,
   decorators: [
     (Story) => (
-      <div className="w-[620px]">
-        <Story />
+      <div className="overlay-window font-[Lato] text-xs font-light">
+        <div className="h-[104px] w-[620px]">
+          <Story />
+        </div>
       </div>
     ),
   ],
@@ -37,4 +39,7 @@ export const EndOfTape: Story = {
 };
 export const Error: Story = {
   args: { error: 'Could not update replay playback' },
+};
+export const Busy: Story = {
+  args: { busy: true },
 };
