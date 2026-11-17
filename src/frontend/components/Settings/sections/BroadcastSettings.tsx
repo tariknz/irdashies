@@ -93,10 +93,10 @@ const PAGE_OPTIONS: {
 // if people want large or many images.
 const MAX_LOGO_BYTES = 300 * 1024;
 
-type TowerTab = 'look' | 'options' | 'visibility';
+type TowerTab = 'display' | 'options' | 'visibility';
 
 const TABS: { id: TowerTab; label: string }[] = [
-  { id: 'look', label: 'Look' },
+  { id: 'display', label: 'Display' },
   { id: 'options', label: 'Options' },
   { id: 'visibility', label: 'Visibility' },
 ];
@@ -175,8 +175,8 @@ export const BroadcastSettings = ({ obsUrl }: { obsUrl?: string }) => {
               ))}
             </div>
 
-            {tab === 'look' && (
-              <SettingsSection title="Look" scaleWidgetId={SETTING_ID}>
+            {tab === 'display' && (
+              <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
                 {mark(
                   ['theme'],
                   <SettingButtonGroupRow<BroadcastTheme>

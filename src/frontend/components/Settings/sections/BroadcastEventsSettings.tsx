@@ -100,10 +100,7 @@ export const BroadcastEventsSettings = ({ obsUrl }: { obsUrl?: string }) => {
             </div>
 
             {tab === 'options' && (
-              <SettingsSection
-                title="Widget options"
-                scaleWidgetId={SETTING_ID}
-              >
+              <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
                 {mark(
                   ['background'],
                   <SettingSliderRow

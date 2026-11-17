@@ -146,9 +146,13 @@ export const TelemetryInspectorSettings = ({
           <div className="space-y-4">
             {/* Current Properties */}
             <SettingsSection
-              title={`Watched Properties (${properties.length})`}
+              title="Display"
               headingLevel={GroupHeading}
               scaleWidgetId={SETTING_ID}
+            />
+            <SettingsSection
+              title={`Watched Properties (${properties.length})`}
+              headingLevel={GroupHeading}
             >
               {properties.length === 0 ? (
                 <p className="text-sm text-slate-400">

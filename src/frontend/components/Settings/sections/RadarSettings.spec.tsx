@@ -93,7 +93,7 @@ describe('RadarSettings', () => {
 
   it('shows the basics first and more at each level', () => {
     render(<RadarSettings />);
-    openSection('Look');
+    openSection('Display');
     expect(screen.getByText('Moving Centre Line')).toBeInTheDocument();
     expect(screen.queryByText(/^Edge Fade/)).not.toBeInTheDocument();
 
@@ -121,7 +121,7 @@ describe('RadarSettings', () => {
 
   it('opens one section at a time from the side list', () => {
     render(<RadarSettings />);
-    openSection('Look');
+    openSection('Display');
     expect(screen.getByText('Moving Centre Line')).toBeInTheDocument();
     expect(screen.queryByText('Warn From')).not.toBeInTheDocument();
 
@@ -137,7 +137,7 @@ describe('RadarSettings', () => {
       fireEvent.change(screen.getByRole('searchbox'), {
         target: { value: query },
       });
-      const look = screen.getByRole('region', { name: 'Look' });
+      const look = screen.getByRole('region', { name: 'Display' });
       expect(
         within(look).getByRole('slider', { name: 'Widget Scale' })
       ).toBeInTheDocument();

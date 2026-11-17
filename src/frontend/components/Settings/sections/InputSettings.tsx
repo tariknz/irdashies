@@ -259,10 +259,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                 {/* OPTIONS TAB */}
                 {activeTab === 'options' && (
                   <div className="space-y-5">
-                    <SettingsSection
-                      title="Widget options"
-                      scaleWidgetId={widgetId}
-                    >
+                    <SettingsSection title="Display" scaleWidgetId={widgetId}>
                       <SettingProp path="useRawValues" />
                       <SettingProp path="background.opacity" />
                     </SettingsSection>

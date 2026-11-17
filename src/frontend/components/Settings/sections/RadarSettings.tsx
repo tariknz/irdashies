@@ -400,8 +400,8 @@ export const RadarSettings = () => {
                             config.autoProfile && isOvalTrack(trackType)
                               ? 'oval'
                               : 'road'
-                          } profile. Look, distances and warnings are kept per profile.`
-                        : 'Use the oval profile on ovals. Look, distances and warnings are kept per profile.'
+                          } profile. Display, distances and warnings are kept per profile.`
+                        : 'Use the oval profile on ovals. Display, distances and warnings are kept per profile.'
                     }
                     enabled={config.autoProfile}
                     onToggle={(autoProfile) =>

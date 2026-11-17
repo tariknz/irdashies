@@ -351,10 +351,7 @@ export const GantrySettings = memo(() => {
             <div>
               {activeTab === 'options' && (
                 <>
-                  <SettingsSection
-                    title="Widget options"
-                    scaleWidgetId={SETTING_ID}
-                  >
+                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
                     <SettingActionButton
                       title="Gantry Window"
                       description={`The Gantry runs in its own resizable window rather than as an on-screen overlay. Use this to bring it back if you closed it.${
