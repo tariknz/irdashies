@@ -93,13 +93,14 @@ describe('scale ownership in custom configuration panels', () => {
   it('puts Telemetry Inspector scale in a Display panel ahead of its watched properties', () => {
     render(<TelemetryInspectorSettings />);
     const { scale, panel } = scalePanel();
-    const property = screen.getByText('Speed');
     expect(
       within(panel).getByRole('heading', { name: 'Display' })
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', { name: 'Watched Properties (1)' })
-    ).toBeInTheDocument();
+    const watched = screen
+      .getByRole('heading', { name: 'Watched Properties (1)' })
+      .closest('section');
+    if (!watched) throw new Error('Watched properties must have a panel');
+    const property = within(watched).getByText('Speed');
     expect(
       scale.compareDocumentPosition(property) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
