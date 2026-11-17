@@ -65,7 +65,7 @@ const writeCrossing = (
 };
 
 describe('LapHistoryRuntime', () => {
-  it('preserves tape replay state when a browser source starts demanding history', async () => {
+  it('provides temporary tape history when a browser source starts demanding it', async () => {
     const lifecycle = createSessionLifecycle();
     const bus = new ChannelBus();
     const persistence = newPersistence();
@@ -95,6 +95,9 @@ describe('LapHistoryRuntime', () => {
       bus.subscribe(browserSource, 'lap-history.snapshot');
       runtime.onFrame(frame({ sessionTime: 100, laps: [4] }));
       runtime.onFrame(frame({ sessionTime: 190, laps: [5] }));
+      expect(crossingCount(runtime.snapshot(), 0)).toBe(1);
+      expect(persistence.load).not.toHaveBeenCalled();
+      expect(persistence.save).not.toHaveBeenCalled();
       bus.unsubscribe(browserSource.id, 'lap-history.snapshot');
       lifecycle._onDisconnect();
       expect(crossingCount(runtime.snapshot(), 0)).toBe(0);
@@ -116,7 +119,7 @@ describe('LapHistoryRuntime', () => {
     }
   });
 
-  it('preserves tape replay state when the replay-file pause ends', async () => {
+  it('resumes temporary tape history when the replay-file pause ends', async () => {
     const lifecycle = createSessionLifecycle();
     const persistence = newPersistence();
     const runtime = new LapHistoryRuntime(
@@ -133,7 +136,7 @@ describe('LapHistoryRuntime', () => {
     runtime.updateReplayPaused(false);
     runtime.onFrame(frame({ sessionTime: 100, laps: [4] }));
     runtime.onFrame(frame({ sessionTime: 190, laps: [5] }));
-    expect(crossingCount(runtime.snapshot(), 0)).toBe(0);
+    expect(crossingCount(runtime.snapshot(), 0)).toBe(1);
     expect(persistence.save).not.toHaveBeenCalled();
     runtime.dispose();
   });
@@ -452,23 +455,38 @@ describe('LapHistoryRuntime', () => {
     expect(persistence.save).not.toHaveBeenCalled();
   });
 
-  it('stops aggregating during a replay and resumes when live', async () => {
+  it('publishes tape crossings without saving or sealing them', async () => {
     const lifecycle = createSessionLifecycle();
+    const persistence = newPersistence();
+    const bus = new ChannelBus();
+    const publish = vi.spyOn(bus, 'publish');
     const runtime = new LapHistoryRuntime(
-      new ChannelBus(),
+      bus,
       lifecycle,
       newMetrics(),
-      newPersistence()
+      persistence
     );
+    lifecycle._onEnter({ replay: true });
     runtime.onSession(raceSession());
     await settle();
-
-    lifecycle._onEnter({ replay: true });
     runtime.onFrame(frame({ sessionTime: 100, laps: [4] }));
     runtime.onFrame(frame({ sessionTime: 190, laps: [5] }));
+    expect(crossingCount(runtime.snapshot(), 0)).toBe(1);
+    expect(publish).toHaveBeenCalledWith(
+      'lap-history.snapshot',
+      runtime.snapshot()
+    );
+    expect(persistence.load).not.toHaveBeenCalled();
+    expect(persistence.save).not.toHaveBeenCalled();
+    lifecycle._onTelemetry(frame({ sessionNum: 1, laps: [5] }));
+    lifecycle._onTelemetry(frame({ sessionNum: 2, laps: [5] }));
+    lifecycle._onDisconnect();
+    expect(persistence.seal).not.toHaveBeenCalled();
     expect(crossingCount(runtime.snapshot(), 0)).toBe(0);
 
     lifecycle._onEnter({ replay: false });
+    runtime.onSession(raceSession());
+    await settle();
     runtime.onFrame(frame({ sessionTime: 100, laps: [4] }));
     runtime.onFrame(frame({ sessionTime: 190, laps: [5] }));
     expect(crossingCount(runtime.snapshot(), 0)).toBe(1);
