@@ -456,6 +456,12 @@ export const BroadcastEventsRoute: Story = {
   },
 };
 
+export const BroadcastTransitionRoute: Story = {
+  args: {
+    initialPath: '/settings/broadcast-transition',
+  },
+};
+
 export const FlatTrackMapRoute: Story = {
   args: {
     initialPath: '/settings/flatmap',

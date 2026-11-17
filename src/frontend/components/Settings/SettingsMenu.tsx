@@ -17,6 +17,7 @@ import {
   generalItems,
   toolItems,
   broadcastItems,
+  BROADCAST_TRANSITION_PAGE,
   widgetItems,
   bottomItems,
   menuHasToggle,
@@ -24,6 +25,7 @@ import {
 } from './menuItems';
 import {
   broadcastModuleChanged,
+  broadcastTransitionChanged,
   isBroadcastModuleType,
 } from './broadcastModules';
 import { settingsPageKind, type SettingsPageKind } from './settingsPageKind';
@@ -269,6 +271,15 @@ export const SettingsMenu = ({
         navigate(item.to);
     };
 
+  const widgetConfig = (widgetType: string) =>
+    currentDashboard?.widgets.find((w) => (w.type ?? w.id) === widgetType)
+      ?.config;
+  const broadcastItemChanged = (item: MenuItem) =>
+    isBroadcastModuleType(item.widgetType)
+      ? broadcastModuleChanged(item.widgetType, widgetConfig(item.widgetType))
+      : item.to === BROADCAST_TRANSITION_PAGE &&
+        broadcastTransitionChanged(widgetConfig('broadcast'));
+
   // A grouped item is on while any widget sharing its page is.
   const isItemEnabled = (item: MenuItem) =>
     !!item.widgetType &&
@@ -426,15 +437,7 @@ export const SettingsMenu = ({
                 showIcon
                 exact
                 isEnabled={isItemEnabled(item)}
-                changed={
-                  isBroadcastModuleType(item.widgetType) &&
-                  broadcastModuleChanged(
-                    item.widgetType,
-                    currentDashboard?.widgets.find(
-                      (w) => (w.type ?? w.id) === item.widgetType
-                    )?.config
-                  )
-                }
+                changed={broadcastItemChanged(item)}
                 disabledReason={unsupported(item) ?? undefined}
                 onToggle={
                   canToggle(item) && item.widgetType && !unsupported(item)

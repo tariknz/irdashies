@@ -25,7 +25,8 @@ describe('menuHasToggle', () => {
   });
 
   it('is true for each broadcast module, switched from the Broadcast menu', () => {
-    for (const { widgetType = '' } of broadcastItems) {
+    for (const { widgetType } of broadcastItems) {
+      if (!widgetType) continue;
       expect(menuHasToggle(widgetType, [widgetType]), widgetType).toBe(true);
     }
   });

@@ -1,4 +1,5 @@
 import { getWidgetDefaultConfig } from '@irdashies/types';
+import type { BroadcastTransition } from '@irdashies/types';
 import { differsFromDefault } from './components/ChangedMark';
 
 export const BROADCAST_MODULE_TYPES = [
@@ -32,3 +33,17 @@ export const broadcastModuleChanged = (
   type: BroadcastModuleType,
   config: unknown
 ): boolean => differsFromDefault(config, broadcastModuleDefaults(type));
+
+const DEFAULT_TRANSITION: BroadcastTransition =
+  getWidgetDefaultConfig('broadcast').pageTransition;
+
+// One transition for every module. It is kept in the tower config, where it
+// started out, so saved dashboards need no migration.
+export const broadcastTransition = (
+  towerConfig: unknown
+): BroadcastTransition =>
+  (towerConfig as { pageTransition?: BroadcastTransition } | undefined)
+    ?.pageTransition ?? DEFAULT_TRANSITION;
+
+export const broadcastTransitionChanged = (towerConfig: unknown): boolean =>
+  broadcastTransition(towerConfig) !== DEFAULT_TRANSITION;

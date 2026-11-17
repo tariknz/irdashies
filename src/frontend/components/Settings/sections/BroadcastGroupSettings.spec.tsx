@@ -20,22 +20,32 @@ vi.mock('@irdashies/context', () => ({
   useDashboard: () => ({ currentDashboard, onDashboardUpdated, bridge }),
 }));
 vi.mock('./BroadcastSettings', () => ({
-  BroadcastSettings: () => <div>tower settings</div>,
+  BroadcastSettings: ({ obsUrl }: { obsUrl?: string }) => (
+    <div>tower settings {obsUrl}</div>
+  ),
 }));
 vi.mock('./BroadcastTickerSettings', () => ({
-  BroadcastTickerSettings: () => <div>ticker settings</div>,
+  BroadcastTickerSettings: ({ obsUrl }: { obsUrl?: string }) => (
+    <div>ticker settings {obsUrl}</div>
+  ),
 }));
 vi.mock('./BroadcastEventsSettings', () => ({
-  BroadcastEventsSettings: () => <div>events settings</div>,
+  BroadcastEventsSettings: ({ obsUrl }: { obsUrl?: string }) => (
+    <div>events settings {obsUrl}</div>
+  ),
 }));
 vi.mock('./BroadcastPreview', () => ({
   BroadcastPreview: () => null,
 }));
 vi.mock('./BroadcastPodiumSettings', () => ({
-  BroadcastPodiumSettings: () => <div>podium settings</div>,
+  BroadcastPodiumSettings: ({ obsUrl }: { obsUrl?: string }) => (
+    <div>podium settings {obsUrl}</div>
+  ),
 }));
 vi.mock('./BroadcastWeatherSettings', () => ({
-  BroadcastWeatherSettings: () => <div>weather settings</div>,
+  BroadcastWeatherSettings: ({ obsUrl }: { obsUrl?: string }) => (
+    <div>weather settings {obsUrl}</div>
+  ),
 }));
 
 const renderAt = (
@@ -51,27 +61,28 @@ describe('BroadcastGroupSettings', () => {
   it("shows only the active module's settings, the Broadcast menu listing the rest", () => {
     renderAt('broadcastticker');
 
-    expect(screen.getByText('ticker settings')).toBeInTheDocument();
-    expect(screen.queryByText('tower settings')).not.toBeInTheDocument();
+    expect(screen.getByText(/^ticker settings/)).toBeInTheDocument();
+    expect(screen.queryByText(/^tower settings/)).not.toBeInTheDocument();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 
-  it('the master switch turns every module off, leaving other widgets', () => {
+  it('has no switch for all modules and no transition', () => {
     renderAt('broadcast');
 
-    fireEvent.click(screen.getByRole('switch'));
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('combobox', { name: 'Transition' })
+    ).not.toBeInTheDocument();
+  });
 
-    expect(onDashboardUpdated).toHaveBeenCalledWith({
-      widgets: [
-        { id: 'broadcast', enabled: false },
-        {
-          id: 'broadcastticker',
-          enabled: false,
-          config: { secondsPerEntry: 9 },
-        },
-        { id: 'standings', enabled: true },
-      ],
-    });
+  it('gives the module its own OBS URL', async () => {
+    renderAt('broadcastevents');
+
+    expect(
+      await screen.findByText(
+        'events settings http://localhost:3002/widget/broadcastevents'
+      )
+    ).toBeInTheDocument();
   });
 
   it('offers no reset for a module at its defaults', () => {
@@ -107,7 +118,6 @@ describe('BroadcastGroupSettings', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('ticker settings')).toBeInTheDocument();
     expect(
       await screen.findByText(/localhost:3002\/widget\/broadcastticker/)
     ).toBeInTheDocument();

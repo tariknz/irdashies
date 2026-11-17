@@ -9,6 +9,9 @@ describe('settingsPageKind', () => {
     expect(settingsPageKind('/settings/driver-tags')).toBe('tool');
     expect(settingsPageKind('/settings/broadcast')).toBe('broadcast');
     expect(settingsPageKind('/settings/broadcastticker')).toBe('broadcast');
+    expect(settingsPageKind('/settings/broadcast-transition')).toBe(
+      'broadcast'
+    );
     expect(settingsPageKind('/settings/standings')).toBe('overlay');
     expect(settingsPageKind('/settings')).toBe('overlay');
   });

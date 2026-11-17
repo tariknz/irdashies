@@ -13,6 +13,7 @@ import {
   MegaphoneIcon,
   CloudSunIcon,
   TrophyIcon,
+  SlideshowIcon,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { WIDGET_MANIFESTS } from '@irdashies/types';
@@ -86,6 +87,8 @@ export const widgetItems: MenuItem[] = WIDGET_MANIFESTS.map(
   })
 ).sort((a, b) => compareMenuLabels(a.label, b.label));
 
+export const BROADCAST_TRANSITION_PAGE = '/settings/broadcast-transition';
+
 export const broadcastItems: MenuItem[] = [
   {
     to: '/settings/broadcast',
@@ -121,6 +124,12 @@ export const broadcastItems: MenuItem[] = [
     label: 'Podium',
     widgetType: 'broadcastpodium',
     icon: TrophyIcon,
+  },
+  {
+    to: BROADCAST_TRANSITION_PAGE,
+    path: '/broadcast-transition',
+    label: 'Transition',
+    icon: SlideshowIcon,
   },
 ];
 

@@ -1,5 +1,6 @@
 import { Fragment, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { BroadcastModuleDescription } from './BroadcastModuleDescription';
 import { changeMarker } from '../components/ChangedMark';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
@@ -43,7 +44,7 @@ const TABS: { id: ModuleTab; label: string }[] = [
 
 const TAB_IDS = TABS.map((tab) => tab.id);
 
-export const BroadcastEventsSettings = () => {
+export const BroadcastEventsSettings = ({ obsUrl }: { obsUrl?: string }) => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
@@ -68,7 +69,13 @@ export const BroadcastEventsSettings = () => {
       disableInternalScroll
       headingLevel="h3"
       title="Broadcast Events"
-      description="Race control popups for the stream: incidents, yellow and black flags, with a card for the driver involved. Uses the Gantry incident detector and its thresholds."
+      description={
+        <BroadcastModuleDescription obsUrl={obsUrl}>
+          Race control popups for the stream: incidents, yellow and black flags,
+          with a card for the driver involved. Uses the Gantry incident detector
+          and its thresholds.
+        </BroadcastModuleDescription>
+      }
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}

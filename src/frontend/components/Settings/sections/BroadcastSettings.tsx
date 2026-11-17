@@ -1,6 +1,7 @@
 import { validateImageDataUrl } from '@irdashies/utils/imageDataUrl';
 import { Fragment, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { BroadcastModuleDescription } from './BroadcastModuleDescription';
 import { changeMarker } from '../components/ChangedMark';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
@@ -109,7 +110,7 @@ const NAME_FORMATS: readonly NameFormat[] = [
   'surname',
 ];
 
-export const BroadcastSettings = () => {
+export const BroadcastSettings = ({ obsUrl }: { obsUrl?: string }) => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
@@ -138,7 +139,13 @@ export const BroadcastSettings = () => {
       disableInternalScroll
       headingLevel="h3"
       title="Broadcast Tower"
-      description="TV-style timing tower that cycles between names, per-class intervals with close battles, positions gained, pit laps and tyres, plus a card for the car on camera."
+      description={
+        <BroadcastModuleDescription obsUrl={obsUrl}>
+          TV-style timing tower that cycles between names, per-class intervals
+          with close battles, positions gained, pit laps and tyres, plus a card
+          for the car on camera.
+        </BroadcastModuleDescription>
+      }
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}

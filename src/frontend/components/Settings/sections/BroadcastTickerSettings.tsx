@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { BroadcastModuleDescription } from './BroadcastModuleDescription';
 import { changeMarker } from '../components/ChangedMark';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
@@ -24,7 +25,7 @@ const TABS: { id: ModuleTab; label: string }[] = [
 
 const TAB_IDS = TABS.map((tab) => tab.id);
 
-export const BroadcastTickerSettings = () => {
+export const BroadcastTickerSettings = ({ obsUrl }: { obsUrl?: string }) => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
@@ -47,7 +48,12 @@ export const BroadcastTickerSettings = () => {
       disableInternalScroll
       headingLevel="h3"
       title="Broadcast Ticker"
-      description="Scrolling bottom-of-screen ticker. After each full loop it moves on: standings, fastest laps, then the best car of each manufacturer."
+      description={
+        <BroadcastModuleDescription obsUrl={obsUrl}>
+          Scrolling bottom-of-screen ticker. After each full loop it moves on:
+          standings, fastest laps, then the best car of each manufacturer.
+        </BroadcastModuleDescription>
+      }
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}

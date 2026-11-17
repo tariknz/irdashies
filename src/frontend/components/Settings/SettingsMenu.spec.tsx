@@ -80,7 +80,13 @@ vi.mock('./menuItems', () => ({
       label: 'Ticker',
       widgetType: 'broadcastticker',
     },
+    {
+      to: '/settings/broadcast-transition',
+      path: '/broadcast-transition',
+      label: 'Transition',
+    },
   ],
+  BROADCAST_TRANSITION_PAGE: '/settings/broadcast-transition',
   bottomItems: [{ to: '/settings/about', path: '/about', label: 'About' }],
   menuHasToggle: (widgetType: string, ids: string[]) =>
     ids.includes(widgetType),
@@ -1007,6 +1013,27 @@ describe('SettingsMenu', () => {
       expect(screen.getByTestId('current-path')).toHaveTextContent(
         '/settings/broadcastticker'
       );
+    });
+
+    it('opens the Transition page, with no switch and a changed dot when set', () => {
+      const tower = state.dashboard?.widgets.find((w) => w.id === 'broadcast');
+      assert(tower);
+      tower.config = { pageTransition: 'wipe' };
+      renderAt('/settings/broadcast');
+      const transition = modules().getByRole('link', { name: 'Transition' });
+      expect(transition).toContainHTML('title="Changed"');
+      expect(
+        screen.queryByRole('switch', { name: 'Enable Transition' })
+      ).toBeNull();
+
+      fireEvent.click(transition);
+      expect(screen.getByTestId('current-path')).toHaveTextContent(
+        '/settings/broadcast-transition'
+      );
+      expect(transition).toHaveAttribute('aria-current', 'page');
+      expect(
+        modules().getByRole('link', { name: 'Tower' })
+      ).not.toHaveAttribute('aria-current');
     });
 
     it('keeps the Broadcast menu in the preview', () => {

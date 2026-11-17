@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { BroadcastModuleDescription } from './BroadcastModuleDescription';
 import { changeMarker } from '../components/ChangedMark';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
@@ -23,7 +24,7 @@ const TABS: { id: ModuleTab; label: string }[] = [
 
 const TAB_IDS = TABS.map((tab) => tab.id);
 
-export const BroadcastWeatherSettings = () => {
+export const BroadcastWeatherSettings = ({ obsUrl }: { obsUrl?: string }) => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
@@ -46,7 +47,12 @@ export const BroadcastWeatherSettings = () => {
       disableInternalScroll
       headingLevel="h3"
       title="Broadcast Weather"
-      description="Pops up with an animated card when rain starts or stops, the track gets wetter or dries, or track temperature swings by 3 degrees."
+      description={
+        <BroadcastModuleDescription obsUrl={obsUrl}>
+          Pops up with an animated card when rain starts or stops, the track
+          gets wetter or dries, or track temperature swings by 3 degrees.
+        </BroadcastModuleDescription>
+      }
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
