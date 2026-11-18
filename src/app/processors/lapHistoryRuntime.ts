@@ -92,7 +92,7 @@ export class LapHistoryRuntime {
   }
 
   onFrame(frame: Telemetry): void {
-    if (!this.enabled || this.replayPaused) return;
+    if (!this.enabled || (this.replayPaused && !this.tapeReplay)) return;
     this.metrics.markStart('lapHistoryProcessing');
     this.processor.onFrame(frame);
     this.metrics.markEnd('lapHistoryProcessing');

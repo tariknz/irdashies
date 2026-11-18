@@ -141,6 +141,48 @@ describe('LapHistoryRuntime', () => {
     runtime.dispose();
   });
 
+  it('records temporary tape history while replay-file mode stays active', async () => {
+    const lifecycle = createSessionLifecycle();
+    const bus = new ChannelBus();
+    const publish = vi.spyOn(bus, 'publish');
+    const persistence = newPersistence();
+    const runtime = new LapHistoryRuntime(
+      bus,
+      lifecycle,
+      newMetrics(),
+      persistence
+    );
+    lifecycle._onEnter({ replay: true });
+    runtime.onSession(raceSession());
+    runtime.updateReplayPaused(true);
+    await settle();
+
+    runtime.onFrame(frame({ sessionTime: 100, laps: [4] }));
+    runtime.onFrame(frame({ sessionTime: 190, laps: [5] }));
+
+    expect(crossingCount(runtime.snapshot(), 0)).toBe(1);
+    expect(publish).toHaveBeenCalledWith(
+      'lap-history.snapshot',
+      runtime.snapshot()
+    );
+    expect(persistence.load).not.toHaveBeenCalled();
+    expect(persistence.save).not.toHaveBeenCalled();
+    lifecycle._onDisconnect();
+    expect(crossingCount(runtime.snapshot(), 0)).toBe(0);
+    expect(persistence.seal).not.toHaveBeenCalled();
+
+    lifecycle._onEnter({ replay: false });
+    runtime.onSession(raceSession(456));
+    await settle();
+    publish.mockClear();
+    runtime.onFrame(frame({ sessionTime: 100, laps: [4] }));
+    runtime.onFrame(frame({ sessionTime: 190, laps: [5] }));
+    expect(crossingCount(runtime.snapshot(), 0)).toBe(0);
+    expect(publish).not.toHaveBeenCalled();
+    expect(persistence.save).not.toHaveBeenCalled();
+    runtime.dispose();
+  });
+
   it('does not process or persist frames while Gantry is disabled', () => {
     const metrics = newMetrics();
     const persistence = newPersistence();
