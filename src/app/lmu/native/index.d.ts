@@ -218,6 +218,7 @@ export interface LmuRawTelemetry {
   /** mDetached on the vehicle — rear wing on LMU. */
   bodyDetached?: boolean;
   lastImpactET?: number;
+  /** Vehicle-local metres, axes unconfirmed; see Telemetry.LmuLastImpactPos. */
   lastImpactPos?: LmuVec;
   // Per-vehicle arrays, indexed by CarIdx (vehicle slot id)
   vehIds: Int32Array;
