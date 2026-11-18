@@ -31,6 +31,18 @@ import {
 } from './storage/pitLaneAnalyticsCheckpoint';
 import { getSimulatorUsageStore } from './storage/simulatorUsage';
 import {
+  MAX_SECTOR_BOUNDARY_PROPERTIES_BYTES,
+  buildLmuSectorBoundaryReport,
+} from './analytics/lmuSectorBoundaryReport';
+import {
+  readLmuSectorBoundaryReportHash,
+  writeLmuSectorBoundaryReportHash,
+} from './storage/lmuSectorBoundaryReportHash';
+import {
+  loadLmuSectorBoundaries,
+  lmuSectorBoundaryStore,
+} from './storage/lmuSectorBoundaries';
+import {
   buildSimulatorUsageProperties,
   type SimulatorUsageProperties,
 } from './analytics/simulatorUsageReport';
@@ -126,6 +138,8 @@ export class Analytics {
   private pitLaneCalibrationTask: Promise<void> | undefined;
   private radarPoleSideTask: Promise<void> | undefined;
   private poleSideEvent: { hash: string; uuid: string } | undefined;
+  private lmuSectorBoundaryTask: Promise<void> | undefined;
+  private lmuSectorBoundaryEvent: { hash: string; uuid: string } | undefined;
   private radarPoleSideTimer: ReturnType<typeof setTimeout> | undefined;
   private watchingRadarPoleSides = false;
   private startupIdentifyTask: Promise<void> | undefined;
@@ -328,6 +342,9 @@ export class Analytics {
     this.radarPoleSideTask ??= this.pitLaneCalibrationTask.then(() =>
       this.captureRadarPoleSides(userId, version)
     );
+    this.lmuSectorBoundaryTask ??= this.radarPoleSideTask.then(() =>
+      this.captureLmuSectorBoundaries(userId, version)
+    );
     this.reportRadarPoleSidesAfterFlips(userId, version);
   }
 
@@ -355,6 +372,10 @@ export class Analytics {
 
   waitForRadarPoleSideUpload(): Promise<void> {
     return this.radarPoleSideTask ?? Promise.resolve();
+  }
+
+  waitForLmuSectorBoundaryUpload(): Promise<void> {
+    return this.lmuSectorBoundaryTask ?? Promise.resolve();
   }
 
   waitForStartupIdentify(): Promise<void> {
@@ -494,6 +515,59 @@ export class Analytics {
       }
     } catch {
       logger.warn('[Analytics] Could not publish radar pole side report');
+    }
+  }
+
+  /**
+   * Reports the LMU sector starts the player measured, once per change, in
+   * the background. Nothing is sent for an installation that never measured
+   * any.
+   */
+  private async captureLmuSectorBoundaries(
+    userId: string,
+    version: string
+  ): Promise<void> {
+    try {
+      if (!this.provider || getAnalyticsOptOut()) return;
+      if (!(await loadLmuSectorBoundaries())) return;
+      const report = buildLmuSectorBoundaryReport(
+        lmuSectorBoundaryStore.snapshot(),
+        version
+      );
+      const stored = await readLmuSectorBoundaryReportHash();
+      const last =
+        typeof stored === 'string' && /^[0-9a-f]{64}$/.test(stored)
+          ? stored
+          : undefined;
+      if (report.properties.track_count === 0) return;
+      if (last === report.hash) return;
+      if (
+        Buffer.byteLength(JSON.stringify(report.properties), 'utf8') >
+        MAX_SECTOR_BOUNDARY_PROPERTIES_BYTES
+      ) {
+        logger.warn(
+          '[Analytics] Skipping oversized LMU sector boundary report'
+        );
+        return;
+      }
+      if (this.lmuSectorBoundaryEvent?.hash !== report.hash) {
+        this.lmuSectorBoundaryEvent = {
+          hash: report.hash,
+          uuid: crypto.randomUUID(),
+        };
+      }
+      if (getAnalyticsOptOut()) return;
+      await this.provider.captureConfirmed({
+        distinctId: userId,
+        event: 'lmu_sector_boundaries',
+        uuid: this.lmuSectorBoundaryEvent.uuid,
+        properties: report.properties,
+      });
+      if (!getAnalyticsOptOut()) {
+        await writeLmuSectorBoundaryReportHash(report.hash);
+      }
+    } catch {
+      logger.warn('[Analytics] Could not publish LMU sector boundary report');
     }
   }
 
