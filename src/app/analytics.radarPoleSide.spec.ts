@@ -39,7 +39,7 @@ vi.mock('./storage/storage', () => ({
 vi.mock('./storage/radarPoleSideReportHash', () => ({
   readRadarPoleSideReportHash: async () =>
     store.data.get('radarPoleSideReportHash'),
-  writeRadarPoleSideReportHash: async (hash: string) => {
+  writeRadarPoleSideReportHash: (hash: string) => {
     store.data.set('radarPoleSideReportHash', hash);
   },
 }));

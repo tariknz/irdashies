@@ -511,7 +511,7 @@ export class Analytics {
       });
       // Recorded only after PostHog acknowledged it, so a failure retries.
       if (!getAnalyticsOptOut()) {
-        await writeRadarPoleSideReportHash(report.hash);
+        writeRadarPoleSideReportHash(report.hash);
       }
     } catch {
       logger.warn('[Analytics] Could not publish radar pole side report');
@@ -564,7 +564,7 @@ export class Analytics {
         properties: report.properties,
       });
       if (!getAnalyticsOptOut()) {
-        await writeLmuSectorBoundaryReportHash(report.hash);
+        writeLmuSectorBoundaryReportHash(report.hash);
       }
     } catch {
       logger.warn('[Analytics] Could not publish LMU sector boundary report');

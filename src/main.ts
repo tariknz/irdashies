@@ -107,6 +107,8 @@ import { createTapeReplayWindow } from './app/tapeReplayWindow';
 import type { ArchiveIndex } from './app/processors/ReplayContextProcessor';
 import { flushRadarPoleSideOverrides } from './app/storage/radarPoleSideOverrides';
 import { flushLmuSectorBoundaries } from './app/storage/lmuSectorBoundaries';
+import { flushRadarPoleSideReportHash } from './app/storage/radarPoleSideReportHash';
+import { flushLmuSectorBoundaryReportHash } from './app/storage/lmuSectorBoundaryReportHash';
 import { createKnownLocalUserIdStore } from './app/storage/knownLocalUserIds';
 import { setupLapHistoryBridge } from './app/bridge/lapHistoryBridge';
 import { onDashboardUpdated } from './app/storage/dashboardEvents';
@@ -808,6 +810,8 @@ const handleBeforeQuit = createBeforeQuitHandler({
       knownLocalUserIds.flush(),
       flushRadarPoleSideOverrides(),
       flushLmuSectorBoundaries(),
+      flushRadarPoleSideReportHash(),
+      flushLmuSectorBoundaryReportHash(),
       releaseNotes?.flush(),
       racePlan?.flush(),
       flushRacePlanHistoryOnShutdown(),

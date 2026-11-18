@@ -55,7 +55,7 @@ vi.mock('./storage/radarPoleSideOverrides', () => ({
 vi.mock('./storage/lmuSectorBoundaryReportHash', () => ({
   readLmuSectorBoundaryReportHash: async () =>
     store.data.get('lmuSectorBoundaryReportHash'),
-  writeLmuSectorBoundaryReportHash: async (hash: string) => {
+  writeLmuSectorBoundaryReportHash: (hash: string) => {
     store.data.set('lmuSectorBoundaryReportHash', hash);
   },
 }));
