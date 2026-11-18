@@ -325,7 +325,10 @@ the DevTools `Tracing` JSON stream for all processes (V8 GC, Blink/toplevel,
 compositor, GPU, Electron) and stops the app afterwards. Open `chrome://tracing`
 in a Chromium browser, choose **Load**, select the JSON file, and inspect long
 tasks and GC around the stall. No additional analysis packages are required.
-Use `--warmup-seconds` to start recording after replay has settled.
+Use `--warmup-seconds` to start recording after replay has settled. The
+category set includes the V8 CPU profiler; its `CpuProfiler::StartProfiling`
+call produces one 200–300 ms renderer task at the start of every trace. Ignore
+that first task when interpreting stalls.
 
 Tracing adds overhead, so keep these runs separate from A/B baselines. Use the
 same replay segment for paired runs, and pass `--speed`, `--port` or
