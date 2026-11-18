@@ -4,6 +4,7 @@ import type { DashboardLayout } from '@irdashies/types';
 import os from 'node:os';
 import path from 'node:path';
 import { mkdtempSync } from 'node:fs';
+import { rm } from 'node:fs/promises';
 
 const { userDataPath, store } = vi.hoisted(() => ({
   userDataPath: { value: '' },
@@ -63,8 +64,14 @@ vi.mock('./storage/radarPoleSideOverrides', () => ({
   },
 }));
 
+vi.mock('./storage/lmuSectorBoundaries', () => ({
+  loadLmuSectorBoundaries: async () => true,
+  lmuSectorBoundaryStore: { snapshot: () => ({}) },
+}));
+
 import { Analytics } from './analytics';
 import { getAnalyticsOptOut } from './storage/analytics';
+import { flushLmuSectorBoundaryReportHash } from './storage/lmuSectorBoundaryReportHash';
 
 const HASH_KEY = 'radarPoleSideReportHash';
 
@@ -97,6 +104,11 @@ describe('Analytics radar pole side report', () => {
     flipped.listeners.clear();
     provider = makeProvider();
     vi.mocked(getAnalyticsOptOut).mockReturnValue(false);
+  });
+
+  afterEach(async () => {
+    await flushLmuSectorBoundaryReportHash();
+    await rm(userDataPath.value, { recursive: true, force: true });
   });
 
   it('sends nothing for an installation that never corrected a side', async () => {

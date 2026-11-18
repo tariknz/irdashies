@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EventMessage, IdentifyMessage } from 'posthog-node';
 import type { DashboardLayout } from '@irdashies/types';
 import os from 'node:os';
 import path from 'node:path';
 import { mkdtempSync } from 'node:fs';
+import { rm } from 'node:fs/promises';
 
 const { userDataPath, store, measured } = vi.hoisted(() => ({
   userDataPath: { value: '' },
@@ -69,6 +70,7 @@ vi.mock('./storage/lmuSectorBoundaries', () => ({
 import { Analytics } from './analytics';
 import { getAnalyticsOptOut } from './storage/analytics';
 import { readLmuSectorBoundaryReportHash } from './storage/lmuSectorBoundaryReportHash';
+import { flushRadarPoleSideReportHash } from './storage/radarPoleSideReportHash';
 
 const HASH_KEY = 'lmuSectorBoundaryReportHash';
 const LAGUNA = { s2StartPct: 0.3904, s3StartPct: 0.7925 };
@@ -103,6 +105,11 @@ describe('Analytics LMU sector boundary report', () => {
     provider = makeProvider();
     vi.mocked(getAnalyticsOptOut).mockReturnValue(false);
     vi.mocked(readLmuSectorBoundaryReportHash).mockClear();
+  });
+
+  afterEach(async () => {
+    await flushRadarPoleSideReportHash();
+    await rm(userDataPath.value, { recursive: true, force: true });
   });
 
   it('sends nothing for an installation that never measured a track', async () => {
