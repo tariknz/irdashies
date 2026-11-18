@@ -96,24 +96,26 @@ export class CarSpeedsProcessor implements TelemetryProcessor<CarSpeedsSnapshot>
     }
 
     const sameFieldSize = this.lastLapDistPct?.length === lapDistPct.length;
+    const measuredSpeeds = numericValues(frame, 'LmuCarIdxSpeed', -1);
     if (!sameFieldSize) {
       this.speedHistory = lapDistPct.map(
         (_, carIdx) => this.speedHistory[carIdx] ?? []
       );
+      lapDistPct.forEach((_, carIdx) => {
+        const speed = measuredSpeed(measuredSpeeds, carIdx);
+        if (speed !== null) this.recordSpeed(carIdx, speed);
+      });
     } else if (
       this.lastSessionTime !== null &&
       sessionTime > this.lastSessionTime
     ) {
       const deltaTime = sessionTime - this.lastSessionTime;
-      const measuredSpeeds = numericValues(frame, 'LmuCarIdxSpeed', -1);
       lapDistPct.forEach((pct, carIdx) => {
-        const speed =
+        this.recordSpeed(
+          carIdx,
           measuredSpeed(measuredSpeeds, carIdx) ??
-          this.positionSpeed(pct, carIdx, deltaTime);
-        const history = this.speedHistory[carIdx] ?? [];
-        history.push(speed);
-        if (history.length > SPEED_AVG_WINDOW) history.shift();
-        this.speedHistory[carIdx] = history;
+            this.positionSpeed(pct, carIdx, deltaTime)
+        );
       });
     }
 
@@ -149,6 +151,13 @@ export class CarSpeedsProcessor implements TelemetryProcessor<CarSpeedsSnapshot>
 
   snapshot(): CarSpeedsSnapshot {
     return this.latest;
+  }
+
+  private recordSpeed(carIdx: number, speed: number): void {
+    const history = this.speedHistory[carIdx] ?? [];
+    history.push(speed);
+    if (history.length > SPEED_AVG_WINDOW) history.shift();
+    this.speedHistory[carIdx] = history;
   }
 
   private positionSpeed(

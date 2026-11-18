@@ -135,11 +135,19 @@ describe('CarSpeedsProcessor with LMU measured speeds', () => {
     const processor = new CarSpeedsProcessor();
     processor.init(session());
     processor.onFrame(lmuFrame([0.1, 0.2], [50, 10], 1));
-    expect(processor.snapshot().carSpeeds).toEqual([0, 0]);
+    expect(processor.snapshot().carSpeeds).toEqual([180, 36]);
     processor.onFrame(lmuFrame([0.1, 0.2], [50, 10], 1.1));
     expect(processor.snapshot().carSpeeds).toEqual([180, 36]);
     processor.onFrame(lmuFrame([0.1, 0.2], [55, 0], 1.2));
-    expect(processor.snapshot().carSpeeds).toEqual([189, 18]);
+    expect(processor.snapshot().carSpeeds).toEqual([186, 24]);
+  });
+
+  it('uses the measured speed of a car that joins the field', () => {
+    const processor = new CarSpeedsProcessor();
+    processor.init(session());
+    processor.onFrame(lmuFrame([0.1], [50], 1));
+    processor.onFrame(lmuFrame([0.1, 0.5], [50, 40], 1.1));
+    expect(processor.snapshot().carSpeeds).toEqual([180, 144]);
   });
 
   it('keeps a moving car moving while its lap position is held', () => {
