@@ -203,7 +203,7 @@ describe('LapHistoryProcessor', () => {
     ]);
   });
 
-  it('stops aggregating on a replay enter and resumes on a live enter', () => {
+  it('starts fresh crossing histories for tape replay and live sources', () => {
     const processor = new LapHistoryProcessor();
     processor.init(session());
     processor.onFrame(frame({ sessionTime: 100, laps: [4] }));
@@ -213,11 +213,13 @@ describe('LapHistoryProcessor', () => {
     processor.onLifecycle({ type: 'enter', replay: true });
     expect(processor.snapshot().count[0]).toBe(0);
 
-    // Replay scrubbing rewinds lap counters; none of this may be recorded.
     processor.onFrame(frame({ sessionTime: 50, laps: [2] }));
     processor.onFrame(frame({ sessionTime: 140, laps: [3] }));
     processor.onFrame(frame({ sessionTime: 230, laps: [4] }));
-    expect(processor.snapshot().count[0]).toBe(0);
+    expect(crossings(processor.snapshot(), 0)).toEqual([
+      expect.objectContaining({ lap: 2, sessionTime: 140 }),
+      expect.objectContaining({ lap: 3, sessionTime: 230 }),
+    ]);
 
     processor.onLifecycle({ type: 'enter', replay: false });
     processor.onFrame(frame({ sessionTime: 100, laps: [4] }));
