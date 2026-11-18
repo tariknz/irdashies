@@ -1,15 +1,22 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { startTransition, Suspense, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { defaultDashboard, type Session } from '@irdashies/types';
+import {
+  defaultDashboard,
+  type DashboardLayout,
+  type Session,
+  type WidgetPreviewStatus,
+} from '@irdashies/types';
 import { WidgetPreview } from './WidgetPreview';
 import { useWidgetPreviewSession } from './useWidgetPreviewSession';
 
 const save = vi.fn();
 const toggleDemo = vi.fn();
+/** A dashboard to preview instead of the default one. */
+let dashboard: DashboardLayout | undefined;
 vi.mock('@irdashies/context', () => ({
   useDashboard: () => ({
-    currentDashboard: defaultDashboard,
+    currentDashboard: dashboard ?? defaultDashboard,
     onDashboardUpdated: save,
     toggleDemoMode: toggleDemo,
   }),
@@ -20,6 +27,25 @@ const connect = vi.fn(async () => session);
 const disconnect = vi.fn(async () => undefined);
 const stop = vi.fn();
 const subscribe = vi.fn(() => stop);
+/** What main would report; answered at once on subscribe, as main does. */
+let mainStatus: WidgetPreviewStatus = { windowHidden: false, driving: false };
+/** Leaves the subscription unanswered, as before main's reply arrives. */
+let answerOnSubscribe = true;
+const listeners = new Set<(status: WidgetPreviewStatus) => void>();
+const onStatus = vi.fn((callback: (status: WidgetPreviewStatus) => void) => {
+  listeners.add(callback);
+  if (answerOnSubscribe) callback(mainStatus);
+  return () => {
+    listeners.delete(callback);
+  };
+});
+/** Pushes a status change the way main does. */
+const status = (value: Partial<WidgetPreviewStatus>) => {
+  mainStatus = { windowHidden: false, driving: false, ...value };
+  act(() => listeners.forEach((listener) => listener(mainStatus)));
+};
+const playButton = () => screen.getByRole('button', { name: 'Play preview' });
+const pauseButton = () => screen.getByRole('button', { name: 'Pause preview' });
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -33,9 +59,14 @@ beforeEach(() => {
     disconnect,
     subscribe,
     getTelemetry: async () => null,
+    onStatus,
   };
 });
 afterEach(() => {
+  dashboard = undefined;
+  mainStatus = { windowHidden: false, driving: false };
+  answerOnSubscribe = true;
+  listeners.clear();
   delete window.widgetPreviewBridge;
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -118,6 +149,42 @@ describe('settings widget preview', () => {
     expect(frame).toHaveStyle({ transform: 'scale(1)' });
     expect(save).not.toHaveBeenCalled();
     expect(toggleDemo).not.toHaveBeenCalled();
+  });
+
+  it('shows the saved size in whole pixels, also after switching widgets and back', () => {
+    // Edit mode saves layouts from pointer deltas, which on a scaled display
+    // are fractions of a CSS pixel.
+    dashboard = {
+      ...defaultDashboard,
+      widgets: defaultDashboard.widgets.map((widget) =>
+        widget.id === 'input'
+          ? {
+              ...widget,
+              layout: {
+                ...widget.layout,
+                width: 396.40000000000003,
+                height: 119.99999999999999,
+              },
+            }
+          : widget
+      ),
+    };
+    const sizeLabel = () => screen.getByText(/ × /).textContent;
+    const { rerender } = render(<WidgetPreview widgetId="input" />);
+    expect(sizeLabel()).toMatch(/^396 × 120 · \d+%$/);
+
+    rerender(<WidgetPreview widgetId="broadcastticker" />);
+    expect(sizeLabel()).toMatch(/^1920 × 72 · /);
+    rerender(<WidgetPreview widgetId="input" />);
+    expect(sizeLabel()).toMatch(/^396 × 120 · \d+%$/);
+    expect(screen.getByTitle('Input Traces demo')).toHaveStyle({
+      width: '396px',
+      height: '120px',
+    });
+    // The shown size is the saved one: nothing to reset.
+    expect(
+      screen.getByRole('button', { name: 'Reset preview size' })
+    ).toBeDisabled();
   });
 
   it('pans with the keyboard and recenters without changing the widget or demo', () => {
@@ -207,7 +274,7 @@ describe('settings widget preview', () => {
   it('stops the demo when paused and recreates its isolated frame on resume', () => {
     render(<WidgetPreview widgetId="input" />);
     fireEvent.click(screen.getByRole('button', { name: 'Pause preview' }));
-    expect(screen.getByText('Preview paused.')).toBeInTheDocument();
+    expect(screen.getByText('Preview paused')).toBeInTheDocument();
     expect(screen.queryByTitle('Input Traces demo')).not.toBeInTheDocument();
     expect(disconnect).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole('button', { name: 'Play preview' }));
@@ -329,5 +396,81 @@ describe('settings widget preview', () => {
     });
     expect(connect).toHaveBeenCalledTimes(2);
     expect(stop).toHaveBeenCalledOnce();
+  });
+
+  it('stops while the settings window is minimised or in the tray, and starts a new demo on restore', () => {
+    render(<WidgetPreview widgetId="input" />);
+    const original = screen.getByTitle('Input Traces demo');
+    status({ windowHidden: true });
+    expect(screen.queryByTitle('Input Traces demo')).toBeNull();
+    expect(screen.getByText('Preview paused')).toBeInTheDocument();
+    expect(disconnect).toHaveBeenCalledOnce();
+    status({ windowHidden: false });
+    expect(screen.getByTitle('Input Traces demo')).not.toBe(original);
+    expect(screen.queryByText('Preview paused')).toBeNull();
+    // Only the preview: the overlays' Demo Mode is left as it was.
+    expect(toggleDemo).not.toHaveBeenCalled();
+  });
+
+  it('stops when the player gets in the car, plays on request there, and stops again the next time in', () => {
+    render(<WidgetPreview widgetId="input" />);
+    status({ driving: true });
+    expect(screen.queryByTitle('Input Traces demo')).toBeNull();
+    expect(screen.getByText('Preview paused')).toBeInTheDocument();
+    fireEvent.click(playButton());
+    expect(screen.getByTitle('Input Traces demo')).toBeInTheDocument();
+    expect(pauseButton()).toBeVisible();
+    // Repeated reports of the same state leave it playing.
+    status({ driving: true });
+    expect(screen.getByTitle('Input Traces demo')).toBeInTheDocument();
+    status({ driving: false });
+    expect(screen.getByTitle('Input Traces demo')).toBeInTheDocument();
+    status({ driving: true });
+    expect(screen.queryByTitle('Input Traces demo')).toBeNull();
+    expect(playButton()).toBeVisible();
+  });
+
+  it('arrives stopped on another widget page while the player is in the car', () => {
+    const { rerender } = render(
+      <WidgetPreview key="laptrace" widgetId="laptrace" />
+    );
+    status({ driving: true });
+    fireEvent.click(playButton());
+    expect(screen.getByTitle('Lap Trace demo')).toBeInTheDocument();
+    // Each widget page mounts its own preview, as the settings pages do.
+    rerender(<WidgetPreview key="input" widgetId="input" />);
+    expect(screen.queryByTitle('Input Traces demo')).toBeNull();
+    expect(playButton()).toBeVisible();
+    expect(screen.getByText('Preview paused')).toBeInTheDocument();
+  });
+
+  it('keeps a manual pause after the player gets out of the car', () => {
+    render(<WidgetPreview widgetId="input" />);
+    fireEvent.click(pauseButton());
+    status({ driving: true });
+    status({ driving: false });
+    expect(screen.queryByTitle('Input Traces demo')).toBeNull();
+    expect(playButton()).toBeVisible();
+  });
+
+  it("waits for main's status before starting a demo, without flashing the loading text or the label", () => {
+    answerOnSubscribe = false;
+    render(<WidgetPreview widgetId="input" />);
+    expect(screen.queryByTitle('Input Traces demo')).toBeNull();
+    expect(screen.queryByText('Loading preview…')).toBeNull();
+    expect(screen.queryByText('Preview paused')).toBeNull();
+    status({ driving: true });
+    expect(screen.queryByTitle('Input Traces demo')).toBeNull();
+    expect(screen.getByText('Preview paused')).toBeInTheDocument();
+    expect(connect).not.toHaveBeenCalled();
+  });
+
+  it('does not say paused for an error or without the desktop app', () => {
+    delete window.widgetPreviewBridge;
+    render(<WidgetPreview widgetId="input" />);
+    expect(
+      screen.getByText('Preview is available in the desktop app.')
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Preview paused')).toBeNull();
   });
 });

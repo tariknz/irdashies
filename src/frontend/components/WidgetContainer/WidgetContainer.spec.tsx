@@ -196,6 +196,15 @@ describe('WidgetContainer center line', () => {
     );
   });
 
+  it('saves a dragged position in whole pixels', () => {
+    renderWidget();
+    grab();
+    // A scaled display moves the pointer in fractions of a pixel.
+    dragTo(100.4);
+    expect(position()).toBe('translate(200px, 40px)');
+    release();
+  });
+
   it('shows nothing before the display is known', () => {
     renderWidget();
     grab();

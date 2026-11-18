@@ -280,8 +280,12 @@ export class OverlayManager {
         }
       }
 
-      // Always create a window for the primary display (fallback for unmatched widgets)
-      displaysWithWidgets.add(primaryDisplay.id);
+      if (
+        !this.isLocked ||
+        dashboardLayout.widgets.some((widget) => this.isOnOverlay(widget))
+      ) {
+        displaysWithWidgets.add(primaryDisplay.id);
+      }
 
       for (const display of allDisplays) {
         if (!displaysWithWidgets.has(display.id)) {
@@ -815,6 +819,8 @@ export class OverlayManager {
       this.forceRefreshOverlays(this.currentDashboard, {
         createSettingsWindow: false,
       });
+    } else if (this.currentDashboard) {
+      this.ensureDisplayWindows(this.currentDashboard);
     }
 
     if (!this.isLocked) {
@@ -1050,12 +1056,6 @@ export class OverlayManager {
     app.quit();
   }
 
-  /**
-   * Create windows for any displays that need them but don't have one yet.
-   * Uses widget center-point assignment (same logic as createOverlays) to
-   * determine which displays are required. Safe to call during drag operations
-   * since it never destroys existing windows.
-   */
   public ensureDisplayWindows(dashboardLayout: DashboardLayout): void {
     dashboardLayout = this.windowLayoutOverride ?? dashboardLayout;
     const individual =
@@ -1093,7 +1093,23 @@ export class OverlayManager {
         }
       }
     }
-    displaysWithWidgets.add(primaryDisplay.id);
+    if (
+      !this.isLocked ||
+      dashboardLayout.widgets.some((widget) => this.isOnOverlay(widget))
+    ) {
+      displaysWithWidgets.add(primaryDisplay.id);
+    }
+
+    if (this.isLocked) {
+      for (const [displayId, window] of this.displayWindows) {
+        if (typeof displayId !== 'number' || displaysWithWidgets.has(displayId))
+          continue;
+        this.displayWindows.delete(displayId);
+        this.displayBoundsInfo.delete(displayId);
+        this.displayFullBounds.delete(displayId);
+        if (!window.isDestroyed()) window.close();
+      }
+    }
 
     for (const display of allDisplays) {
       if (!displaysWithWidgets.has(display.id)) continue;
@@ -1121,7 +1137,7 @@ export class OverlayManager {
       this.syncGantryWindow(dashboardLayout);
       return;
     }
-    if (this.individualWindows && this.currentDashboard) {
+    if (this.currentDashboard) {
       this.ensureDisplayWindows(this.currentDashboard);
       return;
     }

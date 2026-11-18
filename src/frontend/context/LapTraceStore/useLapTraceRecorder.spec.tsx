@@ -414,6 +414,31 @@ describe('useLapTraceRecorder', () => {
     expect(initialize).toHaveBeenCalledTimes(2);
   });
 
+  it.each([null, -1])(
+    'preserves the known session across an unknown snapshot (%s) on show',
+    async (sessionNum) => {
+      const initialize = vi.spyOn(useLapTraceStore.getState(), 'initialize');
+      renderHook(() => useLapTraceRecorder('best'));
+      setSession();
+      await settle();
+      publishSample({ sessionNum: 0 });
+      const activeLap = useLapTraceStore.getState().activeLap;
+
+      publishSample({ sessionNum, lapDistPct: -1, sessionTime: -1 });
+      await settle();
+      publishSample({ sessionNum: 0 });
+      await settle();
+      expect(initialize).toHaveBeenCalledTimes(1);
+      expect(useLapTraceStore.getState().activeLap).toBe(activeLap);
+
+      // Keeping the previous identity must still detect a real change after
+      // the initial unknown snapshot, even if the first valid frame differs.
+      publishSample({ sessionNum, lapDistPct: -1, sessionTime: -1 });
+      publishSample({ sessionNum: 1 });
+      expect(initialize).toHaveBeenCalledTimes(2);
+    }
+  );
+
   it('loads the reference for the configured source', () => {
     const setReference = vi.spyOn(
       useLapTraceStore.getState(),

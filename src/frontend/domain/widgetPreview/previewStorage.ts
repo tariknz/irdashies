@@ -124,6 +124,7 @@ export function createPreviewStorage() {
       };
     },
     replayIncident: async () => undefined,
+    replayPitStop: async () => undefined,
     focusDriver: async () => undefined,
     clearIncidents: async () => {
       incidentsCleared = true;

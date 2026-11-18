@@ -188,8 +188,16 @@ export const useLapTraceRecorder = (referenceSource: LapTraceSource) => {
         return;
       }
 
-      const sessionNum = sample.sessionNum ?? -1;
-      if (sessionNum !== s.sessionNum) {
+      // Re-showing a window reactivates its processor, whose initial snapshot
+      // has no session number yet. Unknown values are not session transitions:
+      // keep the last known identity until an actual telemetry frame arrives.
+      const sessionNum = sample.sessionNum;
+      if (
+        sessionNum !== null &&
+        Number.isInteger(sessionNum) &&
+        sessionNum >= 0 &&
+        sessionNum !== s.sessionNum
+      ) {
         if (s.sessionNum !== -1) {
           logger.info(
             `[LapTrace] SessionNum changed to ${sessionNum}, restarting recorder...`

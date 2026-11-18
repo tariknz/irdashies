@@ -31,6 +31,7 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { DriverNamePreview } from '../components/DriverNamePreview';
 import { GantryDockSettings } from './GantryDockSettings';
 import { GantryStandingsSettings } from './GantryStandingsSettings';
+import { GantryPitStopSettings } from './GantryPitStopSettings';
 import {
   kphFromSpeed,
   resolveSpeedUnit,
@@ -338,6 +339,13 @@ export const GantrySettings = memo(() => {
               >
                 Docked Panels
               </TabButton>
+              <TabButton
+                id="pitstops"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Pit Stops
+              </TabButton>
             </div>
 
             <div>
@@ -595,6 +603,8 @@ export const GantrySettings = memo(() => {
               {activeTab === 'standings' && <GantryStandingsSettings />}
 
               {activeTab === 'dock' && <GantryDockSettings />}
+
+              {activeTab === 'pitstops' && <GantryPitStopSettings />}
             </div>
           </div>
         </SettingProps>

@@ -23,10 +23,13 @@ interface StoryProps {
   initialPath: string;
   emptyFuel?: boolean;
   scaleInstances?: boolean;
-  initialTab?: {
-    key: 'fuelWidgetTab' | 'inputTab' | 'standingsTab' | 'lapTimeTab';
-    value: 'display' | 'options';
-  };
+  initialTab?:
+    | {
+        key: 'fuelWidgetTab' | 'inputTab' | 'standingsTab' | 'lapTimeTab';
+        value: 'display' | 'options';
+      }
+    // The overlay list's order, kept in local storage like a tab.
+    | { key: 'settingsMenuSort'; value: 'alpha' | 'activated' };
 
   profileChoices?: boolean;
   profileName?: string;
@@ -292,6 +295,20 @@ export const Default: Story = {
   },
 };
 
+export const OverlaysAlphabetical: Story = {
+  args: {
+    initialPath: '/settings/standings',
+    initialTab: { key: 'settingsMenuSort', value: 'alpha' },
+  },
+};
+
+export const OverlaysActivatedFirst: Story = {
+  args: {
+    initialPath: '/settings/standings',
+    initialTab: { key: 'settingsMenuSort', value: 'activated' },
+  },
+};
+
 export const GeneralSettings: Story = {
   args: { initialPath: '/settings/general' },
 };
@@ -411,9 +428,43 @@ export const RelativeRoute: Story = {
   },
 };
 
+export const FasterCarsFromBehindRoute: Story = {
+  args: {
+    initialPath: '/settings/fastercarsfrombehind',
+  },
+};
+
 export const WeatherRoute: Story = {
   args: {
     initialPath: '/settings/weather',
+  },
+};
+
+/** The Broadcast menu, with the Tower's Look tab. */
+export const BroadcastTowerRoute: Story = {
+  args: {
+    initialPath: '/settings/broadcast',
+    initialTab: { key: 'broadcastTab', value: 'look' },
+  },
+};
+
+export const BroadcastTowerOptions: Story = {
+  args: {
+    initialPath: '/settings/broadcast',
+    initialTab: { key: 'broadcastTab', value: 'options' },
+  },
+};
+
+export const BroadcastEventsRoute: Story = {
+  args: {
+    initialPath: '/settings/broadcastevents',
+    initialTab: { key: 'broadcasteventsTab', value: 'events' },
+  },
+};
+
+export const BroadcastSettingsRoute: Story = {
+  args: {
+    initialPath: '/settings/broadcast-settings',
   },
 };
 

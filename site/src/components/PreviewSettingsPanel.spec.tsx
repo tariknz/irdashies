@@ -127,6 +127,27 @@ describe('preview settings panel', () => {
     await screen.findByRole('heading', { name: 'relative' });
   });
 
+  it('names the page by its kind', async () => {
+    const { rerender } = render(
+      <PreviewSettingsButton defaultWidget="broadcastticker" />
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    await screen.findByRole('heading', { name: 'broadcastticker' });
+    expect(
+      screen.getByRole('main', { name: 'Broadcast settings page' })
+    ).toBeInTheDocument();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Close settings' })
+    );
+    rerender(<PreviewSettingsButton defaultWidget="relative" />);
+    await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    await screen.findByRole('heading', { name: 'relative' });
+    expect(
+      screen.getByRole('main', { name: 'Overlay settings page' })
+    ).toBeInTheDocument();
+  });
+
   it('consumes Escape before it reaches the fullscreen handler', async () => {
     render(<PreviewSettingsButton />);
     fireEvent.click(screen.getByRole('button', { name: 'Configure' }));

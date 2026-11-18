@@ -33,6 +33,8 @@ import type {
   TelemetryInspectorBridge,
   RendererPerfBridge,
   ReleaseNotesBridge,
+  RacePlanBridge,
+  RacePlanState,
 } from '@irdashies/types';
 import {
   isRendererPerfMetricsEnabled,
@@ -43,11 +45,29 @@ import {
   RENDERER_DATA_SUBSCRIPTION_BRIDGE,
   type RendererDataStream,
 } from './rendererDataSubscriptions';
-import { createSubscriptionBridgeClient, defineBridge } from './defineBridge';
+import {
+  createSharedSubscription,
+  createSubscriptionBridgeClient,
+  defineBridge,
+} from './defineBridge';
 import type { TapeReplayBridge } from '@irdashies/types';
 // The module itself, not the barrel: preload needs this one list, not every
 // default the types package exports.
 import { RENDERER_PERF_MEASURE_NAMES } from '../../types/performance';
+
+/** The shape the race plan settings read before anything else. */
+const isRacePlanState = (value: unknown): value is RacePlanState =>
+  !!value &&
+  typeof value === 'object' &&
+  'config' in value &&
+  !!value.config &&
+  typeof value.config === 'object' &&
+  'hasApiKey' in value &&
+  typeof value.hasApiKey === 'boolean' &&
+  'canStoreApiKey' in value &&
+  typeof value.canStoreApiKey === 'boolean' &&
+  'status' in value &&
+  typeof value.status === 'string';
 
 export function exposeBridge() {
   defineBridge<TapeReplayBridge>('tapeReplayBridge', {
@@ -61,6 +81,25 @@ export function exposeBridge() {
     dismiss: (version) => ipcRenderer.invoke('releaseNotes:dismiss', version),
     setAutoShow: (enabled) =>
       ipcRenderer.invoke('releaseNotes:autoShow', enabled),
+  });
+  defineBridge<RacePlanBridge>('racePlanBridge', {
+    getState: () => ipcRenderer.invoke('racePlan:getState'),
+    choosePlanning: (planningId) =>
+      ipcRenderer.invoke('racePlan:choosePlanning', planningId),
+    setConfig: (config) => ipcRenderer.invoke('racePlan:setConfig', config),
+    setApiKey: (apiKey) => ipcRenderer.invoke('racePlan:setApiKey', apiKey),
+    clearApiKey: () => ipcRenderer.invoke('racePlan:clearApiKey'),
+    listPlannings: () => ipcRenderer.invoke('racePlan:listPlannings'),
+    refreshNow: () => ipcRenderer.invoke('racePlan:refreshNow'),
+    // Main only sends to subscribed windows, and only changes: consumers
+    // read the current state with getState.
+    onStateChanged: createSharedSubscription({
+      name: 'racePlan',
+      key: 'state',
+      channel: 'racePlan:state',
+      parse: (value) => (isRacePlanState(value) ? value : undefined),
+      label: '[RacePlan] State',
+    }),
   });
   if (isRendererPerfMetricsEnabled()) {
     defineBridge<RendererPerfBridge>('rendererPerfBridge', {
@@ -541,6 +580,8 @@ export function exposeBridge() {
     getIncidents: () => ipcRenderer.invoke('raceControl:getIncidents'),
     replayIncident: (incident: Incident, seconds: number) =>
       ipcRenderer.invoke('raceControl:replayIncident', incident, seconds),
+    replayPitStop: (stop, seconds) =>
+      ipcRenderer.invoke('raceControl:replayPitStop', stop, seconds),
     focusDriver: (carNumber: string) =>
       ipcRenderer.invoke('raceControl:focusDriver', carNumber),
     clearIncidents: () => ipcRenderer.invoke('raceControl:clearIncidents'),

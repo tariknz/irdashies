@@ -47,6 +47,14 @@ vi.mock('../../storage/radarPoleSideOverrides', () => ({
   radarPoleSideOverrides: {},
   loadRadarPoleSideOverrides: mocks.loadRadarPoleSideOverrides,
 }));
+vi.mock('../../storage/racePlanHistory', () => ({
+  getRacePlanHistoryStore: () => ({
+    load: vi.fn(async () => undefined),
+    get: vi.fn(() => null),
+    save: vi.fn(),
+    flush: vi.fn(async () => undefined),
+  }),
+}));
 vi.mock('../../perfMetrics', () => ({
   TelemetryPerfMetrics: class {
     startReporting = vi.fn();

@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { PushPin } from '@phosphor-icons/react';
 import logo from '../../../../assets/icons/logo.svg';
 import { Tooltip } from '../Tooltip/Tooltip';
-type GantryView = 'standings-incidents' | 'lap-graph';
+type GantryView = 'standings-incidents' | 'lap-graph' | 'pit-stops';
 
 interface GantryTabBarProps {
   activeView: GantryView;
@@ -19,6 +19,7 @@ interface GantryTabBarProps {
 const VIEW_LABELS: Record<GantryView, string> = {
   'standings-incidents': 'Standings & Incidents',
   'lap-graph': 'Lap Graph',
+  'pit-stops': 'Pit Stops',
 };
 
 const VIEW_TOOLTIPS: Record<GantryView, string> = {
@@ -26,6 +27,8 @@ const VIEW_TOOLTIPS: Record<GantryView, string> = {
     'Live running order by class, side by side with the incident feed. Use it to see who is in trouble and jump the replay straight to it.',
   'lap-graph':
     "Plots every driver's gap to the class leader lap by lap, so you can see where positions were won and lost.",
+  'pit-stops':
+    "Every team's pit stops: when they stopped, how long they spent in the pit lane and stopped, driver changes, and an estimate of the service from the stop time.",
 };
 
 const FOCUS_NOTE =
@@ -112,7 +115,7 @@ export const GantryTabBar = memo(
           aria-label="Gantry views"
           className="flex items-end gap-1 border-b border-slate-700 bg-slate-900 px-4"
         >
-          {(['standings-incidents', 'lap-graph'] as GantryView[]).map(
+          {(['standings-incidents', 'lap-graph', 'pit-stops'] as GantryView[]).map(
             (view) => (
               <Tooltip
                 key={view}

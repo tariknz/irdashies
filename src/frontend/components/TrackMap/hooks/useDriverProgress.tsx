@@ -5,37 +5,54 @@ import {
   useSessionQualifyingResults,
   useSessionQualifyPositions,
   useSessionStore,
-  useTrackStateSnapshot,
+  trackStateSelectors,
+  useTrackStateSelector,
 } from '@irdashies/context';
 
 const EMPTY_POSITIONS: readonly number[] = [];
+
+const samePositions = (
+  previous: readonly number[] | undefined,
+  next: readonly number[] | undefined
+): boolean => {
+  if (Object.is(previous, next)) return true;
+  if (!previous || !next || previous.length !== next.length) return false;
+  for (let index = 0; index < previous.length; index++) {
+    if (!Object.is(previous[index], next[index])) return false;
+  }
+  return true;
+};
 
 // Drivers progress logic
 export const useDriverProgress = () => {
   const driverIdx = useFocusCarIdx();
   const drivers = useSessionDrivers();
-  const trackState = useTrackStateSnapshot();
-  const driversLapDist = trackState?.carIdxLapDistPct ?? EMPTY_POSITIONS;
+  const driversLapDist =
+    useTrackStateSelector(trackStateSelectors.carIdxLapDistPct) ??
+    EMPTY_POSITIONS;
+  const carIdxClassPosition = useTrackStateSelector(
+    trackStateSelectors.carIdxClassPosition,
+    { equality: samePositions }
+  );
+  const sessionNum =
+    useTrackStateSelector(trackStateSelectors.sessionNum) ?? undefined;
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
 
   const qualifyingResultsRaw = useSessionQualifyingResults();
-  const sessionNum = trackState?.sessionNum ?? undefined;
   const sessionQualifyPositions = useSessionQualifyPositions(sessionNum);
 
   // Heat race fallback: QualifyResultsInfo.Results may be null, use QualifyPositions instead
-  const qualifyingResults = qualifyingResultsRaw?.length
-    ? qualifyingResultsRaw
-    : sessionQualifyPositions?.map((q) => ({
-        CarIdx: q.CarIdx,
-        ClassPosition: q.ClassPosition,
-      }));
+  const qualifyingResults = useMemo(() => {
+    if (qualifyingResultsRaw?.length) return qualifyingResultsRaw;
+    return sessionQualifyPositions?.map((q) => ({
+      CarIdx: q.CarIdx,
+      ClassPosition: q.ClassPosition,
+    }));
+  }, [qualifyingResultsRaw, sessionQualifyPositions]);
 
-  // Get class position data from telemetry
-  const carIdxClassPosition = trackState?.carIdxClassPosition;
-
-  // Stable identity data — only recomputes when driver roster, player focus,
-  // or class positions change. Does NOT depend on driversLapDist.
+  // Stable identity data — recomputes for roster/focus/pace-car/class-position
+  // or qualifying changes, but not for volatile lap progress.
   const driverIdentities = useMemo(() => {
     if (!drivers) return [];
 

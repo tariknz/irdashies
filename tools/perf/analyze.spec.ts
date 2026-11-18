@@ -233,6 +233,54 @@ describe('performance analysis', () => {
     );
   });
 
+  it.each([
+    ['trackMapAnimationFrameMs', 'trackMapAnimationFrameRateHz'],
+    ['inputTraceFrameMs', 'inputTraceFrameRateHz'],
+    ['radarFrameMs', 'radarFrameRateHz'],
+    ['lapTraceFrameMs', 'lapTraceFrameRateHz'],
+    ['lapTraceBrakeCueMs', 'lapTraceBrakeCueRateHz'],
+  ] as const)(
+    'ignores zero-only windows for %s but retains a painter’s idle intervals',
+    (measure, rate) => {
+      const input = capture([
+        mainSample(5, 100, 100, 100, 5000),
+        mainSample(10, 100, 100, 100, 5000),
+      ]);
+      const sample = (
+        pid: number,
+        seconds: number,
+        count: number
+      ): RendererPerfSample => ({
+        schemaVersion: 1,
+        timestamp: new Date(seconds * 1000).toISOString(),
+        runId: 'run',
+        scenario: 'full',
+        pid,
+        route: '/',
+        visibilityState: 'visible',
+        intervalMs: 5000,
+        frameTimeMs: stats(16),
+        [measure]: stats(0.4, { count, p99: count > 0 ? 0.8 : 0 }),
+        framesOver25Ms: 0,
+        framesOver50Ms: 0,
+      });
+      input.renderer = [
+        sample(1, 5, 300),
+        sample(1, 10, 0),
+        sample(2, 5, 0),
+        sample(2, 10, 0),
+      ];
+      expect(summarizeCapture(input, 0).renderer[rate]).toBe(30);
+
+      // A second actual painter contributes both its busy and idle time.
+      input.renderer.push(sample(3, 5, 150), sample(3, 10, 0));
+      expect(summarizeCapture(input, 0).renderer[rate]).toBe(22.5);
+
+      input.renderer = [sample(2, 5, 0), sample(2, 10, 0)];
+      expect(summarizeCapture(input, 0).renderer[rate]).toBe(0);
+    }
+  );
+
   it('summarizes the Lap Trace frame and brake-cue measures', () => {
     const input = capture([
       mainSample(5, 100, 100, 100, 5000),

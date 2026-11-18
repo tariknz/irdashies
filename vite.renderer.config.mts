@@ -40,6 +40,11 @@ export default defineConfig({
   ],
   server: {
     host: '0.0.0.0',
+    watch: {
+      // Captures and temporary Electron profiles must not trigger HMR or
+      // watches on locked browser databases during a performance run.
+      ignored: ['**/perf-results/**'],
+    },
   },
   resolve: {
     alias: tsconfigPathAliases,

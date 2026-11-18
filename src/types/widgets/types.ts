@@ -42,6 +42,11 @@ export interface WidgetManifest<
   groupTypes?: WidgetId[];
   enabled: boolean;
   alwaysEnabled?: boolean;
+  /**
+   * Reads `lap-history.snapshot`. Lap history is only recorded while an
+   * enabled widget sets this, so every reader of the channel must.
+   */
+  usesLapHistory?: boolean;
   layout: WidgetLayout;
   config: WidgetConfigMap[K];
   /** Settings described once; drives SettingProp and config validation. */

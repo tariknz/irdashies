@@ -37,6 +37,7 @@ export class LapHistoryRuntime {
   private readonly processor: LapHistoryProcessor;
   private enabled = true;
   private replayPaused = false;
+  private tapeReplay = false;
   private currentSessionId = '';
   private lastPublishedVersion = -1;
   private subscribers = 0;
@@ -59,9 +60,11 @@ export class LapHistoryRuntime {
     // Delivery stays demand-gated - the bus only sends to subscribed windows.
     this.processor = new LapHistoryProcessor();
     this.disconnects = [
-      lifecycle.onEnter((event) =>
-        this.processor.onLifecycle({ type: 'enter', replay: event.replay })
-      ),
+      lifecycle.onEnter((event) => {
+        this.tapeReplay = event.replay;
+        this.processor.onLifecycle({ type: 'enter', replay: event.replay });
+        this.load(this.currentSessionId);
+      }),
       lifecycle.onSessionNumChange(() => {
         this.sealCurrentSession();
         this.processor.onLifecycle({ type: 'sessionNumChange' });
@@ -89,7 +92,7 @@ export class LapHistoryRuntime {
   }
 
   onFrame(frame: Telemetry): void {
-    if (!this.enabled || this.replayPaused) return;
+    if (!this.enabled || (this.replayPaused && !this.tapeReplay)) return;
     this.metrics.markStart('lapHistoryProcessing');
     this.processor.onFrame(frame);
     this.metrics.markEnd('lapHistoryProcessing');
@@ -100,8 +103,8 @@ export class LapHistoryRuntime {
   updateEnabled(enabled: boolean): void {
     if (enabled === this.enabled) return;
     this.enabled = enabled;
-    // Re-baseline: lap counters moved on while recording was off.
-    this.processor.onLifecycle({ type: 'enter', replay: false });
+    // Re-baseline without overriding the source's lifecycle replay state.
+    this.processor.rebaseline();
   }
 
   /**
@@ -111,7 +114,9 @@ export class LapHistoryRuntime {
   updateReplayPaused(paused: boolean): void {
     if (paused === this.replayPaused) return;
     this.replayPaused = paused;
-    if (!paused) this.processor.onLifecycle({ type: 'enter', replay: false });
+    if (!paused) {
+      this.processor.rebaseline();
+    }
   }
 
   getCurrentSessionId(): string {
@@ -136,7 +141,7 @@ export class LapHistoryRuntime {
     this.restoreToken += 1;
     const token = this.restoreToken;
     this.pendingRestore = null;
-    if (!sessionId) {
+    if (!sessionId || this.tapeReplay) {
       this.restorePending = false;
       return;
     }
@@ -194,6 +199,7 @@ export class LapHistoryRuntime {
     // reset never reaches disk and a pending read is left to finish first.
     if (
       this.currentSessionId &&
+      !this.tapeReplay &&
       !this.restorePending &&
       hasCrossings(snapshot)
     ) {
@@ -227,7 +233,8 @@ export class LapHistoryRuntime {
    */
   private sealCurrentSession(): void {
     const snapshot = this.processor.snapshot();
-    if (!this.currentSessionId || this.restorePending) return;
+    if (!this.currentSessionId || this.restorePending || this.tapeReplay)
+      return;
     if (!hasCrossings(snapshot)) return;
     this.persistence.seal(this.currentSessionId, snapshot);
   }

@@ -334,11 +334,21 @@ function summarizeRendererMeasure(
   renderer: RendererPerfSample[],
   select: (sample: RendererPerfSample) => NumericSampleStats | undefined
 ): { rateHz: number; p99MeanMs: number; p99WorstMs: number } {
-  const stats = renderer
+  // A window may register a widget's counter during startup, then keep
+  // reporting zero after the widget moves to another display. Only windows
+  // observed painting this measure belong in its rate denominator. Retain
+  // their zero-count intervals so actual pauses still reduce the rate.
+  const painters = new Set(
+    renderer
+      .filter((sample) => (select(sample)?.count ?? 0) > 0)
+      .map((sample) => sample.pid)
+  );
+  const participating = renderer.filter((sample) => painters.has(sample.pid));
+  const stats = participating
     .map(select)
     .filter((entry): entry is NumericSampleStats => entry !== undefined);
   const seconds =
-    renderer
+    participating
       .filter((sample) => select(sample) !== undefined)
       .reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
   return {
@@ -576,13 +586,10 @@ export function summarizeCapture(
     renderer
       .filter((sample) => sample.telemetryCallbackMs !== undefined)
       .reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
-  const trackMapAnimationFrames = renderer
-    .map((sample) => sample.trackMapAnimationFrameMs)
-    .filter((stats): stats is NumericSampleStats => stats !== undefined);
-  const trackMapAnimationSeconds =
-    renderer
-      .filter((sample) => sample.trackMapAnimationFrameMs !== undefined)
-      .reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
+  const trackMapAnimationFrame = summarizeRendererMeasure(
+    renderer,
+    (sample) => sample.trackMapAnimationFrameMs
+  );
   const inputTraceFrame = summarizeRendererMeasure(
     renderer,
     (sample) => sample.inputTraceFrameMs
@@ -1168,22 +1175,9 @@ export function summarizeCapture(
       telemetryCallbackP99WorstMs: maximum(
         rendererTelemetryCallbacks.map((stats) => stats.p99)
       ),
-      trackMapAnimationFrameRateHz:
-        trackMapAnimationSeconds === 0
-          ? 0
-          : trackMapAnimationFrames.reduce(
-              (sum, stats) => sum + stats.count,
-              0
-            ) / trackMapAnimationSeconds,
-      trackMapAnimationFrameP99MeanMs: weightedAverage(
-        trackMapAnimationFrames.map((stats) => ({
-          value: stats.p99,
-          weight: stats.count,
-        }))
-      ),
-      trackMapAnimationFrameP99WorstMs: maximum(
-        trackMapAnimationFrames.map((stats) => stats.p99)
-      ),
+      trackMapAnimationFrameRateHz: trackMapAnimationFrame.rateHz,
+      trackMapAnimationFrameP99MeanMs: trackMapAnimationFrame.p99MeanMs,
+      trackMapAnimationFrameP99WorstMs: trackMapAnimationFrame.p99WorstMs,
       inputTraceFrameRateHz: inputTraceFrame.rateHz,
       inputTraceFrameP99MeanMs: inputTraceFrame.p99MeanMs,
       inputTraceFrameP99WorstMs: inputTraceFrame.p99WorstMs,

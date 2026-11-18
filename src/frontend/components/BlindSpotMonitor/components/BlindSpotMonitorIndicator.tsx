@@ -26,7 +26,9 @@ export const BlindSpotMonitorIndicator = ({
 }: BlindSpotMonitorIndicatorProps) => {
   const isTwoCars =
     state === CarLeftRight.Cars2Left || state === CarLeftRight.Cars2Right;
-  const topPosition = `${25 - percent * 75}%`;
+  // Translation percentages use the indicator's own height (50% of its
+  // container), so double the former top percentage to keep identical motion.
+  const translateY = `${50 - percent * 150}%`;
   const widthPx = `${width ?? 20}px`;
   const indicatorColorHex = `#${(indicatorColor ?? 16096779).toString(16).padStart(6, '0')}`;
   const twoCarsText = state === CarLeftRight.Cars2Left ? '2 left' : '2 right';
@@ -77,12 +79,12 @@ export const BlindSpotMonitorIndicator = ({
         }}
       >
         <div
-          className={`absolute rounded-full h-[50%] left-1/2 -translate-x-1/2 flex items-center justify-center`}
+          className={`absolute top-0 rounded-full h-[50%] left-1/2 -translate-x-1/2 flex items-center justify-center`}
           style={{
-            top: topPosition,
+            transform: `translateY(${translateY})`,
             width: widthPx,
             backgroundColor: indicatorColorHex,
-            transition: enableTransition ? 'top 0.04s linear' : 'none',
+            transition: enableTransition ? 'transform 0.04s linear' : 'none',
           }}
         ></div>
 

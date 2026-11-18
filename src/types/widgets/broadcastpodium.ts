@@ -4,7 +4,7 @@ export default defineWidgetManifest({
   id: 'broadcastpodium',
   name: 'Broadcast Podium',
   category: 'Broadcast & Streaming',
-  // Reached through a tab on the Broadcast settings page.
+  // Reached through the Broadcast menu.
   hideInMenu: true,
   enabled: false,
   layout: {

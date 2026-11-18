@@ -1,5 +1,6 @@
 import { setupStorageStatusBridge } from './app/bridge/storageStatusBridge';
 import { setupWidgetPreviewBridge } from './app/bridge/widgetPreviewBridge';
+import { setupWindowVisibilityBridge } from './app/bridge/windowVisibilityBridge';
 import { app, autoUpdater, BrowserWindow, ipcMain } from 'electron';
 import { setupReleaseNotesBridge } from './app/bridge/releaseNotesBridge';
 import log from './app/logger';
@@ -75,6 +76,16 @@ import { flushSimulatorUsageOnShutdown } from './app/storage/simulatorUsage';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { getHiddenWidgets } from './app/widgetVisibility';
 import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
+import { setupRacePlanBridge } from './app/bridge/racePlanBridge';
+import { flushRacePlanHistoryOnShutdown } from './app/storage/racePlanHistory';
+import {
+  flushPitStopHistoryOnShutdown,
+  getPitStopHistoryStore,
+} from './app/storage/pitStopHistory';
+import {
+  PitStopRuntime,
+  type PitStopPersistence,
+} from './app/processors/pitStopRuntime';
 import {
   flushIncidentsOnShutdown,
   appendIncident,
@@ -89,6 +100,7 @@ import {
   LapHistoryRuntime,
   type LapHistoryPersistence,
 } from './app/processors/lapHistoryRuntime';
+import { watchLapHistoryDemand } from './app/lapHistoryDemand';
 import {
   flushLapHistoryOnShutdown,
   listArchivedLapHistorySessions,
@@ -192,10 +204,12 @@ let sessionProfileSwitcher: SessionProfileSwitcher | undefined;
 let gameProfileSwitcher: GameProfileSwitcher | undefined;
 let incidentRuntime: IncidentRuntime | undefined;
 let disposeLapHistoryRuntime: (() => void) | undefined;
+let disposePitStopRuntime: (() => void) | undefined;
 let disposeStreamChat: (() => void) | undefined;
 let disposeReplayContextRuntime: (() => void) | undefined;
 const knownLocalUserIds = createKnownLocalUserIdStore();
 let disposeGarage61SearchSession: (() => void) | undefined;
+let racePlan: ReturnType<typeof setupRacePlanBridge> | undefined;
 // Resolved per call: a runtime outlives any single SDK bridge, so it must
 // not hold a reference to a metrics instance that has stopped reporting.
 const runtimePerfMetrics: PerformanceSections = {
@@ -244,8 +258,9 @@ let disposeRendererDataSubscriptions: (() => void) | undefined;
 /**
  * Hosts lap-history recording outside the ProcessorHost, the way the incident
  * runtime is hosted: an enabled Gantry keeps recording while its window is
- * closed. Gated on the Gantry widget, so a user who never enables it pays no
- * frame cost.
+ * closed. Gated on widgets whose manifest sets `usesLapHistory` and on live
+ * subscribers such as browser sources, so a user who uses none of them pays
+ * no frame cost.
  */
 function setupLapHistoryRuntime(
   initialDashboard: DashboardLayout,
@@ -268,12 +283,13 @@ function setupLapHistoryRuntime(
       loadArchivedLapHistory(sessionId, sessionNum),
   });
 
-  const applyDashboard = (layout: DashboardLayout | undefined) => {
-    const widget = layout?.widgets.find((w) => w.id === 'gantry');
-    runtime.updateEnabled(widget?.enabled ?? false);
-  };
-  applyDashboard(initialDashboard);
-  const unsubscribeDashboard = onDashboardUpdated(applyDashboard);
+  const unsubscribeDemand = watchLapHistoryDemand(
+    channelBus,
+    initialDashboard,
+    onDashboardUpdated,
+    (needed) => runtime.updateEnabled(needed),
+    (layout) => createPerfDashboard(layout, perfRun)
+  );
 
   let unsubscribeSession: (() => void) | undefined;
   let unsubscribeTelemetry: (() => void) | undefined;
@@ -310,8 +326,72 @@ function setupLapHistoryRuntime(
     unsubscribeSession = undefined;
     unsubscribeTelemetry = undefined;
     unsubscribeBridgeChanged?.();
-    unsubscribeDashboard?.();
+    unsubscribeDemand();
     unsubscribeSessionId?.();
+    unsubscribeReplayContext();
+    runtime.dispose();
+  };
+}
+
+const pitStopPersistence: PitStopPersistence = {
+  load: async (key) => {
+    const store = getPitStopHistoryStore();
+    await store.load();
+    return store.get(key);
+  },
+  save: (key, stops) => getPitStopHistoryStore().save(key, stops),
+};
+
+/**
+ * Hosts pit stop recording like lap history: gated on the Gantry widget, and
+ * kept running while the Gantry window is closed.
+ */
+function setupPitStopRuntime(
+  initialDashboard: DashboardLayout,
+  replayContext: ReplayContextRuntime
+): void {
+  const runtime = new PitStopRuntime(
+    channelBus,
+    getSessionLifecycle(),
+    runtimePerfMetrics,
+    pitStopPersistence
+  );
+  runtime.updateReplayPaused(replayContext.isReplayFile());
+  const unsubscribeReplayContext = replayContext.onChange((context) =>
+    runtime.updateReplayPaused(context.mode === 'replayFile')
+  );
+
+  const applyDashboard = (layout: DashboardLayout | undefined) => {
+    const widget = layout?.widgets.find((w) => w.id === 'gantry');
+    runtime.updateEnabled(widget?.enabled ?? false);
+  };
+  applyDashboard(initialDashboard);
+  const unsubscribeDashboard = onDashboardUpdated(applyDashboard);
+
+  let unsubscribeSession: (() => void) | undefined;
+  let unsubscribeTelemetry: (() => void) | undefined;
+  const wireToTelemetryBridge = () => {
+    unsubscribeSession?.();
+    unsubscribeTelemetry?.();
+    const bridge = getCurrentBridge();
+    if (!bridge) return;
+    unsubscribeSession =
+      bridge.onSessionData((session) => runtime.onSession(session)) ??
+      undefined;
+    unsubscribeTelemetry =
+      bridge.onTelemetry((telemetry) => runtime.onFrame(telemetry)) ??
+      undefined;
+  };
+  wireToTelemetryBridge();
+  const unsubscribeBridgeChanged = onBridgeChanged(wireToTelemetryBridge);
+
+  disposePitStopRuntime = () => {
+    unsubscribeSession?.();
+    unsubscribeTelemetry?.();
+    unsubscribeSession = undefined;
+    unsubscribeTelemetry = undefined;
+    unsubscribeBridgeChanged?.();
+    unsubscribeDashboard?.();
     unsubscribeReplayContext();
     runtime.dispose();
   };
@@ -321,8 +401,8 @@ function setupLapHistoryRuntime(
  * Hosts the replay context outside the ProcessorHost. It is created before the
  * incident and lap-history runtimes and wired to the bridge first, so a
  * replay file is recognised before they see its session. Frames are only read
- * while the Gantry is enabled; sessions are always read so this PC's user ids
- * are remembered.
+ * while lap history is recorded; sessions are always read so this PC's user
+ * ids are remembered.
  */
 function setupReplayContextRuntime(
   initialDashboard: DashboardLayout
@@ -342,13 +422,16 @@ function setupReplayContextRuntime(
     }
   );
 
-  let gantryEnabled = false;
-  const applyDashboard = (layout: DashboardLayout | undefined) => {
-    gantryEnabled =
-      layout?.widgets.find((w) => w.id === 'gantry')?.enabled ?? false;
-  };
-  applyDashboard(initialDashboard);
-  const unsubscribeDashboard = onDashboardUpdated(applyDashboard);
+  let readFrames = false;
+  const unsubscribeDemand = watchLapHistoryDemand(
+    channelBus,
+    initialDashboard,
+    onDashboardUpdated,
+    (needed) => {
+      readFrames = needed;
+    },
+    (layout) => createPerfDashboard(layout, perfRun)
+  );
 
   let unsubscribeSession: (() => void) | undefined;
   let unsubscribeTelemetry: (() => void) | undefined;
@@ -362,7 +445,7 @@ function setupReplayContextRuntime(
       undefined;
     unsubscribeTelemetry =
       bridge.onTelemetry((telemetry) => {
-        if (gantryEnabled) runtime.onFrame(telemetry);
+        if (readFrames) runtime.onFrame(telemetry);
       }) ?? undefined;
   };
   wireToTelemetryBridge();
@@ -374,7 +457,7 @@ function setupReplayContextRuntime(
     unsubscribeSession = undefined;
     unsubscribeTelemetry = undefined;
     unsubscribeBridgeChanged?.();
-    unsubscribeDashboard?.();
+    unsubscribeDemand();
     runtime.dispose();
   };
   return runtime;
@@ -490,7 +573,11 @@ void app.whenReady().then(async () => {
   // Setup IPC bridges
   setupLogBridge();
   setupStorageStatusBridge();
-  const disposeWidgetPreviews = setupWidgetPreviewBridge(runtimePerfMetrics);
+  setupWindowVisibilityBridge();
+  const disposeWidgetPreviews = setupWidgetPreviewBridge(
+    runtimePerfMetrics,
+    getSessionLifecycle()
+  );
   app.once('will-quit', disposeWidgetPreviews);
   fuelDatabase = setupFuelCalculatorBridge();
   const pitLaneBridge = setupPitLaneBridge(overlayManager, channelBus);
@@ -499,6 +586,7 @@ void app.whenReady().then(async () => {
   setupLapTraceBridge(overlayManager);
   setupGarage61SearchSession(dashboard);
   setupChromiumFlagsBridge();
+  racePlan = setupRacePlanBridge();
   ipcMain.handle('widgetVisibility:getHidden', () => getHiddenWidgets());
   const replayContextRuntime = setupReplayContextRuntime(dashboard);
   const incidents = new IncidentRuntime(
@@ -515,6 +603,7 @@ void app.whenReady().then(async () => {
   );
   setupRaceControlBridge(incidents, dashboard, replayContextRuntime);
   setupLapHistoryRuntime(dashboard, replayContextRuntime);
+  setupPitStopRuntime(dashboard, replayContextRuntime);
   disposeStreamChat = setupStreamChat(channelBus, listDashboards);
   // Returns false when the Gantry widget is disabled, so Settings can explain
   // why the button did nothing instead of appearing to be broken.
@@ -726,9 +815,11 @@ const handleBeforeQuit = createBeforeQuitHandler({
     disposeRendererDataSubscriptions?.();
     incidentRuntime?.dispose();
     disposeLapHistoryRuntime?.();
+    disposePitStopRuntime?.();
     disposeStreamChat?.();
     disposeReplayContextRuntime?.();
     disposeGarage61SearchSession?.();
+    racePlan?.dispose();
     channelBus.dispose();
     // Storage writes are debounced, so drain all pending queues within the
     // coordinator deadline before the process exits.
@@ -742,6 +833,9 @@ const handleBeforeQuit = createBeforeQuitHandler({
       knownLocalUserIds.flush(),
       flushRadarPoleSideOverrides(),
       releaseNotes?.flush(),
+      racePlan?.flush(),
+      flushRacePlanHistoryOnShutdown(),
+      flushPitStopHistoryOnShutdown(),
       flushGarage61SearchSessionOnShutdown(),
       flushStorageWritesOnShutdown(),
       flushSettingsWindowBoundsOnShutdown(),

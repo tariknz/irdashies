@@ -64,7 +64,8 @@ export const CarManufacturer = memo(({ carId }: CarManufacturerProps) => {
         backgroundImage: `url(${isLmu ? lmuCarLogoImage : carLogoImage})`,
         backgroundSize,
         backgroundPosition,
-        transform: 'scale(1.25) translateZ(0)',
+        // Static badges do not need a forced compositor layer per car.
+        transform: 'scale(1.25)',
       }}
     />
   );

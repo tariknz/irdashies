@@ -102,28 +102,30 @@ export const useDriverPositions = () => {
 
 export const useDrivers = () => {
   const sessionDrivers = useSessionDrivers();
-  const drivers =
-    sessionDrivers?.map((driver) => ({
-      carIdx: driver.CarIdx,
-      name: driver.UserName,
-      carNum: driver.CarNumber,
-      carNumRaw: driver.CarNumberRaw,
-      license: driver.LicString,
-      rating: driver.IRating,
-      flairId: driver.FlairID,
-      lmuRating: driver.LmuRating,
-      teamName: driver.TeamName,
-      isAI: driver.CarIsAIControlled,
-      carClass: {
-        id: driver.CarClassID,
-        color: driver.CarClassColor,
-        name: driver.CarClassShortName,
-        relativeSpeed: driver.CarClassRelSpeed,
-        estLapTime: driver.CarClassEstLapTime,
-      },
-      carId: driver.CarID,
-    })) ?? [];
-  return drivers;
+  return useMemo(
+    () =>
+      sessionDrivers?.map((driver) => ({
+        carIdx: driver.CarIdx,
+        name: driver.UserName,
+        carNum: driver.CarNumber,
+        carNumRaw: driver.CarNumberRaw,
+        license: driver.LicString,
+        rating: driver.IRating,
+        flairId: driver.FlairID,
+        lmuRating: driver.LmuRating,
+        teamName: driver.TeamName,
+        isAI: driver.CarIsAIControlled,
+        carClass: {
+          id: driver.CarClassID,
+          color: driver.CarClassColor,
+          name: driver.CarClassShortName,
+          relativeSpeed: driver.CarClassRelSpeed,
+          estLapTime: driver.CarClassEstLapTime,
+        },
+        carId: driver.CarID,
+      })) ?? [],
+    [sessionDrivers]
+  );
 };
 
 /**

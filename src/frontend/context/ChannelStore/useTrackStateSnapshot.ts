@@ -7,6 +7,8 @@ import {
 
 export const trackStateSelectors = {
   carIdxLapDistPct: (snapshot: TrackStateSnapshot) => snapshot.carIdxLapDistPct,
+  carIdxClassPosition: (snapshot: TrackStateSnapshot) =>
+    snapshot.carIdxClassPosition,
   carIdxOnPitRoad: (snapshot: TrackStateSnapshot) => snapshot.carIdxOnPitRoad,
   carIdxTrackSurface: (snapshot: TrackStateSnapshot) =>
     snapshot.carIdxTrackSurface,

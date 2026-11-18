@@ -1,4 +1,5 @@
 import { DEFAULT_INCIDENT_CAMERA_GROUP } from '../widgetConfigs';
+import { DEFAULT_GANTRY_PIT_STOPS } from '../gantryPitStops';
 import { defineWidgetManifest } from './types';
 
 export default defineWidgetManifest({
@@ -7,6 +8,7 @@ export default defineWidgetManifest({
   category: 'Broadcast & Streaming',
   menuLabel: 'Gantry',
   enabled: false,
+  usesLapHistory: true,
   layout: {
     x: 0,
     y: 0,
@@ -44,6 +46,7 @@ export default defineWidgetManifest({
     standings: {
       source: 'builtin',
     },
+    pitStops: DEFAULT_GANTRY_PIT_STOPS,
   },
   properties: {
     'window.alwaysOnTop': {

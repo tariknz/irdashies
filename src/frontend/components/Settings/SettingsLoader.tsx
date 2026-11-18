@@ -27,6 +27,7 @@ import { CarSetupSettings } from './sections/CarSetupSettings';
 import { StreamChatSettings } from './sections/StreamChatSettings';
 import { DriverTagsSettings } from './sections/DriverTagsSettings';
 import { KeybindingsSettings } from './sections/KeybindingsSettings';
+import { RacePlanSettings } from './sections/RacePlanSettings';
 import { LapTimeLogSettings } from './sections/LapTimeLogSettings';
 import { InformationBarSettings } from './sections/InformationBarSettings';
 import { useDashboard } from '@irdashies/context';
@@ -39,10 +40,14 @@ import { CornerNameSettings } from './sections/CornerNameSettings';
 import { LapTraceSettings } from './sections/LapTraceSettings';
 import { BattleSettings } from './sections/BattleSettings';
 import { BroadcastSettingsPage } from './sections/BroadcastGroupSettings';
+import { BroadcastTransitionSettings } from './sections/BroadcastTransitionSettings';
 import { GantrySettings } from './sections/GantrySettings';
 import { SettingsPreviewContext } from '@irdashies/domain/widgetPreview/settingsPreviewContext';
+import { widgetSettingsType } from './widgetSettingsType';
 import { drivingMetricSettingsPages } from './sections/DrivingMetricSettings';
 import { DamageSettings } from './sections/DamageSettings';
+import { StintPlanSettings } from './sections/StintPlanSettings';
+import { StrategyTimelineSettings } from './sections/StrategyTimelineSettings';
 
 /**
  * Settings page per widget type. Telemetry Inspector has none of its own: its
@@ -80,7 +85,7 @@ export const WIDGET_SETTINGS: Record<
   cornername: CornerNameSettings,
   laptrace: LapTraceSettings,
   battle: BattleSettings,
-  // The broadcast widgets share one page, with a tab per widget.
+  // The broadcast widgets share one page, opened from the Broadcast menu.
   broadcast: BroadcastSettingsPage,
   broadcastticker: BroadcastSettingsPage,
   broadcastevents: BroadcastSettingsPage,
@@ -89,6 +94,8 @@ export const WIDGET_SETTINGS: Record<
   gantry: GantrySettings,
   damage: DamageSettings,
   ...drivingMetricSettingsPages,
+  stintplan: StintPlanSettings,
+  strategytimeline: StrategyTimelineSettings,
 };
 
 interface SettingsLoaderProps {
@@ -109,12 +116,14 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
   if (widgetId === 'release-notes') return <ReleaseNotesSettings />;
   if (widgetId === 'driver-tags') return <DriverTagsSettings />;
   if (widgetId === 'keybindings') return <KeybindingsSettings />;
+  if (widgetId === 'race-plan') return <RacePlanSettings />;
+  if (widgetId === 'broadcast-settings') return <BroadcastTransitionSettings />;
 
   // 2. Find specific widget instance (may be undefined if widgetId is a type name)
   const widget = currentDashboard?.widgets.find((w) => w.id === widgetId);
-  const type = widget ? widget.type || widget.id : widgetId;
+  const type = widgetSettingsType(currentDashboard?.widgets, widgetId ?? '');
 
-  const Settings = Object.hasOwn(WIDGET_SETTINGS, type ?? '')
+  const Settings = Object.hasOwn(WIDGET_SETTINGS, type)
     ? WIDGET_SETTINGS[type as keyof typeof WIDGET_SETTINGS]
     : undefined;
   if (Settings)

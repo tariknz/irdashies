@@ -10,6 +10,7 @@ import {
   resizeWidgetLayout,
   type ResizeDirection,
 } from '@irdashies/domain/widgetPresentation/resizeWidget';
+import { roundLayout } from './roundLayout';
 export type { ResizeDirection } from '@irdashies/domain/widgetPresentation/resizeWidget';
 
 interface UseResizeWidgetOptions {
@@ -102,7 +103,7 @@ export function useResizeWidget({
       );
 
       snapStateRef.current = snapped.state;
-      onLayoutChange(snapped.layout);
+      onLayoutChange(roundLayout(snapped.layout));
     };
 
     const handlePointerUp = () => {

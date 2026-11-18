@@ -309,11 +309,34 @@ describe('InputTrace Canvas', () => {
     expect(paths(view.container)).toHaveLength(1); // Grid only; no old pixels.
   });
 
-  it.each([0, 1, Number.NaN, Number.POSITIVE_INFINITY])(
-    'handles invalid capacity %s without non-finite drawing coordinates',
+  it.each([
+    [-100, 2],
+    [0, 2],
+    [1, 2],
+    [40.9, 40],
+    [Number.NaN, 400],
+    [Number.NEGATIVE_INFINITY, 400],
+    [Number.POSITIVE_INFINITY, 400],
+  ])('normalizes capacity %s to %i samples', (capacity, expected) => {
+    const view = render(trace(activeInput, capacity));
+    const reference = render(trace(activeInput, expected));
+    drawFrame();
+    expect(paths(view.container)).toEqual(paths(reference.container));
+    expect(JSON.stringify(paths(view.container))).not.toMatch(/NaN|Infinity/);
+  });
+
+  it.each([1000.9, 1001, 2 ** 32, Number.MAX_SAFE_INTEGER, Number.MAX_VALUE])(
+    'caps capacity %s at 1000 and retains history when the capped size is unchanged',
     (capacity) => {
       const view = render(trace(activeInput, capacity));
+      const reference = render(trace(activeInput, 1000));
       drawFrame();
+      expect(paths(view.container)).toEqual(paths(reference.container));
+
+      view.rerender(trace(idleInput, 1000));
+      reference.rerender(trace(idleInput, 1000));
+      drawFrame();
+      expect(paths(view.container)).toEqual(paths(reference.container));
       expect(JSON.stringify(paths(view.container))).not.toMatch(/NaN|Infinity/);
     }
   );
