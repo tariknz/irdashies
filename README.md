@@ -53,9 +53,9 @@ Choose **Auto**, **iRacing**, or **Le Mans Ultimate** in **Settings > General > 
 1. In LMU, enable **Settings > Gameplay > Enable Plugins**, then restart the simulator.
 2. Start irDashies and load into an LMU session to receive telemetry.
 
-**Supported overlays:** Standings, Relative, Input, Lap Trace, Pitlane Helper, Corner Names, Battle, Flag, and Information Bar. Telemetry Inspector is also available for diagnostics. All other widgets are currently unavailable in LMU, including Fuel Calculator, both track maps, Radar, Gantry, Car Systems, Lap Timer, Tachometer, and Shift Light.
+**Supported overlays:** Standings, Relative, Input, Lap Trace, Pitlane Helper, Corner Names, Battle, Flag, Information Bar, Faster Cars From Behind, Shift Light, Sector Delta, Weather, Lap Timer, Delta Speed, and Garage Cover. Telemetry Inspector is also available for diagnostics. All other widgets are currently unavailable in LMU, including Fuel Calculator, both track maps, Radar, Gantry, Car Systems, and Tachometer.
 
-- Standings use class colours and manufacturer badges, with best-lap ordering in practice and position ordering in races. Driver ratings, incident counts, and team data are not yet integrated; car numbers are placeholders, and iRacing rating columns are hidden.
+- Standings use class colours and manufacturer badges, with best-lap ordering in practice and position ordering in races. The Rating column shows each driver's LMU driver and safety rank, with AI entries marked AI; a human's rank can take a few seconds to appear after joining. Country flags, team names, and car numbers come from LMU. LMU keeps no incident count, and the iRating Change column is hidden.
 - Corner Names and Lap Trace corner feedback depend on available LMU track data. Unnamed turns use turn numbers where provided.
 - Lap Trace does not yet check LMU lap validity, so laps invalidated by track limits may still become saved references. Imports support iRacing `.ibt` files and Garage 61 CSV laps, with no native LMU telemetry-file import.
 - Input and Lap Trace need your own car's telemetry, which can be unavailable while spectating or in the garage.
@@ -630,9 +630,7 @@ Settings are split into **Display**, **Twitch** and **YouTube** tabs. Chat from 
 
 <img src="./docs/assets/twitchchat.png" alt="Twitch Chat with sample messages" width="374">
 
-
 ### Heart Rate
-
 
 Displays your live heart rate from [HypeRate](https://www.hyperate.io/) by embedding its overlay — no API key or account required, just your session id.
 

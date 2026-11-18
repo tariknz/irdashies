@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import {
+  useActiveSimulator,
+  useDrivingState,
   useGeneralSettings,
   useWeekendInfoNumCarClasses,
 } from '@irdashies/context';
@@ -9,11 +11,15 @@ import { FasterCarsFromBehind } from './FasterCarsFromBehind';
 import { useCarBehind } from './hooks/useCarBehind';
 import { useFasterCarsSettings } from './hooks/useFasterCarsSettings';
 
+const dashboard = vi.hoisted(() => ({ isDemoMode: false }));
+
 vi.mock('@irdashies/context', () => ({
-  useDashboard: () => ({ isDemoMode: false }),
+  useDashboard: () => dashboard,
   useSessionVisibility: () => true,
   useWeekendInfoNumCarClasses: vi.fn(),
   useGeneralSettings: vi.fn(),
+  useDrivingState: vi.fn(),
+  useActiveSimulator: vi.fn(),
 }));
 
 vi.mock('./hooks/useFasterCarsSettings');
@@ -29,9 +35,14 @@ const car = {
   percent: 52.4,
   license: 'A 4.2',
   rating: 2400,
+  lmuRating: undefined,
+  isAI: false,
 };
 
 beforeEach(() => {
+  dashboard.isDemoMode = false;
+  vi.mocked(useDrivingState).mockReturnValue({ isDriving: true });
+  vi.mocked(useActiveSimulator).mockReturnValue('iracing');
   vi.mocked(useGeneralSettings).mockReturnValue({ compactMode: 'off' });
   vi.mocked(useWeekendInfoNumCarClasses).mockReturnValue(2);
   vi.mocked(useFasterCarsSettings).mockReturnValue(
@@ -213,5 +224,147 @@ describe('FasterCarsFromBehind', () => {
     vi.mocked(useCarBehind).mockReturnValue([]);
     const { container } = render(<FasterCarsFromBehind />);
     expect(container).toBeEmptyDOMElement();
+  });
+
+  describe('display order', () => {
+    const withOrder = (displayOrder: string[], showName = true) =>
+      vi.mocked(useFasterCarsSettings).mockReturnValue({
+        ...getWidgetDefaultConfig('fastercarsfrombehind'),
+        showName,
+        showBadge: true,
+        badgeFormat: 'rating-bw-no-license',
+        displayOrder,
+      });
+
+    it('shows name, badge and gap in the default order', () => {
+      withOrder(['driverName', 'badge', 'distance']);
+      render(<FasterCarsFromBehind />);
+      expect(screen.getByRole('listitem').textContent).toMatch(
+        /Following Driver2.*2\.4k.*−0\.7s$/
+      );
+    });
+
+    it('follows a saved order', () => {
+      withOrder(['distance', 'badge', 'driverName']);
+      render(<FasterCarsFromBehind />);
+      const row = screen.getByRole('listitem').firstElementChild;
+      expect(row?.textContent).toMatch(/P3−0\.7s2\.4kFollowing Driver2$/);
+      expect(screen.getByText('Following Driver2').parentElement).toHaveClass(
+        'flex-1'
+      );
+      expect(screen.getByLabelText('0.7 seconds behind')).toBe(
+        row?.children[1]
+      );
+    });
+
+    it('keeps the gap on the right when the name is hidden', () => {
+      withOrder(['badge', 'driverName', 'distance'], false);
+      render(<FasterCarsFromBehind />);
+      const row = screen.getByRole('listitem').firstElementChild;
+      const gap = screen.getByLabelText('0.7 seconds behind');
+      expect(row?.lastElementChild).toBe(gap);
+      expect(gap.previousElementSibling).toHaveClass('flex-1');
+      expect(gap.previousElementSibling).toHaveTextContent('2.4k');
+    });
+  });
+
+  describe('rating badge', () => {
+    const lmuCar = {
+      ...car,
+      license: '',
+      rating: 0,
+    };
+
+    beforeEach(() => {
+      vi.mocked(useFasterCarsSettings).mockReturnValue({
+        ...getWidgetDefaultConfig('fastercarsfrombehind'),
+        showBadge: true,
+        badgeFormat: 'rating-bw-no-license',
+      });
+    });
+
+    it('shows the LMU rank under LMU', () => {
+      vi.mocked(useActiveSimulator).mockReturnValue('lmu');
+      vi.mocked(useCarBehind).mockReturnValue([
+        { ...lmuCar, lmuRating: { driverRank: 'Gold', driverTier: 3 } },
+      ]);
+      render(<FasterCarsFromBehind />);
+      expect(screen.getByTitle('Driver rating: Gold 3')).toBeInTheDocument();
+      expect(screen.queryByText('AI')).not.toBeInTheDocument();
+    });
+
+    it('shows no badge for an LMU driver whose rank has not arrived', () => {
+      vi.mocked(useActiveSimulator).mockReturnValue('lmu');
+      vi.mocked(useCarBehind).mockReturnValue([
+        { ...lmuCar, lmuRating: { countryCode: 'FR' } },
+      ]);
+      render(<FasterCarsFromBehind />);
+      expect(screen.getByText(car.name)).toBeInTheDocument();
+      expect(screen.queryByText('AI')).not.toBeInTheDocument();
+      expect(screen.queryByTitle(/rating/)).not.toBeInTheDocument();
+    });
+
+    it('names an LMU AI entry as one', () => {
+      vi.mocked(useActiveSimulator).mockReturnValue('lmu');
+      vi.mocked(useCarBehind).mockReturnValue([{ ...lmuCar, isAI: true }]);
+      render(<FasterCarsFromBehind />);
+      expect(screen.getByText('AI')).toBeInTheDocument();
+    });
+
+    it('keeps the iRacing badge and AI placeholder under iRacing', () => {
+      vi.mocked(useCarBehind).mockReturnValue([
+        car,
+        { ...car, carIdx: 2, name: 'iRacing AI', license: '', rating: 0 },
+      ]);
+      render(<FasterCarsFromBehind />);
+      const [human, ai] = screen.getAllByRole('listitem');
+      expect(within(human).getByText('2.4k')).toBeInTheDocument();
+      expect(within(ai).getByText('AI')).toBeInTheDocument();
+    });
+
+    it('shows iRacing-style sample badges in demo mode under LMU', () => {
+      dashboard.isDemoMode = true;
+      vi.mocked(useActiveSimulator).mockReturnValue('lmu');
+      render(<FasterCarsFromBehind />);
+      const [first] = screen.getAllByRole('listitem');
+      expect(within(first).getByText('Tarik Alani')).toBeInTheDocument();
+      expect(within(first).getByText('1.2k')).toBeInTheDocument();
+    });
+  });
+
+  describe('show only when on track', () => {
+    const withSetting = (showOnlyWhenOnTrack: boolean) =>
+      vi.mocked(useFasterCarsSettings).mockReturnValue({
+        ...getWidgetDefaultConfig('fastercarsfrombehind'),
+        showOnlyWhenOnTrack,
+      });
+
+    it('hides while not driving', () => {
+      withSetting(true);
+      vi.mocked(useDrivingState).mockReturnValue({ isDriving: false });
+      const { container } = render(<FasterCarsFromBehind />);
+      expect(container).toBeEmptyDOMElement();
+    });
+
+    it('shows while driving', () => {
+      withSetting(true);
+      render(<FasterCarsFromBehind />);
+      expect(screen.getByRole('listitem')).toBeInTheDocument();
+    });
+
+    it('shows while not driving when the setting is off', () => {
+      withSetting(false);
+      vi.mocked(useDrivingState).mockReturnValue({ isDriving: false });
+      render(<FasterCarsFromBehind />);
+      expect(screen.getByRole('listitem')).toBeInTheDocument();
+    });
+
+    it('keeps showing sample cars in demo mode', () => {
+      withSetting(true);
+      dashboard.isDemoMode = true;
+      vi.mocked(useDrivingState).mockReturnValue({ isDriving: false });
+      render(<FasterCarsFromBehind />);
+      expect(screen.getByText('Tarik Alani')).toBeInTheDocument();
+    });
   });
 });
