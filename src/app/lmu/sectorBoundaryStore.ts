@@ -42,25 +42,36 @@ export const parseLmuSectorBoundaries = (
 };
 
 export class LmuSectorBoundaryStore {
-  private records: LmuSectorBoundaryRecords | undefined;
+  private records?: LmuSectorBoundaryRecords;
 
   constructor(private readonly persistence: LmuSectorBoundaryPersistence) {}
 
-  private current(): LmuSectorBoundaryRecords {
-    return this.records ?? parseLmuSectorBoundaries(this.persistence.read());
+  private load(): LmuSectorBoundaryRecords | undefined {
+    if (this.records) return this.records;
+    const raw = this.persistence.read();
+    if (raw === undefined) return undefined;
+    this.records = parseLmuSectorBoundaries(raw);
+    return this.records;
   }
 
   get(trackId: string): LmuSectorBoundaries | null {
-    const record = this.current()[trackId];
-    return record ? [record.s2StartPct, record.s3StartPct] : null;
+    const records = this.load();
+    if (!records || !TRACK_ID.test(trackId) || !Object.hasOwn(records, trackId))
+      return null;
+    const { s2StartPct, s3StartPct } = records[trackId];
+    return [s2StartPct, s3StartPct];
   }
 
   record(trackId: string, boundaries: LmuSectorBoundaries): void {
+    const records = this.load();
     const [s2, s3] = boundaries;
-    if (!TRACK_ID.test(trackId) || !isPlausibleLmuSectorBoundaries(s2, s3)) {
+    if (
+      !records ||
+      !TRACK_ID.test(trackId) ||
+      !isPlausibleLmuSectorBoundaries(s2, s3)
+    ) {
       return;
     }
-    const records = this.current();
     const stored = this.get(trackId);
     if (stored && sameLmuSectorBoundaries(stored, boundaries)) return;
     this.records = {
@@ -71,6 +82,6 @@ export class LmuSectorBoundaryStore {
   }
 
   snapshot(): LmuSectorBoundaryRecords {
-    return this.current();
+    return structuredClone(this.load() ?? {});
   }
 }
