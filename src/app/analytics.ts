@@ -17,7 +17,10 @@ import logger from './logger';
 import type ElectronLog from 'electron-log';
 import type { LogMessage } from 'electron-log';
 import { readPitLaneCalibrationForAnalytics } from './analytics/pitLaneCalibration';
-import { hashTrackTuples } from './analytics/hashedTrackReport';
+import {
+  hashTrackTuples,
+  type HashedTrackReport,
+} from './analytics/hashedTrackReport';
 import {
   MAX_POLE_SIDE_PROPERTIES_BYTES,
   buildRadarPoleSideReport,
@@ -60,6 +63,48 @@ const DEDUP_WINDOW_MS = 60 * 60 * 1000;
 const DEDUP_KEY_LENGTH = 30;
 const DEDUP_MAX_ENTRIES = 5000;
 const MAX_CALIBRATION_PROPERTIES_BYTES = 512 * 1024;
+const REPORT_HASH = /^[0-9a-f]{64}$/;
+
+interface AcknowledgedTrackReport {
+  event: string;
+  name: string;
+  maxPropertiesBytes: number;
+  reportsRevert: boolean;
+  load(): Promise<boolean>;
+  build(version: string): HashedTrackReport<unknown>;
+  readHash(): Promise<string | undefined>;
+  writeHash(hash: string): void;
+}
+
+/**
+ * Reports the pole sides the player corrected with the radar key, once per
+ * change, in the background. A revert to the table is reported too, but
+ * nothing is sent for an installation that never corrected anything.
+ */
+const RADAR_POLE_SIDE_REPORT: AcknowledgedTrackReport = {
+  event: 'radar_pole_side',
+  name: 'radar pole side',
+  maxPropertiesBytes: MAX_POLE_SIDE_PROPERTIES_BYTES,
+  reportsRevert: true,
+  // An unreadable file would look like every correction was reverted.
+  load: () => loadRadarPoleSideOverrides(),
+  build: (version) =>
+    buildRadarPoleSideReport(radarPoleSideOverrides.snapshot(), version),
+  readHash: () => readRadarPoleSideReportHash(),
+  writeHash: (hash) => writeRadarPoleSideReportHash(hash),
+};
+
+const LMU_SECTOR_BOUNDARY_REPORT: AcknowledgedTrackReport = {
+  event: 'lmu_sector_boundaries',
+  name: 'LMU sector boundary',
+  maxPropertiesBytes: MAX_SECTOR_BOUNDARY_PROPERTIES_BYTES,
+  reportsRevert: false,
+  load: () => loadLmuSectorBoundaries(),
+  build: (version) =>
+    buildLmuSectorBoundaryReport(lmuSectorBoundaryStore.snapshot(), version),
+  readHash: () => readLmuSectorBoundaryReportHash(),
+  writeHash: (hash) => writeLmuSectorBoundaryReportHash(hash),
+};
 
 /**
  * Names the connected simulator on an exception PostHog captured by itself,
@@ -138,9 +183,8 @@ export class Analytics {
   private pitLaneCalibrationAttempted = false;
   private pitLaneCalibrationTask: Promise<void> | undefined;
   private radarPoleSideTask: Promise<void> | undefined;
-  private poleSideEvent: { hash: string; uuid: string } | undefined;
   private lmuSectorBoundaryTask: Promise<void> | undefined;
-  private lmuSectorBoundaryEvent: { hash: string; uuid: string } | undefined;
+  private trackReportEvents = new Map<string, { hash: string; uuid: string }>();
   private radarPoleSideTimer: ReturnType<typeof setTimeout> | undefined;
   private watchingRadarPoleSides = false;
   private startupIdentifyTask: Promise<void> | undefined;
@@ -341,10 +385,10 @@ export class Analytics {
     });
     // After the pit lane report, so startup does one thing at a time.
     this.radarPoleSideTask ??= this.pitLaneCalibrationTask.then(() =>
-      this.captureRadarPoleSides(userId, version)
+      this.captureTrackReport(RADAR_POLE_SIDE_REPORT, userId, version)
     );
     this.lmuSectorBoundaryTask ??= this.radarPoleSideTask.then(() =>
-      this.captureLmuSectorBoundaries(userId, version)
+      this.captureTrackReport(LMU_SECTOR_BOUNDARY_REPORT, userId, version)
     );
     this.reportRadarPoleSidesAfterFlips(userId, version);
   }
@@ -365,7 +409,9 @@ export class Analytics {
       this.radarPoleSideTimer = setTimeout(() => {
         this.radarPoleSideTask = (
           this.radarPoleSideTask ?? Promise.resolve()
-        ).then(() => this.captureRadarPoleSides(userId, version));
+        ).then(() =>
+          this.captureTrackReport(RADAR_POLE_SIDE_REPORT, userId, version)
+        );
       }, POLE_SIDE_REPORT_DELAY_MS);
       this.radarPoleSideTimer.unref?.();
     });
@@ -466,109 +512,47 @@ export class Analytics {
     }
   }
 
-  /**
-   * Reports the pole sides the player corrected with the radar key, once per
-   * change, in the background. A revert to the table is reported too, but
-   * nothing is sent for an installation that never corrected anything.
-   */
-  private async captureRadarPoleSides(
+  private async captureTrackReport(
+    report: AcknowledgedTrackReport,
     userId: string,
     version: string
   ): Promise<void> {
     try {
       if (!this.provider || getAnalyticsOptOut()) return;
-      // An unreadable file would look like every correction was reverted.
-      if (!(await loadRadarPoleSideOverrides())) return;
-      const report = buildRadarPoleSideReport(
-        radarPoleSideOverrides.snapshot(),
-        version
-      );
-      const stored = await readRadarPoleSideReportHash();
-      const last =
-        typeof stored === 'string' && /^[0-9a-f]{64}$/.test(stored)
-          ? stored
-          : undefined;
-      if (report.properties.track_count === 0 && last === undefined) return;
-      if (last === report.hash) return;
+      if (!(await report.load())) return;
+      const { hash, properties } = report.build(version);
+      const empty = properties.track_count === 0;
+      if (empty && !report.reportsRevert) return;
+      const stored = await report.readHash();
+      const last = stored && REPORT_HASH.test(stored) ? stored : undefined;
+      if (empty && last === undefined) return;
+      if (last === hash) return;
       if (
-        Buffer.byteLength(JSON.stringify(report.properties), 'utf8') >
-        MAX_POLE_SIDE_PROPERTIES_BYTES
+        Buffer.byteLength(JSON.stringify(properties), 'utf8') >
+        report.maxPropertiesBytes
       ) {
-        logger.warn('[Analytics] Skipping oversized radar pole side report');
+        logger.warn(`[Analytics] Skipping oversized ${report.name} report`);
         return;
       }
       // The same report keeps its event id across retries, so a send whose
       // acknowledgement was lost is not counted twice while the app runs.
-      if (this.poleSideEvent?.hash !== report.hash) {
-        this.poleSideEvent = { hash: report.hash, uuid: crypto.randomUUID() };
+      let sent = this.trackReportEvents.get(report.event);
+      if (sent?.hash !== hash) {
+        sent = { hash, uuid: crypto.randomUUID() };
+        this.trackReportEvents.set(report.event, sent);
       }
       // The player may have opted out while the file load was pending.
       if (getAnalyticsOptOut()) return;
       await this.provider.captureConfirmed({
         distinctId: userId,
-        event: 'radar_pole_side',
-        uuid: this.poleSideEvent.uuid,
-        properties: report.properties,
+        event: report.event,
+        uuid: sent.uuid,
+        properties,
       });
       // Recorded only after PostHog acknowledged it, so a failure retries.
-      if (!getAnalyticsOptOut()) {
-        writeRadarPoleSideReportHash(report.hash);
-      }
+      if (!getAnalyticsOptOut()) report.writeHash(hash);
     } catch {
-      logger.warn('[Analytics] Could not publish radar pole side report');
-    }
-  }
-
-  /**
-   * Reports the LMU sector starts the player measured, once per change, in
-   * the background. Nothing is sent for an installation that never measured
-   * any.
-   */
-  private async captureLmuSectorBoundaries(
-    userId: string,
-    version: string
-  ): Promise<void> {
-    try {
-      if (!this.provider || getAnalyticsOptOut()) return;
-      if (!(await loadLmuSectorBoundaries())) return;
-      const report = buildLmuSectorBoundaryReport(
-        lmuSectorBoundaryStore.snapshot(),
-        version
-      );
-      const stored = await readLmuSectorBoundaryReportHash();
-      const last =
-        typeof stored === 'string' && /^[0-9a-f]{64}$/.test(stored)
-          ? stored
-          : undefined;
-      if (report.properties.track_count === 0) return;
-      if (last === report.hash) return;
-      if (
-        Buffer.byteLength(JSON.stringify(report.properties), 'utf8') >
-        MAX_SECTOR_BOUNDARY_PROPERTIES_BYTES
-      ) {
-        logger.warn(
-          '[Analytics] Skipping oversized LMU sector boundary report'
-        );
-        return;
-      }
-      if (this.lmuSectorBoundaryEvent?.hash !== report.hash) {
-        this.lmuSectorBoundaryEvent = {
-          hash: report.hash,
-          uuid: crypto.randomUUID(),
-        };
-      }
-      if (getAnalyticsOptOut()) return;
-      await this.provider.captureConfirmed({
-        distinctId: userId,
-        event: 'lmu_sector_boundaries',
-        uuid: this.lmuSectorBoundaryEvent.uuid,
-        properties: report.properties,
-      });
-      if (!getAnalyticsOptOut()) {
-        writeLmuSectorBoundaryReportHash(report.hash);
-      }
-    } catch {
-      logger.warn('[Analytics] Could not publish LMU sector boundary report');
+      logger.warn(`[Analytics] Could not publish ${report.name} report`);
     }
   }
 

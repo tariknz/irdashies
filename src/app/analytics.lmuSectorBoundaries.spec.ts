@@ -53,8 +53,9 @@ vi.mock('./storage/radarPoleSideOverrides', () => ({
 }));
 
 vi.mock('./storage/lmuSectorBoundaryReportHash', () => ({
-  readLmuSectorBoundaryReportHash: async () =>
-    store.data.get('lmuSectorBoundaryReportHash'),
+  readLmuSectorBoundaryReportHash: vi.fn(async () =>
+    store.data.get('lmuSectorBoundaryReportHash')
+  ),
   writeLmuSectorBoundaryReportHash: (hash: string) => {
     store.data.set('lmuSectorBoundaryReportHash', hash);
   },
@@ -67,6 +68,7 @@ vi.mock('./storage/lmuSectorBoundaries', () => ({
 
 import { Analytics } from './analytics';
 import { getAnalyticsOptOut } from './storage/analytics';
+import { readLmuSectorBoundaryReportHash } from './storage/lmuSectorBoundaryReportHash';
 
 const HASH_KEY = 'lmuSectorBoundaryReportHash';
 const LAGUNA = { s2StartPct: 0.3904, s3StartPct: 0.7925 };
@@ -100,10 +102,18 @@ describe('Analytics LMU sector boundary report', () => {
     measured.loads = true;
     provider = makeProvider();
     vi.mocked(getAnalyticsOptOut).mockReturnValue(false);
+    vi.mocked(readLmuSectorBoundaryReportHash).mockClear();
   });
 
   it('sends nothing for an installation that never measured a track', async () => {
     await start();
+    expect(reports()).toEqual([]);
+  });
+
+  it('does not read the stored hash when nothing was measured', async () => {
+    store.data.set(HASH_KEY, 'a'.repeat(64));
+    await start();
+    expect(readLmuSectorBoundaryReportHash).not.toHaveBeenCalled();
     expect(reports()).toEqual([]);
   });
 

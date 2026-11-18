@@ -187,6 +187,18 @@ describe('Analytics radar pole side report', () => {
       expect(store.data.get(HASH_KEY)).toBeDefined();
     });
 
+    it('sends a report that failed again with the same event id', async () => {
+      corrections.value = { '95': { start: false, table: true } };
+      provider.captureConfirmed.mockRejectedValueOnce(new Error('down'));
+      await start();
+      flip();
+      await vi.advanceTimersByTimeAsync(61_000);
+
+      expect(reports()).toHaveLength(2);
+      expect(reports()[1].uuid).toBe(reports()[0].uuid);
+      expect(store.data.get(HASH_KEY)).toBe(reports()[1].properties?.data_hash);
+    });
+
     it('sends nothing when the flips cancelled out and nothing was ever sent', async () => {
       await start();
       flip();
