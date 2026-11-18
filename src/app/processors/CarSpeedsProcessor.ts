@@ -31,6 +31,16 @@ const numericValue = (
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 };
 
+const measuredSpeed = (
+  speeds: readonly number[],
+  carIdx: number
+): number | null => {
+  const speed = speeds[carIdx];
+  return speed !== undefined && speed >= 0
+    ? speed * METERS_PER_SECOND_TO_KILOMETERS_PER_HOUR
+    : null;
+};
+
 const trackLengthFrom = (session: Session): number => {
   const [value, unit] = session.WeekendInfo?.TrackLength?.split(' ') ?? [];
   const parsed = Number.parseFloat(value);
@@ -94,15 +104,11 @@ export class CarSpeedsProcessor implements TelemetryProcessor<CarSpeedsSnapshot>
       sessionTime > this.lastSessionTime
     ) {
       const deltaTime = sessionTime - this.lastSessionTime;
+      const measuredSpeeds = numericValues(frame, 'LmuCarIdxSpeed');
       lapDistPct.forEach((pct, carIdx) => {
-        const previous = this.lastLapDistPct?.[carIdx] ?? pct;
-        let distancePercent = pct - previous;
-        if (distancePercent < 0 && previous > 0.9 && pct < 0.1) {
-          distancePercent += 1;
-        }
         const speed =
-          ((this.trackLength * distancePercent) / deltaTime) *
-          METERS_PER_SECOND_TO_KILOMETERS_PER_HOUR;
+          measuredSpeed(measuredSpeeds, carIdx) ??
+          this.positionSpeed(pct, carIdx, deltaTime);
         const history = this.speedHistory[carIdx] ?? [];
         history.push(speed);
         if (history.length > SPEED_AVG_WINDOW) history.shift();
@@ -142,6 +148,22 @@ export class CarSpeedsProcessor implements TelemetryProcessor<CarSpeedsSnapshot>
 
   snapshot(): CarSpeedsSnapshot {
     return this.latest;
+  }
+
+  private positionSpeed(
+    pct: number,
+    carIdx: number,
+    deltaTime: number
+  ): number {
+    const previous = this.lastLapDistPct?.[carIdx] ?? pct;
+    let distancePercent = pct - previous;
+    if (distancePercent < 0 && previous > 0.9 && pct < 0.1) {
+      distancePercent += 1;
+    }
+    return (
+      ((this.trackLength * distancePercent) / deltaTime) *
+      METERS_PER_SECOND_TO_KILOMETERS_PER_HOUR
+    );
   }
 
   private publish(carSpeeds: readonly number[], sessionNum: number | null) {

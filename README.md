@@ -53,13 +53,14 @@ Choose **Auto**, **iRacing**, or **Le Mans Ultimate** in **Settings > General > 
 1. In LMU, enable **Settings > Gameplay > Enable Plugins**, then restart the simulator.
 2. Start irDashies and load into an LMU session to receive telemetry.
 
-**Supported overlays:** Standings, Relative, Input, Lap Trace, Pitlane Helper, Corner Names, Battle, Flag, and Information Bar. Telemetry Inspector is also available for diagnostics. All other widgets are currently unavailable in LMU, including Fuel Calculator, both track maps, Radar, Gantry, Car Systems, Lap Timer, Tachometer, and Shift Light.
+**Supported overlays:** Standings, Relative, Input, Lap Trace, Pitlane Helper, Corner Names, Battle, Flag, Slow Car Ahead, and Information Bar. Telemetry Inspector is also available for diagnostics. All other widgets are currently unavailable in LMU, including Fuel Calculator, both track maps, Radar, Gantry, Car Systems, Lap Timer, Tachometer, and Shift Light.
 
 - Standings use class colours and manufacturer badges, with best-lap ordering in practice and position ordering in races. Driver ratings, incident counts, and team data are not yet integrated; car numbers are placeholders, and iRacing rating columns are hidden.
 - Corner Names and Lap Trace corner feedback depend on available LMU track data. Unnamed turns use turn numbers where provided.
 - Lap Trace does not yet check LMU lap validity, so laps invalidated by track limits may still become saved references. Imports support iRacing `.ibt` files and Garage 61 CSV laps, with no native LMU telemetry-file import.
 - Input and Lap Trace need your own car's telemetry, which can be unavailable while spectating or in the garage.
 - Lap positions are estimated between updates; cars without full telemetry may update in larger steps. Automatic units are metric, and Pitlane Helper currently uses a fixed 60 km/h pit limit.
+- Slow Car Ahead cannot tell a car that has left the track from one stopped on it, so a car stopped off the track shows the red "stopped" bar rather than the green "off track" one.
 - LMU in-game replays do not yet have iRacing's replay-aware handling. LMU session recording and playback tools are development tools.
 
 ## Available overlays
@@ -630,9 +631,7 @@ Settings are split into **Display**, **Twitch** and **YouTube** tabs. Chat from 
 
 <img src="./docs/assets/twitchchat.png" alt="Twitch Chat with sample messages" width="374">
 
-
 ### Heart Rate
-
 
 Displays your live heart rate from [HypeRate](https://www.hyperate.io/) by embedding its overlay — no API key or account required, just your session id.
 
