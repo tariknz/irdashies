@@ -503,6 +503,21 @@ describe('Analytics startup pit lane calibration', () => {
     ]);
   });
 
+  it('keeps the hash and properties it has always sent for the same calibration', async () => {
+    await writeCalibration({
+      '9000000001': { pitEntryPct: 0.9, pitExitPct: null },
+      ...tracks,
+      '8000000000': { pitEntryPct: null, pitExitPct: 0.1 },
+    });
+    await startAndSettle();
+    expect(calibrationEvents()[0]?.properties?.data_hash).toBe(
+      '480be4be59fc4d9a6e9807e5661facfd6066cb6487233507c0a219cabb253a66'
+    );
+    expect(JSON.stringify(calibrationEvents()[0]?.properties)).toBe(
+      '{"version":"2.0.0","data_hash":"480be4be59fc4d9a6e9807e5661facfd6066cb6487233507c0a219cabb253a66","track_count":5,"tracks":{"42":{"pitEntryPct":0.98,"pitExitPct":0.02},"237":{"pitEntryPct":null,"pitExitPct":0.18},"999":{"pitEntryPct":null,"pitExitPct":null},"9000000001":{"pitEntryPct":0.9,"pitExitPct":null},"8000000000":{"pitEntryPct":null,"pitExitPct":0.1}}}'
+    );
+  });
+
   it('strips unrelated fields rather than sending raw file data', async () => {
     await writeCalibration({
       '42': {

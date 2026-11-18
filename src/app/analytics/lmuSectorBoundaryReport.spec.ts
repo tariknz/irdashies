@@ -31,6 +31,23 @@ describe('buildLmuSectorBoundaryReport', () => {
     );
   });
 
+  it('keeps the hash and properties it has always sent for the same measurements', () => {
+    const report = buildLmuSectorBoundaryReport(
+      {
+        ...records,
+        '9000000001': { s2StartPct: 0.25, s3StartPct: 0.5 },
+        '8000000000': { s2StartPct: 0.3, s3StartPct: 0.6 },
+      },
+      '3.0.0'
+    );
+    expect(report.hash).toBe(
+      'c522b3603fd5db881fce556f9afc10a25f8a278265741b343af3ff73605c109f'
+    );
+    expect(JSON.stringify(report.properties)).toBe(
+      '{"version":"3.0.0","data_hash":"c522b3603fd5db881fce556f9afc10a25f8a278265741b343af3ff73605c109f","track_count":4,"tracks":{"1000123":{"s2_start_pct":0.3904,"s3_start_pct":0.7925},"2000000123":{"s2_start_pct":0.41,"s3_start_pct":0.72},"8000000000":{"s2_start_pct":0.3,"s3_start_pct":0.6},"9000000001":{"s2_start_pct":0.25,"s3_start_pct":0.5}}}'
+    );
+  });
+
   it('hashes a moved line apart', () => {
     const moved = {
       ...records,
