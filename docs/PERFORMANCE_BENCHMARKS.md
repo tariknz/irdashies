@@ -78,12 +78,20 @@ Before starting:
 4. Let the replay and camera settle for 60 seconds.
 5. Run each mode for at least 6 minutes. Stop it with Ctrl+C.
 
-For the curated native telemetry tape, pass `--replay-input`. The runner selects
-the isolated SDK addon, waits until the development native rebuild is complete,
-starts the publisher, and stops it with the app:
+For the curated native telemetry tape, pass `--replay-input`. On Windows the
+runner selects the isolated SDK addon, waits until the development native
+rebuild is complete, starts `irsdk_replay.exe`, and stops it with the app. On
+Linux it points the app at the tape through `IRDASHIES_TELEMETRY_REPLAY` and
+uses the in-process native tape addon; no separate publisher is started. Use
+an `.irdt` tape on both platforms; an `.ibt` recording must be converted first
+(the `doctor --input` check validates either format).
 
 ```powershell
 $replay = 'test-data\telemetry\ai-race-10min.irdt'
+```
+
+```bash
+replay=test-data/telemetry/ai-race-10min.irdt
 ```
 
 ### 1. SDK observer baseline
@@ -303,6 +311,43 @@ such as a dirty worktree do not block the check; hard failures return a non-zero
 exit code. It does not connect to iRacing or modify files. Live iRacing SDK and
 game-frame measurements still require a supported Windows/iRacing setup.
 
+### Tracing a stall with `chrome://tracing`
+
+When `diagnose` reports an event-loop stall that no timed main-process section
+explains, capture a short browser trace:
+
+```bash
+npm run perf:trace -- --input /path/to/session.irdt --duration-seconds 20 --output perf-results/stall.json
+```
+
+The runner starts the app with an isolated profile, replays the tape, records
+the DevTools `Tracing` JSON stream for all processes (V8 GC, Blink/toplevel,
+compositor, GPU, Electron) and stops the app afterwards. Open `chrome://tracing`
+in a Chromium browser, choose **Load**, select the JSON file, and inspect long
+tasks and GC around the stall. No additional analysis packages are required.
+Use `--warmup-seconds` to start recording after replay has settled.
+
+Tracing adds overhead, so keep these runs separate from A/B baselines. Use the
+same replay segment for paired runs, and pass `--speed`, `--port` or
+`--user-data-dir` when needed.
+
+### Running a full A/B matrix
+
+For overhead attribution, run observer/empty/full scenarios with the same tape
+and identical analysis windows, then compare each stage with the previous one:
+
+```bash
+npm run perf:ab -- --input /path/to/session.irdt --duration-seconds 420 --warmup-seconds 60
+```
+
+The runner writes per-scenario captures, analyzer summaries and diagnoses into
+`perf-results/ab-<timestamp>/`, and `AB_REPORT.md` ranks the largest deltas.
+Use `--scenarios observer,empty,full,map` to add per-widget stages and
+`--profile <directory>` to seed every run from the same saved dashboard. Full
+scenarios set `PERF_FORCE_PROCESSOR_DEMAND=1` so widget channels publish even
+when renderer windows have not settled yet; observer and empty baselines stay
+undemand-driven.
+
 The diagnosis reuses the analyzer's evidence and project gates to highlight investigation
 leads and suggest next measurements. It does not identify root causes, and an
 inconclusive run remains inconclusive; use the full analyzer report for detailed
@@ -333,8 +378,13 @@ Treat a failed gate as a signal to inspect, not proof of causality. Repeat any
 failed A/B pair once before making an architectural decision.
 
 Private memory is the acceptance metric because aggregate working set includes
-shared Chromium pages and can double-count them across processes. Working-set
-slope remains in the report as diagnostic context. The private-memory gate is
+shared Chromium pages and can double-count them across processes. Electron does
+not expose `privateBytes` on Linux, so while `PERF_METRICS=1` is active the
+collector also samples `Private_Clean` plus `Private_Dirty` from
+`/proc/<pid>/smaps_rollup` (falling back to `/proc/<pid>/status` where
+available) for every app process and reports them as `privateMemoryMB` and
+`totalAppPrivateMemoryMB`. Working-set slope remains in the report as
+diagnostic context. The private-memory gate is
 reported as **INCONCLUSIVE**, never pass/fail, unless the analysis contains at
 least five minutes of private-byte samples covering every included Electron
 process, at least two observations with adequate span and no gap over 60

@@ -7,9 +7,11 @@ import {
   PERF_REPLAY_READY_LOG_MARKER,
   parsePerfVisibilityPhases,
   perfRunSimulator,
+  replayRunEnvironment,
+  usesIsolatedReplayPublisher,
 } from '../../src/app/perfRunConfig.ts';
 
-const REPLAY_STARTUP_TIMEOUT_MS = 30_000;
+const REPLAY_STARTUP_TIMEOUT_MS = 120_000;
 
 type OverlayMode = 'full' | 'empty' | 'observer';
 type RunTarget = 'dev' | 'packaged';
@@ -166,6 +168,10 @@ const replayInputPath = options.replayInput
 if (replayInputPath) {
   await fs.access(replayInputPath);
 }
+const useIsolatedReplayPublisher = usesIsolatedReplayPublisher(
+  replayInputPath,
+  process.platform
+);
 const output = createWriteStream(consoleLogPath, { encoding: 'utf8' });
 let childCommand: string;
 let childArguments: string[];
@@ -270,6 +276,10 @@ const child = spawn(childCommand, childArguments, {
     PERF_WINDOW_MODE: options.windowMode ?? '',
     PERF_REPLAY_VISIBLE_WIDGETS: options.replayVisibleWidgets ? '1' : '0',
     PERF_WIDGET_TYPES: options.widgets,
+    PERF_FORCE_PROCESSOR_DEMAND:
+      options.mode === 'full'
+        ? process.env.PERF_FORCE_PROCESSOR_DEMAND ?? '1'
+        : process.env.PERF_FORCE_PROCESSOR_DEMAND,
     PERF_REPORT_INTERVAL_MS: String(options.intervalMs),
     PERF_DURATION_SECONDS: String(options.durationSeconds),
     PERF_BUILD: build,
@@ -292,9 +302,11 @@ const child = spawn(childCommand, childArguments, {
       sourceDirty,
       widgetInputRequirements,
     }),
-    IRDASHIES_IRSDK_REPLAY: replayInputPath
-      ? '1'
-      : process.env.IRDASHIES_IRSDK_REPLAY,
+    ...replayRunEnvironment(
+      replayInputPath,
+      process.platform,
+      process.env
+    ),
     IRDASHIES_SIM: simulator.simulator,
     ELECTRON_ENABLE_LOGGING: '1',
   },
@@ -356,7 +368,7 @@ const failRun = (error: Error): void => {
 };
 
 const startReplayPublisher = (): void => {
-  if (!replayInputPath || replayPublisher) return;
+  if (!useIsolatedReplayPublisher || replayPublisher) return;
   if (replayStartupTimeout) clearTimeout(replayStartupTimeout);
   const publisherPath = path.resolve('build/Release/irsdk_replay.exe');
   const publisher = spawn(
@@ -386,10 +398,14 @@ const startReplayPublisher = (): void => {
 
 const copyAppOutput = (chunk: Buffer): void => {
   copyOutput(chunk);
-  if (!replayInputPath || replayPublisher) return;
+  if (!replayInputPath) return;
   startupOutput = `${startupOutput}${chunk.toString('utf8')}`.slice(-2048);
-  if (startupOutput.includes(PERF_REPLAY_READY_LOG_MARKER)) {
+  if (!startupOutput.includes(PERF_REPLAY_READY_LOG_MARKER)) return;
+  if (useIsolatedReplayPublisher) {
     startReplayPublisher();
+  } else if (replayStartupTimeout) {
+    clearTimeout(replayStartupTimeout);
+    replayStartupTimeout = undefined;
   }
 };
 
@@ -419,7 +435,7 @@ const childExitCode = await Promise.race([
   }),
 ]);
 if (replayStartupTimeout) clearTimeout(replayStartupTimeout);
-if (replayInputPath && !replayPublisher && !fatalError) {
+if (useIsolatedReplayPublisher && !replayPublisher && !fatalError) {
   fatalError = new Error('App exited before emitting replay readiness');
 }
 if (replayPublisher?.exitCode === null) {

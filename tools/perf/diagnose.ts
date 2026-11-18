@@ -173,6 +173,12 @@ export function diagnosePerfSummary(summary: PerfSummary): PerfDiagnosis {
       p99WorstMs: summary.renderer.inputTraceFrameP99WorstMs,
     },
     {
+      name: 'Widget React commit',
+      rateHz: summary.renderer.widgetRenderRateHz,
+      p99MeanMs: summary.renderer.widgetRenderP99MeanMs,
+      p99WorstMs: summary.renderer.widgetRenderP99WorstMs,
+    },
+    {
       name: 'Lap Trace plot',
       rateHz: summary.renderer.lapTraceFrameRateHz,
       p99MeanMs: summary.renderer.lapTraceFrameP99MeanMs,

@@ -13,6 +13,7 @@ import { app, BrowserWindow } from 'electron';
 import type { NumericSampleStats, Telemetry } from '@irdashies/types';
 import type { ChannelBusMetricsSnapshot } from './bridge/channelBridge';
 import { FixedSampleBuffer } from '../shared/performanceSamples';
+import { readProcessPrivateMemoryKB } from './processPrivateMemory';
 import logger from './logger';
 
 export interface SectionStats {
@@ -155,6 +156,8 @@ export class TelemetryPerfMetrics {
   private iracingGpuUsage = new FixedSampleBuffer();
   private eventLoopDelay = monitorEventLoopDelay({ resolution: 20 });
   private reportTimer: NodeJS.Timeout | null = null;
+  private privateMemorySampler: NodeJS.Timeout | null = null;
+  private linuxPrivateMemoryKB = new Map<number, number>();
   private lastReportTime = 0;
   private lastTickTime = 0;
   private lastCpuUsage: NodeJS.CpuUsage = { user: 0, system: 0 };
@@ -194,6 +197,12 @@ export class TelemetryPerfMetrics {
       const report = this.report();
       this.logReport(report);
     }, effectiveInterval);
+    if (process.platform === 'linux') {
+      this.sampleLinuxPrivateMemory();
+      this.privateMemorySampler = setInterval(() => {
+        this.sampleLinuxPrivateMemory();
+      }, effectiveInterval);
+    }
     setActivePerfMetrics(this);
   }
 
@@ -202,8 +211,37 @@ export class TelemetryPerfMetrics {
       clearInterval(this.reportTimer);
       this.reportTimer = null;
     }
+    if (this.privateMemorySampler) {
+      clearInterval(this.privateMemorySampler);
+      this.privateMemorySampler = null;
+    }
     this.eventLoopDelay.disable();
     if (activePerfMetrics === this) setActivePerfMetrics(null);
+  }
+
+  private sampleLinuxPrivateMemory(): void {
+    const pids = app
+      .getAppMetrics()
+      .map((metric) => metric.pid)
+      .filter((pid) => Number.isSafeInteger(pid) && pid > 0);
+    void Promise.all(
+      pids.map(async (pid) => {
+        try {
+          const kilobytes = await readProcessPrivateMemoryKB(pid);
+          return kilobytes === undefined
+            ? undefined
+            : ([pid, kilobytes] as const);
+        } catch {
+          return undefined;
+        }
+      })
+    ).then((entries) => {
+      const next = new Map<number, number>();
+      for (const entry of entries) {
+        if (entry) next.set(entry[0], entry[1]);
+      }
+      this.linuxPrivateMemoryKB = next;
+    });
   }
 
   markStart(label: string): void {
@@ -389,9 +427,11 @@ export class TelemetryPerfMetrics {
       const processes: ProcessMetrics[] = [];
       let totalCpu = 0;
       let totalMemory = 0;
-      const totalPrivateMemory = sumCompletePrivateMemoryMB(
-        metrics.map((metric) => metric.memory.privateBytes)
-      );
+      const privateBytes = metrics.map((metric) => {
+        const cachedKB = this.linuxPrivateMemoryKB.get(metric.pid);
+        return metric.memory.privateBytes ?? cachedKB;
+      });
+      const totalPrivateMemory = sumCompletePrivateMemoryMB(privateBytes);
 
       const pidToWindowName = new Map<number, string>();
       try {
@@ -415,13 +455,12 @@ export class TelemetryPerfMetrics {
         // Ignore errors getting window info
       }
 
-      for (const metric of metrics) {
+      for (const [index, metric] of metrics.entries()) {
         const cpuPercent = metric.cpu.percentCPUUsage;
         const memoryMB = metric.memory.workingSetSize / 1024;
+        const bytes = privateBytes[index];
         const privateMemoryMB =
-          metric.memory.privateBytes === undefined
-            ? undefined
-            : metric.memory.privateBytes / 1024;
+          bytes === undefined ? undefined : bytes / 1024;
 
         totalCpu += cpuPercent;
         totalMemory += memoryMB;

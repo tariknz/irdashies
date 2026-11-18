@@ -1,5 +1,6 @@
 import {
   memo,
+  Profiler,
   useCallback,
   useRef,
   useState,
@@ -20,6 +21,7 @@ import { displayCenterX } from './displayCenter';
 import { getWidgetName } from '../../constants/widgetNames';
 import { ResizeIcon, GearIcon, XIcon } from '@phosphor-icons/react';
 import { useContainerOffset, useDashboard } from '@irdashies/context';
+import { perfMetrics } from '../../utils/perfMetrics';
 
 export interface WidgetContainerProps {
   widget: DashboardWidget;
@@ -185,7 +187,15 @@ export const WidgetContainer = memo(
       <div style={containerStyle} data-widget-id={id}>
         {/* Widget content */}
         <div className="w-full h-full pointer-events-none [contain:layout_style_paint]">
-          <WidgetScale scale={widget.scale}>{children}</WidgetScale>
+          <Profiler
+            id={widget.type ?? id}
+            onRender={(_id, _phase, actualDuration) => {
+              if (actualDuration > 0)
+                perfMetrics.recordRaw('widgetRender', actualDuration);
+            }}
+          >
+            <WidgetScale scale={widget.scale}>{children}</WidgetScale>
+          </Profiler>
         </div>
 
         {/* Edit mode overlay */}

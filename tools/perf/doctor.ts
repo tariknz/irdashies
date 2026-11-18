@@ -3,6 +3,8 @@ import { promises as fs } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 
+import { inspectIbtRecording } from './ibt.ts';
+
 export const DOCTOR_USAGE = `Usage: npm run perf -- doctor [options]
   --target dev|packaged  Benchmark target to preflight (default dev)
   --input <file>         Optional .ibt or .irdt recording to check
@@ -191,10 +193,11 @@ const checkRecording = async (inputPath: string): Promise<DoctorCheck> => {
         detail: header.detail,
       };
     }
+    const ibt = await inspectIbtRecording(inputPath, stats.size);
     return {
       name: 'Replay recording',
-      status: 'PASS',
-      detail: `Readable IBT file (${stats.size} bytes); full conversion validation runs when replay starts.`,
+      status: ibt.valid ? 'PASS' : 'FAIL',
+      detail: ibt.detail,
     };
   } catch (error) {
     return {
@@ -390,7 +393,7 @@ export async function collectDoctorChecks(
       name: 'perf:run replay publisher',
       status: 'SKIP',
       detail:
-        'This Windows-only publisher is only required by perf:run --replay-input; other perf:run scenarios do not use it.',
+        'Not required on Linux: perf:run --replay-input uses the in-process native tape addon instead of a separate publisher.',
     });
   }
 
