@@ -21,6 +21,7 @@ import {
 } from '@irdashies/context';
 import type { CameraGroup, TrackStateSnapshot } from '@irdashies/types';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingActionButton } from '../components/SettingActionButton';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
@@ -310,7 +311,7 @@ export const GantrySettings = memo(() => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="options"
                 activeTab={activeTab}
@@ -346,7 +347,7 @@ export const GantrySettings = memo(() => {
               >
                 Pit Stops
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div>
               {activeTab === 'options' && (

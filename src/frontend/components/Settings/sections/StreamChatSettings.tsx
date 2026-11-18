@@ -14,6 +14,7 @@ import { useDashboard } from '@irdashies/context';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingProps, settingPropFor } from '../components/SettingProp';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 
 const SETTING_ID = 'streamchat';
 const SettingProp = settingPropFor(SETTING_ID);
@@ -122,7 +123,7 @@ export const StreamChatSettings = () => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="display"
                 activeTab={activeTab}
@@ -150,7 +151,7 @@ export const StreamChatSettings = () => {
               >
                 YouTube
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             {activeTab === 'display' && (
               <div className="space-y-5">

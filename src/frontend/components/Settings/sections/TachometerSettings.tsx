@@ -14,6 +14,7 @@ import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingDivider } from '../components/SettingDivider';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import logger from '@irdashies/utils/logger';
@@ -482,7 +483,7 @@ export const TachometerSettings = () => {
           >
             <div className="space-y-6">
               {/* Tabs */}
-              <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+              <SettingsTabBar>
                 <TabButton
                   id="display"
                   activeTab={activeTab}
@@ -504,7 +505,7 @@ export const TachometerSettings = () => {
                 >
                   Visibility
                 </TabButton>
-              </div>
+              </SettingsTabBar>
 
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (

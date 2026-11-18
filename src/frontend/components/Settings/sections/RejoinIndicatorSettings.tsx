@@ -8,6 +8,7 @@ import {
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingProps, settingPropFor } from '../components/SettingProp';
 
@@ -57,7 +58,7 @@ export const RejoinIndicatorSettings = () => {
         >
           <div className="space-y-4">
             {/* Tabs */}
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="options"
                 activeTab={activeTab}
@@ -72,7 +73,7 @@ export const RejoinIndicatorSettings = () => {
               >
                 Visibility
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div>
               {/* DISPLAY TAB */}

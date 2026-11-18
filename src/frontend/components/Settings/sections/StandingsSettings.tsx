@@ -8,6 +8,7 @@ import {
 import { useDashboard } from '@irdashies/context';
 import { copyOverlayToGantryStandings } from './gantryStandingsEdits';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SortableList } from '../../SortableList';
 import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
@@ -507,7 +508,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                 </div>
               )}
               {/* Tabs */}
-              <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+              <SettingsTabBar>
                 <TabButton
                   id="display"
                   activeTab={activeTab}
@@ -552,7 +553,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                     Visibility
                   </TabButton>
                 )}
-              </div>
+              </SettingsTabBar>
 
               <div>
                 {/* DISPLAY TAB */}

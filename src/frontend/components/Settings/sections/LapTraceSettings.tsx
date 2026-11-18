@@ -32,6 +32,7 @@ import { SettingSelectRow } from '../components/SettingSelectRow';
 import { SettingActionButton } from '../components/SettingActionButton';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { LapTraceHelp } from './LapTraceHelp';
 import {
   playBrakeCue,
@@ -454,7 +455,7 @@ export const LapTraceSettings = () => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="layout"
                 activeTab={activeTab}
@@ -504,7 +505,7 @@ export const LapTraceSettings = () => {
               >
                 Help
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div>
               {activeTab === 'layout' && (
