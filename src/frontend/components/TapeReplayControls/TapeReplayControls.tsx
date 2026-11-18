@@ -45,7 +45,7 @@ export function TapeReplayControls({
     seek(draft);
     setDraft(null);
   };
-  const buttonClass = 'settings-button h-9 px-2';
+  const buttonClass = 'settings-button h-7 min-h-7 gap-1.5 px-2 py-1';
 
   return (
     <section
@@ -91,7 +91,7 @@ export function TapeReplayControls({
           {timestamp(status.duration)}
         </span>
       </div>
-      <div className="mt-1 flex items-center justify-center gap-2">
+      <div className="mt-3 flex items-center justify-center gap-2">
         <button
           aria-label="Restart replay"
           title="Restart replay"
@@ -99,7 +99,7 @@ export function TapeReplayControls({
           disabled={busy}
           onClick={() => seek(0)}
         >
-          <SkipBackIcon size={18} weight="fill" />
+          <SkipBackIcon size={16} weight="fill" />
         </button>
         <button
           aria-label="Rewind 10 seconds"
@@ -108,14 +108,14 @@ export function TapeReplayControls({
           disabled={busy}
           onClick={() => seek(status.position - 10)}
         >
-          <ArrowCounterClockwiseIcon size={18} />
+          <ArrowCounterClockwiseIcon size={16} />
           <span className="text-xs">10s</span>
         </button>
         <button
           aria-label={
             status.paused || status.ended ? 'Play replay' : 'Pause replay'
           }
-          className="settings-button-primary h-9 px-2"
+          className="settings-button-primary h-7 min-h-7 px-2 py-1"
           disabled={busy}
           onClick={() =>
             onCommand({
@@ -125,9 +125,9 @@ export function TapeReplayControls({
           }
         >
           {status.paused || status.ended ? (
-            <PlayIcon size={20} weight="fill" />
+            <PlayIcon size={16} weight="fill" />
           ) : (
-            <PauseIcon size={20} weight="fill" />
+            <PauseIcon size={16} weight="fill" />
           )}
         </button>
         <button
@@ -138,7 +138,7 @@ export function TapeReplayControls({
           onClick={() => seek(status.position + 10)}
         >
           <span className="text-xs">10s</span>
-          <ArrowClockwiseIcon size={18} />
+          <ArrowClockwiseIcon size={16} />
         </button>
         <label className="ml-3 flex items-center gap-2 text-xs text-slate-400">
           Speed
@@ -149,7 +149,7 @@ export function TapeReplayControls({
             onChange={(event) =>
               onCommand({ type: 'speed', speed: Number(event.target.value) })
             }
-            className="settings-field"
+            className="settings-field h-7 min-h-7 py-1 text-xs"
           >
             {!TAPE_REPLAY_SPEEDS.some((speed) => speed === status.speed) && (
               <option value={status.speed}>{status.speed}x</option>
