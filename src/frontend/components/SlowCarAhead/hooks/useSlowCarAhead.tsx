@@ -1,4 +1,5 @@
 ﻿import {
+  useActiveSimulator,
   useCarIdxOffTrack,
   useFocusCarIdx,
   useSessionDrivers,
@@ -6,12 +7,18 @@
   useTrackLength,
 } from '@irdashies/context';
 import { useCallback, useMemo } from 'react';
-import { Driver } from '@irdashies/types';
+import { Driver, TrackLocation } from '@irdashies/types';
 import { useCarIdxSpeed } from '@irdashies/context';
 import { useSlowCarAheadSettings } from './useSlowCarAheadSettings';
 
 const EMPTY_POSITIONS: readonly number[] = [];
 const EMPTY_PIT_STATE: readonly boolean[] = [];
+const EMPTY_TRACK_SURFACES: readonly number[] = [];
+const LMU_IGNORED_SURFACES: readonly number[] = [
+  TrackLocation.InPitStall,
+  TrackLocation.ApproachingPits,
+  TrackLocation.NotInWorld,
+];
 
 /**
  * Determines the closest slow car ahead, if one exists.
@@ -26,6 +33,11 @@ export const useSlowCarAhead = () => {
   const carIdxOffTrack = useCarIdxOffTrack();
   const carSpeeds = useCarIdxSpeed();
   const settings = useSlowCarAheadSettings();
+  const simulator = useActiveSimulator();
+  const lmuTrackSurfaces =
+    simulator === 'lmu'
+      ? (trackState?.carIdxTrackSurface ?? EMPTY_TRACK_SURFACES)
+      : undefined;
 
   // Gets the distance, in meters, to a driver
   const calculateRelativeDist = useCallback(
@@ -67,6 +79,13 @@ export const useSlowCarAhead = () => {
 
       // Opponent in the pits
       if (carIdxOnPitRoad[d.CarIdx]) {
+        continue;
+      }
+
+      if (
+        lmuTrackSurfaces !== undefined &&
+        LMU_IGNORED_SURFACES.includes(lmuTrackSurfaces[d.CarIdx])
+      ) {
         continue;
       }
 
@@ -117,6 +136,7 @@ export const useSlowCarAhead = () => {
     drivers,
     driverIdx,
     carIdxOnPitRoad,
+    lmuTrackSurfaces,
     carIdxOffTrack,
     carSpeeds,
     settings.slowSpeedThreshold,
