@@ -59,7 +59,7 @@ export const PushToPassCell = memo(({ state }: PushToPassCellProps) => {
       className="w-[4.5rem] px-1 text-center align-middle"
     >
       <span
-        className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs w-[4rem] ${bgClass} ${pulseClass}`}
+        className={`flex min-w-[4rem] items-center gap-0.5 px-1.5 py-0.5 rounded text-xs whitespace-nowrap ${bgClass} ${pulseClass}`}
       >
         <span className={iconClass}>{icon}</span>
         <span className="flex-1 text-right">
