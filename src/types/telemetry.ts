@@ -154,15 +154,13 @@ export type Telemetry = {
    */
   LmuLastImpactET?: TelemetryVar<number[]>;
   /**
-   * Last impact position [x, y, z], passed through as LMU reports it.
-   *
-   * Vehicle-local metres, not world space: in the recorded Laguna Seca race
-   * every impact reads within about 1 m sideways and 2.5 m lengthways while
-   * the car's world position is hundreds of metres out. The axes are not
-   * confirmed. rF2's local frame is x left, y up, z backward; the one impact
-   * that dented the car (z about -2.45) dented index 0, front-centre in
-   * TinyPedal's order, which fits a backward z. Nothing yet confirms the
-   * sign of x.
+   * Last impact position [x, y, z], passed through as LMU reports it:
+   * vehicle-local metres in rF2's axes, x to the car's left, y up and z to the
+   * rear, so a hit on the nose has a negative z. TinyPedal reads it this way
+   * for both rF2 and LMU and points its impact cone at atan2(-x, z). The
+   * recorded Laguna Seca race agrees: every impact sits within a few metres of
+   * the car while its world position is hundreds of metres out, and the one
+   * that dented the car (z about -2.45) dented front-centre.
    */
   LmuLastImpactPos?: TelemetryVar<number[]>;
   /**
