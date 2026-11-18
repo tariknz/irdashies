@@ -33,21 +33,18 @@ export const LMU_PIT_SPEED_LIMIT_KPH = 60;
 
 /**
  * LMU's mTrackGripLevel as the words the rubber readout already prints. The
- * weather widget only has a string, so the steps are named.
- *
- * Checked against the recorded Laguna Seca AI race
- * (test-data/telemetry/lmu-session.lmudt): its race session starts on the
- * "Preset: Saturated" Real Road setting and reports 4 throughout, so 4 is a
- * real step, the scale is not 0–3, and 4 reads as "maximum". Not yet
- * confirmed: that 1–3 are the lower steps in this order, and that 0 means
- * "not reported" rather than a green track. 0 stays blank until a recording
- * shows otherwise.
+ * weather widget only has a string, so the steps take the names of LMU's Real
+ * Road levels, read the way TinyPedal reads them: 0 green, 1 low, 2 medium,
+ * 3 heavy, 4 saturated. The recorded Laguna Seca race
+ * (test-data/telemetry/lmu-session.lmudt) starts on the "Preset: Saturated"
+ * Real Road setting and reports 4 throughout.
  */
 export const lmuGripRubber = (grip: number): string => {
+  if (grip === 0) return 'green';
   if (grip === 1) return 'low';
-  if (grip === 2) return 'moderate';
-  if (grip === 3) return 'high';
-  if (grip === 4) return 'maximum';
+  if (grip === 2) return 'medium';
+  if (grip === 3) return 'heavy';
+  if (grip === 4) return 'saturated';
   return '';
 };
 

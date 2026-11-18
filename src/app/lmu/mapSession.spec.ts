@@ -13,12 +13,14 @@ import { LMU_MANUFACTURERS } from '@irdashies/types';
 import { LMU_CLASS_COLOURS } from '@irdashies/types';
 
 describe('lmuGripRubber', () => {
-  it('names grip steps 1 to 4, with 4 as maximum, and leaves 0 blank', () => {
-    expect(lmuGripRubber(0)).toBe('');
+  it("names LMU's Real Road levels and leaves an unknown level blank", () => {
+    expect(lmuGripRubber(0)).toBe('green');
     expect(lmuGripRubber(1)).toBe('low');
-    expect(lmuGripRubber(2)).toBe('moderate');
-    expect(lmuGripRubber(3)).toBe('high');
-    expect(lmuGripRubber(4)).toBe('maximum');
+    expect(lmuGripRubber(2)).toBe('medium');
+    expect(lmuGripRubber(3)).toBe('heavy');
+    expect(lmuGripRubber(4)).toBe('saturated');
+    expect(lmuGripRubber(5)).toBe('');
+    expect(lmuGripRubber(-1)).toBe('');
   });
 });
 
