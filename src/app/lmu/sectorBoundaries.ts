@@ -5,17 +5,15 @@ const MAX_BOUNDARY = 0.98;
 const MIN_SECTOR_GAP = 0.02;
 const MAX_FRAME_STEP = 0.01;
 const MIN_STEADY_FRAMES = 10;
+const SAME_LINE = 0.001;
 
-/** Where S2 and S3 start, as lap fractions. */
 export type LmuSectorBoundaries = readonly [number, number];
 
-/** Boundaries known before driving, and where a new measurement goes. */
 export interface LmuSectorBoundarySources {
   known(trackKey: string): LmuSectorBoundaries | null;
   measured(trackKey: string, boundaries: LmuSectorBoundaries): void;
 }
 
-/** True when the pair is in order, inside the lap and not squeezed together. */
 export const isPlausibleLmuSectorBoundaries = (
   s2: number,
   s3: number
@@ -26,21 +24,23 @@ export const isPlausibleLmuSectorBoundaries = (
   s3 < MAX_BOUNDARY &&
   s3 - s2 >= MIN_SECTOR_GAP;
 
-/**
- * Learns where S2 and S3 start from the lap fraction at the player's 100 Hz
- * sector changes, since LMU publishes no boundary distances.
- *
- * A track starts on the boundaries measured earlier in this run, then on the
- * known ones (saved or bundled), then on none. Each track is measured once per
- * reset either way: the measurement is published only when nothing was known,
- * so timing never resets mid-session, and is handed to `measured` for next
- * time.
- */
+export const sameLmuSectorBoundaries = (
+  a: LmuSectorBoundaries,
+  b: LmuSectorBoundaries
+): boolean =>
+  Math.abs(a[0] - b[0]) < SAME_LINE && Math.abs(a[1] - b[1]) < SAME_LINE;
+
+interface PublishedBoundaries {
+  boundaries: LmuSectorBoundaries;
+  confirmed: boolean;
+}
+
 export class LmuSectorBoundaryLearner {
-  private readonly learnedByTrack = new Map<string, LmuSectorBoundaries>();
+  private readonly learnedByTrack = new Map<string, PublishedBoundaries>();
   private trackKey = '';
-  private published: LmuSectorBoundaries | null = null;
-  private measuredThisReset = false;
+  private published: PublishedBoundaries | null = null;
+  private candidate: LmuSectorBoundaries | null = null;
+  private settled = false;
   private pendingS2: number | null = null;
   private pendingS3: number | null = null;
   private lastSector: number | null = null;
@@ -49,14 +49,14 @@ export class LmuSectorBoundaryLearner {
 
   constructor(private readonly sources?: LmuSectorBoundarySources) {}
 
-  /** Starts watching a track, with the best boundaries already known for it. */
   reset(trackKey: string): void {
     this.trackKey = trackKey;
+    const learned = this.learnedByTrack.get(trackKey);
+    const known = learned ? null : (this.sources?.known(trackKey) ?? null);
     this.published =
-      this.learnedByTrack.get(trackKey) ??
-      this.sources?.known(trackKey) ??
-      null;
-    this.measuredThisReset = false;
+      learned ?? (known ? { boundaries: known, confirmed: true } : null);
+    this.candidate = null;
+    this.settled = false;
     this.pendingS2 = null;
     this.pendingS3 = null;
     this.lastSector = null;
@@ -64,12 +64,8 @@ export class LmuSectorBoundaryLearner {
     this.steadyFrames = 0;
   }
 
-  /**
-   * Feeds one frame: the player's raw `mCurrentSector` and the lap fraction
-   * published on the same frame. True when the published boundaries changed.
-   */
   update(rawSector: number | undefined, lapPct: number | undefined): boolean {
-    if (this.measuredThisReset) return false;
+    if (this.settled) return false;
     if (
       rawSector === undefined ||
       lapPct === undefined ||
@@ -118,16 +114,44 @@ export class LmuSectorBoundaryLearner {
 
     if (this.pendingS2 === null || this.pendingS3 === null) return false;
     const measurement: LmuSectorBoundaries = [this.pendingS2, this.pendingS3];
-    this.measuredThisReset = true;
-    this.learnedByTrack.set(this.trackKey, measurement);
-    this.sources?.measured(this.trackKey, measurement);
-    if (this.published !== null) return false;
-    this.published = measurement;
-    return true;
+    this.pendingS2 = null;
+    this.pendingS3 = null;
+    return this.take(measurement);
   }
 
-  /** The start fractions of S2 and S3, or null until any are known. */
   boundaries(): LmuSectorBoundaries | null {
-    return this.published;
+    return this.published?.boundaries ?? null;
+  }
+
+  private take(measurement: LmuSectorBoundaries): boolean {
+    if (this.published === null) {
+      this.publish({ boundaries: measurement, confirmed: false });
+      return true;
+    }
+    const { boundaries, confirmed } = this.published;
+    if (sameLmuSectorBoundaries(measurement, boundaries)) {
+      this.settle(boundaries);
+      if (!confirmed) this.sources?.measured(this.trackKey, boundaries);
+      return false;
+    }
+    const candidate = this.candidate;
+    if (candidate !== null && sameLmuSectorBoundaries(measurement, candidate)) {
+      this.settle(candidate);
+      this.sources?.measured(this.trackKey, candidate);
+      return true;
+    }
+    this.candidate = measurement;
+    return false;
+  }
+
+  private settle(boundaries: LmuSectorBoundaries): void {
+    this.publish({ boundaries, confirmed: true });
+    this.candidate = null;
+    this.settled = true;
+  }
+
+  private publish(published: PublishedBoundaries): void {
+    this.published = published;
+    this.learnedByTrack.set(this.trackKey, published);
   }
 }

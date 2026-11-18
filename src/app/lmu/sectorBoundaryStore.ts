@@ -1,9 +1,9 @@
 import {
   isPlausibleLmuSectorBoundaries,
+  sameLmuSectorBoundaries,
   type LmuSectorBoundaries,
 } from './sectorBoundaries';
 
-/** LMU track id (as a string) -> the sector starts measured there. */
 export type LmuSectorBoundaryRecords = Record<
   string,
   { s2StartPct: number; s3StartPct: number }
@@ -17,13 +17,10 @@ export interface LmuSectorBoundaryPersistence {
 const MAX_TRACKS = 10000;
 const TRACK_ID = /^[1-9]\d{0,9}$/;
 const PRECISION = 10000;
-/** About 4 m on a 4 km lap: a measurement this close is the same line. */
-const SAME_LINE = 0.001;
 
 const round = (value: number): number =>
   Math.round(value * PRECISION) / PRECISION;
 
-/** The stored file is untrusted: keep canonical ids with plausible pairs. */
 export const parseLmuSectorBoundaries = (
   raw: unknown
 ): LmuSectorBoundaryRecords => {
@@ -44,7 +41,6 @@ export const parseLmuSectorBoundaries = (
   return records;
 };
 
-/** The sector starts the player measured, per LMU track. */
 export class LmuSectorBoundaryStore {
   private records: LmuSectorBoundaryRecords | undefined;
 
@@ -59,20 +55,14 @@ export class LmuSectorBoundaryStore {
     return record ? [record.s2StartPct, record.s3StartPct] : null;
   }
 
-  /** Keeps a measurement, unless it finds the same lines as the stored one. */
-  record(trackId: string, [s2, s3]: LmuSectorBoundaries): void {
+  record(trackId: string, boundaries: LmuSectorBoundaries): void {
+    const [s2, s3] = boundaries;
     if (!TRACK_ID.test(trackId) || !isPlausibleLmuSectorBoundaries(s2, s3)) {
       return;
     }
     const records = this.current();
-    const stored = records[trackId];
-    if (
-      stored &&
-      Math.abs(stored.s2StartPct - s2) < SAME_LINE &&
-      Math.abs(stored.s3StartPct - s3) < SAME_LINE
-    ) {
-      return;
-    }
+    const stored = this.get(trackId);
+    if (stored && sameLmuSectorBoundaries(stored, boundaries)) return;
     this.records = {
       ...records,
       [trackId]: { s2StartPct: round(s2), s3StartPct: round(s3) },
