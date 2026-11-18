@@ -22,6 +22,8 @@ Install the Windows .exe and run it. The application will automatically update w
 - [Introduction](#introduction)
 - [Supported simulators](#supported-simulators)
 - [Available overlays](#available-overlays)
+- [iRacePlan and endurance strategy](#iraceplan-and-endurance-strategy)
+- [The Gantry](#the-gantry)
 - [Prerequisites](#prerequisites-for-development)
 - [Installation](#installation-for-development)
 - [Usage](#usage-for-development)
@@ -40,11 +42,11 @@ Install the Windows .exe and run it. The application will automatically update w
 
 This project is built with React and Electron and retrieves live telemetry from iRacing and Le Mans Ultimate to power configurable overlays and race utilities.
 
-See the [latest release notes](https://github.com/tariknz/irdashies/releases/latest) for the latest updates.
+See the [latest release notes](https://github.com/tariknz/irdashies/releases/latest) for recent changes.
 
 ## Supported simulators
 
-iRacing is the primary supported simulator. Le Mans Ultimate support is in beta as of [v2.0.0](https://github.com/tariknz/irdashies/releases/tag/v2.0.0), with a limited set of supported widgets.
+iRacing is the primary supported simulator. Le Mans Ultimate support is in beta and covers a limited set of widgets.
 
 Choose **Auto**, **iRacing**, or **Le Mans Ultimate** in **Settings > General > Simulator**. Auto detects the running simulator and follows simulator changes without restarting irDashies. If both simulators are active when detection runs, iRacing takes priority; select Le Mans Ultimate explicitly if needed. Unsupported widgets are hidden for the active simulator.
 
@@ -53,12 +55,12 @@ Choose **Auto**, **iRacing**, or **Le Mans Ultimate** in **Settings > General > 
 1. In LMU, enable **Settings > Gameplay > Enable Plugins**, then restart the simulator.
 2. Start irDashies and load into an LMU session to receive telemetry.
 
-**Supported overlays:** Standings, Relative, Input, Lap Trace, Pitlane Helper, Corner Names, Battle, Flag, and Information Bar. Telemetry Inspector is also available for diagnostics. All other widgets are currently unavailable in LMU, including Fuel Calculator, both track maps, Radar, Gantry, Car Systems, Lap Timer, Tachometer, and Shift Light.
+**Supported overlays** include Standings, Relative, Input, Lap Trace, Pitlane Helper, Corner Names, Battle, Flag, Information Bar, Faster Cars From Behind, Shift Light, Sector Delta, Weather, Lap Timer, Delta Speed, and Garage Cover. Telemetry Inspector is also available for diagnostics. The Gantry, the iRacePlan widgets, Broadcast overlays, Fuel Calculator, both track maps, Radar, Car Systems, and Tachometer are iRacing-only.
 
-- Standings use class colours and manufacturer badges, with best-lap ordering in practice and position ordering in races. Driver ratings, incident counts, and team data are not yet integrated; car numbers are placeholders, and iRacing rating columns are hidden.
+- Standings use class colours and manufacturer badges, with best-lap ordering in practice and position ordering in races. The Rating column shows LMU driver and safety ranks and marks AI entries. Country flags and ranks can take a few seconds to appear after drivers join. Team names and car numbers come from LMU. Standings and Relative show finish, DNF, and disqualification badges, and can display LMU track-limits points.
 - Corner Names and Lap Trace corner feedback depend on available LMU track data. Unnamed turns use turn numbers where provided.
-- Lap Trace does not yet check LMU lap validity, so laps invalidated by track limits may still become saved references. Imports support iRacing `.ibt` files and Garage 61 CSV laps, with no native LMU telemetry-file import.
-- Input and Lap Trace need your own car's telemetry, which can be unavailable while spectating or in the garage.
+- Lap Trace saves clean LMU laps once the official lap time arrives. Reference imports support iRacing `.ibt` files and Garage 61 CSV laps.
+- Input and Lap Trace need your own car's telemetry, which can be unavailable while spectating or in the garage. Overlays set to show only while driving stay visible when you pause on track and hide when you return to the session monitor.
 - Lap positions are estimated between updates; cars without full telemetry may update in larger steps. Automatic units are metric, and Pitlane Helper currently uses a fixed 60 km/h pit limit.
 - LMU in-game replays do not yet have iRacing's replay-aware handling. LMU session recording and playback tools are development tools.
 
@@ -101,13 +103,14 @@ Compares your current lap against a saved reference to show where you gain or lo
 
 **Features:**
 
-- Automatically saves the fastest reference lap for each car and track, with clean-lap checks in iRacing
+- Automatically saves the fastest clean reference lap for each car and track
 - Import reference laps from iRacing `.ibt` telemetry files or Garage 61 CSV laps
 - Compare throttle, braking, and gear changes against the reference, with ABS activity where available
-- Configurable audio or visual countdowns to reference braking points, with audio-device selection and a minimum brake-pressure filter
+- Configurable audio or visual countdowns to reference braking points, with audio-device selection and a minimum brake-pressure filter adjustable from 0% to 25%
 - Corner feedback showing time gained or lost, braking distance, and minimum speed where corner data is available
+- Layout editor to arrange Trace, Last Corner, and Countdown Bars in rows or columns and omit panels you do not need
 
-<img src="./docs/assets/laptrace.png" alt="Lap Trace comparing a driven lap with a saved reference" width="444">
+<img src="./docs/assets/laptrace.png" alt="Lap Trace with corner feedback, reference traces, and braking countdown bars arranged side by side" width="660">
 
 ### Tachometer
 
@@ -182,6 +185,7 @@ Displays standings information for the current session.
 - Timing information: gap, interval, best lap time, last lap time (multiple time format options)
   - Configurable decimal precision (1, 2, or 3) for gap and interval
   - Gap and interval display in practice and qualifying sessions
+  - Optional Average Lap Time column using 1–100 recorded laps, with a choice of time format and an option to exclude in-laps and out-laps
 - Optional column headers
 - Class headers:
   - Estimated race lap counts, or scheduled totals in fixed-lap races
@@ -246,6 +250,7 @@ Displays drive relative delta information for the current session.
 - Styling customizations: toggle minimal license badges, minimal status badges, position background color, and car number background/border independently
 - Relative delta timing display with configurable precision
 - Timing information: best lap time, last lap time (multiple time format options: full, mixed, minutes, seconds-full, seconds-mixed, seconds)
+- Optional Average Lap Time column using 1–100 recorded laps, with a choice of time format and an option to exclude in-laps and out-laps
 - Optional Push-to-Pass column, showing a driver's active state and remaining time in supported series
 - Configurable radio icon duration, so recent transmissions remain visible without flickering
 - Lap time delta column (configurable number of laps: 1-5)
@@ -357,19 +362,17 @@ Displays wind direction and speed as a standalone overlay.
 
 ### Faster Cars From Behind
 
-Displays information about faster cars approaching from behind, including driver name, distance, and a visual indicator that pulses when cars are close.
+Shows faster cars approaching from behind with their class position, time gap, and a proximity bar.
 
 **Features:**
 
-- Driver name and distance display
-- Visual pulsing indicator when cars are close
-- Configurable distance threshold for alerts
-- Real-time detection of faster approaching cars
-- Pit status filtering: Option to exclude cars in the pits
+- Optional driver name, rating badge, and gap countdown in a configurable display order
+- Proximity bar that follows the configured detection range and turns red when a car gets close
+- Row density follows the Normal, Compact, or Ultra setting in General
+- Option to exclude cars in the pits
 - Automatically hidden when on pit road
-- Multiple driver display settings for more control over what's shown
 
-![Faster Cars From Behind](./docs/assets/fastercarsfrombehind.png)
+<img src="./docs/assets/fastercarsfrombehind.png" alt="Faster Cars From Behind showing three approaching cars with class positions, ratings, and time gaps" width="344">
 
 ### Fuel Calculator
 
@@ -543,7 +546,7 @@ Helps you manage your pit stops with clear visual guidance. It assists with spee
 - Best and last lap: Display the best and last lap times.
 - Personal best lap: Optionally show the best lap ever recorded by irDashies for the current car and track combo, persisted across sessions.
 - Lap history: Show a history of your most recent lap times along with optional deltas.
-- Optionally hide pit laps from the lap history list and graph.
+- Optionally hide pit laps from the history and graph. **Hide Caution Laps** also filters full-course caution laps from the displayed history, graph, and average.
 - Fully configurable: Decide which laps your interested in and toggle them on and off individually.
 - Fully customisable: Resize, scale and align to position the widget to your taste.
 
@@ -599,15 +602,15 @@ Displays racing flags in an LED-matrix style, automatically showing the most rel
 
 ### Setup Comparison Tool
 
-Side-by-side setup analysis to compare car setup changes between sessions.
+Open **Settings > Tools > Setup Comparison** to compare iRacing car setups side by side.
 
 **Features:**
 
-- Side-by-side setup diff with changed values highlighted in red
+- Side-by-side setup diff with changed values highlighted in amber
 - Snapshot timestamps for each saved setup
 - Move setups left/right to reorder comparisons
 
-<img src="./docs/assets/setup-comparison.png" alt="Setup Comparison with changes highlighted between snapshots" width="900">
+<img src="./docs/assets/setup-comparison.png" alt="Setup Comparison showing amber highlights on changed tire settings" width="808">
 
 ### Stream Chat Overlay
 
@@ -630,9 +633,7 @@ Settings are split into **Display**, **Twitch** and **YouTube** tabs. Chat from 
 
 <img src="./docs/assets/twitchchat.png" alt="Twitch Chat with sample messages" width="374">
 
-
 ### Heart Rate
-
 
 Displays your live heart rate from [HypeRate](https://www.hyperate.io/) by embedding its overlay — no API key or account required, just your session id.
 
@@ -682,15 +683,28 @@ Displays the current track section (corner or named straight) along with corner 
 
 <img src="./docs/assets/cornername.png" alt="Corner Names showing the current turn and progress" width="312">
 
+### iRacePlan and endurance strategy
+
+Open **Settings > Tools > Race Plan** and enter an iRacePlan API key to choose a planning and strategy for your iRacing endurance race. irDashies can refresh the plan automatically or on demand and keeps the last loaded plan available offline.
+
+- **Stint Plan** shows the current stint, lap progress, when to box, the fuel target, the next driver, and how far ahead of or behind the plan you are.
+- **Strategy Timeline** compares planned and projected driver stints, adjusts after unplanned stops, and flags driver availability conflicts and stints that no longer fit. Use it as an overlay or dock it in the Gantry.
+
+Both widgets are off by default and require a loaded race plan.
+
+<img src="./docs/assets/stint-plan.png" alt="Stint Plan showing lap progress, fuel target, and the next driver">
+
+<img src="./docs/assets/strategy-timeline.png" alt="Strategy Timeline showing planned and projected driver stints">
+
 ### The Gantry
 
-A race control window with live standings, an automatic incident feed, and a per-lap graph. Unlike the other widgets it opens in its own resizable window instead of sitting on top of the sim, so it suits a second monitor, a spotter, or a race director. Enable it in Settings, then use **Show Window** to bring it back if you close it.
+A resizable race control window with live standings, an automatic incident feed, lap graphs, and pit-stop tracking. It can sit on a second monitor for a spotter or race director. Enable it in Settings and use **Show Window** to bring it back if you close it.
 
 **Features:**
 
 - Standings and incidents shown side by side with a draggable divider, plus a separate Lap Graph tab
 - Optional always-on-top mode, controlled from the tab bar or settings for windowed or borderless simulators
-- Dock Fuel Calculator, Track Map, or Flat Track Map panels beneath the incident feed, side by side or in tabs, with optional Gantry-only fuel layouts
+- Dock Fuel Calculator, Track Map, Flat Track Map, or Strategy Timeline panels beneath the incident feed, side by side or in tabs, with optional Gantry-only fuel layouts
 - Review recorded incidents and lap history while watching an iRacing replay; history follows the selected replay session and requires recordings made by irDashies on this PC
 - Final standings and lap graphs remain available after iRacing closes, including when switching tabs, until the next session loads or irDashies closes
 - Standings list
@@ -716,10 +730,24 @@ A race control window with live standings, an automatic incident feed, and a per
   - Hover the chart for a crosshair readout of the nearby lines; hover a name to lift that driver's line above the field
   - Pan and zoom the lap window by dragging or scrolling, with an overview strip below the chart, and it follows the latest lap
   - Configurable default axis, laps shown, and auto-pin
+- Pit Stops
+  - Review pit-lane time, stationary time, driver changes, and live pit timers with class and team filters
+  - Compare stop totals, average stint lengths, and estimated next-stop laps in the Teams view, and expand a team to see individual stops
+  - Record stops while the Gantry is enabled, including when its window is closed, and keep recent session history across restarts
+  - Jump to five seconds before a stop when replay controls are available
 
-![The Gantry](./docs/assets/gantry-standings-incidents.png)
+![Gantry window showing class standings and the incident feed](./docs/assets/gantry-standings-incidents.png)
 
-![Gantry Lap Graph](./docs/assets/gantry-chart.png)
+<details>
+<summary>Lap Graph, Pit Stops, and team strategy</summary>
+
+![Gantry Lap Graph showing GTP class position changes on laps 8–29 of a recorded Road Atlanta race](./docs/assets/gantry-chart.png)
+
+![Gantry Pit Stops showing stop durations, driver changes, and live timers](./docs/assets/gantry-pit-stops.png)
+
+![Gantry Teams view showing stop totals, average stint lengths, and estimated next stops](./docs/assets/gantry-pit-teams.png)
+
+</details>
 
 ### Broadcast overlays
 
@@ -727,14 +755,14 @@ TV-style overlays for iRacing streams, configured together in **Settings > Broad
 
 **Features:**
 
-- **Tower:** Multi-class standings with rotating or fixed pages for names, gaps, positions gained, pit stops, and tyres; optional focused-driver card and pre-race/post-race screens
+- **Tower** shows multi-class standings with rotating or fixed pages for names, gaps, position changes, pit stops, tyres, last laps, and best laps. It also has optional pre-race and post-race screens and a focused-driver card with its own last- and best-lap controls.
 - **Ticker:** A scrolling standings strip for the bottom of your broadcast
 - **Events:** Timed alerts for incidents, flags, fastest laps, pit stops, and race milestones, with selectable event types
 - **Weather:** A weather panel shown at configurable intervals
 - **Podium:** Class podiums after the checkered flag, with steps or trophy styles
 - IMSA, WEC, and F1 themes, a custom logo and title, and configurable backgrounds
 
-<img src="./docs/assets/broadcast-tower.png" alt="Broadcast Tower with multi-class standings and a focused-driver card" width="300">
+<img src="./docs/assets/broadcast-tower.png" alt="Broadcast Tower on its Best Lap page with a focused-driver card" width="300">
 
 ![Broadcast Ticker with scrolling standings](./docs/assets/broadcast-ticker.png)
 
@@ -758,8 +786,8 @@ TV-style overlays for iRacing streams, configured together in **Settings > Broad
   - Each profile can be accessed as its own browser source URL for OBS streaming
   - Dashboard import/export to share layouts between users or back up your setup
 - Streamer & OBS Ready
-  - Built-in Web Server: All overlays can be used as a browser source in OBS. `http://localhost:3000/dashboard` follows the active profile; `http://localhost:3000/dashboard?profile=<profileId>` selects a specific profile. Copy the actual URLs from Settings > Profiles if the server uses another port.
-  - Separate browser layouts: Each profile stores its browser widget positions independently of the desktop layout. Use **Settings > Profiles > Actions > Edit Browser Layout** to arrange widgets for OBS. Set the browser source's width and height to match your intended canvas.
+  - Use the built-in web server to add overlays as browser sources in OBS. `http://localhost:3000/dashboard` follows the active profile and `http://localhost:3000/dashboard?profile=<profileId>` selects a specific profile. Copy the actual URLs from **Settings > Tools > Profiles** if the server uses another port.
+  - Each profile stores its browser widget positions independently of the desktop layout. Use **Settings > Tools > Profiles > Actions > Edit Browser Layout** to arrange widgets for OBS. Set the browser source's width and height to match your intended canvas.
   - Single Widget URLs: `http://localhost:3000/widget/<widgetId>` shows one widget filling the page, including widgets hidden from the desktop layout, for hosts that take one page per source such as OpenKneeboard in VR. `http://localhost:3000` lists the URL for every widget in the active dashboard; older component links redirect to the widget pages.
   - Optional Web Server: Disable the built-in server when browser sources are not needed; restart the app to free its port.
   - Network Access: Enable network access in settings to allow other devices on your local network to access the dashboard (useful for dual-PC streaming setups).
@@ -777,6 +805,7 @@ TV-style overlays for iRacing streams, configured together in **Settings > Broad
   - Per-widget visibility shortcuts: Show or hide individual widgets without affecting the rest of the dashboard.
   - Global toggle (Alt+H by default): Quickly hide or show all your overlays with a single keyboard shortcut.
   - Reset widget position: Reset any widget's position to the top-left corner if it gets lost off-screen.
+  - In Edit Layout, drag an overlay near the middle of its screen to snap to a vertical guide. Hold Shift to bypass snapping.
   - Close to tray: Closing the window minimizes to the system tray instead of quitting (configurable).
   - Always on top: Keep your overlays visible even when clicking on other windows.
   - System autostart: Optionally have the app start automatically when your computer boots up.

@@ -5,7 +5,7 @@ export default defineWidgetManifest({
   name: 'Broadcast Tower',
   category: 'Broadcast & Streaming',
   menuLabel: 'Broadcast',
-  // One settings page with a tab per broadcast widget.
+  // Its row opens the Broadcast menu, with a page per broadcast widget.
   groupTypes: [
     'broadcast',
     'broadcastticker',

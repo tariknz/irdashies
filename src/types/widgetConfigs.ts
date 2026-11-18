@@ -880,6 +880,7 @@ export interface FasterCarsFromBehindConfig {
   showDistance?: boolean;
   showBadge?: boolean;
   badgeFormat?: string;
+  displayOrder?: string[];
   onlyShowFasterClasses: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }

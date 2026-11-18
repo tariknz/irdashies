@@ -173,7 +173,9 @@ export const ResearchMenu = ({
   // share a page and have no single widget to switch.
   const widgetIds = currentDashboard?.widgets.map((w) => w.id) ?? [];
   const canToggle = (item: MenuItem) =>
-    !!item.widgetType && menuHasToggle(item.widgetType, widgetIds);
+    !!item.widgetType &&
+    !item.groupTypes &&
+    menuHasToggle(item.widgetType, widgetIds);
 
   // Off switches every copy off; on revives only the primary widget.
   const setWidgetEnabled = (widgetType: string, enabled: boolean) => {

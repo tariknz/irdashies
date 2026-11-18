@@ -19,7 +19,7 @@ import { SettingsPreviewLayout } from './SettingsPreviewLayout';
 interface BaseSettingsSectionProps<T> {
   title: string;
   headingLevel?: 'h2' | 'h3';
-  description: string;
+  description: ReactNode;
   settings?: BaseWidgetSettings<T>;
   onSettingsChange?: (settings: BaseWidgetSettings<T>) => void;
   widgetId?: string;

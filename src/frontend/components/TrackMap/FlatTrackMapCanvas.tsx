@@ -1,3 +1,4 @@
+import { useCanvasCleanup } from '@irdashies/domain/canvas/useCanvasCleanup';
 import { useWidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { TrackDriver, TrackDrawing } from './TrackCanvas';
@@ -46,6 +47,7 @@ export const FlatTrackMapCanvas = ({
   const widgetScale = useWidgetScale();
   const canvasInvalidatedRef = useRef(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  useCanvasCleanup(canvasRef);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const driversOffTrack = useCarIdxOffTrack();
   const debounceResizeRef = useRef<ReturnType<typeof setTimeout> | undefined>(
