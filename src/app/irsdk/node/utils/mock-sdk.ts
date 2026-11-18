@@ -13,7 +13,7 @@ import type {
   TelemetryCommand,
   FFBCommand,
   VideoCaptureCommand,
-} from '../../types';
+} from '../../../../types/irSdk';
 
 import { loadMockSessionData, loadMockTelemetry } from './mock-data/loader';
 import logger from '../../../logger';
@@ -89,8 +89,7 @@ export class MockSDK implements INativeSDK {
 
   public broadcast(
     message:
-      | BroadcastMessages.CameraSwitchPos
-      | BroadcastMessages.CameraSwitchNum,
+      BroadcastMessages.CameraSwitchPos | BroadcastMessages.CameraSwitchNum,
     driverOrPos: number,
     group: number,
     camera: number

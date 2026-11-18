@@ -29,6 +29,8 @@ const FRONTEND_CONTEXT_VIA_ALIAS = {
 export default defineConfig([
   {
     ignores: [
+      'tmp-data/**',
+      'perf-results/**',
       '**/.vite/**',
       '**/out/**',
       '**/coverage/**',
@@ -110,6 +112,31 @@ export default defineConfig([
     ignores: ['src/frontend/utils/logger.ts'],
     rules: {
       'no-console': 'error',
+    },
+  },
+  {
+    files: ['src/types/**/*.{ts,tsx}'],
+    ignores: ['**/*.spec.*'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '**/app/**',
+                '**/frontend/**',
+                '@irdashies/context',
+                '@irdashies/domain',
+                '@irdashies/domain/*',
+                '@irdashies/utils/*',
+              ],
+              message:
+                'Shared types must be independent of the main process and renderer.',
+            },
+          ],
+        },
+      ],
     },
   },
   {

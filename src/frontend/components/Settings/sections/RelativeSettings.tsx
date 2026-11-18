@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
+import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import {
   RelativeWidgetSettings,
-  SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { TabButton } from '../components/TabButton';
@@ -342,12 +342,12 @@ export const RelativeSettings = () => {
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as RelativeWidgetSettings | undefined;
-  const [settings, setSettings] = useState<RelativeWidgetSettings>({
+  const settings: RelativeWidgetSettings = {
     enabled: savedSettings?.enabled ?? true,
     config:
       (savedSettings?.config as RelativeWidgetSettings['config']) ??
       defaultConfig,
-  });
+  };
   const [itemsOrder, setItemsOrder] = useState(() => {
     const validIds = new Set(sortableSettings.map((s) => s.id));
     const saved = settings.config.displayOrder ?? [];
@@ -359,14 +359,14 @@ export const RelativeSettings = () => {
     return [...filtered, ...missing];
   });
 
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('relativeTab') as SettingsTabType) || 'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('relativeTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('relativeTab', [
+    'display',
+    'options',
+    'header',
+    'footer',
+    'styling',
+    'visibility',
+  ]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -377,7 +377,6 @@ export const RelativeSettings = () => {
       title="Relative"
       description="Configure the relative timing display settings."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId="relative"
     >
       {(handleConfigChange) => {

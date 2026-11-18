@@ -1,5 +1,5 @@
 import { SettingsSection } from '../components/SettingSection';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import {
@@ -14,21 +14,42 @@ const LOCALSTORAGE_KEY = 'garagecover-image';
 const defaultConfig = getWidgetDefaultConfig('garagecover');
 
 export const GarageCoverSettings = () => {
-  const { currentDashboard, bridge } = useDashboard();
-  const [settings, setSettings] = useState<GarageCoverWidgetSettings>({
-    enabled:
-      currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
-      false,
+  const { currentDashboard, currentProfile, bridge } = useDashboard();
+  const savedWidget = currentDashboard?.widgets.find(
+    (w) => w.id === SETTING_ID
+  );
+  const settings: GarageCoverWidgetSettings = {
+    enabled: savedWidget?.enabled ?? false,
     config:
-      (currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.config as
+      (savedWidget?.config as
         GarageCoverWidgetSettings['config'] | undefined) ?? defaultConfig,
-  });
+  };
   const [serverPort, setServerPort] = useState<number>(3000);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const configChangeHandlerRef = useRef<
-    ((newConfig: Partial<GarageCoverWidgetSettings['config']>) => void) | null
-  >(null);
-  const hasInitializedRef = useRef(false);
+  const [preview, setPreview] = useState<{
+    imageFilename: string;
+    profileId?: string;
+    url: string | null;
+  }>();
+  const [browserPreview, setBrowserPreview] = useState(() =>
+    localStorage.getItem(LOCALSTORAGE_KEY)
+  );
+  const uploadVersion = useRef(0);
+  const profileId = currentProfile?.id;
+  const { imageFilename } = settings.config;
+  const desktopBridge = (
+    window as unknown as { dashboardBridge?: DashboardBridge }
+  ).dashboardBridge;
+  const useBrowserImage =
+    !desktopBridge?.getGarageCoverImageAsDataUrl ||
+    imageFilename === 'browser-mode';
+  const previewUrl = !imageFilename
+    ? null
+    : useBrowserImage
+      ? browserPreview
+      : preview?.imageFilename === imageFilename &&
+          preview.profileId === profileId
+        ? preview.url
+        : null;
 
   useEffect(() => {
     if (bridge?.getComponentServerPort) {
@@ -36,125 +57,60 @@ export const GarageCoverSettings = () => {
     }
   }, [bridge]);
 
-  const loadPreview = (imageFilename: string) => {
-    if (!imageFilename) {
-      setPreviewUrl(null);
-      return;
-    }
-
-    // Try Electron bridge first
-    const dashboardBridge = (
-      window as unknown as { dashboardBridge?: DashboardBridge }
-    ).dashboardBridge;
-    if (dashboardBridge && 'getGarageCoverImageAsDataUrl' in dashboardBridge) {
-      dashboardBridge
-        .getGarageCoverImageAsDataUrl(imageFilename)
-        .then((dataUrl: string | null) => {
-          setPreviewUrl(dataUrl);
-        })
-        .catch(() => {
-          // Fallback to localStorage
-          const dataUrl = localStorage.getItem(LOCALSTORAGE_KEY);
-          setPreviewUrl(dataUrl);
-        });
-    } else {
-      // Browser mode - use localStorage
-      const dataUrl = localStorage.getItem(LOCALSTORAGE_KEY);
-      setPreviewUrl(dataUrl);
-    }
-  };
-
-  // Initialize settings from current dashboard once on mount
-  // hasInitializedRef prevents re-initialization if currentDashboard changes
   useEffect(() => {
-    if (!currentDashboard || hasInitializedRef.current) return;
-
-    hasInitializedRef.current = true;
-    const widget = currentDashboard.widgets.find((w) => w.id === SETTING_ID);
-    if (!widget) return;
-
-    const newSettings = {
-      enabled: widget.enabled ?? false,
-      config:
-        (widget.config as unknown as GarageCoverWidgetSettings['config']) ||
-        defaultConfig,
+    if (!imageFilename || useBrowserImage || !desktopBridge) return;
+    let cancelled = false;
+    desktopBridge
+      .getGarageCoverImageAsDataUrl(imageFilename)
+      .catch(() => localStorage.getItem(LOCALSTORAGE_KEY))
+      .then((url) => {
+        if (!cancelled) setPreview({ imageFilename, profileId, url });
+      });
+    return () => {
+      cancelled = true;
     };
-    setSettings(newSettings);
-    // Preview will be loaded by the next effect when settings change
-  }, [currentDashboard]);
+  }, [desktopBridge, imageFilename, profileId, useBrowserImage]);
 
-  // Load preview when imageFilename changes
-  useEffect(() => {
-    loadPreview(settings.config.imageFilename);
-  }, [settings.config.imageFilename]);
+  useLayoutEffect(
+    () => () => {
+      uploadVersion.current += 1;
+    },
+    [imageFilename, profileId]
+  );
 
-  // Helper to update imageFilename in config
-  const updateImageFilename = (filename: string) => {
-    if (configChangeHandlerRef.current) {
-      configChangeHandlerRef.current({ imageFilename: filename });
-    } else {
-      // Fallback to direct state update
-      setSettings((prev) => ({
-        ...prev,
-        config: {
-          ...prev.config,
-          imageFilename: filename,
-        },
-      }));
-    }
-  };
-
-  // Common image processing logic
-  const processImageFile = (file: File) => {
+  const processImageFile = (
+    file: File,
+    updateImageFilename: (filename: string) => void
+  ) => {
+    if (!file.type.startsWith('image/')) return;
+    const version = ++uploadVersion.current;
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const imageData = event.target?.result as string;
-      const imageBuffer = Uint8Array.from(atob(imageData.split(',')[1]), (c) =>
-        c.charCodeAt(0)
-      );
-
-      // Call bridge to save image file (Electron only)
-      if ('saveGarageCoverImage' in bridge) {
-        (
-          bridge.saveGarageCoverImage as (buffer: Uint8Array) => Promise<string>
-        )(imageBuffer)
-          .then((filePath) => {
-            // Extract just the filename from the path
-            const filename = filePath.split(/[\\/]/).pop() || '';
-            updateImageFilename(filename);
-          })
-          .catch(() => {
-            // Still save to localStorage as fallback
-            localStorage.setItem(LOCALSTORAGE_KEY, imageData);
-            updateImageFilename('browser-mode');
-          });
-      } else {
-        // Browser mode - save to localStorage
-        localStorage.setItem(LOCALSTORAGE_KEY, imageData);
-        updateImageFilename('browser-mode');
+    reader.onload = async () => {
+      const imageData = reader.result;
+      if (version !== uploadVersion.current || typeof imageData !== 'string') {
+        return;
       }
+      let filename: string | undefined;
+      if (bridge.saveGarageCoverImage) {
+        try {
+          const imageBuffer = Uint8Array.from(
+            atob(imageData.split(',')[1]),
+            (character) => character.charCodeAt(0)
+          );
+          const filePath = await bridge.saveGarageCoverImage(imageBuffer);
+          filename = filePath.split(/[\\/]/).pop();
+        } catch {
+          filename = undefined;
+        }
+      }
+      if (version !== uploadVersion.current) return;
+      if (!filename) {
+        localStorage.setItem(LOCALSTORAGE_KEY, imageData);
+        setBrowserPreview(imageData);
+      }
+      updateImageFilename(filename || 'browser-mode');
     };
     reader.readAsDataURL(file);
-  };
-
-  const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      const file = files[0];
-      if (file.type.startsWith('image/')) {
-        processImageFile(file);
-      }
-    }
-  };
-
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      processImageFile(files[0]);
-    }
   };
 
   if (!currentDashboard) {
@@ -166,16 +122,18 @@ export const GarageCoverSettings = () => {
       title="Garage Cover"
       description="Configure settings for the garage cover widget that displays when in the garage."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => {
-        // Store the handleConfigChange from BaseSettingsSection for use in async callbacks
-        configChangeHandlerRef.current = handleConfigChange;
+        const selectImage = (file: File | undefined) => {
+          if (file)
+            processImageFile(file, (filename) => {
+              handleConfigChange({ imageFilename: filename });
+            });
+        };
 
         return (
           <div className="space-y-4">
-            {/* Info Banner */}
             <div className="bg-slate-800/40 border border-slate-700 rounded-md p-4 space-y-2">
               <p className="text-sm text-slate-300">
                 <strong>Note:</strong> The garage cover is intended for use
@@ -191,11 +149,14 @@ export const GarageCoverSettings = () => {
             </div>
 
             <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
-              {/* Image Upload */}
               <div className="space-y-2">
                 <div className="text-slate-300">Garage Image</div>
                 <div
-                  onDrop={handleImageDrop}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    selectImage(event.dataTransfer.files[0]);
+                  }}
                   onDragOver={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -205,7 +166,7 @@ export const GarageCoverSettings = () => {
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => handleImageSelect(e)}
+                    onChange={(event) => selectImage(event.target.files?.[0])}
                     aria-label="Garage image"
                     className="sr-only"
                     id="garage-image-input"
@@ -236,7 +197,9 @@ export const GarageCoverSettings = () => {
                 {settings.config.imageFilename && (
                   <button
                     onClick={() => {
+                      uploadVersion.current += 1;
                       localStorage.removeItem(LOCALSTORAGE_KEY);
+                      setBrowserPreview(null);
                       handleConfigChange({ imageFilename: '' });
                     }}
                     className="settings-button-danger"

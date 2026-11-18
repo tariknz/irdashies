@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { TabButton } from '../components/TabButton';
 import { SettingsTabBar } from '../components/SettingsTabBar';
@@ -15,7 +15,6 @@ const SETTING_ID = 'pitlanehelper';
 const SettingProp = settingPropFor(SETTING_ID);
 
 const defaultConfig = getWidgetDefaultConfig('pitlanehelper');
-type PitlaneSettingsTab = 'options' | 'visibility' | 'calibration';
 
 export const PitlaneHelperSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -23,24 +22,18 @@ export const PitlaneHelperSettings = () => {
     (w) => w.id === SETTING_ID
   ) as PitlaneHelperWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<PitlaneHelperWidgetSettings>({
+  const settings: PitlaneHelperWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config:
       (savedSettings?.config as PitlaneHelperWidgetSettings['config']) ??
       defaultConfig,
-  });
+  };
 
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<PitlaneSettingsTab>(() => {
-    const saved = localStorage.getItem('pitLaneTab');
-    return saved === 'visibility' || saved === 'calibration'
-      ? saved
-      : 'options';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('pitLaneTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('pitLaneTab', [
+    'options',
+    'visibility',
+    'calibration',
+  ]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -51,7 +44,6 @@ export const PitlaneHelperSettings = () => {
       title="Pitlane Helper"
       description="Assists with pit entry by showing speed delta, pitbox position, and warnings."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (

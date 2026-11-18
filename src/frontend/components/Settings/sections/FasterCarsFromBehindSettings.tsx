@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   FasterCarsFromBehindWidgetSettings,
-  SettingsTabType,
   type StandingsBadgeFormat,
 } from '@irdashies/types';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -124,23 +123,17 @@ const DisplaySettingsList = ({
 export const FasterCarsFromBehindSettings = () => {
   const { currentDashboard } = useDashboard();
   const fasterCarsSettings = useFasterCarsSettings();
-  const [settings, setSettings] = useState<FasterCarsFromBehindWidgetSettings>({
+  const settings: FasterCarsFromBehindWidgetSettings = {
     enabled:
       currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
       false,
     config: fasterCarsSettings as FasterCarsFromBehindWidgetSettings['config'],
-  });
+  };
 
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () =>
-      (localStorage.getItem('fasterCarsFromBehindTab') as SettingsTabType) ||
-      'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('fasterCarsFromBehindTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('fasterCarsFromBehindTab', [
+    'display',
+    'visibility',
+  ]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -151,7 +144,6 @@ export const FasterCarsFromBehindSettings = () => {
       title="Faster Cars From Behind"
       description="Configure settings for the faster cars detection widget."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId="fastercarsfrombehind"
     >
       {(handleConfigChange) => (

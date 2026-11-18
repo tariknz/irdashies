@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
+import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   WeatherWidgetSettings,
-  SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
@@ -106,23 +106,20 @@ export const WeatherSettings = () => {
   ) as WeatherWidgetSettings | undefined;
   const initialConfig =
     (savedSettings?.config as WeatherWidgetSettings['config']) ?? defaultConfig;
-  const [settings, setSettings] = useState<WeatherWidgetSettings>({
+  const settings: WeatherWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config: initialConfig,
-  });
+  };
 
   const [itemsOrder, setItemsOrder] = useState(() =>
     getItemsOrder(initialConfig.displayOrder)
   );
 
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('weatherTab') as SettingsTabType) || 'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('weatherTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('weatherTab', [
+    'display',
+    'options',
+    'visibility',
+  ]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -135,7 +132,6 @@ export const WeatherSettings = () => {
       title="Weather"
       description="Show weather related readings (air/track temperature, wind, wetness, track state)."
       settings={settings}
-      onSettingsChange={(s) => setSettings(s)}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => {

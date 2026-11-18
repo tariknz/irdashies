@@ -14,7 +14,7 @@ import type { LapTraceSamples } from '@irdashies/types';
 import {
   normalisePct,
   valueAtDistance,
-} from '@irdashies/domain/lapTrace/lapSamples';
+} from '@irdashies/utils/lapTrace/lapSamples';
 import {
   createBrakeCueLatch,
   createBrakeCueOutput,

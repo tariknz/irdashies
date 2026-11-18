@@ -4,7 +4,7 @@ import type {
   SessionLifecycleEvent,
   Telemetry,
 } from '@irdashies/types';
-import { GlobalFlags } from '../irsdk/types/enums';
+import { GlobalFlags } from '../../types/irSdk/enums';
 import type { TelemetryProcessor } from './TelemetryProcessor';
 
 const FULL_COURSE_CAUTION_FLAGS =

@@ -1,4 +1,4 @@
-import type { TelemetryVariable, TelemetryVarList } from '../app/irsdk/types';
+import type { TelemetryVariable, TelemetryVarList } from './irSdk';
 
 export type Telemetry = {
   [K in keyof TelemetryVarList]: Pick<TelemetryVarList[K], 'value'>;

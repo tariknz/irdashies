@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { BroadcastModuleDescription } from './BroadcastModuleDescription';
 import { changeMarker } from '../components/ChangedMark';
@@ -32,10 +31,10 @@ export const BroadcastTickerSettings = ({ obsUrl }: { obsUrl?: string }) => {
     (w) => w.id === SETTING_ID
   ) as BroadcastTickerWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<BroadcastTickerWidgetSettings>({
+  const settings: BroadcastTickerWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config: { ...defaultConfig, ...savedSettings?.config },
-  });
+  };
   const [tab, setTab] = useStoredTab(`${SETTING_ID}Tab`, TAB_IDS);
 
   if (!currentDashboard) {
@@ -55,7 +54,6 @@ export const BroadcastTickerSettings = ({ obsUrl }: { obsUrl?: string }) => {
         </BroadcastModuleDescription>
       }
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => {

@@ -4,7 +4,7 @@ import { ChannelBus } from '../bridge/channelBridge';
 import { createSessionLifecycle } from '../sessionLifecycle';
 import { IncidentRuntime } from './incidentRuntime';
 import { IncidentType } from '../../types/raceControl';
-import { TrackLocation, SessionState } from '../irsdk/types/enums';
+import { TrackLocation, SessionState } from '../../types/irSdk/enums';
 
 const raceSession = (): Session =>
   ({

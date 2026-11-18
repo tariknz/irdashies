@@ -44,7 +44,6 @@ export const usePitLaneStore = create<PitLaneState>((set, get) => ({
   ...initialState,
 
   setCurrentTrack: (trackId, data, revision = 0, sourceId = null) => {
-    // Reset module-level previous frame data
     previousCarIdxOnPitRoad = [];
     previousCarIdxTrackSurface = [];
     previousCarIdxLapDistPct = [];
@@ -62,9 +61,6 @@ export const usePitLaneStore = create<PitLaneState>((set, get) => ({
     const state = get();
     const TOLERANCE = 0.02; // 2% of lap distance
 
-    // Update if:
-    // 1. Not set yet (null), OR
-    // 2. New detection is significantly different from stored value
     if (
       state.pitEntryPct === null ||
       Math.abs(state.pitEntryPct - pct) > TOLERANCE
@@ -77,9 +73,6 @@ export const usePitLaneStore = create<PitLaneState>((set, get) => ({
     const state = get();
     const TOLERANCE = 0.02; // 2% of lap distance
 
-    // Update if:
-    // 1. Not set yet (null), OR
-    // 2. New detection is significantly different from stored value
     if (
       state.pitExitPct === null ||
       Math.abs(state.pitExitPct - pct) > TOLERANCE
@@ -89,8 +82,6 @@ export const usePitLaneStore = create<PitLaneState>((set, get) => ({
   },
 
   clearPitData: () => {
-    // Clear pit entry/exit data but keep track ID
-    // Reset module-level previous frame data
     previousCarIdxOnPitRoad = [];
     previousCarIdxTrackSurface = [];
     previousCarIdxLapDistPct = [];
@@ -102,7 +93,6 @@ export const usePitLaneStore = create<PitLaneState>((set, get) => ({
   },
 
   reset: () => {
-    // Reset module-level previous frame data
     previousCarIdxOnPitRoad = [];
     previousCarIdxTrackSurface = [];
     previousCarIdxLapDistPct = [];
@@ -125,7 +115,6 @@ export const detectPitTransitions = (
 ) => {
   const state = usePitLaneStore.getState();
 
-  // Skip if this is the first frame (no previous data)
   // Just store current state and return - we can't detect transitions without a previous frame
   if (previousCarIdxOnPitRoad.length === 0) {
     // Store references directly instead of spreading arrays (avoid copies)
@@ -135,7 +124,6 @@ export const detectPitTransitions = (
     return;
   }
 
-  // Check each car for pit entry/exit transitions
   for (let i = 0; i < carIdxOnPitRoad.length; i++) {
     const isOnPitRoad = carIdxOnPitRoad[i] ?? false;
     const wasOnPitRoad = previousCarIdxOnPitRoad[i] ?? false;

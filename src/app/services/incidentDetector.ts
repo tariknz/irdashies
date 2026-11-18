@@ -5,7 +5,7 @@ import type {
   IncidentDebugSnapshot,
 } from '../../types/raceControl';
 import { IncidentType } from '../../types/raceControl';
-import { TrackLocation, GlobalFlags } from '../irsdk/types/enums';
+import { TrackLocation, GlobalFlags } from '../../types/irSdk/enums';
 import logger from '../logger';
 import {
   baselineSpeed,

@@ -8,7 +8,7 @@ import {
   tileTranslatePct,
   type LapPiece,
 } from './lapTraceTiles';
-import { xForMetres } from './lapTraceWindow';
+import { xForMetres } from '@irdashies/utils/lapTrace/lapTraceWindow';
 
 /** Window settings across the range the widget offers. */
 const WINDOWS: [number, number][] = [

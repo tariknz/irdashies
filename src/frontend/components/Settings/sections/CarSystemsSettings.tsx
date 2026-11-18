@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   CAR_SYSTEM_ADJUSTMENTS,
   CarSystemsWidgetSettings,
-  SettingsTabType,
   carSystemIsRenamedSomewhere,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
@@ -36,40 +35,18 @@ export const CarSystemsSettings = () => {
     (w) => w.id === SETTING_ID
   ) as CarSystemsWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<CarSystemsWidgetSettings>({
+  const settings: CarSystemsWidgetSettings = {
     id: SETTING_ID,
     enabled: savedSettings?.enabled ?? false,
     config:
       (savedSettings?.config as CarSystemsWidgetSettings['config']) ??
       defaultConfig,
-  });
+  };
 
-  // Same guarded set-during-render sync as the other widget settings sections:
-  // useState only reads its initialiser once, so mounting before the dashboard
-  // has loaded would otherwise persist defaults over the saved config on the
-  // next edit.
-  const [prevSaved, setPrevSaved] = useState(savedSettings);
-  if (JSON.stringify(savedSettings) !== JSON.stringify(prevSaved)) {
-    setPrevSaved(savedSettings);
-    if (savedSettings) {
-      setSettings({
-        id: SETTING_ID,
-        enabled: savedSettings.enabled ?? false,
-        config:
-          (savedSettings.config as CarSystemsWidgetSettings['config']) ??
-          defaultConfig,
-      });
-    }
-  }
-
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () =>
-      (localStorage.getItem('carSystemsTab') as SettingsTabType) || 'options'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('carSystemsTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('carSystemsTab', [
+    'options',
+    'visibility',
+  ]);
 
   if (!currentDashboard) return <>Loading...</>;
 
@@ -98,7 +75,6 @@ export const CarSystemsSettings = () => {
       title="Car Systems"
       description="Brake bias, ABS, traction control and the other adjustments your car exposes."
       settings={settings as CarSystemsWidgetSettings}
-      onSettingsChange={(s) => setSettings(s as CarSystemsWidgetSettings)}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (

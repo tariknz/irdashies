@@ -5,8 +5,8 @@ import {
   MAX_SAMPLE_GAP_M,
   indexAtOrBefore,
   normalisePct,
-} from '@irdashies/domain/lapTrace/lapSamples';
-import { xForMetres } from '@irdashies/domain/lapTrace/lapTraceWindow';
+} from '@irdashies/utils/lapTrace/lapSamples';
+import { xForMetres } from '@irdashies/utils/lapTrace/lapTraceWindow';
 import {
   REFERENCE_SPAN_SLOTS,
   lapPieces,

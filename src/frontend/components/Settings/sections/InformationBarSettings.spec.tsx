@@ -1,3 +1,4 @@
+import { mockDashboardUpdater } from '../mockDashboardUpdater';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -17,7 +18,10 @@ vi.mock('@irdashies/context', async () => {
   return {
     useDashboard: () => ({
       currentDashboard: mocks.dashboard,
-      onDashboardUpdated: mocks.onDashboardUpdated,
+      onDashboardUpdated: mockDashboardUpdater(
+        () => mocks.dashboard,
+        mocks.onDashboardUpdated
+      ),
     }),
     useActiveSimulator: () => null,
     useSimWidgetSupport: () => DEFAULT_SIM_WIDGET_SUPPORT,

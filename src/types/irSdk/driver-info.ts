@@ -1,4 +1,4 @@
-import type { LmuDriverRating } from '../../../types/lmu';
+import type { LmuDriverRating } from '../lmu';
 
 export interface Driver {
   CarIdx: number;

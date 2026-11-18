@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   InformationBarWidgetSettings,
-  SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
@@ -30,20 +29,18 @@ export const InformationBarSettings = () => {
     (w) => w.id === SETTING_ID
   ) as InformationBarWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<InformationBarWidgetSettings>({
+  const settings: InformationBarWidgetSettings = {
     enabled: savedSettings?.enabled ?? true,
     config:
       (savedSettings?.config as InformationBarWidgetSettings['config']) ??
       defaultConfig,
-  });
+  };
 
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('infobarTab') as SettingsTabType) || 'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('infobarTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('infobarTab', [
+    'display',
+    'styling',
+    'visibility',
+  ]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -54,7 +51,6 @@ export const InformationBarSettings = () => {
       title="Information Bar"
       description="A standalone bar displaying session and timing information."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId="infobar"
     >
       {(handleConfigChange) => (
