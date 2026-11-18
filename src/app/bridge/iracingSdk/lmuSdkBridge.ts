@@ -219,15 +219,24 @@ export async function publishLmuSDKEvents(
   const { NativeLmu } = await import('../../lmu/native');
   const sdk = new NativeLmu();
   const mapRecorder = new LmuTrackMapRecorder();
-  await loadLmuSectorBoundaries();
-  const sectorBoundaries = new LmuSectorBoundaryLearner({
-    known: (trackKey) =>
-      lmuSectorBoundaryStore.get(trackKey) ??
-      LMU_SECTOR_BOUNDARY_DEFAULTS.get(trackKey) ??
-      null,
-    measured: (trackKey, boundaries) =>
-      lmuSectorBoundaryStore.record(trackKey, boundaries),
-  });
+  const isTapeReplay = Boolean(process.env.IRDASHIES_LMU_REPLAY);
+  if (!isTapeReplay) await loadLmuSectorBoundaries();
+  const sectorBoundaries = new LmuSectorBoundaryLearner(
+    isTapeReplay
+      ? {
+          known: (trackKey) =>
+            LMU_SECTOR_BOUNDARY_DEFAULTS.get(trackKey) ?? null,
+          measured: () => undefined,
+        }
+      : {
+          known: (trackKey) =>
+            lmuSectorBoundaryStore.get(trackKey) ??
+            LMU_SECTOR_BOUNDARY_DEFAULTS.get(trackKey) ??
+            null,
+          measured: (trackKey, boundaries) =>
+            lmuSectorBoundaryStore.record(trackKey, boundaries),
+        }
+  );
   const sectorTrackKey = (trackName: string) =>
     String(resolveLmuTrackId(trackName));
   const mapStorage = new LmuTrackMapStorage(
@@ -243,7 +252,6 @@ export async function publishLmuSDKEvents(
   // rather than hit a port the sim is not serving. Everything above the
   // transport is identical either way, which is the point of injecting it:
   // a replay exercises the real poller, not a shortcut around it.
-  const isTapeReplay = Boolean(process.env.IRDASHIES_LMU_REPLAY);
   const restTransport = isTapeReplay
     ? createLmuTapeRestTransport(sdk)
     : createLmuRestTransport(lmuRestOrigin());
