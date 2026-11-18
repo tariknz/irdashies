@@ -44,6 +44,7 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'deltaspeed',
   'flag',
   'garagecover',
+  'heartrate',
   'infobar',
   'input',
   'laptimelog',
@@ -58,6 +59,7 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'shiftlight',
   'slowcarahead',
   'standings',
+  'streamchat',
   // Not a sim-specific widget: it reports whatever channels the running sim
   // publishes, which is how LMU's own mapping gets checked. It is also the
   // one widget absent from the settings menu, so there would be no toggle to
@@ -82,7 +84,6 @@ export const LMU_DISABLED_WIDGETS: readonly string[] = [
   'flatmap',
   'fuel',
   'gantry',
-  'heartrate',
   'map',
   'radar',
   'rejoin',
@@ -90,7 +91,6 @@ export const LMU_DISABLED_WIDGETS: readonly string[] = [
   'stintplan',
   'strategytimeline',
   'tachometer',
-  'streamchat',
   // LMU simulates no wind: its wind vector is always zero.
   'wind',
 ];
@@ -123,7 +123,7 @@ export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
  * it did, which costs a user their hand edits once per change and is why the
  * number is bumped only for a real one.
  */
-export const SIM_WIDGET_SUPPORT_VERSION = 9;
+export const SIM_WIDGET_SUPPORT_VERSION = 10;
 
 /**
  * Whether a widget is unavailable under the running sim.
