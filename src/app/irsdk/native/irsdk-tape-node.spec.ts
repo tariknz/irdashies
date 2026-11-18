@@ -293,6 +293,57 @@ describe('tape-backed native SDK', () => {
     await rm(temporaryDirectory, { recursive: true, force: true });
   });
 
+  it('shares one owned frame across byte views without changing earlier frames', async () => {
+    await writeFile(tapePath, createTapeFixture());
+    const script = `
+      const assert = require('node:assert/strict');
+      const { iRacingSdkNode } = require(process.argv[1]);
+      const sdk = new iRacingSdkNode();
+      const readFrame = sdk.getTelemetryDataView?.bind(sdk);
+      assert.ok(readFrame);
+      try {
+        assert.deepEqual(readFrame(), {});
+        assert.equal(sdk.startSDK(), true);
+        assert.equal(sdk.waitForData(100), true);
+        const first = readFrame();
+        const variables = Object.values(first);
+        assert.ok(variables.length > 1);
+        assert.ok(variables.every(({ value }) => value instanceof Uint8Array));
+        assert.equal(new Set(variables.map(({ value }) => value.buffer)).size, 1);
+        const independent = sdk.getTelemetryData();
+        for (const [name, variable] of Object.entries(first)) {
+          assert.deepEqual(
+            [...variable.value],
+            [...new Uint8Array(independent[name].value)]
+          );
+        }
+        const speed = first.Speed.value;
+        const readSpeed = () =>
+          new DataView(speed.buffer, speed.byteOffset, speed.byteLength).getFloat32(0, true);
+        const retainedSpeed = readSpeed();
+        assert.equal(sdk.waitForData(100), true);
+        const next = readFrame();
+        assert.notEqual(next.Speed.value.buffer, speed.buffer);
+        assert.equal(readSpeed(), retainedSpeed);
+        assert.ok(sdk.getTelemetryData().Speed.value instanceof ArrayBuffer);
+        sdk.stopSDK();
+        assert.equal(readSpeed(), retainedSpeed);
+        assert.deepEqual(readFrame(), {});
+      } finally {
+        sdk.stopSDK();
+      }
+    `;
+    await execFileAsync(process.execPath, ['-e', script, addonPath], {
+      env: {
+        ...process.env,
+        IRDASHIES_TELEMETRY_REPLAY: tapePath,
+        IRDASHIES_TELEMETRY_REPLAY_LOOP: '1',
+        IRDASHIES_TELEMETRY_REPLAY_SPEED: '100',
+      },
+      timeout: 5000,
+    });
+  });
+
   it.each([
     // Names from the 7 November 2026 F7 captures, before double decoding.
     ['captured Catalan name', Buffer.from('Jaime Perpinyà'), 'Jaime Perpinyà'],

@@ -41,7 +41,6 @@ export class LapHistoryProcessor implements TelemetryProcessor<LapHistorySnapsho
 
   private sessionNum: number | null = null;
   private version = 0;
-  private enabled = true;
   private readonly latest: LapHistorySnapshot;
 
   constructor() {
@@ -64,8 +63,6 @@ export class LapHistoryProcessor implements TelemetryProcessor<LapHistorySnapsho
   }
 
   onFrame(frame: Telemetry): void {
-    if (!this.enabled) return;
-
     const carIdxLap = frame.CarIdxLap?.value;
     if (!Array.isArray(carIdxLap)) return;
 
@@ -132,13 +129,7 @@ export class LapHistoryProcessor implements TelemetryProcessor<LapHistorySnapsho
   }
 
   onLifecycle(event: SessionLifecycleEvent): void {
-    if (event.type === 'enter') {
-      // Replay scrubbing rewinds lap counters, which would fabricate
-      // crossings. Aggregate live sessions only (R3.6).
-      this.enabled = !event.replay;
-      if (event.replay) this.reset(null);
-      return;
-    }
+    void event;
     this.reset(null);
   }
 

@@ -480,6 +480,34 @@ describe('useCarBehind', () => {
       expect(car.percent).toBeCloseTo((1 - 1.234 / 2.5) * 100);
     });
 
+    it('passes the LMU rating and AI flag through', () => {
+      const lmuRating = { driverRank: 'Gold' as const, driverTier: 2 };
+      const human = createMockDriver(10, -1.0, 42, 'LMU Human');
+      const ai = createMockDriver(20, -1.5, 42, 'LMU AI');
+      const mockDrivers = [
+        { ...human, driver: { ...human.driver, lmuRating, isAI: false } },
+        { ...ai, driver: { ...ai.driver, isAI: true } },
+        createMockDriver(30, 0, 37, 'Player'),
+      ];
+
+      vi.mocked(driverRelativesModule.useDriverRelatives).mockReturnValue(
+        mockDrivers
+      );
+
+      const { result } = renderHook(() =>
+        useCarBehind({ distanceThreshold: -2.5 })
+      );
+
+      expect(result.current).toHaveLength(2);
+      expect(result.current[0]).toMatchObject({
+        name: 'LMU Human',
+        lmuRating,
+        isAI: false,
+      });
+      expect(result.current[1]).toMatchObject({ name: 'LMU AI', isAI: true });
+      expect(result.current[1].lmuRating).toBeUndefined();
+    });
+
     it('should calculate percent correctly', () => {
       const mockDrivers = [
         createMockDriver(10, -1.5, 42, 'Half Way'),

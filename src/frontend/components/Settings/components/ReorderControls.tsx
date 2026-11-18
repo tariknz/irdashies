@@ -1,10 +1,16 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { ArrowDownIcon, ArrowUpIcon } from '@phosphor-icons/react';
+import {
+  ArrowDownIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ArrowUpIcon,
+} from '@phosphor-icons/react';
 
 interface ReorderControlsProps {
   label: string;
   position: number;
   total: number;
+  orientation?: 'vertical' | 'horizontal';
   onMoveUp?: () => void;
   onMoveDown?: () => void;
 }
@@ -14,6 +20,7 @@ export const ReorderControls = ({
   label,
   position,
   total,
+  orientation = 'vertical',
   onMoveUp,
   onMoveDown,
 }: ReorderControlsProps) => {
@@ -21,6 +28,10 @@ export const ReorderControls = ({
   const downRef = useRef<HTMLButtonElement>(null);
   const moved = useRef<'up' | 'down' | null>(null);
   const [announcement, setAnnouncement] = useState('');
+  const [backward, forward, BackwardIcon, ForwardIcon] =
+    orientation === 'horizontal'
+      ? (['left', 'right', ArrowLeftIcon, ArrowRightIcon] as const)
+      : (['up', 'down', ArrowUpIcon, ArrowDownIcon] as const);
 
   useLayoutEffect(() => {
     // Reinserted rows may lose focus even before reaching a boundary.
@@ -35,36 +46,36 @@ export const ReorderControls = ({
       <button
         ref={upRef}
         type="button"
-        aria-label={`Move ${label} up`}
-        title="Move up"
+        aria-label={`Move ${label} ${backward}`}
+        title={`Move ${backward}`}
         disabled={!onMoveUp}
         onClick={() => {
           moved.current = 'up';
           onMoveUp?.();
           setAnnouncement(
-            `${label} moved up. Position ${position - 1} of ${total}.`
+            `${label} moved ${backward}. Position ${position - 1} of ${total}.`
           );
         }}
         className="inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-400 hover:bg-settings-hover hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        <ArrowUpIcon size={16} aria-hidden="true" />
+        <BackwardIcon size={16} aria-hidden="true" />
       </button>
       <button
         ref={downRef}
         type="button"
-        aria-label={`Move ${label} down`}
-        title="Move down"
+        aria-label={`Move ${label} ${forward}`}
+        title={`Move ${forward}`}
         disabled={!onMoveDown}
         onClick={() => {
           moved.current = 'down';
           onMoveDown?.();
           setAnnouncement(
-            `${label} moved down. Position ${position + 1} of ${total}.`
+            `${label} moved ${forward}. Position ${position + 1} of ${total}.`
           );
         }}
         className="inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-400 hover:bg-settings-hover hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        <ArrowDownIcon size={16} aria-hidden="true" />
+        <ForwardIcon size={16} aria-hidden="true" />
       </button>
       <span role="status" className="sr-only">
         {announcement}

@@ -1,3 +1,4 @@
+import { useCanvasCleanup } from '@irdashies/domain/canvas/useCanvasCleanup';
 import { RadarRingsLayer } from '../radarDrawRings';
 import { useNativeWindowVisibility } from '@irdashies/context';
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -117,6 +118,7 @@ export const RadarDisplay = memo(
     const nativeVisible = useNativeWindowVisibility();
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    useCanvasCleanup(canvasRef);
     const [size, setSize] = useState(0);
 
     const latest = useRef({

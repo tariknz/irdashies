@@ -39,6 +39,7 @@ Napi::Object iRacingSdkNode::Init(Napi::Env env, Napi::Object exports)
     InstanceMethod("getSessionVersionNum", &iRacingSdkNode::GetSessionVersionNum),
     InstanceMethod("getSessionData", &iRacingSdkNode::GetSessionData),
     InstanceMethod("getTelemetryData", &iRacingSdkNode::GetTelemetryData),
+    InstanceMethod("getTelemetryDataView", &iRacingSdkNode::GetTelemetryDataView),
     InstanceMethod("getTelemetryVariable", &iRacingSdkNode::GetTelemetryVar),
     // Helpers
     InstanceMethod("__getTelemetryTypes", &iRacingSdkNode::__GetTelemetryTypes)
@@ -518,6 +519,21 @@ Napi::Value iRacingSdkNode::GetTelemetryData(const Napi::CallbackInfo &info)
 }
 
 // Helpers
+Napi::Value iRacingSdkNode::GetTelemetryDataView(const Napi::CallbackInfo &info)
+{
+  auto env = info.Env();
+  auto result = Napi::Object::New(env);
+  if (!this->_capture.valid) return result;
+
+  auto frameBuffer = Napi::ArrayBuffer::New(env, this->_capture.data.size());
+  std::memcpy(frameBuffer.Data(), this->_capture.data.data(), this->_capture.data.size());
+  for (std::size_t i = 0; i < this->_capture.variables.size(); ++i) {
+    auto variable = this->GetTelemetryVarByIndex(env, static_cast<int>(i), &frameBuffer);
+    if (variable.Has("name")) result.Set(variable.Get("name"), variable);
+  }
+  return result;
+}
+
 Napi::Value iRacingSdkNode::__GetTelemetryTypes(const Napi::CallbackInfo &info)
 {
   auto env = info.Env();
@@ -541,7 +557,8 @@ Napi::Value iRacingSdkNode::__GetTelemetryTypes(const Napi::CallbackInfo &info)
 // ---------------------------
 // Helper functions
 // ---------------------------
-Napi::Object iRacingSdkNode::GetTelemetryVarByIndex(const Napi::Env env, int index)
+Napi::Object iRacingSdkNode::GetTelemetryVarByIndex(const Napi::Env env, int index,
+    const Napi::ArrayBuffer* frameBuffer)
 {
   auto telemVar = Napi::Object::New(env);
 
@@ -564,10 +581,13 @@ Napi::Object iRacingSdkNode::GetTelemetryVarByIndex(const Napi::Env env, int ind
   telemVar.Set("unit", sdkString(headerVar->unit, sizeof(headerVar->unit)));
   telemVar.Set("varType", headerVar->type);
 
-  auto entryVal = Napi::ArrayBuffer::New(env, dataSize);
-  memcpy(entryVal.Data(), this->_capture.data.data() + headerVar->offset, dataSize);
-
-  telemVar.Set("value", entryVal);
+  if (frameBuffer) {
+    telemVar.Set("value", Napi::Uint8Array::New(env, dataSize, *frameBuffer, headerVar->offset));
+  } else {
+    auto entryVal = Napi::ArrayBuffer::New(env, dataSize);
+    memcpy(entryVal.Data(), this->_capture.data.data() + headerVar->offset, dataSize);
+    telemVar.Set("value", entryVal);
+  }
   return telemVar;
 }
 

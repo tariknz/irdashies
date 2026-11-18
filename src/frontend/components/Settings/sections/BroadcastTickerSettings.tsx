@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { BroadcastModuleDescription } from './BroadcastModuleDescription';
 import { changeMarker } from '../components/ChangedMark';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SessionVisibility } from '../components/SessionVisibility';
+import { TabButton } from '../components/TabButton';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { useDashboard } from '@irdashies/context';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import type { BroadcastTickerWidgetSettings } from '@irdashies/types';
@@ -13,7 +16,16 @@ const SETTING_ID = 'broadcastticker';
 
 const defaultConfig = getWidgetDefaultConfig('broadcastticker');
 
-export const BroadcastTickerSettings = () => {
+type ModuleTab = 'options' | 'visibility';
+
+const TABS: { id: ModuleTab; label: string }[] = [
+  { id: 'options', label: 'Options' },
+  { id: 'visibility', label: 'Visibility' },
+];
+
+const TAB_IDS = TABS.map((tab) => tab.id);
+
+export const BroadcastTickerSettings = ({ obsUrl }: { obsUrl?: string }) => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
@@ -23,6 +35,7 @@ export const BroadcastTickerSettings = () => {
     enabled: savedSettings?.enabled ?? false,
     config: { ...defaultConfig, ...savedSettings?.config },
   });
+  const [tab, setTab] = useStoredTab(`${SETTING_ID}Tab`, TAB_IDS);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -33,9 +46,13 @@ export const BroadcastTickerSettings = () => {
   return (
     <BaseSettingsSection
       disableInternalScroll
-      headingLevel="h3"
       title="Broadcast Ticker"
-      description="Scrolling bottom-of-screen ticker. After each full loop it moves on: standings, fastest laps, then the best car of each manufacturer."
+      description={
+        <BroadcastModuleDescription obsUrl={obsUrl}>
+          Scrolling bottom-of-screen ticker. After each full loop it moves on:
+          standings, fastest laps, then the best car of each manufacturer.
+        </BroadcastModuleDescription>
+      }
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -50,74 +67,94 @@ export const BroadcastTickerSettings = () => {
         );
         return (
           <div className="space-y-4">
-            <SettingsSection title="Widget options" scaleWidgetId={SETTING_ID}>
-              {mark(
-                ['background'],
-                <SettingSliderRow
-                  title="Background Opacity"
-                  value={config.background.opacity}
-                  units="%"
-                  min={0}
-                  max={100}
-                  step={1}
-                  onChange={(v) =>
-                    handleConfigChange({ background: { opacity: v } })
-                  }
-                />
-              )}
-              {markFade(
-                ['enabled'],
-                <SettingToggleRow
-                  title="Translucent"
-                  description="Fade the whole widget, text included, so it hides less of the stream."
-                  enabled={config.translucent.enabled}
-                  onToggle={(v) =>
-                    handleConfigChange({
-                      translucent: { ...config.translucent, enabled: v },
-                    })
-                  }
-                />
-              )}
-              {config.translucent.enabled &&
-                markFade(
-                  ['opacity'],
+            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+              {TABS.map(({ id, label }) => (
+                <TabButton
+                  key={id}
+                  id={id}
+                  activeTab={tab}
+                  setActiveTab={setTab}
+                >
+                  {label}
+                </TabButton>
+              ))}
+            </div>
+
+            {tab === 'options' && (
+              <SettingsSection
+                title="Widget options"
+                scaleWidgetId={SETTING_ID}
+              >
+                {mark(
+                  ['background'],
                   <SettingSliderRow
-                    title="Widget Opacity"
-                    value={config.translucent.opacity}
+                    title="Background Opacity"
+                    value={config.background.opacity}
                     units="%"
-                    min={20}
+                    min={0}
                     max={100}
-                    step={5}
+                    step={1}
                     onChange={(v) =>
+                      handleConfigChange({ background: { opacity: v } })
+                    }
+                  />
+                )}
+                {markFade(
+                  ['enabled'],
+                  <SettingToggleRow
+                    title="Translucent"
+                    description="Fade the whole widget, text included, so it hides less of the stream."
+                    enabled={config.translucent.enabled}
+                    onToggle={(v) =>
                       handleConfigChange({
-                        translucent: { ...config.translucent, opacity: v },
+                        translucent: { ...config.translucent, enabled: v },
                       })
                     }
                   />
                 )}
-              {mark(
-                ['secondsPerEntry'],
-                <SettingSliderRow
-                  title="Seconds Per Car"
-                  value={config.secondsPerEntry}
-                  units="s"
-                  min={1}
-                  max={10}
-                  step={0.5}
-                  onChange={(v) => handleConfigChange({ secondsPerEntry: v })}
-                />
-              )}
-            </SettingsSection>
+                {config.translucent.enabled &&
+                  markFade(
+                    ['opacity'],
+                    <SettingSliderRow
+                      title="Widget Opacity"
+                      value={config.translucent.opacity}
+                      units="%"
+                      min={20}
+                      max={100}
+                      step={5}
+                      onChange={(v) =>
+                        handleConfigChange({
+                          translucent: { ...config.translucent, opacity: v },
+                        })
+                      }
+                    />
+                  )}
+                {mark(
+                  ['secondsPerEntry'],
+                  <SettingSliderRow
+                    title="Seconds Per Car"
+                    value={config.secondsPerEntry}
+                    units="s"
+                    min={1}
+                    max={10}
+                    step={0.5}
+                    onChange={(v) => handleConfigChange({ secondsPerEntry: v })}
+                  />
+                )}
+              </SettingsSection>
+            )}
 
-            <SettingsSection title="Visibility">
-              {mark(
-                ['sessionVisibility'],
-                <SessionVisibility
-                  sessionVisibility={config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
-              )}
-            </SettingsSection>
+            {tab === 'visibility' && (
+              <SettingsSection title="Visibility">
+                {mark(
+                  ['sessionVisibility'],
+                  <SessionVisibility
+                    sessionVisibility={config.sessionVisibility}
+                    handleConfigChange={handleConfigChange}
+                  />
+                )}
+              </SettingsSection>
+            )}
           </div>
         );
       }}
