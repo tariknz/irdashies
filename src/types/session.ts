@@ -8,9 +8,9 @@ import type {
   LmuTrackMap,
   LmuRestSession,
   LmuWeatherNode,
-} from '../app/irsdk/types';
-import type { CameraInfo, CameraGroup } from '../app/irsdk/types/camera-info';
-import type { Sector } from '../app/irsdk/types/split-info';
+} from './irSdk';
+import type { CameraInfo, CameraGroup } from './irSdk/camera-info';
+import type { Sector } from './irSdk/split-info';
 
 export type Session = SessionData;
 export type SessionInfo = SdkSessionInfo;

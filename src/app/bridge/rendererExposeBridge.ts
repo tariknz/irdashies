@@ -24,8 +24,6 @@ import type {
   RaceControlBridge,
   LapHistoryBridge,
   Incident,
-  IncidentThresholds,
-  SessionRetention,
   TelemetryInspectorBridge,
   RendererPerfBridge,
   ReleaseNotesBridge,
@@ -503,10 +501,6 @@ export function exposeBridge() {
     focusDriver: (carNumber: string) =>
       ipcRenderer.invoke('raceControl:focusDriver', carNumber),
     clearIncidents: () => ipcRenderer.invoke('raceControl:clearIncidents'),
-    updateThresholds: (thresholds: IncidentThresholds) =>
-      ipcRenderer.invoke('raceControl:updateThresholds', thresholds),
-    updateRetention: (retention: SessionRetention) =>
-      ipcRenderer.invoke('raceControl:updateRetention', retention),
     showGantryWindow: () => ipcRenderer.invoke('raceControl:showGantryWindow'),
   });
   defineBridge<LapHistoryBridge>('lapHistoryBridge', {

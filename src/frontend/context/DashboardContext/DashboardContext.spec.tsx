@@ -122,6 +122,101 @@ describe('DashboardContext', () => {
     });
   });
 
+  it('composes dashboard updates before React renders again', async () => {
+    function ApplyEdits() {
+      const { onDashboardUpdated } = useDashboard();
+      return (
+        <button
+          onClick={() => {
+            onDashboardUpdated?.((dashboard) => ({
+              ...dashboard,
+              generalSettings: { ...dashboard.generalSettings, fontSize: 'lg' },
+            }));
+            onDashboardUpdated?.((dashboard) => ({
+              ...dashboard,
+              generalSettings: {
+                ...dashboard.generalSettings,
+                fontWeight: 'bold',
+              },
+            }));
+          }}
+        >
+          Apply edits
+        </button>
+      );
+    }
+    vi.mocked(mockBridge.dashboardUpdated).mockImplementation((callback) => {
+      callback({ widgets: [] }, 'race');
+      return undefined;
+    });
+    render(
+      <DashboardProvider bridge={mockBridge}>
+        <ApplyEdits />
+      </DashboardProvider>
+    );
+    await act(async () =>
+      screen.getByRole('button', { name: 'Apply edits' }).click()
+    );
+    expect(mockBridge.saveDashboard).toHaveBeenLastCalledWith(
+      { widgets: [], generalSettings: { fontSize: 'lg', fontWeight: 'bold' } },
+      { profileId: 'race' }
+    );
+  });
+
+  it('applies a deferred edit to the latest snapshot of the original profile', async () => {
+    let receive!: Parameters<DashboardBridge['dashboardUpdated']>[0];
+    vi.mocked(mockBridge.dashboardUpdated).mockImplementation((callback) => {
+      receive = callback;
+      return undefined;
+    });
+    let finishEdit!: () => void;
+    let finishImport!: () => void;
+    function DeferredEdit() {
+      const { onDashboardUpdated } = useDashboard();
+      return (
+        <button
+          onClick={() => {
+            finishEdit = () =>
+              onDashboardUpdated?.((dashboard) => ({
+                ...dashboard,
+                generalSettings: {
+                  ...dashboard.generalSettings,
+                  fontSize: 'lg',
+                },
+              }));
+            finishImport = () =>
+              onDashboardUpdated?.({ widgets: [] }, { forceReload: true });
+          }}
+        >
+          Start edit
+        </button>
+      );
+    }
+    render(
+      <DashboardProvider bridge={mockBridge}>
+        <DeferredEdit />
+      </DashboardProvider>
+    );
+    const beginEdit = () =>
+      screen.getByRole('button', { name: 'Start edit' }).click();
+    await act(async () => receive({ widgets: [] }, 'race'));
+    act(beginEdit);
+    await act(async () =>
+      receive({ widgets: [], generalSettings: { fontWeight: 'bold' } }, 'race')
+    );
+    act(finishEdit);
+    expect(mockBridge.saveDashboard).toHaveBeenCalledExactlyOnceWith(
+      { widgets: [], generalSettings: { fontSize: 'lg', fontWeight: 'bold' } },
+      { profileId: 'race' }
+    );
+
+    act(beginEdit);
+    await act(async () => receive({ widgets: [] }, 'practice'));
+    act(finishEdit);
+    act(finishImport);
+    expect(mockBridge.saveDashboard).toHaveBeenCalledTimes(1);
+  });
+
   it('reloads the dashboard on mount', async () => {
     act(() => {
       render(

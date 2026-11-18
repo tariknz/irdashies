@@ -10,8 +10,8 @@ import {
   type LayoutNode,
 } from '@irdashies/types';
 import { useLapTraceStore } from '@irdashies/context';
-import { hydrateLapTrace } from '../../domain/lapTrace/hydrateLapTrace';
-import { parseGarage61Csv } from '../../domain/lapTrace/garage61CsvImport';
+import { hydrateLapTrace } from '@irdashies/utils/lapTrace/hydrateLapTrace';
+import { parseGarage61Csv } from '@irdashies/utils/lapTrace/garage61CsvImport';
 import {
   sampleGarage61Csv,
   sampleGarage61FileName,

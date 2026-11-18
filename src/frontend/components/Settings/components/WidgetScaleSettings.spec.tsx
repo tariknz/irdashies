@@ -1,3 +1,4 @@
+import { mockDashboardUpdater } from '../mockDashboardUpdater';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DashboardLayout } from '@irdashies/types';
@@ -15,7 +16,10 @@ vi.mock('@irdashies/context', async () => {
   return {
     useDashboard: () => ({
       currentDashboard: mocks.dashboard,
-      onDashboardUpdated: mocks.update,
+      onDashboardUpdated: mockDashboardUpdater(
+        () => mocks.dashboard,
+        mocks.update
+      ),
     }),
     useActiveSimulator: () => null,
     useSimWidgetSupport: () => DEFAULT_SIM_WIDGET_SUPPORT,
@@ -29,7 +33,6 @@ const renderSection = (widgetId = 'fuel-2') => (
     description="Fuel settings"
     widgetId={widgetId}
     settings={settings}
-    onSettingsChange={() => undefined}
   >
     {(change) => (
       <>

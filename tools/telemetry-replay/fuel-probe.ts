@@ -1,4 +1,4 @@
-import type { Telemetry } from '../../src/types';
+import { telemetryFrom } from './processorInputs';
 import { FuelProjectionProcessor } from '../../src/app/processors/FuelProjectionProcessor';
 import type { ReplayProbe, TelemetryFrame } from './validator';
 import { ranLastFrame, rateLimited } from './rateLimited';
@@ -54,9 +54,7 @@ export const createFuelStateProbe = (): ReplayProbe<FuelProbeState> => {
       const onPitRoad = Boolean(frame.OnPitRoad);
       const flags = numberValue(frame, 'SessionFlags');
       const lap = numberValue(frame, 'Lap');
-      const telemetry = Object.fromEntries(
-        Object.entries(frame).map(([name, entry]) => [name, { value: [entry] }])
-      ) as unknown as Telemetry;
+      const telemetry = telemetryFrom(frame);
       processor.onFrame(telemetry);
       const validation = processor.validationSnapshot();
       // Commands belong to the frame the processor ran on; on skipped frames

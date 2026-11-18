@@ -1,10 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import {
-  FlagWidgetSettings,
-  SettingsTabType,
-  getWidgetDefaultConfig,
-} from '@irdashies/types';
+import { FlagWidgetSettings, getWidgetDefaultConfig } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
 import { SettingsTabBar } from '../components/SettingsTabBar';
@@ -25,21 +21,17 @@ export const FlagSettings = () => {
     (w) => w.id === SETTING_ID
   ) as FlagWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<FlagWidgetSettings>({
+  const settings: FlagWidgetSettings = {
     id: SETTING_ID,
     enabled: savedSettings?.enabled ?? true,
     config:
       (savedSettings?.config as FlagWidgetSettings['config']) ?? defaultConfig,
-  });
+  };
 
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('flagTab') as SettingsTabType) || 'options'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('flagTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('flagTab', [
+    'options',
+    'visibility',
+  ]);
 
   if (!currentDashboard) return <>Loading...</>;
 
@@ -48,7 +40,6 @@ export const FlagSettings = () => {
       title="Flag"
       description="Display track flags"
       settings={settings as FlagWidgetSettings}
-      onSettingsChange={(s) => setSettings(s as FlagWidgetSettings)}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (

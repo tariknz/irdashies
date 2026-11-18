@@ -40,28 +40,18 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { pathToFileURL } = require('node:url');
 const { app, BrowserWindow } = require('electron');
 
-/** Where fetch-lmu-rank-art.ts puts the source art. Kept in step with it. */
-const CACHE_DIR = path.resolve('tools/.cache/lmu-rank-art');
-const RANK_DIR = path.join(CACHE_DIR, 'drsr');
-const BADGE_DIR = path.join(CACHE_DIR, 'badges');
+const {
+  plates: plateCells,
+  badges: badgeCells,
+  CACHE_DIR,
+} = require('./lmu-rank-art.ts');
 const OUT_DIR = path.resolve('src/frontend/assets/lmu');
 const POSITIONS_OUT = path.resolve(
   'src/frontend/components/shared/DriverRatingBadge/lmuSpritePositions.ts'
 );
-
-/** Kept in step with LMU_TIERED_RANKS and the fetcher's own lists. */
-const KINDS = ['dr', 'sr'];
-const RANKS = ['Bronze', 'Silver', 'Gold', 'Platinum'];
-const TIERS = [0, 1, 2, 3];
-const BADGES = [
-  'sr-noob',
-  'sr-saint',
-  'sr-clean',
-  'sr-warning',
-  'sr-probation',
-];
 
 /**
  * Badge names with no artwork of their own, drawn from another badge's cell.
@@ -97,10 +87,6 @@ const SCALE = 2;
 /** Long enough for 37 small rasterisations, short enough to not look hung. */
 const TIMEOUT_MS = 60_000;
 
-/** `file:///C:/dev/...` with spaces escaped, which the page can load. */
-const fileUrl = (file) =>
-  `file:///${file.replace(/\\/g, '/').replace(/ /g, '%20')}`;
-
 /**
  * Draws every cell into one canvas and returns the sheet as PNG bytes.
  *
@@ -114,7 +100,7 @@ const compose = async (win, cells, cols, cellW, cellH) => {
     name: cell.name,
     col: index % cols,
     row: Math.floor(index / cols),
-    url: fileUrl(cell.file),
+    url: pathToFileURL(cell.file).href,
   }));
 
   const dataUrl = await win.webContents.executeJavaScript(
@@ -160,22 +146,6 @@ window.compose = async ({ cells, cols, rows, cellW, cellH }) => {
 </script></body>`;
 
 async function main() {
-  const plateCells = [];
-  for (const kind of KINDS) {
-    for (const rank of RANKS) {
-      for (const tier of TIERS) {
-        plateCells.push({
-          name: `${kind}-${rank}${tier}`,
-          file: path.join(RANK_DIR, `${kind}-${rank}${tier}.svg`),
-        });
-      }
-    }
-  }
-  const badgeCells = BADGES.map((badge) => ({
-    name: badge,
-    file: path.join(BADGE_DIR, `${badge}.svg`),
-  }));
-
   // Checked up front rather than left to the page: a missing input there
   // surfaces as "could not load" halfway through, with no hint of the cause.
   // The fetcher treats a file the bucket lacks as a fact about the bucket;

@@ -267,7 +267,7 @@ export async function publishDashboardUpdates(
 
   const applyDashboard = (merged: DashboardLayout, profileId: string) => {
     overlayManager.closeOrCreateWindows(merged);
-    overlayManager.publishMessage('dashboardUpdated', merged);
+    overlayManager.publishMessage('dashboardUpdated', merged, profileId);
     // Notify component server bridge subscribers
     dashboardUpdateCallbacks.forEach((callback) => {
       try {
@@ -320,6 +320,14 @@ export async function publishDashboardUpdates(
   ipcMain.on(
     'saveDashboard',
     (_, savedDashboard: DashboardLayout, options?: SaveDashboardOptions) => {
+      const currentProfileId = getCurrentProfileId();
+      if (
+        options?.profileId !== undefined &&
+        options.profileId !== currentProfileId
+      ) {
+        return;
+      }
+
       // Advanced settings can replace a dashboard with JSON from an older export.
       if (options?.forceReload && !isDashboardExport(savedDashboard)) {
         logger.warn('[saveDashboard] Imported JSON is not a dashboard export');
@@ -331,18 +339,20 @@ export async function publishDashboardUpdates(
       // For layout-only changes (drag/resize), skip the window refresh
       if (options?.skipWindowRefresh) {
         // Save without emitting event to avoid window recreation
-        const currentProfileId = getCurrentProfileId();
         const existingDashboards = listDashboards();
         existingDashboards[currentProfileId] = dashboard;
         writeData('dashboards', existingDashboards);
         // Create windows for any new displays the widget may have been dragged to
         overlayManager.ensureDisplayWindows(dashboard);
         // Still notify renderer of the update
-        overlayManager.publishMessage('dashboardUpdated', dashboard);
+        overlayManager.publishMessage(
+          'dashboardUpdated',
+          dashboard,
+          currentProfileId
+        );
         return;
       }
 
-      const currentProfileId = getCurrentProfileId();
       saveDashboard(currentProfileId, dashboard);
       if (options?.forceReload) {
         overlayManager.forceRefreshOverlays(dashboard);
@@ -360,7 +370,7 @@ export async function publishDashboardUpdates(
     overlayManager.closeOrCreateWindows(merged);
     if (event.sender.isDestroyed()) return;
     overlayManager.sendOverlayState(event.sender);
-    event.sender.send('dashboardUpdated', merged);
+    event.sender.send('dashboardUpdated', merged, currentProfileId);
   });
 
   ipcMain.handle('resetDashboard', (_, resetEverything: boolean) => {
@@ -607,7 +617,11 @@ export async function publishDashboardUpdates(
     const currentDashboard = getDashboard(currentProfileId);
     if (currentDashboard) {
       const merged = mergeDriverTagsIntoLayout(currentDashboard, settings);
-      overlayManager.publishMessage('dashboardUpdated', merged);
+      overlayManager.publishMessage(
+        'dashboardUpdated',
+        merged,
+        currentProfileId
+      );
     }
 
     // Notify all profiles' browser views (e.g. OBS stream overlays).

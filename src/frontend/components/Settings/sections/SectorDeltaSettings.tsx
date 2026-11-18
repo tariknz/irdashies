@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   SectorDeltaWidgetSettings,
-  SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
@@ -30,22 +29,18 @@ export const SectorDeltaSettings = () => {
     (w) => w.id === SETTING_ID
   ) as SectorDeltaWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<SectorDeltaWidgetSettings>({
+  const settings: SectorDeltaWidgetSettings = {
     id: SETTING_ID,
     enabled: savedSettings?.enabled ?? false,
     config:
       (savedSettings?.config as SectorDeltaWidgetSettings['config']) ??
       defaultConfig,
-  });
+  };
 
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () =>
-      (localStorage.getItem('sectorDeltaTab') as SettingsTabType) || 'options'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('sectorDeltaTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('sectorDeltaTab', [
+    'options',
+    'visibility',
+  ]);
 
   if (!currentDashboard) return <>Loading...</>;
 
@@ -54,7 +49,6 @@ export const SectorDeltaSettings = () => {
       title="Sector Delta"
       description="Per-sector timing deltas colored by performance."
       settings={settings as SectorDeltaWidgetSettings}
-      onSettingsChange={(s) => setSettings(s as SectorDeltaWidgetSettings)}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (

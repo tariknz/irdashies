@@ -3,7 +3,7 @@ import type {
   Session,
   Telemetry,
 } from '@irdashies/types';
-import type { ChannelBus } from '../bridge/channelBridge';
+import type { ChannelBus } from '../bridge/channelBus';
 import type { SessionLifecycle } from '../sessionLifecycle';
 import {
   ReplayContextProcessor,
@@ -12,11 +12,7 @@ import {
   type KnownUserIds,
 } from './ReplayContextProcessor';
 import logger from '../logger';
-
-export interface PerformanceSections {
-  markStart(label: string): void;
-  markEnd(label: string): void;
-}
+import type { PerformanceSections } from '../perfMetrics';
 
 export interface KnownUserIdRecorder extends KnownUserIds {
   remember(userId: number): boolean;

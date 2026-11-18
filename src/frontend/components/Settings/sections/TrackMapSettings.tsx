@@ -1,8 +1,8 @@
+import { useStoredTab } from '../hooks/useStoredTab';
 import { useState, useEffect, useRef } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   TrackMapWidgetSettings,
-  SettingsTabType,
   getWidgetDefaultConfig,
   DashboardBridge,
 } from '@irdashies/types';
@@ -49,14 +49,14 @@ export const TrackMapSettings = () => {
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as TrackMapWidgetSettings | undefined;
-  const [settings, setSettings] = useState<TrackMapWidgetSettings>({
+  const settings: TrackMapWidgetSettings = {
     enabled:
       currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
       false,
     config:
       (savedSettings?.config as TrackMapWidgetSettings['config']) ??
       defaultConfig,
-  });
+  };
 
   const [imageError, setImageError] = useState<string | null>(null);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
@@ -67,14 +67,12 @@ export const TrackMapSettings = () => {
     ((newConfig: Partial<TrackMapWidgetSettings['config']>) => void) | null
   >(null);
 
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('trackMapTab') as SettingsTabType) || 'track'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('trackMapTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('trackMapTab', [
+    'track',
+    'drivers',
+    'styling',
+    'visibility',
+  ]);
 
   const imageFilename = settings.config.playerIcon?.fileName ?? '';
 
@@ -130,7 +128,6 @@ export const TrackMapSettings = () => {
       title="Track Map"
       description="Configure track map visualization settings."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId="map"
     >
       {(handleConfigChange) => {

@@ -1,5 +1,5 @@
 import { validateImageDataUrl } from '@irdashies/utils/imageDataUrl';
-import { Fragment, useState } from 'react';
+import { Fragment, useLayoutEffect, useRef, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { BroadcastModuleDescription } from './BroadcastModuleDescription';
 import { changeMarker } from '../components/ChangedMark';
@@ -112,20 +112,27 @@ const NAME_FORMATS: readonly NameFormat[] = [
 ];
 
 export const BroadcastSettings = ({ obsUrl }: { obsUrl?: string }) => {
-  const { currentDashboard } = useDashboard();
+  const { currentDashboard, currentProfile } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as BroadcastWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<BroadcastWidgetSettings>({
+  const settings: BroadcastWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config: {
       ...defaultConfig,
       ...savedSettings?.config,
       pages: { ...defaultConfig.pages, ...savedSettings?.config?.pages },
     },
-  });
+  };
   const [logoError, setLogoError] = useState('');
+  const logoReadVersion = useRef(0);
+  useLayoutEffect(
+    () => () => {
+      logoReadVersion.current += 1;
+    },
+    [currentProfile?.id]
+  );
   const [tab, setTab] = useStoredTab(`${SETTING_ID}Tab`, TAB_IDS);
 
   if (!currentDashboard) {
@@ -147,7 +154,6 @@ export const BroadcastSettings = ({ obsUrl }: { obsUrl?: string }) => {
         </BroadcastModuleDescription>
       }
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => {
@@ -212,6 +218,7 @@ export const BroadcastSettings = ({ obsUrl }: { obsUrl?: string }) => {
                           const file = e.target.files?.[0];
                           e.target.value = '';
                           if (!file) return;
+                          const version = ++logoReadVersion.current;
                           if (!file.type.startsWith('image/')) {
                             return setLogoError('Pick an image file.');
                           }
@@ -221,6 +228,7 @@ export const BroadcastSettings = ({ obsUrl }: { obsUrl?: string }) => {
                           setLogoError('');
                           const reader = new FileReader();
                           reader.onload = () => {
+                            if (version !== logoReadVersion.current) return;
                             const logo = validateImageDataUrl(reader.result);
                             if (!logo)
                               return setLogoError(
@@ -234,7 +242,10 @@ export const BroadcastSettings = ({ obsUrl }: { obsUrl?: string }) => {
                       {config.logo && (
                         <button
                           type="button"
-                          onClick={() => handleConfigChange({ logo: '' })}
+                          onClick={() => {
+                            logoReadVersion.current += 1;
+                            handleConfigChange({ logo: '' });
+                          }}
                           className="settings-button"
                         >
                           Remove

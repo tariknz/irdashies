@@ -1,10 +1,10 @@
+import { useStoredTab } from '../hooks/useStoredTab';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowSquareOutIcon, UploadSimpleIcon } from '@phosphor-icons/react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   LapTraceWidgetSettings,
   LayoutNode,
-  SettingsTabType,
   getWidgetDefaultConfig,
   DEFAULT_AUDIO_OUTPUT_DEVICE_ID,
   DEFAULT_LAP_TRACE_LAYOUT_TREE,
@@ -22,8 +22,8 @@ import { useDashboard, useLapTraceStore } from '@irdashies/context';
 import {
   GARAGE61_IMPORT_CAR_PATH,
   GARAGE61_IMPORT_TRACK_ID,
-} from '../../../domain/lapTrace/garage61CsvImport';
-import { MAX_METERS_BEHIND } from '../../../domain/lapTrace/lapTraceWindow';
+} from '@irdashies/utils/lapTrace/garage61CsvImport';
+import { MAX_METERS_BEHIND } from '@irdashies/utils/lapTrace/lapTraceWindow';
 import { BRAKE_CUE_MIN_PEAK_DEFAULT } from '../../../domain/lapTrace/brakeCuePoints';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
@@ -108,7 +108,7 @@ const formatLapTime = (seconds: number): string => {
 
 const defaultConfig = getWidgetDefaultConfig('laptrace');
 
-const TABS: SettingsTabType[] = [
+const TABS = [
   'layout',
   'trace',
   'corner',
@@ -116,7 +116,7 @@ const TABS: SettingsTabType[] = [
   'styling',
   'visibility',
   'help',
-];
+] as const;
 
 const LAST_CORNER_DISPLAY_ORDER = [
   'corner',
@@ -216,12 +216,12 @@ export const LapTraceSettings = () => {
     (w) => w.id === SETTING_ID
   ) as LapTraceWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<LapTraceWidgetSettings>(() => ({
+  const settings: LapTraceWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config:
       (savedSettings?.config as LapTraceWidgetSettings['config']) ??
       defaultConfig,
-  }));
+  };
 
   // The same tree the overlay draws. Configs saved before the layout editor
   // got theirs from the dashboard-load migration.
@@ -235,14 +235,7 @@ export const LapTraceSettings = () => {
     lapTraceElementSide(withoutRepeatedElements(currentTree), 'brakeCue') ??
     'right';
 
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(() => {
-    const saved = localStorage.getItem('lapTraceTab') as SettingsTabType | null;
-    return saved && TABS.includes(saved) ? saved : 'layout';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('lapTraceTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('lapTraceTab', TABS);
 
   const [garage61Status, setGarage61Status] = useState<Garage61Status>(null);
   const [ibtStatus, setIbtStatus] = useState<IbtStatus>(null);
@@ -445,7 +438,6 @@ export const LapTraceSettings = () => {
       title="Lap Trace"
       description="Compare your throttle, brake and speed with a saved reference lap as you drive."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (

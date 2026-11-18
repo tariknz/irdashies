@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react';
+import { Fragment } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { BroadcastModuleDescription } from './BroadcastModuleDescription';
 import { changeMarker } from '../components/ChangedMark';
@@ -51,10 +51,10 @@ export const BroadcastEventsSettings = ({ obsUrl }: { obsUrl?: string }) => {
     (w) => w.id === SETTING_ID
   ) as BroadcastEventsWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<BroadcastEventsWidgetSettings>({
+  const settings: BroadcastEventsWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config: { ...defaultConfig, ...savedSettings?.config },
-  });
+  };
   const [tab, setTab] = useStoredTab(`${SETTING_ID}Tab`, TAB_IDS);
 
   if (!currentDashboard) {
@@ -77,7 +77,6 @@ export const BroadcastEventsSettings = ({ obsUrl }: { obsUrl?: string }) => {
         </BroadcastModuleDescription>
       }
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => {

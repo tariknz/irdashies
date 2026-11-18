@@ -1,11 +1,8 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useStoredTab } from '../../hooks/useStoredTab';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BaseSettingsSection } from '../../components/BaseSettingsSection';
-import {
-  FuelWidgetSettings,
-  LayoutNode,
-  SettingsTabType,
-} from '@irdashies/types';
+import { FuelWidgetSettings, LayoutNode } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { PlusIcon } from '@phosphor-icons/react';
 import { SessionVisibility } from '../../components/SessionVisibility';
@@ -43,16 +40,7 @@ export const SingleFuelWidgetSettings = ({
   const fuelWidgets =
     currentDashboard?.widgets.filter((w) => (w.type || w.id) === 'fuel') ?? [];
 
-  const [selectedId, setSelectedId] = useState(widgetId);
-  const [prevWidgetId, setPrevWidgetId] = useState(widgetId);
-
-  if (widgetId !== prevWidgetId) {
-    setPrevWidgetId(widgetId);
-    setSelectedId(widgetId);
-  }
-
   const handleWidgetChange = (newId: string) => {
-    setSelectedId(newId);
     navigate(`/settings/${newId}`);
   };
 
@@ -77,7 +65,7 @@ export const SingleFuelWidgetSettings = ({
 
   const handleDeleteWidget = () => {
     if (!currentDashboard || !onDashboardUpdated) return;
-    const updated = deleteFuelLayout(currentDashboard, selectedId);
+    const updated = deleteFuelLayout(currentDashboard, widgetId);
     onDashboardUpdated(updated);
     const remaining = updated.widgets.filter(
       (w) => (w.type || w.id) === 'fuel'
@@ -88,24 +76,19 @@ export const SingleFuelWidgetSettings = ({
 
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === widgetId
-  ) as FuelWidgetSettings | undefined;
-  const isGantryOnly =
-    currentDashboard?.widgets.find((w) => w.id === widgetId)?.placement ===
-    'gantry';
-
-  const [settings, setSettings] = useState<FuelWidgetSettings>(() => {
-    const savedConfig =
-      (savedSettings?.config as FuelWidgetSettings['config']) ?? defaultConfig;
-    const needsDefaultTree =
-      (!savedConfig.layoutConfig || savedConfig.layoutConfig.length === 0) &&
-      !savedConfig.layoutTree;
-    return {
-      enabled: savedSettings?.enabled ?? false,
-      config: needsDefaultTree
-        ? { ...savedConfig, layoutTree: DEFAULT_TREE_FUEL }
-        : savedConfig,
-    };
-  });
+  );
+  const isGantryOnly = savedSettings?.placement === 'gantry';
+  const savedConfig =
+    (savedSettings?.config as FuelWidgetSettings['config'] | undefined) ??
+    defaultConfig;
+  const needsDefaultTree =
+    !savedConfig.layoutConfig?.length && !savedConfig.layoutTree;
+  const settings: FuelWidgetSettings = {
+    enabled: savedSettings?.enabled ?? false,
+    config: needsDefaultTree
+      ? { ...savedConfig, layoutTree: DEFAULT_TREE_FUEL }
+      : savedConfig,
+  };
 
   const availableWidgets = AVAILABLE_WIDGETS_FUEL;
 
@@ -118,14 +101,13 @@ export const SingleFuelWidgetSettings = ({
     return migrateToTree(settings.config.layoutConfig || []);
   }, [settings.config.layoutTree, settings.config.layoutConfig]);
 
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('fuelWidgetTab') as SettingsTabType) || 'layout'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('fuelWidgetTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('fuelWidgetTab', [
+    'layout',
+    'display',
+    'options',
+    'history',
+    'visibility',
+  ]);
 
   if (!currentDashboard || !savedSettings) {
     return (
@@ -138,7 +120,6 @@ export const SingleFuelWidgetSettings = ({
       title="Fuel Calculator"
       description={`Configure the Fuel Calculator layout. Editing: ${widgetId}${isGantryOnly ? ' (Gantry)' : ''}.`}
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={widgetId}
       disableInternalScroll={disableInternalScroll}
       hidePositionReset={isGantryOnly || activeTab === 'history'}
@@ -206,7 +187,7 @@ export const SingleFuelWidgetSettings = ({
                         </span>
                         <select
                           aria-label="Editing fuel widget"
-                          value={selectedId}
+                          value={widgetId}
                           onChange={(e) => handleWidgetChange(e.target.value)}
                           className="settings-field"
                         >
@@ -231,19 +212,19 @@ export const SingleFuelWidgetSettings = ({
                       <div className="flex items-center gap-2">
                         <button
                           onClick={handleDeleteWidget}
-                          disabled={selectedId === 'fuel'}
+                          disabled={widgetId === 'fuel'}
                           title={
-                            selectedId === 'fuel'
+                            widgetId === 'fuel'
                               ? 'Default widget cannot be deleted. Disable it instead.'
                               : 'Delete this layout configuration'
                           }
                           className={`settings-button-danger ${
-                            selectedId === 'fuel'
+                            widgetId === 'fuel'
                               ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed opacity-50'
                               : ''
                           }`}
                         >
-                          {selectedId === 'fuel'
+                          {widgetId === 'fuel'
                             ? 'Default (Locked)'
                             : 'Delete Layout'}
                         </button>

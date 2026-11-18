@@ -1,10 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import {
-  BattleWidgetSettings,
-  SettingsTabType,
-  getWidgetDefaultConfig,
-} from '@irdashies/types';
+import { BattleWidgetSettings, getWidgetDefaultConfig } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
 import { SettingsTabBar } from '../components/SettingsTabBar';
@@ -130,21 +126,19 @@ export const BattleSettings = () => {
     (w) => w.id === SETTING_ID
   ) as BattleWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<BattleWidgetSettings>({
+  const settings: BattleWidgetSettings = {
     id: SETTING_ID,
     enabled: savedSettings?.enabled ?? false,
     config:
       (savedSettings?.config as BattleWidgetSettings['config']) ??
       defaultConfig,
-  });
+  };
 
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('battleTab') as SettingsTabType) || 'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('battleTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('battleTab', [
+    'display',
+    'options',
+    'visibility',
+  ]);
 
   if (!currentDashboard) return <>Loading...</>;
 
@@ -153,7 +147,6 @@ export const BattleSettings = () => {
       title="Battle"
       description="Shows the cars immediately ahead and behind the player with gap information"
       settings={settings as BattleWidgetSettings}
-      onSettingsChange={(s) => setSettings(s as BattleWidgetSettings)}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (

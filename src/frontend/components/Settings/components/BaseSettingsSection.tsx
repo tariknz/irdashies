@@ -16,17 +16,52 @@ import { SettingsPreviewContext } from '@irdashies/domain/widgetPreview/settings
 import { WidgetPreview } from './WidgetPreview';
 import { SettingsPreviewLayout } from './SettingsPreviewLayout';
 
+const isConfigObject = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+function mergeConfigChanges(
+  latest: Record<string, unknown>,
+  rendered: Record<string, unknown>,
+  changes: Record<string, unknown>
+) {
+  const merged = { ...latest };
+  for (const [key, value] of Object.entries(changes)) {
+    if (value === rendered[key]) continue;
+
+    const latestValue = latest[key];
+    const renderedValue = rendered[key];
+    if (
+      isConfigObject(value) &&
+      isConfigObject(latestValue) &&
+      isConfigObject(renderedValue) &&
+      typeof value.type !== 'string' &&
+      typeof renderedValue.type !== 'string'
+    ) {
+      const retainedEntries = Object.entries(latestValue).filter(
+        ([entry]) =>
+          !Object.hasOwn(renderedValue, entry) || Object.hasOwn(value, entry)
+      );
+      merged[key] = mergeConfigChanges(
+        Object.fromEntries(retainedEntries),
+        renderedValue,
+        value
+      );
+    } else {
+      merged[key] = value;
+    }
+  }
+  return merged;
+}
+
 interface BaseSettingsSectionProps<T> {
   title: string;
   headingLevel?: 'h2' | 'h3';
   description: ReactNode;
   settings?: BaseWidgetSettings<T>;
-  onSettingsChange?: (settings: BaseWidgetSettings<T>) => void;
   widgetId?: string;
   children?:
     | ((handleConfigChange: (config: Partial<T>) => void) => ReactNode)
     | ReactNode;
-  onConfigChange?: (config: Partial<T>) => void;
   disableInternalScroll?: boolean;
   /** For widgets that never appear on the overlay, so have no position. */
   hidePositionReset?: boolean;
@@ -39,10 +74,8 @@ export const BaseSettingsSection = <T,>({
   headingLevel: Heading = 'h2',
   description,
   settings,
-  onSettingsChange,
   widgetId,
   children,
-  onConfigChange,
   disableInternalScroll = false,
   hidePositionReset = false,
   previewWidgetId: explicitPreviewWidgetId,
@@ -68,55 +101,12 @@ export const BaseSettingsSection = <T,>({
     !simDisabledReason &&
     !!widgetId &&
     menuHasToggle(widgetId, currentDashboard?.widgets.map((w) => w.id) ?? []);
+  const savedWidget = currentDashboard?.widgets.find((w) => w.id === widgetId);
   // The Gantry renders its own layouts whatever their enabled flag says.
-  const isGantryOnly =
-    currentDashboard?.widgets.find((w) => w.id === widgetId)?.placement ===
-    'gantry';
+  const isGantryOnly = savedWidget?.placement === 'gantry';
   const simIncompatibleLabel = simDisabledReason
     ? widgetIncompatibleLabel(simulator)
     : null;
-  const [localSettings, setLocalSettings] = useState<BaseWidgetSettings<T>>(
-    settings ?? { enabled: false, config: {} as T }
-  );
-
-  // Clean synchronization pattern: track what we last synced to detect external changes
-  const updatedWidget = currentDashboard?.widgets.find(
-    (w) => w.id === widgetId
-  );
-  const [prevWidgetData, setPrevWidgetData] = useState(updatedWidget);
-
-  if (JSON.stringify(updatedWidget) !== JSON.stringify(prevWidgetData)) {
-    setPrevWidgetData(updatedWidget);
-    if (updatedWidget) {
-      // This setState during render is safe and efficient in React when guarded by a condition
-      // like this. It avoids the extra render pass that an effect would cause.
-      setLocalSettings({
-        enabled: updatedWidget.enabled,
-        config: updatedWidget.config as unknown as T,
-      });
-    }
-  }
-
-  const handleSettingsChange = (newSettings: BaseWidgetSettings<T>) => {
-    setLocalSettings(newSettings);
-    onSettingsChange?.(newSettings);
-    updateDashboard(newSettings);
-  };
-
-  const handleConfigChange = (newConfig: Partial<T>) => {
-    const updatedSettings: BaseWidgetSettings<T> = {
-      ...localSettings,
-      config: {
-        ...localSettings.config,
-        ...newConfig,
-      } as T,
-    };
-
-    setLocalSettings(updatedSettings);
-    onSettingsChange?.(updatedSettings);
-    updateDashboard(updatedSettings);
-    onConfigChange?.(newConfig);
-  };
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
@@ -126,68 +116,28 @@ export const BaseSettingsSection = <T,>({
 
   const confirmResetPosition = () => {
     setShowResetConfirm(false);
-    if (currentDashboard && onDashboardUpdated) {
-      const updatedWidgets = currentDashboard.widgets.map((widget) => {
-        if (widget.id !== widgetId) return widget;
-
-        return {
-          ...widget,
-          layout: {
-            ...widget.layout,
-            x: 0,
-            y: 0,
-          },
-          config: {
-            ...widget.config,
-            browserPosition: undefined,
-          },
-        };
-      });
-
-      const updatedDashboard = {
-        ...currentDashboard,
-        widgets: updatedWidgets,
-      };
-      onDashboardUpdated(updatedDashboard);
-    }
-  };
-
-  const updateDashboard = (newSettings: BaseWidgetSettings<T>) => {
-    if (currentDashboard && onDashboardUpdated && widgetId) {
-      const widgetExists = currentDashboard.widgets.some(
-        (w) => w.id === widgetId
-      );
-
-      const updatedWidgets = widgetExists
-        ? currentDashboard.widgets.map((widget) => {
-            if (widget.id !== widgetId) return widget;
-
-            return {
+    onDashboardUpdated?.((dashboard) => ({
+      ...dashboard,
+      widgets: dashboard.widgets.map((widget) =>
+        widget.id !== widgetId
+          ? widget
+          : {
               ...widget,
-              enabled: newSettings.enabled,
-              config: newSettings.config as unknown as Record<string, unknown>,
-            };
-          })
-        : [
-            ...currentDashboard.widgets,
-            {
-              id: widgetId,
-              enabled: newSettings.enabled,
-              config: newSettings.config as unknown as Record<string, unknown>,
-              // Default layout for new widgets if they don't exist
-              layout: { x: 50, y: 50, width: 400, height: 300 },
-            },
-          ];
-
-      const updatedDashboard = {
-        ...currentDashboard,
-        widgets: updatedWidgets,
-      };
-      onDashboardUpdated(updatedDashboard);
-    }
+              layout: {
+                ...widget.layout,
+                x: 0,
+                y: 0,
+              },
+              config: {
+                ...widget.config,
+                browserPosition: undefined,
+              },
+            }
+      ),
+    }));
   };
 
-  if (!settings || !onSettingsChange || !widgetId) {
+  if (!settings || !widgetId) {
     return (
       <section className="space-y-4 rounded-lg border border-slate-700 bg-slate-800/40 p-4">
         <div>
@@ -205,13 +155,48 @@ export const BaseSettingsSection = <T,>({
     );
   }
 
+  const updateWidget = (configChange?: Partial<T>, enabled?: boolean) => {
+    const renderedConfig = settings.config as unknown as Record<
+      string,
+      unknown
+    >;
+    onDashboardUpdated?.((dashboard) => {
+      const current = dashboard.widgets.find(
+        (widget) => widget.id === widgetId
+      );
+      if (!current && savedWidget) return dashboard;
+
+      const config = mergeConfigChanges(
+        current === savedWidget
+          ? renderedConfig
+          : (current?.config ?? renderedConfig),
+        renderedConfig,
+        (configChange as Record<string, unknown>) ?? {}
+      );
+      const widget = {
+        ...(current ?? {
+          id: widgetId,
+          layout: { x: 50, y: 50, width: 400, height: 300 },
+        }),
+        enabled: enabled ?? current?.enabled ?? settings.enabled,
+        config,
+      };
+      return {
+        ...dashboard,
+        widgets: current
+          ? dashboard.widgets.map((entry) =>
+              entry.id === widgetId ? widget : entry
+            )
+          : [...dashboard.widgets, widget],
+      };
+    });
+  };
+
   const content = (
     <>
       {children && (
         <div className="space-y-4">
-          {typeof children === 'function'
-            ? children(handleConfigChange)
-            : children}
+          {typeof children === 'function' ? children(updateWidget) : children}
         </div>
       )}
       {!hidePositionReset && (
@@ -256,12 +241,10 @@ export const BaseSettingsSection = <T,>({
               {!menuToggles && !isGantryOnly && (
                 <ToggleSwitch
                   ariaLabel={`Enable ${title}`}
-                  enabled={localSettings.enabled}
+                  enabled={settings.enabled}
                   disabled={!!simDisabledReason}
                   disabledReason={simDisabledReason ?? undefined}
-                  onToggle={(enabled) =>
-                    handleSettingsChange({ ...localSettings, enabled })
-                  }
+                  onToggle={(enabled) => updateWidget(undefined, enabled)}
                 />
               )}
               {simIncompatibleLabel && (

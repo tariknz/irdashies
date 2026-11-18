@@ -1,4 +1,4 @@
-import { TelemetryVarList } from '../../../types';
+import { TelemetryVarList } from '../../../../../types/irSdk';
 import * as yaml from 'js-yaml';
 
 export const loadMockSessionData = async (): Promise<string> => {

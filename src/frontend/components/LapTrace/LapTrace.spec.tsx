@@ -9,7 +9,7 @@ import type {
   TrackStateSnapshot,
 } from '@irdashies/types';
 import { useLapTraceStore, useSessionStore } from '@irdashies/context';
-import { hydrateLapTrace } from '../../domain/lapTrace/hydrateLapTrace';
+import { hydrateLapTrace } from '@irdashies/utils/lapTrace/hydrateLapTrace';
 import { lapTraceTreeFromLegacy } from '@irdashies/types';
 import { LapTrace } from './LapTrace';
 import { makeSyntheticLapTrace } from './fixtures/syntheticLap';

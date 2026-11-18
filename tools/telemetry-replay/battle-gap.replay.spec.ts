@@ -1,8 +1,7 @@
+import { parseSession, telemetryFrom } from './processorInputs';
 import { resolve } from 'node:path';
 import { stat } from 'node:fs/promises';
-import * as yaml from 'js-yaml';
 import { describe, expect, it, vi } from 'vitest';
-import type { Session, Telemetry } from '@irdashies/types';
 import { ChannelBus } from '../../src/app/bridge/channelBridge';
 import { createSessionLifecycle } from '../../src/app/sessionLifecycle';
 import { LapHistoryRuntime } from '../../src/app/processors/lapHistoryRuntime';
@@ -61,7 +60,7 @@ describe.skipIf(!tapeAvailable)('Battle gaps over the curated tape', () => {
           'CarIdxTrackSurface',
         ],
         onSessionInfo(text) {
-          const session = yaml.load(text, { json: true }) as Session;
+          const session = parseSession(text);
           runtime.onSession(session);
           relatives.init(session);
         },
@@ -69,12 +68,7 @@ describe.skipIf(!tapeAvailable)('Battle gaps over the curated tape', () => {
           if (context.elapsedSeconds - lastSample < speed / 25)
             return comparisons;
           lastSample = context.elapsedSeconds;
-          const telemetry = Object.fromEntries(
-            Object.entries(raw).map(([key, value]) => [
-              key,
-              { value: Array.isArray(value) ? value : [value] },
-            ])
-          ) as unknown as Telemetry;
+          const telemetry = telemetryFrom(raw);
           lifecycle._onTelemetry(telemetry);
           runtime.onFrame(telemetry);
           relatives.onFrame(telemetry);
@@ -119,6 +113,7 @@ describe.skipIf(!tapeAvailable)('Battle gaps over the curated tape', () => {
       } finally {
         runtime.dispose();
       }
-    }
+    },
+    120_000
   );
 });

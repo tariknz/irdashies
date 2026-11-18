@@ -1,10 +1,8 @@
-import { useEffect, useId, useState } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
+import { useId } from 'react';
 import { TwitchLogoIcon, YoutubeLogoIcon } from '@phosphor-icons/react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import type {
-  SettingsTabType,
-  StreamChatWidgetSettings,
-} from '@irdashies/types';
+import type { StreamChatWidgetSettings } from '@irdashies/types';
 import {
   getWidgetDefaultConfig,
   TWITCH_CHANNEL_PATTERN,
@@ -22,16 +20,7 @@ const SettingProp = settingPropFor(SETTING_ID);
 const defaultConfig = getWidgetDefaultConfig('streamchat');
 
 const TAB_STORAGE_KEY = 'streamChatTab';
-const TABS: readonly SettingsTabType[] = ['display', 'twitch', 'youtube'];
-
-const readStoredTab = (): SettingsTabType => {
-  try {
-    const stored = localStorage.getItem(TAB_STORAGE_KEY);
-    return TABS.find((tab) => tab === stored) ?? 'display';
-  } catch {
-    return 'display';
-  }
-};
+const TABS = ['display', 'twitch', 'youtube'] as const;
 
 interface ChannelFieldProps {
   label: string;
@@ -84,22 +73,14 @@ export const StreamChatSettings = () => {
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as StreamChatWidgetSettings | undefined;
-  const [settings, setSettings] = useState<StreamChatWidgetSettings>({
+  const settings: StreamChatWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config: {
       ...defaultConfig,
       ...(savedSettings?.config as Partial<StreamChatWidgetSettings['config']>),
     },
-  });
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(readStoredTab);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(TAB_STORAGE_KEY, activeTab);
-    } catch {
-      // Remembering the tab is a convenience; it can fail in private windows.
-    }
-  }, [activeTab]);
+  };
+  const [activeTab, setActiveTab] = useStoredTab(TAB_STORAGE_KEY, TABS);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -113,7 +94,6 @@ export const StreamChatSettings = () => {
       title="Stream Chat"
       description="Show live Twitch and YouTube chat in one overlay."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
