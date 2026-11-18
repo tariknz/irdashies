@@ -9,6 +9,7 @@ import type {
   DashboardProfile,
   SessionProfileMap,
   SaveDashboardOptions,
+  DashboardUpdateListener,
   ContainerBoundsInfo,
   FuelCalculatorBridge,
   FuelLapData,
@@ -196,15 +197,14 @@ export function exposeBridge() {
     reloadDashboard: () => {
       ipcRenderer.send('reloadDashboard');
     },
-    dashboardUpdated: (
-      callback: (dashboard: DashboardLayout, profileId?: string) => void
-    ) => {
+    dashboardUpdated: (callback: DashboardUpdateListener) => {
       const handler = (
         _: Electron.IpcRendererEvent,
         dashboard: DashboardLayout,
-        profileId?: string
+        profileId?: string,
+        saveId?: string
       ) => {
-        callback(dashboard, profileId);
+        callback(dashboard, profileId, saveId);
       };
       ipcRenderer.on('dashboardUpdated', handler);
       return () => ipcRenderer.removeListener('dashboardUpdated', handler);

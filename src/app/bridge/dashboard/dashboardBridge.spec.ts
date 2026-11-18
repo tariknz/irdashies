@@ -104,14 +104,15 @@ describe('dashboard save callbacks', () => {
         widgets: [],
         generalSettings: { colorPalette: 'legacy' as never },
       },
-      { profileId: 'race' }
+      { profileId: 'race', saveId: 'settings:1' }
     );
 
     expect(callback).toHaveBeenCalledWith(
       expect.objectContaining({
         generalSettings: expect.objectContaining({ colorPalette: 'default' }),
       }),
-      'race'
+      'race',
+      'settings:1'
     );
     unsubscribe?.();
   });
@@ -154,7 +155,22 @@ describe('dashboard renderer initialization', () => {
     expect(mocks.publish).toHaveBeenCalledWith(
       'dashboardUpdated',
       dashboard,
-      'race'
+      'race',
+      undefined
+    );
+  });
+
+  it('carries the save ID through an Electron dashboard broadcast', () => {
+    const dashboard = { widgets: [], generalSettings: { fontSize: 'lg' } };
+    mocks.listeners.get('saveDashboard')?.(null, dashboard, {
+      profileId: 'race',
+      saveId: 'settings:2',
+    });
+    expect(mocks.publish).toHaveBeenCalledWith(
+      'dashboardUpdated',
+      expect.objectContaining(dashboard),
+      'race',
+      'settings:2'
     );
   });
 

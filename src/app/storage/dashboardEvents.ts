@@ -4,7 +4,7 @@ import { DashboardLayout } from '@irdashies/types';
 const dashboardEvents = new EventEmitter();
 
 export const onDashboardUpdated = (
-  listener: (dashboard: DashboardLayout) => void
+  listener: (dashboard: DashboardLayout, saveId?: string) => void
 ) => {
   dashboardEvents.on('dashboardUpdated', listener);
   return () => {
@@ -12,8 +12,11 @@ export const onDashboardUpdated = (
   };
 };
 
-export const emitDashboardUpdated = (dashboard: DashboardLayout) => {
-  dashboardEvents.emit('dashboardUpdated', dashboard);
+export const emitDashboardUpdated = (
+  dashboard: DashboardLayout,
+  saveId?: string
+) => {
+  dashboardEvents.emit('dashboardUpdated', dashboard, saveId);
 };
 
 /** Fires on every persisted dashboard change, whichever profile it belongs to. */

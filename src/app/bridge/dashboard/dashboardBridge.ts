@@ -4,6 +4,7 @@ import type {
   DashboardProfile,
   DriverTagSettings,
   SaveDashboardOptions,
+  DashboardUpdateListener,
 } from '@irdashies/types';
 import { app, ipcMain } from 'electron';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
@@ -105,9 +106,7 @@ const mergeDriverTagsIntoLayout = (
 };
 
 // Store callbacks for dashboard updates
-const dashboardUpdateCallbacks = new Set<
-  (dashboard: DashboardLayout, profileId?: string) => void
->();
+const dashboardUpdateCallbacks = new Set<DashboardUpdateListener>();
 const demoModeCallbacks = new Set<(isDemoMode: boolean) => void>();
 
 /**
@@ -118,9 +117,7 @@ export const dashboardBridge: DashboardBridge = {
     // Not used by component server, but required by interface
     return undefined;
   },
-  dashboardUpdated: (
-    callback: (dashboard: DashboardLayout, profileId?: string) => void
-  ) => {
+  dashboardUpdated: (callback: DashboardUpdateListener) => {
     dashboardUpdateCallbacks.add(callback);
     return () => dashboardUpdateCallbacks.delete(callback);
   },
@@ -132,13 +129,14 @@ export const dashboardBridge: DashboardBridge = {
     options?: SaveDashboardOptions
   ) => {
     const targetProfileId = options?.profileId || getCurrentProfileId();
-    saveDashboard(targetProfileId, dashboard);
+    const saveId = readSaveId(options);
+    saveDashboard(targetProfileId, dashboard, saveId);
     const savedDashboard =
       getDashboard(targetProfileId) ?? withDashboardDefaults(dashboard);
     if (dashboardUpdateCallbacks.size > 0) {
       dashboardUpdateCallbacks.forEach((callback) => {
         try {
-          callback(savedDashboard, targetProfileId);
+          callback(savedDashboard, targetProfileId, saveId);
         } catch (err) {
           logger.error('Error in dashboard update callback:', err);
         }
@@ -254,6 +252,11 @@ export const dashboardBridge: DashboardBridge = {
   },
 };
 
+function readSaveId(options?: SaveDashboardOptions): string | undefined {
+  const value = options?.saveId;
+  return typeof value === 'string' && value.length <= 100 ? value : undefined;
+}
+
 export async function publishDashboardUpdates(
   overlayManager: OverlayManager,
   analytics: Analytics,
@@ -265,27 +268,36 @@ export async function publishDashboardUpdates(
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
   let settleTimer: ReturnType<typeof setTimeout> | undefined;
 
-  const applyDashboard = (merged: DashboardLayout, profileId: string) => {
+  const applyDashboard = (
+    merged: DashboardLayout,
+    profileId: string,
+    saveId?: string
+  ) => {
     overlayManager.closeOrCreateWindows(merged);
-    overlayManager.publishMessage('dashboardUpdated', merged, profileId);
+    overlayManager.publishMessage(
+      'dashboardUpdated',
+      merged,
+      profileId,
+      saveId
+    );
     // Notify component server bridge subscribers
     dashboardUpdateCallbacks.forEach((callback) => {
       try {
-        callback(merged, profileId);
+        callback(merged, profileId, saveId);
       } catch (err) {
         logger.error('Error in dashboard update callback:', err);
       }
     });
   };
 
-  onDashboardUpdated((dashboard) => {
+  onDashboardUpdated((dashboard, saveId) => {
     const merged = dashboardTransform(
       mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings())
     );
     const profileId = getCurrentProfileId();
 
     if (profileId === lastProfileId) {
-      applyDashboard(merged, profileId);
+      applyDashboard(merged, profileId, saveId);
       return;
     }
 
@@ -307,7 +319,7 @@ export async function publishDashboardUpdates(
     const SETTLE_MS = 80; // let the new layout settle before revealing
     overlayManager.publishMessage('profileTransition', { hidden: true, name });
     hideTimer = setTimeout(() => {
-      applyDashboard(merged, profileId);
+      applyDashboard(merged, profileId, saveId);
       settleTimer = setTimeout(() => {
         overlayManager.publishMessage('profileTransition', {
           hidden: false,
@@ -336,6 +348,7 @@ export async function publishDashboardUpdates(
       const dashboard = options?.forceReload
         ? withDashboardDefaults(savedDashboard)
         : savedDashboard;
+      const saveId = readSaveId(options);
       // For layout-only changes (drag/resize), skip the window refresh
       if (options?.skipWindowRefresh) {
         // Save without emitting event to avoid window recreation
@@ -348,12 +361,13 @@ export async function publishDashboardUpdates(
         overlayManager.publishMessage(
           'dashboardUpdated',
           dashboard,
-          currentProfileId
+          currentProfileId,
+          saveId
         );
         return;
       }
 
-      saveDashboard(currentProfileId, dashboard);
+      saveDashboard(currentProfileId, dashboard, saveId);
       if (options?.forceReload) {
         overlayManager.forceRefreshOverlays(dashboard);
       }

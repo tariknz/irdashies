@@ -1,5 +1,11 @@
 import React from 'react';
-import { render, screen, act, waitFor } from '@testing-library/react';
+import {
+  render,
+  renderHook,
+  screen,
+  act,
+  waitFor,
+} from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DashboardProvider, useDashboard } from './DashboardContext';
 import type { DashboardBridge, DashboardLayout } from '@irdashies/types';
@@ -117,7 +123,7 @@ describe('DashboardContext', () => {
             },
           ],
         },
-        { profileId: undefined }
+        { profileId: undefined, saveId: expect.any(String) }
       );
     });
   });
@@ -159,8 +165,81 @@ describe('DashboardContext', () => {
     );
     expect(mockBridge.saveDashboard).toHaveBeenLastCalledWith(
       { widgets: [], generalSettings: { fontSize: 'lg', fontWeight: 'bold' } },
-      { profileId: 'race' }
+      { profileId: 'race', saveId: expect.any(String) }
     );
+  });
+
+  it('keeps newer edits when an earlier save is broadcast back', async () => {
+    let receive!: Parameters<DashboardBridge['dashboardUpdated']>[0];
+    vi.mocked(mockBridge.dashboardUpdated).mockImplementation((callback) => {
+      receive = callback;
+      return undefined;
+    });
+    const { result } = renderHook(useDashboard, {
+      wrapper: ({ children }) => (
+        <DashboardProvider bridge={mockBridge}>{children}</DashboardProvider>
+      ),
+    });
+    await act(async () => receive({ widgets: [] }, 'race'));
+
+    act(() => {
+      result.current.onDashboardUpdated?.((dashboard) => ({
+        ...dashboard,
+        generalSettings: { ...dashboard.generalSettings, fontSize: 'lg' },
+      }));
+      result.current.onDashboardUpdated?.((dashboard) => ({
+        ...dashboard,
+        generalSettings: { ...dashboard.generalSettings, fontWeight: 'bold' },
+      }));
+    });
+
+    const [firstDashboard, firstOptions] = vi.mocked(mockBridge.saveDashboard)
+      .mock.calls[0];
+    await act(async () =>
+      receive(firstDashboard, 'race', firstOptions?.saveId)
+    );
+    expect(result.current.currentDashboard?.generalSettings?.fontWeight).toBe(
+      'bold'
+    );
+
+    act(() =>
+      result.current.onDashboardUpdated?.((dashboard) => ({
+        ...dashboard,
+        generalSettings: {
+          ...dashboard.generalSettings,
+          colorPalette: 'black',
+        },
+      }))
+    );
+    expect(mockBridge.saveDashboard).toHaveBeenLastCalledWith(
+      {
+        widgets: [],
+        generalSettings: {
+          fontSize: 'lg',
+          fontWeight: 'bold',
+          colorPalette: 'black',
+        },
+      },
+      { profileId: 'race', saveId: expect.any(String) }
+    );
+    const [lastDashboard, lastOptions] = vi.mocked(mockBridge.saveDashboard)
+      .mock.calls[2];
+    await act(async () =>
+      receive(
+        {
+          ...lastDashboard,
+          generalSettings: {
+            ...lastDashboard.generalSettings,
+            startMinimized: true,
+          },
+        },
+        'race',
+        lastOptions?.saveId
+      )
+    );
+    expect(
+      result.current.currentDashboard?.generalSettings?.startMinimized
+    ).toBe(true);
   });
 
   it('applies a deferred edit to the latest snapshot of the original profile', async () => {
@@ -207,7 +286,7 @@ describe('DashboardContext', () => {
     act(finishEdit);
     expect(mockBridge.saveDashboard).toHaveBeenCalledExactlyOnceWith(
       { widgets: [], generalSettings: { fontSize: 'lg', fontWeight: 'bold' } },
-      { profileId: 'race' }
+      { profileId: 'race', saveId: expect.any(String) }
     );
 
     act(beginEdit);

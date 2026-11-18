@@ -58,6 +58,8 @@ export const DashboardProvider: React.FC<{
   const [dashboardState, setDashboardState] = useState<DashboardState>();
   const latestDashboard = React.useRef<DashboardState | undefined>(undefined);
   const pendingProfile = React.useRef<string | undefined>(undefined);
+  const saveSource = React.useRef<string | undefined>(undefined);
+  const saveSequence = React.useRef(0);
   const setDashboard = React.useCallback(
     (dashboard: DashboardLayout, updatedProfileId?: string) => {
       const state = { dashboard, profileId: updatedProfileId };
@@ -121,7 +123,19 @@ export const DashboardProvider: React.FC<{
 
   useEffect(() => {
     const unsubDashboard = bridge.dashboardUpdated(
-      (updatedDashboard, updatedProfileId) => {
+      (updatedDashboard, updatedProfileId, saveId) => {
+        const source = saveSource.current;
+        if (
+          source &&
+          saveId?.startsWith(source) &&
+          (saveId !== `${source}${saveSequence.current}` ||
+            (updatedProfileId !== undefined &&
+              latestDashboard.current?.profileId !== undefined &&
+              updatedProfileId !== latestDashboard.current.profileId))
+        ) {
+          return;
+        }
+
         const contextProfileId = initialProfileIdRef.current;
 
         // If this context is for a specific profile (i.e., a browser view)
@@ -220,19 +234,23 @@ export const DashboardProvider: React.FC<{
     ) {
       return;
     }
+    let dashboard: DashboardLayout;
     if (typeof update === 'function') {
       if (!latest) return;
-      const dashboard = update(latest.dashboard);
+      dashboard = update(latest.dashboard);
       if (dashboard === latest.dashboard) return;
-      setDashboard(dashboard, targetProfileId);
-      bridge.saveDashboard(dashboard, {
-        ...options,
-        profileId: targetProfileId,
-      });
-      return;
+    } else {
+      dashboard = update;
     }
-    setDashboard(update, targetProfileId);
-    bridge.saveDashboard(update, { ...options, profileId: targetProfileId });
+    const source =
+      (saveSource.current ??= `${crypto.getRandomValues(new Uint32Array(4)).join('-')}:`);
+    const saveId = `${source}${++saveSequence.current}`;
+    setDashboard(dashboard, targetProfileId);
+    bridge.saveDashboard(dashboard, {
+      ...options,
+      profileId: targetProfileId,
+      saveId,
+    });
   };
 
   const resetDashboard = async (resetEverything: boolean) => {
