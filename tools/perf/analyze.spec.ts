@@ -401,20 +401,28 @@ describe('performance analysis', () => {
     expect(memoryCheck?.passed).toBe(true);
   });
 
-  it('marks all checks inconclusive when private bytes are missing', () => {
+  it('isolates missing private bytes to the memory gate', () => {
     const samples = conclusiveSamples().map((sample) => ({
       ...sample,
       totalAppPrivateMemoryMB: undefined,
     }));
     const summary = summarizeCapture(capture(samples), 0);
     const comparison = compareSummaries(summary, summary);
+    const memoryCheck = comparison.checks.find((check) =>
+      check.name.includes('private-memory')
+    );
 
     expect(summary.evidence.privateMemoryAvailable).toBe(false);
     expect(summary.evidence.conclusive).toBe(false);
+    expect(memoryCheck?.passed).toBeNull();
     expect(
       comparison.checks
-        .filter((check) => check.name !== 'Matched workload metadata')
-        .every((check) => check.passed === null)
+        .filter(
+          (check) =>
+            check.name !== 'Matched workload metadata' &&
+            check.name !== 'Steady-state private-memory slope'
+        )
+        .every((check) => check.passed === true)
     ).toBe(true);
     expect(
       comparison.checks.find(
@@ -459,6 +467,52 @@ describe('performance analysis', () => {
     expect(comparisonMarkdown(mismatched)).toContain(
       'Workload metadata excluding source revision/state: **DIFFERENT**'
     );
+  });
+
+  it('accepts declared contrasts for the variable under test', () => {
+    const baseline = summarizeCapture(capture(conclusiveSamples()), 0);
+    const candidate = summarizeCapture(capture(conclusiveSamples()), 0);
+    baseline.overlayMode = 'observer';
+    baseline.scenarioMetadata.activeWidgetTypes = [];
+    candidate.overlayMode = 'full';
+    candidate.scenarioMetadata.activeWidgetTypes = ['radar'];
+
+    const strict = compareSummaries(baseline, candidate);
+    const contrasted = compareSummaries(baseline, candidate, ['overlay']);
+    const workloadCheck = (comparison: ReturnType<typeof compareSummaries>) =>
+      comparison.checks.find(
+        ({ name }) => name === 'Matched workload metadata'
+      );
+
+    expect(workloadCheck(strict)?.passed).toBe(false);
+    expect(workloadCheck(contrasted)?.passed).toBe(true);
+    expect(contrasted.checks.every((check) => check.passed === true)).toBe(true);
+    expect(comparisonMarkdown(contrasted)).toContain(
+      'Declared contrast: overlay'
+    );
+  });
+
+  it('does not apply game FPS gates to historical values from a replay tape', () => {
+    const baseline = summarizeCapture(capture(conclusiveSamples()), 0);
+    const candidate = summarizeCapture(capture(conclusiveSamples()), 0);
+    baseline.scenarioMetadata.simulatorMode = 'replay';
+    baseline.scenarioMetadata.tapeSha256 = 'abc';
+    candidate.scenarioMetadata.simulatorMode = 'replay';
+    candidate.scenarioMetadata.tapeSha256 = 'abc';
+
+    const comparison = compareSummaries(baseline, candidate);
+    const fpsChecks = comparison.checks.filter((check) =>
+      check.name.includes('FPS')
+    );
+
+    expect(fpsChecks).toHaveLength(2);
+    expect(fpsChecks.every((check) => check.passed === null)).toBe(true);
+    expect(fpsChecks[0].target).toContain('not-applicable');
+    expect(
+      comparison.checks.find(
+        (check) => check.name === 'Telemetry processing p99'
+      )?.passed
+    ).toBe(true);
   });
 
   it('requires publication rather than processor execution for visible coverage', () => {

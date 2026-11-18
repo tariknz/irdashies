@@ -5,12 +5,19 @@ import type {
   NumericSampleStats,
   RendererPerfSample,
 } from '../../src/types/performance';
+import { listArgument, numericArgument, parseArguments } from './args.ts';
+import {
+  MIN_ANALYSIS_SECONDS,
+  PERF_GATES,
+  contrastDescription,
+  parseComparisonContrast,
+  type ComparisonContrast,
+} from './gates.ts';
 
 const MAIN_PREFIX = '[PerfMetrics:JSON] ';
 const RENDERER_PREFIX = '[PerfRenderer:JSON] ';
 const VISIBILITY_PREFIX = '[PerfVisibility:JSON] ';
 const ORIGIN_PREFIX = '[PerfRunOrigin:JSON] ';
-const MIN_ANALYSIS_SECONDS = 300;
 const MIN_PRIVATE_OBSERVATIONS = 2;
 const MIN_PRIVATE_SPAN_RATIO = 0.8;
 const MAX_PRIVATE_SAMPLE_GAP_SECONDS = 60;
@@ -237,6 +244,7 @@ export interface PerfSummary {
 export interface PerfComparison {
   baseline: PerfSummary;
   candidate: PerfSummary;
+  contrast: ComparisonContrast;
   delta: {
     averageFpsPercent: number;
     onePercentLowFpsPercent: number;
@@ -1250,35 +1258,89 @@ function stableJson(value: unknown): string {
   return JSON.stringify(value) ?? 'undefined';
 }
 
-function workloadMetadata(summary: PerfSummary): string | undefined {
+const contrastExcludedKeys = (
+  contrast: ComparisonContrast
+): ReadonlySet<string> => {
+  const keys = new Set<string>();
+  if (contrast.includes('overlay')) {
+    ['activeWidgetTypes', 'requestedWidgetTypes', 'overlayWindowMode'].forEach(
+      (key) => keys.add(key)
+    );
+  }
+  if (contrast.includes('widgets')) {
+    [
+      'activeWidgetTypes',
+      'requestedWidgetTypes',
+      'widgetInputRequirements',
+    ].forEach((key) => keys.add(key));
+  }
+  if (contrast.includes('channels')) {
+    ['channelDelivery', 'telemetryDelivery', 'telemetryPayload'].forEach(
+      (key) => keys.add(key)
+    );
+  }
+  return keys;
+};
+
+function workloadMetadata(
+  summary: PerfSummary,
+  contrast: ComparisonContrast
+): string | undefined {
   if (
     !summary.evidence.scenarioMetadataConsistent ||
     Object.keys(summary.scenarioMetadata).length === 0
   )
     return undefined;
+  const excluded = contrastExcludedKeys(contrast);
   const metadata = Object.fromEntries(
     Object.entries(summary.scenarioMetadata).filter(
-      ([key]) => key !== 'sourceCommit' && key !== 'sourceDirty'
+      ([key]) =>
+        key !== 'sourceCommit' && key !== 'sourceDirty' && !excluded.has(key)
     )
   );
-  return stableJson({ overlayMode: summary.overlayMode, metadata });
+  return stableJson({
+    ...(contrast.includes('overlay') ? {} : { overlayMode: summary.overlayMode }),
+    metadata,
+  });
 }
 
 function workloadMetadataMatch(
   baseline: PerfSummary,
-  candidate: PerfSummary
+  candidate: PerfSummary,
+  contrast: ComparisonContrast
 ): boolean | undefined {
-  const baselineMetadata = workloadMetadata(baseline);
-  const candidateMetadata = workloadMetadata(candidate);
+  const baselineMetadata = workloadMetadata(baseline, contrast);
+  const candidateMetadata = workloadMetadata(candidate, contrast);
   if (baselineMetadata === undefined || candidateMetadata === undefined)
     return undefined;
   return baselineMetadata === candidateMetadata;
 }
 
+export function coreEvidenceComplete(summary: PerfSummary): boolean {
+  return (
+    summary.evidence.durationSufficient &&
+    summary.evidence.scenarioMetadataConsistent
+  );
+}
+
+export function comparisonCoreComplete(
+  baseline: PerfSummary,
+  candidate: PerfSummary,
+  contrast: ComparisonContrast = []
+): boolean {
+  return (
+    coreEvidenceComplete(baseline) &&
+    coreEvidenceComplete(candidate) &&
+    workloadMetadataMatch(baseline, candidate, contrast) === true
+  );
+}
+
 /** Compute candidate-minus-baseline deltas for the summary metrics. */
 export function compareSummaries(
   baseline: PerfSummary,
-  candidate: PerfSummary
+  candidate: PerfSummary,
+  contrast: ComparisonContrast = [],
+  ignoredGates: readonly string[] = []
 ): PerfComparison {
   const averageFpsPercent = percentChange(
     baseline.iracing.averageFps,
@@ -1288,33 +1350,70 @@ export function compareSummaries(
     baseline.iracing.meanOnePercentLowFps,
     candidate.iracing.meanOnePercentLowFps
   );
-  const workloadMatch = workloadMetadataMatch(baseline, candidate);
-  const comparisonConclusive =
-    baseline.evidence.conclusive &&
-    candidate.evidence.conclusive &&
-    workloadMatch === true;
-  const verdict = (passed: boolean): boolean | null =>
-    comparisonConclusive ? passed : null;
-  const evidenceTarget = (target: string): string =>
-    comparisonConclusive
-      ? target
-      : `inconclusive: ${[
-          ...baseline.evidence.inconclusiveReasons.map(
-            (reason) => `baseline ${reason}`
-          ),
-          ...candidate.evidence.inconclusiveReasons.map(
-            (reason) => `candidate ${reason}`
-          ),
-          ...(workloadMatch === false
-            ? ['baseline and candidate workload metadata differ']
-            : workloadMatch === undefined
-              ? ['workload metadata is unavailable or inconsistent']
-              : []),
-        ].join('; ')}`;
+  const workloadMatch = workloadMetadataMatch(baseline, candidate, contrast);
+  const coreReasons = (summary: PerfSummary, label: string): string[] => [
+    ...(!summary.evidence.durationSufficient
+      ? [`${label} analysis duration is shorter than five minutes`]
+      : []),
+    ...(!summary.evidence.scenarioMetadataConsistent
+      ? [`${label} scenario metadata is inconsistent`]
+      : []),
+  ];
+  const workloadReasons =
+    workloadMatch === false
+      ? ['baseline and candidate workload metadata differ']
+      : workloadMatch === undefined
+        ? ['workload metadata is unavailable or inconsistent']
+        : [];
+  const comparableReasons = [
+    ...coreReasons(baseline, 'baseline'),
+    ...coreReasons(candidate, 'candidate'),
+    ...workloadReasons,
+  ];
+  const memoryReasons = [
+    ...(!baseline.evidence.privateMemorySamplingAdequate
+      ? ['baseline private-memory samples are unavailable or incomplete']
+      : []),
+    ...(!candidate.evidence.privateMemorySamplingAdequate
+      ? ['candidate private-memory samples are unavailable or incomplete']
+      : []),
+  ];
+  const tapeReplay = (summary: PerfSummary): boolean =>
+    summary.scenarioMetadata.simulatorMode === 'replay' &&
+    typeof summary.scenarioMetadata.tapeSha256 === 'string';
+  const gameFpsReasons = tapeReplay(baseline) || tapeReplay(candidate)
+    ? ['game FPS is historical in an isolated replay tape']
+    : [];
+  const gate = (
+    name: string,
+    actual: number,
+    passed: boolean,
+    applicable: boolean,
+    reasons: string[],
+    target: string
+  ) => {
+    const allReasons = [
+      ...reasons,
+      ...(ignoredGates.some((ignored) =>
+        name.toLowerCase().includes(ignored.toLowerCase())
+      )
+        ? ['ignored by --ignore-gates']
+        : []),
+    ];
+    return {
+      passed: applicable && allReasons.length === reasons.length ? passed : null,
+      actual,
+      target:
+        applicable && allReasons.length === reasons.length
+          ? target
+          : `not-applicable: ${allReasons.join('; ')}`,
+    };
+  };
 
   return {
     baseline,
     candidate,
+    contrast,
     delta: {
       averageFpsPercent,
       onePercentLowFpsPercent,
@@ -1376,39 +1475,74 @@ export function compareSummaries(
       },
       {
         name: 'iRacing average FPS regression',
-        passed: verdict(averageFpsPercent >= -2),
-        actual: averageFpsPercent,
-        target: evidenceTarget('>= -2%'),
+        ...gate(
+          'iRacing average FPS regression',
+          averageFpsPercent,
+          averageFpsPercent >= PERF_GATES.averageFpsPercent.minimum,
+          comparableReasons.length === 0 && gameFpsReasons.length === 0,
+          [...comparableReasons, ...gameFpsReasons],
+          `>= ${PERF_GATES.averageFpsPercent.minimum}%`
+        ),
       },
       {
         name: 'iRacing sampled FPS p1 regression',
-        passed: verdict(onePercentLowFpsPercent >= -5),
-        actual: onePercentLowFpsPercent,
-        target: evidenceTarget('>= -5%'),
+        ...gate(
+          'iRacing sampled FPS p1 regression',
+          onePercentLowFpsPercent,
+          onePercentLowFpsPercent >= PERF_GATES.onePercentLowFpsPercent.minimum,
+          comparableReasons.length === 0 && gameFpsReasons.length === 0,
+          [...comparableReasons, ...gameFpsReasons],
+          `>= ${PERF_GATES.onePercentLowFpsPercent.minimum}%`
+        ),
       },
       {
         name: 'Telemetry processing p99',
-        passed: verdict(candidate.telemetry.processTelemetryP99MeanMs < 3),
-        actual: candidate.telemetry.processTelemetryP99MeanMs,
-        target: evidenceTarget('< 3 ms'),
+        ...gate(
+          'Telemetry processing p99',
+          candidate.telemetry.processTelemetryP99MeanMs,
+          candidate.telemetry.processTelemetryP99MeanMs <
+            PERF_GATES.processTelemetryP99Ms.maximum,
+          comparableReasons.length === 0,
+          comparableReasons,
+          `< ${PERF_GATES.processTelemetryP99Ms.maximum} ms`
+        ),
       },
       {
         name: 'Telemetry tick rate',
-        passed: verdict(candidate.telemetry.minimumTickRateHz >= 20),
-        actual: candidate.telemetry.minimumTickRateHz,
-        target: evidenceTarget('>= 20 Hz'),
+        ...gate(
+          'Telemetry tick rate',
+          candidate.telemetry.minimumTickRateHz,
+          candidate.telemetry.minimumTickRateHz >=
+            PERF_GATES.minimumTickRateHz.minimum,
+          comparableReasons.length === 0,
+          comparableReasons,
+          `>= ${PERF_GATES.minimumTickRateHz.minimum} Hz`
+        ),
       },
       {
         name: 'Steady-state private-memory slope',
-        passed: verdict(candidate.app.privateMemorySlopeMBPerMinute < 5),
-        actual: candidate.app.privateMemorySlopeMBPerMinute,
-        target: evidenceTarget('< 5 MB/min'),
+        ...gate(
+          'Steady-state private-memory slope',
+          candidate.app.privateMemorySlopeMBPerMinute,
+          Number.isFinite(candidate.app.privateMemorySlopeMBPerMinute) &&
+            candidate.app.privateMemorySlopeMBPerMinute <
+              PERF_GATES.privateMemorySlopeMBPerMinute.maximum,
+          comparableReasons.length === 0 && memoryReasons.length === 0,
+          [...comparableReasons, ...memoryReasons],
+          `< ${PERF_GATES.privateMemorySlopeMBPerMinute.maximum} MB/min`
+        ),
       },
       {
         name: 'Renderer frames over 50 ms',
-        passed: verdict(candidate.renderer.framesOver50MsPercent < 0.1),
-        actual: candidate.renderer.framesOver50MsPercent,
-        target: evidenceTarget('< 0.1%'),
+        ...gate(
+          'Renderer frames over 50 ms',
+          candidate.renderer.framesOver50MsPercent,
+          candidate.renderer.framesOver50MsPercent <
+            PERF_GATES.framesOver50MsPercent.maximum,
+          comparableReasons.length === 0,
+          comparableReasons,
+          `< ${PERF_GATES.framesOver50MsPercent.maximum}%`
+        ),
       },
     ],
   };
@@ -1603,6 +1737,7 @@ export function comparisonMarkdown(comparison: PerfComparison): string {
 - Baseline: \`${baseline.runId}\` (${baseline.scenario})
 - Candidate: \`${candidate.runId}\` (${candidate.scenario})
 - Evidence: **${evidenceStatus}**
+- Declared contrast: ${contrastDescription(comparison.contrast)}
 
 ## Provenance and workload
 
@@ -1657,7 +1792,9 @@ async function writeAnalysis(
   baselinePath: string | undefined,
   warmupSeconds: number,
   analysisWindow: AnalysisWindow,
-  requireConclusive: boolean
+  requireConclusive: boolean,
+  contrast: ComparisonContrast,
+  ignoredGates: readonly string[]
 ): Promise<void> {
   const candidate = await readSummary(
     candidatePath,
@@ -1672,7 +1809,7 @@ async function writeAnalysis(
 
   if (baselinePath) {
     baseline = await readSummary(baselinePath, warmupSeconds, analysisWindow);
-    const comparison = compareSummaries(baseline, candidate);
+    const comparison = compareSummaries(baseline, candidate, contrast, ignoredGates);
     workloadMatch = comparison.checks.find(
       (check) => check.name === 'Matched workload metadata'
     )?.passed;
@@ -1690,17 +1827,23 @@ async function writeAnalysis(
   process.stdout.write(`${markdownPath}\n`);
   if (
     requireConclusive &&
-    (!candidate.evidence.conclusive ||
-      (baseline !== undefined &&
-        (!baseline.evidence.conclusive || workloadMatch !== true)))
+    (!coreEvidenceComplete(candidate) ||
+      (baseline !== undefined && !coreEvidenceComplete(baseline)) ||
+      (baseline !== undefined && workloadMatch !== true))
   ) {
     const reasons = [
-      ...candidate.evidence.inconclusiveReasons.map(
-        (reason) => `candidate: ${reason}`
-      ),
-      ...(baseline?.evidence.inconclusiveReasons ?? []).map(
-        (reason) => `baseline: ${reason}`
-      ),
+      ...(!candidate.evidence.durationSufficient
+        ? ['candidate analysis duration is shorter than five minutes']
+        : []),
+      ...(!candidate.evidence.scenarioMetadataConsistent
+        ? ['candidate scenario metadata is inconsistent']
+        : []),
+      ...(baseline !== undefined && !baseline.evidence.durationSufficient
+        ? ['baseline analysis duration is shorter than five minutes']
+        : []),
+      ...(baseline !== undefined && !baseline.evidence.scenarioMetadataConsistent
+        ? ['baseline scenario metadata is inconsistent']
+        : []),
       ...(baseline !== undefined && workloadMatch !== true
         ? ['baseline and candidate workload metadata differ or are unavailable']
         : []),
@@ -1711,54 +1854,70 @@ async function writeAnalysis(
   }
 }
 
+export const ANALYZE_USAGE = `Usage: npm run perf:analyze -- <candidate.log> [options]
+  --baseline <file>            Baseline raw log or analyzer summary
+  --warmup-seconds N           Ignore startup samples (default 30)
+  --analysis-start-seconds N   Start analysis after capture origin
+  --analysis-end-seconds N     End analysis after capture origin
+  --contrast overlay,widgets   Declare intentional A/B differences
+  --ignore-gates a,b           Skip selected gate names explicitly
+  --allow-inconclusive         Write reports for partial evidence
+`;
+
 export function parseCliArgs(args: string[]): {
   candidatePath: string;
   baselinePath?: string;
   warmupSeconds: number;
   analysisWindow: AnalysisWindow;
   requireConclusive: boolean;
+  contrast: ComparisonContrast;
+  ignoredGates: string[];
 } {
-  const valueFlags = new Set([
-    '--baseline',
-    '--warmup-seconds',
-    '--analysis-start-seconds',
-    '--analysis-end-seconds',
-  ]);
-  const positional = args.filter(
-    (arg, index) =>
-      !arg.startsWith('--') && !valueFlags.has(args[index - 1] ?? '')
-  );
-  const baselineIndex = args.indexOf('--baseline');
-  const warmupIndex = args.indexOf('--warmup-seconds');
-  const startIndex = args.indexOf('--analysis-start-seconds');
-  const endIndex = args.indexOf('--analysis-end-seconds');
-  if (!positional[0]) {
+  const parsed = parseArguments(args, {
+    usage: ANALYZE_USAGE,
+    values: [
+      '--baseline',
+      '--warmup-seconds',
+      '--analysis-start-seconds',
+      '--analysis-end-seconds',
+      '--contrast',
+      '--ignore-gates',
+    ],
+    booleans: ['--allow-inconclusive'],
+    positional: 'one',
+  });
+  const baselinePath = parsed.value('--baseline');
+  const analysisWindow: AnalysisWindow = {
+    startSeconds: numericArgument(parsed, '--analysis-start-seconds', 0, {
+      min: 0,
+    }),
+    endSeconds: numericArgument(parsed, '--analysis-end-seconds', 0, {
+      min: 0,
+    }),
+  };
+  if (!parsed.has('--analysis-start-seconds'))
+    analysisWindow.startSeconds = undefined;
+  if (!parsed.has('--analysis-end-seconds'))
+    analysisWindow.endSeconds = undefined;
+  if (
+    analysisWindow.startSeconds !== undefined &&
+    analysisWindow.endSeconds !== undefined &&
+    analysisWindow.endSeconds <= analysisWindow.startSeconds
+  )
     throw new Error(
-      'Usage: npm run perf:analyze -- <candidate.log> [--baseline <baseline.log>] [--warmup-seconds 30] [--analysis-start-seconds 60] [--analysis-end-seconds 420] [--allow-inconclusive]'
+      '--analysis-end-seconds must be greater than --analysis-start-seconds.'
     );
-  }
 
   return {
-    candidatePath: path.resolve(positional[0]),
-    baselinePath:
-      baselineIndex >= 0 && args[baselineIndex + 1]
-        ? path.resolve(args[baselineIndex + 1])
-        : undefined,
-    warmupSeconds:
-      warmupIndex >= 0 && Number.isFinite(Number(args[warmupIndex + 1]))
-        ? Number(args[warmupIndex + 1])
-        : 30,
-    analysisWindow: {
-      startSeconds:
-        startIndex >= 0 && Number.isFinite(Number(args[startIndex + 1]))
-          ? Number(args[startIndex + 1])
-          : undefined,
-      endSeconds:
-        endIndex >= 0 && Number.isFinite(Number(args[endIndex + 1]))
-          ? Number(args[endIndex + 1])
-          : undefined,
-    },
-    requireConclusive: !args.includes('--allow-inconclusive'),
+    candidatePath: path.resolve(parsed.positionals[0]),
+    baselinePath: baselinePath ? path.resolve(baselinePath) : undefined,
+    warmupSeconds: numericArgument(parsed, '--warmup-seconds', 30, { min: 0 }),
+    analysisWindow,
+    requireConclusive: !parsed.flag('--allow-inconclusive'),
+    contrast: parseComparisonContrast(
+      listArgument(parsed, '--contrast')
+    ),
+    ignoredGates: listArgument(parsed, '--ignore-gates'),
   };
 }
 
@@ -1767,12 +1926,19 @@ const isCli =
   path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 if (isCli) {
-  const options = parseCliArgs(process.argv.slice(2));
-  await writeAnalysis(
-    options.candidatePath,
-    options.baselinePath,
-    options.warmupSeconds,
-    options.analysisWindow,
-    options.requireConclusive
-  );
+  const args = process.argv.slice(2);
+  if (args.includes('--help') || args.includes('-h')) {
+    process.stdout.write(ANALYZE_USAGE);
+  } else {
+    const options = parseCliArgs(args);
+    await writeAnalysis(
+      options.candidatePath,
+      options.baselinePath,
+      options.warmupSeconds,
+      options.analysisWindow,
+      options.requireConclusive,
+      options.contrast,
+      options.ignoredGates
+    );
+  }
 }

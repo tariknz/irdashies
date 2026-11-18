@@ -263,6 +263,12 @@ describe('performance diagnosis', () => {
     const candidate = summary();
     baseline.evidence.conclusive = true;
     candidate.evidence.conclusive = true;
+    baseline.evidence.durationSufficient = true;
+    candidate.evidence.durationSufficient = true;
+    baseline.evidence.privateMemorySamplingAdequate = true;
+    candidate.evidence.privateMemorySamplingAdequate = true;
+    baseline.app.privateMemorySlopeMBPerMinute = 1;
+    candidate.app.privateMemorySlopeMBPerMinute = 1;
     baseline.scenarioMetadata.sourceCommit = 'before-sha';
     baseline.scenarioMetadata.sourceDirty = false;
     candidate.scenarioMetadata.sourceCommit = 'after-sha';
@@ -354,6 +360,26 @@ describe('diagnose CLI options', () => {
       warmupSeconds: 10,
       analysisWindow: { startSeconds: 30, endSeconds: 300 },
     });
+  });
+
+  it('accepts output and failure-threshold options', () => {
+    expect(
+      parseDiagnoseOptions([
+        'run.log',
+        '--format',
+        'json',
+        '--fail-on',
+        'caution',
+        '--no-correlate',
+      ])
+    ).toMatchObject({
+      format: 'json',
+      failOn: 'caution',
+      correlateRawLog: false,
+    });
+    expect(() =>
+      parseDiagnoseOptions(['run.log', '--fail-on', 'critical'])
+    ).toThrow();
   });
 
   it.each([

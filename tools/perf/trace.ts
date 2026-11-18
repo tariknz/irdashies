@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import WebSocket from 'ws';
+import { numericArgument, parseArguments } from './args.ts';
+import { writeTraceAnalysis } from './analyzeTrace.ts';
 
 const DEFAULT_PORT = 9222;
 const DEFAULT_DURATION_SECONDS = 20;
@@ -30,6 +32,7 @@ export const TRACE_USAGE = `Usage: npm run perf:trace [options]
   --port N                    Remote debugging port (default ${DEFAULT_PORT})
   --speed N                   Replay speed (default 1)
   --user-data-dir <directory> Isolated Electron profile
+  --no-analyze                Skip the generated trace summary
 `;
 
 export interface TraceOptions {
@@ -39,47 +42,63 @@ export interface TraceOptions {
   outputPath: string;
   port: number;
   speed: number;
+  analyze: boolean;
   userDataDirectory?: string;
 }
 
-const valueAfter = (args: string[], flag: string): string | undefined => {
-  const index = args.indexOf(flag);
-  return index >= 0 ? args[index + 1] : undefined;
-};
-
 export const parseTraceOptions = (args: string[]): TraceOptions => {
-  const inputPath = valueAfter(args, '--input');
+  const parsed = parseArguments(args, {
+    usage: TRACE_USAGE,
+    values: [
+      '--input',
+      '--duration-seconds',
+      '--warmup-seconds',
+      '--output',
+      '--port',
+      '--speed',
+      '--user-data-dir',
+    ],
+    booleans: ['--no-analyze'],
+  });
+  const inputPath = parsed.value('--input');
   if (!inputPath) throw new Error(`--input is required\n${TRACE_USAGE}`);
-  const durationSeconds = Number(
-    valueAfter(args, '--duration-seconds') ?? DEFAULT_DURATION_SECONDS
-  );
-  const warmupSeconds = Number(valueAfter(args, '--warmup-seconds') ?? 0);
-  const port = Number(valueAfter(args, '--port') ?? DEFAULT_PORT);
-  const speed = Number(valueAfter(args, '--speed') ?? 1);
-  if (
-    !Number.isSafeInteger(warmupSeconds) ||
-    warmupSeconds < 0 ||
-    !Number.isFinite(durationSeconds) ||
-    durationSeconds < 5 ||
-    !Number.isInteger(port) ||
-    port < 1024 ||
-    port > 65535 ||
-    !Number.isFinite(speed) ||
-    speed <= 0
-  )
+  let durationSeconds: number;
+  let warmupSeconds: number;
+  let port: number;
+  let speed: number;
+  try {
+    durationSeconds = numericArgument(
+      parsed,
+      '--duration-seconds',
+      DEFAULT_DURATION_SECONDS,
+      { min: 5 }
+    );
+    warmupSeconds = numericArgument(parsed, '--warmup-seconds', 0, {
+      min: 0,
+      integer: true,
+    });
+    port = numericArgument(parsed, '--port', DEFAULT_PORT, {
+      min: 1024,
+      max: 65535,
+      integer: true,
+    });
+    speed = numericArgument(parsed, '--speed', 1, { min: 0.000001 });
+  } catch {
     throw new Error(`Invalid trace option\n${TRACE_USAGE}`);
+  }
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const requestedProfile = valueAfter(args, '--user-data-dir');
+  const requestedProfile = parsed.value('--user-data-dir');
   return {
     inputPath: path.resolve(inputPath),
     durationSeconds,
     warmupSeconds,
     outputPath: path.resolve(
-      valueAfter(args, '--output') ??
+      parsed.value('--output') ??
         path.join('perf-results', `${timestamp}-trace.json`)
     ),
     port,
     speed,
+    analyze: !parsed.flag('--no-analyze'),
     userDataDirectory: requestedProfile
       ? path.resolve(requestedProfile)
       : undefined,
@@ -259,8 +278,26 @@ const runTrace = async (args: string[]): Promise<void> => {
       JSON.stringify({ traceEvents: events }),
       'utf8'
     );
+    const outputBase = options.outputPath.replace(/\.[^.]+$/, '');
+    const summary = options.analyze
+      ? await writeTraceAnalysis({
+          inputPath: options.outputPath,
+          outputPrefix: `${outputBase}.trace-summary`,
+          minLongTaskMs: 50,
+        })
+      : undefined;
     process.stdout.write(
-      `Trace: ${options.outputPath}\nEvents: ${events.length}\nProfile: ${userDataDirectory}\nOpen chrome://tracing and load this JSON file.\n`
+      [
+        `Trace: ${options.outputPath}`,
+        `Events: ${events.length}`,
+        `Profile: ${userDataDirectory}`,
+        summary
+          ? `Trace summary: ${summary.markdownPath}\nTrace data: ${summary.jsonPath}`
+          : undefined,
+        'Open chrome://tracing and load this JSON file.',
+      ]
+        .filter(Boolean)
+        .join('\n') + '\n'
     );
   } finally {
     stopChild();

@@ -16,7 +16,13 @@ import { inspectIbtRecording } from './ibt';
 
 describe('performance CLI doctor', () => {
   it('defaults to the development target and resolves an optional input path', () => {
-    expect(parseDoctorOptions([])).toMatchObject({ target: 'dev' });
+    expect(parseDoctorOptions([])).toMatchObject({
+      target: 'dev',
+      format: 'md',
+    });
+    expect(
+      parseDoctorOptions(['--target', 'packaged', '--format', 'json'])
+    ).toMatchObject({ target: 'packaged', format: 'json' });
     expect(
       parseDoctorOptions(['--target', 'packaged', '--input', 'session.irdt'])
     ).toMatchObject({
@@ -91,7 +97,7 @@ describe('performance CLI doctor', () => {
     });
     expect(summarizeDoctorChecks(checks)).toEqual(report.summary);
     expect(doctorMarkdown(report)).toContain(
-      'Checks are read-only; no application or simulator was launched.'
+      'Checks are read-only; no application was launched.'
     );
     expect(doctorMarkdown(report)).toContain(
       '1 passed, 1 warnings, 1 failed, 1 skipped'

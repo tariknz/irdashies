@@ -1,17 +1,21 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import {
+  comparisonCoreComplete,
   parsePerfLog,
   summarizeCapture,
   type AnalysisWindow,
   type PerfComparison,
   type PerfSummary,
 } from './analyze.ts';
+import { choiceArgument, numericArgument, parseArguments } from './args.ts';
+import { correlateCapture, type CorrelationFinding } from './correlate.ts';
+import {
+  COMPARISON_CONTRASTS,
+  PERF_GATES,
+  contrastDescription,
+} from './gates.ts';
 
-const MEMORY_SLOPE_TARGET_MB_PER_MINUTE = 5;
-const PROCESS_TELEMETRY_P99_TARGET_MS = 3;
-const MIN_TICK_RATE_TARGET_HZ = 20;
-const FRAMES_OVER_50_MS_TARGET_PERCENT = 0.1;
 const MAIN_EVENT_LOOP_STALL_SIGNAL_MS = 50;
 
 export const DIAGNOSE_USAGE = `Usage: npm run perf -- diagnose <run.log|report.json|summary.json> [options]
@@ -19,6 +23,9 @@ export const DIAGNOSE_USAGE = `Usage: npm run perf -- diagnose <run.log|report.j
   --analysis-start-seconds N   Start raw-log analysis after capture origin
   --analysis-end-seconds N     End raw-log analysis after capture origin
   --output <path-prefix>       Write <prefix>.json and <prefix>.md
+  --format paths|md|json      stdout format (default paths); sidecars are always written
+  --fail-on never|info|caution|attention  Exit non-zero at or above severity
+  --no-correlate              Skip timestamped anomaly correlation on raw logs
   JSON inputs may be replay reports or analyzer summaries/comparisons
 `;
 
@@ -44,12 +51,23 @@ export interface PerfDiagnosis {
   conclusion: string;
 }
 
+export type DiagnosisOutputFormat = 'paths' | 'md' | 'json';
+
+export type DiagnosisFailureThreshold =
+  | 'never'
+  | 'info'
+  | 'caution'
+  | 'attention';
+
 export interface DiagnoseOptions {
   inputPath: string;
   outputPrefix: string;
   warmupSeconds: number;
   analysisWindow: AnalysisWindow;
   analysisOptionsProvided: boolean;
+  format: DiagnosisOutputFormat;
+  failOn: DiagnosisFailureThreshold;
+  correlateRawLog: boolean;
 }
 
 const markdownText = (value: string): string =>
@@ -228,14 +246,14 @@ export function diagnosePerfSummary(summary: PerfSummary): PerfDiagnosis {
   if (
     summary.evidence.privateMemorySamplingAdequate &&
     summary.app.privateMemorySlopeMBPerMinute >=
-      MEMORY_SLOPE_TARGET_MB_PER_MINUTE
+      PERF_GATES.privateMemorySlopeMBPerMinute.maximum
   ) {
     add({
       id: 'private-memory-growth',
       severity: 'attention',
       title: 'Private-memory growth is at or above the project target',
       evidence: [
-        `${format(summary.app.privateMemorySlopeMBPerMinute)} MB/min; target is below ${MEMORY_SLOPE_TARGET_MB_PER_MINUTE} MB/min.`,
+        `${format(summary.app.privateMemorySlopeMBPerMinute)} MB/min; target is below ${PERF_GATES.privateMemorySlopeMBPerMinute.maximum} MB/min.`,
         `${summary.evidence.privateMemorySampleCount} private-memory samples over ${format(summary.evidence.privateMemorySpanSeconds)} seconds.`,
       ],
       nextStep:
@@ -245,14 +263,14 @@ export function diagnosePerfSummary(summary: PerfSummary): PerfDiagnosis {
 
   if (
     summary.telemetry.processTelemetryP99MeanMs >=
-    PROCESS_TELEMETRY_P99_TARGET_MS
+    PERF_GATES.processTelemetryP99Ms.maximum
   ) {
     add({
       id: 'telemetry-processing-latency',
       severity: 'attention',
       title: 'Telemetry processing p99 is at or above its target',
       evidence: [
-        `processTelemetry p99 mean: ${format(summary.telemetry.processTelemetryP99MeanMs)} ms; target is below ${PROCESS_TELEMETRY_P99_TARGET_MS} ms.`,
+        `processTelemetry p99 mean: ${format(summary.telemetry.processTelemetryP99MeanMs)} ms; target is below ${PERF_GATES.processTelemetryP99Ms.maximum} ms.`,
       ],
       nextStep:
         'Inspect the timed main-process sections in the summary and repeat a matched replay with the relevant workload isolated before attributing the cost to a particular processor or widget.',
@@ -261,14 +279,14 @@ export function diagnosePerfSummary(summary: PerfSummary): PerfDiagnosis {
 
   if (
     summary.telemetry.minimumTickRateHz > 0 &&
-    summary.telemetry.minimumTickRateHz < MIN_TICK_RATE_TARGET_HZ
+    summary.telemetry.minimumTickRateHz < PERF_GATES.minimumTickRateHz.minimum
   ) {
     add({
       id: 'telemetry-tick-rate',
       severity: 'caution',
       title: 'Telemetry tick rate fell below the project target',
       evidence: [
-        `Minimum observed tick rate: ${format(summary.telemetry.minimumTickRateHz)} Hz; target is at least ${MIN_TICK_RATE_TARGET_HZ} Hz.`,
+        `Minimum observed tick rate: ${format(summary.telemetry.minimumTickRateHz)} Hz; target is at least ${PERF_GATES.minimumTickRateHz.minimum} Hz.`,
       ],
       nextStep:
         'Correlate the low-rate interval with processTelemetry, event-loop delay, and CPU measurements; repeat the same scenario to distinguish a code path from host load.',
@@ -276,14 +294,14 @@ export function diagnosePerfSummary(summary: PerfSummary): PerfDiagnosis {
   }
 
   if (
-    summary.renderer.framesOver50MsPercent > FRAMES_OVER_50_MS_TARGET_PERCENT
+    summary.renderer.framesOver50MsPercent > PERF_GATES.framesOver50MsPercent.maximum
   ) {
     add({
       id: 'renderer-long-frames',
       severity: 'attention',
       title: 'Renderer frames over 50 ms exceeded the project target',
       evidence: [
-        `${format(summary.renderer.framesOver50MsPercent, 3)}% of observed renderer frames exceeded 50 ms; target is below ${FRAMES_OVER_50_MS_TARGET_PERCENT}%.`,
+        `${format(summary.renderer.framesOver50MsPercent, 3)}% of observed renderer frames exceeded 50 ms; target is below ${PERF_GATES.framesOver50MsPercent.maximum}%.`,
         `Worst observed renderer frame: ${format(summary.renderer.worstFrameMs)} ms.`,
       ],
       nextStep:
@@ -458,7 +476,12 @@ function isPerfComparison(value: unknown): value is PerfComparison {
         (typeof check.passed === 'boolean' || check.passed === null) &&
         isNumberOrNull(check.actual) &&
         typeof check.target === 'string'
-    )
+    ) &&
+    (value.contrast === undefined ||
+      (Array.isArray(value.contrast) &&
+        value.contrast.every((item) =>
+          (COMPARISON_CONTRASTS as readonly string[]).includes(String(item))
+        )))
   );
 }
 
@@ -533,6 +556,7 @@ export function diagnosePerfComparison(
     (check) => check.name === 'Matched workload metadata'
   );
   const workloadMatches = workloadCheck?.passed === true;
+  const contrast = comparison.contrast ?? [];
   const sourceProvenanceComplete =
     typeof comparison.baseline.scenarioMetadata.sourceCommit === 'string' &&
     typeof comparison.baseline.scenarioMetadata.sourceDirty === 'boolean' &&
@@ -551,10 +575,11 @@ export function diagnosePerfComparison(
         ? ['workload metadata is unavailable or inconsistent']
         : []),
   ];
-  diagnosis.run.evidenceConclusive =
-    comparison.baseline.evidence.conclusive &&
-    comparison.candidate.evidence.conclusive &&
-    workloadMatches;
+  diagnosis.run.evidenceConclusive = comparisonCoreComplete(
+    comparison.baseline,
+    comparison.candidate,
+    comparison.contrast ?? []
+  );
   diagnosis.run.inconclusiveReasons = [...new Set(comparisonReasons)];
   const failed = comparison.checks.filter(
     (check) =>
@@ -571,11 +596,14 @@ export function diagnosePerfComparison(
       `Baseline source: ${sourceDescription(comparison.baseline)}.`,
       `Candidate source: ${sourceDescription(comparison.candidate)}.`,
       `Workload metadata: ${workloadCheck?.passed === true ? 'matched' : workloadCheck?.passed === false ? 'different' : 'unavailable'}.`,
+      `Declared contrast: ${contrastDescription(contrast)}.`,
       `Baseline conditions: ${workloadDescription(comparison.baseline)}.`,
       `Candidate conditions: ${workloadDescription(comparison.candidate)}.`,
     ],
     nextStep: !workloadMatches
-      ? 'Make the benchmark conditions match, or rerun with complete scenario metadata before treating metric deltas as a code effect.'
+      ? contrast.length > 0
+        ? 'Conditions still differ outside the declared contrast. Align the remaining workload metadata before treating metric deltas as a code effect.'
+        : 'Make the benchmark conditions match, or rerun with complete scenario metadata before treating metric deltas as a code effect.'
       : !sourceProvenanceComplete
         ? 'Repeat the captures with the updated perf:run so both source commits and worktree states are recorded.'
         : 'Confirm both revisions and worktree states are the intended before/after builds; then interpret the metric deltas.',
@@ -821,53 +849,27 @@ export function diagnosisMarkdown(diagnosis: PerfDiagnosis): string {
 }
 
 export function parseDiagnoseOptions(args: string[]): DiagnoseOptions {
-  const values = new Map<string, string>();
-  const valueFlags = new Set([
-    '--warmup-seconds',
-    '--analysis-start-seconds',
-    '--analysis-end-seconds',
-    '--output',
-  ]);
-  let input: string | undefined;
-
-  for (let index = 0; index < args.length; index++) {
-    const argument = args[index];
-    if (!argument.startsWith('--')) {
-      if (input !== undefined)
-        throw new Error(
-          `Unexpected positional argument: ${argument}\n${DIAGNOSE_USAGE}`
-        );
-      input = argument;
-      continue;
-    }
-
-    if (!valueFlags.has(argument) || values.has(argument))
-      throw new Error(`Invalid option: ${argument}\n${DIAGNOSE_USAGE}`);
-    const value = args[index + 1];
-    if (!value || value.startsWith('--'))
-      throw new Error(
-        `Option ${argument} requires a value.\n${DIAGNOSE_USAGE}`
-      );
-    values.set(argument, value);
-    index++;
-  }
-
-  if (!input) throw new Error(DIAGNOSE_USAGE);
-
-  const number = (flag: string, fallback: number): number => {
-    const value = Number(values.get(flag) ?? fallback);
-    if (!Number.isFinite(value) || value < 0)
-      throw new Error(
-        `Invalid ${flag}: expected a finite non-negative number.`
-      );
-    return value;
-  };
-  const warmupSeconds = number('--warmup-seconds', 30);
-  const startSeconds = values.has('--analysis-start-seconds')
-    ? number('--analysis-start-seconds', 0)
+  const parsed = parseArguments(args, {
+    usage: DIAGNOSE_USAGE,
+    values: [
+      '--warmup-seconds',
+      '--analysis-start-seconds',
+      '--analysis-end-seconds',
+      '--output',
+      '--format',
+      '--fail-on',
+    ],
+    booleans: ['--no-correlate'],
+    positional: 'one',
+  });
+  const warmupSeconds = numericArgument(parsed, '--warmup-seconds', 30, {
+    min: 0,
+  });
+  const startSeconds = parsed.has('--analysis-start-seconds')
+    ? numericArgument(parsed, '--analysis-start-seconds', 0, { min: 0 })
     : undefined;
-  const endSeconds = values.has('--analysis-end-seconds')
-    ? number('--analysis-end-seconds', 0)
+  const endSeconds = parsed.has('--analysis-end-seconds')
+    ? numericArgument(parsed, '--analysis-end-seconds', 0, { min: 0 })
     : undefined;
   if (
     startSeconds !== undefined &&
@@ -877,10 +879,22 @@ export function parseDiagnoseOptions(args: string[]): DiagnoseOptions {
     throw new Error(
       '--analysis-end-seconds must be greater than --analysis-start-seconds.'
     );
-
-  const inputPath = path.resolve(input);
+  const format = choiceArgument(
+    parsed,
+    '--format',
+    ['paths', 'md', 'json'] as const,
+    'paths'
+  );
+  const failOn = choiceArgument(
+    parsed,
+    '--fail-on',
+    ['never', 'info', 'caution', 'attention'] as const,
+    'never'
+  );
+  const inputPath = path.resolve(parsed.positionals[0]);
   const outputPrefix = path.resolve(
-    values.get('--output') ?? inputPath.replace(/\.[^.]+$/, '') + '.diagnosis'
+    parsed.value('--output') ??
+      inputPath.replace(/\.[^.]+$/, '') + '.diagnosis'
   );
   return {
     inputPath,
@@ -891,11 +905,18 @@ export function parseDiagnoseOptions(args: string[]): DiagnoseOptions {
       '--warmup-seconds',
       '--analysis-start-seconds',
       '--analysis-end-seconds',
-    ].some((flag) => values.has(flag)),
+    ].some((flag) => parsed.has(flag)),
+    format,
+    failOn,
+    correlateRawLog: !parsed.flag('--no-correlate'),
   };
 }
 
 export async function runDiagnosisCli(args: string[]): Promise<void> {
+  if (args.includes('--help') || args.includes('-h')) {
+    process.stdout.write(DIAGNOSE_USAGE);
+    return;
+  }
   const options = parseDiagnoseOptions(args);
   const input = await fs.readFile(options.inputPath, 'utf8');
   let diagnosis: PerfDiagnosis;
@@ -921,13 +942,27 @@ export async function runDiagnosisCli(args: string[]): Promise<void> {
       );
     }
   } else {
+    const capture = parsePerfLog(input);
     const summary = summarizeCapture(
-      parsePerfLog(input),
+      capture,
       options.warmupSeconds,
       options.analysisWindow
     );
     diagnosis = diagnosePerfSummary(summary);
     diagnosis.source = 'perf-log';
+    if (options.correlateRawLog) {
+      const correlations: CorrelationFinding[] = correlateCapture(capture, {
+        warmupSeconds: options.warmupSeconds,
+        analysisWindow: options.analysisWindow,
+      });
+      const firstIndex = diagnosis.findings.length;
+      diagnosis.findings.push(
+        ...correlations.map((finding, index) => ({
+          ...finding,
+          id: `${finding.id}-${firstIndex + index}`,
+        }))
+      );
+    }
   }
 
   const jsonPath = `${options.outputPrefix}.json`;
@@ -947,5 +982,18 @@ export async function runDiagnosisCli(args: string[]): Promise<void> {
     fs.writeFile(jsonPath, JSON.stringify(diagnosis, null, 2), 'utf8'),
     fs.writeFile(markdownPath, diagnosisMarkdown(diagnosis), 'utf8'),
   ]);
-  process.stdout.write(`Diagnosis: ${markdownPath}\nData: ${jsonPath}\n`);
+  if (options.format === 'json') {
+    process.stdout.write(`${JSON.stringify(diagnosis, null, 2)}\n`);
+  } else if (options.format === 'md') {
+    process.stdout.write(diagnosisMarkdown(diagnosis));
+  } else {
+    process.stdout.write(`Diagnosis: ${markdownPath}\nData: ${jsonPath}\n`);
+  }
+
+  if (options.failOn !== 'never') {
+    const rank = { info: 1, caution: 2, attention: 3 };
+    const threshold = rank[options.failOn];
+    if (diagnosis.findings.some((finding) => rank[finding.severity] >= threshold))
+      process.exitCode = 1;
+  }
 }

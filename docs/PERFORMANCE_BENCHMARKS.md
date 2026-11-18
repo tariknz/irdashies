@@ -9,7 +9,10 @@ under `docs/performance/` survives when local `perf-results/` logs are absent.
 This is the repeatable benchmark protocol for diagnosing iRacing FPS loss,
 overlay stutter, and long-session degradation. It complements
 [`PERFORMANCE_TEST_SUMMARY.md`](./PERFORMANCE_TEST_SUMMARY.md), whose earlier
-runs established the memory and telemetry-processing targets.
+runs established the memory and telemetry-processing targets. Every tool is
+also reachable through `npm run perf -- <command>` (`doctor`, `diagnose`,
+`run`, `analyze`, `ab`, `branches`, `report`, `trace`, `trace-analyze`); subcommand `--help` prints
+its strict option list.
 
 ## What the harness captures
 
@@ -257,8 +260,10 @@ npm run perf:run -- --target packaged --mode full --scenario phase4-full --durat
 
 The runner always records target, live/replay mode, requested and active widget
 types, channel/Inspector delivery modes, telemetry payload mode, and widget
-input requirements. The optional field count, class count, display geometry,
-FPS cap, and sync mode flags complete the controlled-workload record.
+input requirements. Stable host facts (CPU model, logical cores, total memory,
+platform, display server) are recorded automatically; dynamic host state is
+not. The optional field count, class count, display geometry, FPS cap, and
+sync mode flags complete the controlled-workload record.
 
 ## Analyse and compare
 
@@ -281,6 +286,24 @@ capture:
 npm run perf:analyze -- perf-results/<candidate>.log --baseline perf-results/<baseline>.log --warmup-seconds 0 --analysis-start-seconds 120 --analysis-end-seconds 360
 ```
 
+A comparison is only conclusive when all controlled conditions match. The
+variable under test must be declared instead:
+
+```powershell
+npm run perf:analyze -- perf-results/full.log --baseline perf-results/observer.log --contrast overlay
+```
+
+`--contrast` accepts `overlay`, `widgets`, `channels` and `scenario`. It removes
+those fields from the matched-workload check while still printing the expected
+differences in the report. Without it, `observer` versus `full` is correctly
+reported as a workload mismatch and every gate is inconclusive.
+
+Evidence is now granular: a short analysis window or mismatched workload
+invalidates the CPU and frame gates, while unavailable private-memory samples
+only invalidate the memory gate. FPS gates are reported as `NOT_APPLICABLE`
+when both sides use an isolated `.irdt`, because those FPS values are historical
+tape data. `--ignore-gates <names>` skips selected gates explicitly.
+
 Analysis rejects inconclusive evidence by default after writing the summary.
 It exits non-zero when the measured interval is shorter than five minutes,
 private bytes are incomplete or too sparsely sampled, scenario/widget metadata
@@ -297,8 +320,13 @@ npm run perf -- diagnose perf-results/<candidate>.log --warmup-seconds 60
 npm run perf -- diagnose perf-results/<candidate>.summary.json
 ```
 
-This writes adjacent `.diagnosis.json` and `.diagnosis.md` files. Before a
-benchmark, check prerequisites without launching the app:
+This writes adjacent `.diagnosis.json` and `.diagnosis.md` files. For a raw
+`.log`, the diagnosis also correlates timestamped FPS dips with main sections,
+event-loop stalls, renderer measures and channel publication spikes; use
+`--no-correlate` to skip it. `--format json|md` writes the diagnosis to stdout
+and `--fail-on caution` (or `attention`) returns a non-zero exit code, which is
+useful in CI. Before a benchmark, check prerequisites without launching the
+app:
 
 ```powershell
 npm run perf -- doctor --input perf-results/<recording>.irdt
@@ -306,10 +334,12 @@ npm run perf -- doctor --target packaged
 ```
 
 `doctor` reports missing runtime dependencies, native replay addons, inaccessible
-recordings/results directories, build provenance, and target availability. Warnings
-such as a dirty worktree do not block the check; hard failures return a non-zero
-exit code. It does not connect to iRacing or modify files. Live iRacing SDK and
-game-frame measurements still require a supported Windows/iRacing setup.
+recordings/results directories, build provenance, target availability, CPU
+governor, free memory, remote display sessions, the presence of the Linux
+private-memory sampler and a read-only iRacing process probe. Use `--format json` for machine-readable output. Warnings such as a dirty
+worktree do not block the check; hard failures return a non-zero exit code. It
+does not launch an application or modify files. Live iRacing SDK and game-frame
+measurements still require a supported Windows/iRacing setup.
 
 ### Tracing a stall with `chrome://tracing`
 
@@ -322,13 +352,16 @@ npm run perf:trace -- --input /path/to/session.irdt --duration-seconds 20 --outp
 
 The runner starts the app with an isolated profile, replays the tape, records
 the DevTools `Tracing` JSON stream for all processes (V8 GC, Blink/toplevel,
-compositor, GPU, Electron) and stops the app afterwards. Open `chrome://tracing`
-in a Chromium browser, choose **Load**, select the JSON file, and inspect long
-tasks and GC around the stall. No additional analysis packages are required.
-Use `--warmup-seconds` to start recording after replay has settled. The
-category set includes the V8 CPU profiler; its `CpuProfiler::StartProfiling`
-call produces one 200–300 ms renderer task at the start of every trace. Ignore
-that first task when interpreting stalls.
+compositor, GPU, Electron) and stops the app afterwards. It also writes
+`<trace>.trace-summary.md` and `.trace-summary.json`, ranking V8 CPU self time,
+long tasks and GC events. Open `chrome://tracing` in a Chromium browser, choose
+**Load**, select the JSON file, and inspect long tasks around the stall. Use
+`--warmup-seconds` to start recording after replay has settled, or
+`--no-analyze` to skip the generated summary. An existing trace can be
+summarized later with `npm run perf:trace-analyze -- <trace.json>`. The
+`CpuProfiler::StartProfiling` task at the start of every trace is excluded from
+the long-task count. The analyzer reports nested complete events as leads, not
+additive CPU time.
 
 Tracing adds overhead, so keep these runs separate from A/B baselines. Use the
 same replay segment for paired runs, and pass `--speed`, `--port` or
@@ -344,12 +377,53 @@ npm run perf:ab -- --input /path/to/session.irdt --duration-seconds 420 --warmup
 ```
 
 The runner writes per-scenario captures, analyzer summaries and diagnoses into
-`perf-results/ab-<timestamp>/`, and `AB_REPORT.md` ranks the largest deltas.
-Use `--scenarios observer,empty,full,map` to add per-widget stages and
-`--profile <directory>` to seed every run from the same saved dashboard. Full
-scenarios set `PERF_FORCE_PROCESSOR_DEMAND=1` so widget channels publish even
-when renderer windows have not settled yet; observer and empty baselines stay
-undemand-driven.
+`perf-results/ab-<timestamp>/`. `AB_REPORT.md` groups deltas by unit and lists
+the gate checks and evidence status. Use `--scenarios observer,empty,full,map`
+to add per-widget stages: names other than `observer`, `empty` or `full` are
+widget types and run with `--widgets <name>` (as does `widgets:<name>`).
+`--profile <directory>` seeds every run from the same saved dashboard. The
+runner declares `overlay` or `widgets` contrast automatically for each stage;
+`--contrast` overrides it and `--ignore-gates memory,FPS` skips named gates.
+Full scenarios set
+`PERF_FORCE_PROCESSOR_DEMAND=1` so widget channels publish even when renderer
+windows have not settled yet; observer and empty baselines stay
+undemand-driven. Analysis now fails on inconclusive evidence by default; pass
+`--allow-inconclusive` to the A/B runner for exploratory captures and repeat
+any failed pair in reverse order before drawing a conclusion.
+
+### Profiling two branches or a diff
+
+To compare committed refs under identical conditions, use the branch runner.
+It creates detached worktrees, seeds each side with the same profile, runs the
+same replay and writes a `BRANCH_REPORT.md` with both commits, the changed
+file list and the normal comparison gates:
+
+```bash
+npm run perf:branches -- --baseline main --candidate HEAD \
+  --input test-data/telemetry/ai-race-10min.irdt --output perf-results/main-vs-pr
+```
+
+`--diff main...HEAD` (or `main..HEAD`, or a single commit) replaces the two ref
+flags. `--dry-run` resolves the refs and prints the changed files without
+launching the app. `--pr 949` resolves the PR base/head through `gh` automatically.
+
+The default order is ABBA: `base, candidate, candidate, base` per pair;
+`--pairs 2` repeats that cycle, and `--order ab` restores the old two-run
+behaviour. The report aggregates each metric by commit with median/range,
+compares the effect to the observed run noise, and prints a verdict such as
+`NO REPRODUCIBLE EFFECT`. A short harness check is available via `--smoke`
+(60 s, two runs, inconclusive allowed), and `--coverage-probe-seconds 30`
+adds a short probe that narrows `--widgets` to fully covered types.
+Several existing comparisons can be combined with
+`npm run perf:report -- <summary.json>...`. Generated worktrees are cached by
+commit SHA under `perf-results/.cache/branches` and reused by default; use
+`--no-reuse` for fresh checkouts and `--clean-cache` to remove the cache.
+`--ignore-gates memory,FPS` skips named gates. Temporary non-cached worktrees
+are removed afterwards unless `--keep-worktrees` is set. Dependencies and the native build are linked from the current checkout;
+use `--install` for a clean `npm ci`, and add `--rebuild-native` when the diff
+touches `binding.gyp` or `src/app/irsdk/native/`. For a PR branch that is not
+local yet, fetch the ref first, for example `git fetch origin pull/123/head:pr-123`.
+To include uncommitted local changes, pass `--candidate-dir .` instead of a ref.
 
 The diagnosis reuses the analyzer's evidence and project gates to highlight investigation
 leads and suggest next measurements. It does not identify root causes, and an

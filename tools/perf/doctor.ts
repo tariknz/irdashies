@@ -1,13 +1,17 @@
 import { constants } from 'node:fs';
 import { promises as fs } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import os from 'node:os';
 import path from 'node:path';
 
+import { choiceArgument, parseArguments } from './args.ts';
+import { collectHostFacts } from './hostFacts.ts';
 import { inspectIbtRecording } from './ibt.ts';
 
 export const DOCTOR_USAGE = `Usage: npm run perf -- doctor [options]
   --target dev|packaged  Benchmark target to preflight (default dev)
   --input <file>         Optional .ibt or .irdt recording to check
+  --format md|json       Output format (default md)
 `;
 
 export type DoctorStatus = 'PASS' | 'WARN' | 'FAIL' | 'SKIP';
@@ -21,6 +25,7 @@ export interface DoctorCheck {
 export interface DoctorOptions {
   target: 'dev' | 'packaged';
   inputPath?: string;
+  format: 'md' | 'json';
 }
 
 export interface DoctorReport {
@@ -40,24 +45,26 @@ interface ProjectPackage {
 }
 
 export function parseDoctorOptions(args: string[]): DoctorOptions {
-  const values = new Map<string, string>();
-  const valueFlags = new Set(['--target', '--input']);
-  for (let index = 0; index < args.length; index++) {
-    const flag = args[index];
-    if (!valueFlags.has(flag) || values.has(flag))
-      throw new Error(`Invalid doctor option: ${flag}\n${DOCTOR_USAGE}`);
-    const value = args[index + 1];
-    if (!value || value.startsWith('--'))
-      throw new Error(`Option ${flag} requires a value.\n${DOCTOR_USAGE}`);
-    values.set(flag, value);
-    index++;
-  }
-  const target = values.get('--target') ?? 'dev';
-  if (target !== 'dev' && target !== 'packaged')
-    throw new Error('--target must be dev or packaged.');
-  const input = values.get('--input');
+  const parsed = parseArguments(args, {
+    usage: DOCTOR_USAGE,
+    values: ['--target', '--input', '--format'],
+  });
+  const target = choiceArgument(
+    parsed,
+    '--target',
+    ['dev', 'packaged'] as const,
+    'dev'
+  );
+  const format = choiceArgument(
+    parsed,
+    '--format',
+    ['md', 'json'] as const,
+    'md'
+  );
+  const input = parsed.value('--input');
   return {
     target,
+    format,
     inputPath: input ? path.resolve(input) : undefined,
   };
 }
@@ -158,6 +165,33 @@ const isGitLfsPointer = async (inputPath: string): Promise<boolean> => {
   }
 };
 
+const readCpuGovernor = async (): Promise<string | undefined> => {
+  try {
+    const value = await fs.readFile(
+      '/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor',
+      'utf8'
+    );
+    return value.trim() || undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const iracingProcessRunning = (): boolean => {
+  try {
+    const output = execFileSync(
+      process.platform === 'win32' ? 'tasklist' : 'pgrep',
+      process.platform === 'win32'
+        ? ['/FI', 'IMAGENAME eq iRacing.exe']
+        : ['-f', 'iRacing'],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
+    );
+    return /iRacing/i.test(output);
+  } catch {
+    return false;
+  }
+};
+
 const checkRecording = async (inputPath: string): Promise<DoctorCheck> => {
   const extension = path.extname(inputPath).toLowerCase();
   if (extension !== '.ibt' && extension !== '.irdt') {
@@ -214,6 +248,62 @@ export async function collectDoctorChecks(
   options: DoctorOptions
 ): Promise<DoctorCheck[]> {
   const checks: DoctorCheck[] = [];
+  const host = collectHostFacts();
+  checks.push({
+    name: 'Host hardware',
+    status: 'PASS',
+    detail: `${host.hostCpuModel}; ${host.hostLogicalCores} logical cores; ${host.hostTotalMemoryGB} GB RAM; ${host.hostPlatform}/${host.hostArch} ${host.hostRelease}. Recorded in scenario metadata.`,
+  });
+  checks.push({
+    name: 'Display session',
+    status:
+      process.env.SSH_CONNECTION || process.env.SSH_TTY ? 'WARN' : 'PASS',
+    detail: `${host.hostDisplayServer}${process.env.SSH_CONNECTION || process.env.SSH_TTY ? ' over a remote session; frame pacing may not represent a local desktop.' : ' local display detected.'}`,
+  });
+  const governor = await readCpuGovernor();
+  checks.push({
+    name: 'CPU frequency governor',
+    status:
+      process.platform !== 'linux'
+        ? 'SKIP'
+        : governor === undefined
+          ? 'SKIP'
+          : governor === 'performance'
+            ? 'PASS'
+            : 'WARN',
+    detail:
+      process.platform !== 'linux'
+        ? 'Linux governor probe is not available on this platform.'
+        : governor === undefined
+          ? 'scaling_governor is not exposed; check the host power policy manually.'
+          : `${governor}; use the performance governor for comparable CPU timings.`,
+  });
+  const perfMetricsSource = await fs
+    .readFile(path.join(packageRoot, 'src/app/perfMetrics.ts'), 'utf8')
+    .catch(() => '');
+  checks.push({
+    name: 'Private-memory instrumentation',
+    status: perfMetricsSource.includes('privateMemorySampler')
+      ? 'PASS'
+      : 'WARN',
+    detail: perfMetricsSource.includes('privateMemorySampler')
+      ? 'This checkout samples /proc private memory on Linux.'
+      : 'No Linux private-memory sampler in this checkout; the memory gate will be inconclusive for replay runs.',
+  });
+  const freeRatio = os.freemem() / Math.max(1, os.totalmem());
+  const simulatorRunning = iracingProcessRunning();
+  checks.push({
+    name: 'Available memory',
+    status: freeRatio < 0.1 ? 'WARN' : 'PASS',
+    detail: `${(freeRatio * 100).toFixed(1)}% of physical memory is currently free.`,
+  });
+  checks.push({
+    name: 'Simulator process',
+    status: simulatorRunning ? 'PASS' : 'WARN',
+    detail: simulatorRunning
+      ? 'iRacing is running; live comparisons should keep the session and camera fixed.'
+      : 'iRacing is not running; use --replay-input for isolated captures.',
+  });
   let projectPackage: ProjectPackage | undefined;
   try {
     projectPackage = JSON.parse(
@@ -421,7 +511,7 @@ export function doctorMarkdown(report: DoctorReport): string {
   return [
     '# irDashies perf CLI doctor',
     '',
-    `Target: ${report.target}. Checks are read-only; no application or simulator was launched.`,
+    `Target: ${report.target}. Checks are read-only; no application was launched.`,
     '',
     ...report.checks.map(
       (check) => `- [${check.status}] ${check.name}: ${check.detail}`
@@ -433,11 +523,19 @@ export function doctorMarkdown(report: DoctorReport): string {
 }
 
 export async function runDoctorCli(args: string[]): Promise<void> {
+  if (args.includes('--help') || args.includes('-h')) {
+    process.stdout.write(DOCTOR_USAGE);
+    return;
+  }
   const options = parseDoctorOptions(args);
   const report = createDoctorReport(
     options.target,
     await collectDoctorChecks(options)
   );
-  process.stdout.write(doctorMarkdown(report));
+  process.stdout.write(
+    options.format === 'json'
+      ? `${JSON.stringify(report, null, 2)}\n`
+      : doctorMarkdown(report)
+  );
   if (report.summary.failed > 0) process.exitCode = 1;
 }
