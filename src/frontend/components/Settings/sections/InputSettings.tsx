@@ -5,6 +5,7 @@ import { PlusIcon } from '@phosphor-icons/react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import {
   InputWidgetSettings,
   LayoutNode,
@@ -206,7 +207,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
               </div>
 
               {/* Tabs */}
-              <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+              <SettingsTabBar>
                 <TabButton
                   id="layout"
                   activeTab={activeTab}
@@ -228,7 +229,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                 >
                   Visibility
                 </TabButton>
-              </div>
+              </SettingsTabBar>
 
               <div>
                 {/* LAYOUT TAB */}

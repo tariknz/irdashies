@@ -7,6 +7,7 @@ import {
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SortableList } from '../../SortableList';
 import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -163,7 +164,7 @@ export const BattleSettings = () => {
         >
           <div className="space-y-4">
             {/* Tabs */}
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="display"
                 activeTab={activeTab}
@@ -185,7 +186,7 @@ export const BattleSettings = () => {
               >
                 Visibility
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div>
               {/* DISPLAY TAB */}

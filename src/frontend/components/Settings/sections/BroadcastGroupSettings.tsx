@@ -14,6 +14,7 @@ import { differsFromDefault } from '../components/ChangedMark';
 import { BroadcastPreview } from './BroadcastPreview';
 import { SettingsPreviewContext } from '@irdashies/domain/widgetPreview/settingsPreviewContext';
 import { SettingsPreviewLayout } from '../components/SettingsPreviewLayout';
+import { STICKY_TAB_BAR_CLASS } from '../components/SettingsTabBar';
 
 /**
  * The broadcast modules stay separate widgets, so each keeps its own place in
@@ -162,7 +163,7 @@ export const BroadcastGroupSettings = ({
       >
         <nav
           aria-label="Broadcast modules"
-          className={`flex flex-wrap gap-1 border-b border-slate-700 pb-1 ${sharedPreview ? '' : 'xl:col-span-2'}`}
+          className={`${STICKY_TAB_BAR_CLASS} flex flex-wrap gap-1 border-b border-slate-700 pb-1 ${sharedPreview ? '' : 'xl:col-span-2'}`}
         >
           <div className="sr-only">Modules</div>
           {MODULES.map(({ type, label }) => (

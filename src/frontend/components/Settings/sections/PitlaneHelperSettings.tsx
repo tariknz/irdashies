@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import type { PitlaneHelperWidgetSettings } from '@irdashies/types';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
@@ -61,7 +62,7 @@ export const PitlaneHelperSettings = () => {
         >
           <div className="space-y-4">
             {/* Tabs */}
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="options"
                 activeTab={activeTab}
@@ -83,7 +84,7 @@ export const PitlaneHelperSettings = () => {
               >
                 Calibration
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div>
               {/* OPTIONS TAB */}

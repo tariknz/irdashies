@@ -10,6 +10,7 @@ import { useDashboard } from '@irdashies/context';
 import { PlusIcon } from '@phosphor-icons/react';
 import { SessionVisibility } from '../../components/SessionVisibility';
 import { TabButton } from '../../components/TabButton';
+import { SettingsTabBar } from '../../components/SettingsTabBar';
 import { LayoutVisualizer, migrateToTree } from '../LayoutVisualizer';
 import { DEFAULT_FUEL_LAYOUT_TREE } from '../../../FuelCalculator/defaults';
 import { getWidgetDefaultConfig } from '@irdashies/types';
@@ -155,7 +156,7 @@ export const SingleFuelWidgetSettings = ({
           >
             <div className="space-y-4">
               {/* Tabs */}
-              <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+              <SettingsTabBar>
                 <TabButton
                   id="layout"
                   activeTab={activeTab}
@@ -191,7 +192,7 @@ export const SingleFuelWidgetSettings = ({
                 >
                   Visibility
                 </TabButton>
-              </div>
+              </SettingsTabBar>
 
               <div>
                 {/* LAYOUT TAB */}

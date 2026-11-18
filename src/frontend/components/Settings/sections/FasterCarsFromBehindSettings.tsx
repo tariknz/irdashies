@@ -9,6 +9,7 @@ import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { useDashboard } from '@irdashies/context';
 import { useFasterCarsSettings } from '../../FasterCarsFromBehind/hooks/useFasterCarsSettings';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingSliderRow } from '../components/SettingSliderRow';
@@ -58,7 +59,7 @@ export const FasterCarsFromBehindSettings = () => {
         >
           <div className="space-y-4">
             {/* Tabs */}
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="display"
                 activeTab={activeTab}
@@ -73,7 +74,7 @@ export const FasterCarsFromBehindSettings = () => {
               >
                 Visibility
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div>
               {/* DISPLAY TAB */}

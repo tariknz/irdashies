@@ -10,6 +10,7 @@ import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SettingProps, settingPropFor } from '../components/SettingProp';
 
 const SETTING_ID = 'cornername';
@@ -57,7 +58,7 @@ export const CornerNameSettings = () => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="display"
                 activeTab={activeTab}
@@ -79,7 +80,7 @@ export const CornerNameSettings = () => {
               >
                 Visibility
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div>
               {activeTab === 'display' && (

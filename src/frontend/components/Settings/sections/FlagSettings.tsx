@@ -7,6 +7,7 @@ import {
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingDivider } from '../components/SettingDivider';
@@ -58,7 +59,7 @@ export const FlagSettings = () => {
         >
           <div className="space-y-4">
             {/* Tabs */}
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="options"
                 activeTab={activeTab}
@@ -73,7 +74,7 @@ export const FlagSettings = () => {
               >
                 Visibility
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div>
               {/* OPTIONS TAB */}
