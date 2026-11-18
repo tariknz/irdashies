@@ -372,7 +372,7 @@ Shows faster cars approaching from behind with their class position, time gap, a
 - Option to exclude cars in the pits
 - Automatically hidden when on pit road
 
-<img src="./docs/assets/fastercarsfrombehind.png" alt="Faster Cars From Behind showing the same alerts in normal, compact, and ultra densities" width="344">
+<img src="./docs/assets/fastercarsfrombehind.png" alt="Faster Cars From Behind showing three approaching cars with class positions, ratings, and time gaps" width="344">
 
 ### Fuel Calculator
 
@@ -741,7 +741,7 @@ A resizable race control window with live standings, an automatic incident feed,
 <details>
 <summary>Lap Graph, Pit Stops, and team strategy</summary>
 
-![Gantry Lap Graph showing race pace by driver](./docs/assets/gantry-chart.png)
+![Gantry Lap Graph showing GTP class position changes on laps 8–29 of a recorded Road Atlanta race](./docs/assets/gantry-chart.png)
 
 ![Gantry Pit Stops showing stop durations, driver changes, and live timers](./docs/assets/gantry-pit-stops.png)
 
