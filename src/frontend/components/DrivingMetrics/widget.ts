@@ -1,26 +1,77 @@
+import { lazyWidget } from '@irdashies/domain/lazyWidget';
 import type { WidgetModule } from '@irdashies/domain';
-import {
-  AccelerationTimer,
-  BrakePressure,
-  CruiseOdometer,
-  FrictionCircle,
-  SteeringMeter,
-  StintHistory,
-  SuspensionPosition,
-  TrackClock,
-  TrackNotes,
-} from './DrivingMetrics';
 
-const modules = [
-  { id: 'tracknotes', component: TrackNotes },
-  { id: 'accelerationtimer', component: AccelerationTimer },
-  { id: 'stinthistory', component: StintHistory },
-  { id: 'frictioncircle', component: FrictionCircle },
-  { id: 'brakepressure', component: BrakePressure },
-  { id: 'suspensionposition', component: SuspensionPosition },
-  { id: 'trackclock', component: TrackClock },
-  { id: 'steeringmeter', component: SteeringMeter },
-  { id: 'cruiseodometer', component: CruiseOdometer },
-] as const satisfies readonly WidgetModule[];
-
-export default modules;
+export default [
+  {
+    id: 'tracknotes',
+    component: lazyWidget(() =>
+      import('./DrivingMetrics').then((module) => ({
+        default: module.TrackNotes,
+      }))
+    ),
+  },
+  {
+    id: 'accelerationtimer',
+    component: lazyWidget(() =>
+      import('./DrivingMetrics').then((module) => ({
+        default: module.AccelerationTimer,
+      }))
+    ),
+  },
+  {
+    id: 'stinthistory',
+    component: lazyWidget(() =>
+      import('./DrivingMetrics').then((module) => ({
+        default: module.StintHistory,
+      }))
+    ),
+  },
+  {
+    id: 'frictioncircle',
+    component: lazyWidget(() =>
+      import('./DrivingMetrics').then((module) => ({
+        default: module.FrictionCircle,
+      }))
+    ),
+  },
+  {
+    id: 'brakepressure',
+    component: lazyWidget(() =>
+      import('./DrivingMetrics').then((module) => ({
+        default: module.BrakePressure,
+      }))
+    ),
+  },
+  {
+    id: 'suspensionposition',
+    component: lazyWidget(() =>
+      import('./DrivingMetrics').then((module) => ({
+        default: module.SuspensionPosition,
+      }))
+    ),
+  },
+  {
+    id: 'trackclock',
+    component: lazyWidget(() =>
+      import('./DrivingMetrics').then((module) => ({
+        default: module.TrackClock,
+      }))
+    ),
+  },
+  {
+    id: 'steeringmeter',
+    component: lazyWidget(() =>
+      import('./DrivingMetrics').then((module) => ({
+        default: module.SteeringMeter,
+      }))
+    ),
+  },
+  {
+    id: 'cruiseodometer',
+    component: lazyWidget(() =>
+      import('./DrivingMetrics').then((module) => ({
+        default: module.CruiseOdometer,
+      }))
+    ),
+  },
+] satisfies WidgetModule[];

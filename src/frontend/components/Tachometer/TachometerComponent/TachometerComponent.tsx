@@ -83,7 +83,9 @@ export const Tachometer = ({
   const effectiveBlinkRpm = gearRpmThresholds
     ? gearRpmThresholds[0]
     : blinkRpm || maxRpm * 0.97; // Use redline from car data
-  const shouldBlink = clampedRpm >= effectiveBlinkRpm;
+  const pitLimiterOn = !!(engineWarnings & EngineWarnings.PitSpeedLimiter);
+  // Pit limiter must light the whole bar — idle RPM would leave every LED dark.
+  const shouldBlink = clampedRpm >= effectiveBlinkRpm || pitLimiterOn;
 
   // Use car-specific LED count if available
   const effectiveNumLights =
@@ -168,6 +170,8 @@ export const Tachometer = ({
 
   // Determine if a specific LED should be active (handles center-out pattern)
   const isLedActive = (ledIndex: number): boolean => {
+    if (pitLimiterOn) return true;
+
     if (!gearRpmThresholds || gearRpmThresholds.length <= 1) {
       // Fallback: simple left-to-right
       return ledIndex < activeLights;
@@ -367,7 +371,7 @@ export const Tachometer = ({
         className={`bg-slate-800/(--bg-opacity) flex relative items-center justify-center rounded-full`}
         style={{
           ['--bg-opacity' as string]: `${opacity ?? 80}%`,
-          padding: `4px min(40cqh, ${(42.5 / effectiveNumLights).toFixed(2)}cqw)`,
+          padding: `4px min(20px, 40cqh, ${(42.5 / effectiveNumLights).toFixed(2)}cqw)`,
         }}
       >
         {/* OIL — defaults to the left of the bar, swappable */}
@@ -399,7 +403,7 @@ export const Tachometer = ({
             key={i}
             className="aspect-square p-0.5"
             style={{
-              width: `min(80cqh, ${(85 / effectiveNumLights).toFixed(2)}cqw)`,
+              width: `min(40px, 80cqh, ${(85 / effectiveNumLights).toFixed(2)}cqw)`,
             }}
           >
             <div

@@ -1,7 +1,18 @@
 import { renderHook } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { useCustomShiftPoints } from './useCustomShiftPoints';
 import type { ShiftPointSettings } from '@irdashies/types';
+import * as Context from '@irdashies/context';
+
+vi.mock('@irdashies/context', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@irdashies/context')>();
+  return {
+    ...actual,
+    useActiveSimulator: vi.fn(),
+  };
+});
+
+const mockActiveSimulator = vi.mocked(Context.useActiveSimulator);
 
 const settings: ShiftPointSettings = {
   enabled: true,
@@ -20,6 +31,10 @@ const settings: ShiftPointSettings = {
 };
 
 describe('useCustomShiftPoints', () => {
+  beforeEach(() => {
+    mockActiveSimulator.mockReturnValue('iracing');
+  });
+
   it('normalizes the car path before looking up saved shift points', () => {
     const { result } = renderHook(() =>
       useCustomShiftPoints(settings, 'Ferrari 296 GT3', 1, 6500)
@@ -29,6 +44,7 @@ describe('useCustomShiftPoints', () => {
   });
 
   it('keys an LMU car by its model, not by a same-named iRacing car', () => {
+    mockActiveSimulator.mockReturnValue('lmu');
     // "Ferrari 499P" normalises to iRacing's ferrari499p.
     const lmuAndIracing: ShiftPointSettings = {
       ...settings,

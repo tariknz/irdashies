@@ -6,7 +6,11 @@ import {
   getWidgetDefaultConfig,
   SettingsTabType,
 } from '@irdashies/types';
-import { useDashboard, useSessionStore } from '@irdashies/context';
+import {
+  useActiveSimulator,
+  useDashboard,
+  useSessionStore,
+} from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { getAvailableCars } from '../../../utils/carData';
@@ -96,6 +100,7 @@ const CustomShiftPointsSection = ({
 
   const customShiftPoints = config.shiftPointSettings;
   const currentModelCar = useCurrentModelCar();
+  const simulator = useActiveSimulator();
 
   const updateCustomShiftPoints = (
     updates: Partial<typeof customShiftPoints>
@@ -114,7 +119,7 @@ const CustomShiftPointsSection = ({
 
       setLoading(true);
       try {
-        const allCars = getAvailableCars();
+        const allCars = getAvailableCars(simulator);
         const cars: CarListItem[] = allCars
           .map((car) => ({
             carId: car.carId,
@@ -136,7 +141,7 @@ const CustomShiftPointsSection = ({
     };
 
     loadAvailableCars();
-  }, [customShiftPoints.enabled, availableCars.length]);
+  }, [customShiftPoints.enabled, availableCars.length, simulator]);
 
   const addCurrentModelCar = (car: CurrentModelCar) => {
     const gearShiftPoints: Record<string, { shiftRpm: number }> = {};

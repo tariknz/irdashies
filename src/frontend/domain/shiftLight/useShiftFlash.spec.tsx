@@ -9,6 +9,7 @@ vi.mock('@irdashies/context', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@irdashies/context')>();
   return {
     ...actual,
+    useActiveSimulator: vi.fn(),
     useChannelSelector: vi.fn(),
     useDashboard: vi.fn(),
     useSessionStore: vi.fn(),
@@ -23,6 +24,7 @@ vi.mock('@irdashies/utils/carData', async (importOriginal) => {
 const mockSelector = vi.mocked(Context.useChannelSelector);
 const mockDashboard = vi.mocked(Context.useDashboard);
 const mockSessionStore = vi.mocked(Context.useSessionStore);
+const mockActiveSimulator = vi.mocked(Context.useActiveSimulator);
 const mockLoadCarData = vi.mocked(CarData.loadCarData);
 
 const shiftPointSettings: ShiftPointSettings = {
@@ -61,6 +63,7 @@ const setRpm = (rpm: number, gear = 2) =>
 describe('useShiftFlashActive', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockActiveSimulator.mockReturnValue('iracing');
     mockDashboard.mockReturnValue({
       currentDashboard: {
         widgets: [
