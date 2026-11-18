@@ -322,26 +322,16 @@ Displays a simplified horizontal track map showing driver positions along a flat
 
 ### Weather
 
-Displays the weather information for the current session.
+A compact card for current track and weather conditions, with a short trend estimate.
 
 **Features:**
 
-- Current weather conditions: track state, track and air temperature, wind speed and direction, humidity, precipitation, track wetness
-- Vertical, horizontal compact, and horizontal full layouts
-- Optional humidity display
-- Customizable display order for all weather elements
+- Track surface status, current sky, air and track temperatures, and wind direction/speed
+- A three-hour temperature and precipitation trend with a rain warning showing its approximate lead time
+- The trend is extrapolated from recent session telemetry; it is not a simulator-provided forecast
 - Temperature units: Auto (based on iRacing settings), Metric (°C), or Imperial (°F)
-- Adjustable background opacity
-- Option to show only when on track
-- Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
-
-**Normal layout:**
-
-<img src="./docs/assets/weather.png" alt="Weather in the normal vertical layout" width="210">
-
-**Horizontal layout:**
-
-![Weather in the horizontal layout](./docs/assets/weather-horizontal.png)
+- Adjustable background opacity and widget scale
+- Optional on-track-only display and session visibility settings
 
 ### Wind
 
@@ -630,9 +620,7 @@ Settings are split into **Display**, **Twitch** and **YouTube** tabs. Chat from 
 
 <img src="./docs/assets/twitchchat.png" alt="Twitch Chat with sample messages" width="374">
 
-
 ### Heart Rate
-
 
 Displays your live heart rate from [HypeRate](https://www.hyperate.io/) by embedding its overlay — no API key or account required, just your session id.
 

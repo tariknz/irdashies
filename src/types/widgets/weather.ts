@@ -8,44 +8,15 @@ export default defineWidgetManifest({
   layout: {
     x: 1334,
     y: 271,
-    width: 174,
-    height: 425,
+    width: 380,
+    height: 142,
   },
   config: {
     background: {
-      opacity: 25,
+      opacity: 90,
     },
-    layout: 'vertical',
-    horizontalMode: 'compact',
     units: 'auto',
-    displayOrder: [
-      'trackTemp',
-      'airTemp',
-      'wind',
-      'humidity',
-      'precipitation',
-      'wetness',
-      'trackState',
-    ],
-    airTemp: {
-      enabled: true,
-    },
-    trackTemp: {
-      enabled: true,
-    },
-    wetness: {
-      enabled: true,
-    },
-    trackState: {
-      enabled: true,
-    },
-    humidity: {
-      enabled: true,
-    },
-    precipitation: {
-      enabled: false,
-    },
-    wind: {
+    forecast: {
       enabled: true,
     },
     showOnlyWhenOnTrack: false,
@@ -66,21 +37,11 @@ export default defineWidgetManifest({
       step: 1,
       units: '%',
     },
-    layout: {
-      type: 'enum',
-      label: 'Layout',
-      options: [
-        { value: 'vertical', label: 'Vertical' },
-        { value: 'horizontal', label: 'Horizontal' },
-      ],
-    },
-    horizontalMode: {
-      type: 'enum',
-      label: 'Horizontal View',
-      options: [
-        { value: 'compact', label: 'Compact' },
-        { value: 'full', label: 'Full' },
-      ],
+    'forecast.enabled': {
+      type: 'boolean',
+      label: 'Show forecast',
+      description:
+        'Colour-coded estimate of the next three hours, from the session trend',
     },
     units: {
       type: 'enum',
