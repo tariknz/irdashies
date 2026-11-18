@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   CornerNameWidgetSettings,
   SettingsTabType,
@@ -58,7 +57,7 @@ export const CornerNameSettings = () => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <div className="flex border-b border-slate-700/50">
+            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
               <TabButton
                 id="display"
                 activeTab={activeTab}
@@ -85,8 +84,7 @@ export const CornerNameSettings = () => {
             <div>
               {activeTab === 'display' && (
                 <>
-                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
-                  <SettingsSection title="Elements">
+                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
                     <SettingProp path="showCornerNumber" />
                     <SettingProp path="showProgressBar" />
                     <SettingProp path="showTrackPct" />

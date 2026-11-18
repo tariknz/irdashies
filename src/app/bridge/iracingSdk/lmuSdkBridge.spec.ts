@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import logger from '../../logger';
 import type { OverlayManager } from '../../overlayManager';
 import type { SessionLifecycle } from '../../sessionLifecycle';
@@ -48,6 +48,12 @@ const ratingState = vi.hoisted(() => ({
   },
   /** Set when the bridge chose the tape-backed client over the live one. */
   tapeClientBuilt: false,
+  /** RACEOS_ENABLED as the bridge sees it; on, so the wiring stays covered. */
+  enabled: true,
+  /** Set when the bridge built the live client. */
+  liveClientBuilt: false,
+  /** Set when the bridge built the HTTPS transport or the ticket fetcher. */
+  networkBuilt: false,
 }));
 
 /** Shared so a spec can read the arguments the session mapper was given. */
@@ -177,9 +183,16 @@ vi.mock('../../lmu/mapSession', () => ({
 
 // The rating client and its IO have their own specs; here only the bridge's
 // use of them matters.
+vi.mock('../../lmu/raceos/enabled', () => ({
+  get RACEOS_ENABLED() {
+    return ratingState.enabled;
+  },
+}));
+
 vi.mock('../../lmu/raceos/client', () => ({
   createRaceosClient: (options: { onResolved?: () => void }) => {
     ratingState.onResolved = options.onResolved;
+    ratingState.liveClientBuilt = true;
     return {
       get: ratingState.get,
       request: (steamIds: readonly string[]) => {
@@ -191,11 +204,17 @@ vi.mock('../../lmu/raceos/client', () => ({
 }));
 
 vi.mock('../../lmu/raceos/httpsJson', () => ({
-  createRaceosTransport: () => vi.fn(),
+  createRaceosTransport: () => {
+    ratingState.networkBuilt = true;
+    return vi.fn();
+  },
 }));
 
 vi.mock('../../lmu/raceos/ticket', () => ({
-  createTicketFetcher: () => vi.fn(),
+  createTicketFetcher: () => {
+    ratingState.networkBuilt = true;
+    return vi.fn();
+  },
 }));
 
 // Keeps the rating cache off the filesystem.
@@ -260,6 +279,71 @@ const runningStatesPublished = (overlayManager: OverlayManager) =>
     .mocked(overlayManager.publishMessage)
     .mock.calls.filter(([channel]) => channel === 'runningState')
     .map(([, value]) => value);
+
+describe('publishLmuSDKEvents when stopped', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sdkState.running = true;
+    sdkState.readThrows = false;
+  });
+
+  it('resets the shared lifecycle once, synchronously, when stopped mid-session', async () => {
+    const lifecycle = createLifecycle();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(createOverlayManager(), lifecycle);
+    await vi.waitFor(() => expect(lifecycle._onEnter).toHaveBeenCalled());
+
+    bridge.stop();
+    expect(lifecycle._onDisconnect).toHaveBeenCalledOnce();
+    bridge.stop();
+    expect(lifecycle._onDisconnect).toHaveBeenCalledOnce();
+  });
+
+  it('leaves the lifecycle alone when LMU never ran', async () => {
+    sdkState.running = false;
+    const lifecycle = createLifecycle();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(createOverlayManager(), lifecycle);
+
+    bridge.stop();
+    expect(lifecycle._onEnter).not.toHaveBeenCalled();
+    expect(lifecycle._onDisconnect).not.toHaveBeenCalled();
+  });
+
+  it('stays out of the lifecycle when a running-state listener stops it as LMU starts', async () => {
+    sdkState.running = false;
+    const lifecycle = createLifecycle();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(createOverlayManager(), lifecycle);
+    let stoppedOnStart = false;
+    bridge.onRunningState((running) => {
+      if (!running) return;
+      stoppedOnStart = true;
+      bridge.stop();
+    });
+
+    sdkState.running = true;
+    await vi.waitFor(() => expect(stoppedOnStart).toBe(true), {
+      timeout: 5000,
+    });
+    // Time for the stopped iteration to have run on, had it not broken off.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(lifecycle._onEnter).not.toHaveBeenCalled();
+    expect(lifecycle._onTelemetry).not.toHaveBeenCalled();
+  });
+
+  it('does not leave it twice after a failure already released it', async () => {
+    const lifecycle = createLifecycle();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(createOverlayManager(), lifecycle);
+    await vi.waitFor(() => expect(lifecycle._onEnter).toHaveBeenCalled());
+    sdkState.readThrows = true;
+    await vi.waitFor(() => expect(lifecycle._onDisconnect).toHaveBeenCalled());
+
+    bridge.stop();
+    expect(lifecycle._onDisconnect).toHaveBeenCalledOnce();
+  });
+});
 
 describe('publishLmuSDKEvents when the telemetry loop fails', () => {
   beforeEach(() => {
@@ -859,5 +943,56 @@ describe('publishLmuSDKEvents rating source on a tape replay', () => {
     expect(ratingState.tapeClientBuilt).toBe(false);
 
     bridge.stop();
+  });
+});
+
+/**
+ * RaceOS switched off, which is how the app ships.
+ *
+ * Nothing of the feature may be built: no transport or ticket fetcher means no
+ * request can reach raceos.gg and no ticket is asked of the sim, and no cache
+ * means nothing is read from or written to disk.
+ */
+describe('publishLmuSDKEvents with RaceOS disabled', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sdkState.running = true;
+    sdkState.readThrows = false;
+    sdkState.drivers = [{ name: 'Herve Attard', id: 1 }];
+    ratingState.enabled = false;
+    ratingState.liveClientBuilt = false;
+    ratingState.tapeClientBuilt = false;
+    ratingState.networkBuilt = false;
+  });
+
+  afterEach(() => {
+    ratingState.enabled = true;
+    vi.unstubAllEnvs();
+  });
+
+  it.each([
+    ['a live session', undefined],
+    ['a tape replay', 'session.lmudt'],
+  ])('builds no rating source for %s', async (_, replay) => {
+    if (replay) vi.stubEnv('IRDASHIES_LMU_REPLAY', replay);
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(mapSessionSpy).toHaveBeenCalled());
+    expect(ratingState.liveClientBuilt).toBe(false);
+    expect(ratingState.tapeClientBuilt).toBe(false);
+    expect(ratingState.networkBuilt).toBe(false);
+    expect(ratingState.cache.load).not.toHaveBeenCalled();
+
+    // The session still maps, and every driver comes back unrated.
+    const ratingFor = mapSessionSpy.mock.calls[0][3] as (
+      name: string
+    ) => unknown;
+    expect(ratingFor('Herve Attard')).toBeUndefined();
+    expect(ratingState.get).not.toHaveBeenCalled();
+
+    bridge.stop();
+    expect(ratingState.cache.flush).not.toHaveBeenCalled();
   });
 });

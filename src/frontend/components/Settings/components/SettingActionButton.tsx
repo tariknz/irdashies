@@ -15,7 +15,7 @@ export function SettingActionButton({
     <button
       type="button"
       onClick={onClick}
-      className="px-3 py-1 text-sm font-semibold border border-slate-600 hover:border-accent-500 text-slate-300 rounded-md transition-colors"
+      className="min-h-9 px-3 py-1.5 text-sm font-semibold border border-settings-boundary bg-slate-800 hover:border-accent-400 text-slate-200 rounded-md transition-colors"
     >
       {label}
     </button>
@@ -26,8 +26,8 @@ export function SettingActionButton({
   }
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="max-w-[70%]">
+    <div className="flex min-h-9 flex-wrap items-center justify-between gap-4">
+      <div className="min-w-0 flex-1 basis-40">
         {title && (
           <h4 className="text-md font-medium text-slate-300">{title}</h4>
         )}

@@ -51,19 +51,24 @@ export function createLmuRestTransport(origin: string): LmuRestTransport {
         },
         (response) => {
           const status = response.statusCode ?? 0;
-          if (status < 200 || status >= 300) {
-            // Drain before destroying, or the keep-alive socket is left with
-            // an unread body and the next request on it reads the wrong reply.
-            response.resume();
-            settle({ ok: false, reason: 'status' });
-            return;
-          }
+          const ok = status >= 200 && status < 300;
+          // Read to the end either way. An error body is read rather than
+          // drained because one path's errors are answers -- GetGameState
+          // says "not in a session" that way -- and reading it still empties
+          // the keep-alive socket, which an unread body would leave holding
+          // the wrong reply for the next request.
           let body = '';
           response.setEncoding('utf8');
           response.on('data', (chunk: string) => {
             body += chunk;
           });
-          response.on('end', () => settle({ ok: true, body }));
+          response.on('end', () =>
+            settle(
+              ok
+                ? { ok: true, body }
+                : { ok: false, reason: 'status', status, body }
+            )
+          );
           response.on('error', () => settle({ ok: false, reason: 'network' }));
         }
       );

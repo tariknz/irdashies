@@ -175,6 +175,18 @@ export interface PerfSummary {
     trackMapAnimationFrameRateHz: number;
     trackMapAnimationFrameP99MeanMs: number;
     trackMapAnimationFrameP99WorstMs: number;
+    inputTraceFrameRateHz: number;
+    inputTraceFrameP99MeanMs: number;
+    inputTraceFrameP99WorstMs: number;
+    radarFrameRateHz: number;
+    radarFrameP99MeanMs: number;
+    radarFrameP99WorstMs: number;
+    lapTraceFrameRateHz: number;
+    lapTraceFrameP99MeanMs: number;
+    lapTraceFrameP99WorstMs: number;
+    lapTraceBrakeCueRateHz: number;
+    lapTraceBrakeCueP99MeanMs: number;
+    lapTraceBrakeCueP99WorstMs: number;
     framesOver25MsPercent: number;
     framesOver50MsPercent: number;
   };
@@ -231,6 +243,14 @@ export interface PerfComparison {
     eventLoopP99Ms: number;
     trackMapAnimationFrameRateHz: number;
     trackMapAnimationFrameP99Ms: number;
+    inputTraceFrameRateHz: number;
+    inputTraceFrameP99Ms: number;
+    radarFrameRateHz: number;
+    radarFrameP99Ms: number;
+    lapTraceFrameRateHz: number;
+    lapTraceFrameP99Ms: number;
+    lapTraceBrakeCueRateHz: number;
+    lapTraceBrakeCueP99Ms: number;
   };
   checks: {
     name: string;
@@ -303,6 +323,44 @@ function minimum(values: number[]): number {
 
 function maximum(values: number[]): number {
   return values.length > 0 ? Math.max(...values) : 0;
+}
+
+/**
+ * Rate and p99 of one renderer measure, over the intervals that reported it.
+ * A loop's rate is its own: a frame loop measured on every animation frame
+ * reads at the display's refresh rate, one driven by telemetry at its rate.
+ */
+function summarizeRendererMeasure(
+  renderer: RendererPerfSample[],
+  select: (sample: RendererPerfSample) => NumericSampleStats | undefined
+): { rateHz: number; p99MeanMs: number; p99WorstMs: number } {
+  // A window may register a widget's counter during startup, then keep
+  // reporting zero after the widget moves to another display. Only windows
+  // observed painting this measure belong in its rate denominator. Retain
+  // their zero-count intervals so actual pauses still reduce the rate.
+  const painters = new Set(
+    renderer
+      .filter((sample) => (select(sample)?.count ?? 0) > 0)
+      .map((sample) => sample.pid)
+  );
+  const participating = renderer.filter((sample) => painters.has(sample.pid));
+  const stats = participating
+    .map(select)
+    .filter((entry): entry is NumericSampleStats => entry !== undefined);
+  const seconds =
+    participating
+      .filter((sample) => select(sample) !== undefined)
+      .reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
+  return {
+    rateHz:
+      seconds === 0
+        ? 0
+        : stats.reduce((sum, entry) => sum + entry.count, 0) / seconds,
+    p99MeanMs: weightedAverage(
+      stats.map((entry) => ({ value: entry.p99, weight: entry.count }))
+    ),
+    p99WorstMs: maximum(stats.map((entry) => entry.p99)),
+  };
 }
 
 function linearSlopePerMinute(
@@ -457,6 +515,7 @@ const summarizeChannels = (
   );
 };
 
+/** Reduce a parsed capture to warmup-trimmed summary statistics. */
 export function summarizeCapture(
   capture: PerfCapture,
   warmupSeconds = 30,
@@ -527,13 +586,26 @@ export function summarizeCapture(
     renderer
       .filter((sample) => sample.telemetryCallbackMs !== undefined)
       .reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
-  const trackMapAnimationFrames = renderer
-    .map((sample) => sample.trackMapAnimationFrameMs)
-    .filter((stats): stats is NumericSampleStats => stats !== undefined);
-  const trackMapAnimationSeconds =
-    renderer
-      .filter((sample) => sample.trackMapAnimationFrameMs !== undefined)
-      .reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
+  const trackMapAnimationFrame = summarizeRendererMeasure(
+    renderer,
+    (sample) => sample.trackMapAnimationFrameMs
+  );
+  const inputTraceFrame = summarizeRendererMeasure(
+    renderer,
+    (sample) => sample.inputTraceFrameMs
+  );
+  const radarFrame = summarizeRendererMeasure(
+    renderer,
+    (sample) => sample.radarFrameMs
+  );
+  const lapTraceFrame = summarizeRendererMeasure(
+    renderer,
+    (sample) => sample.lapTraceFrameMs
+  );
+  const lapTraceBrakeCue = summarizeRendererMeasure(
+    renderer,
+    (sample) => sample.lapTraceBrakeCueMs
+  );
   const rendererSeconds =
     renderer.reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
   const telemetryWakeups = renderer.reduce(
@@ -1103,22 +1175,21 @@ export function summarizeCapture(
       telemetryCallbackP99WorstMs: maximum(
         rendererTelemetryCallbacks.map((stats) => stats.p99)
       ),
-      trackMapAnimationFrameRateHz:
-        trackMapAnimationSeconds === 0
-          ? 0
-          : trackMapAnimationFrames.reduce(
-              (sum, stats) => sum + stats.count,
-              0
-            ) / trackMapAnimationSeconds,
-      trackMapAnimationFrameP99MeanMs: weightedAverage(
-        trackMapAnimationFrames.map((stats) => ({
-          value: stats.p99,
-          weight: stats.count,
-        }))
-      ),
-      trackMapAnimationFrameP99WorstMs: maximum(
-        trackMapAnimationFrames.map((stats) => stats.p99)
-      ),
+      trackMapAnimationFrameRateHz: trackMapAnimationFrame.rateHz,
+      trackMapAnimationFrameP99MeanMs: trackMapAnimationFrame.p99MeanMs,
+      trackMapAnimationFrameP99WorstMs: trackMapAnimationFrame.p99WorstMs,
+      inputTraceFrameRateHz: inputTraceFrame.rateHz,
+      inputTraceFrameP99MeanMs: inputTraceFrame.p99MeanMs,
+      inputTraceFrameP99WorstMs: inputTraceFrame.p99WorstMs,
+      radarFrameRateHz: radarFrame.rateHz,
+      radarFrameP99MeanMs: radarFrame.p99MeanMs,
+      radarFrameP99WorstMs: radarFrame.p99WorstMs,
+      lapTraceFrameRateHz: lapTraceFrame.rateHz,
+      lapTraceFrameP99MeanMs: lapTraceFrame.p99MeanMs,
+      lapTraceFrameP99WorstMs: lapTraceFrame.p99WorstMs,
+      lapTraceBrakeCueRateHz: lapTraceBrakeCue.rateHz,
+      lapTraceBrakeCueP99MeanMs: lapTraceBrakeCue.p99MeanMs,
+      lapTraceBrakeCueP99WorstMs: lapTraceBrakeCue.p99WorstMs,
       framesOver25MsPercent:
         rendererFrameCount === 0
           ? 0
@@ -1156,6 +1227,7 @@ function percentChange(baseline: number, candidate: number): number {
   return ((candidate - baseline) / baseline) * 100;
 }
 
+/** Compute candidate-minus-baseline deltas for the summary metrics. */
 export function compareSummaries(
   baseline: PerfSummary,
   candidate: PerfSummary
@@ -1204,6 +1276,30 @@ export function compareSummaries(
       trackMapAnimationFrameP99Ms:
         candidate.renderer.trackMapAnimationFrameP99MeanMs -
         baseline.renderer.trackMapAnimationFrameP99MeanMs,
+      inputTraceFrameRateHz:
+        candidate.renderer.inputTraceFrameRateHz -
+        baseline.renderer.inputTraceFrameRateHz,
+      inputTraceFrameP99Ms:
+        candidate.renderer.inputTraceFrameP99MeanMs -
+        baseline.renderer.inputTraceFrameP99MeanMs,
+      radarFrameRateHz:
+        candidate.renderer.radarFrameRateHz -
+        baseline.renderer.radarFrameRateHz,
+      radarFrameP99Ms:
+        candidate.renderer.radarFrameP99MeanMs -
+        baseline.renderer.radarFrameP99MeanMs,
+      lapTraceFrameRateHz:
+        candidate.renderer.lapTraceFrameRateHz -
+        baseline.renderer.lapTraceFrameRateHz,
+      lapTraceFrameP99Ms:
+        candidate.renderer.lapTraceFrameP99MeanMs -
+        baseline.renderer.lapTraceFrameP99MeanMs,
+      lapTraceBrakeCueRateHz:
+        candidate.renderer.lapTraceBrakeCueRateHz -
+        baseline.renderer.lapTraceBrakeCueRateHz,
+      lapTraceBrakeCueP99Ms:
+        candidate.renderer.lapTraceBrakeCueP99MeanMs -
+        baseline.renderer.lapTraceBrakeCueP99MeanMs,
     },
     checks: [
       {
@@ -1250,6 +1346,7 @@ function format(value: number, digits = 2): string {
   return Number.isFinite(value) ? value.toFixed(digits) : 'n/a';
 }
 
+/** Format the summary as a Markdown report. */
 export function summaryMarkdown(summary: PerfSummary): string {
   const sections = Object.entries(summary.sections)
     .map(
@@ -1335,8 +1432,16 @@ export function summaryMarkdown(summary: PerfSummary): string {
 | Renderer frame-time p99 mean | ${format(summary.renderer.frameTimeP99MeanMs)} ms |
 | Renderer telemetry callbacks / second | ${format(summary.renderer.telemetryCallbackRateHz)} |
 | Renderer telemetry callback p99, mean / worst interval | ${format(summary.renderer.telemetryCallbackP99MeanMs, 3)} / ${format(summary.renderer.telemetryCallbackP99WorstMs, 3)} ms |
+| Input trace frames / second | ${format(summary.renderer.inputTraceFrameRateHz)} |
+| Input trace frame p99, mean / worst interval | ${format(summary.renderer.inputTraceFrameP99MeanMs, 3)} / ${format(summary.renderer.inputTraceFrameP99WorstMs, 3)} ms |
+| Radar frames / second | ${format(summary.renderer.radarFrameRateHz)} |
+| Radar frame p99, mean / worst interval | ${format(summary.renderer.radarFrameP99MeanMs, 3)} / ${format(summary.renderer.radarFrameP99WorstMs, 3)} ms |
 | Track-map animation frames / second | ${format(summary.renderer.trackMapAnimationFrameRateHz)} |
 | Track-map animation-frame p99, mean / worst interval | ${format(summary.renderer.trackMapAnimationFrameP99MeanMs, 3)} / ${format(summary.renderer.trackMapAnimationFrameP99WorstMs, 3)} ms |
+| Lap Trace plot frames / second | ${format(summary.renderer.lapTraceFrameRateHz)} |
+| Lap Trace plot frame p99, mean / worst interval | ${format(summary.renderer.lapTraceFrameP99MeanMs, 3)} / ${format(summary.renderer.lapTraceFrameP99WorstMs, 3)} ms |
+| Lap Trace brake-cue steps / second | ${format(summary.renderer.lapTraceBrakeCueRateHz)} |
+| Lap Trace brake-cue step p99, mean / worst interval | ${format(summary.renderer.lapTraceBrakeCueP99MeanMs, 3)} / ${format(summary.renderer.lapTraceBrakeCueP99WorstMs, 3)} ms |
 | Renderer frames over 25 / 50 ms | ${format(summary.renderer.framesOver25MsPercent, 3)}% / ${format(summary.renderer.framesOver50MsPercent, 3)}% |
 | Worst renderer frame | ${format(summary.renderer.worstFrameMs)} ms |
 
@@ -1378,6 +1483,7 @@ ${processes}
 `;
 }
 
+/** Format the comparison as a Markdown table. */
 export function comparisonMarkdown(comparison: PerfComparison): string {
   const { baseline, candidate, delta } = comparison;
   const evidenceStatus =
@@ -1405,8 +1511,16 @@ export function comparisonMarkdown(comparison: PerfComparison): string {
 | irDashies peak memory | ${format(delta.peakMemoryMB)} MB |
 | processTelemetry p99 mean | ${format(delta.processTelemetryP99Ms)} ms |
 | Main event-loop p99 mean | ${format(delta.eventLoopP99Ms)} ms |
+| Input trace frames / second | ${format(delta.inputTraceFrameRateHz)} Hz |
+| Input trace frame p99 mean | ${format(delta.inputTraceFrameP99Ms, 3)} ms |
+| Radar frames / second | ${format(delta.radarFrameRateHz)} Hz |
+| Radar frame p99 mean | ${format(delta.radarFrameP99Ms, 3)} ms |
 | Track-map animation frames / second | ${format(delta.trackMapAnimationFrameRateHz)} Hz |
 | Track-map animation-frame p99 mean | ${format(delta.trackMapAnimationFrameP99Ms, 3)} ms |
+| Lap Trace plot frames / second | ${format(delta.lapTraceFrameRateHz)} Hz |
+| Lap Trace plot frame p99 mean | ${format(delta.lapTraceFrameP99Ms, 3)} ms |
+| Lap Trace brake-cue steps / second | ${format(delta.lapTraceBrakeCueRateHz)} Hz |
+| Lap Trace brake-cue step p99 mean | ${format(delta.lapTraceBrakeCueP99Ms, 3)} ms |
 
 | Check | Status | Actual | Target |
 | --- | --- | ---: | ---: |

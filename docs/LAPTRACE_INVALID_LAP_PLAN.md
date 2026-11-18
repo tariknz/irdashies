@@ -14,10 +14,10 @@ Drive a clean lap to record a reference
 [████████░░░░░░░░]  Recording 52%
 ```
 
-That bar is driven by `useLapTraceRecordingProgress`
-([`LapTraceStore.tsx:1059-1067`](../src/frontend/context/LapTraceStore/LapTraceStore.tsx#L1059-L1067)),
-which is pure distance along the lap. It knows nothing about whether the lap
-is still promotable.
+That bar is driven by `useLapTraceRecordingPercent`
+([`LapTraceStore.tsx:1216-1226`](../src/frontend/context/LapTraceStore/LapTraceStore.tsx#L1216-L1226)),
+which returns the distance along the lap in whole percent. It knows nothing
+about whether the lap is still promotable.
 
 The recorder, meanwhile, does know. `ActiveLap.isCleanLap`
 ([`LapTraceStore.tsx:141`](../src/frontend/context/LapTraceStore/LapTraceStore.tsx#L141))
@@ -213,7 +213,7 @@ the change back to `null` at a lap boundary. That is one extra store write per
 lap, against 60 frames a second, so there is no hot-path cost to measure.
 
 Then expose a selector returning a primitive, which works with Zustand's
-default equality (the same trick `useLapTraceRecordingProgress` relies on —
+default equality (the same trick `useLapTraceRecordingPercent` relies on —
 the `activeLap` reference never changes, so an object-returning selector would
 never re-render):
 

@@ -2,12 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { LapTimeLogDisplay } from './LapTimeLog';
 import type { LapTimeLogConfig } from '@irdashies/types';
 import { TelemetryDecorator } from '@irdashies/storybook';
-
-interface LapEntry {
-  lap: number;
-  time: number;
-  delta: number;
-}
+import type { LapEntry } from './demoData';
 
 const meta: Meta<typeof LapTimeLogDisplay> = {
   title: 'widgets/LapTimeLog',
@@ -263,6 +258,55 @@ export const PittedLapsHidden: Story = {
         count: 10,
         style: 'chart',
         hidePittedLaps: true,
+      },
+    }),
+  },
+};
+
+const cautionStintHistory: LapEntry[] = [
+  { lap: 12, time: 31.2 },
+  { lap: 11, time: 31.3 },
+  { lap: 10, time: 64.2, caution: true },
+  { lap: 9, time: 65.1, caution: true },
+  { lap: 8, time: 31.4 },
+  { lap: 7, time: 31.2 },
+  { lap: 6, time: 31.5 },
+  { lap: 5, time: 31.1 },
+  { lap: 4, time: 31.6 },
+  { lap: 3, time: 31.3 },
+];
+
+export const CautionLapsShown: Story = {
+  name: 'Caution Laps Shown (default)',
+  args: {
+    ...baseArgs,
+    current: 20.3,
+    lastlap: 31.2,
+    bestlap: 31.1,
+    reference: 31.1,
+    delta: 0.1,
+    overall: 31.0,
+    history: cautionStintHistory,
+    settings: mockConfig({
+      history: {
+        enabled: true,
+        count: 10,
+        style: 'chart',
+        hideCautionLaps: false,
+      },
+    }),
+  },
+};
+
+export const CautionLapsHidden: Story = {
+  args: {
+    ...CautionLapsShown.args,
+    settings: mockConfig({
+      history: {
+        enabled: true,
+        count: 10,
+        style: 'chart',
+        hideCautionLaps: true,
       },
     }),
   },

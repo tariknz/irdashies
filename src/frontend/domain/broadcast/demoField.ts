@@ -26,6 +26,14 @@ const car = (
         : { value: (classPosition - 1) * 1.8, laps: 0 },
     interval: classPosition === 1 ? undefined : 0.6 + classPosition * 0.3,
     fastestTime: 95 + carIdx * 0.37,
+    hasFastestTime: classPosition === 1,
+    lastTime: 95 + carIdx * 0.37 + (classPosition > 2 ? 1.234 : 0),
+    lastTimeState:
+      classPosition === 1
+        ? 'session-fastest'
+        : classPosition === 2
+          ? 'personal-best'
+          : undefined,
     lap: 24,
     positionChange: (carIdx % 3) - 1,
     lastPitLap: 18 + (carIdx % 3),

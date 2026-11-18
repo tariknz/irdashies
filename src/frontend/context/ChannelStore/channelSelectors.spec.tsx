@@ -74,6 +74,57 @@ describe('channel-specific selectors', () => {
     expect(renders).toBe(rendersAfterInitialSnapshot);
   });
 
+  it('keeps the Relative flag selection quiet while car positions move', () => {
+    let now = 0;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    const source = createBridge<'track-state.snapshot'>();
+    let renders = 0;
+    const { result } = renderHook(() => {
+      renders += 1;
+      return useTrackStateSelector(trackStateSelectors.sessionFlags, {
+        bridge: source.bridge,
+      });
+    });
+
+    act(() =>
+      source.publish({
+        sessionFlags: 4,
+        lapDistPct: 0.1,
+        carIdxLapDistPct: [0.1, 0.5],
+        version: 1,
+      } as unknown as TrackStateSnapshot)
+    );
+    expect(result.current).toBe(4);
+    const rendersAfterInitialFlags = renders;
+
+    now = 40;
+    act(() =>
+      source.publish({
+        sessionFlags: 4,
+        lapDistPct: 0.2,
+        carIdxLapDistPct: [0.2, 0.6],
+        sessionTime: 20,
+        version: 2,
+      } as unknown as TrackStateSnapshot)
+    );
+
+    expect(renders).toBe(rendersAfterInitialFlags);
+    expect(result.current).toBe(4);
+
+    now = 80;
+    act(() =>
+      source.publish({
+        sessionFlags: 8,
+        lapDistPct: 0.3,
+        carIdxLapDistPct: [0.3, 0.7],
+        version: 3,
+      } as unknown as TrackStateSnapshot)
+    );
+
+    expect(renders).toBe(rendersAfterInitialFlags + 1);
+    expect(result.current).toBe(8);
+  });
+
   it('does not rerender a session-bar consumer for unrelated fields', () => {
     let now = 0;
     vi.spyOn(performance, 'now').mockImplementation(() => now);

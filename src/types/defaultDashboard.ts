@@ -55,6 +55,8 @@ export function getWidgetDefaultConfig<K extends keyof WidgetConfigMap>(
  * - Nested objects are merged recursively.
  * - Arrays named "displayOrder" are merged to preserve existing order while
  *   inserting any new default items at their relative position.
+ * - A saved "layoutTree" replaces the default one whole: two trees merged
+ *   node by node would graft the default's branches onto the user's layout.
  */
 export function deepMergeConfig(
   defaultCfg: Record<string, unknown>,
@@ -73,7 +75,9 @@ export function deepMergeConfig(
 
     if (savedVal === undefined) continue;
 
-    if (
+    if (key === 'layoutTree') {
+      result[key] = savedVal;
+    } else if (
       key === 'displayOrder' &&
       Array.isArray(savedVal) &&
       Array.isArray(defaultVal)

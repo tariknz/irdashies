@@ -278,6 +278,20 @@ describe('stepBrakeCueLatch', () => {
     expect(r.fired).toEqual(['count3', 'count2', 'count1', 'brake', 'brake']);
   });
 
+  it('still beeps for a point the car is already well past by the next tick', () => {
+    // A late or stalled frame can land the car beyond the release distance in
+    // one step. The point is then released and the next one looked for on the
+    // same tick, and that look must not swallow the brake beep.
+    const r = rig([1000, 3000]);
+    r.approach(800, 960, 40);
+    expect(r.fired).not.toContain('brake');
+
+    r.tick(1080);
+
+    expect(r.fired[r.fired.length - 1]).toBe('brake');
+    expect(r.fired.filter((sound) => sound === 'brake')).toHaveLength(1);
+  });
+
   it('still walks the bars down for a point it will not count out loud', () => {
     // Only the beeps are held back — the strip is the driver's read on how far
     // away the point is, and it is no less true for being close.
@@ -440,4 +454,81 @@ describe('stepBrakeCueLatch', () => {
     });
     expect(out.bars).toBe(0);
   });
+});
+
+describe('a chicane', () => {
+  it('hands straight from one point to the next without blanking', () => {
+    const r = rig([1000, 1100]);
+    r.start(850);
+    const shown: number[] = [];
+    // 5 m per tick, through the first point's hold and on to the second.
+    for (let d = 855; d < 1100; d += 5) shown.push(r.tick(d).bars);
+    const first = shown.findIndex((bars) => bars > 0);
+    expect(first).toBeGreaterThanOrEqual(0);
+    expect(shown.slice(first).every((bars) => bars > 0)).toBe(true);
+  });
+});
+
+describe('stepping once per snapshot', () => {
+  /**
+   * The widget steps the latch once per track-state snapshot. It used to step
+   * on every animation frame, repeating each snapshot two to six times; the
+   * repeats must not have carried any behaviour the per-snapshot step loses.
+   */
+  const drive = (repeats: number) => {
+    const state = createBrakeCueLatch();
+    const out = createBrakeCueOutput();
+    // Close pairs (a chicane) and lone points, and a lap wrap.
+    const points = new Float32Array([600, 700, 1800, 3200, 4950]);
+    const perSnapshot: {
+      fire: BrakeCueSound | null;
+      bars: number;
+      tone: string;
+    }[] = [];
+    const dt = 1 / 25;
+    let distanceM = 100;
+    let sessionTime = 0;
+    // Two laps at 25 Hz, braking from 60 to 25 m/s into each point and
+    // accelerating out, so every target is held, released and replaced.
+    for (let i = 0; i < 2 * 25 * 140; i++) {
+      const next = points.find((p) => p > distanceM) ?? points[0] + 5000;
+      const toPoint = next - distanceM;
+      const speedMs = toPoint < 120 ? 25 + toPoint * 0.25 : 60;
+      distanceM = (distanceM + speedMs * dt) % TRACK_LENGTH_M;
+      sessionTime += dt;
+      let fire: BrakeCueSound | null = null;
+      for (let r = 0; r < repeats; r++) {
+        stepBrakeCueLatch(state, out, {
+          carDistanceM: distanceM,
+          speedMs,
+          sessionTime,
+          trackLengthM: TRACK_LENGTH_M,
+          cuePointsM: points,
+          cuePointCount: points.length,
+          referenceSpeedMs: 50,
+          audioCueLeadSec: 0.2,
+          driving: true,
+        });
+        fire ??= out.fire;
+      }
+      perSnapshot.push({ fire, bars: out.bars, tone: out.tone });
+    }
+    return perSnapshot;
+  };
+
+  it.each([2, 3, 6])(
+    'fires and shows what %i steps per snapshot did',
+    (repeats) => {
+      const once = drive(1);
+      const repeated = drive(repeats);
+      const firedAt = (run: typeof once) =>
+        run.flatMap((s, i) => (s.fire ? [`${i}:${s.fire}`] : []));
+
+      expect(firedAt(once).length).toBeGreaterThan(10);
+      expect(firedAt(once)).toEqual(firedAt(repeated));
+      expect(once.map((s) => `${s.bars}${s.tone}`)).toEqual(
+        repeated.map((s) => `${s.bars}${s.tone}`)
+      );
+    }
+  );
 });

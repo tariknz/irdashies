@@ -18,6 +18,7 @@ import { app } from 'electron';
 import { randomUUID, createHash } from 'node:crypto';
 import logger from '../logger';
 import { migrateLegacyStreamChat } from './streamChatMigration';
+import { migrateLapTraceLayout } from './lapTraceLayoutMigration';
 
 const DASHBOARDS_KEY = 'dashboards';
 const PROFILES_KEY = 'profiles';
@@ -220,8 +221,7 @@ export const withDashboardDefaults = (
       !storedWidgets.find((widget) => widget.id === defaultWidget.id)
   );
 
-  const savedColorPalette: unknown =
-    dashboard.generalSettings?.colorPalette;
+  const savedColorPalette: unknown = dashboard.generalSettings?.colorPalette;
   const generalSettings: DashboardLayout['generalSettings'] & {
     settingsTheme?: unknown;
   } = {
@@ -244,12 +244,17 @@ export const withDashboardDefaults = (
     generalSettings,
     widgets: [...storedWidgets, ...missingWidgets].map((widget) => {
       // A second instance (id `fuel-2`, type `fuel`) takes its type's defaults.
-      const defaultWidget = defaultDashboard.widgets.find(
-        (w) => w.id === (widget.type || widget.id)
-      );
+      const type = widget.type || widget.id;
+      const defaultWidget = defaultDashboard.widgets.find((w) => w.id === type);
       if (!defaultWidget?.config) return widget;
       const defaults = defaultWidget.config as Record<string, unknown>;
-      const merged = deepMergeConfig(defaults, widget.config) as Record<
+      // Before the merge: the default layout tree would otherwise stand in
+      // for the one this migration builds from the old settings.
+      const saved =
+        type === 'laptrace'
+          ? migrateLapTraceLayout(widget.config)
+          : widget.config;
+      const merged = deepMergeConfig(defaults, saved) as Record<
         string,
         unknown
       >;

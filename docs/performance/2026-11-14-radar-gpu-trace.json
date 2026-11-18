@@ -1,0 +1,5372 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-14",
+  "sourceRevision": "711552a1598a0d3258eb61a5d94e34a37f85547d",
+  "target": "Development Electron/Forge/Vite; actual iRacing replay; three shared transparent display overlays plus Gantry",
+  "method": {
+    "capture": "Electron contentTracing via loopback-only main-process Node inspector; no app source patch or renderer debugger UI",
+    "requestedTraceDurationSeconds": 15,
+    "traceAfterReplayPlaySeconds": 40,
+    "analysisDurationSeconds": 13,
+    "analysisWindow": "trace_bounds.start_ts + 1s to +14s; complete slices entirely inside window; identical policy for both traces",
+    "cpuDefinition": "Perfetto slice.thread_dur; CPU execution time charged to the named scope, not slice.dur wall time or GPU execution time",
+    "allocation": "CrGpuMain ThreadControllerImpl::RunTask depth-0 scopes. Present scopes must descend from those selected tasks. Present + residual task CPU form disjoint allocations; other nested operation rows are diagnostic and must not be summed.",
+    "nativeSampling": "cpu_profile_stack_sample, unsymbolized module names only. Wall-time samples are not CPU percentages."
+  },
+  "tooling": {
+    "electron": "45.3.2",
+    "perfettoPython": "0.59.1",
+    "traceProcessor": "v59.1",
+    "protobuf": "7.36.2",
+    "analysisScriptSha256": "7fbdc430cdef687171c136d2039159beb2d204d17de079c0d1b7b145eb837e9e"
+  },
+  "runs": [
+    {
+      "runId": "radar-trace-on-1",
+      "condition": "on",
+      "sourceRevision": "711552a1598a0d3258eb61a5d94e34a37f85547d",
+      "runtime": {
+        "electron": "45.3.2",
+        "chrome": "156.0.8078.100",
+        "node": "24.22.2"
+      },
+      "seedConfigSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+      "mainBundleSha256": "a95e8f7cf74c9c0f5a077d236cb957d58d2beb62dfb5b38333676f0df7fd72c9",
+      "nativeAddonSha256": "eaf1b9fc87c3d9a951a7f25b5be9bb8bbbbd9a05732169fb448c09ed2e16ccc5",
+      "controllerSha256": "4c0951540f529bcac95f3344363ca2f4f16ed4d26623f97edd7bcb81bb3eb7cd",
+      "traceFile": "perf-results/radar-trace-on-1.perfetto-trace",
+      "traceBytes": 75302765,
+      "traceSha256": "392b676b1c854c549685a3c464b1d9ce261d08019d958f551d5db96eae2d2a89",
+      "rawLogSha256": "8cd46145960205a821650137aaa487f390ece7c61f9476baf53bf20631e72cbc",
+      "replaySha256": "0c74eec601d77161e4616195763f115c71056ba2df182ab57126ffdae9303de1",
+      "traceConfig": {
+        "included_categories": [
+          "gpu",
+          "viz",
+          "cc",
+          "skia",
+          "toplevel",
+          "benchmark",
+          "disabled-by-default-gpu.service",
+          "disabled-by-default-gpu.debug",
+          "disabled-by-default-skia",
+          "disabled-by-default-cpu_profiler"
+        ],
+        "recording_mode": "record-until-full",
+        "trace_buffer_size_in_kb": 262144
+      },
+      "categoriesEnumeration": [],
+      "traceStartRequest": "2026-11-14T07:10:11.196Z",
+      "traceStartAcknowledged": "2026-11-14T07:10:11.200Z",
+      "traceStopRequest": "2026-11-14T07:10:26.214Z",
+      "traceStopAcknowledged": "2026-11-14T07:10:26.791Z",
+      "traceBufferUsage": {
+        "percentage": 0.24637195467948914,
+        "value": 0
+      },
+      "activeWidgetTypes": [
+        "battle",
+        "blindspotmonitor",
+        "cornername",
+        "fastercarsfrombehind",
+        "flag",
+        "fuel",
+        "gantry",
+        "input",
+        "laptimelog",
+        "laptrace",
+        "map",
+        "pitlanehelper",
+        "radar",
+        "rejoin",
+        "relative",
+        "sectordelta",
+        "slowcarahead",
+        "standings",
+        "tachometer",
+        "weather"
+      ],
+      "radarDrawRateHzAcrossShortPass": 27.783194417362626,
+      "foregroundChecks": [
+        {
+          "timestamp": "2026-11-14T07:09:31.102Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+        },
+        {
+          "timestamp": "2026-11-14T07:10:10.222Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+        },
+        {
+          "timestamp": "2026-11-14T07:10:49.502Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+        }
+      ],
+      "allForegroundChecksPassed": true,
+      "replayIntegrity": {
+        "verified": true,
+        "settledSampleCount": 18,
+        "verificationStartsAfterPlaySeconds": 1
+      },
+      "cpuAllocation": {
+        "gpuMainTaskCpuMs": 7758.363,
+        "presentCpuMs": 6925.494,
+        "otherGpuMainTaskCpuMs": 832.8690000000006,
+        "presentCallCount": 893,
+        "presentShareOfGpuMainTaskCpu": 0.8926488745112854
+      },
+      "analysis": {
+        "runId": "radar-trace-on-1",
+        "gpuPid": 13380,
+        "windowStartNs": 82210979878000,
+        "windowEndNs": 82223979878000,
+        "windowDurationSeconds": 13,
+        "windowDefinition": "Complete slices entirely within trace_bounds.start_ts + 1s to +14s; edge-crossing slices excluded. CPU is thread_dur, not elapsed dur. Nested operation groups must not be added together.",
+        "task_cpu_by_thread": [
+          {
+            "name": "CrGpuMain",
+            "count": 6770,
+            "wall_ms": 11868.4169,
+            "thread_cpu_ms": 7758.363
+          },
+          {
+            "name": "VizCompositorThread",
+            "count": 7591,
+            "wall_ms": 285.737,
+            "thread_cpu_ms": 221.308
+          },
+          {
+            "name": "GpuVSyncThread",
+            "count": 715,
+            "wall_ms": 11923.5245,
+            "thread_cpu_ms": 30.26
+          },
+          {
+            "name": "StackSamplingProfiler",
+            "count": 479,
+            "wall_ms": 17.9333,
+            "thread_cpu_ms": 13.083
+          },
+          {
+            "name": "PerfettoTrace",
+            "count": 69,
+            "wall_ms": 1.6846,
+            "thread_cpu_ms": 1.599
+          },
+          {
+            "name": "Chrome_ChildIOThread",
+            "count": 17,
+            "wall_ms": 0.081,
+            "thread_cpu_ms": 0.068
+          },
+          {
+            "name": "GpuWatchdog",
+            "count": 1,
+            "wall_ms": 0.027,
+            "thread_cpu_ms": 0.015
+          }
+        ],
+        "present_by_thread": [
+          {
+            "name": "CrGpuMain",
+            "count": 893,
+            "wall_ms": 10808.3289,
+            "thread_cpu_ms": 6925.494,
+            "mean_cpu_ms": 7.755312430011198
+          }
+        ],
+        "task_depth_counts": [
+          {
+            "depth": 0,
+            "count": 6770
+          }
+        ],
+        "present_inside_selected_tasks": [
+          {
+            "count": 893,
+            "cpu_ms": 6925.494
+          }
+        ],
+        "present_dirty_rect_cpu": [
+          {
+            "dirty_rect": "1107,112 300x300",
+            "has_alpha": 1,
+            "count": 135,
+            "thread_cpu_ms": 1626.427
+          },
+          {
+            "dirty_rect": "1073,112 334x832",
+            "has_alpha": 1,
+            "count": 114,
+            "thread_cpu_ms": 1160.879
+          },
+          {
+            "dirty_rect": "20,20 683x678",
+            "has_alpha": 1,
+            "count": 245,
+            "thread_cpu_ms": 973.074
+          },
+          {
+            "dirty_rect": "37,54 1236x1224",
+            "has_alpha": 1,
+            "count": 16,
+            "thread_cpu_ms": 220.405
+          },
+          {
+            "dirty_rect": "37,54 1222x1210",
+            "has_alpha": 1,
+            "count": 11,
+            "thread_cpu_ms": 219.046
+          },
+          {
+            "dirty_rect": "37,54 1244x1232",
+            "has_alpha": 1,
+            "count": 71,
+            "thread_cpu_ms": 180.775
+          },
+          {
+            "dirty_rect": "37,54 1232x1220",
+            "has_alpha": 1,
+            "count": 6,
+            "thread_cpu_ms": 152.687
+          },
+          {
+            "dirty_rect": "29,35 1252x1251",
+            "has_alpha": 1,
+            "count": 19,
+            "thread_cpu_ms": 133.86
+          },
+          {
+            "dirty_rect": "37,54 1231x1219",
+            "has_alpha": 1,
+            "count": 10,
+            "thread_cpu_ms": 127.678
+          },
+          {
+            "dirty_rect": "1073,112 1173x918",
+            "has_alpha": 1,
+            "count": 7,
+            "thread_cpu_ms": 120.903
+          }
+        ],
+        "gpu_operations": [
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "category": "toplevel",
+            "count": 6770,
+            "wall_ms": 11868.4169,
+            "thread_cpu_ms": 7758.363
+          },
+          {
+            "name": "Scheduler::RunTask",
+            "category": "gpu,toplevel.flow",
+            "count": 2970,
+            "wall_ms": 11840.4039,
+            "thread_cpu_ms": 7742.194
+          },
+          {
+            "name": "SkiaOutputSurfaceImplOnGpu::SwapBuffers",
+            "category": "viz",
+            "count": 893,
+            "wall_ms": 10867.2299,
+            "thread_cpu_ms": 6962.956
+          },
+          {
+            "name": "Graphics.Pipeline",
+            "category": "viz,benchmark,graphics.pipeline",
+            "count": 1787,
+            "wall_ms": 10856.5179,
+            "thread_cpu_ms": 6953.114
+          },
+          {
+            "name": "SkiaOutputDevice->ScheduleOverlays()",
+            "category": "viz",
+            "count": 893,
+            "wall_ms": 10817.9569,
+            "thread_cpu_ms": 6931.353
+          },
+          {
+            "name": "DXGISwapChainImageBacking::Present",
+            "category": "gpu",
+            "count": 893,
+            "wall_ms": 10808.3289,
+            "thread_cpu_ms": 6925.494
+          },
+          {
+            "name": "GpuChannel::ExecuteDeferredRequest",
+            "category": "gpu",
+            "count": 1420,
+            "wall_ms": 862.367,
+            "thread_cpu_ms": 682.489
+          },
+          {
+            "name": "CommandBuffer::Flush",
+            "category": "gpu,toplevel.flow",
+            "count": 1385,
+            "wall_ms": 849.247,
+            "thread_cpu_ms": 673.057
+          },
+          {
+            "name": "CommandBufferStub::OnAsyncFlush",
+            "category": "gpu",
+            "count": 1385,
+            "wall_ms": 847.826,
+            "thread_cpu_ms": 672.98
+          },
+          {
+            "name": "CommandBufferService:PutChanged",
+            "category": "gpu",
+            "count": 1385,
+            "wall_ms": 843.752,
+            "thread_cpu_ms": 671.33
+          },
+          {
+            "name": "RendererMainThread",
+            "category": "gpu",
+            "count": 1185,
+            "wall_ms": 607.555,
+            "thread_cpu_ms": 495.289
+          },
+          {
+            "name": "RasterDecoderImpl::DoEndRasterCHROMIUM",
+            "category": "gpu",
+            "count": 903,
+            "wall_ms": 379.681,
+            "thread_cpu_ms": 351.87
+          },
+          {
+            "name": "RasterDecoderImpl::DoEndRasterCHROMIUM::Flush",
+            "category": "gpu",
+            "count": 903,
+            "wall_ms": 370.619,
+            "thread_cpu_ms": 345.248
+          },
+          {
+            "name": "RasterDecoderImpl::DoRasterCHROMIUM",
+            "category": "gpu",
+            "count": 906,
+            "wall_ms": 380.315,
+            "thread_cpu_ms": 272.657
+          },
+          {
+            "name": "RasterDecoderImpl::DoRasterCHROMIUM::Deserializing",
+            "category": "gpu",
+            "count": 906,
+            "wall_ms": 378.1632,
+            "thread_cpu_ms": 271.662
+          },
+          {
+            "name": "RendererRasterWorker",
+            "category": "gpu",
+            "count": 209,
+            "wall_ms": 243.571,
+            "thread_cpu_ms": 178.074
+          },
+          {
+            "name": "SkiaOutputSurfaceImplOnGpu::FinishPaintRenderPass",
+            "category": "viz",
+            "count": 894,
+            "wall_ms": 92.228,
+            "thread_cpu_ms": 85.598
+          },
+          {
+            "name": "void __cdecl SkCanvas::drawPath(const SkPath &, const SkPaint &)",
+            "category": "disabled-by-default-skia",
+            "count": 11988,
+            "wall_ms": 83.934,
+            "thread_cpu_ms": 73.257
+          },
+          {
+            "name": "void __cdecl SkCanvas::drawArc(const SkRect &, SkScalar, SkScalar, bool, const SkPaint &)",
+            "category": "disabled-by-default-skia",
+            "count": 26808,
+            "wall_ms": 62.956,
+            "thread_cpu_ms": 48.166
+          },
+          {
+            "name": "void __cdecl SkCanvas::drawRect(const SkRect &, const SkPaint &)",
+            "category": "disabled-by-default-skia",
+            "count": 20787,
+            "wall_ms": 54.925,
+            "thread_cpu_ms": 43.086
+          },
+          {
+            "name": "void __cdecl SkCanvas::drawSlug(const Slug *, const SkPaint &)",
+            "category": "disabled-by-default-skia",
+            "count": 24716,
+            "wall_ms": 39.619,
+            "thread_cpu_ms": 26.618
+          },
+          {
+            "name": "RasterDecoderImpl::DoBeginRasterCHROMIUM",
+            "category": "gpu",
+            "count": 903,
+            "wall_ms": 21.1787,
+            "thread_cpu_ms": 18.648
+          },
+          {
+            "name": "DCompPresenter::Present",
+            "category": "gpu",
+            "count": 894,
+            "wall_ms": 26.165,
+            "thread_cpu_ms": 15.241
+          },
+          {
+            "name": "DCLayerTree::CommitAndClearPendingOverlays",
+            "category": "gpu",
+            "count": 894,
+            "wall_ms": 12.57,
+            "thread_cpu_ms": 8.02
+          },
+          {
+            "name": "int __cdecl SkCanvas::saveLayer(const SaveLayerRec &)",
+            "category": "disabled-by-default-skia",
+            "count": 2369,
+            "wall_ms": 13.377,
+            "thread_cpu_ms": 7.844
+          },
+          {
+            "name": "void __cdecl SkCanvas::internalSaveLayer(const SaveLayerRec &, SaveLayerStrategy, bool)",
+            "category": "disabled-by-default-skia",
+            "count": 2369,
+            "wall_ms": 9.468,
+            "thread_cpu_ms": 7.517
+          },
+          {
+            "name": "CommandBufferStub::PerformWork",
+            "category": "gpu",
+            "count": 1541,
+            "wall_ms": 9.34,
+            "thread_cpu_ms": 6.891
+          },
+          {
+            "name": "void __cdecl SkCanvas::drawPaint(const SkPaint &)",
+            "category": "disabled-by-default-skia",
+            "count": 903,
+            "wall_ms": 8.2313,
+            "thread_cpu_ms": 6.513
+          },
+          {
+            "name": "void __cdecl SkCanvas::drawRRect(const SkRRect &, const SkPaint &)",
+            "category": "disabled-by-default-skia",
+            "count": 2749,
+            "wall_ms": 4.9718,
+            "thread_cpu_ms": 3.507
+          },
+          {
+            "name": "SkiaOutputSurfaceImplOnGpu::BeginAccessImages",
+            "category": "viz",
+            "count": 894,
+            "wall_ms": 3.504,
+            "thread_cpu_ms": 2.694
+          },
+          {
+            "name": "DCompPresenter::CheckPendingFrames",
+            "category": "gpu",
+            "count": 1771,
+            "wall_ms": 2.252,
+            "thread_cpu_ms": 1.125
+          },
+          {
+            "name": "SyncToken::Release",
+            "category": "gpu,toplevel.flow",
+            "count": 738,
+            "wall_ms": 2.063,
+            "thread_cpu_ms": 0.861
+          },
+          {
+            "name": "SkiaOutputSurfaceImplOnGpu::EndAccessImages",
+            "category": "viz",
+            "count": 894,
+            "wall_ms": 1.445,
+            "thread_cpu_ms": 0.788
+          },
+          {
+            "name": "GPUTracer::ProcessTraces",
+            "category": "gpu",
+            "count": 582,
+            "wall_ms": 1.252,
+            "thread_cpu_ms": 0.763
+          },
+          {
+            "name": "Scheduler::ContinueTask",
+            "category": "gpu,toplevel.flow",
+            "count": 648,
+            "wall_ms": 0.791,
+            "thread_cpu_ms": 0.506
+          },
+          {
+            "name": "SharedImageStub::OnCreateSharedImage",
+            "category": "gpu",
+            "count": 20,
+            "wall_ms": 0.429,
+            "thread_cpu_ms": 0.42
+          },
+          {
+            "name": "void __cdecl SkCanvas::drawPoints(PointMode, SkSpan<const SkPoint>, const SkPaint &)",
+            "category": "disabled-by-default-skia",
+            "count": 24,
+            "wall_ms": 0.354,
+            "thread_cpu_ms": 0.35
+          },
+          {
+            "name": "void __cdecl SkCanvas::drawOval(const SkRect &, const SkPaint &)",
+            "category": "disabled-by-default-skia",
+            "count": 92,
+            "wall_ms": 0.339,
+            "thread_cpu_ms": 0.287
+          },
+          {
+            "name": "CommandBufferStub::OnDestroyTransferBuffer",
+            "category": "gpu",
+            "count": 9,
+            "wall_ms": 0.287,
+            "thread_cpu_ms": 0.26
+          },
+          {
+            "name": "Scheduler::FinishTask",
+            "category": "gpu,toplevel.flow",
+            "count": 2323,
+            "wall_ms": 1.784,
+            "thread_cpu_ms": 0.217
+          },
+          {
+            "name": "Receive mojo message",
+            "category": "toplevel,mojom",
+            "count": 15,
+            "wall_ms": 0.223,
+            "thread_cpu_ms": 0.201
+          },
+          {
+            "name": "SharedImageStub::OnDestroySharedImage",
+            "category": "gpu",
+            "count": 6,
+            "wall_ms": 0.178,
+            "thread_cpu_ms": 0.135
+          },
+          {
+            "name": "CommandBufferStub::OnRegisterTransferBuffer",
+            "category": "gpu",
+            "count": 12,
+            "wall_ms": 0.129,
+            "thread_cpu_ms": 0.124
+          },
+          {
+            "name": "GrShaderCache::store",
+            "category": "gpu",
+            "count": 2,
+            "wall_ms": 0.044,
+            "thread_cpu_ms": 0.043
+          },
+          {
+            "name": "Scheduler::SequenceUnblocked",
+            "category": "gpu,toplevel.flow",
+            "count": 713,
+            "wall_ms": 0.48,
+            "thread_cpu_ms": 0.034
+          },
+          {
+            "name": "CommandBuffer::FlushComplete",
+            "category": "gpu,toplevel.flow",
+            "count": 737,
+            "wall_ms": 0.41,
+            "thread_cpu_ms": 0.024
+          },
+          {
+            "name": "CommandBufferStub::SetGetBuffer",
+            "category": "gpu",
+            "count": 3,
+            "wall_ms": 0.012,
+            "thread_cpu_ms": 0.012
+          },
+          {
+            "name": "GrShaderCache::load",
+            "category": "gpu",
+            "count": 2,
+            "wall_ms": 0.006,
+            "thread_cpu_ms": 0.004
+          }
+        ],
+        "present_arguments": [
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1073,112 1043x1029",
+            "count": 12
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1073,112 1173x1029",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1073,112 1173x918",
+            "count": 7
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1073,112 1199x1029",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1073,112 334x832",
+            "count": 114
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1073,112 429x833",
+            "count": 15
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1073,857 429x88",
+            "count": 2
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1073,858 238x86",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1107,112 1009x1029",
+            "count": 12
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1107,112 1139x918",
+            "count": 3
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1107,112 1165x1029",
+            "count": 6
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1107,112 1165x1144",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1107,112 300x300",
+            "count": 135
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "13,230 666x212",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "13,230 666x25",
+            "count": 4
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "13,230 666x48",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "13,494 666x25",
+            "count": 4
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "13,566 666x25",
+            "count": 9
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "13,566 666x48",
+            "count": 2
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "20,20 683x678",
+            "count": 245
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "2100,1124 172x132",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "2100,1125 16x16",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "2176,1017 70x13",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "29,35 1228x1227",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "29,35 1229x1228",
+            "count": 3
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "29,35 1230x1229",
+            "count": 2
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "29,35 1232x1231",
+            "count": 2
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "29,35 1234x1233",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "29,35 1235x1234",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "29,35 1236x1235",
+            "count": 1
+          }
+        ],
+        "sample_threads": [
+          {
+            "name": "CrGpuMain",
+            "count": 239
+          }
+        ],
+        "sample_leaf_modules": [
+          {
+            "thread_name": "CrGpuMain",
+            "module": "/ntdll.pdb",
+            "function": null,
+            "count": 189
+          },
+          {
+            "thread_name": "CrGpuMain",
+            "module": "/nvwgf2umx.pdb",
+            "function": null,
+            "count": 23
+          },
+          {
+            "thread_name": "CrGpuMain",
+            "module": "/electron.exe.pdb",
+            "function": null,
+            "count": 21
+          },
+          {
+            "thread_name": "CrGpuMain",
+            "module": "/win32u.pdb",
+            "function": null,
+            "count": 3
+          },
+          {
+            "thread_name": "CrGpuMain",
+            "module": "/d3d11.pdb",
+            "function": null,
+            "count": 1
+          },
+          {
+            "thread_name": "CrGpuMain",
+            "module": "/kernelbase.pdb",
+            "function": null,
+            "count": 1
+          },
+          {
+            "thread_name": "CrGpuMain",
+            "module": "/missing",
+            "function": null,
+            "count": 1
+          }
+        ],
+        "slice_percentiles": [
+          {
+            "count": 893,
+            "min_cpu_ms": 0.027,
+            "max_cpu_ms": 94.979,
+            "p50_cpu_ms": 0.061,
+            "p95_cpu_ms": 46.49339999999999
+          }
+        ],
+        "stats": [],
+        "all_process_tasks": [
+          {
+            "name": "GPU Process",
+            "thread_name": "CrGpuMain",
+            "cpu_ms": 7758.363
+          },
+          {
+            "name": "Renderer",
+            "thread_name": "CrRendererMain",
+            "cpu_ms": 1237.92
+          },
+          {
+            "name": "Renderer",
+            "thread_name": "CrRendererMain",
+            "cpu_ms": 899.514
+          },
+          {
+            "name": "Browser",
+            "thread_name": "CrBrowserMain",
+            "cpu_ms": 626.295
+          },
+          {
+            "name": "Renderer",
+            "thread_name": "CrRendererMain",
+            "cpu_ms": 505.91
+          },
+          {
+            "name": "Renderer",
+            "thread_name": "CrRendererMain",
+            "cpu_ms": 392.759
+          },
+          {
+            "name": "GPU Process",
+            "thread_name": "VizCompositorThread",
+            "cpu_ms": 221.308
+          },
+          {
+            "name": "Renderer",
+            "thread_name": "Compositor",
+            "cpu_ms": 110.491
+          },
+          {
+            "name": "Renderer",
+            "thread_name": "Compositor",
+            "cpu_ms": 80.869
+          },
+          {
+            "name": "Renderer",
+            "thread_name": "Compositor",
+            "cpu_ms": 61.105
+          },
+          {
+            "name": "GPU Process",
+            "thread_name": "GpuVSyncThread",
+            "cpu_ms": 30.26
+          },
+          {
+            "name": "Service: tracing.mojom.TracingService",
+            "thread_name": "tracing.CrUtilityMain",
+            "cpu_ms": 24.695
+          }
+        ]
+      }
+    },
+    {
+      "runId": "radar-trace-off-1",
+      "condition": "off",
+      "sourceRevision": "711552a1598a0d3258eb61a5d94e34a37f85547d",
+      "runtime": {
+        "electron": "45.3.2",
+        "chrome": "156.0.8078.100",
+        "node": "24.22.2"
+      },
+      "seedConfigSha256": "59c384037b969aaabdc553bd370bd9b649eda136b014a3d4b344cfbfe42d0b76",
+      "mainBundleSha256": "a95e8f7cf74c9c0f5a077d236cb957d58d2beb62dfb5b38333676f0df7fd72c9",
+      "nativeAddonSha256": "177d0928e6a271b6c507a7713ad638ad202c991f34310623c77513d6162b670e",
+      "controllerSha256": "4c0951540f529bcac95f3344363ca2f4f16ed4d26623f97edd7bcb81bb3eb7cd",
+      "traceFile": "perf-results/radar-trace-off-1.perfetto-trace",
+      "traceBytes": 65067981,
+      "traceSha256": "90c7e1e94cb927a656f4e1bf06a7c588162e7ce4de146cbb278704f5e29ac8f3",
+      "rawLogSha256": "e2113f961a75519b461995583891b41de3e279117116c2302e0a07f693e09d32",
+      "replaySha256": "9f331fbf0445b88ba7bab4f63019c144044e20d766c36a10440d2a3eb41ab4ef",
+      "traceConfig": {
+        "included_categories": [
+          "gpu",
+          "viz",
+          "cc",
+          "skia",
+          "toplevel",
+          "benchmark",
+          "disabled-by-default-gpu.service",
+          "disabled-by-default-gpu.debug",
+          "disabled-by-default-skia",
+          "disabled-by-default-cpu_profiler"
+        ],
+        "recording_mode": "record-until-full",
+        "trace_buffer_size_in_kb": 262144
+      },
+      "categoriesEnumeration": [],
+      "traceStartRequest": "2026-11-14T07:13:16.148Z",
+      "traceStartAcknowledged": "2026-11-14T07:13:16.152Z",
+      "traceStopRequest": "2026-11-14T07:13:31.166Z",
+      "traceStopAcknowledged": "2026-11-14T07:13:31.672Z",
+      "traceBufferUsage": {
+        "percentage": 0.21385671198368073,
+        "value": 0
+      },
+      "activeWidgetTypes": [
+        "battle",
+        "blindspotmonitor",
+        "cornername",
+        "fastercarsfrombehind",
+        "flag",
+        "fuel",
+        "gantry",
+        "input",
+        "laptimelog",
+        "laptrace",
+        "map",
+        "pitlanehelper",
+        "rejoin",
+        "relative",
+        "sectordelta",
+        "slowcarahead",
+        "standings",
+        "tachometer",
+        "weather"
+      ],
+      "radarDrawRateHzAcrossShortPass": 0,
+      "foregroundChecks": [
+        {
+          "timestamp": "2026-11-14T07:12:36.082Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+        },
+        {
+          "timestamp": "2026-11-14T07:13:15.821Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+        },
+        {
+          "timestamp": "2026-11-14T07:13:34.020Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+        }
+      ],
+      "allForegroundChecksPassed": true,
+      "replayIntegrity": {
+        "verified": true,
+        "settledSampleCount": 18,
+        "verificationStartsAfterPlaySeconds": 1
+      },
+      "cpuAllocation": {
+        "gpuMainTaskCpuMs": 3016.914,
+        "presentCpuMs": 2444.428,
+        "otherGpuMainTaskCpuMs": 572.4860000000003,
+        "presentCallCount": 822,
+        "presentShareOfGpuMainTaskCpu": 0.8102411934844678
+      },
+      "analysis": {
+        "runId": "radar-trace-off-1",
+        "gpuPid": 11212,
+        "windowStartNs": 82395835380000,
+        "windowEndNs": 82408835380000,
+        "windowDurationSeconds": 13,
+        "windowDefinition": "Complete slices entirely within trace_bounds.start_ts + 1s to +14s; edge-crossing slices excluded. CPU is thread_dur, not elapsed dur. Nested operation groups must not be added together.",
+        "task_cpu_by_thread": [
+          {
+            "name": "CrGpuMain",
+            "count": 5381,
+            "wall_ms": 11161.0012,
+            "thread_cpu_ms": 3016.914
+          },
+          {
+            "name": "VizCompositorThread",
+            "count": 7433,
+            "wall_ms": 271.1695,
+            "thread_cpu_ms": 212.982
+          },
+          {
+            "name": "GpuVSyncThread",
+            "count": 709,
+            "wall_ms": 11823.4803,
+            "thread_cpu_ms": 29.481
+          },
+          {
+            "name": "StackSamplingProfiler",
+            "count": 475,
+            "wall_ms": 17.513,
+            "thread_cpu_ms": 12.634
+          },
+          {
+            "name": "PerfettoTrace",
+            "count": 68,
+            "wall_ms": 1.6623,
+            "thread_cpu_ms": 1.555
+          },
+          {
+            "name": "Chrome_ChildIOThread",
+            "count": 17,
+            "wall_ms": 0.079,
+            "thread_cpu_ms": 0.063
+          },
+          {
+            "name": "GpuWatchdog",
+            "count": 1,
+            "wall_ms": 0.025,
+            "thread_cpu_ms": 0.009
+          }
+        ],
+        "present_by_thread": [
+          {
+            "name": "CrGpuMain",
+            "count": 822,
+            "wall_ms": 10442.1695,
+            "thread_cpu_ms": 2444.428,
+            "mean_cpu_ms": 2.973756690997567
+          }
+        ],
+        "task_depth_counts": [
+          {
+            "depth": 0,
+            "count": 5381
+          }
+        ],
+        "present_inside_selected_tasks": [
+          {
+            "count": 822,
+            "cpu_ms": 2444.428
+          }
+        ],
+        "present_dirty_rect_cpu": [
+          {
+            "dirty_rect": "37,54 1244x1232",
+            "has_alpha": 1,
+            "count": 86,
+            "thread_cpu_ms": 560.337
+          },
+          {
+            "dirty_rect": "1073,858 238x86",
+            "has_alpha": 1,
+            "count": 135,
+            "thread_cpu_ms": 395.883
+          },
+          {
+            "dirty_rect": "20,20 683x678",
+            "has_alpha": 1,
+            "count": 238,
+            "thread_cpu_ms": 366.111
+          },
+          {
+            "dirty_rect": "37,54 1233x1221",
+            "has_alpha": 1,
+            "count": 12,
+            "thread_cpu_ms": 127.001
+          },
+          {
+            "dirty_rect": "1073,857 429x88",
+            "has_alpha": 1,
+            "count": 17,
+            "thread_cpu_ms": 125.003
+          },
+          {
+            "dirty_rect": "37,54 1242x1230",
+            "has_alpha": 1,
+            "count": 11,
+            "thread_cpu_ms": 99.27
+          },
+          {
+            "dirty_rect": "37,54 1227x1215",
+            "has_alpha": 1,
+            "count": 12,
+            "thread_cpu_ms": 93.099
+          },
+          {
+            "dirty_rect": "29,35 1252x1251",
+            "has_alpha": 1,
+            "count": 18,
+            "thread_cpu_ms": 87.116
+          },
+          {
+            "dirty_rect": "37,54 6x6",
+            "has_alpha": 1,
+            "count": 15,
+            "thread_cpu_ms": 76.644
+          },
+          {
+            "dirty_rect": "2100,1124 172x17",
+            "has_alpha": 1,
+            "count": 10,
+            "thread_cpu_ms": 76.594
+          }
+        ],
+        "gpu_operations": [
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "category": "toplevel",
+            "count": 5381,
+            "wall_ms": 11161.0012,
+            "thread_cpu_ms": 3016.914
+          },
+          {
+            "name": "Scheduler::RunTask",
+            "category": "gpu,toplevel.flow",
+            "count": 2302,
+            "wall_ms": 11137.7062,
+            "thread_cpu_ms": 3002.476
+          },
+          {
+            "name": "SkiaOutputSurfaceImplOnGpu::SwapBuffers",
+            "category": "viz",
+            "count": 822,
+            "wall_ms": 10486.4325,
+            "thread_cpu_ms": 2479.224
+          },
+          {
+            "name": "Graphics.Pipeline",
+            "category": "viz,benchmark,graphics.pipeline",
+            "count": 1645,
+            "wall_ms": 10474.5105,
+            "thread_cpu_ms": 2469.413
+          },
+          {
+            "name": "SkiaOutputDevice->ScheduleOverlays()",
+            "category": "viz",
+            "count": 822,
+            "wall_ms": 10449.9835,
+            "thread_cpu_ms": 2449.894
+          },
+          {
+            "name": "DXGISwapChainImageBacking::Present",
+            "category": "gpu",
+            "count": 822,
+            "wall_ms": 10442.1695,
+            "thread_cpu_ms": 2444.428
+          },
+          {
+            "name": "GpuChannel::ExecuteDeferredRequest",
+            "category": "gpu",
+            "count": 946,
+            "wall_ms": 547.8437,
+            "thread_cpu_ms": 432.666
+          },
+          {
+            "name": "CommandBuffer::Flush",
+            "category": "gpu,toplevel.flow",
+            "count": 909,
+            "wall_ms": 537.5037,
+            "thread_cpu_ms": 424.972
+          },
+          {
+            "name": "CommandBufferStub::OnAsyncFlush",
+            "category": "gpu",
+            "count": 909,
+            "wall_ms": 536.6377,
+            "thread_cpu_ms": 424.904
+          },
+          {
+            "name": "CommandBufferService:PutChanged",
+            "category": "gpu",
+            "count": 909,
+            "wall_ms": 533.8297,
+            "thread_cpu_ms": 423.648
+          },
+          {
+            "name": "RendererMainThread",
+            "category": "gpu",
+            "count": 708,
+            "wall_ms": 297.8867,
+            "thread_cpu_ms": 244.129
+          },
+          {
+            "name": "RasterDecoderImpl::DoEndRasterCHROMIUM",
+            "category": "gpu",
+            "count": 614,
+            "wall_ms": 229.684,
+            "thread_cpu_ms": 218.124
+          },
+          {
+            "name": "RasterDecoderImpl::DoEndRasterCHROMIUM::Flush",
+            "category": "gpu",
+            "count": 614,
+            "wall_ms": 224.187,
+            "thread_cpu_ms": 213.783
+          },
+          {
+            "name": "RendererRasterWorker",
+            "category": "gpu",
+            "count": 211,
+            "wall_ms": 241.137,
+            "thread_cpu_ms": 181.153
+          },
+          {
+            "name": "RasterDecoderImpl::DoRasterCHROMIUM",
+            "category": "gpu",
+            "count": 617,
+            "wall_ms": 245.452,
+            "thread_cpu_ms": 160.511
+          },
+          {
+            "name": "RasterDecoderImpl::DoRasterCHROMIUM::Deserializing",
+            "category": "gpu",
+            "count": 617,
+            "wall_ms": 243.8972,
+            "thread_cpu_ms": 159.724
+          },
+          {
+            "name": "SkiaOutputSurfaceImplOnGpu::FinishPaintRenderPass",
+            "category": "viz",
+            "count": 823,
+            "wall_ms": 88.508,
+            "thread_cpu_ms": 81.26
+          },
+          {
+            "name": "void __cdecl SkCanvas::drawArc(const SkRect &, SkScalar, SkScalar, bool, const SkPaint &)",
+            "category": "disabled-by-default-skia",
+            "count": 25662,
+            "wall_ms": 54.537,
+            "thread_cpu_ms": 40.588
+          },
+          {
+            "name": "void __cdecl SkCanvas::drawRect(const SkRect &, const SkPaint &)",
+            "category": "disabled-by-default-skia",
+            "count": 20499,
+            "wall_ms": 33.509,
+            "thread_cpu_ms": 23.065
+          },
+          {
+            "name": "void __cdecl SkCanvas::drawPath(const SkPath &, const SkPaint &)",
+            "category": "disabled-by-default-skia",
+            "count": 2985,
+            "wall_ms": 22.712,
+            "thread_cpu_ms": 20.29
+          },
+          {
+            "name": "void __cdecl SkCanvas::drawSlug(const Slug *, const SkPaint &)",
+            "category": "disabled-by-default-skia",
+            "count": 19822,
+            "wall_ms": 28.4688,
+            "thread_cpu_ms": 19.514
+          },
+          {
+            "name": "DCompPresenter::Present",
+            "category": "gpu",
+            "count": 823,
+            "wall_ms": 16.733,
+            "thread_cpu_ms": 13.609
+          },
+          {
+            "name": "RasterDecoderImpl::DoBeginRasterCHROMIUM",
+            "category": "gpu",
+            "count": 614,
+            "wall_ms": 14.6743,
+            "thread_cpu_ms": 13.258
+          },
+          {
+            "name": "DCLayerTree::CommitAndClearPendingOverlays",
+            "category": "gpu",
+            "count": 823,
+            "wall_ms": 8.058,
+            "thread_cpu_ms": 7.159
+          },
+          {
+            "name": "CommandBufferStub::PerformWork",
+            "category": "gpu",
+            "count": 1358,
+            "wall_ms": 7.858,
+            "thread_cpu_ms": 6.135
+          },
+          {
+            "name": "void __cdecl SkCanvas::drawPaint(const SkPaint &)",
+            "category": "disabled-by-default-skia",
+            "count": 612,
+            "wall_ms": 5.6977,
+            "thread_cpu_ms": 4.826
+          },
+          {
+            "name": "int __cdecl SkCanvas::saveLayer(const SaveLayerRec &)",
+            "category": "disabled-by-default-skia",
+            "count": 2135,
+            "wall_ms": 9.555,
+            "thread_cpu_ms": 4.82
+          },
+          {
+            "name": "void __cdecl SkCanvas::internalSaveLayer(const SaveLayerRec &, SaveLayerStrategy, bool)",
+            "category": "disabled-by-default-skia",
+            "count": 2135,
+            "wall_ms": 6.224,
+            "thread_cpu_ms": 4.644
+          },
+          {
+            "name": "void __cdecl SkCanvas::drawRRect(const SkRRect &, const SkPaint &)",
+            "category": "disabled-by-default-skia",
+            "count": 2830,
+            "wall_ms": 5.131,
+            "thread_cpu_ms": 3.536
+          },
+          {
+            "name": "SkiaOutputSurfaceImplOnGpu::BeginAccessImages",
+            "category": "viz",
+            "count": 823,
+            "wall_ms": 2.662,
+            "thread_cpu_ms": 2.203
+          },
+          {
+            "name": "DCompPresenter::CheckPendingFrames",
+            "category": "gpu",
+            "count": 1387,
+            "wall_ms": 2.013,
+            "thread_cpu_ms": 1.129
+          },
+          {
+            "name": "SyncToken::Release",
+            "category": "gpu,toplevel.flow",
+            "count": 579,
+            "wall_ms": 1.761,
+            "thread_cpu_ms": 0.649
+          },
+          {
+            "name": "SkiaOutputSurfaceImplOnGpu::EndAccessImages",
+            "category": "viz",
+            "count": 823,
+            "wall_ms": 1.13,
+            "thread_cpu_ms": 0.641
+          },
+          {
+            "name": "GPUTracer::ProcessTraces",
+            "category": "gpu",
+            "count": 480,
+            "wall_ms": 0.793,
+            "thread_cpu_ms": 0.532
+          },
+          {
+            "name": "SharedImageStub::OnCreateSharedImage",
+            "category": "gpu",
+            "count": 20,
+            "wall_ms": 0.556,
+            "thread_cpu_ms": 0.504
+          },
+          {
+            "name": "void __cdecl SkCanvas::drawPoints(PointMode, SkSpan<const SkPoint>, const SkPaint &)",
+            "category": "disabled-by-default-skia",
+            "count": 24,
+            "wall_ms": 0.331,
+            "thread_cpu_ms": 0.317
+          },
+          {
+            "name": "void __cdecl SkCanvas::drawOval(const SkRect &, const SkPaint &)",
+            "category": "disabled-by-default-skia",
+            "count": 91,
+            "wall_ms": 0.389,
+            "thread_cpu_ms": 0.314
+          },
+          {
+            "name": "Scheduler::ContinueTask",
+            "category": "gpu,toplevel.flow",
+            "count": 341,
+            "wall_ms": 0.447,
+            "thread_cpu_ms": 0.296
+          },
+          {
+            "name": "SharedImageStub::OnDestroySharedImage",
+            "category": "gpu",
+            "count": 7,
+            "wall_ms": 0.28,
+            "thread_cpu_ms": 0.277
+          },
+          {
+            "name": "CommandBufferStub::OnDestroyTransferBuffer",
+            "category": "gpu",
+            "count": 10,
+            "wall_ms": 0.27,
+            "thread_cpu_ms": 0.265
+          },
+          {
+            "name": "Receive mojo message",
+            "category": "toplevel,mojom",
+            "count": 16,
+            "wall_ms": 0.272,
+            "thread_cpu_ms": 0.25
+          },
+          {
+            "name": "Scheduler::FinishTask",
+            "category": "gpu,toplevel.flow",
+            "count": 1962,
+            "wall_ms": 1.316,
+            "thread_cpu_ms": 0.162
+          },
+          {
+            "name": "CommandBufferStub::OnRegisterTransferBuffer",
+            "category": "gpu",
+            "count": 13,
+            "wall_ms": 0.14,
+            "thread_cpu_ms": 0.135
+          },
+          {
+            "name": "Scheduler::SequenceUnblocked",
+            "category": "gpu,toplevel.flow",
+            "count": 572,
+            "wall_ms": 0.39,
+            "thread_cpu_ms": 0.038
+          },
+          {
+            "name": "CommandBuffer::FlushComplete",
+            "category": "gpu,toplevel.flow",
+            "count": 568,
+            "wall_ms": 0.322,
+            "thread_cpu_ms": 0.034
+          },
+          {
+            "name": "GrShaderCache::store",
+            "category": "gpu",
+            "count": 1,
+            "wall_ms": 0.026,
+            "thread_cpu_ms": 0.025
+          },
+          {
+            "name": "CommandBufferStub::SetGetBuffer",
+            "category": "gpu",
+            "count": 3,
+            "wall_ms": 0.019,
+            "thread_cpu_ms": 0.015
+          },
+          {
+            "name": "GrShaderCache::load",
+            "category": "gpu",
+            "count": 1,
+            "wall_ms": 0.004,
+            "thread_cpu_ms": 0.004
+          }
+        ],
+        "present_arguments": [
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1073,857 1043x284",
+            "count": 12
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1073,857 1173x173",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1073,857 1199x284",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1073,857 429x88",
+            "count": 17
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1073,858 1043x283",
+            "count": 2
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1073,858 1173x172",
+            "count": 4
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "1073,858 238x86",
+            "count": 135
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "13,230 666x212",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "13,230 666x25",
+            "count": 3
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "13,230 666x48",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "13,494 666x25",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "13,566 666x25",
+            "count": 7
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "13,566 666x48",
+            "count": 2
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "20,20 683x678",
+            "count": 238
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "2100,1017 146x124",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "2100,1124 16x17",
+            "count": 9
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "2100,1124 172x132",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "2100,1124 172x17",
+            "count": 10
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "2100,1125 172x131",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "2176,1017 70x13",
+            "count": 6
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "29,35 1230x1229",
+            "count": 1
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "29,35 1231x1230",
+            "count": 2
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "29,35 1232x1231",
+            "count": 2
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "29,35 1234x1233",
+            "count": 2
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "29,35 1235x1234",
+            "count": 2
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "29,35 1236x1235",
+            "count": 2
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "29,35 1237x1236",
+            "count": 4
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "29,35 1240x1239",
+            "count": 3
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "29,35 1242x1241",
+            "count": 3
+          },
+          {
+            "flat_key": "debug.dirty_rect",
+            "display_value": "29,35 1243x1242",
+            "count": 4
+          }
+        ],
+        "sample_threads": [
+          {
+            "name": "CrGpuMain",
+            "count": 237
+          }
+        ],
+        "sample_leaf_modules": [
+          {
+            "thread_name": "CrGpuMain",
+            "module": "/ntdll.pdb",
+            "function": null,
+            "count": 213
+          },
+          {
+            "thread_name": "CrGpuMain",
+            "module": "/electron.exe.pdb",
+            "function": null,
+            "count": 12
+          },
+          {
+            "thread_name": "CrGpuMain",
+            "module": "/nvwgf2umx.pdb",
+            "function": null,
+            "count": 8
+          },
+          {
+            "thread_name": "CrGpuMain",
+            "module": "/win32u.pdb",
+            "function": null,
+            "count": 2
+          },
+          {
+            "thread_name": "CrGpuMain",
+            "module": "/d3d11.pdb",
+            "function": null,
+            "count": 1
+          },
+          {
+            "thread_name": "CrGpuMain",
+            "module": "/dxgi.pdb",
+            "function": null,
+            "count": 1
+          }
+        ],
+        "slice_percentiles": [
+          {
+            "count": 822,
+            "min_cpu_ms": 0.027,
+            "max_cpu_ms": 83.106,
+            "p50_cpu_ms": 0.059,
+            "p95_cpu_ms": 24.433949999999992
+          }
+        ],
+        "stats": [
+          {
+            "name": "stackprofile_empty_callstack",
+            "value": 1,
+            "severity": "error"
+          },
+          {
+            "name": "stackprofile_parser_error",
+            "value": 1,
+            "severity": "error"
+          }
+        ],
+        "all_process_tasks": [
+          {
+            "name": "GPU Process",
+            "thread_name": "CrGpuMain",
+            "cpu_ms": 3016.914
+          },
+          {
+            "name": "Renderer",
+            "thread_name": "CrRendererMain",
+            "cpu_ms": 1077.684
+          },
+          {
+            "name": "Renderer",
+            "thread_name": "CrRendererMain",
+            "cpu_ms": 930.386
+          },
+          {
+            "name": "Browser",
+            "thread_name": "CrBrowserMain",
+            "cpu_ms": 572.218
+          },
+          {
+            "name": "Renderer",
+            "thread_name": "CrRendererMain",
+            "cpu_ms": 497.859
+          },
+          {
+            "name": "Renderer",
+            "thread_name": "CrRendererMain",
+            "cpu_ms": 388.684
+          },
+          {
+            "name": "GPU Process",
+            "thread_name": "VizCompositorThread",
+            "cpu_ms": 212.982
+          },
+          {
+            "name": "Renderer",
+            "thread_name": "Compositor",
+            "cpu_ms": 126.562
+          },
+          {
+            "name": "Renderer",
+            "thread_name": "Compositor",
+            "cpu_ms": 68.51
+          },
+          {
+            "name": "Renderer",
+            "thread_name": "Compositor",
+            "cpu_ms": 60.204
+          },
+          {
+            "name": "GPU Process",
+            "thread_name": "GpuVSyncThread",
+            "cpu_ms": 29.481
+          },
+          {
+            "name": "Service: tracing.mojom.TracingService",
+            "thread_name": "tracing.CrUtilityMain",
+            "cpu_ms": 22.597
+          }
+        ]
+      }
+    }
+  ],
+  "delta": {
+    "gpuMainTaskCpuMs": 4741.4490000000005,
+    "presentCpuMs": 4481.066,
+    "presentFractionOfGpuMainTaskCpuIncrease": 0.9450836653520894
+  },
+  "restoration": {
+    "original": {
+      "snapshot": {
+        "IsReplayPlaying": 1,
+        "ReplayFrameNum": 256728,
+        "ReplayPlaySpeed": 1,
+        "ReplaySessionTime": 2184.193391927085,
+        "SessionNum": 2,
+        "CamCarIdx": 37,
+        "CamGroupNumber": 9,
+        "CamCameraNumber": 1,
+        "FrameRate": 65.64347839355469
+      },
+      "userConfigSha256": "e23e6ffad33d1ab53713b81dc1cff15bfe3ed86a0e5cd7e9c6954b5b090885ff",
+      "graphicsSha256": "1f8c44edd8f43466787204e86f9b7bc8198391d03ba1da14bca5652b15d712ce"
+    },
+    "restored": {
+      "snapshot": {
+        "IsReplayPlaying": 1,
+        "ReplayFrameNum": 256759,
+        "ReplayPlaySpeed": 1,
+        "ReplaySessionTime": 2184.716520182293,
+        "SessionNum": 2,
+        "CamCarIdx": 37,
+        "CamGroupNumber": 9,
+        "CamCameraNumber": 1,
+        "FrameRate": 70.38735961914062
+      },
+      "userConfigSha256": "e23e6ffad33d1ab53713b81dc1cff15bfe3ed86a0e5cd7e9c6954b5b090885ff",
+      "graphicsSha256": "1f8c44edd8f43466787204e86f9b7bc8198391d03ba1da14bca5652b15d712ce"
+    },
+    "userConfigurationUnchanged": true,
+    "simulatorGraphicsUnchanged": true,
+    "runtimeSourceUnmodified": true
+  },
+  "limitations": [
+    "One short traced pair, not a statistical test or replacement performance baseline. Trace overhead is present in both conditions.",
+    "Scopes localize CPU to DXGI presentation but do not identify the exact underlying native function or prove an NVIDIA/Windows/Chromium driver fault.",
+    "Native stack frames are unsymbolized; module counts include waits. Off trace reports one empty-callstack/parser error; slice CPU conclusions do not use native samples.",
+    "contentTracing.getCategories returned an empty list; actual gpu/viz/skia/toplevel categories and CPU samples are verified in recorded data.",
+    "No native hardware GPU utilization or game frame-time conclusion is drawn from this Chromium trace.",
+    "The 13-second slice analysis trims capture edges and omits edge-crossing tasks; its scoped CPU totals are not full-process CPU totals."
+  ],
+  "validation": {
+    "matchedProfileExceptRadar": true,
+    "radarOnDrawingVerified": true,
+    "radarOffNoDrawingVerified": true,
+    "replayAndFocusChecksPassed": true,
+    "nonoverlappingTaskAllocationVerified": true,
+    "traceBufferNotExhausted": true,
+    "sourceAndConfigurationRestorationVerified": true
+  },
+  "conclusion": "Most added GPU-main-thread task CPU with Radar enabled is inside DXGISwapChainImageBacking::Present. Investigate transparent-window/DXGI presentation and compositor interactions before optimizing Radar calculation or drawing code.",
+  "radarLayout": {
+    "x": 1107,
+    "y": 112,
+    "width": 300,
+    "height": 300
+  },
+  "presentationControls": {
+    "runs": [
+      {
+        "runId": "presentation-stock-2",
+        "condition": "stock",
+        "analysisWindowSecondsFromPlayback": [30, 90],
+        "completed": true,
+        "appCpuPercent": 6.761754679282208,
+        "gpuProcessCpuPercent": 4.013410483912025,
+        "radarPaintHz": 28.92235472976208,
+        "overlayFrameP99MeanMs": 69.78793103448577,
+        "privateGrowthMiBPerMinute": 77.72485406282333,
+        "traceEnabled": true,
+        "traceSha256": "d7c3ad01be5714b05945e8847c7bf7e94fdc65bd95e09cbeeb077921c549b101",
+        "logSha256": "cd482e036ecdf893946ab0715081bf76e8adcb71349e3c4e6bbfb36dd9b52e1e",
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T07:33:55.290Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T07:34:10.110Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ],
+        "sourceVariant": null,
+        "sourceRestoration": null
+      },
+      {
+        "runId": "presentation-waitable-1",
+        "condition": "waitable",
+        "analysisWindowSecondsFromPlayback": [30, 90],
+        "completed": true,
+        "appCpuPercent": 9.04625539463879,
+        "gpuProcessCpuPercent": 6.366536342472897,
+        "radarPaintHz": 28.77303766344206,
+        "overlayFrameP99MeanMs": 68.14558543874227,
+        "privateGrowthMiBPerMinute": 70.40006505446576,
+        "traceEnabled": true,
+        "traceSha256": "8054ac3794e7141dd983a3da8a7d14852883a583cbf9d5aa125361bcd20ed001",
+        "logSha256": "5eae7ed72de10bef52f92e0512ace5327601a8d5a25dd484c266f2071323ed20",
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T07:42:51.396Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T07:43:28.496Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ],
+        "sourceVariant": null,
+        "sourceRestoration": null
+      },
+      {
+        "runId": "presentation-interval0-1",
+        "condition": "interval0",
+        "analysisWindowSecondsFromPlayback": [30, 90],
+        "completed": true,
+        "appCpuPercent": 6.884126742290037,
+        "gpuProcessCpuPercent": 4.14233233958335,
+        "radarPaintHz": 29.90403704500553,
+        "overlayFrameP99MeanMs": 69.92100139082058,
+        "privateGrowthMiBPerMinute": 41.712147405446785,
+        "traceEnabled": true,
+        "traceSha256": "5c97182d05b8299938cae6c4374f2d70b0f736a32f8e27ad3fb005ffb1f901e6",
+        "logSha256": "dafdeec5dcd92b9f212e4821c543daa58f9bc68e3cff1e88cc66854a678abdf1",
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T07:46:05.127Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T07:46:41.199Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ],
+        "sourceVariant": null,
+        "sourceRestoration": null
+      },
+      {
+        "runId": "presentation-novsync-1",
+        "condition": "novsync",
+        "analysisWindowSecondsFromPlayback": [30, 90],
+        "completed": true,
+        "appCpuPercent": 6.8600215424080915,
+        "gpuProcessCpuPercent": 4.134784248998379,
+        "radarPaintHz": 27.51437380218315,
+        "overlayFrameP99MeanMs": 73.82678980308539,
+        "privateGrowthMiBPerMinute": 79.48555803663382,
+        "traceEnabled": true,
+        "traceSha256": "542d93dc0e79e4e0ee4d0d8bf1ff882c5da1119f2f3ae1408ba60b8b16be1f3d",
+        "logSha256": "c40b5a17c434ecfb18ed0ded1580084815e214702e942dcbccf9a2f3ae00858f",
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T07:49:46.397Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T07:50:23.852Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ],
+        "sourceVariant": null,
+        "sourceRestoration": null
+      },
+      {
+        "runId": "presentation-cpu-canvas-1",
+        "condition": "Radar CPU canvas",
+        "analysisWindowSecondsFromPlayback": [30, 90],
+        "completed": true,
+        "appCpuPercent": 5.492277279837581,
+        "gpuProcessCpuPercent": 2.518925807296698,
+        "radarPaintHz": 28.300849025469358,
+        "overlayFrameP99MeanMs": 72.3365370287593,
+        "privateGrowthMiBPerMinute": 44.71593701414047,
+        "traceEnabled": true,
+        "traceSha256": "992ae8ded7bd5ecb842da63f69a88faa5d1fec407be9fc4f47ca52da2430c00a",
+        "logSha256": "3e79dc8136402a8ee0e23395a83d47047a8110e0ccc691b3f041c9c8321c4f08",
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T07:53:04.943Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T07:53:48.004Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ],
+        "sourceVariant": {
+          "originalSha256": "7632c5ec1850668f8bc896bbc672422580f95f0783c4e260f196aa7c529d30e9",
+          "variantSha256": "6dc4b76d14bb351f4829cbf668ebf8f02e23b0440a1b79a5ec19fa0bd4a2dae3",
+          "change": "Radar 2D context willReadFrequently=true; all other source and profile unchanged."
+        },
+        "sourceRestoration": {
+          "sha256": "7632c5ec1850668f8bc896bbc672422580f95f0783c4e260f196aa7c529d30e9"
+        }
+      },
+      {
+        "runId": "cpu-long-canvas-1",
+        "condition": "Radar CPU canvas",
+        "analysisWindowSecondsFromPlayback": [60, 420],
+        "completed": true,
+        "appCpuPercent": 5.253647803226938,
+        "gpuProcessCpuPercent": 2.258206223654471,
+        "radarPaintHz": 23.592084610404765,
+        "overlayFrameP99MeanMs": 111.70298074096131,
+        "privateGrowthMiBPerMinute": 20.797076138331185,
+        "traceEnabled": false,
+        "traceSha256": null,
+        "logSha256": "d0826990f336a823161a2b448dfa1745a3ff4a0b72dcc2b65ebbf0bf39d2fa22",
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T07:57:50.312Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T07:58:54.082Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T07:59:55.876Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T08:01:00.570Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T08:02:03.281Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T08:03:10.110Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T08:04:11.691Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ],
+        "sourceVariant": {
+          "originalSha256": "7632c5ec1850668f8bc896bbc672422580f95f0783c4e260f196aa7c529d30e9",
+          "variantSha256": "6dc4b76d14bb351f4829cbf668ebf8f02e23b0440a1b79a5ec19fa0bd4a2dae3",
+          "change": "Radar 2D context willReadFrequently=true; all other source and profile unchanged."
+        },
+        "sourceRestoration": {
+          "sha256": "7632c5ec1850668f8bc896bbc672422580f95f0783c4e260f196aa7c529d30e9"
+        }
+      }
+    ],
+    "excluded": [
+      {
+        "runId": "presentation-stock-1",
+        "reason": "Foreground gate timed out while Python firewall dialog was awaiting user dismissal; no measured replay."
+      },
+      {
+        "runId": "presentation-dcomp-off-1",
+        "reason": "Overlays invisible in visual preflight despite active drawing counters; aborted before measured replay."
+      }
+    ],
+    "securityPrompt": "User dismissed Python firewall prompt; fresh screenshots verified it closed before these measured controls. No network access was granted by the agent.",
+    "acceptance": "No production change accepted. Swap-chain and VSync controls do not improve CPU. Radar CPU canvas lowers CPU but the longer run has poor overlay pacing, requiring a matched stock long repeat and further investigation; historical CPU target and game-frame validation remain open.",
+    "restoration": {
+      "snapshot": {
+        "IsReplayPlaying": 1,
+        "ReplayFrameNum": 303844,
+        "ReplayPlaySpeed": 1,
+        "ReplaySessionTime": 2969.4665690104175,
+        "SessionNum": 2,
+        "CamCarIdx": 37,
+        "CamGroupNumber": 9,
+        "CamCameraNumber": 1,
+        "FrameRate": 80.7976303100586
+      },
+      "userConfigSha256": "e23e6ffad33d1ab53713b81dc1cff15bfe3ed86a0e5cd7e9c6954b5b090885ff",
+      "graphicsSha256": "1f8c44edd8f43466787204e86f9b7bc8198391d03ba1da14bca5652b15d712ce"
+    }
+  },
+  "stallInvestigation": {
+    "date": "2026-11-14",
+    "watcherFix": {
+      "file": "vite.renderer.config.mts",
+      "ignored": "**/perf-results/**",
+      "sourceSha256": "643aff2d0e7b73efb1043cac1327772b97d73614f66c9075f01642ccbdabccc4",
+      "integration": {
+        "passed": true,
+        "observed": [
+          {
+            "event": "add",
+            "file": "src\\perf-watch-isolation-probe.txt"
+          }
+        ]
+      },
+      "validation": "Full TypeScript and ESLint command passed: npm run lint -- --ignore-pattern perf-results/**",
+      "scope": "Measurement isolation only. No causal claim that this fixes the historical stall."
+    },
+    "trace": {
+      "runId": "stall-watch-isolated-1",
+      "traceSha256": "2916b9405d8515f1949a850d9a0c29788dde608e712c2250064b7624cee519ba",
+      "traceBytes": 581865205,
+      "recordingMode": "record-continuously",
+      "bufferUsage": {
+        "percentage": 0.9997636079788208,
+        "value": 0
+      },
+      "probeScriptSha256": "d3f438062c8844f387e451b4bfb5cf54828c9fb954bfc02d90e8f747070b61ef",
+      "playCommand": "2026-11-14T09:05:55.438Z",
+      "lastProbeObservation": {
+        "timestamp": "2026-11-14T09:09:01.143Z",
+        "probes": [
+          {
+            "id": 3,
+            "title": "irDashies - 3286545436)",
+            "probe": {
+              "startedAt": "2026-11-14T09:05:55.438Z",
+              "timeOrigin": 1794647112971.1,
+              "rafCount": 5644,
+              "timerCount": 1856,
+              "maxRafGapMs": 183.29999999998836,
+              "maxTimerGapMs": 115.19999998807907,
+              "longTaskCount": 0,
+              "maxLongTaskMs": 0,
+              "events": [],
+              "droppedEvents": 0,
+              "longTasksSupported": true
+            }
+          },
+          {
+            "id": 2,
+            "title": "irDashies - 4096387830 (Primary))",
+            "probe": {
+              "startedAt": "2026-11-14T09:05:55.438Z",
+              "timeOrigin": 1794647112960.9,
+              "rafCount": 5895,
+              "timerCount": 1856,
+              "maxRafGapMs": 150.20000000001164,
+              "maxTimerGapMs": 114.6000000089407,
+              "longTaskCount": 0,
+              "maxLongTaskMs": 0,
+              "events": [],
+              "droppedEvents": 0,
+              "longTasksSupported": true
+            }
+          },
+          {
+            "id": 1,
+            "title": "irDashies - 697929445)",
+            "probe": {
+              "startedAt": "2026-11-14T09:05:55.438Z",
+              "timeOrigin": 1794647114577.6,
+              "rafCount": 7338,
+              "timerCount": 1809,
+              "maxRafGapMs": 216.79999999998836,
+              "maxTimerGapMs": 278.29999999701977,
+              "longTaskCount": 0,
+              "maxLongTaskMs": 0,
+              "events": [
+                {
+                  "type": "timer-gap",
+                  "gapMs": 278.29999999701977,
+                  "atMs": 169039.5,
+                  "wallTime": 1794647283615
+                },
+                {
+                  "type": "timer-gap",
+                  "gapMs": 277.5,
+                  "atMs": 188386.20000000298,
+                  "wallTime": 1794647302961
+                }
+              ],
+              "droppedEvents": 0,
+              "longTasksSupported": true
+            }
+          }
+        ]
+      },
+      "largeStallTriggered": false,
+      "selectedTraceTables": [
+        {
+          "section": "trace_bounds",
+          "start_ts": 89158307533000,
+          "end_ts": 89239286648000
+        },
+        {
+          "section": "coverage",
+          "pid": 30468,
+          "process": "Renderer",
+          "thread": "CrRendererMain",
+          "start_ns": 89161344016000,
+          "end_ns": 89239283635700,
+          "events": 316684
+        },
+        {
+          "section": "coverage",
+          "pid": 31140,
+          "process": "Renderer",
+          "thread": "CrRendererMain",
+          "start_ns": 89161381470200,
+          "end_ns": 89239104382000,
+          "events": 94536
+        },
+        {
+          "section": "coverage",
+          "pid": 33644,
+          "process": "Renderer",
+          "thread": "CrRendererMain",
+          "start_ns": 89161381050000,
+          "end_ns": 89239229601900,
+          "events": 663808
+        },
+        {
+          "section": "coverage",
+          "pid": 34852,
+          "process": "Renderer",
+          "thread": "CrRendererMain",
+          "start_ns": 89161376875000,
+          "end_ns": 89239242700500,
+          "events": 305928
+        },
+        {
+          "section": "coverage",
+          "pid": 35060,
+          "process": "GPU Process",
+          "thread": "CrGpuMain",
+          "start_ns": 89161381205200,
+          "end_ns": 89239217074000,
+          "events": 959148
+        },
+        {
+          "section": "renderer_root_tasks",
+          "pid": 30468,
+          "count": 29835,
+          "wall_ms": 5937.8729,
+          "cpu_ms": 5643.49,
+          "max_wall_ms": 8.998,
+          "tasks_over_50ms": 0
+        },
+        {
+          "section": "renderer_root_tasks",
+          "pid": 31140,
+          "count": 3574,
+          "wall_ms": 2831.9533,
+          "cpu_ms": 2697.852,
+          "max_wall_ms": 11.792,
+          "tasks_over_50ms": 0
+        },
+        {
+          "section": "renderer_root_tasks",
+          "pid": 33644,
+          "count": 36233,
+          "wall_ms": 8176.682,
+          "cpu_ms": 7681.06,
+          "max_wall_ms": 10.015,
+          "tasks_over_50ms": 0
+        },
+        {
+          "section": "renderer_root_tasks",
+          "pid": 34852,
+          "count": 28234,
+          "wall_ms": 2977.4585,
+          "cpu_ms": 2728.274,
+          "max_wall_ms": 3.564,
+          "tasks_over_50ms": 0
+        },
+        {
+          "section": "gc_events",
+          "pid": 33644,
+          "name": "MajorGC",
+          "count": 23,
+          "max_wall_ms": 6.372,
+          "max_cpu_ms": 6.095
+        },
+        {
+          "section": "gc_events",
+          "pid": 33644,
+          "name": "V8.GCFinalizeMC",
+          "count": 23,
+          "max_wall_ms": 6.247,
+          "max_cpu_ms": 5.983
+        },
+        {
+          "section": "gc_events",
+          "pid": 33644,
+          "name": "V8.GC_MARK_COMPACTOR",
+          "count": 23,
+          "max_wall_ms": 6.238,
+          "max_cpu_ms": 5.976
+        },
+        {
+          "section": "gc_events",
+          "pid": 30468,
+          "name": "MajorGC",
+          "count": 29,
+          "max_wall_ms": 5.813,
+          "max_cpu_ms": 5.231
+        },
+        {
+          "section": "gc_events",
+          "pid": 30468,
+          "name": "V8.GCFinalizeMC",
+          "count": 29,
+          "max_wall_ms": 5.731,
+          "max_cpu_ms": 5.153
+        },
+        {
+          "section": "gc_events",
+          "pid": 30468,
+          "name": "V8.GC_MARK_COMPACTOR",
+          "count": 29,
+          "max_wall_ms": 5.722,
+          "max_cpu_ms": 5.146
+        },
+        {
+          "section": "gc_events",
+          "pid": 31140,
+          "name": "MajorGC",
+          "count": 17,
+          "max_wall_ms": 4.639,
+          "max_cpu_ms": 4.139
+        },
+        {
+          "section": "gc_events",
+          "pid": 33644,
+          "name": "V8.GC_MC_MARK",
+          "count": 23,
+          "max_wall_ms": 4.632,
+          "max_cpu_ms": 4.537
+        },
+        {
+          "section": "gc_events",
+          "pid": 31140,
+          "name": "V8.GCFinalizeMC",
+          "count": 17,
+          "max_wall_ms": 4.529,
+          "max_cpu_ms": 4.038
+        },
+        {
+          "section": "gc_events",
+          "pid": 31140,
+          "name": "V8.GC_MARK_COMPACTOR",
+          "count": 17,
+          "max_wall_ms": 4.521,
+          "max_cpu_ms": 4.032
+        }
+      ],
+      "gpuAttribution": {
+        "root_tasks": 47246,
+        "root_cpu_ms": 50452.307,
+        "max_root_wall_ms": 80.6,
+        "presents_in_complete_root_tasks": 7173,
+        "present_cpu_ms": 44879.533,
+        "presentFractionOfGpuRootCpu": 0.8895437229461084,
+        "method": "Complete DXGI Present descendants of complete depth-zero CrGpuMain RunTask roots. CPU uses thread_dur; nested scopes are not added. Circular trace retains approximately the last 78 seconds of thread events."
+      }
+    },
+    "controls": [
+      {
+        "runId": "stall-pm-closed-1",
+        "condition": "PresentMon app closed (service remains)",
+        "analysisPlaybackSeconds": [30, 90],
+        "app": {
+          "averageCpuPercent": 6.21705680904913,
+          "averageRendererCpuPercent": 2.0788414319456554,
+          "averageMainCpuPercent": 0.38595030561797405,
+          "averageGpuCpuPercent": 3.7519051127439846,
+          "peakMemoryMB": 2650.44921875,
+          "averageRendererMemoryMB": 1695.1135817307693,
+          "averageMainMemoryMB": 342.3876201923077,
+          "averageGpuMemoryMB": 335.13341346153845,
+          "peakPrivateMemoryMB": 1176.00390625,
+          "averageRendererPrivateMemoryMB": 769.6039663461538,
+          "averageMainPrivateMemoryMB": 119.38671875,
+          "averageGpuPrivateMemoryMB": 221.78545673076923,
+          "peakRendererMemoryMB": 1702.99609375,
+          "peakMainMemoryMB": 364.2578125,
+          "peakGpuMemoryMB": 347.2421875,
+          "rendererProcessCount": 4,
+          "memorySlopeMBPerMinute": 6.123178437499053,
+          "privateMemorySlopeMBPerMinute": 34.84159427843833
+        },
+        "renderer": {
+          "sampleCount": 38,
+          "frameTimeP99MeanMs": 60.26231483806309,
+          "worstFrameMs": 116.69999999998254,
+          "telemetryCallbackRateHz": 0,
+          "channelCallbackRateHz": 63.617972182398596,
+          "totalWakeupRateHz": 63.617972182398596,
+          "telemetryCallbackP99MeanMs": 0,
+          "telemetryCallbackP99WorstMs": 0,
+          "trackMapAnimationFrameRateHz": 24.21690883575863,
+          "trackMapAnimationFrameP99MeanMs": 0.19270475109281493,
+          "trackMapAnimationFrameP99WorstMs": 0.20000000298023224,
+          "inputTraceFrameRateHz": 12.137266484529642,
+          "inputTraceFrameP99MeanMs": 0.2122940452077694,
+          "inputTraceFrameP99WorstMs": 0.29999999701976776,
+          "radarFrameRateHz": 32.719855275785235,
+          "radarFrameP99MeanMs": 0.39506347343626863,
+          "radarFrameP99WorstMs": 0.7000000029802322,
+          "lapTraceFrameRateHz": 0,
+          "lapTraceFrameP99MeanMs": 0,
+          "lapTraceFrameP99WorstMs": 0,
+          "lapTraceBrakeCueRateHz": 0,
+          "lapTraceBrakeCueP99MeanMs": 0,
+          "lapTraceBrakeCueP99WorstMs": 0,
+          "framesOver25MsPercent": 32.27466733617876,
+          "framesOver50MsPercent": 4.393673110720562
+        },
+        "iracingSdk": {
+          "averageFps": 76.12925632830986,
+          "meanOnePercentLowFps": 75.36827906952601,
+          "worstFps": 73.30180358886719,
+          "averageCpuForeground": 25.629287833401783,
+          "averageGpuUsage": 71.50290416981713
+        },
+        "completed": true,
+        "seedSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+        "sourceLogSha256": "dc993fb9b26e0b8a8817cf89b15b47d1dc01901b02321da6074d033ed62cfba7",
+        "foregroundStart": {
+          "timestamp": "2026-11-14T09:14:58.573Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise",
+          "presentMonApplicationClosed": true,
+          "backgroundServiceUnchanged": true
+        },
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T09:16:05.961Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ]
+      },
+      {
+        "runId": "stall-pm-running-2",
+        "condition": "PresentMon app reopened and iRacing target restored",
+        "analysisPlaybackSeconds": [30, 90],
+        "app": {
+          "averageCpuPercent": 6.288540484830199,
+          "averageRendererCpuPercent": 2.0468788371727777,
+          "averageMainCpuPercent": 0.3957047557449974,
+          "averageGpuCpuPercent": 3.8456815868698424,
+          "peakMemoryMB": 2676.24609375,
+          "averageRendererMemoryMB": 1714.1397235576924,
+          "averageMainMemoryMB": 341.9489182692308,
+          "averageGpuMemoryMB": 337.61117788461536,
+          "peakPrivateMemoryMB": 1209.09765625,
+          "averageRendererPrivateMemoryMB": 786.9672475961538,
+          "averageMainPrivateMemoryMB": 119.3506610576923,
+          "averageGpuPrivateMemoryMB": 227.74519230769232,
+          "peakRendererMemoryMB": 1726.96875,
+          "peakMainMemoryMB": 344.296875,
+          "peakGpuMemoryMB": 346.91015625,
+          "rendererProcessCount": 4,
+          "memorySlopeMBPerMinute": 47.5415757250072,
+          "privateMemorySlopeMBPerMinute": 86.10542086727942
+        },
+        "renderer": {
+          "sampleCount": 39,
+          "frameTimeP99MeanMs": 66.87355081556346,
+          "worstFrameMs": 133.60000000000582,
+          "telemetryCallbackRateHz": 0,
+          "channelCallbackRateHz": 62.14954349314753,
+          "totalWakeupRateHz": 62.14954349314753,
+          "telemetryCallbackP99MeanMs": 0,
+          "telemetryCallbackP99WorstMs": 0,
+          "trackMapAnimationFrameRateHz": 24.919933177665236,
+          "trackMapAnimationFrameP99MeanMs": 0.19333333238775346,
+          "trackMapAnimationFrameP99WorstMs": 0.20000000298023224,
+          "inputTraceFrameRateHz": 11.662004941737734,
+          "inputTraceFrameP99MeanMs": 0.20435356472601676,
+          "inputTraceFrameP99WorstMs": 0.29999999701976776,
+          "radarFrameRateHz": 32.23205851311419,
+          "radarFrameP99MeanMs": 0.3662529887902708,
+          "radarFrameP99WorstMs": 0.5,
+          "lapTraceFrameRateHz": 0,
+          "lapTraceFrameP99MeanMs": 0,
+          "lapTraceFrameP99WorstMs": 0,
+          "lapTraceBrakeCueRateHz": 0,
+          "lapTraceBrakeCueP99MeanMs": 0,
+          "lapTraceBrakeCueP99WorstMs": 0,
+          "framesOver25MsPercent": 32.923462986198246,
+          "framesOver50MsPercent": 5.658720200752823
+        },
+        "iracingSdk": {
+          "averageFps": 75.73780486637833,
+          "meanOnePercentLowFps": 75.09592247816543,
+          "worstFps": 73.7022933959961,
+          "averageCpuForeground": 25.804309114074194,
+          "averageGpuUsage": 72.00382175285938
+        },
+        "completed": true,
+        "seedSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+        "sourceLogSha256": "8fac40d5f122445b470d2fb47e9af61e7af5f67dab2d1211ea48f80fb43fc54d",
+        "foregroundStart": {
+          "timestamp": "2026-11-14T09:23:45.783Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise",
+          "presentMonRestored": true,
+          "targetPid": 19272,
+          "backgroundServiceUnchanged": true
+        },
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T09:25:01.626Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ]
+      },
+      {
+        "runId": "stall-radar-window-1",
+        "condition": "Radar in its own window, others shared",
+        "analysisPlaybackSeconds": [30, 90],
+        "app": {
+          "averageCpuPercent": 6.803308328766414,
+          "averageRendererCpuPercent": 2.3021844122140336,
+          "averageMainCpuPercent": 0.4107377891018327,
+          "averageGpuCpuPercent": 4.089924256199567,
+          "peakMemoryMB": 2980.71484375,
+          "averageRendererMemoryMB": 2019.1813151041667,
+          "averageMainMemoryMB": 342.8037109375,
+          "averageGpuMemoryMB": 340.1295572916667,
+          "peakPrivateMemoryMB": 1269.83203125,
+          "averageRendererPrivateMemoryMB": 859.0403645833334,
+          "averageMainPrivateMemoryMB": 119.47428385416667,
+          "averageGpuPrivateMemoryMB": 234.0283203125,
+          "peakRendererMemoryMB": 2030.07421875,
+          "peakMainMemoryMB": 363.29296875,
+          "peakGpuMemoryMB": 348.86328125,
+          "rendererProcessCount": 5,
+          "memorySlopeMBPerMinute": 16.13327000205712,
+          "privateMemorySlopeMBPerMinute": 56.533244414974426
+        },
+        "renderer": {
+          "sampleCount": 49,
+          "frameTimeP99MeanMs": 81.85859598853763,
+          "worstFrameMs": 150.19999999998254,
+          "telemetryCallbackRateHz": 0,
+          "channelCallbackRateHz": 52.13037819013684,
+          "totalWakeupRateHz": 52.13037819013684,
+          "telemetryCallbackP99MeanMs": 0,
+          "telemetryCallbackP99WorstMs": 0,
+          "trackMapAnimationFrameRateHz": 24.077404625014474,
+          "trackMapAnimationFrameP99MeanMs": 0.1978913769078331,
+          "trackMapAnimationFrameP99WorstMs": 0.4000000059604645,
+          "inputTraceFrameRateHz": 9.750016250026116,
+          "inputTraceFrameP99MeanMs": 0.17572650015354158,
+          "inputTraceFrameP99WorstMs": 0.20000000298023224,
+          "radarFrameRateHz": 26.446121235553434,
+          "radarFrameP99MeanMs": 0.34291115770305414,
+          "radarFrameP99WorstMs": 0.5,
+          "lapTraceFrameRateHz": 0,
+          "lapTraceFrameP99MeanMs": 0,
+          "lapTraceFrameP99WorstMs": 0,
+          "lapTraceBrakeCueRateHz": 0,
+          "lapTraceBrakeCueP99MeanMs": 0,
+          "lapTraceBrakeCueP99WorstMs": 0,
+          "framesOver25MsPercent": 42.705348615090735,
+          "framesOver50MsPercent": 13.419293218720153
+        },
+        "iracingSdk": {
+          "averageFps": 76.04098054541515,
+          "meanOnePercentLowFps": 75.4734707228709,
+          "worstFps": 74.21238708496094,
+          "averageCpuForeground": 25.770964347878635,
+          "averageGpuUsage": 71.85106669742228
+        },
+        "completed": true,
+        "seedSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+        "sourceLogSha256": "194c700a4ab5224816facf720c84aa6692ea05e80cfbc54716d3e666709b5379",
+        "foregroundStart": {
+          "timestamp": "2026-11-14T09:34:11.404Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise",
+          "radarVisibleInOwnWindow": true,
+          "radarDrawingOnlyInAssignedRenderer": true,
+          "presentMonRunning": true
+        },
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T09:35:55.125Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ]
+      }
+    ],
+    "radarWindowRestoration": {
+      "files": [
+        {
+          "file": "src/app/overlayManager.ts",
+          "sha256": "3f3461cc4f579babce39ba1e52bbe16b57463c76725315b354042d7c6208a8e7",
+          "matchesOriginal": true
+        },
+        {
+          "file": "src/frontend/context/shared/useWidgetsForThisDisplay.ts",
+          "sha256": "f9b793f3f0b5da7a19e9b06c87c9971235dc5db8dc39321ebb74c10efeb7444c",
+          "matchesOriginal": true
+        }
+      ]
+    },
+    "excluded": [
+      {
+        "runId": "stall-pm-running-1",
+        "reason": "Foreground gate expired during PresentMon setup; no measured replay."
+      },
+      {
+        "excluded": true,
+        "reason": "OpenGL backend applied but overlay content is invisible in native visual preflight; no foreground play gate or measured replay.",
+        "configurationPrivate": true
+      }
+    ],
+    "openGl": {
+      "runId": "stall-angle-gl-1",
+      "requestedBackend": "gl",
+      "effectiveRenderer": "ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 2070 SUPER/PCIe/SSE2, OpenGL 4.5.0 NVIDIA 617.42)",
+      "directComposition": false,
+      "accepted": false
+    },
+    "nativeCapture": {
+      "runId": "native-wpr-1",
+      "status": "completed and analyzed",
+      "instanceName": "irDashiesStallAudit",
+      "recordingActive": false,
+      "initialStartErrorHex": "0xc5585011",
+      "administratorStartConfirmedByUser": true,
+      "helper": "perf-results/capture-native-stall.cmd",
+      "helperSha256": "65b76235f52dbd5f475993279dd6e566fa64f52a68d90ad50f2b7d6b4610c218",
+      "trace": {
+        "file": "perf-results/native-wpr-1.etl",
+        "bytes": 20734541824,
+        "sha256": "aac110b55147d3edbdacf730147dde67543bb111dbb054722a32f86b6c181517",
+        "startUtc": "2026-11-14T09:56:25.0127Z",
+        "endUtc": "2026-11-14T09:59:04.7077709Z",
+        "eventsLost": 0
+      },
+      "provenance": {
+        "runId": "native-wpr-1",
+        "source": "current",
+        "sourceRevision": "711552a1598a0d3258eb61a5d94e34a37f85547d",
+        "runtime": "new",
+        "version": "45.3.2",
+        "runtimeExeSha256": "7ae7a76540172dba12a731974dac752be374ca1c35b3d0833ce7db60a07c8a3d",
+        "seedConfigSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+        "reset": {
+          "IsReplayPlaying": 1,
+          "ReplayFrameNum": 129269,
+          "ReplayPlaySpeed": 0,
+          "ReplaySessionTime": 59.880000305175784,
+          "SessionNum": 2,
+          "CamCarIdx": 37,
+          "CamGroupNumber": 9,
+          "CamCameraNumber": 1,
+          "FrameRate": 79.96365356445312
+        },
+        "launch": "2026-11-14T09:47:16.667Z",
+        "origin": {
+          "timestamp": "2026-11-14T09:47:45.870Z",
+          "runId": "native-wpr-1"
+        },
+        "omittedWidget": null,
+        "mainBundleSha256": "a95e8f7cf74c9c0f5a077d236cb957d58d2beb62dfb5b38333676f0df7fd72c9",
+        "nativeAddonSha256": "faf952989769fde561e3b4830b025325875178e72eed1a719f62176747764699",
+        "appPid": 22024,
+        "ready": "2026-11-14T09:47:45.871Z",
+        "foregroundStart": {
+          "timestamp": "2026-11-14T09:57:10.461Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise",
+          "wprReady": true,
+          "statusVisibility": "Non-elevated status reports no recording; elevated helper created success marker."
+        },
+        "playCommand": "2026-11-14T09:57:10.489Z",
+        "analysisWindowSeconds": [594.619, 654.619],
+        "end": {
+          "IsReplayPlaying": 1,
+          "ReplayFrameNum": 134790,
+          "ReplayPlaySpeed": 0,
+          "ReplaySessionTime": 151.9000030517579,
+          "SessionNum": 2,
+          "CamCarIdx": 37,
+          "CamGroupNumber": 9,
+          "CamCameraNumber": 1,
+          "FrameRate": 79.37132263183594
+        },
+        "completed": true,
+        "ended": "2026-11-14T09:58:42.818Z"
+      },
+      "analysisWindowUtc": {
+        "start": "2026-11-14T09:57:40.489Z",
+        "end": "2026-11-14T09:58:40.489Z"
+      },
+      "analysis": {
+        "tool": "Microsoft.Diagnostics.Tracing.TraceEvent 3.2.8 / .NET 9; local offline streaming",
+        "analyzerSourceSha256": "13c767969d906578f81eefe0b09a8cdd30a9f3480e2345ff479b0ab8827ed4d2",
+        "rawSummarySha256": "f1e8c74247231482cf9f5ea1ec85ee02ab7a641130ece55fd9a9f80e4256ad93",
+        "totalCpuSampleEvents": 292378,
+        "gpuCpuSampleEvents": 20114,
+        "gpuSamplesWithStacks": 20112,
+        "gpuModuleLeafSamples": [
+          {
+            "pid": 2860,
+            "module": "ntoskrnl.exe",
+            "samples": 9250
+          },
+          {
+            "pid": 2860,
+            "module": "electron.exe",
+            "samples": 5306
+          },
+          {
+            "pid": 2860,
+            "module": "nvwgf2umx.dll",
+            "samples": 2703
+          },
+          {
+            "pid": 2860,
+            "module": "ntdll.dll",
+            "samples": 1696
+          },
+          {
+            "pid": 2860,
+            "module": "d3d11.dll",
+            "samples": 222
+          },
+          {
+            "pid": 2860,
+            "module": "unknown!0x7ff9fe6bc055",
+            "samples": 148
+          },
+          {
+            "pid": 2860,
+            "module": "dxgkrnl.sys",
+            "samples": 104
+          },
+          {
+            "pid": 2860,
+            "module": "unknown!0x7ff9fe6bc04a",
+            "samples": 103
+          },
+          {
+            "pid": 2860,
+            "module": "KernelBase.dll",
+            "samples": 99
+          },
+          {
+            "pid": 2860,
+            "module": "dxgmms2.sys",
+            "samples": 81
+          },
+          {
+            "pid": 2860,
+            "module": "nvlddmkm.sys",
+            "samples": 69
+          },
+          {
+            "pid": 2860,
+            "module": "unknown!0x7ff9fe6bc040",
+            "samples": 56
+          }
+        ],
+        "gpuThreadSamples": [
+          {
+            "pid": 2860,
+            "tid": 35420,
+            "thread": null,
+            "samples": 13082
+          },
+          {
+            "pid": 2860,
+            "tid": 29600,
+            "thread": null,
+            "samples": 3742
+          },
+          {
+            "pid": 2860,
+            "tid": 32508,
+            "thread": null,
+            "samples": 1710
+          },
+          {
+            "pid": 2860,
+            "tid": 9892,
+            "thread": null,
+            "samples": 807
+          },
+          {
+            "pid": 2860,
+            "tid": 19204,
+            "thread": null,
+            "samples": 414
+          },
+          {
+            "pid": 2860,
+            "tid": 11948,
+            "thread": null,
+            "samples": 174
+          },
+          {
+            "pid": 2860,
+            "tid": 13772,
+            "thread": null,
+            "samples": 86
+          }
+        ],
+        "hottestThreadStackAttribution": {
+          "tid": 35420,
+          "samplesWithAnyStack": 13082,
+          "samplesWithDxgi": 7207,
+          "samplesWithNvidia": 7322
+        },
+        "hottestThreadStackCaveat": "Counts are distinct (thread ID, sampled QPC) CPU samples. Kernel and user stack parts are counted once per sample for each module category. Categories overlap; incomplete/absent user stack parts remain unattributed. No conversion of stack-part totals into CPU percentages.",
+        "representativeUserStack": {
+          "tid": 35420,
+          "samples": 4624,
+          "frames": [
+            "ntdll.dll+0x166a64",
+            "ntdll.dll+0xd3194",
+            "KernelBase.dll+0x8cca1",
+            "nvwgf2umx.dll+0x143886",
+            "nvwgf2umx.dll+0x5c691a",
+            "nvwgf2umx.dll+0x5c7371",
+            "nvwgf2umx.dll+0x23af5a",
+            "d3d11.dll+0x4ea8e",
+            "d3d11.dll+0x4dcfd",
+            "dxgi.dll+0x5c73",
+            "dxgi.dll+0x3f0a",
+            "dxgi.dll+0xbe7e",
+            "dxgi.dll+0x8ebe",
+            "dxgi.dll+0x8a90",
+            "electron.exe+0x9f90550",
+            "electron.exe+0x7a82e61",
+            "electron.exe+0x9fce9d4",
+            "electron.exe+0x9fce85c",
+            "electron.exe+0x9fce405",
+            "electron.exe+0x9429f73",
+            "electron.exe+0x9429d0e",
+            "electron.exe+0x942cc1d",
+            "electron.exe+0x9fc9317",
+            "electron.exe+0x9424bec",
+            "electron.exe+0x942497b",
+            "electron.exe+0x8894605",
+            "electron.exe+0x88957ff",
+            "electron.exe+0x941232",
+            "electron.exe+0x1f7fd38",
+            "electron.exe+0x145c01a",
+            "electron.exe+0xc487f3",
+            "electron.exe+0xd2d010",
+            "electron.exe+0x333577d",
+            "electron.exe+0x332c578",
+            "electron.exe+0x33289c7",
+            "electron.exe+0x3327da9",
+            "electron.exe+0x33275a7",
+            "electron.exe+0x3326fed",
+            "electron.exe+0x31ac829",
+            "kernel32.dll+0x2dda7",
+            "ntdll.dll+0xc9c5c"
+          ]
+        },
+        "exportChecks": [
+          {
+            "module": "ntdll.dll",
+            "target": "0x166a64",
+            "nearbyExports": [
+              {
+                "rva": "0x166970",
+                "name": "NtSetEventBoostPriority",
+                "distance": 244
+              },
+              {
+                "rva": "0x166970",
+                "name": "ZwSetEventBoostPriority",
+                "distance": 244
+              },
+              {
+                "rva": "0x166990",
+                "name": "NtReadFileScatter",
+                "distance": 212
+              },
+              {
+                "rva": "0x166990",
+                "name": "ZwReadFileScatter",
+                "distance": 212
+              },
+              {
+                "rva": "0x1669b0",
+                "name": "NtOpenThreadTokenEx",
+                "distance": 180
+              },
+              {
+                "rva": "0x1669b0",
+                "name": "ZwOpenThreadTokenEx",
+                "distance": 180
+              },
+              {
+                "rva": "0x1669d0",
+                "name": "NtOpenProcessTokenEx",
+                "distance": 148
+              },
+              {
+                "rva": "0x1669d0",
+                "name": "ZwOpenProcessTokenEx",
+                "distance": 148
+              },
+              {
+                "rva": "0x1669f0",
+                "name": "NtQueryPerformanceCounter",
+                "distance": 116
+              },
+              {
+                "rva": "0x1669f0",
+                "name": "ZwQueryPerformanceCounter",
+                "distance": 116
+              },
+              {
+                "rva": "0x166a10",
+                "name": "NtEnumerateKey",
+                "distance": 84
+              },
+              {
+                "rva": "0x166a10",
+                "name": "ZwEnumerateKey",
+                "distance": 84
+              },
+              {
+                "rva": "0x166a30",
+                "name": "NtOpenFile",
+                "distance": 52
+              },
+              {
+                "rva": "0x166a30",
+                "name": "ZwOpenFile",
+                "distance": 52
+              },
+              {
+                "rva": "0x166a50",
+                "name": "NtDelayExecution",
+                "distance": 20
+              },
+              {
+                "rva": "0x166a50",
+                "name": "ZwDelayExecution",
+                "distance": 20
+              }
+            ]
+          },
+          {
+            "module": "ntdll.dll",
+            "target": "0xd3194",
+            "nearbyExports": [
+              {
+                "rva": "0xd3160",
+                "name": "RtlDelayExecution",
+                "distance": 52
+              }
+            ]
+          },
+          {
+            "module": "ntdll.dll",
+            "target": "0x8b28d",
+            "nearbyExports": [
+              {
+                "rva": "0x8b220",
+                "name": "RtlQueryPerformanceCounter",
+                "distance": 109
+              }
+            ]
+          },
+          {
+            "module": "KernelBase.dll",
+            "target": "0x8cca1",
+            "nearbyExports": [
+              {
+                "rva": "0x8cc10",
+                "name": "SleepEx",
+                "distance": 145
+              }
+            ]
+          },
+          {
+            "module": "dxgi.dll",
+            "target": "0x8a90",
+            "nearbyExports": []
+          },
+          {
+            "module": "dxgi.dll",
+            "target": "0x5c73",
+            "nearbyExports": []
+          },
+          {
+            "module": "d3d11.dll",
+            "target": "0x4dcfd",
+            "nearbyExports": []
+          }
+        ],
+        "symbols": "Module+RVA from image rundown. Local PE exports support nearby Windows sleep/timing entries; full Microsoft/Electron/NVIDIA PDB function resolution was not performed."
+      },
+      "appMetrics": {
+        "averageCpuPercent": 5.015846882226052,
+        "averageRendererCpuPercent": 2.440371294921424,
+        "averageMainCpuPercent": 0.4753149864902735,
+        "averageGpuCpuPercent": 2.0995345341798,
+        "peakMemoryMB": 2731.58203125,
+        "averageRendererMemoryMB": 1751.1225961538462,
+        "averageMainMemoryMB": 349.8134014423077,
+        "averageGpuMemoryMB": 340.9065504807692,
+        "peakPrivateMemoryMB": 1236.09375,
+        "averageRendererPrivateMemoryMB": 819.7710336538462,
+        "averageMainPrivateMemoryMB": 124.58623798076923,
+        "averageGpuPrivateMemoryMB": 227.97626201923077,
+        "peakRendererMemoryMB": 1787.44921875,
+        "peakMainMemoryMB": 352.52734375,
+        "peakGpuMemoryMB": 352.69140625,
+        "rendererProcessCount": 4,
+        "memorySlopeMBPerMinute": 22.146460435030637,
+        "privateMemorySlopeMBPerMinute": 51.9956332820092
+      },
+      "rendererMetrics": {
+        "sampleCount": 39,
+        "frameTimeP99MeanMs": 45.432733916724096,
+        "worstFrameMs": 100.09999999997672,
+        "telemetryCallbackRateHz": 0,
+        "channelCallbackRateHz": 62.049845016419596,
+        "totalWakeupRateHz": 62.049845016419596,
+        "telemetryCallbackP99MeanMs": 0,
+        "telemetryCallbackP99WorstMs": 0,
+        "trackMapAnimationFrameRateHz": 26.46630239597095,
+        "trackMapAnimationFrameP99MeanMs": 0.20000000200992407,
+        "trackMapAnimationFrameP99WorstMs": 0.20000000298023224,
+        "inputTraceFrameRateHz": 14.153671954804114,
+        "inputTraceFrameP99MeanMs": 0.19978261154306973,
+        "inputTraceFrameP99WorstMs": 0.20000000298023224,
+        "radarFrameRateHz": 47.29172564029114,
+        "radarFrameP99MeanMs": 0.4564736537543224,
+        "radarFrameP99WorstMs": 0.6000000089406967,
+        "lapTraceFrameRateHz": 0,
+        "lapTraceFrameP99MeanMs": 0,
+        "lapTraceFrameP99WorstMs": 0,
+        "lapTraceBrakeCueRateHz": 0,
+        "lapTraceBrakeCueP99MeanMs": 0,
+        "lapTraceBrakeCueP99WorstMs": 0,
+        "framesOver25MsPercent": 10.36638138282527,
+        "framesOver50MsPercent": 1.0385614001346284
+      },
+      "evidence": {
+        "runOriginAvailable": true,
+        "privateMemoryAvailable": true,
+        "privateMemorySampleCount": 12,
+        "privateMemorySpanSeconds": 55.077,
+        "privateMemoryMaxGapSeconds": 5.016,
+        "privateMemorySamplingAdequate": true,
+        "scenarioMetadataConsistent": true,
+        "inputCoverageAvailable": true,
+        "inputCoverageComplete": false,
+        "durationSufficient": false,
+        "conclusive": false,
+        "inconclusiveReasons": [
+          "analysis duration is shorter than five minutes",
+          "one or more visibility phases violated workload expectations"
+        ]
+      },
+      "allPlaybackWorstReportedRendererIntervalMs": 100.19999999995343,
+      "foreground": {
+        "start": {
+          "timestamp": "2026-11-14T09:57:10.461Z",
+          "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise",
+          "wprReady": true,
+          "statusVisibility": "Non-elevated status reports no recording; elevated helper created success marker."
+        },
+        "checks": [
+          {
+            "timestamp": "2026-11-14T09:57:46.591Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T09:58:11.655Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T09:58:36.716Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ]
+      },
+      "replay": {
+        "samples": 19,
+        "playingSamples": 18,
+        "sceneConsistent": true,
+        "end": {
+          "IsReplayPlaying": 1,
+          "ReplayFrameNum": 134790,
+          "ReplayPlaySpeed": 0,
+          "ReplaySessionTime": 151.9000030517579,
+          "SessionNum": 2,
+          "CamCarIdx": 37,
+          "CamGroupNumber": 9,
+          "CamCameraNumber": 1,
+          "FrameRate": 79.37132263183594
+        }
+      },
+      "gameFrames": {
+        "offlinePresentMonVersion": "2.6.0",
+        "attempt": "--etl_file <trace> --process_id 19272 --date_time --v2_metrics --no_console_stats",
+        "exitCode": 0,
+        "csvProduced": false,
+        "conclusion": "This ETL produced no PresentMon frame CSV; no actual game-frame stutter or FPS conclusion is drawn from it."
+      },
+      "restoration": {
+        "snapshot": {
+          "IsReplayPlaying": 1,
+          "ReplayFrameNum": 420883,
+          "ReplayPlaySpeed": 1,
+          "ReplaySessionTime": 4920.110058593749,
+          "SessionNum": 2,
+          "CamCarIdx": 37,
+          "CamGroupNumber": 9,
+          "CamCameraNumber": 1,
+          "FrameRate": 81.11405944824219
+        },
+        "userConfigSha256": "e23e6ffad33d1ab53713b81dc1cff15bfe3ed86a0e5cd7e9c6954b5b090885ff",
+        "graphicsSha256": "1f8c44edd8f43466787204e86f9b7bc8198391d03ba1da14bca5652b15d712ce"
+      },
+      "limitations": [
+        "One instrumented current-source diagnostic; no matched old-source native trace.",
+        "Large synchronized stall did not recur during this short playback.",
+        "Long setup idle and CPU/GPU recording instrumentation mean its app metrics are not an optimization result versus earlier untraced runs.",
+        "Short-run duration and widget visibility coverage remain inconclusive.",
+        "CPU samples support a native presentation/scheduling cost lead, not a particular driver bug or proof the historical stall has the same cause."
+      ],
+      "conclusion": "Native samples independently support the DXGI/D3D11/NVIDIA presentation and Windows scheduling path as a persistent-cost lead. No source CPU regression or stutter fix is established, and no widget code change is retained."
+    },
+    "restorationBeforeNativePreparation": {
+      "snapshot": {
+        "IsReplayPlaying": 1,
+        "ReplayFrameNum": 420850,
+        "ReplayPlaySpeed": 1,
+        "ReplaySessionTime": 4919.563118489583,
+        "SessionNum": 2,
+        "CamCarIdx": 37,
+        "CamGroupNumber": 9,
+        "CamCameraNumber": 1,
+        "FrameRate": 81.29048156738281
+      },
+      "userConfigSha256": "e23e6ffad33d1ab53713b81dc1cff15bfe3ed86a0e5cd7e9c6954b5b090885ff",
+      "graphicsSha256": "1f8c44edd8f43466787204e86f9b7bc8198391d03ba1da14bca5652b15d712ce"
+    },
+    "conclusion": "Native samples independently support the DXGI/D3D11/NVIDIA presentation and Windows scheduling path as a persistent-cost lead. No source CPU regression or stutter fix is established, and no widget code change is retained."
+  },
+  "canvasContextFollowUp": {
+    "completedUtc": "2026-11-14T11:20:18.045Z",
+    "localDate": "2026-11-15",
+    "method": "Same frozen 20-widget profile and replay/camera, iRacing foreground, PresentMon 2.6.0 GUI/service. Loopback Electron inspector used consistently, reading context attributes at playback +15 seconds before measurement. No native trace or other analysis during capture.",
+    "acceptance": "Lower CPU without reduced Radar paint cadence, degraded overlay pacing or a game-frame regression.",
+    "runs": [
+      {
+        "runId": "canvas-path-stock-1",
+        "condition": "stock",
+        "playbackSeconds": 92,
+        "analysisPlaybackSeconds": [30, 90],
+        "sourceRevision": "711552a1598a0d3258eb61a5d94e34a37f85547d",
+        "source": {
+          "file": "src/frontend/components/Radar/components/RadarDisplay.tsx",
+          "originalSha256": "7632c5ec1850668f8bc896bbc672422580f95f0783c4e260f196aa7c529d30e9",
+          "variantSha256": "7632c5ec1850668f8bc896bbc672422580f95f0783c4e260f196aa7c529d30e9",
+          "condition": "stock"
+        },
+        "sourceRestored": {
+          "file": "src/frontend/components/Radar/components/RadarDisplay.tsx",
+          "sha256": "7632c5ec1850668f8bc896bbc672422580f95f0783c4e260f196aa7c529d30e9",
+          "matchesOriginal": true
+        },
+        "electron": "45.3.2",
+        "mainBundleSha256": "a95e8f7cf74c9c0f5a077d236cb957d58d2beb62dfb5b38333676f0df7fd72c9",
+        "nativeAddonSha256": "6c644cf2bd764c4cad0512aeb92049b03b3ed1b713610cf7759514a731afe652",
+        "controllerSha256": "39ffb330906068de0ff35b8f58416b57148ff6a50be7edce86ad36203b195771",
+        "seedConfigSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+        "sourceLogSha256": "1585563d7c19bc497aa3016b05b133eb5cefd6d74b68920ece0bcd5179cfea73",
+        "captureName": "pmcap-iRacingSim64DX11.exe-261114-234228.csv",
+        "captureSha256": "18fe8ca4184c6fb4b81a9b4778541a59ff380a384fc9fdcd40fa0fb7691391ca",
+        "captureBytes": 3192717,
+        "canvasState": [
+          {
+            "id": 4,
+            "title": "irDashies",
+            "canvas": null
+          },
+          {
+            "id": 3,
+            "title": "irDashies - 3286545436)",
+            "canvas": null
+          },
+          {
+            "id": 2,
+            "title": "irDashies - 4096387830 (Primary))",
+            "canvas": {
+              "width": 300,
+              "height": 300,
+              "attributes": {
+                "alpha": true,
+                "colorSpace": "srgb",
+                "colorType": "unorm8",
+                "desynchronized": false,
+                "toneMapping": {
+                  "mode": "standard"
+                },
+                "willReadFrequently": false
+              }
+            }
+          },
+          {
+            "id": 1,
+            "title": "irDashies - 697929445)",
+            "canvas": null
+          }
+        ],
+        "foregroundStart": {
+          "captureHotkeyBefore": "2026-11-14T10:42:28.026Z",
+          "captureHotkeyAfter": "2026-11-14T10:42:28.064Z",
+          "foreground": "0 window iRacing.com Simulator Secondary Actions: Raise",
+          "captureFilesBefore": [
+            "pmcap-iRacingSim64DX11.exe-261114-175247-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175247.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231449-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231449.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231843-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231843.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232223-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232223.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232546-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232546.csv"
+          ]
+        },
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T10:43:01.075Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:43:26.134Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:43:51.186Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ],
+        "replay": {
+          "verified": true,
+          "samples": 12,
+          "firstFrame": 131072,
+          "lastFrame": 134376
+        },
+        "app": {
+          "averageCpuPercent": 6.478085973199033,
+          "averageRendererCpuPercent": 2.2344119070397963,
+          "averageMainCpuPercent": 0.4010348198533553,
+          "averageGpuCpuPercent": 3.841482672090849,
+          "peakMemoryMB": 2953.8671875,
+          "averageRendererMemoryMB": 1849.946514423077,
+          "averageMainMemoryMB": 365.22475961538464,
+          "averageGpuMemoryMB": 433.61658653846155,
+          "peakPrivateMemoryMB": 1446.90625,
+          "averageRendererPrivateMemoryMB": 923.9930889423077,
+          "averageMainPrivateMemoryMB": 142.20733173076923,
+          "averageGpuPrivateMemoryMB": 321.60546875,
+          "peakRendererMemoryMB": 1895.015625,
+          "peakMainMemoryMB": 367.046875,
+          "peakGpuMemoryMB": 439.85546875,
+          "rendererProcessCount": 4,
+          "memorySlopeMBPerMinute": -66.67911989809024,
+          "privateMemorySlopeMBPerMinute": -34.728097719240004
+        },
+        "overlay": {
+          "sampleCount": 38,
+          "frameTimeP99MeanMs": 70.44241695475795,
+          "worstFrameMs": 150.10000000000582,
+          "telemetryCallbackRateHz": 0,
+          "channelCallbackRateHz": 63.21552330306077,
+          "totalWakeupRateHz": 63.21552330306077,
+          "telemetryCallbackP99MeanMs": 0,
+          "telemetryCallbackP99WorstMs": 0,
+          "trackMapAnimationFrameRateHz": 23.88329352784649,
+          "trackMapAnimationFrameP99MeanMs": 0.18897418367929253,
+          "trackMapAnimationFrameP99WorstMs": 0.20000000298023224,
+          "inputTraceFrameRateHz": 10.969095764975703,
+          "inputTraceFrameP99MeanMs": 0.20953716906140263,
+          "inputTraceFrameP99WorstMs": 0.29999999701976776,
+          "radarFrameRateHz": 26.707363601679976,
+          "radarFrameP99MeanMs": 0.4146313414938988,
+          "radarFrameP99WorstMs": 0.5999999940395355,
+          "lapTraceFrameRateHz": 0,
+          "lapTraceFrameP99MeanMs": 0,
+          "lapTraceFrameP99WorstMs": 0,
+          "lapTraceBrakeCueRateHz": 0,
+          "lapTraceBrakeCueP99MeanMs": 0,
+          "lapTraceBrakeCueP99WorstMs": 0,
+          "framesOver25MsPercent": 42.28167743874944,
+          "framesOver50MsPercent": 12.580790620772584
+        },
+        "game": {
+          "schemaVersion": 1,
+          "analysisWindowSeconds": [30.477, 90.477],
+          "durationSeconds": 60,
+          "processName": "iRacingSim64DX11.exe",
+          "primarySwapChain": "19272:0x2BFFE570",
+          "swapChains": [
+            {
+              "key": "19272:0x2BFFE570",
+              "frameCount": 7880
+            }
+          ],
+          "frameRows": 4534,
+          "displayTimingUnavailableRows": 937,
+          "present": {
+            "sampleCount": 4534,
+            "meanFps": 75.56378038213529,
+            "onePercentLowFps": 60.87161805229878,
+            "pointOnePercentLowFps": 58.041943430000245,
+            "meanMs": 13.233853506837237,
+            "p99Ms": 15.8779,
+            "p999Ms": 16.9648,
+            "maximumMs": 17.617,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 50,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "display": {
+            "sampleCount": 3597,
+            "meanFps": 59.94955227676032,
+            "onePercentLowFps": 59.64379730188028,
+            "pointOnePercentLowFps": 59.45356230881964,
+            "meanMs": 16.680691715318346,
+            "p99Ms": 16.7514,
+            "p999Ms": 16.7759,
+            "maximumMs": 16.9466,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 50,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "presentModes": ["Composed: Flip"],
+          "frameTypes": ["Application"],
+          "captureSpanSeconds": [0, 103.2],
+          "evidence": {
+            "fullAnalysisWindowAvailable": true,
+            "longEnough": false
+          }
+        },
+        "gpuMetrics": {
+          "GPUUtilization": {
+            "samples": 4534,
+            "mean": 99,
+            "max": 99
+          },
+          "GPUBusy": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUFrequency": {
+            "samples": 4534,
+            "mean": 1765.9737538597265,
+            "max": 1800
+          },
+          "GPUTemperature": {
+            "samples": 4534,
+            "mean": 82.9949272165858,
+            "max": 83
+          },
+          "GPUPower": {
+            "samples": 4534,
+            "mean": 189.59543008381175,
+            "max": 198.888
+          },
+          "GPUPowerLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUTemperatureLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          }
+        },
+        "workloadEvidence": {
+          "runOriginAvailable": true,
+          "privateMemoryAvailable": true,
+          "privateMemorySampleCount": 12,
+          "privateMemorySpanSeconds": 55.066,
+          "privateMemoryMaxGapSeconds": 5.013,
+          "privateMemorySamplingAdequate": true,
+          "scenarioMetadataConsistent": true,
+          "inputCoverageAvailable": true,
+          "inputCoverageComplete": false,
+          "durationSufficient": false,
+          "conclusive": false,
+          "inconclusiveReasons": [
+            "analysis duration is shorter than five minutes",
+            "one or more visibility phases violated workload expectations"
+          ]
+        },
+        "originalReportedRadarHz": 13.353774248907584,
+        "ownerIntervalAudit": {
+          "id": "canvas-path-stock-1",
+          "windowSeconds": [30, 90],
+          "ownerPids": [37652],
+          "groups": [
+            {
+              "pid": 3624,
+              "samples": 12,
+              "radarSamples": 12,
+              "radarDraws": 0,
+              "seconds": 60.00679999999702,
+              "radarHz": 0,
+              "rafHz": 28.530099922010255,
+              "rafP99MeanMs": 77.48913551402138,
+              "worstRafMs": 116.79999999999563
+            },
+            {
+              "pid": 37652,
+              "samples": 12,
+              "radarSamples": 12,
+              "radarDraws": 1589,
+              "seconds": 60.00679999999703,
+              "radarHz": 26.480332229015357,
+              "rafHz": 29.646640047462757,
+              "rafP99MeanMs": 77.54463181562669,
+              "worstRafMs": 133.60000000000582
+            },
+            {
+              "pid": 2324,
+              "samples": 12,
+              "radarSamples": 0,
+              "radarDraws": 0,
+              "seconds": 60.000099999994035,
+              "radarHz": 0,
+              "rafHz": 47.383254361247445,
+              "rafP99MeanMs": 62.163524446007436,
+              "worstRafMs": 150.10000000000582
+            }
+          ],
+          "ownerSummary": {
+            "draws": 1589,
+            "seconds": 60.00679999999703,
+            "hz": 26.480332229015357
+          }
+        }
+      },
+      {
+        "runId": "canvas-path-desync-1",
+        "condition": "desync",
+        "playbackSeconds": 92,
+        "analysisPlaybackSeconds": [30, 90],
+        "sourceRevision": "711552a1598a0d3258eb61a5d94e34a37f85547d",
+        "source": {
+          "file": "src/frontend/components/Radar/components/RadarDisplay.tsx",
+          "originalSha256": "7632c5ec1850668f8bc896bbc672422580f95f0783c4e260f196aa7c529d30e9",
+          "variantSha256": "d9cd5677848086b8e9ec0b2d599544a545fc5bc2a069f2a12541e80c3257763a",
+          "condition": "desync"
+        },
+        "sourceRestored": {
+          "file": "src/frontend/components/Radar/components/RadarDisplay.tsx",
+          "sha256": "7632c5ec1850668f8bc896bbc672422580f95f0783c4e260f196aa7c529d30e9",
+          "matchesOriginal": true
+        },
+        "electron": "45.3.2",
+        "mainBundleSha256": "a95e8f7cf74c9c0f5a077d236cb957d58d2beb62dfb5b38333676f0df7fd72c9",
+        "nativeAddonSha256": "ade1066b1add9fdd0438cad1d91fb314790e0a51cd84c1f5b6cb9ed93028b64e",
+        "controllerSha256": "39ffb330906068de0ff35b8f58416b57148ff6a50be7edce86ad36203b195771",
+        "seedConfigSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+        "sourceLogSha256": "a889b09d64c80aa4eebec79ebfdbdab7478deb2ac193d30b6bedd79fdbc99783",
+        "captureName": "pmcap-iRacingSim64DX11.exe-261114-234507.csv",
+        "captureSha256": "095bb413edb56c8bb3f26ffd6110d72dc53e0718b85e09cd0a440d5d3585e173",
+        "captureBytes": 3220528,
+        "canvasState": [
+          {
+            "id": 4,
+            "title": "irDashies",
+            "canvas": null
+          },
+          {
+            "id": 3,
+            "title": "irDashies - 3286545436)",
+            "canvas": null
+          },
+          {
+            "id": 2,
+            "title": "irDashies - 4096387830 (Primary))",
+            "canvas": {
+              "width": 300,
+              "height": 300,
+              "attributes": {
+                "alpha": true,
+                "colorSpace": "srgb",
+                "colorType": "unorm8",
+                "desynchronized": true,
+                "toneMapping": {
+                  "mode": "standard"
+                },
+                "willReadFrequently": false
+              }
+            }
+          },
+          {
+            "id": 1,
+            "title": "irDashies - 697929445)",
+            "canvas": null
+          }
+        ],
+        "foregroundStart": {
+          "captureHotkeyBefore": "2026-11-14T10:45:07.650Z",
+          "captureHotkeyAfter": "2026-11-14T10:45:07.689Z",
+          "foreground": "0 window iRacing.com Simulator Secondary Actions: Raise",
+          "captureFilesBefore": [
+            "pmcap-iRacingSim64DX11.exe-261114-175247-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175247.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231449-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231449.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231843-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231843.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232223-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232223.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232546-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232546.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234228-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234228.csv"
+          ]
+        },
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T10:45:33.625Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:46:10.160Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:46:35.210Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ],
+        "replay": {
+          "verified": true,
+          "samples": 12,
+          "firstFrame": 131071,
+          "lastFrame": 134376
+        },
+        "app": {
+          "averageCpuPercent": 8.360368394465585,
+          "averageRendererCpuPercent": 2.01966199888725,
+          "averageMainCpuPercent": 0.39219413995950747,
+          "averageGpuCpuPercent": 5.947321739248417,
+          "peakMemoryMB": 2771.015625,
+          "averageRendererMemoryMB": 1695.4625651041667,
+          "averageMainMemoryMB": 365.9449869791667,
+          "averageGpuMemoryMB": 424.5032552083333,
+          "peakPrivateMemoryMB": 1281.91796875,
+          "averageRendererPrivateMemoryMB": 768.6901041666666,
+          "averageMainPrivateMemoryMB": 143.50813802083334,
+          "averageGpuPrivateMemoryMB": 316.2210286458333,
+          "peakRendererMemoryMB": 1721.78125,
+          "peakMainMemoryMB": 368.37890625,
+          "peakGpuMemoryMB": 432.13671875,
+          "rendererProcessCount": 4,
+          "memorySlopeMBPerMinute": 6.252546805086388,
+          "privateMemorySlopeMBPerMinute": 43.4793347942686
+        },
+        "overlay": {
+          "sampleCount": 36,
+          "frameTimeP99MeanMs": 92.53142458100622,
+          "worstFrameMs": 183.5,
+          "telemetryCallbackRateHz": 0,
+          "channelCallbackRateHz": 61.278567222554436,
+          "totalWakeupRateHz": 61.278567222554436,
+          "telemetryCallbackP99MeanMs": 0,
+          "telemetryCallbackP99WorstMs": 0,
+          "trackMapAnimationFrameRateHz": 23.881104430255547,
+          "trackMapAnimationFrameP99MeanMs": 0.20000000190917877,
+          "trackMapAnimationFrameP99WorstMs": 0.20000000298023224,
+          "inputTraceFrameRateHz": 8.815197467088819,
+          "inputTraceFrameP99MeanMs": 0.2013232535304104,
+          "inputTraceFrameP99WorstMs": 0.29999999701976776,
+          "radarFrameRateHz": 22.712881186468923,
+          "radarFrameP99MeanMs": 0.39823918059872776,
+          "radarFrameP99WorstMs": 0.5,
+          "lapTraceFrameRateHz": 0,
+          "lapTraceFrameP99MeanMs": 0,
+          "lapTraceFrameP99WorstMs": 0,
+          "lapTraceBrakeCueRateHz": 0,
+          "lapTraceBrakeCueP99MeanMs": 0,
+          "lapTraceBrakeCueP99WorstMs": 0,
+          "framesOver25MsPercent": 46.05446927374302,
+          "framesOver50MsPercent": 17.02164804469274
+        },
+        "game": {
+          "schemaVersion": 1,
+          "analysisWindowSeconds": [30.367, 90.367],
+          "durationSeconds": 60,
+          "processName": "iRacingSim64DX11.exe",
+          "primarySwapChain": "19272:0x2BFFE570",
+          "swapChains": [
+            {
+              "key": "19272:0x2BFFE570",
+              "frameCount": 7949
+            }
+          ],
+          "frameRows": 4532,
+          "displayTimingUnavailableRows": 936,
+          "present": {
+            "sampleCount": 4532,
+            "meanFps": 75.54188328958713,
+            "onePercentLowFps": 61.505721569749014,
+            "pointOnePercentLowFps": 58.13203179589612,
+            "meanMs": 13.237689563106805,
+            "p99Ms": 15.8211,
+            "p999Ms": 16.6969,
+            "maximumMs": 18.4858,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 50,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "display": {
+            "sampleCount": 3596,
+            "meanFps": 59.94949821594811,
+            "onePercentLowFps": 59.654817341920534,
+            "pointOnePercentLowFps": 59.56538119610264,
+            "meanMs": 16.680706757508343,
+            "p99Ms": 16.7537,
+            "p999Ms": 16.7813,
+            "maximumMs": 16.797,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 50,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "presentModes": ["Composed: Flip"],
+          "frameTypes": ["Application"],
+          "captureSpanSeconds": [0, 104],
+          "evidence": {
+            "fullAnalysisWindowAvailable": true,
+            "longEnough": false
+          }
+        },
+        "gpuMetrics": {
+          "GPUUtilization": {
+            "samples": 4532,
+            "mean": 99,
+            "max": 99
+          },
+          "GPUBusy": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUFrequency": {
+            "samples": 4532,
+            "mean": 1766.3790820829656,
+            "max": 1815
+          },
+          "GPUTemperature": {
+            "samples": 4532,
+            "mean": 82.9931597528685,
+            "max": 83
+          },
+          "GPUPower": {
+            "samples": 4532,
+            "mean": 189.9410152250662,
+            "max": 198.499
+          },
+          "GPUPowerLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUTemperatureLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          }
+        },
+        "workloadEvidence": {
+          "runOriginAvailable": true,
+          "privateMemoryAvailable": true,
+          "privateMemorySampleCount": 12,
+          "privateMemorySpanSeconds": 55.097,
+          "privateMemoryMaxGapSeconds": 5.015,
+          "privateMemorySamplingAdequate": true,
+          "scenarioMetadataConsistent": true,
+          "inputCoverageAvailable": true,
+          "inputCoverageComplete": false,
+          "durationSufficient": false,
+          "conclusive": false,
+          "inconclusiveReasons": [
+            "analysis duration is shorter than five minutes",
+            "one or more visibility phases violated workload expectations"
+          ]
+        },
+        "originalReportedRadarHz": 22.712881186468923,
+        "ownerIntervalAudit": {
+          "id": "canvas-path-desync-1",
+          "windowSeconds": [30, 90],
+          "ownerPids": [39648],
+          "groups": [
+            {
+              "pid": 39648,
+              "samples": 12,
+              "radarSamples": 12,
+              "radarDraws": 1363,
+              "seconds": 60.010000000000005,
+              "radarHz": 22.71288118646892,
+              "rafHz": 28.645225795700714,
+              "rafP99MeanMs": 101.76963350785411,
+              "worstRafMs": 133.5
+            },
+            {
+              "pid": 35940,
+              "samples": 12,
+              "radarSamples": 0,
+              "radarDraws": 0,
+              "seconds": 59.99839999999105,
+              "radarHz": 0,
+              "rafHz": 25.250673351293134,
+              "rafP99MeanMs": 94.33029702970457,
+              "worstRafMs": 133.5
+            },
+            {
+              "pid": 28576,
+              "samples": 12,
+              "radarSamples": 0,
+              "radarDraws": 0,
+              "seconds": 60.00559999999404,
+              "radarHz": 0,
+              "rafHz": 41.5627874731733,
+              "rafP99MeanMs": 85.07121090617476,
+              "worstRafMs": 183.5
+            }
+          ],
+          "ownerSummary": {
+            "draws": 1363,
+            "seconds": 60.010000000000005,
+            "hz": 22.71288118646892
+          }
+        }
+      },
+      {
+        "runId": "canvas-path-cpu-1",
+        "condition": "cpu",
+        "playbackSeconds": 92,
+        "analysisPlaybackSeconds": [30, 90],
+        "sourceRevision": "711552a1598a0d3258eb61a5d94e34a37f85547d",
+        "source": {
+          "file": "src/frontend/components/Radar/components/RadarDisplay.tsx",
+          "originalSha256": "7632c5ec1850668f8bc896bbc672422580f95f0783c4e260f196aa7c529d30e9",
+          "variantSha256": "6dc4b76d14bb351f4829cbf668ebf8f02e23b0440a1b79a5ec19fa0bd4a2dae3",
+          "condition": "cpu"
+        },
+        "sourceRestored": {
+          "file": "src/frontend/components/Radar/components/RadarDisplay.tsx",
+          "sha256": "7632c5ec1850668f8bc896bbc672422580f95f0783c4e260f196aa7c529d30e9",
+          "matchesOriginal": true
+        },
+        "electron": "45.3.2",
+        "mainBundleSha256": "a95e8f7cf74c9c0f5a077d236cb957d58d2beb62dfb5b38333676f0df7fd72c9",
+        "nativeAddonSha256": "0f499555b3749ebab73ec99a582565ddb5319f969d273d734ed941fae14bab7e",
+        "controllerSha256": "75e8b06fcaa921758acec9ccff8e0bbce7751277d77e61c60ce2106101e0e68d",
+        "seedConfigSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+        "sourceLogSha256": "422efb8378127ded013e33fd37898f497b99050e4152b71b0a407beca3dfdf8d",
+        "captureName": "pmcap-iRacingSim64DX11.exe-261114-234901.csv",
+        "captureSha256": "9491996594bddb56d8613e23bfe62699b53d318d1916cfa7916b47baae6fd588",
+        "captureBytes": 3686322,
+        "canvasState": [
+          {
+            "id": 4,
+            "title": "irDashies",
+            "canvas": null
+          },
+          {
+            "id": 3,
+            "title": "irDashies - 3286545436)",
+            "canvas": null
+          },
+          {
+            "id": 2,
+            "title": "irDashies - 4096387830 (Primary))",
+            "canvas": {
+              "width": 300,
+              "height": 300,
+              "attributes": {
+                "alpha": true,
+                "colorSpace": "srgb",
+                "colorType": "unorm8",
+                "desynchronized": false,
+                "toneMapping": {
+                  "mode": "standard"
+                },
+                "willReadFrequently": true
+              }
+            }
+          },
+          {
+            "id": 1,
+            "title": "irDashies - 697929445)",
+            "canvas": null
+          }
+        ],
+        "foregroundStart": {
+          "captureHotkeyBefore": "2026-11-14T10:49:01.150Z",
+          "captureHotkeyAfter": "2026-11-14T10:49:01.192Z",
+          "foreground": "0 window iRacing.com Simulator Secondary Actions: Raise",
+          "captureFilesBefore": [
+            "pmcap-iRacingSim64DX11.exe-261114-175247-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175247.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231449-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231449.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231843-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231843.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232223-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232223.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232546-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232546.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234228-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234228.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234507-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234507.csv"
+          ]
+        },
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T10:49:33.216Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:50:16.788Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:50:41.848Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ],
+        "replay": {
+          "verified": true,
+          "samples": 12,
+          "firstFrame": 131070,
+          "lastFrame": 134374
+        },
+        "app": {
+          "averageCpuPercent": 5.022762242015676,
+          "averageRendererCpuPercent": 2.3927607370318316,
+          "averageMainCpuPercent": 0.40097451628946296,
+          "averageGpuCpuPercent": 2.228024162342255,
+          "peakMemoryMB": 2909.078125,
+          "averageRendererMemoryMB": 1809.7102864583333,
+          "averageMainMemoryMB": 365.2939453125,
+          "averageGpuMemoryMB": 432.9296875,
+          "peakPrivateMemoryMB": 1400.5234375,
+          "averageRendererPrivateMemoryMB": 876.30859375,
+          "averageMainPrivateMemoryMB": 142.890625,
+          "averageGpuPrivateMemoryMB": 319.3548177083333,
+          "peakRendererMemoryMB": 1849.21875,
+          "peakMainMemoryMB": 367.25390625,
+          "peakGpuMemoryMB": 435.0859375,
+          "rendererProcessCount": 4,
+          "memorySlopeMBPerMinute": 43.85417867690445,
+          "privateMemorySlopeMBPerMinute": 55.76431089765042
+        },
+        "overlay": {
+          "sampleCount": 36,
+          "frameTimeP99MeanMs": 73.23108451757821,
+          "worstFrameMs": 200.1999999999971,
+          "telemetryCallbackRateHz": 0,
+          "channelCallbackRateHz": 61.59987467822106,
+          "totalWakeupRateHz": 61.59987467822106,
+          "telemetryCallbackP99MeanMs": 0,
+          "telemetryCallbackP99WorstMs": 0,
+          "trackMapAnimationFrameRateHz": 24.23191980467806,
+          "trackMapAnimationFrameP99MeanMs": 0.19270976849074542,
+          "trackMapAnimationFrameP99WorstMs": 0.20000000298023224,
+          "inputTraceFrameRateHz": 9.982251922708373,
+          "inputTraceFrameP99MeanMs": 0.23839732949841203,
+          "inputTraceFrameP99WorstMs": 0.3999999910593033,
+          "radarFrameRateHz": 28.53024255705632,
+          "radarFrameP99MeanMs": 0.4148364557632219,
+          "radarFrameP99WorstMs": 0.9000000059604645,
+          "lapTraceFrameRateHz": 0,
+          "lapTraceFrameP99MeanMs": 0,
+          "lapTraceFrameP99WorstMs": 0,
+          "lapTraceBrakeCueRateHz": 0,
+          "lapTraceBrakeCueP99MeanMs": 0,
+          "lapTraceBrakeCueP99WorstMs": 0,
+          "framesOver25MsPercent": 39.19222139117427,
+          "framesOver50MsPercent": 9.24457741211668
+        },
+        "game": {
+          "schemaVersion": 1,
+          "analysisWindowSeconds": [30.413, 90.413],
+          "durationSeconds": 60,
+          "processName": "iRacingSim64DX11.exe",
+          "primarySwapChain": "19272:0x2BFFE570",
+          "swapChains": [
+            {
+              "key": "19272:0x2BFFE570",
+              "frameCount": 9104
+            }
+          ],
+          "frameRows": 4508,
+          "displayTimingUnavailableRows": 912,
+          "present": {
+            "sampleCount": 4508,
+            "meanFps": 75.14487320627019,
+            "onePercentLowFps": 58.913096906537305,
+            "pointOnePercentLowFps": 54.05376187155746,
+            "meanMs": 13.30762775066548,
+            "p99Ms": 16.2587,
+            "p999Ms": 17.9763,
+            "maximumMs": 19.1145,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 50,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "display": {
+            "sampleCount": 3596,
+            "meanFps": 59.949514106854096,
+            "onePercentLowFps": 59.63689085057447,
+            "pointOnePercentLowFps": 59.51256235800675,
+            "meanMs": 16.68070233592884,
+            "p99Ms": 16.7546,
+            "p999Ms": 16.7884,
+            "maximumMs": 16.8214,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 50,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "presentModes": ["Composed: Flip"],
+          "frameTypes": ["Application"],
+          "captureSpanSeconds": [0, 118],
+          "evidence": {
+            "fullAnalysisWindowAvailable": true,
+            "longEnough": false
+          }
+        },
+        "gpuMetrics": {
+          "GPUUtilization": {
+            "samples": 4508,
+            "mean": 98.96694764862467,
+            "max": 99
+          },
+          "GPUBusy": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUFrequency": {
+            "samples": 4508,
+            "mean": 1765.9571872227152,
+            "max": 1815
+          },
+          "GPUTemperature": {
+            "samples": 4508,
+            "mean": 82.95785270629992,
+            "max": 83
+          },
+          "GPUPower": {
+            "samples": 4508,
+            "mean": 189.3579350044365,
+            "max": 199.079
+          },
+          "GPUPowerLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUTemperatureLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          }
+        },
+        "workloadEvidence": {
+          "runOriginAvailable": true,
+          "privateMemoryAvailable": true,
+          "privateMemorySampleCount": 12,
+          "privateMemorySpanSeconds": 55.057,
+          "privateMemoryMaxGapSeconds": 5.011,
+          "privateMemorySamplingAdequate": true,
+          "scenarioMetadataConsistent": true,
+          "inputCoverageAvailable": true,
+          "inputCoverageComplete": false,
+          "durationSufficient": false,
+          "conclusive": false,
+          "inconclusiveReasons": [
+            "analysis duration is shorter than five minutes",
+            "one or more visibility phases violated workload expectations"
+          ]
+        },
+        "originalReportedRadarHz": 14.265109392223618,
+        "ownerIntervalAudit": {
+          "id": "canvas-path-cpu-1",
+          "windowSeconds": [30, 90],
+          "ownerPids": [34160],
+          "groups": [
+            {
+              "pid": 35516,
+              "samples": 12,
+              "radarSamples": 12,
+              "radarDraws": 0,
+              "seconds": 60.006600000008945,
+              "radarHz": 0,
+              "rafHz": 30.14668386477038,
+              "rafP99MeanMs": 84.57213930348365,
+              "worstRafMs": 166.8000000000029
+            },
+            {
+              "pid": 34160,
+              "samples": 12,
+              "radarSamples": 12,
+              "radarDraws": 1712,
+              "seconds": 60.0065,
+              "radarHz": 28.53024255705632,
+              "rafHz": 31.963203986234824,
+              "rafP99MeanMs": 83.53550573514147,
+              "worstRafMs": 166.79999999998836
+            },
+            {
+              "pid": 28216,
+              "samples": 12,
+              "radarSamples": 0,
+              "radarDraws": 0,
+              "seconds": 60.0035,
+              "radarHz": 0,
+              "rafHz": 49.29712433441382,
+              "rafP99MeanMs": 59.61382691007673,
+              "worstRafMs": 200.1999999999971
+            }
+          ],
+          "ownerSummary": {
+            "draws": 1712,
+            "seconds": 60.0065,
+            "hz": 28.53024255705632
+          }
+        }
+      },
+      {
+        "runId": "canvas-path-cpu-2",
+        "condition": "cpu",
+        "playbackSeconds": 92,
+        "analysisPlaybackSeconds": [30, 90],
+        "sourceRevision": "711552a1598a0d3258eb61a5d94e34a37f85547d",
+        "source": {
+          "file": "src/frontend/components/Radar/components/RadarDisplay.tsx",
+          "originalSha256": "7632c5ec1850668f8bc896bbc672422580f95f0783c4e260f196aa7c529d30e9",
+          "variantSha256": "6dc4b76d14bb351f4829cbf668ebf8f02e23b0440a1b79a5ec19fa0bd4a2dae3",
+          "condition": "cpu"
+        },
+        "sourceRestored": {
+          "file": "src/frontend/components/Radar/components/RadarDisplay.tsx",
+          "sha256": "7632c5ec1850668f8bc896bbc672422580f95f0783c4e260f196aa7c529d30e9",
+          "matchesOriginal": true
+        },
+        "electron": "45.3.2",
+        "mainBundleSha256": "a95e8f7cf74c9c0f5a077d236cb957d58d2beb62dfb5b38333676f0df7fd72c9",
+        "nativeAddonSha256": "63b5c1e0b038906476d80344cac372de5da1b51d7790c4ea563949fa92c35453",
+        "controllerSha256": "75e8b06fcaa921758acec9ccff8e0bbce7751277d77e61c60ce2106101e0e68d",
+        "seedConfigSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+        "sourceLogSha256": "ddb714587f2ebc703f0cd9d40b1f473acbdac889056e8226e24374b2614af70c",
+        "captureName": "pmcap-iRacingSim64DX11.exe-261114-235317.csv",
+        "captureSha256": "2fbc24c52d3165bb602de5adab87b55fe40ab5b1a2e89d0ab41930b60fa3e0ca",
+        "captureBytes": 3060137,
+        "canvasState": [
+          {
+            "id": 4,
+            "title": "irDashies",
+            "canvas": null
+          },
+          {
+            "id": 3,
+            "title": "irDashies - 3286545436)",
+            "canvas": null
+          },
+          {
+            "id": 2,
+            "title": "irDashies - 4096387830 (Primary))",
+            "canvas": {
+              "width": 300,
+              "height": 300,
+              "attributes": {
+                "alpha": true,
+                "colorSpace": "srgb",
+                "colorType": "unorm8",
+                "desynchronized": false,
+                "toneMapping": {
+                  "mode": "standard"
+                },
+                "willReadFrequently": true
+              }
+            }
+          },
+          {
+            "id": 1,
+            "title": "irDashies - 697929445)",
+            "canvas": null
+          }
+        ],
+        "foregroundStart": {
+          "captureHotkeyBefore": "2026-11-14T10:53:17.604Z",
+          "captureHotkeyAfter": "2026-11-14T10:53:17.656Z",
+          "foreground": "0 window iRacing.com Simulator Secondary Actions: Raise",
+          "captureFilesBefore": [
+            "pmcap-iRacingSim64DX11.exe-261114-175247-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175247.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231449-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231449.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231843-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231843.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232223-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232223.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232546-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232546.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234228-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234228.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234507-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234507.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234901-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234901.csv"
+          ]
+        },
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T10:53:52.200Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:54:17.260Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:54:42.308Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ],
+        "replay": {
+          "verified": true,
+          "samples": 12,
+          "firstFrame": 131071,
+          "lastFrame": 134377
+        },
+        "app": {
+          "averageCpuPercent": 4.853639696628922,
+          "averageRendererCpuPercent": 2.2226280867311345,
+          "averageMainCpuPercent": 0.3883688330568773,
+          "averageGpuCpuPercent": 2.2416793550184257,
+          "peakMemoryMB": 2762.66796875,
+          "averageRendererMemoryMB": 1692.6588541666667,
+          "averageMainMemoryMB": 368.0641276041667,
+          "averageGpuMemoryMB": 430.8974609375,
+          "peakPrivateMemoryMB": 1252.98828125,
+          "averageRendererPrivateMemoryMB": 757.1220703125,
+          "averageMainPrivateMemoryMB": 145.63834635416666,
+          "averageGpuPrivateMemoryMB": 314.2115885416667,
+          "peakRendererMemoryMB": 1704.05859375,
+          "peakMainMemoryMB": 370.91015625,
+          "peakGpuMemoryMB": 432.68359375,
+          "rendererProcessCount": 4,
+          "memorySlopeMBPerMinute": 24.61725032621034,
+          "privateMemorySlopeMBPerMinute": 27.859241386206826
+        },
+        "overlay": {
+          "sampleCount": 37,
+          "frameTimeP99MeanMs": 74.01807121661807,
+          "worstFrameMs": 133.5,
+          "telemetryCallbackRateHz": 0,
+          "channelCallbackRateHz": 60.784408056089596,
+          "totalWakeupRateHz": 60.784408056089596,
+          "telemetryCallbackP99MeanMs": 0,
+          "telemetryCallbackP99WorstMs": 0,
+          "trackMapAnimationFrameRateHz": 24.295148355811097,
+          "trackMapAnimationFrameP99MeanMs": 0.19759341570453753,
+          "trackMapAnimationFrameP99WorstMs": 0.29999999701976776,
+          "inputTraceFrameRateHz": 10.332455074653014,
+          "inputTraceFrameP99MeanMs": 0.17451613353144738,
+          "inputTraceFrameP99WorstMs": 0.20000000298023224,
+          "radarFrameRateHz": 27.26434919698763,
+          "radarFrameP99MeanMs": 0.431540341433001,
+          "radarFrameP99WorstMs": 0.5999999940395355,
+          "lapTraceFrameRateHz": 0,
+          "lapTraceFrameP99MeanMs": 0,
+          "lapTraceFrameP99WorstMs": 0,
+          "lapTraceBrakeCueRateHz": 0,
+          "lapTraceBrakeCueP99MeanMs": 0,
+          "lapTraceBrakeCueP99WorstMs": 0,
+          "framesOver25MsPercent": 40.16320474777448,
+          "framesOver50MsPercent": 10.474777448071217
+        },
+        "game": {
+          "schemaVersion": 1,
+          "analysisWindowSeconds": [30.193, 90.193],
+          "durationSeconds": 60,
+          "processName": "iRacingSim64DX11.exe",
+          "primarySwapChain": "19272:0x2BFFE570",
+          "swapChains": [
+            {
+              "key": "19272:0x2BFFE570",
+              "frameCount": 7550
+            }
+          ],
+          "frameRows": 4529,
+          "displayTimingUnavailableRows": 934,
+          "present": {
+            "sampleCount": 4529,
+            "meanFps": 75.49228986442307,
+            "onePercentLowFps": 59.529062994430916,
+            "pointOnePercentLowFps": 43.2624003017985,
+            "meanMs": 13.246385846765335,
+            "p99Ms": 15.7501,
+            "p999Ms": 16.537,
+            "maximumMs": 47.2934,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 1,
+                "percent": 0.022079929344226097,
+                "perMinute": 1
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 1,
+                "percent": 0.022079929344226097,
+                "perMinute": 1
+              },
+              {
+                "thresholdMs": 50,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "display": {
+            "sampleCount": 3595,
+            "meanFps": 59.916181844895036,
+            "onePercentLowFps": 56.526866827255326,
+            "pointOnePercentLowFps": 39.8315920289018,
+            "meanMs": 16.68998205841452,
+            "p99Ms": 16.7531,
+            "p999Ms": 16.7871,
+            "maximumMs": 50.0101,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 1,
+                "percent": 0.027816411682892908,
+                "perMinute": 1
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 1,
+                "percent": 0.027816411682892908,
+                "perMinute": 1
+              },
+              {
+                "thresholdMs": 50,
+                "count": 1,
+                "percent": 0.027816411682892908,
+                "perMinute": 1
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "presentModes": ["Composed: Flip"],
+          "frameTypes": ["Application"],
+          "captureSpanSeconds": [0, 99.36],
+          "evidence": {
+            "fullAnalysisWindowAvailable": true,
+            "longEnough": false
+          }
+        },
+        "gpuMetrics": {
+          "GPUUtilization": {
+            "samples": 4529,
+            "mean": 98.94568337381321,
+            "max": 99
+          },
+          "GPUBusy": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUFrequency": {
+            "samples": 4529,
+            "mean": 1765.5983660852285,
+            "max": 1815
+          },
+          "GPUTemperature": {
+            "samples": 4529,
+            "mean": 82.97902406712298,
+            "max": 83
+          },
+          "GPUPower": {
+            "samples": 4529,
+            "mean": 189.88636763082405,
+            "max": 198.913
+          },
+          "GPUPowerLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUTemperatureLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          }
+        },
+        "workloadEvidence": {
+          "runOriginAvailable": true,
+          "privateMemoryAvailable": true,
+          "privateMemorySampleCount": 12,
+          "privateMemorySpanSeconds": 55.05,
+          "privateMemoryMaxGapSeconds": 5.014,
+          "privateMemorySamplingAdequate": true,
+          "scenarioMetadataConsistent": true,
+          "inputCoverageAvailable": true,
+          "inputCoverageComplete": false,
+          "durationSufficient": false,
+          "conclusive": false,
+          "inconclusiveReasons": [
+            "analysis duration is shorter than five minutes",
+            "one or more visibility phases violated workload expectations"
+          ]
+        },
+        "originalReportedRadarHz": 27.26434919698763,
+        "ownerIntervalAudit": {
+          "id": "canvas-path-cpu-2",
+          "windowSeconds": [30, 90],
+          "ownerPids": [35272],
+          "groups": [
+            {
+              "pid": 12732,
+              "samples": 12,
+              "radarSamples": 0,
+              "radarDraws": 0,
+              "seconds": 59.99289999999106,
+              "radarHz": 0,
+              "rafHz": 50.255946953730344,
+              "rafP99MeanMs": 59.969154228857285,
+              "worstRafMs": 133.3000000000029
+            },
+            {
+              "pid": 35272,
+              "samples": 12,
+              "radarSamples": 12,
+              "radarDraws": 1636,
+              "seconds": 60.00509999999403,
+              "radarHz": 27.264349196987634,
+              "rafHz": 30.847377972875375,
+              "rafP99MeanMs": 86.78341437060858,
+              "worstRafMs": 133.5
+            },
+            {
+              "pid": 7760,
+              "samples": 12,
+              "radarSamples": 0,
+              "radarDraws": 0,
+              "seconds": 60.000599999994044,
+              "radarHz": 0,
+              "rafHz": 28.649713502867815,
+              "rafP99MeanMs": 82.56148923793245,
+              "worstRafMs": 133.5
+            }
+          ],
+          "ownerSummary": {
+            "draws": 1636,
+            "seconds": 60.00509999999403,
+            "hz": 27.264349196987634
+          }
+        }
+      },
+      {
+        "runId": "canvas-path-stock-2",
+        "condition": "stock",
+        "playbackSeconds": 422,
+        "analysisPlaybackSeconds": [60, 420],
+        "sourceRevision": "711552a1598a0d3258eb61a5d94e34a37f85547d",
+        "source": {
+          "file": "src/frontend/components/Radar/components/RadarDisplay.tsx",
+          "originalSha256": "7632c5ec1850668f8bc896bbc672422580f95f0783c4e260f196aa7c529d30e9",
+          "variantSha256": "7632c5ec1850668f8bc896bbc672422580f95f0783c4e260f196aa7c529d30e9",
+          "condition": "stock"
+        },
+        "sourceRestored": {
+          "file": "src/frontend/components/Radar/components/RadarDisplay.tsx",
+          "sha256": "7632c5ec1850668f8bc896bbc672422580f95f0783c4e260f196aa7c529d30e9",
+          "matchesOriginal": true
+        },
+        "electron": "45.3.2",
+        "mainBundleSha256": "a95e8f7cf74c9c0f5a077d236cb957d58d2beb62dfb5b38333676f0df7fd72c9",
+        "nativeAddonSha256": "8d4afbb3793ae14648c61e6a88e0c009ca07fd806aa6fc3fa7a16aaae77fc2a1",
+        "controllerSha256": "d6b01bc874be65831f8d7632d29b462b404fd9ebf5157c50afa87084ddf7136f",
+        "seedConfigSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+        "sourceLogSha256": "c8c62d9a82ebd15c12142f249fc5181a806f280db1a770c648f9276957053e27",
+        "captureName": "pmcap-iRacingSim64DX11.exe-261114-235621.csv",
+        "captureSha256": "9659c29c1478321f46f81f48d56bf2ac55f589528d1c555df185f34029a55f5e",
+        "captureBytes": 13005671,
+        "canvasState": [
+          {
+            "id": 4,
+            "title": "irDashies",
+            "canvas": null
+          },
+          {
+            "id": 3,
+            "title": "irDashies - 3286545436)",
+            "canvas": null
+          },
+          {
+            "id": 2,
+            "title": "irDashies - 4096387830 (Primary))",
+            "canvas": {
+              "width": 300,
+              "height": 300,
+              "attributes": {
+                "alpha": true,
+                "colorSpace": "srgb",
+                "colorType": "unorm8",
+                "desynchronized": false,
+                "toneMapping": {
+                  "mode": "standard"
+                },
+                "willReadFrequently": false
+              }
+            }
+          },
+          {
+            "id": 1,
+            "title": "irDashies - 697929445)",
+            "canvas": null
+          }
+        ],
+        "foregroundStart": {
+          "captureHotkeyBefore": "2026-11-14T10:56:21.279Z",
+          "captureHotkeyAfter": "2026-11-14T10:56:21.323Z",
+          "foreground": "0 window iRacing.com Simulator Secondary Actions: Raise",
+          "captureFilesBefore": [
+            "pmcap-iRacingSim64DX11.exe-261114-175247-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175247.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231449-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231449.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231843-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231843.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232223-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232223.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232546-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232546.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234228-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234228.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234507-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234507.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234901-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234901.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-235317-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-235317.csv"
+          ]
+        },
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T10:57:07.760Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:57:32.816Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:57:57.866Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:58:23.108Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:58:48.172Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:59:13.236Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T10:59:38.288Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:00:03.339Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:00:28.398Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:00:53.449Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:01:18.507Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:01:43.567Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:02:08.613Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:02:33.666Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:02:58.725Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:03:23.772Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ],
+        "replay": {
+          "verified": true,
+          "samples": 72,
+          "firstFrame": 132873,
+          "lastFrame": 154196
+        },
+        "app": {
+          "averageCpuPercent": 5.745121104116687,
+          "averageRendererCpuPercent": 2.347808721063262,
+          "averageMainCpuPercent": 0.4246398113034704,
+          "averageGpuCpuPercent": 2.9723056062852438,
+          "peakMemoryMB": 2989.5546875,
+          "averageRendererMemoryMB": 1867.947506421233,
+          "averageMainMemoryMB": 350.60188356164383,
+          "averageGpuMemoryMB": 458.2723137842466,
+          "peakPrivateMemoryMB": 1494.24609375,
+          "averageRendererPrivateMemoryMB": 931.0512628424658,
+          "averageMainPrivateMemoryMB": 127.79757063356165,
+          "averageGpuPrivateMemoryMB": 364.13029751712327,
+          "peakRendererMemoryMB": 1901.89453125,
+          "peakMainMemoryMB": 370.5703125,
+          "peakGpuMemoryMB": 488.70703125,
+          "rendererProcessCount": 4,
+          "memorySlopeMBPerMinute": 18.557101337609783,
+          "privateMemorySlopeMBPerMinute": 16.923458353586536
+        },
+        "overlay": {
+          "sampleCount": 219,
+          "frameTimeP99MeanMs": 87.72800344658164,
+          "worstFrameMs": 233.60000000003492,
+          "telemetryCallbackRateHz": 0,
+          "channelCallbackRateHz": 76.52225562754919,
+          "totalWakeupRateHz": 76.52225562754919,
+          "telemetryCallbackP99MeanMs": 0,
+          "telemetryCallbackP99WorstMs": 0,
+          "trackMapAnimationFrameRateHz": 45.56169376624049,
+          "trackMapAnimationFrameP99MeanMs": 0.19561635875963548,
+          "trackMapAnimationFrameP99WorstMs": 0.20000000298023224,
+          "inputTraceFrameRateHz": 24.786233462374078,
+          "inputTraceFrameP99MeanMs": 0.20754946644093775,
+          "inputTraceFrameP99WorstMs": 0.5,
+          "radarFrameRateHz": 27.89307426554996,
+          "radarFrameP99MeanMs": 0.5000687565220185,
+          "radarFrameP99WorstMs": 1.2000000029802322,
+          "lapTraceFrameRateHz": 0,
+          "lapTraceFrameP99MeanMs": 0,
+          "lapTraceFrameP99WorstMs": 0,
+          "lapTraceBrakeCueRateHz": 0,
+          "lapTraceBrakeCueP99MeanMs": 0,
+          "lapTraceBrakeCueP99WorstMs": 0,
+          "framesOver25MsPercent": 64.4048498276711,
+          "framesOver50MsPercent": 14.189438700147711
+        },
+        "game": {
+          "schemaVersion": 1,
+          "analysisWindowSeconds": [60.118, 420.118],
+          "durationSeconds": 360,
+          "processName": "iRacingSim64DX11.exe",
+          "primarySwapChain": "19272:0x2BFFE570",
+          "swapChains": [
+            {
+              "key": "19272:0x2BFFE570",
+              "frameCount": 32079
+            }
+          ],
+          "frameRows": 26476,
+          "displayTimingUnavailableRows": 5026,
+          "present": {
+            "sampleCount": 26476,
+            "meanFps": 73.53862729389705,
+            "onePercentLowFps": 48.584721560777396,
+            "pointOnePercentLowFps": 40.99064988094493,
+            "meanMs": 13.598295709321592,
+            "p99Ms": 19.4121,
+            "p999Ms": 21.6789,
+            "maximumMs": 47.8425,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 3,
+                "percent": 0.01133101676990482,
+                "perMinute": 0.5
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 2,
+                "percent": 0.007554011179936546,
+                "perMinute": 0.33333333333333337
+              },
+              {
+                "thresholdMs": 50,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "display": {
+            "sampleCount": 21450,
+            "meanFps": 59.580107649754744,
+            "onePercentLowFps": 36.98839649916353,
+            "pointOnePercentLowFps": 29.283562989676078,
+            "meanMs": 16.784125431235545,
+            "p99Ms": 16.7652,
+            "p999Ms": 33.3721,
+            "maximumMs": 50.0254,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 132,
+                "percent": 0.6153846153846154,
+                "perMinute": 22
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 123,
+                "percent": 0.5734265734265734,
+                "perMinute": 20.5
+              },
+              {
+                "thresholdMs": 50,
+                "count": 1,
+                "percent": 0.004662004662004662,
+                "perMinute": 0.16666666666666669
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "presentModes": ["Composed: Flip"],
+          "frameTypes": ["Application"],
+          "captureSpanSeconds": [0, 433.5],
+          "evidence": {
+            "fullAnalysisWindowAvailable": true,
+            "longEnough": true
+          }
+        },
+        "gpuMetrics": {
+          "GPUUtilization": {
+            "samples": 26476,
+            "mean": 98.97896207886387,
+            "max": 99
+          },
+          "GPUBusy": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUFrequency": {
+            "samples": 26476,
+            "mean": 1767.0969935035505,
+            "max": 1845
+          },
+          "GPUTemperature": {
+            "samples": 26476,
+            "mean": 82.97446744221182,
+            "max": 84
+          },
+          "GPUPower": {
+            "samples": 26476,
+            "mean": 190.01699792264637,
+            "max": 201.619
+          },
+          "GPUPowerLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUTemperatureLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          }
+        },
+        "workloadEvidence": {
+          "runOriginAvailable": true,
+          "privateMemoryAvailable": true,
+          "privateMemorySampleCount": 72,
+          "privateMemorySpanSeconds": 355.381,
+          "privateMemoryMaxGapSeconds": 5.016,
+          "privateMemorySamplingAdequate": true,
+          "scenarioMetadataConsistent": true,
+          "inputCoverageAvailable": true,
+          "inputCoverageComplete": false,
+          "durationSufficient": true,
+          "conclusive": false,
+          "inconclusiveReasons": [
+            "one or more visibility phases violated workload expectations"
+          ]
+        },
+        "originalReportedRadarHz": 13.94653522229605,
+        "ownerIntervalAudit": {
+          "id": "canvas-path-stock-2",
+          "windowSeconds": [60, 420],
+          "ownerPids": [32968],
+          "groups": [
+            {
+              "pid": 32968,
+              "samples": 72,
+              "radarSamples": 72,
+              "radarDraws": 10030,
+              "seconds": 360.0105000000001,
+              "radarHz": 27.860298519070966,
+              "rafHz": 30.41855723652504,
+              "rafP99MeanMs": 81.92415304538792,
+              "worstRafMs": 233.59999999997672
+            },
+            {
+              "pid": 3240,
+              "samples": 72,
+              "radarSamples": 72,
+              "radarDraws": 0,
+              "seconds": 360.0110999999939,
+              "radarHz": 0,
+              "rafHz": 29.062992779945333,
+              "rafP99MeanMs": 84.15008123865664,
+              "worstRafMs": 233.5
+            },
+            {
+              "pid": 40424,
+              "samples": 72,
+              "radarSamples": 0,
+              "radarDraws": 0,
+              "seconds": 359.99889999999107,
+              "radarHz": 0,
+              "rafHz": 29.42231212373222,
+              "rafP99MeanMs": 98.23421450151123,
+              "worstRafMs": 233.60000000003492
+            }
+          ],
+          "ownerSummary": {
+            "draws": 10030,
+            "seconds": 360.0105000000001,
+            "hz": 27.860298519070966
+          }
+        }
+      },
+      {
+        "runId": "canvas-path-cpu-3",
+        "condition": "cpu",
+        "playbackSeconds": 422,
+        "analysisPlaybackSeconds": [60, 420],
+        "sourceRevision": "711552a1598a0d3258eb61a5d94e34a37f85547d",
+        "source": {
+          "file": "src/frontend/components/Radar/components/RadarDisplay.tsx",
+          "originalSha256": "7632c5ec1850668f8bc896bbc672422580f95f0783c4e260f196aa7c529d30e9",
+          "variantSha256": "6dc4b76d14bb351f4829cbf668ebf8f02e23b0440a1b79a5ec19fa0bd4a2dae3",
+          "condition": "cpu"
+        },
+        "sourceRestored": {
+          "file": "src/frontend/components/Radar/components/RadarDisplay.tsx",
+          "sha256": "7632c5ec1850668f8bc896bbc672422580f95f0783c4e260f196aa7c529d30e9",
+          "matchesOriginal": true
+        },
+        "electron": "45.3.2",
+        "mainBundleSha256": "a95e8f7cf74c9c0f5a077d236cb957d58d2beb62dfb5b38333676f0df7fd72c9",
+        "nativeAddonSha256": "8b50c526b4e070baf870e9089501cd7d8da7b57cedeb7573c61d84acef77517b",
+        "controllerSha256": "d6b01bc874be65831f8d7632d29b462b404fd9ebf5157c50afa87084ddf7136f",
+        "seedConfigSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+        "sourceLogSha256": "b82b8f22018829b0f625efdda45b469c5e4354a98f63140bf762def09c9159d5",
+        "captureName": "pmcap-iRacingSim64DX11.exe-261115-000433.csv",
+        "captureSha256": "7e023a2d14143febd5eaf7800ea99cc21c3e18ea9e8c0881b7a24050df713483",
+        "captureBytes": 13009233,
+        "canvasState": [
+          {
+            "id": 4,
+            "title": "irDashies",
+            "canvas": null
+          },
+          {
+            "id": 3,
+            "title": "irDashies - 3286545436)",
+            "canvas": null
+          },
+          {
+            "id": 2,
+            "title": "irDashies - 4096387830 (Primary))",
+            "canvas": {
+              "width": 300,
+              "height": 300,
+              "attributes": {
+                "alpha": true,
+                "colorSpace": "srgb",
+                "colorType": "unorm8",
+                "desynchronized": false,
+                "toneMapping": {
+                  "mode": "standard"
+                },
+                "willReadFrequently": true
+              }
+            }
+          },
+          {
+            "id": 1,
+            "title": "irDashies - 697929445)",
+            "canvas": null
+          }
+        ],
+        "foregroundStart": {
+          "captureHotkeyBefore": "2026-11-14T11:04:33.061Z",
+          "captureHotkeyAfter": "2026-11-14T11:04:33.101Z",
+          "foreground": "0 window iRacing.com Simulator Secondary Actions: Raise",
+          "captureFilesBefore": [
+            "pmcap-iRacingSim64DX11.exe-261114-175247-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175247.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-175819.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-180839.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-181817.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-182624.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231449-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231449.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231843-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-231843.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232223-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232223.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232546-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-232546.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234228-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234228.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234507-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234507.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234901-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-234901.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-235317-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-235317.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-235621-stats.csv",
+            "pmcap-iRacingSim64DX11.exe-261114-235621.csv"
+          ]
+        },
+        "foregroundChecks": [
+          {
+            "timestamp": "2026-11-14T11:05:06.453Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:05:31.507Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:05:56.554Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:06:21.607Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:06:46.660Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:07:11.723Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:07:36.782Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:08:01.838Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:08:26.907Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:08:51.964Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:09:17.019Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:09:42.074Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:10:07.131Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:10:32.188Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:10:57.238Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          },
+          {
+            "timestamp": "2026-11-14T11:11:22.295Z",
+            "focusedElement": "0 window iRacing.com Simulator Secondary Actions: Raise"
+          }
+        ],
+        "replay": {
+          "verified": true,
+          "samples": 72,
+          "firstFrame": 132874,
+          "lastFrame": 154201
+        },
+        "app": {
+          "averageCpuPercent": 5.167494174408436,
+          "averageRendererCpuPercent": 2.453682640758733,
+          "averageMainCpuPercent": 0.4274747557363781,
+          "averageGpuCpuPercent": 2.2859965163766773,
+          "peakMemoryMB": 2916.25,
+          "averageRendererMemoryMB": 1830.8138912671234,
+          "averageMainMemoryMB": 348.1098030821918,
+          "averageGpuMemoryMB": 444.83732876712327,
+          "peakPrivateMemoryMB": 1396.171875,
+          "averageRendererPrivateMemoryMB": 890.3812607020548,
+          "averageMainPrivateMemoryMB": 125.21468321917808,
+          "averageGpuPrivateMemoryMB": 327.638591609589,
+          "peakRendererMemoryMB": 1868.4609375,
+          "peakMainMemoryMB": 367.578125,
+          "peakGpuMemoryMB": 450.35546875,
+          "rendererProcessCount": 4,
+          "memorySlopeMBPerMinute": 14.147456400087501,
+          "privateMemorySlopeMBPerMinute": 11.566748545825394
+        },
+        "overlay": {
+          "sampleCount": 218,
+          "frameTimeP99MeanMs": 100.0389908727354,
+          "worstFrameMs": 283.5,
+          "telemetryCallbackRateHz": 0,
+          "channelCallbackRateHz": 77.04035990455245,
+          "totalWakeupRateHz": 77.04035990455245,
+          "telemetryCallbackP99MeanMs": 0,
+          "telemetryCallbackP99WorstMs": 0,
+          "trackMapAnimationFrameRateHz": 43.69736788011371,
+          "trackMapAnimationFrameP99MeanMs": 0.19708855360922573,
+          "trackMapAnimationFrameP99WorstMs": 0.20000000298023224,
+          "inputTraceFrameRateHz": 23.051770594609106,
+          "inputTraceFrameP99MeanMs": 0.20393392200144958,
+          "inputTraceFrameP99WorstMs": 0.5,
+          "radarFrameRateHz": 25.065444398630703,
+          "radarFrameP99MeanMs": 0.5340692980756706,
+          "radarFrameP99WorstMs": 1.2000000029802322,
+          "lapTraceFrameRateHz": 0,
+          "lapTraceFrameP99MeanMs": 0,
+          "lapTraceFrameP99WorstMs": 0,
+          "lapTraceBrakeCueRateHz": 0,
+          "lapTraceBrakeCueP99MeanMs": 0,
+          "lapTraceBrakeCueP99WorstMs": 0,
+          "framesOver25MsPercent": 68.21522578880798,
+          "framesOver50MsPercent": 20.58250435852733
+        },
+        "game": {
+          "schemaVersion": 1,
+          "analysisWindowSeconds": [60.188, 420.188],
+          "durationSeconds": 360,
+          "processName": "iRacingSim64DX11.exe",
+          "primarySwapChain": "19272:0x2BFFE570",
+          "swapChains": [
+            {
+              "key": "19272:0x2BFFE570",
+              "frameCount": 32088
+            }
+          ],
+          "frameRows": 26462,
+          "displayTimingUnavailableRows": 5025,
+          "present": {
+            "sampleCount": 26462,
+            "meanFps": 73.5142212690139,
+            "onePercentLowFps": 48.32714846134654,
+            "pointOnePercentLowFps": 40.35575239862634,
+            "meanMs": 13.602810214647516,
+            "p99Ms": 19.4755,
+            "p999Ms": 21.7596,
+            "maximumMs": 48.6556,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 4,
+                "percent": 0.015116015418335727,
+                "perMinute": 0.6666666666666667
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 2,
+                "percent": 0.007558007709167864,
+                "perMinute": 0.33333333333333337
+              },
+              {
+                "thresholdMs": 50,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "display": {
+            "sampleCount": 21437,
+            "meanFps": 59.55503437039885,
+            "onePercentLowFps": 36.061398237275256,
+            "pointOnePercentLowFps": 29.270588898969493,
+            "meanMs": 16.79119171992349,
+            "p99Ms": 16.7626,
+            "p999Ms": 33.3826,
+            "maximumMs": 50.0469,
+            "slowFrames": [
+              {
+                "thresholdMs": 25,
+                "count": 141,
+                "percent": 0.6577412884265522,
+                "perMinute": 23.5
+              },
+              {
+                "thresholdMs": 33.333333333333336,
+                "count": 125,
+                "percent": 0.5831039791015534,
+                "perMinute": 20.833333333333332
+              },
+              {
+                "thresholdMs": 50,
+                "count": 1,
+                "percent": 0.004664831832812427,
+                "perMinute": 0.16666666666666669
+              },
+              {
+                "thresholdMs": 100,
+                "count": 0,
+                "percent": 0,
+                "perMinute": 0
+              }
+            ]
+          },
+          "presentModes": ["Composed: Flip"],
+          "frameTypes": ["Application"],
+          "captureSpanSeconds": [0, 433.8],
+          "evidence": {
+            "fullAnalysisWindowAvailable": true,
+            "longEnough": true
+          }
+        },
+        "gpuMetrics": {
+          "GPUUtilization": {
+            "samples": 26462,
+            "mean": 98.85923210641675,
+            "max": 99
+          },
+          "GPUBusy": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUFrequency": {
+            "samples": 26462,
+            "mean": 1766.0972337691785,
+            "max": 1830
+          },
+          "GPUTemperature": {
+            "samples": 26462,
+            "mean": 82.95880885798503,
+            "max": 83
+          },
+          "GPUPower": {
+            "samples": 26462,
+            "mean": 189.65245843095994,
+            "max": 201.208
+          },
+          "GPUPowerLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          },
+          "GPUTemperatureLimited": {
+            "samples": 0,
+            "mean": null,
+            "max": null
+          }
+        },
+        "workloadEvidence": {
+          "runOriginAvailable": true,
+          "privateMemoryAvailable": true,
+          "privateMemorySampleCount": 72,
+          "privateMemorySpanSeconds": 355.393,
+          "privateMemoryMaxGapSeconds": 5.015,
+          "privateMemorySamplingAdequate": true,
+          "scenarioMetadataConsistent": true,
+          "inputCoverageAvailable": true,
+          "inputCoverageComplete": false,
+          "durationSufficient": true,
+          "conclusive": false,
+          "inconclusiveReasons": [
+            "one or more visibility phases violated workload expectations"
+          ]
+        },
+        "originalReportedRadarHz": 12.532854393546765,
+        "ownerIntervalAudit": {
+          "id": "canvas-path-cpu-3",
+          "windowSeconds": [60, 420],
+          "ownerPids": [32384],
+          "groups": [
+            {
+              "pid": 32384,
+              "samples": 72,
+              "radarSamples": 72,
+              "radarDraws": 9004,
+              "seconds": 360.0021999999881,
+              "radarHz": 25.010958266366977,
+              "rafHz": 27.319277493305112,
+              "rafP99MeanMs": 92.50598881545967,
+              "worstRafMs": 200.19999999998254
+            },
+            {
+              "pid": 39976,
+              "samples": 72,
+              "radarSamples": 72,
+              "radarDraws": 0,
+              "seconds": 359.99670000000305,
+              "radarHz": 0,
+              "rafHz": 26.383575182772287,
+              "rafP99MeanMs": 94.90483259633997,
+              "worstRafMs": 150.20000000001164
+            },
+            {
+              "pid": 38340,
+              "samples": 72,
+              "radarSamples": 0,
+              "radarDraws": 0,
+              "seconds": 359.9988000000118,
+              "radarHz": 0,
+              "rafHz": 26.67786670399925,
+              "rafP99MeanMs": 113.37977925864688,
+              "worstRafMs": 283.5
+            }
+          ],
+          "ownerSummary": {
+            "draws": 9004,
+            "seconds": 360.0021999999881,
+            "hz": 25.010958266366977
+          }
+        }
+      }
+    ],
+    "longPairDelta": {
+      "appCpuPercentagePoints": -0.5776269297082512,
+      "appCpuRelativePercent": -10.054216773504576,
+      "radarRateRelativePercent": -10.137390522103873,
+      "overlayP99RelativePercent": 14.033133027642686,
+      "gamePresentedFpsPercent": -0.03318803434501083
+    },
+    "decisions": {
+      "desynchronized": "Rejected: effective hint is true but short-run app CPU rises; Radar cadence also falls versus the owning stock renderer.",
+      "willReadFrequently": "Rejected: short-run CPU saving repeats, but the long pair has fewer Radar paints and worse overlay frame-time p99. This one pair does not establish a causal regression; it fails the acceptance criteria for retaining an optimization.",
+      "applicationChangeRetained": false
+    },
+    "reportingFix": {
+      "file": "tools/perf/analyze.ts",
+      "sha256": "9c174ebdd1461e19754714e4cb42adfd3c5f354f7d203cbf1ad9bd4aff514904",
+      "issue": "A renderer that reports only zero-count samples dilutes widget rates. Startup registration can leave zero counters in windows that do not paint the widget.",
+      "behavior": "Only renderers observed recording a positive count for the measure enter its denominator. Their zero-count intervals remain included. Multiple observed renderers retain the existing per-renderer average; an entirely idle measure remains zero.",
+      "affectedMeasures": [
+        "trackMapAnimationFrame",
+        "inputTraceFrame",
+        "radarFrame",
+        "lapTraceFrame",
+        "lapTraceBrakeCue"
+      ],
+      "historicalCaveat": "Previously recorded aggregate rates can have different zero-window denominators. Historical raw results are preserved; these new results include corrected rates and independent per-PID whole-interval audits. CPU and PresentMon metrics are unaffected."
+    },
+    "validation": {
+      "testFilesPassed": 10,
+      "testsPassed": 73,
+      "command": "npx vitest run tools/perf/analyze.spec.ts tools/perf/analyze-game.spec.ts src/frontend/components/Radar --no-coverage",
+      "lint": "npm run lint -- --ignore-pattern perf-results/**",
+      "lintPassed": true,
+      "prettierPassed": true
+    },
+    "restoration": {
+      "original": {
+        "snapshot": {
+          "IsReplayPlaying": 1,
+          "ReplayFrameNum": 519428,
+          "ReplayPlaySpeed": 1,
+          "ReplaySessionTime": 6562.526627604166,
+          "SessionNum": 2,
+          "CamCarIdx": 37,
+          "CamGroupNumber": 9,
+          "CamCameraNumber": 1,
+          "FrameRate": 78.4002914428711
+        },
+        "userConfigSha256": "e23e6ffad33d1ab53713b81dc1cff15bfe3ed86a0e5cd7e9c6954b5b090885ff",
+        "graphicsSha256": "1f8c44edd8f43466787204e86f9b7bc8198391d03ba1da14bca5652b15d712ce"
+      },
+      "restored": {
+        "snapshot": {
+          "IsReplayPlaying": 1,
+          "ReplayFrameNum": 519457,
+          "ReplayPlaySpeed": 1,
+          "ReplaySessionTime": 6563.016666666666,
+          "SessionNum": 2,
+          "CamCarIdx": 37,
+          "CamGroupNumber": 9,
+          "CamCameraNumber": 1,
+          "FrameRate": 76.69934844970703
+        },
+        "userConfigSha256": "e23e6ffad33d1ab53713b81dc1cff15bfe3ed86a0e5cd7e9c6954b5b090885ff",
+        "graphicsSha256": "1f8c44edd8f43466787204e86f9b7bc8198391d03ba1da14bca5652b15d712ce"
+      },
+      "userConfigUnchanged": true,
+      "graphicsUnchanged": true,
+      "allVariantFilesRestored": true,
+      "captureStopped": true,
+      "furtherGameAccessNeeded": false
+    },
+    "limitations": [
+      "One long stock/software pair; short repeats are not a statistical equivalence test.",
+      "Replay/hidden/event/device coverage remains limited; this is not live-driving or packaged-release acceptance.",
+      "Context hints are verified via getContextAttributes; no new native trace establishes their internal backing implementation.",
+      "The six-second overlay stall did not recur in these captures and remains an unresolved separate finding. No game stutter fix is claimed."
+    ]
+  },
+  "reviewAudit": {
+    "date": "2026-11-15",
+    "status": "Same-session source controls did not reproduce an aggregate CPU/FPS regression. Historical cross-date drift, presentation cost, private growth, limited widget coverage and the rare overlay stall remain distinct findings. Neither canvas variant is retained.",
+    "foregroundScope": "iRacing was activated before capture and checked periodically through the UI. These point observations and the absence of other automated UI inputs support the intended foreground protocol; continuous OS foreground state was not recorded.",
+    "details": "2026-11-14-widget-regressions.json#reviewAudit"
+  },
+  "evidenceExport": {
+    "omitted": ["Per-second PresentMon timing timelines"],
+    "regeneration": "tools/perf/analyze-game.ts regenerates timelines from the fingerprinted local CSVs; distributions, slow-frame counts, capture windows and provenance are retained here."
+  }
+}

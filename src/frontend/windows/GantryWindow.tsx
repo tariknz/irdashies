@@ -21,7 +21,7 @@ import { GantrySessionHoldProvider } from '../components/Gantry/hooks/useGantryS
 import { ThemeManager } from '../components/ThemeManager/ThemeManager';
 import { WidgetRuntimeProvider } from '../widgetRuntime';
 
-const GantryContent = () => {
+export const GantryContent = () => {
   const { running } = useRunningState();
   const { currentDashboard } = useDashboard();
   const gantry = currentDashboard?.widgets.find(

@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'cornername',
   name: 'Corner Names',
+  category: 'Track & Navigation',
   enabled: false,
   layout: {
     x: 50,

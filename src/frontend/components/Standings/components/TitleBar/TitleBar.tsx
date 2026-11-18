@@ -1,7 +1,7 @@
 import {
   useCurrentSessionType,
-  useTotalRaceValue,
-  useTrackStateSnapshot,
+  useTrackStateSelector,
+  trackStateSelectors,
   useWeekendInfoSeriesID,
 } from '@irdashies/context';
 import { SessionState } from '@irdashies/types';
@@ -11,10 +11,19 @@ import { useHighlightColor } from '@irdashies/domain';
 import { useSessionLapCount } from '../../hooks/useSessionLapCount';
 
 interface TitleBarProps {
-  titleBarSettings?: { enabled: boolean; progressBar: { enabled: boolean } };
+  titleBarSettings?: {
+    enabled: boolean;
+    progressBar?: { enabled?: boolean };
+  };
 }
 
 export const TitleBar = ({ titleBarSettings }: TitleBarProps) => {
+  if (!titleBarSettings?.enabled) return null;
+
+  return <EnabledTitleBar titleBarSettings={titleBarSettings} />;
+};
+
+const EnabledTitleBar = ({ titleBarSettings }: Required<TitleBarProps>) => {
   const seriesId = useWeekendInfoSeriesID();
   const sessionType = useCurrentSessionType();
 
@@ -23,14 +32,31 @@ export const TitleBar = ({ titleBarSettings }: TitleBarProps) => {
     ? seriesMapping[seriesId.toString()] || sessionType
     : sessionType || 'Unknown Session';
 
-  const { state: sessionState, currentLap } = useSessionLapCount();
-  const { totalRaceLaps } = useTotalRaceValue();
-  const lapDistPct = useTrackStateSnapshot()?.lapDistPct;
+  return (
+    <div className="relative bg-slate-900/70 text-sm px-3 py-2 flex justify-center items-center">
+      {sessionType === 'Race' && titleBarSettings.progressBar?.enabled && (
+        <RaceProgress />
+      )}
+      <div className="relative z-10 font-medium">{displayText}</div>
+    </div>
+  );
+};
 
-  // Get highlight color from dashboard settings
+const RaceProgress = () => {
+  const {
+    state: sessionState,
+    currentLap,
+    totalRaceLaps,
+  } = useSessionLapCount();
+  const progressNeedsPosition =
+    sessionState >= SessionState.Racing &&
+    sessionState < SessionState.Checkered &&
+    totalRaceLaps > 0;
+  const lapDistPct = useTrackStateSelector(trackStateSelectors.lapDistPct, {
+    enabled: progressNeedsPosition,
+  });
   const highlightColor = useHighlightColor();
 
-  // Computed colors for gradient stripes
   const r = (highlightColor >> 16) & 255;
   const g = (highlightColor >> 8) & 255;
   const b = highlightColor & 255;
@@ -40,9 +66,6 @@ export const TitleBar = ({ titleBarSettings }: TitleBarProps) => {
   const progressPercentage = useMemo(() => {
     // Once checkered flag waves or cool-down begins, race is complete
     if (sessionState >= SessionState.Checkered) return 100;
-
-    // Only calculate progress for racing sessions
-    if (sessionType !== 'Race') return 0;
 
     // Before racing starts (warmup, parade laps)
     if (sessionState < SessionState.Racing) return 0;
@@ -56,32 +79,19 @@ export const TitleBar = ({ titleBarSettings }: TitleBarProps) => {
     const totalProgress = (completedLaps + currentLapProgress) / totalRaceLaps;
 
     return Math.min(100, Math.max(0, totalProgress * 100));
-  }, [sessionState, sessionType, currentLap, lapDistPct, totalRaceLaps]);
+  }, [sessionState, currentLap, lapDistPct, totalRaceLaps]);
 
-  // Don't render title bar if disabled in settings
-  if (!titleBarSettings?.enabled) {
-    return null;
-  }
+  if (!(progressPercentage > 0)) return null;
 
   return (
-    <div className="relative bg-slate-900/70 text-sm px-3 py-2 flex justify-center items-center">
-      {/* Background progress bar - only show for racing sessions and if enabled in settings */}
-      {sessionType === 'Race' &&
-        progressPercentage > 0 &&
-        titleBarSettings?.progressBar?.enabled && (
-          <div className="absolute inset-x-3 inset-y-2">
-            <div
-              className="h-full rounded-sm"
-              style={{
-                width: `${progressPercentage}%`,
-                backgroundImage: `repeating-linear-gradient(-45deg, ${color1} 0px, ${color1} 10px, ${color2} 10px, ${color2} 20px)`,
-              }}
-            />
-          </div>
-        )}
-
-      {/* Centered series/session name text */}
-      <div className="relative z-10 font-medium">{displayText}</div>
+    <div className="absolute inset-x-3 inset-y-2">
+      <div
+        className="h-full rounded-sm"
+        style={{
+          width: `${progressPercentage}%`,
+          backgroundImage: `repeating-linear-gradient(-45deg, ${color1} 0px, ${color1} 10px, ${color2} 10px, ${color2} 20px)`,
+        }}
+      />
     </div>
   );
 };

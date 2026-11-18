@@ -1,10 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { InputTrace } from './InputTrace';
 import { useEffect, useState } from 'react';
+import { WidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 
 const meta: Meta<typeof InputTrace> = {
   component: InputTrace,
   title: 'widgets/Input/components/InputTrace',
+  decorators: [
+    (Story) => (
+      <div className="w-[600px] h-[150px]">
+        <Story />
+      </div>
+    ),
+  ],
 };
 export default meta;
 
@@ -186,4 +194,13 @@ export const ConfigurableStrokeWidth: StoryObj<
       description: 'Stroke width for throttle, brake, and ABS traces',
     },
   },
+};
+
+// Exercise the physical backing-buffer scale as well as responsive CSS sizing.
+export const Scaled: StoryObj<typeof Traces> = {
+  render: () => (
+    <WidgetScale scale={150}>
+      <Traces brakeAbsActive />
+    </WidgetScale>
+  ),
 };

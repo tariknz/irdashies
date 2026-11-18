@@ -8,10 +8,9 @@ import type { LmuSpriteCell } from './lmuRankArt';
  * same texture, where separate images were re-rasterised per element and per
  * size change.
  *
- * `translateZ(0)` for the same reason it is on the manufacturer logo -- it
- * promotes the element so a repaint of the row does not re-composite the art
- * underneath it, which is what an overlay sharing a GPU with the sim cares
- * about.
+ * These LMU badges still request a compositor layer. Revisit that separately
+ * with a full LMU-grid capture; the iRacing manufacturer-logo measurements do
+ * not cover this art.
  */
 export const LmuSprite = ({
   cell,

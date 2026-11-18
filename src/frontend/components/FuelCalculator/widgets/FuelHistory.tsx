@@ -3,6 +3,7 @@ import type { FuelCalculatorSettings, FuelCalculation } from '../types';
 import { MAX_LAP_HISTORY, useFuelStore } from '../FuelStore';
 import { useDashboard } from '@irdashies/context';
 import { formatFuel } from '../fuelCalculations';
+import { demoFuelHistory } from '../demoData';
 import {
   ConsumptionGraphWidget,
   ConsumptionGraphData,
@@ -127,12 +128,7 @@ export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({
     const valueFontSize = widgetStyle.valueFontSize || widgetStyle.fontSize;
     // Demo values stay explicitly labelled and never enter the lap store.
     const rows = isDemoMode
-      ? Array.from({ length: tableLapCount }, (_, index) => ({
-          lapNumber: tableLapCount - index,
-          sessionNum: currentSessionNum,
-          timestamp: 0,
-          fuelUsed: [3.9, 3.85, 3.92, 3.88, 3.91][index % 5],
-        }))
+      ? demoFuelHistory(tableLapCount, currentSessionNum)
       : tableLaps;
 
     return (

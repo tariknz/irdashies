@@ -1,6 +1,7 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useContext, useState } from 'react';
 import { menuHasToggle } from '../menuItems';
 import { ToggleSwitch } from './ToggleSwitch';
+import { ConfirmDialog } from './ConfirmDialog';
 import { BaseWidgetSettings } from '@irdashies/types';
 import {
   useActiveSimulator,
@@ -11,10 +12,14 @@ import {
   widgetDisabledMessage,
   widgetIncompatibleLabel,
 } from '@irdashies/types';
+import { SettingsPreviewContext } from '@irdashies/domain/widgetPreview/settingsPreviewContext';
+import { WidgetPreview } from './WidgetPreview';
+import { SettingsPreviewLayout } from './SettingsPreviewLayout';
 
 interface BaseSettingsSectionProps<T> {
   title: string;
-  description: string;
+  headingLevel?: 'h2' | 'h3';
+  description: ReactNode;
   settings?: BaseWidgetSettings<T>;
   onSettingsChange?: (settings: BaseWidgetSettings<T>) => void;
   widgetId?: string;
@@ -25,10 +30,13 @@ interface BaseSettingsSectionProps<T> {
   disableInternalScroll?: boolean;
   /** For widgets that never appear on the overlay, so have no position. */
   hidePositionReset?: boolean;
+  /** Embedded widgets, such as the inspector, can opt into the same layout. */
+  previewWidgetId?: string;
 }
 
 export const BaseSettingsSection = <T,>({
   title,
+  headingLevel: Heading = 'h2',
   description,
   settings,
   onSettingsChange,
@@ -37,7 +45,12 @@ export const BaseSettingsSection = <T,>({
   onConfigChange,
   disableInternalScroll = false,
   hidePositionReset = false,
+  previewWidgetId: explicitPreviewWidgetId,
 }: BaseSettingsSectionProps<T>) => {
+  const selectedWidgetId = useContext(SettingsPreviewContext);
+  const previewWidgetId =
+    explicitPreviewWidgetId ??
+    (Heading === 'h2' ? selectedWidgetId : undefined);
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const simulator = useActiveSimulator();
   const supportConfig = useSimWidgetSupport();
@@ -176,28 +189,73 @@ export const BaseSettingsSection = <T,>({
 
   if (!settings || !onSettingsChange || !widgetId) {
     return (
-      <div className="space-y-4">
+      <section className="space-y-4 rounded-lg border border-slate-700 bg-slate-800/40 p-4">
         <div>
-          <h3 className="text-lg font-medium text-slate-200">{title}</h3>
+          <h3 className="text-lg font-semibold text-slate-200">{title}</h3>
           <p className="text-sm text-slate-400">{description}</p>
         </div>
+        {previewWidgetId && (
+          <WidgetPreview key={previewWidgetId} widgetId={previewWidgetId} />
+        )}
         {children &&
           (typeof children === 'function'
             ? children(() => undefined)
             : children)}
-      </div>
+      </section>
     );
   }
 
+  const content = (
+    <>
+      {children && (
+        <div className="space-y-4">
+          {typeof children === 'function'
+            ? children(handleConfigChange)
+            : children}
+        </div>
+      )}
+      {!hidePositionReset && (
+        <div className="flex justify-center p-4 pt-2 mt-2">
+          <button
+            type="button"
+            onClick={handleResetPosition}
+            className="min-h-9 rounded-md border border-settings-boundary bg-slate-800 px-3 py-1.5 text-sm text-slate-200 transition-colors hover:border-accent-400"
+          >
+            Reset Position
+          </button>
+        </div>
+      )}
+      <ConfirmDialog
+        isOpen={showResetConfirm}
+        title="Reset Position"
+        message="This will reset the position for both the on-screen overlay and the browser/URL source version."
+        confirmText="Reset Position"
+        onConfirm={confirmResetPosition}
+        onCancel={() => setShowResetConfirm(false)}
+      />
+    </>
+  );
+
   return (
-    <div className={`flex flex-col ${disableInternalScroll ? '' : 'h-full'}`}>
-      <div className="flex-none space-y-6 p-4 bg-slate-700 rounded">
+    <div
+      className={`flex min-h-0 flex-col ${disableInternalScroll ? '' : 'h-full'}`}
+    >
+      <header className="flex-none border-b border-slate-700 px-1 pb-5 pt-1">
         <div>
           <div className="flex justify-between items-center mb-1">
-            <h2 className="text-xl">{title}</h2>
+            <Heading
+              className={
+                Heading === 'h2'
+                  ? 'text-xl font-semibold tracking-tight text-white'
+                  : 'text-lg font-semibold text-white'
+              }
+            >
+              {title}
+            </Heading>
             <div className="flex flex-col items-end gap-0.5">
               {!menuToggles && !isGantryOnly && (
                 <ToggleSwitch
+                  ariaLabel={`Enable ${title}`}
                   enabled={localSettings.enabled}
                   disabled={!!simDisabledReason}
                   disabledReason={simDisabledReason ?? undefined}
@@ -218,61 +276,22 @@ export const BaseSettingsSection = <T,>({
           </div>
           <p className="text-slate-400 text-sm">{description}</p>
         </div>
-      </div>
+      </header>
 
-      <div
-        className={`${disableInternalScroll ? '' : 'flex-1 overflow-y-auto min-h-0'} mt-4`}
-      >
-        {children && (
-          <div className="space-y-4">
-            {typeof children === 'function'
-              ? children(handleConfigChange)
-              : children}
-          </div>
-        )}
-
-        {!hidePositionReset && (
-          <div className="flex justify-center p-4 pt-2 mt-2">
-            <button
-              type="button"
-              onClick={handleResetPosition}
-              className="px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
-            >
-              Reset Position
-            </button>
-          </div>
-        )}
-
-        {showResetConfirm && (
-          <div className="fixed inset-0 z-50 [-webkit-app-region:no-drag] flex items-center justify-center bg-black/60">
-            <div className="bg-slate-800 rounded-lg border border-slate-600 p-5 w-80 shadow-xl">
-              <h3 className="text-base font-semibold text-white mb-2">
-                Reset Position
-              </h3>
-              <p className="text-sm text-slate-300 mb-4">
-                This will reset the position for both the on-screen overlay and
-                the browser/URL source version.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={confirmResetPosition}
-                  className="flex-1 px-3 py-1.5 text-sm bg-red-700 hover:bg-red-600 text-white rounded-md transition-colors"
-                >
-                  Reset Position
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowResetConfirm(false)}
-                  className="flex-1 px-3 py-1.5 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      {previewWidgetId ? (
+        <SettingsPreviewLayout
+          widgetId={previewWidgetId}
+          scroll={!disableInternalScroll}
+        >
+          {content}
+        </SettingsPreviewLayout>
+      ) : (
+        <div
+          className={`${disableInternalScroll ? '' : 'flex-1 overflow-y-auto min-h-0 [scrollbar-gutter:stable]'} pt-5 pr-1`}
+        >
+          {content}
+        </div>
+      )}
     </div>
   );
 };

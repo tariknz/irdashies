@@ -118,6 +118,8 @@ export const TowerView = ({
     ])
   );
   // Positions gained only exist in a race, against the qualifying grid.
+  const hasLastLap = standings.some((s) => s.lastTime > 0);
+  const hasBestLap = standings.some((s) => s.fastestTime > 0);
   const hasGained = standings.some((s) => s.positionChange !== undefined);
   const hasPits = standings.some((s) => s.lastPitLap);
   const pageMode = settings?.pageMode;
@@ -133,6 +135,8 @@ export const TowerView = ({
         },
         {
           classes: JSON.parse(classList) as [string, string][],
+          hasLastLap,
+          hasBestLap,
           hasGained,
           hasPits,
           hasTyreChoice,
@@ -143,6 +147,8 @@ export const TowerView = ({
       staticPage,
       pageSet,
       classList,
+      hasLastLap,
+      hasBestLap,
       hasGained,
       hasPits,
       hasTyreChoice,
@@ -233,7 +239,10 @@ export const TowerView = ({
                   )}
                 </div>
                 {change && (
-                  <PositionArrow key={`arrow-${change.seq}`} delta={change.delta} />
+                  <PositionArrow
+                    key={`arrow-${change.seq}`}
+                    delta={change.delta}
+                  />
                 )}
               </div>
             );
@@ -262,7 +271,11 @@ export const TowerView = ({
       )}
       {settings?.showFocusCard !== false && focus && (
         <BroadcastEnter id={focus.carIdx}>
-          <FocusCard standing={focus} />
+          <FocusCard
+            standing={focus}
+            showLastLap={settings?.showLastLap !== false}
+            showBestLap={settings?.showBestLap !== false}
+          />
         </BroadcastEnter>
       )}
     </div>

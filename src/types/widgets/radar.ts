@@ -4,6 +4,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'radar',
   name: 'Radar',
+  category: 'Spotter & Safety',
   enabled: false,
   layout: {
     x: 760,

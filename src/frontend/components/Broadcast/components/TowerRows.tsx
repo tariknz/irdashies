@@ -6,6 +6,7 @@ import {
 } from '@phosphor-icons/react';
 import type { Standings } from '@irdashies/domain';
 import type { NameFormat } from '@irdashies/types';
+import { formatTime } from '@irdashies/utils/time';
 import { CarManufacturer } from '../../shared/CarManufacturer/CarManufacturer';
 import { Compound } from '../../shared/Compound/Compound';
 import { CountryFlag } from '../../shared/CountryFlag/CountryFlag';
@@ -127,8 +128,30 @@ export const DriverRow = ({
       </span>
       {standing.radioActive && <MicrophoneIcon size={12} weight="fill" />}
       <StatusBadges standing={standing} />
-      <span className="tabular-nums">
+      <span className="shrink-0 tabular-nums">
         {page.kind === 'gaps' && !dimmed && <GapCell standing={standing} />}
+        {page.kind === 'lastLap' && (
+          <span
+            className={
+              standing.lastTimeState === 'session-fastest'
+                ? 'text-purple-400'
+                : standing.lastTimeState === 'personal-best'
+                  ? 'text-green-400'
+                  : ''
+            }
+          >
+            {standing.lastTime > 0
+              ? formatTime(standing.lastTime, 'full')
+              : '—'}
+          </span>
+        )}
+        {page.kind === 'bestLap' && (
+          <span className={standing.hasFastestTime ? 'text-purple-400' : ''}>
+            {standing.fastestTime > 0
+              ? formatTime(standing.fastestTime, 'full')
+              : '—'}
+          </span>
+        )}
         {page.kind === 'gained' && (
           <GainedCell change={standing.positionChange} />
         )}

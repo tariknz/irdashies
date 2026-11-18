@@ -16,8 +16,10 @@ import type { ChannelBridge } from '@irdashies/types';
 
 declare global {
   interface Window {
+    widgetPreviewBridge?: import('./types/widgetPreview').WidgetPreviewBridge;
     storageStatusBridge?: import('./types/storageStatus').StorageStatusBridge;
     channelBridge: ChannelBridge;
+    windowVisibilityBridge?: import('./types/windowVisibility').WindowVisibilityBridge;
     irsdkBridge: IrSdkBridge;
     telemetryInspectorBridge: TelemetryInspectorBridge;
     dashboardBridge: DashboardBridge;
@@ -34,5 +36,7 @@ declare global {
     lapHistoryBridge?: LapHistoryBridge;
     rendererPerfBridge?: RendererPerfBridge;
     tapeReplayBridge?: import('./types/tapeReplay').TapeReplayBridge;
+    /** Absent outside the Electron preload, e.g. the browser server. */
+    racePlanBridge?: import('./types/racePlan').RacePlanBridge;
   }
 }

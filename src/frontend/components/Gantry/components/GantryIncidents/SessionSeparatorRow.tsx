@@ -14,22 +14,22 @@ export const SessionSeparatorRow = memo(
       <div
         role="heading"
         aria-level={3}
-        className="sticky top-0 z-10 flex items-center gap-2 px-3 py-1 bg-slate-900 border-y border-slate-700 text-xs"
+        className="sticky top-0 z-10 flex h-[30px] items-center gap-2 border-b border-slate-700 bg-slate-900 px-4 text-xs"
       >
-        <span className="font-extrabold uppercase tracking-wider text-slate-200 truncate">
+        <span className="truncate font-semibold tracking-wider text-slate-300 uppercase">
           {label}
         </span>
         {isCurrent && (
-          <span className="px-1.5 rounded border border-amber-500/50 bg-amber-500/20 text-amber-300 text-[10px] font-extrabold tracking-wider flex-shrink-0">
+          <span className="flex-shrink-0 rounded-sm border border-settings-boundary px-1.5 text-slate-300">
             {isReplay ? 'REPLAY' : 'LIVE'}
           </span>
         )}
         {isEmptyCurrent && (
-          <span className="text-slate-500 truncate">— no incidents yet</span>
+          <span className="truncate text-slate-400">— no incidents yet</span>
         )}
-        <span className="flex-1 h-px bg-slate-700 min-w-4" />
+        <span className="h-px min-w-4 flex-1 bg-settings-hover" />
         {!isEmptyCurrent && (
-          <span className="text-slate-400 flex-shrink-0">
+          <span className="flex-shrink-0 text-slate-400 tabular-nums">
             {count} {count === 1 ? 'incident' : 'incidents'}
           </span>
         )}

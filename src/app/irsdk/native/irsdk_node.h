@@ -34,11 +34,13 @@ private:
     Napi::Value GetSessionVersionNum(const Napi::CallbackInfo &info);
     Napi::Value GetSessionData(const Napi::CallbackInfo &info);
     Napi::Value GetTelemetryData(const Napi::CallbackInfo &info);
+    Napi::Value GetTelemetryDataView(const Napi::CallbackInfo &info);
     // Helpers
     Napi::Value __GetTelemetryTypes(const Napi::CallbackInfo &info);
     Napi::Value GetTelemetryVar(const Napi::CallbackInfo &info);
 
-    Napi::Object GetTelemetryVarByIndex(const Napi::Env env, int index);
+    Napi::Object GetTelemetryVarByIndex(const Napi::Env env, int index,
+        const Napi::ArrayBuffer* frameBuffer = nullptr);
     Napi::Object GetTelemetryVar(const Napi::Env env, const char *varName);
 
     bool _loggingEnabled;

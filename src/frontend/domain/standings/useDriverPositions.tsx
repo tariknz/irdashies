@@ -22,7 +22,11 @@ import {
 } from './createStandings';
 import { GlobalFlags, SessionState } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
-import { lmuPenaltyBadge, lmuPenaltyKindFromCode } from '@irdashies/types';
+import {
+  lmuFinishStateFromCode,
+  lmuPenaltyBadge,
+  lmuPenaltyKindFromCode,
+} from '@irdashies/types';
 import { measureStandingsRebuild } from './standingsCost';
 import { useRelativeSettings } from './useRelativeSettings';
 import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
@@ -98,28 +102,30 @@ export const useDriverPositions = () => {
 
 export const useDrivers = () => {
   const sessionDrivers = useSessionDrivers();
-  const drivers =
-    sessionDrivers?.map((driver) => ({
-      carIdx: driver.CarIdx,
-      name: driver.UserName,
-      carNum: driver.CarNumber,
-      carNumRaw: driver.CarNumberRaw,
-      license: driver.LicString,
-      rating: driver.IRating,
-      flairId: driver.FlairID,
-      lmuRating: driver.LmuRating,
-      teamName: driver.TeamName,
-      isAI: driver.CarIsAIControlled,
-      carClass: {
-        id: driver.CarClassID,
-        color: driver.CarClassColor,
-        name: driver.CarClassShortName,
-        relativeSpeed: driver.CarClassRelSpeed,
-        estLapTime: driver.CarClassEstLapTime,
-      },
-      carId: driver.CarID,
-    })) ?? [];
-  return drivers;
+  return useMemo(
+    () =>
+      sessionDrivers?.map((driver) => ({
+        carIdx: driver.CarIdx,
+        name: driver.UserName,
+        carNum: driver.CarNumber,
+        carNumRaw: driver.CarNumberRaw,
+        license: driver.LicString,
+        rating: driver.IRating,
+        flairId: driver.FlairID,
+        lmuRating: driver.LmuRating,
+        teamName: driver.TeamName,
+        isAI: driver.CarIsAIControlled,
+        carClass: {
+          id: driver.CarClassID,
+          color: driver.CarClassColor,
+          name: driver.CarClassShortName,
+          relativeSpeed: driver.CarClassRelSpeed,
+          estLapTime: driver.CarClassEstLapTime,
+        },
+        carId: driver.CarID,
+      })) ?? [],
+    [sessionDrivers]
+  );
 };
 
 /**
@@ -157,6 +163,10 @@ const trackLimitsFor = (
   return typeof value === 'number' && value >= 0 ? value : undefined;
 };
 
+/**
+ * Each car's state from the standings snapshot -- pit road, tyres, penalties,
+ * finish status and session flags -- one entry per car slot.
+ */
 export const useCarState = () => {
   const snapshot = useStandingsSnapshot();
   const carIdxTrackSurface = snapshot?.carIdxTrackSurface ?? EMPTY_NUMBERS;
@@ -170,6 +180,7 @@ export const useCarState = () => {
   const carIdxPenalties = snapshot?.carIdxPenalties ?? EMPTY_NUMBERS;
   const carIdxPenaltyKind = snapshot?.carIdxPenaltyKind ?? EMPTY_NUMBERS;
   const carIdxPenaltySeconds = snapshot?.carIdxPenaltySeconds ?? EMPTY_NUMBERS;
+  const carIdxFinishStatus = snapshot?.carIdxFinishStatus ?? EMPTY_NUMBERS;
   const carIdxSessionFlags = snapshot?.carIdxSessionFlags ?? EMPTY_NUMBERS;
 
   return useMemo(() => {
@@ -185,6 +196,7 @@ export const useCarState = () => {
         penalties: carIdxPenalties[index] ?? 0,
         penaltyKind: lmuPenaltyKindFromCode(carIdxPenaltyKind[index]),
         penaltySeconds: carIdxPenaltySeconds[index],
+        finishState: lmuFinishStateFromCode(carIdxFinishStatus[index]),
         dnf: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Disqualify),
         repair: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Repair),
         penalty: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Black),
@@ -201,12 +213,18 @@ export const useCarState = () => {
     carIdxPenalties,
     carIdxPenaltyKind,
     carIdxPenaltySeconds,
+    carIdxFinishStatus,
     carIdxSessionFlags,
   ]);
 };
 
-// TODO: this should eventually replace the useDriverStandings hook
-// currently there's still a few bugs to handle but is only used in relative right now
+/**
+ * Relative's rows: each driver with position, live position when enabled,
+ * and car state.
+ *
+ * TODO: this should eventually replace the useDriverStandings hook
+ * currently there's still a few bugs to handle but is only used in relative right now
+ */
 export const useDriverStandings = () => {
   const driverPositions = useDriverPositions();
   const relativeSettings = useRelativeSettings();
@@ -367,6 +385,7 @@ export const useDriverStandings = () => {
                 penaltySeconds
               ),
             penaltySeconds: carState?.penaltySeconds,
+            finishState: carState?.finishState,
             carClass: driver.carClass,
             radioActive: radioActiveCarIdxs.includes(driverPos.carIdx),
             carId: driver.carId,

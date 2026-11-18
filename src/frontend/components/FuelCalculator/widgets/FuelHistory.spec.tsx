@@ -4,6 +4,8 @@ import type { FuelLapData } from '@irdashies/types';
 import { defaultFuelCalculatorSettings } from '../defaults';
 import { useFuelStore } from '../FuelStore';
 import { FuelHistory } from './FuelHistory';
+import { demoFuelData } from '../demoData';
+import { formatFuel } from '../fuelCalculations';
 
 const dashboard = vi.hoisted(() => ({ isDemoMode: false }));
 vi.mock('@irdashies/context', () => ({ useDashboard: () => dashboard }));
@@ -237,6 +239,7 @@ describe('FuelHistory table', () => {
     const view = render(<FuelHistory fuelUnits="L" settings={settings} />);
     expect(screen.getByText('Preview')).toBeInTheDocument();
     expect(rows()).toHaveLength(5);
+    expect(rows()[0][1]).toBe(formatFuel(demoFuelData.lastLapUsage, 'L'));
     view.rerender(
       <FuelHistory
         fuelUnits="L"
@@ -244,6 +247,16 @@ describe('FuelHistory table', () => {
       />
     );
     expect(rows()).toHaveLength(8);
+    expect(useFuelStore.getState().lapHistory.size).toBe(0);
+    view.rerender(
+      <FuelHistory
+        fuelUnits="L"
+        settings={{ ...settings, fuelHistoryType: 'line' }}
+      />
+    );
+    expect(
+      screen.getByText(formatFuel(demoFuelData.avgAllGreenLaps, 'L'))
+    ).toBeInTheDocument();
     expect(useFuelStore.getState().lapHistory.size).toBe(0);
   });
 });

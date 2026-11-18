@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboard } from '@irdashies/context';
 import { PlusIcon } from '@phosphor-icons/react';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { SingleFuelWidgetSettings } from './SingleFuelWidgetSettings';
 import { generateId } from './utils';
+import { SettingsPreviewContext } from '@irdashies/domain/widgetPreview/settingsPreviewContext';
 
 const widgetType = 'fuel';
 const defaultConfig = getWidgetDefaultConfig('fuel');
@@ -14,6 +15,7 @@ interface FuelSettingsProps {
 }
 
 export const FuelSettings = ({ widgetId }: FuelSettingsProps) => {
+  const sharedPreview = useContext(SettingsPreviewContext);
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const navigate = useNavigate();
 
@@ -75,7 +77,7 @@ export const FuelSettings = ({ widgetId }: FuelSettingsProps) => {
         <p className="text-slate-400">No fuel calculator widgets added yet.</p>
         <button
           onClick={handleAddWidget}
-          className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-600 text-white rounded transition-colors"
+          className="flex min-h-9 items-center gap-2 rounded-md bg-accent-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-600"
         >
           <PlusIcon size={20} /> Create New Widget
         </button>
@@ -84,10 +86,20 @@ export const FuelSettings = ({ widgetId }: FuelSettingsProps) => {
   }
 
   return (
-    <div className="space-y-4 h-full overflow-y-auto p-1">
+    <div
+      className={
+        sharedPreview
+          ? 'h-full min-h-0 p-1'
+          : 'space-y-4 h-full overflow-y-auto p-1'
+      }
+    >
       {/* Render settings for selected ID */}
       {selectedId && (
-        <SingleFuelWidgetSettings key={selectedId} widgetId={selectedId} />
+        <SingleFuelWidgetSettings
+          key={selectedId}
+          widgetId={selectedId}
+          disableInternalScroll={!sharedPreview}
+        />
       )}
     </div>
   );

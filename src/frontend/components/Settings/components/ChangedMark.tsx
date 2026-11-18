@@ -24,7 +24,7 @@ export const differsFromDefault = (
 
 /**
  * Radar's changed marker for any settings page: wrap a row with the config
- * keys it edits, and a blue dot shows while any of them differs from the
+ * keys it edits, and an accent dot shows while any of them differs from the
  * default. Clicking the dot puts them back.
  */
 export const changeMarker =
@@ -44,7 +44,7 @@ export const changeMarker =
             type="button"
             title="Changed: click to reset"
             aria-label={`Reset ${keys.join(', ')}`}
-            className="absolute -left-3 top-2 h-2 w-2 rounded-full bg-accent-400 hover:bg-accent-300"
+            className="absolute -left-6 -top-0.5 flex h-6 w-6 items-center justify-center rounded group"
             onClick={() =>
               set(
                 Object.fromEntries(
@@ -52,7 +52,9 @@ export const changeMarker =
                 ) as Partial<T>
               )
             }
-          />
+          >
+            <span className="h-2 w-2 rounded-full bg-accent-400 group-hover:bg-accent-300" />
+          </button>
         )}
         {children}
       </div>

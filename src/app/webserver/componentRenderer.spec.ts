@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_SIM_WIDGET_SUPPORT,
   type FuelProjectionSnapshot,
+  type RacePlanState,
 } from '@irdashies/types';
 import { WebSocketBridge } from './componentRenderer';
 
@@ -328,6 +329,50 @@ describe('WebSocketBridge image responses', () => {
       bridge.stop();
     }
   );
+});
+
+describe('WebSocketBridge race plan state', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  const reconnectedWithSubscriber = async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('WebSocket', FakeWebSocket);
+    const bridge = new WebSocketBridge();
+    const connecting = bridge.connect('http://localhost:3000');
+    (FakeWebSocket.latest as FakeWebSocket).onopen?.();
+    await connecting;
+    const callback = vi.fn();
+    bridge.onRacePlanState(callback);
+    (FakeWebSocket.latest as FakeWebSocket).onclose?.();
+    await vi.advanceTimersByTimeAsync(1000);
+    const socket = FakeWebSocket.latest as FakeWebSocket;
+    socket.onopen?.();
+    return { bridge, socket, callback };
+  };
+
+  const state = (fetchedAt: number) =>
+    ({ fetchedAt }) as unknown as RacePlanState;
+
+  it('seeds the current state after a reconnect', async () => {
+    const { bridge, socket, callback } = await reconnectedWithSubscriber();
+    socket.reply('racePlan:getState', state(1));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(callback).toHaveBeenLastCalledWith(state(1));
+    bridge.stop();
+  });
+
+  it('drops a reconnect seed once a newer push has arrived', async () => {
+    const { bridge, socket, callback } = await reconnectedWithSubscriber();
+    socket.deliver({ type: 'racePlanState', data: state(2) });
+    socket.reply('racePlan:getState', state(1));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(callback).toHaveBeenCalledTimes(1);
+    expect(callback).toHaveBeenLastCalledWith(state(2));
+    bridge.stop();
+  });
 });
 
 describe('WebSocketBridge pit lane calibration', () => {

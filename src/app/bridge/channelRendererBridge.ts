@@ -27,11 +27,17 @@ interface LocalSubscription {
   subscribedRate?: number;
 }
 
-export const createChannelRendererBridge = (): ChannelBridge => {
+export const createChannelRendererBridge = (
+  channels = {
+    subscribe: CHANNEL_SUBSCRIBE,
+    unsubscribe: CHANNEL_UNSUBSCRIBE,
+    delivery: CHANNEL_DELIVERY,
+  }
+): ChannelBridge => {
   const subscriptions = new Map<ChannelName, LocalSubscription>();
 
   ipcRenderer.on(
-    CHANNEL_DELIVERY,
+    channels.delivery,
     (_event, channel: ChannelName, payload: unknown) => {
       const subscription = subscriptions.get(channel);
       if (!subscription) return;
@@ -63,7 +69,7 @@ export const createChannelRendererBridge = (): ChannelBridge => {
     }
     subscription.isSubscribed = true;
     subscription.subscribedRate = requestedRate;
-    void ipcRenderer.invoke(CHANNEL_SUBSCRIBE, channel, requestedRate);
+    void ipcRenderer.invoke(channels.subscribe, channel, requestedRate);
   };
 
   return {
@@ -91,7 +97,7 @@ export const createChannelRendererBridge = (): ChannelBridge => {
         subscription?.consumers.delete(consumer);
         if (!subscription || subscription.consumers.size === 0) {
           subscriptions.delete(channel);
-          void ipcRenderer.invoke(CHANNEL_UNSUBSCRIBE, channel);
+          void ipcRenderer.invoke(channels.unsubscribe, channel);
           return;
         }
         sync(channel, subscription);

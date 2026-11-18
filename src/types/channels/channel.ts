@@ -7,6 +7,8 @@ import type {
   StreamChatMessagesSnapshot,
 } from '../streamChat';
 import type { ReplayContextSnapshot } from './replayContext';
+import type { RacePlanProgressSnapshot } from './racePlanProgress';
+import type { PitStopsSnapshot } from './pitStops';
 import type { PitLaneCalibration } from '../pitLane';
 
 export type SessionLifecycleEvent =
@@ -44,6 +46,8 @@ export interface ChannelPayloads {
   'replay.context': ReplayContextSnapshot;
   'streamchat.messages': StreamChatMessagesSnapshot;
   'streamchat.emotes': StreamChatEmotesSnapshot;
+  'race-plan.progress': RacePlanProgressSnapshot;
+  'pit-stops.snapshot': PitStopsSnapshot;
 }
 
 export interface TrackStateSnapshot {
@@ -59,6 +63,18 @@ export interface TrackStateSnapshot {
    * reading. Nothing about where the player is can be trusted while it is set.
    */
   dataStale: boolean;
+  /**
+   * True while LMU says it is running and in no session, or in no game at
+   * all. Session visibility treats it as Offline Testing. Always false under
+   * iRacing.
+   */
+  notInSession: boolean;
+  /**
+   * True while LMU says the player is out of the car: at the monitor, or in no
+   * session or game. The driving gate reads false while it is set, whatever
+   * the pit flags say. Always false under iRacing.
+   */
+  outOfCar: boolean;
   playerCarInPitStall: boolean;
   playerTrackSurface: number;
   onPitRoad: boolean;
@@ -382,6 +398,8 @@ export interface LapLogSnapshot {
   deltaToSessionBestLapOk: boolean;
   /** LMU's void flag for the player's lap in progress; always false in iRacing. */
   lapInvalidated: boolean;
+  /** A full-course caution was seen during the most recently completed lap. */
+  lastLapUnderCaution: boolean;
   version: number;
 }
 
@@ -510,6 +528,11 @@ export interface StandingsSnapshot {
    */
   carIdxPenaltyKind: number[];
   /**
+   * Each car's finish status, as an LMU_FINISH_STATUS. Empty under iRacing.
+   * `lmuFinishStateFromCode` turns an entry into something to draw.
+   */
+  carIdxFinishStatus: number[];
+  /**
    * Seconds a time penalty will add, per car. 0 for a clean car and for the
    * two kinds served on track. Empty wherever `carIdxPenaltyKind` is.
    *
@@ -588,8 +611,10 @@ export interface CarSpeedsSnapshot {
 export interface LapTimesSnapshot {
   /** Median filtered pace for each car index. */
   lapTimes: readonly number[];
-  /** At most the ten most recent observed lap times per car index. */
+  /** At most the 100 most recent observed lap times per car index. */
   lapTimeHistory: readonly (readonly number[])[];
+  /** Last 100 fully observed laps without pit-road running. Old sources may omit it. */
+  cleanLapTimeHistory?: readonly (readonly number[])[];
   sessionNum: number | null;
   version: number;
 }
@@ -764,6 +789,19 @@ export const channelRegistry = {
   },
   // Publishes when the Twitch channel's BTTV/7TV emote sets finish loading.
   'streamchat.emotes': {
+    kind: 'snapshot',
+    defaultRateHz: 1,
+    maxRateHz: 2,
+  },
+  // Stints are minutes long; once a second is plenty for a lap count.
+  'race-plan.progress': {
+    kind: 'snapshot',
+    defaultRateHz: 1,
+    maxRateHz: 1,
+  },
+  // Publishes when a car enters, stops in, leaves or exits the pits; the cap
+  // only bounds a burst of stops under a full-course caution.
+  'pit-stops.snapshot': {
     kind: 'snapshot',
     defaultRateHz: 1,
     maxRateHz: 2,

@@ -24,14 +24,16 @@ type EventChannelName =
   | 'pit-lane.reset';
 /**
  * Channels owned by a standalone runtime rather than the ProcessorHost, so
- * this harness never sees them. `lap-history.snapshot` is recorded by
- * LapHistoryRuntime, which deliberately runs outside demand gating so an
+ * this harness never sees them. `lap-history.snapshot` and `pit-stops.snapshot`
+ * are recorded by their own runtimes (LapHistoryRuntime, PitStopRuntime),
+ * which deliberately run outside demand gating so an
  * enabled Gantry keeps recording with its window closed. `replay.context` is
  * owned by ReplayContextRuntime, which the other runtimes read to pause.
  * `streamchat.*` are published by StreamChatService, which reads no telemetry.
  */
 type RuntimeOwnedChannelName =
   | 'lap-history.snapshot'
+  | 'pit-stops.snapshot'
   | 'replay.context'
   | 'streamchat.messages'
   | 'streamchat.emotes';
@@ -58,6 +60,7 @@ const SNAPSHOT_CHANNELS = [
   'standings.snapshot',
   'track-state.snapshot',
   'lap-trace.sample',
+  'race-plan.progress',
 ] as const satisfies readonly SnapshotChannelName[];
 
 type SnapshotChannel = (typeof SNAPSHOT_CHANNELS)[number];
@@ -576,6 +579,13 @@ const summarize = (snapshots: SnapshotRecord) => ({
     sessionNum: snapshots['lap-trace.sample'].sessionNum,
     version: snapshots['lap-trace.sample'].version,
   },
+  'race-plan.progress': {
+    status: snapshots['race-plan.progress'].status,
+    raceStartMs: snapshots['race-plan.progress'].raceStartMs,
+    teamLaps: snapshots['race-plan.progress'].teamLaps,
+    stopCount: snapshots['race-plan.progress'].stops.length,
+    version: snapshots['race-plan.progress'].version,
+  },
 });
 
 describe('runtime boundary replay', () => {
@@ -811,5 +821,12 @@ const FIXED_GOLDEN = {
     brake: 0.11,
     sessionNum: 1,
     version: 5,
+  },
+  'race-plan.progress': {
+    status: 'no-plan',
+    raceStartMs: null,
+    teamLaps: 0,
+    stopCount: 0,
+    version: 6,
   },
 } satisfies ReturnType<typeof summarize>;

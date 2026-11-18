@@ -1,4 +1,9 @@
+import { useCanvasCleanup } from '@irdashies/domain/canvas/useCanvasCleanup';
+import { RadarRingsLayer } from '../radarDrawRings';
+import { useNativeWindowVisibility } from '@irdashies/context';
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { perfMetrics } from '@irdashies/utils/perfMetrics';
+import { advanceFrameDeadline } from '@irdashies/utils/frameDeadline';
 import { useWidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import type { TrackGeometry } from '@irdashies/domain/track';
 import {
@@ -97,6 +102,7 @@ const FALLBACK_APPEARANCE: RadarCarAppearance = {
   width: 1.9,
 };
 
+/** Canvas radar of surrounding cars, painted on rAF from the latest frame ref. */
 export const RadarDisplay = memo(
   ({
     frame,
@@ -109,8 +115,10 @@ export const RadarDisplay = memo(
     dive = NO_DIVES,
   }: RadarDisplayProps) => {
     const widgetScale = useWidgetScale();
+    const nativeVisible = useNativeWindowVisibility();
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    useCanvasCleanup(canvasRef);
     const [size, setSize] = useState(0);
 
     const latest = useRef({
@@ -148,6 +156,7 @@ export const RadarDisplay = memo(
     }, []);
 
     useEffect(() => {
+      if (!nativeVisible) return;
       const canvas = canvasRef.current;
       const ctx = canvas?.getContext('2d');
       if (!canvas || !ctx || size <= 0) return;
@@ -155,6 +164,7 @@ export const RadarDisplay = memo(
       canvas.width = Math.round(size * ratio);
       canvas.height = Math.round(size * ratio);
 
+      const ringsLayer = new RadarRingsLayer(ratio);
       const cars: RadarDrawCar[] = [];
       const follow: RadarDrawFollow = { carIdx: null, dist: 0, label: '' };
       const dives = new DiveTracker();
@@ -169,7 +179,7 @@ export const RadarDisplay = memo(
       let roadLane = latest.current.frame.roadLane ?? 0;
       let lastPaint = performance.now();
       let frameMs: number | undefined;
-      const paint = () => {
+      const drawFrame = () => {
         const started = performance.now();
         const current = latest.current;
         const { frame: snap, style: look } = current;
@@ -266,29 +276,50 @@ export const RadarDisplay = memo(
         }
 
         ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-        drawRadar(ctx, {
-          size,
-          geometry: current.geometry,
-          trackLength: snap.trackLength,
-          playerPct,
-          cars,
-          follow: followTarget,
-          style: look,
-          time: started / 1000,
-          travelled,
-          frameMs,
-          dives: diveHints,
-          laneWidth,
-          hazards,
-          poleSideNotice: snap.poleSideNotice,
-          roadLane,
-        });
+        drawRadar(
+          ctx,
+          {
+            size,
+            geometry: current.geometry,
+            trackLength: snap.trackLength,
+            playerPct,
+            cars,
+            follow: followTarget,
+            style: look,
+            time: started / 1000,
+            travelled,
+            frameMs,
+            dives: diveHints,
+            laneWidth,
+            hazards,
+            poleSideNotice: snap.poleSideNotice,
+            roadLane,
+          },
+          ringsLayer
+        );
         frameMs = performance.now() - started;
+      };
+      const intervalMs = 1000 / 60;
+      let nextPaintAt = performance.now();
+      const paint = (now: number) => {
+        const next = advanceFrameDeadline(now, nextPaintAt, intervalMs);
+        if (next !== nextPaintAt) {
+          // Keep the deadline's phase even across missed frames. Resetting
+          // it to now + intervalMs can skip every other refresh near 60 Hz.
+          // Advance past missed slots without issuing catch-up paints.
+          nextPaintAt = next;
+          perfMetrics.measure('radarFrame', drawFrame);
+        }
+        // Use the refresh timestamp so callback delivery delays cannot move
+        // the paint schedule. drawFrame still measures actual elapsed time.
         if (active) handle = requestAnimationFrame(paint);
       };
-      paint();
-      return () => cancelAnimationFrame(handle);
-    }, [size, active, widgetScale]);
+      paint(performance.now());
+      return () => {
+        cancelAnimationFrame(handle);
+        ringsLayer.dispose();
+      };
+    }, [size, active, widgetScale, nativeVisible]);
 
     return (
       <div

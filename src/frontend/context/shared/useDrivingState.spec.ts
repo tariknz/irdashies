@@ -19,6 +19,7 @@ vi.mock('../ChannelStore', () => ({
       isGarageVisible: useTelemetryValue('IsGarageVisible'),
       isReplayPlaying: useTelemetryValue('IsReplayPlaying'),
       dataStale: useTelemetryValue('LmuDataStale'),
+      outOfCar: useTelemetryValue('LmuOutOfCar'),
     })
   ),
 }));
@@ -310,10 +311,12 @@ describe('useDrivingState', () => {
       expect(useTelemetryValue).toHaveBeenCalledWith('IsInGarage');
       expect(useTelemetryValue).toHaveBeenCalledWith('IsGarageVisible');
       expect(useTelemetryValue).toHaveBeenCalledWith('IsReplayPlaying');
-      // Seven, not six: the frame now also carries whether the sim has
-      // stopped writing it, which the selector checks before anything else.
+      // Eight, not six: the frame also carries whether the sim has stopped
+      // writing it and whether LMU says the player is out of the car, both
+      // checked before anything else.
       expect(useTelemetryValue).toHaveBeenCalledWith('LmuDataStale');
-      expect(useTelemetryValue).toHaveBeenCalledTimes(7);
+      expect(useTelemetryValue).toHaveBeenCalledWith('LmuOutOfCar');
+      expect(useTelemetryValue).toHaveBeenCalledTimes(8);
     });
   });
 });
@@ -342,6 +345,13 @@ describe('useDrivingState with a frame the sim has stopped writing', () => {
     // So the stale flag is doing the work, not the rest of the condition.
     expect(frame({ CarIdxOnPitRoad: true })).toBe(true);
     expect(frame({ IsOnTrack: true })).toBe(true);
+  });
+
+  it('is not driving while LMU says the player is out of the car', () => {
+    // At the monitor with the car left in the pit lane or its stall: the data
+    // is live and the pit terms are true, but the player is not in the car.
+    expect(frame({ CarIdxOnPitRoad: true, LmuOutOfCar: true })).toBe(false);
+    expect(frame({ PlayerCarInPitStall: true, LmuOutOfCar: true })).toBe(false);
   });
 
   it('is not driving in the garage, stale or not', () => {

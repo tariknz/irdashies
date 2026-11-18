@@ -41,6 +41,40 @@ describe('buildPages', () => {
     ]);
   });
 
+  it('includes lap pages only when their times are available', () => {
+    expect(kinds(buildPages({}, { ...data, hasLastLap: true }))).toContain(
+      'lastLap'
+    );
+    expect(kinds(buildPages({}, { ...data, hasLastLap: true }))).not.toContain(
+      'bestLap'
+    );
+    expect(kinds(buildPages({}, { ...data, hasBestLap: true }))).toContain(
+      'bestLap'
+    );
+    expect(kinds(buildPages({}, data))).not.toContain('lastLap');
+    expect(kinds(buildPages({}, data))).not.toContain('bestLap');
+  });
+
+  it('respects disabled lap pages even when times are available', () => {
+    const result = kinds(
+      buildPages(
+        { pages: { lastLap: false, bestLap: false } },
+        { ...data, hasLastLap: true, hasBestLap: true }
+      )
+    );
+    expect(result).not.toContain('lastLap');
+    expect(result).not.toContain('bestLap');
+  });
+
+  it.each(['lastLap', 'bestLap'] as const)(
+    'keeps the static %s page before times are available',
+    (staticPage) => {
+      expect(
+        kinds(buildPages({ pageMode: 'static', staticPage }, data))
+      ).toEqual([staticPage]);
+    }
+  );
+
   it('leaves out the pages the user switched off', () => {
     const pages = {
       names: false,

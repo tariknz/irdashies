@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { menuHasToggle, widgetItems } from './menuItems';
+import { broadcastItems, menuHasToggle, widgetItems } from './menuItems';
 
 describe('menuHasToggle', () => {
   it('is true for a listed widget that exists in the dashboard', () => {
@@ -11,14 +11,23 @@ describe('menuHasToggle', () => {
   });
 
   it('is false for widgets hidden from the menu or sharing a page', () => {
+    const inBroadcastMenu = (item: (typeof widgetItems)[number]) =>
+      broadcastItems.some((b) => b.widgetType === item.widgetType);
     const noSwitch = widgetItems.filter(
-      (item) => item.hideInMenu || item.groupTypes
+      (item) => (item.hideInMenu || item.groupTypes) && !inBroadcastMenu(item)
     );
     expect(noSwitch.length).toBeGreaterThan(0);
     for (const item of noSwitch) {
       expect(
         menuHasToggle(item.widgetType ?? '', [item.widgetType ?? ''])
       ).toBe(false);
+    }
+  });
+
+  it('is true for each broadcast module, switched from the Broadcast menu', () => {
+    for (const { widgetType } of broadcastItems) {
+      if (!widgetType) continue;
+      expect(menuHasToggle(widgetType, [widgetType]), widgetType).toBe(true);
     }
   });
 });

@@ -39,6 +39,7 @@ Napi::Object iRacingSdkNode::Init(Napi::Env env, Napi::Object exports)
     InstanceMethod("getSessionVersionNum", &iRacingSdkNode::GetSessionVersionNum),
     InstanceMethod("getSessionData", &iRacingSdkNode::GetSessionData),
     InstanceMethod("getTelemetryData", &iRacingSdkNode::GetTelemetryData),
+    InstanceMethod("getTelemetryDataView", &iRacingSdkNode::GetTelemetryDataView),
     InstanceMethod("getTelemetryVariable", &iRacingSdkNode::GetTelemetryVar),
     // Helpers
     InstanceMethod("__getTelemetryTypes", &iRacingSdkNode::__GetTelemetryTypes)
@@ -282,12 +283,35 @@ Napi::Value iRacingSdkNode::GetSessionVersionNum(const Napi::CallbackInfo &info)
   return Napi::Number::New(info.Env(), sessVer);
 }
 
-// Helper function to convert Windows-1252 to UTF-8
+// Return the length of a valid non-ASCII UTF-8 sequence, or zero for legacy
+// bytes. Bound every read and reject overlong encodings, surrogates and values
+// beyond U+10FFFF before passing text to N-API.
+static size_t Utf8SequenceLength(const char* input, size_t remaining) {
+    const auto* bytes = reinterpret_cast<const unsigned char*>(input);
+    const unsigned char first = bytes[0];
+    const size_t length = first >= 0xC2 && first <= 0xDF ? 2
+        : first >= 0xE0 && first <= 0xEF ? 3
+        : first >= 0xF0 && first <= 0xF4 ? 4 : 0;
+    if (length == 0 || remaining < length) return 0;
+
+    for (size_t i = 1; i < length; ++i) {
+        if (bytes[i] < 0x80 || bytes[i] > 0xBF) return 0;
+    }
+    if ((first == 0xE0 && bytes[1] < 0xA0) ||
+        (first == 0xED && bytes[1] > 0x9F) ||
+        (first == 0xF0 && bytes[1] < 0x90) ||
+        (first == 0xF4 && bytes[1] > 0x8F)) return 0;
+    return length;
+}
+
+// Preserve UTF-8 from current sessions, converting legacy Windows-1252 bytes.
 std::string ConvertToUTF8(const char* input) {
     if (!input) return "";
     
+    const size_t inputLength = strlen(input);
+    const char* end = input + inputLength;
     std::string result;
-    result.reserve(strlen(input) * 2); // Reserve space for potential UTF-8 expansion
+    result.reserve(inputLength * 2); // Reserve space for potential UTF-8 expansion
     
     for (const char* p = input; *p; ++p) {
         unsigned char c = *p;
@@ -295,6 +319,14 @@ std::string ConvertToUTF8(const char* input) {
             // ASCII character
             result += c;
         } else {
+            // Decode per sequence: a legacy byte elsewhere in the session must
+            // not cause already-valid UTF-8 driver/team names to be re-encoded.
+            const size_t utf8Length = Utf8SequenceLength(p, static_cast<size_t>(end - p));
+            if (utf8Length != 0) {
+                result.append(p, utf8Length);
+                p += utf8Length - 1;
+                continue;
+            }
             // Windows-1252 to UTF-8 conversion
             switch (c) {
                 case 0x80: result += "\xE2\x82\xAC"; break; // €
@@ -440,7 +472,7 @@ Napi::Value iRacingSdkNode::GetSessionData(const Napi::CallbackInfo &info)
     return Napi::String::New(info.Env(), "");
   }
   
-  // Convert Windows-1252 to UTF-8
+  // Preserve UTF-8 names while supporting legacy Windows-1252 session text.
   std::string utf8Session = ConvertToUTF8(session);
   return Napi::String::New(info.Env(), utf8Session.c_str());
 }
@@ -487,6 +519,21 @@ Napi::Value iRacingSdkNode::GetTelemetryData(const Napi::CallbackInfo &info)
 }
 
 // Helpers
+Napi::Value iRacingSdkNode::GetTelemetryDataView(const Napi::CallbackInfo &info)
+{
+  auto env = info.Env();
+  auto result = Napi::Object::New(env);
+  if (!this->_capture.valid) return result;
+
+  auto frameBuffer = Napi::ArrayBuffer::New(env, this->_capture.data.size());
+  std::memcpy(frameBuffer.Data(), this->_capture.data.data(), this->_capture.data.size());
+  for (std::size_t i = 0; i < this->_capture.variables.size(); ++i) {
+    auto variable = this->GetTelemetryVarByIndex(env, static_cast<int>(i), &frameBuffer);
+    if (variable.Has("name")) result.Set(variable.Get("name"), variable);
+  }
+  return result;
+}
+
 Napi::Value iRacingSdkNode::__GetTelemetryTypes(const Napi::CallbackInfo &info)
 {
   auto env = info.Env();
@@ -510,7 +557,8 @@ Napi::Value iRacingSdkNode::__GetTelemetryTypes(const Napi::CallbackInfo &info)
 // ---------------------------
 // Helper functions
 // ---------------------------
-Napi::Object iRacingSdkNode::GetTelemetryVarByIndex(const Napi::Env env, int index)
+Napi::Object iRacingSdkNode::GetTelemetryVarByIndex(const Napi::Env env, int index,
+    const Napi::ArrayBuffer* frameBuffer)
 {
   auto telemVar = Napi::Object::New(env);
 
@@ -533,10 +581,13 @@ Napi::Object iRacingSdkNode::GetTelemetryVarByIndex(const Napi::Env env, int ind
   telemVar.Set("unit", sdkString(headerVar->unit, sizeof(headerVar->unit)));
   telemVar.Set("varType", headerVar->type);
 
-  auto entryVal = Napi::ArrayBuffer::New(env, dataSize);
-  memcpy(entryVal.Data(), this->_capture.data.data() + headerVar->offset, dataSize);
-
-  telemVar.Set("value", entryVal);
+  if (frameBuffer) {
+    telemVar.Set("value", Napi::Uint8Array::New(env, dataSize, *frameBuffer, headerVar->offset));
+  } else {
+    auto entryVal = Napi::ArrayBuffer::New(env, dataSize);
+    memcpy(entryVal.Data(), this->_capture.data.data() + headerVar->offset, dataSize);
+    telemVar.Set("value", entryVal);
+  }
   return telemVar;
 }
 

@@ -1,12 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BrowserWindow } from 'electron';
 import {
+  flushSettingsWindowMovementOnShutdown,
   markCorrectedBounds,
   trackSettingsWindowMovement,
 } from './trackWindowMovement';
-import { writeData } from './storage/storage';
+import { saveSettingsWindowBounds } from './storage/settingsWindowBounds';
 
-vi.mock('./storage/storage', () => ({ writeData: vi.fn() }));
+vi.mock('./storage/settingsWindowBounds', () => ({
+  saveSettingsWindowBounds: vi.fn(),
+}));
 
 const DEBOUNCE_MS = 200;
 
@@ -25,6 +28,7 @@ function fakeWindow(initial: Electron.Rectangle) {
       return win;
     },
     getBounds: () => bounds,
+    isDestroyed: () => false,
   };
 
   return {
@@ -43,10 +47,11 @@ const RESCUED = { x: 622, y: 200, width: 800, height: 700 };
 describe('trackSettingsWindowMovement', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.mocked(writeData).mockClear();
+    vi.mocked(saveSettingsWindowBounds).mockClear();
   });
 
   afterEach(() => {
+    flushSettingsWindowMovementOnShutdown();
     vi.useRealTimers();
   });
 
@@ -58,7 +63,7 @@ describe('trackSettingsWindowMovement', () => {
     emit('moved');
     vi.advanceTimersByTime(DEBOUNCE_MS);
 
-    expect(writeData).toHaveBeenCalledWith('settingsWindowBounds', {
+    expect(saveSettingsWindowBounds).toHaveBeenCalledWith({
       ...ON_SCREEN,
       x: 300,
     });
@@ -72,7 +77,7 @@ describe('trackSettingsWindowMovement', () => {
     emit('resized');
     vi.advanceTimersByTime(DEBOUNCE_MS);
 
-    expect(writeData).toHaveBeenCalledOnce();
+    expect(saveSettingsWindowBounds).toHaveBeenCalledOnce();
   });
 
   it('debounces a burst of events into one save', () => {
@@ -85,7 +90,31 @@ describe('trackSettingsWindowMovement', () => {
     emit('moved');
     vi.advanceTimersByTime(DEBOUNCE_MS);
 
-    expect(writeData).toHaveBeenCalledOnce();
+    expect(saveSettingsWindowBounds).toHaveBeenCalledOnce();
+  });
+
+  it.each(['close', 'shutdown'])('drains a pending resize on %s', (event) => {
+    const { win, setBounds, emit } = fakeWindow(ON_SCREEN);
+    trackSettingsWindowMovement(win);
+    const chosen = { ...ON_SCREEN, width: 1300, height: 850 };
+    setBounds(chosen);
+    emit('resized');
+    expect(saveSettingsWindowBounds).not.toHaveBeenCalled();
+    if (event === 'close') emit('close');
+    else flushSettingsWindowMovementOnShutdown();
+    expect(saveSettingsWindowBounds).toHaveBeenCalledExactlyOnceWith(chosen);
+    vi.advanceTimersByTime(DEBOUNCE_MS);
+    expect(saveSettingsWindowBounds).toHaveBeenCalledOnce();
+  });
+
+  it('cancels a pending timer when a window is destroyed', () => {
+    const { win, emit } = fakeWindow(ON_SCREEN);
+    trackSettingsWindowMovement(win);
+    emit('resized');
+    emit('closed');
+    vi.advanceTimersByTime(DEBOUNCE_MS);
+    flushSettingsWindowMovementOnShutdown();
+    expect(saveSettingsWindowBounds).not.toHaveBeenCalled();
   });
 
   it('does not persist a position the app corrected to', () => {
@@ -104,7 +133,7 @@ describe('trackSettingsWindowMovement', () => {
     emit('resized');
     vi.advanceTimersByTime(DEBOUNCE_MS);
 
-    expect(writeData).not.toHaveBeenCalled();
+    expect(saveSettingsWindowBounds).not.toHaveBeenCalled();
   });
 
   it('resumes saving once the user moves the window themselves', () => {
@@ -115,7 +144,7 @@ describe('trackSettingsWindowMovement', () => {
     setBounds(RESCUED);
     emit('moved');
     vi.advanceTimersByTime(DEBOUNCE_MS);
-    expect(writeData).not.toHaveBeenCalled();
+    expect(saveSettingsWindowBounds).not.toHaveBeenCalled();
 
     // The user drags it somewhere of their own choosing.
     const chosen = { ...RESCUED, x: 900, y: 400 };
@@ -123,7 +152,7 @@ describe('trackSettingsWindowMovement', () => {
     emit('moved');
     vi.advanceTimersByTime(DEBOUNCE_MS);
 
-    expect(writeData).toHaveBeenCalledWith('settingsWindowBounds', chosen);
+    expect(saveSettingsWindowBounds).toHaveBeenCalledWith(chosen);
   });
 
   it('only suppresses the window that was corrected', () => {
@@ -140,7 +169,7 @@ describe('trackSettingsWindowMovement', () => {
     b.emit('moved');
     vi.advanceTimersByTime(DEBOUNCE_MS);
 
-    expect(writeData).toHaveBeenCalledOnce();
-    expect(writeData).toHaveBeenCalledWith('settingsWindowBounds', RESCUED);
+    expect(saveSettingsWindowBounds).toHaveBeenCalledOnce();
+    expect(saveSettingsWindowBounds).toHaveBeenCalledWith(RESCUED);
   });
 });

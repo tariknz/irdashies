@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'infobar',
   name: 'Information Bar',
+  category: 'Session & Weather',
   enabled: false,
   layout: {
     x: 0,

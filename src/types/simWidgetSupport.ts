@@ -42,6 +42,7 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'battle',
   'cornername',
   'deltaspeed',
+  'fastercarsfrombehind',
   'flag',
   'garagecover',
   'infobar',
@@ -77,7 +78,6 @@ export const LMU_DISABLED_WIDGETS: readonly string[] = [
   'broadcastticker',
   'broadcastweather',
   'carsystems',
-  'fastercarsfrombehind',
   'flatmap',
   'fuel',
   'gantry',
@@ -86,6 +86,9 @@ export const LMU_DISABLED_WIDGETS: readonly string[] = [
   'radar',
   'rejoin',
   'slowcarahead',
+  // Race plans name drivers by iRacing customer id.
+  'stintplan',
+  'strategytimeline',
   'tachometer',
   'streamchat',
   // LMU simulates no wind: its wind vector is always zero.
@@ -120,7 +123,7 @@ export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
  * it did, which costs a user their hand edits once per change and is why the
  * number is bumped only for a real one.
  */
-export const SIM_WIDGET_SUPPORT_VERSION = 7;
+export const SIM_WIDGET_SUPPORT_VERSION = 9;
 
 /**
  * Whether a widget is unavailable under the running sim.

@@ -152,7 +152,9 @@ const replayButtons = () =>
   screen.getAllByRole('button', { name: /^-\d+s$/ }) as HTMLButtonElement[];
 
 const headings = () =>
-  screen.queryAllByRole('heading').map((h) => h.textContent ?? '');
+  screen
+    .queryAllByRole('heading', { level: 3 })
+    .map((h) => h.textContent ?? '');
 
 beforeEach(() => {
   trackState.snapshot = undefined;

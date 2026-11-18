@@ -1,3 +1,9 @@
+import {
+  drawRadarRings,
+  RadarRingsLayer,
+  GUIDE_STROKE,
+  GUIDE_DASH,
+} from './radarDrawRings';
 import { drawPoleSideNotice } from './radarDrawNotice';
 import { overlapOf } from './radarHints';
 import { formatDistance, speedIn } from './radarStyle';
@@ -76,9 +82,6 @@ const drawRoad = (
   ctx.stroke();
 };
 
-const GUIDE_STROKE = 'rgba(148, 163, 184, 0.35)';
-const GUIDE_DASH = [4, 4];
-
 /** Dash and gap of the moving line, in metres, so it runs at true speed. */
 const axisDash = (style: RadarStyle, pixelsPerMetre: number) => {
   const dash = Math.max(style.axisDashLength, 0.5) * pixelsPerMetre;
@@ -119,40 +122,6 @@ const drawCrosshair = (
   ctx.stroke();
   ctx.lineDashOffset = 0;
   ctx.setLineDash([]);
-};
-
-const drawRings = (
-  ctx: CanvasRenderingContext2D,
-  centre: number,
-  radius: number,
-  style: RadarStyle,
-  pixelsPerMetre: number
-) => {
-  if (style.ringSpacing <= 0) return;
-  const fontSize = Math.max(MIN_TEXT_PX, Math.round(radius / 14));
-  ctx.font = `${fontSize}px Lato, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
-  ctx.lineWidth = 1;
-  for (
-    let metres = style.ringSpacing;
-    metres < style.range - 0.01;
-    metres += style.ringSpacing
-  ) {
-    const ringRadius = metres * pixelsPerMetre;
-    ctx.strokeStyle = GUIDE_STROKE;
-    ctx.setLineDash(GUIDE_DASH);
-    ctx.beginPath();
-    ctx.arc(centre, centre, ringRadius, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(203, 213, 225, 0.6)';
-    ctx.fillText(
-      formatDistance(metres, style.metric),
-      centre,
-      centre - ringRadius - 1
-    );
-  }
 };
 
 /** Our own overlap strips, one per side, with our car pointing up. */
@@ -232,7 +201,11 @@ const drawBackdrop = (
   ctx.globalCompositeOperation = 'source-over';
 };
 
-export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
+export const drawRadar = (
+  ctx: CanvasRenderingContext2D,
+  scene: RadarScene,
+  ringsLayer?: RadarRingsLayer
+) => {
   const { size, style } = scene;
   const centre = size / 2;
   const radius = size / 2 - 1;
@@ -264,7 +237,10 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
   if (style.showCrosshair) {
     drawCrosshair(ctx, centre, radius, style, pixelsPerMetre, scene.travelled);
   }
-  if (style.showRings) drawRings(ctx, centre, radius, style, pixelsPerMetre);
+  if (style.showRings) {
+    if (ringsLayer) ringsLayer.draw(ctx, size, style);
+    else drawRadarRings(ctx, centre, radius, style, pixelsPerMetre);
+  }
 
   const length = style.carLength * pixelsPerMetre;
   const width = style.carWidth * pixelsPerMetre;

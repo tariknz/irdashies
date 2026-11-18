@@ -5,28 +5,56 @@ import {
 } from '@irdashies/types';
 import { useDashboardBridge } from '../DashboardContext/DashboardContext';
 
+export interface SimWidgetSupportStatus {
+  config: SimWidgetSupportConfig;
+  /**
+   * True once the main process has answered, or when there is nothing to
+   * wait for. Until then `config` is the bundled defaults, which the user's
+   * file can contradict.
+   */
+  loaded: boolean;
+}
+
 /**
- * The per-simulator disabled-widget list, read once from the main process.
+ * The per-simulator disabled-widget list, read once from the main process,
+ * and whether it has arrived.
  *
  * Starts on the bundled defaults rather than on an empty list so the first
  * paint matches what the file almost always says — an empty start would flash
  * every widget as available before hiding some of them again.
  */
-export const useSimWidgetSupport = (): SimWidgetSupportConfig => {
+export const useSimWidgetSupportStatus = (): SimWidgetSupportStatus => {
   const bridge = useDashboardBridge();
-  const [config, setConfig] = useState<SimWidgetSupportConfig>(
-    DEFAULT_SIM_WIDGET_SUPPORT
-  );
+  const [status, setStatus] = useState<SimWidgetSupportStatus>(() => ({
+    config: DEFAULT_SIM_WIDGET_SUPPORT,
+    loaded: !bridge?.getSimWidgetSupport,
+  }));
 
   useEffect(() => {
+    const request = bridge?.getSimWidgetSupport?.();
+    if (!request) return;
     let cancelled = false;
-    void bridge?.getSimWidgetSupport?.().then((loaded) => {
-      if (!cancelled && loaded) setConfig(loaded);
-    });
+    request.then(
+      (loaded) => {
+        if (!cancelled)
+          setStatus((current) => ({
+            config: loaded ?? current.config,
+            loaded: true,
+          }));
+      },
+      // No answer: the defaults are all there is.
+      () => {
+        if (!cancelled) setStatus((current) => ({ ...current, loaded: true }));
+      }
+    );
     return () => {
       cancelled = true;
     };
   }, [bridge]);
 
-  return config;
+  return status;
 };
+
+/** The per-simulator disabled-widget list: the bundled defaults until the file arrives. */
+export const useSimWidgetSupport = (): SimWidgetSupportConfig =>
+  useSimWidgetSupportStatus().config;

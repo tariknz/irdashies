@@ -73,6 +73,7 @@ const emptySnapshot: LapLogSnapshot = {
   deltaToSessionBestLap: 0,
   deltaToSessionBestLapOk: false,
   lapInvalidated: false,
+  lastLapUnderCaution: false,
   version: 0,
 };
 
@@ -87,6 +88,29 @@ const emptySnapshot: LapLogSnapshot = {
  * the seam between the two rather than in either one.
  */
 describe('lap history retention', () => {
+  it('records the completed lap caution result even when timing arrives later', () => {
+    snapshot = { ...emptySnapshot };
+    const { result, rerender } = renderHook(() => useLapTimeLog());
+    snapshot = { ...snapshot, lapCompleted: 1, lastLapUnderCaution: true };
+    rerender();
+    expect(result.current.history).toHaveLength(0);
+    snapshot = { ...snapshot, lastLapTime: 120 };
+    rerender();
+    expect(result.current.history[0]).toMatchObject({ lap: 1, caution: true });
+
+    snapshot = {
+      ...snapshot,
+      lapCompleted: 2,
+      lastLapTime: 91,
+      lastLapUnderCaution: false,
+    };
+    rerender();
+    expect(result.current.history.map((entry) => entry.caution)).toEqual([
+      false,
+      true,
+    ]);
+  });
+
   /**
    * One lap in two steps, because the pit latch and the lap recording are
    * separate effects: the surface has to be seen during the lap for the entry

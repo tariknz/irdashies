@@ -46,7 +46,7 @@ const Harness = (args: LapGraphArgs) => {
   const [pins, setPins] = useState<readonly number[] | null>(args.chosenPins);
 
   return (
-    <div className="h-screen bg-slate-900 text-white">
+    <div className="h-screen overflow-hidden bg-settings-page p-3 text-white">
       <GantrySessionDataProvider>
         <LapGraphView
           followedCarIdx={args.followedCarIdx}

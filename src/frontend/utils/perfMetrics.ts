@@ -1,7 +1,11 @@
 import type { RendererPerfMeasureName } from '@irdashies/types';
 
 export const perfMetrics = {
-  measure<T>(name: RendererPerfMeasureName, measured: () => T): T {
+  measure<T>(
+    name: RendererPerfMeasureName,
+    measured: () => T,
+    breakdownName?: RendererPerfMeasureName
+  ): T {
     const bridge = window.rendererPerfBridge;
     if (!bridge) return measured();
 
@@ -9,7 +13,9 @@ export const perfMetrics = {
     try {
       return measured();
     } finally {
-      bridge.recordMeasure(name, performance.now() - startedAt);
+      const durationMs = performance.now() - startedAt;
+      bridge.recordMeasure(name, durationMs);
+      if (breakdownName) bridge.recordMeasure(breakdownName, durationMs);
     }
   },
 };

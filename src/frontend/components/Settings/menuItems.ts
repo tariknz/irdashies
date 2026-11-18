@@ -7,19 +7,29 @@ import {
   WrenchIcon,
   InfoIcon,
   NewspaperIcon,
+  FlagCheckeredIcon,
+  ListNumbersIcon,
+  SubtitlesIcon,
+  MegaphoneIcon,
+  CloudSunIcon,
+  TrophyIcon,
+  GearSixIcon,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { WIDGET_MANIFESTS } from '@irdashies/types';
+import type { WidgetCategory } from '@irdashies/types';
+import { compareMenuLabels } from './menuLabelOrder';
 
 export interface MenuItem {
   to: string;
   path: string;
   label: string;
   widgetType?: string;
+  category?: WidgetCategory;
   /** Widgets that share this item's page; it shows On while any of them is. */
   groupTypes?: string[];
   icon?: Icon;
-  /** Reached through a tab on another item's page rather than the menu. */
+  /** Left out of the overlay list: reached through the Broadcast menu. */
   hideInMenu?: boolean;
 }
 
@@ -31,22 +41,31 @@ export const generalItems: MenuItem[] = [
     icon: SlidersHorizontalIcon,
   },
   {
+    to: '/settings/keybindings',
+    path: '/keybindings',
+    label: 'Key Bindings',
+    icon: KeyboardIcon,
+  },
+];
+
+export const toolItems: MenuItem[] = [
+  {
     to: '/settings/profiles',
     path: '/profiles',
     label: 'Profiles',
     icon: UsersIcon,
   },
   {
-    to: '/settings/keybindings',
-    path: '/keybindings',
-    label: 'Key Bindings',
-    icon: KeyboardIcon,
-  },
-  {
     to: '/settings/driver-tags',
     path: '/driver-tags',
     label: 'Driver Tags',
     icon: TagIcon,
+  },
+  {
+    to: '/settings/race-plan',
+    path: '/race-plan',
+    label: 'Race Plan',
+    icon: FlagCheckeredIcon,
   },
   {
     to: '/settings/car-setup',
@@ -57,30 +76,79 @@ export const generalItems: MenuItem[] = [
 ];
 
 export const widgetItems: MenuItem[] = WIDGET_MANIFESTS.map(
-  ({ id, name, menuLabel, hideInMenu, groupTypes }) => ({
+  ({ id, name, menuLabel, category, hideInMenu, groupTypes }) => ({
     to: `/settings/${id}`,
     path: `/${id}`,
     label: menuLabel ?? name,
     widgetType: id,
+    category,
     ...(groupTypes && { groupTypes }),
     ...(hideInMenu && { hideInMenu }),
   })
-).sort((a, b) => a.label.localeCompare(b.label));
+).sort((a, b) => compareMenuLabels(a.label, b.label));
+
+export const BROADCAST_SETTINGS_PAGE = '/settings/broadcast-settings';
+
+export const broadcastItems: MenuItem[] = [
+  {
+    to: '/settings/broadcast',
+    path: '/broadcast',
+    label: 'Tower',
+    widgetType: 'broadcast',
+    icon: ListNumbersIcon,
+  },
+  {
+    to: '/settings/broadcastticker',
+    path: '/broadcastticker',
+    label: 'Ticker',
+    widgetType: 'broadcastticker',
+    icon: SubtitlesIcon,
+  },
+  {
+    to: '/settings/broadcastevents',
+    path: '/broadcastevents',
+    label: 'Events',
+    widgetType: 'broadcastevents',
+    icon: MegaphoneIcon,
+  },
+  {
+    to: '/settings/broadcastweather',
+    path: '/broadcastweather',
+    label: 'Weather',
+    widgetType: 'broadcastweather',
+    icon: CloudSunIcon,
+  },
+  {
+    to: '/settings/broadcastpodium',
+    path: '/broadcastpodium',
+    label: 'Podium',
+    widgetType: 'broadcastpodium',
+    icon: TrophyIcon,
+  },
+  {
+    to: BROADCAST_SETTINGS_PAGE,
+    path: '/broadcast-settings',
+    label: 'Settings',
+    icon: GearSixIcon,
+  },
+];
 
 /**
  * Whether the settings menu offers a switch for this widget: it is listed
- * there on its own and exists in the dashboard. The widget's page leaves its
- * own switch out then, so there is one place to flip it.
+ * there on its own, in the overlay list or the Broadcast menu, and exists in
+ * the dashboard. The widget's page leaves its own switch out then, so there
+ * is one place to flip it.
  */
 export const menuHasToggle = (
   widgetType: string,
   dashboardWidgetIds: readonly string[]
 ): boolean =>
   dashboardWidgetIds.includes(widgetType) &&
-  widgetItems.some(
+  (widgetItems.some(
     (item) =>
       item.widgetType === widgetType && !item.hideInMenu && !item.groupTypes
-  );
+  ) ||
+    broadcastItems.some((item) => item.widgetType === widgetType));
 
 export const bottomItems: MenuItem[] = [
   {

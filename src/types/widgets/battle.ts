@@ -3,7 +3,9 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'battle',
   name: 'Battle',
+  category: 'Lap Timing',
   enabled: false,
+  usesLapHistory: true,
   layout: {
     x: 300,
     y: 100,
