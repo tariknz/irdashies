@@ -136,9 +136,10 @@ export type Telemetry = {
   LmuSuspensionDamage?: TelemetryVar<number[]>;
   LmuAeroDamage?: TelemetryVar<number[]>;
   /**
-   * Body dent severity in LMU's own order: FC, FL, CL, RL, RC, RR, CR, FR.
-   * Values: 0 none, 1 light, 2 heavy, ≥3 detached. Display remapping belongs
-   * in the damage widget.
+   * Body dent severity, passed through unchanged in LMU's own order as
+   * TinyPedal reads it: FC, FL, CL, RL, RC, RR, CR, FR. Values: 0 none,
+   * 1 light, 2 heavy, as rF2 documents mDentSeverity; not yet checked against
+   * an LMU recording. Display remapping belongs in the damage widget.
    */
   LmuDentSeverity?: TelemetryVar<number[]>;
   /** Per-wheel detached flags, LF, RF, LR, RR. */

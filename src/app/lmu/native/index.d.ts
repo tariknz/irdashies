@@ -211,8 +211,8 @@ export interface LmuRawTelemetry {
   /** Per-wheel mDetached, LF/RF/LR/RR, 0 or 1. */
   wheelDetached?: Uint8Array;
   /**
-   * Raw mDentSeverity[8] in SHM order. mapTelemetry remaps to display order
-   * FL,FC,FR,CL,CR,RL,RC,RR (TinyPedal LMU order).
+   * Raw mDentSeverity[8]. mapTelemetry passes these values through unchanged,
+   * in LMU's order as TinyPedal reads it: FC, FL, CL, RL, RC, RR, CR, FR.
    */
   dentSeverity?: Uint8Array;
   /** mDetached on the vehicle — rear wing on LMU. */
