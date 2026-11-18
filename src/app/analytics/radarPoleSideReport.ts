@@ -1,31 +1,22 @@
-import crypto from 'node:crypto';
 import type { PoleSideOverrides } from '../radarPoleSideOverrides';
+import {
+  buildHashedTrackReport,
+  type HashedTrackReport,
+} from './hashedTrackReport';
 
 /** Leave headroom for SDK metadata below PostHog's 1 MB event limit. */
 export const MAX_POLE_SIDE_PROPERTIES_BYTES = 512 * 1024;
 
-export interface RadarPoleSideReport {
-  /** Identifies the corrections, whatever order or formatting they came in. */
-  hash: string;
-  properties: {
-    version: string;
-    data_hash: string;
-    track_count: number;
-    /**
-     * By iRacing track id: the side (true: left) the player chose for a race
-     * start, a restart and a standing grid, and what the bundled table said
-     * for a start or restart at the time.
-     */
-    tracks: Record<
-      string,
-      {
-        start_left?: boolean;
-        restart_left?: boolean;
-        grid_left?: boolean;
-        table_left?: boolean;
-      }
-    >;
-  };
+/**
+ * By iRacing track id: the side (true: left) the player chose for a race
+ * start, a restart and a standing grid, and what the bundled table said
+ * for a start or restart at the time.
+ */
+interface RadarPoleSideTrack {
+  start_left?: boolean;
+  restart_left?: boolean;
+  grid_left?: boolean;
+  table_left?: boolean;
 }
 
 /**
@@ -36,36 +27,20 @@ export interface RadarPoleSideReport {
 export const buildRadarPoleSideReport = (
   overrides: PoleSideOverrides,
   version: string
-): RadarPoleSideReport => {
-  const ids = Object.keys(overrides).sort((a, b) => Number(a) - Number(b));
-  const canonical = ids.map((id) => [
-    id,
-    overrides[id].start ?? null,
-    overrides[id].restart ?? null,
-    overrides[id].grid ?? null,
-    overrides[id].table ?? null,
-  ]);
-  const hash = crypto
-    .createHash('sha256')
-    .update(JSON.stringify(canonical))
-    .digest('hex');
-  const tracks: RadarPoleSideReport['properties']['tracks'] = {};
-  for (const id of ids) {
-    const { start, restart, grid, table } = overrides[id];
-    tracks[id] = {
+): HashedTrackReport<RadarPoleSideTrack> =>
+  buildHashedTrackReport(
+    overrides,
+    version,
+    ({ start, restart, grid, table }) => [
+      start ?? null,
+      restart ?? null,
+      grid ?? null,
+      table ?? null,
+    ],
+    ({ start, restart, grid, table }) => ({
       ...(start !== undefined && { start_left: start }),
       ...(restart !== undefined && { restart_left: restart }),
       ...(grid !== undefined && { grid_left: grid }),
       ...(table !== undefined && { table_left: table }),
-    };
-  }
-  return {
-    hash,
-    properties: {
-      version,
-      data_hash: hash,
-      track_count: ids.length,
-      tracks,
-    },
-  };
-};
+    })
+  );

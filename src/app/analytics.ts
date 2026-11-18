@@ -17,6 +17,7 @@ import logger from './logger';
 import type ElectronLog from 'electron-log';
 import type { LogMessage } from 'electron-log';
 import { readPitLaneCalibrationForAnalytics } from './analytics/pitLaneCalibration';
+import { hashTrackTuples } from './analytics/hashedTrackReport';
 import {
   MAX_POLE_SIDE_PROPERTIES_BYTES,
   buildRadarPoleSideReport,
@@ -592,13 +593,10 @@ export class Analytics {
       if (!tracks || getAnalyticsOptOut()) return;
       // Tuples fix field order and numeric sorting makes JSON formatting,
       // object key order, ignored fields, and app version irrelevant.
-      const canonical = Object.keys(tracks)
-        .sort((a, b) => Number(a) - Number(b))
-        .map((id) => [id, tracks[id].pitEntryPct, tracks[id].pitExitPct]);
-      const dataHash = crypto
-        .createHash('sha256')
-        .update(JSON.stringify(canonical))
-        .digest('hex');
+      const dataHash = hashTrackTuples(tracks, (track) => [
+        track.pitEntryPct,
+        track.pitExitPct,
+      ]);
       const properties = {
         version,
         data_hash: dataHash,
