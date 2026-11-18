@@ -14,6 +14,7 @@ import { useDashboard } from '@irdashies/context';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { SettingSelectRow } from '../components/SettingSelectRow';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { useStoredTab } from '../hooks/useStoredTab';
 import type {
   BroadcastConfig,
@@ -162,7 +163,7 @@ export const BroadcastSettings = ({ obsUrl }: { obsUrl?: string }) => {
         );
         return (
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               {TABS.map(({ id, label }) => (
                 <TabButton
                   key={id}
@@ -173,7 +174,7 @@ export const BroadcastSettings = ({ obsUrl }: { obsUrl?: string }) => {
                   {label}
                 </TabButton>
               ))}
-            </div>
+            </SettingsTabBar>
 
             {tab === 'look' && (
               <SettingsSection title="Look" scaleWidgetId={SETTING_ID}>
