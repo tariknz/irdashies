@@ -262,6 +262,22 @@ describe('mapLmuSession', () => {
     ]);
   });
 
+  it('uses learned sector boundaries when they are known', () => {
+    const s = mapLmuSession(
+      fixture(),
+      null,
+      undefined,
+      undefined,
+      undefined,
+      [0.389, 0.791]
+    );
+    expect(s.SplitTimeInfo.Sectors).toEqual([
+      { SectorNum: 0, SectorStartPct: 0 },
+      { SectorNum: 1, SectorStartPct: 0.389 },
+      { SectorNum: 2, SectorStartPct: 0.791 },
+    ]);
+  });
+
   it('gives each LMU track a stable simulator-specific id', () => {
     expect(resolveLmuTrackId('Imola')).toBe(resolveLmuTrackId(' imola '));
     expect(resolveLmuTrackId('Imola')).not.toBe(resolveLmuTrackId('Lusail'));

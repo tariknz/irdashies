@@ -379,7 +379,12 @@ export function mapLmuSession(
    * SessionUniqueID on the frame, and a disagreement would read as a session
    * change on every other tick.
    */
-  sessionIdentity?: LmuSessionIdentity
+  sessionIdentity?: LmuSessionIdentity,
+  /**
+   * Where S2 and S3 start, as lap fractions, learned from the player's own
+   * sector changes. Omitted or null, the sectors are nominal thirds.
+   */
+  sectorBoundaries?: readonly number[] | null
 ): Session {
   const trackLengthM = raw.lapDist;
   const playerDriver = raw.drivers.find((d) => d.isPlayer);
@@ -753,13 +758,13 @@ export function mapLmuSession(
       DriverTires: lmuDriverTires(raw.drivers, rest?.tireCompounds),
       Drivers: drivers,
     },
-    // Nominal thirds label sectors until LMU exposes boundary distances.
-    // Sector Delta reads LMU's own sector times via SectorTimingProcessor.
+    // LMU publishes no boundary distances: the real ones are learned from the
+    // player's sector changes (sectorBoundaries.ts), nominal thirds until then.
     SplitTimeInfo: {
       Sectors: [
         { SectorNum: 0, SectorStartPct: 0 },
-        { SectorNum: 1, SectorStartPct: 1 / 3 },
-        { SectorNum: 2, SectorStartPct: 2 / 3 },
+        { SectorNum: 1, SectorStartPct: sectorBoundaries?.[0] ?? 1 / 3 },
+        { SectorNum: 2, SectorStartPct: sectorBoundaries?.[1] ?? 2 / 3 },
       ],
     },
     CarSetup: { UpdateCount: 0 },
