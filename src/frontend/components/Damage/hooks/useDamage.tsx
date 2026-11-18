@@ -19,6 +19,7 @@ export const useDamage = (): DamageSnapshot => {
   const optRepairNeeded = useTelemetryValue<boolean>('PitOptRepairNeeded');
   const controls = useDriverControlsSnapshot();
   const tyreWear = controls?.tyreWear;
+  const engineWarnings = controls?.engineWarnings ?? 0;
 
   const repairTime =
     lmuRepair !== undefined && lmuRepair > 0
@@ -42,5 +43,6 @@ export const useDamage = (): DamageSnapshot => {
       pitOptRepair !== undefined && pitOptRepair > 0 ? pitOptRepair : undefined,
     repairNeeded: !!repairNeeded,
     optRepairNeeded: !!optRepairNeeded,
+    engineWarnings,
   };
 };

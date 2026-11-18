@@ -1,5 +1,12 @@
 export type DamageBodyStyle =
-  'gt' | 'prototype' | 'openwheel' | 'hatch' | 'stock' | 'truck';
+  | 'gtFront'
+  | 'gtMid'
+  | 'gtRear'
+  | 'prototype'
+  | 'openwheel'
+  | 'hatch'
+  | 'stock'
+  | 'truck';
 
 const OPEN_WHEEL = new Set([
   'f1',
@@ -73,9 +80,35 @@ function haystack(
     .replace(/[^a-z0-9]+/g, ' ');
 }
 
+function resolveGtLayout(h: string): 'gtFront' | 'gtMid' | 'gtRear' {
+  // 911 family — rear engine (exclude mid-engine Cayman / prototypes).
+  if (
+    /\b(911|992|991|993|996|997|rsr)\b/.test(h) ||
+    (/\bporsche\b/.test(h) && !/\b(718|cayman|963|919|gtp|lmp)\b/.test(h))
+  ) {
+    return 'gtRear';
+  }
+
+  // Mid-engine GT / GTE.
+  if (
+    /\b(ferrari|296|488|mclaren|720|570|mp4|lamborghini|huracan|lambo|audi|r8|nsx|c8|z06|718|cayman|fordgt|ford.?gt.?2017)\b/.test(
+      h
+    )
+  ) {
+    return 'gtMid';
+  }
+
+  // Front-engine GT.
+  if (/\b(bmw|m4|m8|mercedes|amg|mustang|vantage|dbr9|c6|corvette)\b/.test(h)) {
+    return 'gtFront';
+  }
+
+  return 'gtMid';
+}
+
 /**
  * Pick a top-down silhouette family from session / lovely-car-data class.
- * Exact per-car meshes are not in the SDK; class shape is the honest match.
+ * GT is split into front / mid / rear engine layouts.
  */
 export function resolveDamageBodyStyle(
   carPath?: string,
@@ -83,15 +116,16 @@ export function resolveDamageBodyStyle(
   carName?: string
 ): DamageBodyStyle {
   const cls = normalizeClass(carClass);
+  const h = haystack(carPath, carClass, carName);
+
   if (OPEN_WHEEL.has(cls)) return 'openwheel';
   if (PROTOTYPE.has(cls) || cls.startsWith('lmp') || cls.startsWith('hyp'))
     return 'prototype';
   if (TRUCK.has(cls)) return 'truck';
   if (STOCK.has(cls)) return 'stock';
   if (HATCH.has(cls)) return 'hatch';
-  if (GT.has(cls) || cls.startsWith('gt')) return 'gt';
+  if (GT.has(cls) || cls.startsWith('gt')) return resolveGtLayout(h);
 
-  const h = haystack(carPath, carClass, carName);
   if (
     /\b(formula|open.?wheel|indycar|usf|ray.?ff|ff1600|fvee|skip.?barber)\b/.test(
       h
@@ -111,17 +145,27 @@ export function resolveDamageBodyStyle(
   if (/\b(gen.?4|nascar|stock.?car|legends|mini.?stock)\b/.test(h)) {
     return 'stock';
   }
-  if (/\b(mx.?5|miata|gr86|clio|tcr|tour.?2|m2|caterham|gr.?86)\b/.test(h)) {
+  if (/\b(mx.?5|miata|gr86|clio|tcr|type.?2|m2|caterham|gr.?86)\b/.test(h)) {
     return 'hatch';
   }
-  if (/\b(gt3|gt4|gte|911|296|lambo|mclaren|ferrari|porsche)\b/.test(h)) {
-    return 'gt';
+  if (
+    /\b(gt3|gt4|gte|gt1|911|296|lambo|mclaren|ferrari|porsche|bmw|mustang)\b/.test(
+      h
+    )
+  ) {
+    return resolveGtLayout(h);
   }
-  return 'gt';
+  return 'gtMid';
 }
 
 export function damageBodyStyleLabel(style: DamageBodyStyle): string {
   switch (style) {
+    case 'gtFront':
+      return 'GT front-engine';
+    case 'gtMid':
+      return 'GT mid-engine';
+    case 'gtRear':
+      return 'GT rear-engine';
     case 'prototype':
       return 'Prototype';
     case 'openwheel':
@@ -132,7 +176,5 @@ export function damageBodyStyleLabel(style: DamageBodyStyle): string {
       return 'Stock car';
     case 'truck':
       return 'Truck';
-    default:
-      return 'GT';
   }
 }

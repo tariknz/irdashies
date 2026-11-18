@@ -31,9 +31,9 @@ export const Damage = () => {
     <DamageDisplay
       data={data}
       opacity={settings.background.opacity}
-      showIntegrity={settings.showIntegrity}
+      showIntegrity={settings.showIntegrity ?? true}
       showStats={settings.showStats}
-      bodyStyle={isDemoMode ? 'gt' : car.bodyStyle}
+      bodyStyle={isDemoMode ? 'gtMid' : car.bodyStyle}
       carLabel={isDemoMode ? 'Ferrari 296 GT3' : car.label}
     />
   );

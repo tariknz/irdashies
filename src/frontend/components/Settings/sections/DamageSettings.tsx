@@ -82,7 +82,7 @@ export const DamageSettings = () => {
   return (
     <BaseSettingsSection
       title="Damage"
-      description="Top-down damage silhouette matched to your car class (GT, prototype, open-wheel, hatch, stock, truck). LMU: panel dents. iRacing: repair flags and tyre wear."
+      description="iRacing-style vehicle damage wireframe. Body and wheel damage colour the silhouette; engine warnings show as side icons. Shape follows car class (GT front/mid/rear engine, prototype, open-wheel, hatch, stock, truck)."
       settings={settings}
       onSettingsChange={(s) => setSettings(s)}
       widgetId={SETTING_ID}
@@ -97,7 +97,6 @@ export const DamageSettings = () => {
             <SettingsSection title="Display">
               <SettingProp path="background.opacity" />
               <SettingProp path="showIntegrity" />
-              <SettingProp path="showStats" />
             </SettingsSection>
 
             <SettingsSection title="Visibility">

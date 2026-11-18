@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { DamageDisplay } from './components/DamageDisplay';
-import { DEMO_DAMAGE } from './logic';
+import { DEMO_DAMAGE, UNDAMAGED } from './logic';
 
 export default {
   component: DamageDisplay,
@@ -9,7 +9,7 @@ export default {
 
 type Story = StoryObj<typeof DamageDisplay>;
 
-const box = (width = 160, height = 260): Story['decorators'] => [
+const box = (width = 170, height = 240): Story['decorators'] => [
   (Story) => (
     <div style={{ width, height }}>
       <Story />
@@ -17,26 +17,82 @@ const box = (width = 160, height = 260): Story['decorators'] => [
   ),
 ];
 
-export const GtDamaged: Story = {
+export const GtFrontUndamaged: Story = {
   args: {
-    data: DEMO_DAMAGE,
+    data: UNDAMAGED,
     opacity: 80,
     showIntegrity: true,
-    showStats: true,
-    bodyStyle: 'gt',
+    showStats: false,
+    bodyStyle: 'gtFront',
+    carLabel: 'BMW M4 GT3',
+  },
+  decorators: box(),
+};
+
+export const GtMidUndamaged: Story = {
+  args: {
+    data: UNDAMAGED,
+    opacity: 80,
+    showIntegrity: true,
+    showStats: false,
+    bodyStyle: 'gtMid',
     carLabel: 'Ferrari 296 GT3',
   },
   decorators: box(),
 };
 
-export const Prototype: Story = {
+export const GtRearUndamaged: Story = {
+  args: {
+    data: UNDAMAGED,
+    opacity: 80,
+    showIntegrity: true,
+    showStats: false,
+    bodyStyle: 'gtRear',
+    carLabel: 'Porsche 992 GT3 R',
+  },
+  decorators: box(),
+};
+
+export const GtFrontDamaged: Story = {
   args: {
     data: DEMO_DAMAGE,
     opacity: 80,
     showIntegrity: true,
-    showStats: true,
+    showStats: false,
+    bodyStyle: 'gtFront',
+  },
+  decorators: box(),
+};
+
+export const GtMidDamaged: Story = {
+  args: {
+    data: DEMO_DAMAGE,
+    opacity: 80,
+    showIntegrity: true,
+    showStats: false,
+    bodyStyle: 'gtMid',
+  },
+  decorators: box(),
+};
+
+export const GtRearDamaged: Story = {
+  args: {
+    data: DEMO_DAMAGE,
+    opacity: 80,
+    showIntegrity: true,
+    showStats: false,
+    bodyStyle: 'gtRear',
+  },
+  decorators: box(),
+};
+
+export const PrototypeUndamaged: Story = {
+  args: {
+    data: UNDAMAGED,
+    opacity: 80,
+    showIntegrity: true,
+    showStats: false,
     bodyStyle: 'prototype',
-    carLabel: 'Porsche 963',
   },
   decorators: box(),
 };
@@ -48,44 +104,17 @@ export const OpenWheel: Story = {
     showIntegrity: true,
     showStats: false,
     bodyStyle: 'openwheel',
-    carLabel: 'Ray FF1600',
-  },
-  decorators: box(140, 200),
-};
-
-export const Hatch: Story = {
-  args: {
-    data: {
-      ...DEMO_DAMAGE,
-      dentSeverity: [0, 1, 0, 0, 0, 0, 0, 0],
-    },
-    opacity: 80,
-    showIntegrity: true,
-    showStats: true,
-    bodyStyle: 'hatch',
-    carLabel: 'Mazda MX-5 Cup',
   },
   decorators: box(),
 };
 
-export const IracingRepairNeeded: Story = {
+export const Hatch: Story = {
   args: {
-    data: {
-      dentSeverity: [],
-      wheelDetached: [false, false, false, false],
-      suspensionDamage: [],
-      tyreWear: [0.85, 0.9, 0.4, 0.88],
-      aeroDamage: undefined,
-      repairTime: 18.2,
-      optRepairTime: 6.5,
-      repairNeeded: true,
-      optRepairNeeded: true,
-    },
+    data: UNDAMAGED,
     opacity: 80,
     showIntegrity: true,
-    showStats: true,
-    bodyStyle: 'gt',
-    carLabel: 'Porsche 992 GT3 R',
+    showStats: false,
+    bodyStyle: 'hatch',
   },
   decorators: box(),
 };

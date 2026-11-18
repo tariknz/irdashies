@@ -13,22 +13,28 @@ export type BodyDamageTier = 'ok' | 'light' | 'heavy' | 'detached';
 export type SuspDamageTier =
   'ok' | 'light' | 'medium' | 'heavy' | 'totaled' | 'detached';
 
-/** Fill colours for SVG body panels (native iRacing-style wireframe). */
+/** Fill colours for SVG body panels (iRacing Season 4 Car Damage). */
 export const BODY_FILL: Record<BodyDamageTier, string> = {
-  ok: '#64748b',
-  light: '#facc15',
+  ok: '#39ff14',
+  light: '#eab308',
   heavy: '#ef4444',
-  detached: '#0f172a',
+  detached: '#64748b',
 };
 
+/** Non-damageable tub / chassis (iRacing white). */
+export const TUB_FILL = '#f1f5f9';
+
 export const SUSP_FILL: Record<SuspDamageTier, string> = {
-  ok: '#10b981',
-  light: '#facc15',
+  ok: '#39ff14',
+  light: '#eab308',
   medium: '#f97316',
-  heavy: '#d946ef',
-  totaled: '#2563eb',
-  detached: '#0f172a',
+  heavy: '#ef4444',
+  totaled: '#ef4444',
+  detached: '#64748b',
 };
+
+export const CORNER_LABELS = ['LF', 'RF', 'LR', 'RR'] as const;
+export const CORNER_OK_BG = '#1a3d1a';
 
 export const bodyTier = (severity: number): BodyDamageTier => {
   if (severity >= 3) return 'detached';
@@ -158,6 +164,8 @@ export interface DamageSnapshot {
   optRepairTime: number | undefined;
   repairNeeded: boolean;
   optRepairNeeded: boolean;
+  /** iRacing EngineWarnings bitfield for fluid / temp / stall icons. */
+  engineWarnings?: number;
 }
 
 /** True when the car has reportable damage (not ordinary tyre wear). */
@@ -194,6 +202,7 @@ const DEMO_DAMAGE_BASE: DamageSnapshot = {
   optRepairTime: 4.0,
   repairNeeded: true,
   optRepairNeeded: true,
+  engineWarnings: 0x01,
 };
 
 /** Static pack for stories / specs. */
@@ -227,4 +236,5 @@ export const UNDAMAGED: DamageSnapshot = {
   optRepairTime: undefined,
   repairNeeded: false,
   optRepairNeeded: false,
+  engineWarnings: 0,
 };
