@@ -4,13 +4,14 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'fastercarsfrombehind',
   name: 'Faster Cars From Behind',
+  category: 'Spotter & Safety',
   menuLabel: 'Faster Cars Behind',
   enabled: false,
   layout: {
     x: 588,
     y: 44,
     width: 405,
-    height: 43,
+    height: 120,
   },
   config: {
     distanceThreshold: -1.5,
@@ -23,6 +24,7 @@ export default defineWidgetManifest({
     removeNumbersFromName: false,
     showDistance: true,
     showBadge: false,
+    displayOrder: ['driverName', 'badge', 'distance'],
     sessionVisibility: {
       race: true,
       loneQualify: false,
@@ -49,8 +51,9 @@ export default defineWidgetManifest({
     },
     showBadge: {
       type: 'boolean',
-      label: 'Show Driver Badge',
-      description: 'Display the driver license and iRating badge.',
+      label: 'Rating',
+      description:
+        "Display the driver's iRacing licence and iRating, or their LMU rank.",
     },
     numberDriversBehind: {
       type: 'enum',

@@ -5,6 +5,7 @@ import {
   SessionProvider,
 } from '@irdashies/context';
 import { Settings } from '../components/Settings/Settings';
+import { TrailingSlashRedirect } from '../components/Settings/TrailingSlashRedirect';
 
 export default function SettingsWindow() {
   return (
@@ -13,7 +14,14 @@ export default function SettingsWindow() {
         <SessionProvider bridge={window.irsdkBridge} />
         <HashRouter>
           <Routes>
-            <Route path="/settings/*" element={<Settings />} />
+            <Route
+              path="/settings/*"
+              element={
+                <TrailingSlashRedirect>
+                  <Settings />
+                </TrailingSlashRedirect>
+              }
+            />
           </Routes>
         </HashRouter>
       </RunningStateProvider>

@@ -140,6 +140,7 @@ const isEmptyMap = (value: ReadonlyMap<unknown, unknown>) => value.size === 0;
 const isUnset = (value: unknown) => value == null;
 const isFalse = (value: boolean | undefined) => !value;
 
+/** The standings widget: the field in position order, by class. */
 export const Standings = () => {
   const settings = useStandingsSettings();
   const { holding } = useSessionHold();
@@ -194,7 +195,10 @@ export const Standings = () => {
   const highlightColor = useHighlightColor();
 
   const avgLapTimes = useHeld(
-    useCarIdxRollingAvgLapTime(settings?.avgLapTime?.numLaps ?? 5),
+    useCarIdxRollingAvgLapTime(
+      settings?.avgLapTime?.numLaps ?? 5,
+      settings?.avgLapTime?.excludePitLaps ?? false
+    ),
     isEmptyList
   );
 
@@ -461,6 +465,7 @@ export const Standings = () => {
                           }
                           penaltyKind={result.penaltyKind}
                           penaltySeconds={result.penaltySeconds}
+                          finishState={result.finishState}
                           trackLimitsPoints={result.trackLimitsPoints}
                           trackLimitsMax={trackLimitsMax}
                           lmuVirtualEnergy={result.energyRemaining}
@@ -471,7 +476,6 @@ export const Standings = () => {
                           prevCarTrackSurface={result.prevCarTrackSurface}
                           license={result.driver?.license}
                           rating={result.driver?.rating}
-                          isAi={result.driver?.isAi}
                           lapTimeDeltas={
                             settings?.lapTimeDeltas?.enabled
                               ? result.lapTimeDeltas

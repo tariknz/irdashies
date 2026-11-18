@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'map',
   name: 'Track Map',
+  category: 'Track & Navigation',
   enabled: true,
   layout: {
     x: 1102,

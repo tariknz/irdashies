@@ -1,3 +1,4 @@
+import { exposeWindowVisibilityBridge } from './app/bridge/windowVisibilityRendererBridge';
 import { exposeStorageStatusBridge } from './app/bridge/storageStatusRendererBridge';
 // See the Electron documentation for details on how to use preload scripts:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
@@ -5,12 +6,15 @@ import { exposeBridge } from './app/bridge/rendererExposeBridge';
 import { exposeInMainWorld } from './app/rendererExpose';
 import { startRendererPerfMetrics } from './app/rendererPerfMetrics';
 import { exposeChannelBridge } from './app/bridge/channelRendererBridge';
+import { exposeWidgetPreviewBridge } from './app/bridge/widgetPreviewRendererBridge';
 
 startRendererPerfMetrics();
 exposeBridge();
 exposeInMainWorld();
 exposeChannelBridge();
+exposeWidgetPreviewBridge();
 exposeStorageStatusBridge();
+exposeWindowVisibilityBridge();
 
 // Local-only feature bridges (git-excluded src/local/). Empty glob => no-op.
 // The negative pattern keeps co-located *.spec.ts test files out of the bundle.

@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'flag',
   name: 'Flag',
+  category: 'Spotter & Safety',
   enabled: false,
   layout: {
     x: 100,

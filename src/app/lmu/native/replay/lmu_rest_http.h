@@ -35,14 +35,16 @@ void httpShutdown();
 
 /**
  * Fetches `path`. On HttpResult::Ok, `body` holds the response body with the
- * headers stripped.
+ * headers stripped. On HttpResult::Status it holds the error's body, and
+ * `status`, when given, its code: one path's errors are answers.
  */
 HttpResult httpGet(
     const std::string& host,
     std::uint16_t port,
     const std::string& path,
     int timeoutMs,
-    std::string& body);
+    std::string& body,
+    int* status = nullptr);
 
 }  // namespace irdashies::lmu_replay
 

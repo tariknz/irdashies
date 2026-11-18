@@ -14,14 +14,14 @@ export function SettingButtonGroupRow<T extends string>({
   onChange,
 }: SettingButtonGroupRowProps<T>) {
   return (
-    <div className="flex items-center justify-between">
-      <div className="max-w-[70%]">
+    <div className="flex min-h-9 flex-wrap items-center justify-between gap-4">
+      <div className="min-w-0 flex-1 basis-40">
         <span className="text-md text-slate-300">{title}</span>
         {description && (
           <p className="text-sm text-slate-500 mt-1">{description}</p>
         )}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex max-w-full flex-wrap items-center gap-2">
         {options.map((opt) => {
           const isActive = opt.value === value;
           return (
@@ -29,10 +29,10 @@ export function SettingButtonGroupRow<T extends string>({
               key={opt.value}
               aria-pressed={isActive}
               onClick={() => onChange(opt.value)}
-              className={`px-3 py-1 rounded text-sm font-semibold border transition-colors ${
+              className={`min-h-9 px-3 py-1.5 rounded-md text-sm font-semibold border transition-colors ${
                 isActive
                   ? 'bg-accent-500 border-accent-500 text-on-accent'
-                  : 'bg-transparent border-slate-600 text-slate-300 hover:border-slate-400'
+                  : 'bg-transparent border-settings-boundary text-slate-300 hover:border-slate-400'
               }`}
             >
               {opt.label}

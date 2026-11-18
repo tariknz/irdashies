@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'tracknotes',
   name: 'Track Notes',
+  category: 'Track & Navigation',
   enabled: false,
   layout: { x: 600, y: 120, width: 420, height: 100 },
   config: {

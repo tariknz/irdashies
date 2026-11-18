@@ -2,14 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   CarLeftRight,
   EngineWarnings,
+  GlobalFlags,
   TIMED_SESSION_LAPS,
 } from '@irdashies/types';
 import type { LmuRawTelemetry } from './native';
-import {
-  mapLmuSectorTimes,
-  mapLmuTelemetry,
-  remapLmuDentSeverity,
-} from './mapTelemetry';
+import { mapLmuSectorTimes, mapLmuTelemetry } from './mapTelemetry';
 import { fixture } from './rawFixture';
 import { createLmuLapDistanceState } from './lapDistance';
 
@@ -363,6 +360,35 @@ describe('mapLmuTelemetry', () => {
     ).toBe(32);
   });
 
+  it.each([
+    { gamePhase: 6, yellowFlagState: 0 },
+    ...[1, 2, 3, 4, 5, 6].map((yellowFlagState) => ({
+      gamePhase: 5,
+      yellowFlagState,
+    })),
+  ])(
+    'distinguishes full-course caution state %j from local yellows',
+    (state) => {
+      const mapped = mapLmuTelemetry({ ...fixture(), ...state });
+      expect(mapped.SessionFlags.value[0]).toBe(
+        GlobalFlags.Yellow | GlobalFlags.Caution
+      );
+    }
+  );
+
+  it.each([-1, 0, 7, 8])(
+    'keeps sector yellows local with non-FCY yellow state %i',
+    (yellowFlagState) => {
+      const mapped = mapLmuTelemetry({
+        ...fixture(),
+        gamePhase: 5,
+        yellowFlagState,
+        sectorFlags: new Uint8Array([0, 1, 0]),
+      });
+      expect(mapped.SessionFlags.value[0]).toBe(GlobalFlags.Yellow);
+    }
+  );
+
   it('converts cumulative LMU sector times and invalid sentinels', () => {
     const times = mapLmuSectorTimes(32.4, 73.4, 133.4);
     expect(times[0]).toBeCloseTo(32.4);
@@ -499,6 +525,52 @@ describe('mapLmuTelemetry lap-distance reconstruction', () => {
     expect(mapLmuTelemetry(raw, state).LapDistPct?.value[0]).toBe(
       mapLmuTelemetry(bare).LapDistPct?.value[0]
     );
+  });
+
+  it('moves the lap counts in the frame LapDistPct wraps, not when the counters flip', () => {
+    // LMU's counters flip at the timing line, here 20 m before scoring's
+    // distance wraps. The fuel calculator pairs Lap with LapDistPct, and seeing
+    // the counter and then the wrap left it ignoring live usage all lap; the
+    // standings and race projections take lap plus fraction from CarIdxLap.
+    const state = createLmuLapDistanceState();
+    const lapDist = 7004;
+    const speed = 51.234;
+    const frameAt = (i: number) => {
+      const raw = fixture();
+      raw.speed = speed;
+      const trueM = lapDist - 60 + speed * (i * 0.01);
+      raw.elapsedTime = 250 + i * 0.01;
+      raw.lapNumber = trueM >= lapDist - 20 ? 4 : 3;
+      raw.vehTotalLaps = new Int32Array([2, raw.lapNumber, 1]);
+      // Scoring updates every 200 ms with the true position.
+      const scoringM = lapDist - 60 + speed * (Math.floor(i / 20) * 0.2);
+      raw.vehLapDistPct = new Float64Array([
+        0.4,
+        (scoringM % lapDist) / lapDist,
+        0.2,
+      ]);
+      return mapLmuTelemetry(raw, state);
+    };
+
+    let previousPct = -1;
+    let previousLap = -1;
+    let wraps = 0;
+    for (let i = 0; i <= 200; i += 1) {
+      const t = frameAt(i);
+      const pct = t.LapDistPct?.value[0] as number;
+      const lap = t.Lap?.value[0] as number;
+      const wrapped = previousPct >= 0 && pct < previousPct - 0.5;
+      if (wrapped) wraps += 1;
+      if (previousLap >= 0) expect(lap !== previousLap).toBe(wrapped);
+      // The completed counts move with it, for the player's slots too.
+      expect(t.LapCompleted?.value[0]).toBe(lap);
+      expect((t.CarIdxLap?.value as number[])[1]).toBe(lap);
+      expect((t.CarIdxLapCompleted?.value as number[])[1]).toBe(lap);
+      previousPct = pct;
+      previousLap = lap;
+    }
+    expect(wraps).toBe(1);
+    expect(previousLap).toBe(4);
   });
 
   it('never publishes a backward step within a lap', () => {
@@ -1004,27 +1076,25 @@ describe('mapLmuTelemetry adjustable dials', () => {
   });
 });
 
-describe('remapLmuDentSeverity', () => {
-  it('maps SHM order into FL,FC,FR,CL,CR,RL,RC,RR display order', () => {
-    // Indices: 0 FC, 1 FL, 2 CL, 3 RL, 4 RC, 5 RR, 6 CR, 7 FR (TinyPedal LMU).
-    const dent = [10, 11, 12, 13, 14, 15, 16, 17];
-    expect(remapLmuDentSeverity(dent, false)).toEqual([
-      11, 10, 17, 12, 16, 13, 14, 15,
-    ]);
-  });
-
-  it('forces rear-center to detached when the body is detached', () => {
-    const dent = [0, 0, 0, 0, 1, 0, 0, 0];
-    expect(remapLmuDentSeverity(dent, true)[6]).toBe(3);
-  });
-
-  it('publishes remapped dents and wheel flags from the fixture', () => {
+describe('LmuDentSeverity', () => {
+  it('publishes LMU dent order and wheel flags from the fixture', () => {
+    // Fixture dentSeverity: FC=0, FL=1, CL=0, RL=0, RC=0, RR=0, CR=2, FR=0
     const t = mapLmuTelemetry(fixture());
-    expect(t.LmuDentSeverity?.value).toEqual([1, 0, 0, 0, 2, 0, 0, 0]);
+    expect(t.LmuDentSeverity?.value).toEqual([0, 1, 0, 0, 0, 0, 2, 0]);
     expect(t.LmuWheelDetached?.value).toEqual([false, false, false, false]);
     expect(t.LmuBodyDetached?.value[0]).toBe(false);
     expect(t.LmuLastImpactET?.value[0]).toBe(240.1);
     expect(t.LmuLastImpactPos?.value).toEqual([0.4, 0, -1.2]);
+  });
+
+  it('does not force rear-center when the body is detached', () => {
+    const t = mapLmuTelemetry({
+      ...fixture(),
+      dentSeverity: new Uint8Array([0, 0, 0, 0, 1, 0, 0, 0]),
+      bodyDetached: true,
+    });
+    expect(t.LmuDentSeverity?.value?.[4]).toBe(1);
+    expect(t.LmuBodyDetached?.value[0]).toBe(true);
   });
 });
 
@@ -1070,6 +1140,23 @@ describe('mapLmuTelemetry penalty kinds', () => {
     expect(
       Array.isArray(mapLmuTelemetry(fixture()).LmuCarIdxPenalties?.value)
     ).toBe(true);
+  });
+});
+
+describe('mapLmuTelemetry finish status', () => {
+  it("publishes each car's mFinishStatus as it stands", () => {
+    // 0 none, 1 finished, 2 DNF, 3 DQ: the codes go out unchanged and the
+    // renderer names them.
+    const raw = { ...fixture(), vehFinishStatus: Int32Array.from([1, 2, 3]) };
+    expect(mapLmuTelemetry(raw).LmuCarIdxFinishStatus?.value).toEqual([
+      1, 2, 3,
+    ]);
+  });
+
+  it('still raises Disqualify for a DQ, which race control reads', () => {
+    const raw = { ...fixture(), vehFinishStatus: Int32Array.from([0, 0, 3]) };
+    const flags = mapLmuTelemetry(raw).CarIdxSessionFlags.value as number[];
+    expect(flags[2] & 0x00020000).toBe(0x00020000);
   });
 });
 

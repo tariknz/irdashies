@@ -13,6 +13,10 @@ export type Telemetry = {
    * Stands in for PlayerCarMyIncidentCount, which LMU does not publish.
    */
   LmuLapInvalidated?: TelemetryVar<boolean[]>;
+  /**
+   * True when that car has a relative position within 120 m of the focus
+   * car. Empty (all false / absent) when the camera is on another car.
+   */
   LmuCarIdxRelativeAvailable?: TelemetryVar<boolean[]>;
   LmuCarIdxRelativeLateral?: TelemetryVar<number[]>;
   LmuCarIdxRelativeLongitudinal?: TelemetryVar<number[]>;
@@ -61,6 +65,11 @@ export type Telemetry = {
    */
   LmuCarIdxPenaltyKind?: TelemetryVar<number[]>;
   /**
+   * Each car's `mFinishStatus`: 0 none, 1 finished, 2 DNF, 3 DQ, as
+   * LMU_FINISH_STATUS. From scoring, so it is there for every car.
+   */
+  LmuCarIdxFinishStatus?: TelemetryVar<number[]>;
+  /**
    * Seconds a time penalty will add to each car's race time. 0 for a clean
    * car and for the two kinds that are served on track rather than paid in
    * time. From the same websocket as the kind above.
@@ -85,6 +94,22 @@ export type Telemetry = {
    */
   LmuDataStale?: TelemetryVar<boolean[]>;
   /**
+   * True while LMU's GetGameState answers `{"status":"unavailable"}` or 404:
+   * the sim is running and in no session, or in no game at all. Widgets read
+   * it as Offline Testing for their session visibility, so only those allowed
+   * there stay on screen. False whenever the game state is anything else or
+   * unknown.
+   */
+  LmuNotInSession?: TelemetryVar<boolean[]>;
+  /**
+   * True while LMU's GetGameState says the player is not in the car: at the
+   * monitor, or out of any session or game. The driving gate reads it before
+   * the pit terms, which stay true for a car left in the pit lane or stall
+   * while the player sits at the monitor. False whenever the game state is
+   * unknown, so shared memory decides then.
+   */
+  LmuOutOfCar?: TelemetryVar<boolean[]>;
+  /**
    * The points a drive-through is served at, 0 when the session has not said.
    *
    * A session constant, carried beside the per-car figure because neither is
@@ -101,6 +126,12 @@ export type Telemetry = {
   LmuPitStopTime?: TelemetryVar<number[]>;
   LmuRepairTime?: TelemetryVar<number[]>;
   /**
+   * iRacing Season 3+ — true when the car needs mandatory / optional repairs.
+   * Not in every generated snapshot yet; optional so older builds still typecheck.
+   */
+  PitRepairNeeded?: TelemetryVar<boolean[]>;
+  PitOptRepairNeeded?: TelemetryVar<boolean[]>;
+  /**
    * What the next pit stop will add. Litres, or a virtual-energy percentage --
    * the companion flag says which, and nothing downstream should guess.
    */
@@ -111,9 +142,9 @@ export type Telemetry = {
   LmuSuspensionDamage?: TelemetryVar<number[]>;
   LmuAeroDamage?: TelemetryVar<number[]>;
   /**
-   * Body dent severity in display order FL,FC,FR,CL,CR,RL,RC,RR.
-   * Values: 0 none, 1 light, 2 heavy, ≥3 detached (LMU forces rear-center to 3
-   * when the body/rear wing is detached).
+   * Body dent severity in LMU's own order: FC, FL, CL, RL, RC, RR, CR, FR.
+   * Values: 0 none, 1 light, 2 heavy, ≥3 detached. Display remapping belongs
+   * in the damage widget.
    */
   LmuDentSeverity?: TelemetryVar<number[]>;
   /** Per-wheel detached flags, LF, RF, LR, RR. */
@@ -122,7 +153,10 @@ export type Telemetry = {
   LmuBodyDetached?: TelemetryVar<boolean[]>;
   /** Session time of the last impact, seconds. */
   LmuLastImpactET?: TelemetryVar<number[]>;
-  /** Last impact position [x, y, z] in vehicle space. */
+  /**
+   * Last impact position [x, y, z] in metres, vehicle local space
+   * (x right, y up, z forward).
+   */
   LmuLastImpactPos?: TelemetryVar<number[]>;
   /**
    * From shared memory, not REST. Virtual energy remaining; the budget it
@@ -131,12 +165,6 @@ export type Telemetry = {
   LmuVirtualEnergy?: TelemetryVar<number[]>;
   LmuStateOfCharge?: TelemetryVar<number[]>;
   LmuRegen?: TelemetryVar<number[]>;
-  /**
-   * iRacing Season 3+ — true when the car needs mandatory / optional repairs.
-   * Not in every generated snapshot yet; optional so older builds still typecheck.
-   */
-  PitRepairNeeded?: TelemetryVar<boolean[]>;
-  PitOptRepairNeeded?: TelemetryVar<boolean[]>;
 };
 /**
  * What SessionLapsRemain and SessionLapsTotal carry when the session has no

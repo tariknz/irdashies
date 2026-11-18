@@ -46,6 +46,10 @@ export const shouldCalculateIRatingChange = (
     sessionType === 'Practice' &&
     estimateInPractice);
 
+/**
+ * The Standings widget's rows: every driver with position, gaps, lap times
+ * and car state, grouped by class and trimmed to the widget's settings.
+ */
 export const useDriverStandings = (
   settings?: StandingsWidgetSettings['config'],
   options?: { showAll?: boolean; livePositions?: boolean }
@@ -118,6 +122,8 @@ export const useDriverStandings = (
     standingsSnapshot?.carIdxPenaltyKind ?? EMPTY_NUMBERS;
   const carIdxPenaltySeconds =
     standingsSnapshot?.carIdxPenaltySeconds ?? EMPTY_NUMBERS;
+  const carIdxFinishStatus =
+    standingsSnapshot?.carIdxFinishStatus ?? EMPTY_NUMBERS;
   const penaltySeconds = standingsSnapshot?.penaltySeconds;
   const isOfficial = useSessionIsOfficial();
   const eventType = useWeekendInfoEventType();
@@ -161,6 +167,7 @@ export const useDriverStandings = (
             carIdxPenaltiesValue: carIdxPenalties,
             carIdxPenaltyKindValue: carIdxPenaltyKind,
             carIdxPenaltySecondsValue: carIdxPenaltySeconds,
+            carIdxFinishStatusValue: carIdxFinishStatus,
             penaltySeconds,
             carIdxSessionFlags: carIdxSessionFlags,
           },
@@ -303,6 +310,7 @@ export const useDriverStandings = (
       carIdxPenalties,
       carIdxPenaltyKind,
       carIdxPenaltySeconds,
+      carIdxFinishStatus,
       penaltySeconds,
       ownCarIdx,
       positions,

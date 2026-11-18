@@ -1,3 +1,4 @@
+import { useCanvasCleanup } from '@irdashies/domain/canvas/useCanvasCleanup';
 import { useWidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Driver } from '@irdashies/types';
@@ -37,7 +38,6 @@ export interface DriverIdentity {
 
 export interface TrackProps {
   trackId: number;
-  trackDrawing?: TrackDrawing;
   drivers: TrackDriver[];
   driverIdentities?: DriverIdentity[];
   turnLabels?: {
@@ -84,19 +84,18 @@ export interface TurnLabels {
 
 const TRACK_DRAWING_WIDTH = 1920;
 const TRACK_DRAWING_HEIGHT = 1080;
+const DEFAULT_TURN_LABELS: TurnLabels = {
+  enabled: false,
+  labelType: 'both',
+  highContrast: true,
+  labelFontSize: 100,
+};
 
 /** Mount canvas effects only once the requested drawing is available. */
 export const TrackCanvas = (props: TrackProps) => {
-  const override = props.trackDrawing;
-  const loaded = useTrackDrawing(override ? undefined : props.trackId);
-  const drawing = override ?? loaded;
+  const drawing = useTrackDrawing(props.trackId);
   return drawing ? (
-    <LoadedTrackCanvas
-      key={props.trackId}
-      {...props}
-      trackDrawing={drawing}
-      hasDrawingOverride={override !== undefined}
-    />
+    <LoadedTrackCanvas key={props.trackId} {...props} trackDrawing={drawing} />
   ) : null;
 };
 
@@ -104,12 +103,7 @@ const LoadedTrackCanvas = ({
   trackId,
   drivers,
   driverIdentities,
-  turnLabels = {
-    enabled: false,
-    labelType: 'both',
-    highContrast: true,
-    labelFontSize: 100,
-  },
+  turnLabels = DEFAULT_TURN_LABELS,
   showCarNumbers = true,
   displayMode = 'carNumber',
   invertTrackColors = false,
@@ -130,18 +124,16 @@ const LoadedTrackCanvas = ({
   driverLivePositions = {},
   maxFps,
   trackDrawing,
-  hasDrawingOverride,
-}: TrackProps & {
-  trackDrawing: TrackDrawing;
-  hasDrawingOverride: boolean;
-}) => {
+}: TrackProps & { trackDrawing: TrackDrawing }) => {
   const playerIconDataUrl = useMemo(
     () => validateImageDataUrl(rawPlayerIconDataUrl),
     [rawPlayerIconDataUrl]
   );
   const widgetScale = useWidgetScale();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasInvalidatedRef = useRef(false);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  useCanvasCleanup(canvasRef, cacheCanvasRef);
   const debounceResizeRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined
   );
@@ -149,9 +141,7 @@ const LoadedTrackCanvas = ({
   const playerIconElRef = useRef<HTMLImageElement>(null);
   const playerPitBadgeRef = useRef<HTMLDivElement>(null);
 
-  const shouldShow = hasDrawingOverride
-    ? !!trackDrawing.active?.inside && !!trackDrawing.startFinish?.line
-    : shouldShowTrack(trackId, trackDrawing);
+  const shouldShow = shouldShowTrack(trackId, trackDrawing);
 
   const driversOffTrack = useCarIdxOffTrack();
   const carIdxIsOnPitRoad =
@@ -254,6 +244,7 @@ const LoadedTrackCanvas = ({
       const { clientWidth: width, clientHeight: height } = canvas;
 
       // Set the actual canvas size in memory (scaled up for high-DPI)
+      canvasInvalidatedRef.current = true;
       canvas.width = width * dpr;
       canvas.height = height * dpr;
 
@@ -304,7 +295,11 @@ const LoadedTrackCanvas = ({
       if (debounceResizeRef.current) {
         clearTimeout(debounceResizeRef.current);
       }
-      cacheCanvasRef.current = null;
+      if (cacheCanvasRef.current) {
+        cacheCanvasRef.current.width = 0;
+        cacheCanvasRef.current.height = 0;
+        cacheCanvasRef.current = null;
+      }
     };
   }, [trackId, widgetScale]);
 
@@ -378,10 +373,12 @@ const LoadedTrackCanvas = ({
     }
 
     drawStartFinishLine(cacheCtx, startFinishLine);
-    drawTurnNames(cacheCtx, trackDrawing?.turns, turnLabels);
+    drawTurnNames(cacheCtx, trackDrawing.turns, turnLabels);
 
     cacheCtx.restore();
 
+    // The static blit clears cars too; restore the dynamic layer this commit.
+    canvasInvalidatedRef.current = true;
     // Blit to main canvas so static-only changes are visible immediately
     const ctx = canvas.getContext('2d');
     if (ctx) {
@@ -523,7 +520,8 @@ const LoadedTrackCanvas = ({
         }
       }
     },
-    maxFps
+    maxFps,
+    canvasInvalidatedRef
   );
 
   const renderIconOverlay = () =>

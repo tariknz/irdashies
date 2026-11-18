@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import * as yaml from 'js-yaml';
 import { IRacingSDK } from './irsdk-node';
 import { getSdkOrMock } from './get-sdk';
-import type { INativeSDK } from '../native';
+import type { INativeSDK, NativeTelemetryDataView } from '../native';
 import logger from '../../logger';
 
 vi.mock('../../logger', () => ({ default: { error: vi.fn() } }));
@@ -84,6 +84,7 @@ describe('irsdk-node', () => {
     await sdk.ready();
     // Get the mock SDK instance
     mockSdk = await getSdkOrMock();
+    delete mockSdk.getTelemetryDataView;
     vi.clearAllMocks();
     vi.mocked(mockSdk.isRunning).mockReturnValue(true);
     vi.mocked(mockSdk.waitForData).mockReturnValue(true);
@@ -91,6 +92,46 @@ describe('irsdk-node', () => {
       value: 0,
       configurable: true,
     });
+  });
+
+  it('decodes shared frame byte ranges and keeps converted values in JS arrays', () => {
+    const buffer = new ArrayBuffer(64);
+    const bytes = new DataView(buffer);
+    bytes.setFloat64(8, 123.5, true);
+    bytes.setFloat32(20, 42.25, true);
+    bytes.setInt32(24, 1234, true);
+    bytes.setInt8(28, 1);
+    bytes.setFloat32(33, 0.75, true);
+    const variable = (offset: number, length: number, varType: number) => ({
+      value: new Uint8Array(buffer, offset, length),
+      varType,
+    });
+    mockSdk.getTelemetryDataView = vi.fn().mockReturnValue({
+      SessionTime: variable(8, 8, 5),
+      Speed: variable(20, 4, 4),
+      SessionTick: variable(24, 4, 2),
+      IsOnTrack: variable(28, 1, 1),
+      LapDistPct: variable(33, 4, 4),
+    } as NativeTelemetryDataView);
+
+    const first = sdk.getTelemetry();
+    expect(first.SessionTime.value).toEqual([123.5]);
+    expect(first.Speed.value).toEqual([42.25]);
+    expect(first.SessionTick.value).toEqual([1234]);
+    expect(first.IsOnTrack.value).toEqual([true]);
+    expect(first.LapDistPct.value).toEqual([0.75]);
+    expect(mockSdk.getTelemetryData).not.toHaveBeenCalled();
+    expect(
+      Object.values(first).every(({ value }) => Array.isArray(value))
+    ).toBe(true);
+
+    const previousValues = first.Speed.value;
+    bytes.setFloat32(20, 12.5, true);
+    bytes.setInt8(28, 0);
+    const next = sdk.getTelemetry();
+    expect(next.Speed.value).toBe(previousValues);
+    expect(next.Speed.value).toEqual([12.5]);
+    expect(next.IsOnTrack.value).toEqual([false]);
   });
 
   it.each(sessionFixtureDirectories)(

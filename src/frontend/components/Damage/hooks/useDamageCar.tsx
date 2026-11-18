@@ -20,12 +20,7 @@ export const useDamageCar = (): DamageCarInfo => {
 
   const carPath = driver?.CarPath;
   const carName = driver?.CarScreenName ?? driver?.CarScreenNameShort;
-  const carData = carPath
-    ? loadCarData(carPath, simulator ?? undefined, [
-        driver?.CarCfgName,
-        driver?.CarScreenName,
-      ])
-    : null;
+  const carData = carPath ? loadCarData(carPath, simulator ?? undefined) : null;
 
   const bodyStyle = resolveDamageBodyStyle(
     carPath,

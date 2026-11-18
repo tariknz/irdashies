@@ -349,4 +349,34 @@ describe('camera group across a bridge change', () => {
     // Group 0 means "leave the camera alone", which is the safe fallback.
     expect(second.bridge.changeCameraNumber).toHaveBeenCalledWith('7', 0, 0);
   });
+
+  it('replays a pit stop on Far Chase whatever the incident camera is', () => {
+    const { runtime } = createRuntime();
+    const sdk = createBridge();
+    vi.mocked(getCurrentBridge).mockReturnValue(
+      sdk.bridge as unknown as ReturnType<typeof getCurrentBridge>
+    );
+    setupRaceControlBridge(
+      runtime,
+      dashboardWith({ incidentCameraGroup: 'TV1' })
+    );
+    sdk.publishSession(
+      sessionWithGroups([
+        { GroupNum: 13, GroupName: 'Far Chase' },
+        { GroupNum: 18, GroupName: 'TV1' },
+      ])
+    );
+
+    handlers.get('raceControl:replayPitStop')?.(
+      {},
+      { sessionNum: 2, sessionTime: 1000, carNumber: '7', carIdx: 3 },
+      5
+    );
+
+    expect(sdk.bridge.changeCameraNumber).toHaveBeenCalledWith('7', 13, 0);
+    expect(sdk.bridge.triggerReplaySessionSearch).toHaveBeenCalledWith(
+      2,
+      995000
+    );
+  });
 });

@@ -1,596 +1,407 @@
+import { TrashIcon } from '@phosphor-icons/react';
 import { useCarSetup } from '@irdashies/context';
 import type { CarSetupInfo } from '@irdashies/types';
-import { memo, type ReactNode, useState } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { ReorderControls } from '../components/ReorderControls';
+import { SettingsSection } from '../components/SettingSection';
+import { TabButton } from '../components/TabButton';
+
+type SetupData = CarSetupInfo &
+  Partial<Record<'Tires' | 'Dampers' | 'Drivetrain' | 'Systems', object>>;
+type SetupValue = string | number | undefined;
+type ComparisonMode = 'first' | 'previous';
 
 interface Snapshot {
-  id: string;
+  id: number;
   timestamp: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any;
+  data: SetupData;
 }
 
-type ComparisonMode = 'previous' | 'all';
+const setupSections = [
+  ['Tires', 'Tires'],
+  ['TiresAero', 'Tires & Aero'],
+  ['Chassis', 'Chassis'],
+  ['Suspension', 'Suspension'],
+  ['Dampers', 'Dampers'],
+  ['Drivetrain', 'Drivetrain'],
+  ['DriveBrake', 'Drive & Brake'],
+  ['Systems', 'Systems'],
+] as const;
+
+const formatSetupLabel = (label: string) =>
+  label
+    .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+
+const isSetupGroup = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const getSetupValue = (data: SetupData, path: string[]): SetupValue => {
+  const value = path.reduce<unknown>(
+    (group, key) => (isSetupGroup(group) ? group[key] : undefined),
+    data
+  );
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'number' || typeof value === 'string') return value;
+};
+
+const isChanged = (value: SetupValue, reference: SetupValue) =>
+  value !== undefined &&
+  value !== '' &&
+  reference !== undefined &&
+  reference !== '' &&
+  String(value) !== String(reference);
 
 interface SetupRowProps {
   label: string;
-  values: (string | number | undefined)[];
-  unit?: string;
-  comparisonMode?: ComparisonMode;
+  values: SetupValue[];
+  mode: ComparisonMode;
 }
 
-const isHighlighted = (
-  values: (string | number | undefined)[],
-  index: number,
-  mode: ComparisonMode
-): boolean => {
-  if (values.length <= 1 || index === 0) return false;
-
-  const cur = values[index];
-  if (cur === undefined || cur === null || cur === '') return false;
-
-  if (mode === 'previous') {
-    const ref = values[0];
-    return (
-      ref !== undefined &&
-      ref !== null &&
-      ref !== '' &&
-      String(cur) !== String(ref)
-    );
-  }
-  const left = values[index - 1];
-  return (
-    left !== undefined &&
-    left !== null &&
-    left !== '' &&
-    String(cur) !== String(left)
-  );
-};
-
-const SetupRow = memo(
-  ({
-    label,
-    values,
-    unit = '',
-    comparisonMode = 'previous',
-  }: SetupRowProps) => {
-    if (values.length === 0) return null;
-
-    if (values.length === 1) {
+const SetupRow = ({ label, values, mode }: SetupRowProps) => (
+  <tr>
+    <th
+      scope="row"
+      className="sticky left-0 border-r border-b border-slate-700/60 bg-slate-900 px-3 py-1.5 text-left align-top font-normal wrap-anywhere text-slate-300"
+    >
+      {formatSetupLabel(label)}
+    </th>
+    {values.map((value, index) => {
+      const reference = values[mode === 'first' ? 0 : index - 1];
+      const changed = index > 0 && isChanged(value, reference);
       return (
-        <div className="flex justify-between items-center py-1 border-b border-slate-700/30">
-          <span className="text-slate-400 text-xs">{label}</span>
-          <span className="text-xs font-mono text-white">
-            {values[0]} {unit}
-          </span>
-        </div>
+        <td
+          key={index}
+          className={`border-r border-b border-slate-700/60 px-1.5 py-1.5 text-right align-top font-mono wrap-anywhere tabular-nums last:border-r-transparent ${
+            changed
+              ? 'bg-amber-500/10 font-semibold text-amber-400'
+              : 'text-slate-200'
+          }`}
+        >
+          {changed && <span className="sr-only">Changed </span>}
+          {value === undefined || value === '' ? '—' : value}
+        </td>
       );
-    }
-    return (
-      <div
-        className="grid gap-2 py-1 border-b border-slate-700/30 items-center"
-        style={{
-          gridTemplateColumns: `1fr ${values.map(() => 'auto').join(' ')}`,
-        }}
-      >
-        <span className="text-slate-400 text-xs">{label}</span>
-        {values.map((val, idx) => (
-          <span
-            key={idx}
-            className={`text-xs font-mono text-right min-w-20 ${
-              isHighlighted(values, idx, comparisonMode)
-                ? 'text-red-400 font-bold'
-                : 'text-white'
-            }`}
-          >
-            {val} {unit}
-          </span>
-        ))}
-      </div>
-    );
-  }
+    })}
+  </tr>
 );
-SetupRow.displayName = 'SetupRow';
 
 interface SetupSectionProps {
   title: string;
-  children: ReactNode;
-  snapshots?: Snapshot[];
+  sectionKey: string;
+  data: object;
+  snapshots: Snapshot[];
+  mode: ComparisonMode;
 }
 
-const SetupSection = memo(
-  ({ title, children, snapshots = [] }: SetupSectionProps) => {
-    const hasSnapshots = snapshots.length > 0;
+const SetupTableSection = ({
+  title,
+  sectionKey,
+  data,
+  snapshots,
+  mode,
+}: SetupSectionProps) => {
+  const renderRow = (label: string, path: string[]) => (
+    <SetupRow
+      key={label}
+      label={label}
+      values={snapshots.map(({ data }) => getSetupValue(data, path))}
+      mode={mode}
+    />
+  );
 
-    return (
-      <div className="mb-4 last:mb-0">
-        <h4 className="text-sm font-semibold text-slate-300 mb-2">{title}</h4>
-        {hasSnapshots && (
-          <div
-            className="grid gap-2 py-1 mb-1 border-b border-slate-500"
-            style={{
-              gridTemplateColumns: `1fr ${snapshots.map(() => 'auto').join(' ')}`,
-            }}
-          >
-            <span className="text-slate-500 text-xs font-semibold" />
-            {snapshots.map((snapshot) => (
-              <span
-                key={snapshot.id}
-                className="text-slate-500 text-xs font-semibold text-right min-w-20"
-              >
-                {new Date(snapshot.timestamp).toLocaleTimeString()}
-              </span>
-            ))}
-          </div>
-        )}
-        <div className="space-y-0.5">{children}</div>
-      </div>
-    );
-  }
-);
-SetupSection.displayName = 'SetupSection';
+  const fields: [string, unknown][] = Object.entries(data);
+  return (
+    <tbody>
+      <tr>
+        <th
+          scope="rowgroup"
+          className="sticky left-0 border-b border-slate-700 bg-slate-800 px-3 py-2 text-left text-slate-200"
+        >
+          <h3 className="text-lg font-semibold">{title}</h3>
+        </th>
+        <td
+          colSpan={snapshots.length}
+          className="border-b border-slate-700 bg-slate-800"
+        />
+      </tr>
+      {fields.map(([key, value]) => {
+        if (!isSetupGroup(value)) return renderRow(key, [sectionKey, key]);
 
-const buildValues = (
-  snapshots: Snapshot[],
-  path: string[]
-): (string | number | undefined)[] => {
-  return snapshots.map((snapshot) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let value: any = snapshot.data;
-    for (const key of path) {
-      value = value?.[key];
-      if (value === undefined) return undefined;
-    }
-    return value;
-  });
+        const groupFields = Object.keys(value);
+        if (groupFields.length === 1 && groupFields[0] === key) {
+          return renderRow(key, [sectionKey, key, key]);
+        }
+        return (
+          <SetupGroup key={key} label={key} columnCount={snapshots.length}>
+            {groupFields.map((field) =>
+              renderRow(field, [sectionKey, key, field])
+            )}
+          </SetupGroup>
+        );
+      })}
+    </tbody>
+  );
 };
 
-const SectionAccordion = memo(
-  ({ title, children }: { title: string; children: ReactNode }) => (
-    <div className="border border-slate-700 rounded">
-      <div className="p-3">
-        <h3 className="text-lg font-semibold mb-3">{title}</h3>
-        <div className="space-y-4">{children}</div>
-      </div>
-    </div>
-  )
-);
-SectionAccordion.displayName = 'SectionAccordion';
-
-interface SectionProps {
-  setup: CarSetupInfo;
-  snapshots?: Snapshot[];
-  comparisonMode?: ComparisonMode;
-}
-
-const renderObjectSection = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: Record<string, any>,
-  sectionPath: string[],
-  snapshots: Snapshot[],
-  comparisonMode: ComparisonMode
-) => {
-  return Object.entries(data).map(([key, value]) => {
-    if (typeof value === 'object' && value !== null) {
-      return (
-        <SetupSection key={key} title={key} snapshots={snapshots}>
-          {Object.entries(value as Record<string, unknown>).map(([subKey]) => {
-            const snapshotValues = snapshots.map((s) => {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              let v: any = s.data;
-              for (const p of sectionPath) v = v?.[p];
-              const raw = v?.[key]?.[subKey];
-              return typeof raw === 'boolean' ? (raw ? 'Yes' : 'No') : raw;
-            });
-
-            return (
-              <SetupRow
-                key={subKey}
-                label={subKey}
-                values={snapshotValues}
-                comparisonMode={comparisonMode}
-              />
-            );
-          })}
-        </SetupSection>
-      );
-    }
-
-    // Top-level primitive
-    return (
-      <SetupRow
-        key={key}
-        label={key}
-        values={buildValues(snapshots, [...sectionPath, key])}
-        comparisonMode={comparisonMode}
+const SetupGroup = ({
+  label,
+  columnCount,
+  children,
+}: {
+  label: string;
+  columnCount: number;
+  children: React.ReactNode;
+}) => (
+  <>
+    <tr>
+      <td className="sticky left-0 border-b border-slate-700/60 bg-settings-control px-3 py-1.5">
+        <h4 className="text-sm font-semibold wrap-anywhere text-slate-300">
+          {formatSetupLabel(label)}
+        </h4>
+      </td>
+      <td
+        colSpan={columnCount}
+        className="border-b border-slate-700/60 bg-settings-control"
       />
-    );
-  });
-};
-
-const TiresAeroSection = memo(
-  ({ setup, snapshots = [], comparisonMode = 'previous' }: SectionProps) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tiresAero = setup.TiresAero || (setup as any).Tires;
-    if (!tiresAero) return null;
-    const sectionKey = setup.TiresAero ? 'TiresAero' : 'Tires';
-    return (
-      <SectionAccordion title="Tires &amp; Aero">
-        {renderObjectSection(
-          tiresAero,
-          [sectionKey],
-          snapshots,
-          comparisonMode
-        )}
-      </SectionAccordion>
-    );
-  }
+    </tr>
+    {children}
+  </>
 );
-TiresAeroSection.displayName = 'TiresAeroSection';
-
-const ChassisSection = memo(
-  ({ setup, snapshots = [], comparisonMode = 'previous' }: SectionProps) => {
-    const chassis = setup.Chassis;
-    if (!chassis) return null;
-    return (
-      <SectionAccordion title="Chassis">
-        {renderObjectSection(
-          chassis as unknown as Record<string, unknown>,
-          ['Chassis'],
-          snapshots,
-          comparisonMode
-        )}
-      </SectionAccordion>
-    );
-  }
-);
-ChassisSection.displayName = 'ChassisSection';
-
-const SuspensionSection = memo(
-  ({ setup, snapshots = [], comparisonMode = 'previous' }: SectionProps) => {
-    const suspension = setup.Suspension;
-    if (!suspension || suspension === setup.Chassis) return null;
-    return (
-      <SectionAccordion title="Suspension">
-        {suspension.Front && (
-          <SetupSection title="Front" snapshots={snapshots}>
-            {Object.entries(suspension.Front).map(([key]) => (
-              <SetupRow
-                key={key}
-                label={key}
-                values={buildValues(snapshots, ['Suspension', 'Front', key])}
-                comparisonMode={comparisonMode}
-              />
-            ))}
-          </SetupSection>
-        )}
-        {suspension.Rear && (
-          <SetupSection title="Rear" snapshots={snapshots}>
-            {Object.entries(suspension.Rear).map(([key]) => (
-              <SetupRow
-                key={key}
-                label={key}
-                values={buildValues(snapshots, ['Suspension', 'Rear', key])}
-                comparisonMode={comparisonMode}
-              />
-            ))}
-          </SetupSection>
-        )}
-      </SectionAccordion>
-    );
-  }
-);
-SuspensionSection.displayName = 'SuspensionSection';
-
-const DriveBrakeSection = memo(
-  ({ setup, snapshots = [], comparisonMode = 'previous' }: SectionProps) => {
-    const driveBrake = setup.DriveBrake;
-    if (!driveBrake) return null;
-    return (
-      <SectionAccordion title="Drive &amp; Brake">
-        {renderObjectSection(
-          driveBrake as unknown as Record<string, unknown>,
-          ['DriveBrake'],
-          snapshots,
-          comparisonMode
-        )}
-      </SectionAccordion>
-    );
-  }
-);
-DriveBrakeSection.displayName = 'DriveBrakeSection';
-
-const TiresSection = memo(
-  ({ setup, snapshots = [], comparisonMode = 'previous' }: SectionProps) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tires = (setup as any).Tires;
-    if (!tires) return null;
-    return (
-      <SectionAccordion title="Tires">
-        {renderObjectSection(tires, ['Tires'], snapshots, comparisonMode)}
-      </SectionAccordion>
-    );
-  }
-);
-TiresSection.displayName = 'TiresSection';
-
-const DrivetrainSection = memo(
-  ({ setup, snapshots = [], comparisonMode = 'previous' }: SectionProps) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const drivetrain = (setup as any).Drivetrain;
-    if (!drivetrain) return null;
-    return (
-      <SectionAccordion title="Drivetrain">
-        {renderObjectSection(
-          drivetrain,
-          ['Drivetrain'],
-          snapshots,
-          comparisonMode
-        )}
-      </SectionAccordion>
-    );
-  }
-);
-DrivetrainSection.displayName = 'DrivetrainSection';
-
-const DampersSection = memo(
-  ({ setup, snapshots = [], comparisonMode = 'previous' }: SectionProps) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const dampers = (setup as any).Dampers;
-    if (!dampers) return null;
-    return (
-      <SectionAccordion title="Dampers">
-        {renderObjectSection(dampers, ['Dampers'], snapshots, comparisonMode)}
-      </SectionAccordion>
-    );
-  }
-);
-DampersSection.displayName = 'DampersSection';
-
-const SystemsSection = memo(
-  ({ setup, snapshots = [], comparisonMode = 'previous' }: SectionProps) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const systems = (setup as any).Systems;
-    if (!systems) return null;
-    return (
-      <SectionAccordion title="Systems">
-        {renderObjectSection(systems, ['Systems'], snapshots, comparisonMode)}
-      </SectionAccordion>
-    );
-  }
-);
-SystemsSection.displayName = 'SystemsSection';
 
 export const CarSetupSettings = () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const setup = useCarSetup() as any;
-
+  const setup: SetupData | undefined = useCarSetup();
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
-  const [comparisonMode, setComparisonMode] =
-    useState<ComparisonMode>('previous');
+  const [mode, setMode] = useState<ComparisonMode>('first');
+  const nextSnapshotId = useRef(1);
+  const captureButton = useRef<HTMLButtonElement>(null);
+  const removeButtons = useRef(new Map<number, HTMLButtonElement>());
+  const focusCapture = useRef(false);
 
-  const handleTakeSnapshot = () => {
-    if (setup) {
-      setSnapshots((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          timestamp: Date.now(),
-          data: JSON.parse(JSON.stringify(setup)),
-        },
-      ]);
+  useLayoutEffect(() => {
+    if (snapshots.length === 0 && focusCapture.current) {
+      focusCapture.current = false;
+      captureButton.current?.focus();
     }
-  };
+  }, [snapshots.length]);
 
-  const handleClearAll = () => {
-    setSnapshots([]);
-    setComparisonMode('previous');
-  };
-
-  const handleRemove = (id: string) => {
-    setSnapshots((prev) => {
-      const next = prev.filter((s) => s.id !== id);
-      if (next.length === 0) setComparisonMode('previous');
-      return next;
-    });
-  };
-
-  const handleMoveLeft = (index: number) => {
-    if (index <= 0) return;
-    setSnapshots((prev) => {
-      const next = [...prev];
-      [next[index - 1], next[index]] = [next[index], next[index - 1]];
-      return next;
-    });
-  };
-
-  const handleMoveRight = (index: number) => {
-    setSnapshots((prev) => {
-      if (index >= prev.length - 1) return prev;
-      const next = [...prev];
-      [next[index], next[index + 1]] = [next[index + 1], next[index]];
-      return next;
-    });
-  };
-
-  const hasData =
-    setup &&
-    (setup.Tires ||
-      setup.TiresAero ||
-      setup.Chassis ||
-      setup.Suspension ||
-      setup.DriveBrake ||
-      setup.Drivetrain ||
-      setup.Dampers ||
-      setup.Systems);
-
+  const hasData = setup && setupSections.some(([key]) => setup[key]);
   const canTakeSnapshot =
     hasData &&
     (snapshots.length === 0 ||
-      setup.UpdateCount !== snapshots[snapshots.length - 1]?.data?.UpdateCount);
+      setup.UpdateCount !== snapshots.at(-1)?.data.UpdateCount);
 
-  if (!hasData) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-slate-400 mb-2">
-            Car setup data is not available.
-          </p>
-          <p className="text-slate-500 text-sm">
-            Join a session and get in the car to view setup information.
-          </p>
-        </div>
-      </div>
+  const captureSnapshot = () => {
+    if (!setup) return;
+    const snapshot: Snapshot = {
+      id: nextSnapshotId.current++,
+      timestamp: Date.now(),
+      data: structuredClone(setup),
+    };
+    setSnapshots((previous) => [...previous, snapshot]);
+  };
+
+  const clearSnapshots = () => {
+    focusCapture.current = true;
+    setSnapshots([]);
+    setMode('first');
+  };
+
+  const removeSnapshot = (index: number) => {
+    if (snapshots.length === 1) {
+      clearSnapshots();
+      return;
+    }
+    const neighbor = snapshots[index + 1] ?? snapshots[index - 1];
+    removeButtons.current.get(neighbor.id)?.focus();
+    const { id } = snapshots[index];
+    setSnapshots((previous) =>
+      previous.filter((snapshot) => snapshot.id !== id)
     );
-  }
+  };
+
+  const moveSnapshot = (id: number, offset: -1 | 1) => {
+    setSnapshots((previous) => {
+      const index = previous.findIndex((snapshot) => snapshot.id === id);
+      const target = index + offset;
+      if (index < 0 || target < 0 || target >= previous.length) return previous;
+
+      const next = [...previous];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  };
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold mb-2">Car Setup</h2>
-            <p className="text-sm text-slate-400">
-              Current car setup configuration from iRacing
-            </p>
-          </div>
-          <div className="flex gap-2">
+    <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-700 pt-1 pb-3">
+        <div>
+          <h2 className="mb-1 text-xl font-semibold tracking-tight text-slate-100">
+            Setup Comparison
+          </h2>
+          <p className="text-sm text-slate-400">
+            Capture and compare car setups from iRacing.
+          </p>
+        </div>
+        {hasData && (
+          <div className="flex flex-wrap gap-2">
             <button
-              onClick={handleTakeSnapshot}
+              ref={captureButton}
+              type="button"
+              onClick={captureSnapshot}
               disabled={!canTakeSnapshot}
-              className="px-4 py-2 bg-accent-600 hover:bg-accent-700 disabled:opacity-50 disabled:cursor-not-allowed text-on-accent rounded text-sm font-medium transition-colors"
+              className="settings-button-primary"
             >
               Take Snapshot
             </button>
             {snapshots.length > 0 && (
               <button
-                onClick={handleClearAll}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium transition-colors"
+                type="button"
+                onClick={clearSnapshots}
+                className="settings-button-danger"
               >
                 Clear All
               </button>
             )}
           </div>
-        </div>
-        {snapshots.length > 0 && (
-          <>
-            <div className="flex gap-2 items-center flex-wrap">
-              <span className="text-sm text-slate-400">Compare:</span>
-              {(
-                [
-                  ['previous', 'To First'],
-                  ['all', 'To Previous'],
-                ] as const
-              ).map(([mode, label]) => (
-                <button
-                  key={mode}
-                  onClick={() => setComparisonMode(mode)}
-                  className={`px-3 py-1 rounded text-sm transition-colors ${
-                    comparisonMode === mode
-                      ? 'bg-accent-600 text-on-accent'
-                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div className="bg-amber-900/30 border border-amber-600/50 rounded p-3">
-              <p className="text-amber-300 text-sm font-medium">
-                {comparisonMode === 'previous'
-                  ? 'Comparing all columns to the first (leftmost) snapshot - differences in red'
-                  : 'Comparing each column to the one directly to its left - differences in red'}
-              </p>
-            </div>
-          </>
         )}
-        {snapshots.length === 0 ? (
-          <div className="flex items-center justify-center py-12">
-            <p className="text-slate-500 text-sm">
-              Click &quot;Take Snapshot&quot; to capture the current setup.
+      </header>
+      {!setup || !hasData || snapshots.length === 0 ? (
+        <SettingsSection variant="panel">
+          <p className="text-sm text-slate-300">
+            {hasData
+              ? 'Take a snapshot to start comparing setups.'
+              : 'Join an iRacing session and get in the car to load setup data.'}
+          </p>
+        </SettingsSection>
+      ) : (
+        <>
+          <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2">
+            <div
+              role="group"
+              aria-label="Comparison mode"
+              className="flex flex-wrap items-center gap-x-2"
+            >
+              <span className="text-sm text-slate-300">Compare</span>
+              <TabButton id="first" activeTab={mode} setActiveTab={setMode}>
+                To First
+              </TabButton>
+              <TabButton id="previous" activeTab={mode} setActiveTab={setMode}>
+                To Previous
+              </TabButton>
+            </div>
+            <p className="text-sm text-slate-400">
+              Changed values are highlighted.
             </p>
           </div>
-        ) : (
-          <div className="space-y-3">
-            <div
-              className="grid gap-2 py-2 border-b border-slate-500 sticky top-0 bg-slate-800 z-10"
-              style={{
-                gridTemplateColumns: `1fr ${snapshots.map(() => 'auto').join(' ')}`,
-              }}
+          <div
+            role="region"
+            aria-label="Setup snapshots"
+            tabIndex={0}
+            className="min-h-40 overflow-auto rounded-lg border border-slate-700 focus-visible:-outline-offset-4"
+          >
+            <table
+              className="w-full min-w-[calc(var(--setup-label-width)+var(--snapshot-count)*8rem)] table-fixed border-separate border-spacing-0 text-sm [--setup-label-width:9rem] lg:[--setup-label-width:14rem]"
+              style={{ '--snapshot-count': snapshots.length } as CSSProperties}
             >
-              <span />
-              {snapshots.map((snapshot, index) => (
-                <div key={snapshot.id} className="text-right min-w-20">
-                  <div className="text-slate-300 text-xs font-semibold">
-                    {new Date(snapshot.timestamp).toLocaleTimeString()}
-                  </div>
-                  <div className="flex justify-end gap-0.5 mt-1">
-                    <button
-                      onClick={() => handleMoveLeft(index)}
-                      disabled={index === 0}
-                      className="px-1 py-0.5 text-[10px] bg-slate-600 hover:bg-slate-500 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded transition-colors"
-                    >
-                      ←
-                    </button>
-                    <button
-                      onClick={() => handleMoveRight(index)}
-                      disabled={index === snapshots.length - 1}
-                      className="px-1 py-0.5 text-[10px] bg-slate-600 hover:bg-slate-500 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded transition-colors"
-                    >
-                      →
-                    </button>
-                    <button
-                      onClick={() => handleRemove(snapshot.id)}
-                      className="px-1 py-0.5 text-[10px] bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
-                    >
-                      x
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <TiresSection
-              setup={setup}
-              snapshots={snapshots}
-              comparisonMode={comparisonMode}
-            />
-            <TiresAeroSection
-              setup={setup}
-              snapshots={snapshots}
-              comparisonMode={comparisonMode}
-            />
-            <ChassisSection
-              setup={setup}
-              snapshots={snapshots}
-              comparisonMode={comparisonMode}
-            />
-            <SuspensionSection
-              setup={setup}
-              snapshots={snapshots}
-              comparisonMode={comparisonMode}
-            />
-            <DampersSection
-              setup={setup}
-              snapshots={snapshots}
-              comparisonMode={comparisonMode}
-            />
-            <DrivetrainSection
-              setup={setup}
-              snapshots={snapshots}
-              comparisonMode={comparisonMode}
-            />
-            <DriveBrakeSection
-              setup={setup}
-              snapshots={snapshots}
-              comparisonMode={comparisonMode}
-            />
-            <SystemsSection
-              setup={setup}
-              snapshots={snapshots}
-              comparisonMode={comparisonMode}
-            />
+              <caption className="sr-only">Car setup comparison</caption>
+              <colgroup>
+                <col className="w-(--setup-label-width)" />
+                <col span={snapshots.length} />
+              </colgroup>
+              <thead className="sticky top-0 z-10 bg-slate-800">
+                <tr>
+                  <th
+                    scope="col"
+                    className="sticky left-0 z-10 border-r border-b border-slate-700 bg-slate-800 px-3 py-2 text-left font-semibold text-slate-200"
+                  >
+                    Setting
+                  </th>
+                  {snapshots.map((snapshot, index) => {
+                    const label = `Snapshot ${snapshot.id}`;
+                    const capturedAt = new Date(snapshot.timestamp);
+                    return (
+                      <th
+                        key={snapshot.id}
+                        scope="col"
+                        aria-label={label}
+                        className="border-r border-b border-slate-700 px-1.5 pt-2 pb-1 text-right font-normal last:border-r-transparent"
+                      >
+                        <div className="font-semibold text-slate-200">
+                          {label}
+                        </div>
+                        <time
+                          dateTime={capturedAt.toISOString()}
+                          className="text-xs text-slate-400 tabular-nums"
+                        >
+                          {capturedAt.toLocaleTimeString()}
+                        </time>
+                        <div className="flex justify-end">
+                          <ReorderControls
+                            label={label}
+                            position={index + 1}
+                            total={snapshots.length}
+                            orientation="horizontal"
+                            onMoveUp={
+                              index > 0
+                                ? () => moveSnapshot(snapshot.id, -1)
+                                : undefined
+                            }
+                            onMoveDown={
+                              index < snapshots.length - 1
+                                ? () => moveSnapshot(snapshot.id, 1)
+                                : undefined
+                            }
+                          />
+                          <button
+                            ref={(button) => {
+                              if (button)
+                                removeButtons.current.set(snapshot.id, button);
+                              else removeButtons.current.delete(snapshot.id);
+                            }}
+                            type="button"
+                            aria-label={`Remove ${label}`}
+                            title={`Remove ${label}`}
+                            onClick={() => removeSnapshot(index)}
+                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-red-300 hover:bg-red-950/60"
+                          >
+                            <TrashIcon size={16} aria-hidden="true" />
+                          </button>
+                        </div>
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              {setupSections.map(([key, title]) => {
+                const data = setup[key];
+                if (!data || (key === 'Suspension' && data === setup.Chassis)) {
+                  return null;
+                }
+                return (
+                  <SetupTableSection
+                    key={key}
+                    title={title}
+                    sectionKey={key}
+                    data={
+                      key === 'Suspension'
+                        ? Object.fromEntries(
+                            Object.entries({
+                              Front: setup.Suspension?.Front,
+                              Rear: setup.Suspension?.Rear,
+                            }).filter(([, value]) => value)
+                          )
+                        : data
+                    }
+                    snapshots={snapshots}
+                    mode={mode}
+                  />
+                );
+              })}
+            </table>
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 };

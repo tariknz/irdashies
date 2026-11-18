@@ -112,6 +112,7 @@ function controller(command = 'run', manifestFailure = false) {
     },
   };
   const fakeProcess = {
+    execPath: 'node',
     argv: ['node', 'live-full-profile.cjs', command, 'review-test', '420'],
     platform: 'win32',
     version: 'test-node',
@@ -198,6 +199,46 @@ describe('actual replay capture controller', () => {
       expect(c.sdk.broadcast).not.toHaveBeenCalled();
     }
   });
+
+  it('captures an alternate isolated widget seed with its own provenance', async () => {
+    const c = controller();
+    c.fakeProcess.argv.push('coverage-seed-1');
+    c.files.set(path.join(c.out, 'coverage-seed-1/config.json'), 'widget seed');
+    c.start();
+    await vi.waitFor(() => expect(c.spawn).toHaveBeenCalledOnce());
+    expect(c.spawn).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.arrayContaining([
+        `${'a'.repeat(8)}-coverage-seed-1-actual-replay`,
+      ]),
+      expect.anything()
+    );
+    c.child.stdout.emit('data', Buffer.from('[PerfRunOrigin:JSON] {}'));
+    c.child.exitCode = 0;
+    c.child.emit('close', 0);
+    await c.done;
+    expect(c.provenance()).toMatchObject({
+      seed: 'coverage-seed-1',
+      seedConfigSha256: crypto
+        .createHash('sha256')
+        .update('widget seed')
+        .digest('hex'),
+      exitCode: 0,
+    });
+  });
+
+  it.each(['../saved-profile', 'C:\\saved-profile', 'seed/name'])(
+    'rejects an escaping seed name %s before seeking or launching',
+    async (seed) => {
+      const c = controller();
+      c.fakeProcess.argv.push(seed);
+      c.start();
+      await c.done;
+      expect(c.fakeProcess.exitCode).toBe(1);
+      expect(c.sdk.broadcast).not.toHaveBeenCalled();
+      expect(c.spawn).not.toHaveBeenCalled();
+    }
+  );
 
   it('refuses to save a playing benchmark start or overwrite the original', async () => {
     const playing = controller('save-start');

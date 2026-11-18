@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'stinthistory',
   name: 'Stint History',
+  category: 'Lap Timing',
   enabled: false,
   layout: { x: 600, y: 380, width: 400, height: 140 },
   config: {

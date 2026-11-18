@@ -12,3 +12,4 @@ export * from './mockDashboardBridge';
 export * from './raceControlDecorator';
 export * from './lapHistorySnapshot';
 export * from './gantryDecorator';
+export * from './racePlanDecorator';

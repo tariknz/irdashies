@@ -417,6 +417,26 @@ describe('sessionLifecycle', () => {
       ['in the garage', { IsOnTrack: true, IsInGarage: true }, false],
       ['watching a replay', { IsOnTrack: true, IsReplayPlaying: true }, false],
       ['spotting for a team-mate', { IsOnTrack: false }, false],
+      [
+        'LMU, at the monitor with the car left in its pit box',
+        { PlayerCarInPitStall: true, LmuOutOfCar: true },
+        false,
+      ],
+      [
+        'LMU, at the monitor with the car left on pit road',
+        { OnPitRoad: true, LmuOutOfCar: true },
+        false,
+      ],
+      [
+        'LMU, in the car in its pit box',
+        { PlayerCarInPitStall: true, LmuOutOfCar: false },
+        true,
+      ],
+      [
+        'LMU, on track whatever the out-of-car flag says',
+        { IsOnTrack: true, LmuOutOfCar: true },
+        true,
+      ],
     ];
 
     it.each(drivingCases)(
@@ -457,6 +477,68 @@ describe('sessionLifecycle', () => {
       lifecycle._onTelemetry(makeDrivingTelemetry(0, { IsOnTrack: true }));
 
       expect(drivingSpy.mock.calls).toEqual([[true], [false], [true]]);
+    });
+  });
+
+  describe('watching state', () => {
+    const watchingCases: [string, Record<string, boolean>, boolean][] = [
+      ['iRacing, in the car', { IsOnTrack: true }, true],
+      ['iRacing, a replay', { IsReplayPlaying: true }, true],
+      ['iRacing, spectating', {}, true],
+      ['iRacing, at the garage screen', { IsGarageVisible: true }, false],
+      [
+        'LMU, in the car',
+        { LmuNotInSession: false, IsOnTrack: true, LmuDataStale: false },
+        true,
+      ],
+      [
+        'LMU, at the monitor, with the car in its garage stall',
+        { LmuNotInSession: false, IsGarageVisible: true, LmuDataStale: false },
+        true,
+      ],
+      [
+        'LMU, after the session ended',
+        { LmuNotInSession: false, LmuDataStale: true },
+        false,
+      ],
+      ['LMU, at its menus', { LmuNotInSession: true }, false],
+    ];
+
+    it.each(watchingCases)('reports %s -> %s', (_label, flags, expected) => {
+      const watchingSpy = vi.fn();
+      lifecycle.onWatchingStateChange(watchingSpy);
+
+      lifecycle._onTelemetry(makeDrivingTelemetry(0, flags));
+
+      expect(watchingSpy).toHaveBeenCalledExactlyOnceWith(expected);
+    });
+
+    it('fires only on the edge, not on every tick', () => {
+      const watchingSpy = vi.fn();
+      lifecycle.onWatchingStateChange(watchingSpy);
+
+      lifecycle._onTelemetry(makeDrivingTelemetry(0, { IsOnTrack: true }));
+      lifecycle._onTelemetry(makeDrivingTelemetry(0, { IsOnTrack: true }));
+      lifecycle._onTelemetry(
+        makeDrivingTelemetry(0, { IsGarageVisible: true })
+      );
+      lifecycle._onTelemetry(
+        makeDrivingTelemetry(0, { IsGarageVisible: true })
+      );
+
+      expect(watchingSpy.mock.calls).toEqual([[true], [false]]);
+    });
+
+    it('stops at a disconnect, and starts again with the next session', () => {
+      const watchingSpy = vi.fn();
+      lifecycle.onWatchingStateChange(watchingSpy);
+
+      lifecycle._onTelemetry(makeDrivingTelemetry(0, { IsOnTrack: true }));
+      lifecycle._onDisconnect();
+      expect(lifecycle.getCurrentState().isWatching).toBeUndefined();
+      lifecycle._onTelemetry(makeDrivingTelemetry(0, { IsOnTrack: true }));
+
+      expect(watchingSpy.mock.calls).toEqual([[true], [false], [true]]);
     });
   });
 
@@ -559,6 +641,7 @@ describe('sessionLifecycle', () => {
       expect(lifecycle.getCurrentState()).toEqual({
         sessionType: 'Race',
         isDriving: true,
+        isWatching: true,
       });
     });
 
@@ -566,6 +649,7 @@ describe('sessionLifecycle', () => {
       expect(createSessionLifecycle().getCurrentState()).toEqual({
         sessionType: undefined,
         isDriving: undefined,
+        isWatching: undefined,
       });
     });
   });

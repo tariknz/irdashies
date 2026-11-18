@@ -7,6 +7,7 @@ import { useStandingsInteraction } from '@irdashies/domain';
 import type { Gap, LastTimeState } from '@irdashies/domain';
 import type {
   LmuDriverRating,
+  LmuFinishState,
   LmuPenaltyKind,
   RelativeWidgetSettings,
   StandingsWidgetSettings,
@@ -49,7 +50,6 @@ interface DriverRowInfoProps {
   lap?: number;
   license?: string;
   rating?: number;
-  isAi?: boolean;
   iratingChangeValue?: number;
   positionChange?: number;
   lastTime?: number;
@@ -70,6 +70,8 @@ interface DriverRowInfoProps {
   /** LMU's penalty kind: DT for a drive-through, SG for a stop-go. */
   penaltyKind?: LmuPenaltyKind;
   penaltySeconds?: number;
+  /** LMU's finish status, drawn where the penalty badge is. */
+  finishState?: LmuFinishState;
   /** LMU's track-limits penalty points. Undefined where unknown. */
   trackLimitsPoints?: number;
   /** Points at which a drive-through is served. */
@@ -163,7 +165,6 @@ const getDisplayProps = (props: DriverRowInfoProps) => {
     tireCompound: dummyData.tireCompound,
     license: dummyData.license,
     rating: dummyData.rating,
-    isAi: undefined,
     iratingChangeValue: dummyData.iratingChangeValue,
     positionChange: 0,
     lapTimeDeltas: dummyData.lapTimeDeltas,
@@ -230,7 +231,6 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     lap,
     license,
     rating,
-    isAi,
     iratingChangeValue,
     positionChange,
     lastTime,
@@ -248,6 +248,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     wheelCompounds,
     penaltyKind,
     penaltySeconds,
+    finishState,
     trackLimitsPoints,
     trackLimitsMax,
     lmuVirtualEnergy,
@@ -318,6 +319,17 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
 
   const badgeMinimal = config?.stylingOptions?.badge ?? false;
   const statusBadgesMinimal = config?.stylingOptions?.statusBadges ?? false;
+  // LMU's DQ also raises Disqualify, so the pit column would repeat as DNF
+  // what the name cell already writes out -- but only there: with the name
+  // cell's badges off or the column hidden, the pit column is the only sign.
+  // An LMU retirement raises no flag at all, so the pit column takes it from
+  // the finish status, or it would show nowhere.
+  const nameShowsRetirement =
+    (finishState === 'DNF' || finishState === 'DQ') &&
+    (displayOrder ? displayOrder.includes('driverName') : true) &&
+    (config?.driverName?.enabled ?? true) &&
+    (config?.driverName?.showStatusBadges ?? true);
+  const pitStatusDnf = (dnf || finishState === 'DNF') && !nameShowsRetirement;
   const positionBackground =
     config?.stylingOptions?.driverPosition?.background ?? true;
   const numberBackground =
@@ -426,6 +438,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             repair={repair}
             penaltyKind={penaltyKind}
             penaltySeconds={penaltySeconds}
+            finishState={finishState}
             penalty={penalty}
             slowdown={slowdown}
             showStatusBadges={config?.driverName?.showStatusBadges ?? true}
@@ -490,7 +503,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             lastPitLap={lastPitLap}
             lastLap={lastLap}
             currentSessionType={currentSessionType}
-            dnf={dnf}
+            dnf={pitStatusDnf}
             pitStopDuration={pitStopDuration}
             showPitTime={config?.pitStatus?.showPitTime ?? false}
             pitLapDisplayMode={config?.pitStatus?.pitLapDisplayMode}
@@ -537,7 +550,6 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             key="badge"
             license={license}
             rating={rating}
-            isAi={isAi}
             lmuRating={lmuRating}
             badgeFormat={config?.badge?.badgeFormat}
             lmuFormat={config?.badge?.lmuFormat}
@@ -557,6 +569,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           <IratingChangeCell
             key="iratingChange"
             iratingChangeValue={iratingChangeValue}
+            compactMode={compactMode}
           />
         ),
       },
@@ -826,7 +839,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     lastPitLap,
     lastLap,
     currentSessionType,
-    dnf,
+    pitStatusDnf,
     repair,
     penalty,
     slowdown,
@@ -834,7 +847,6 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     carId,
     license,
     rating,
-    isAi,
     iratingChangeValue,
     positionChange,
     delta,
@@ -849,6 +861,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     wheelCompounds,
     penaltyKind,
     penaltySeconds,
+    finishState,
     trackLimitsPoints,
     trackLimitsMax,
     lmuVirtualEnergy,

@@ -56,6 +56,9 @@ export function setupReleaseNotesBridge() {
   ipcMain.handle('releaseNotes:get', (_event, version: unknown) =>
     service.getRelease(version)
   );
+  ipcMain.handle('releaseNotes:list', (_event, page: unknown) =>
+    service.getReleases(page)
+  );
   ipcMain.handle('releaseNotes:dismiss', (_event, version: unknown) =>
     service.dismiss(version)
   );

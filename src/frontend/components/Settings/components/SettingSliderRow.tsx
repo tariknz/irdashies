@@ -27,9 +27,7 @@ export function SettingSliderRow({
 }: SettingSliderRowProps) {
   const id = useId();
   return (
-    <div
-      className={`space-y-2 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
-    >
+    <div className={`space-y-3 ${disabled ? 'opacity-50' : ''}`}>
       <label htmlFor={id} className="text-md text-slate-300">
         {title}
         <span className="text-md text-slate-400">
@@ -45,7 +43,7 @@ export function SettingSliderRow({
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full cursor-pointer"
+        className="h-5 w-full cursor-pointer accent-accent-400 disabled:cursor-not-allowed"
       />
       {description && <p className="text-sm text-slate-500">{description}</p>}
     </div>

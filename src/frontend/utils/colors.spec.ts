@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { getTailwindStyle, colorNumToHex } from './colors';
+import { getTailwindStyle, getColor, colorNumToHex } from './colors';
 
 describe('colors', () => {
   describe('getTailwindColor', () => {
@@ -35,6 +35,53 @@ describe('colors', () => {
       }));
     });
     afterEach(() => vi.unstubAllGlobals());
+
+    it('reads only the requested theme colour and observes later theme changes', () => {
+      let themeColour = '#123456';
+      const getPropertyValue = vi.fn(() => themeColour);
+      const computedStyle = vi.fn(() => ({ getPropertyValue }));
+      vi.stubGlobal('getComputedStyle', computedStyle);
+
+      expect(getTailwindStyle(undefined, 0x33ceff).canvasFill).toBe('#123456');
+      expect(computedStyle).toHaveBeenCalledTimes(1);
+      expect(getPropertyValue).toHaveBeenCalledExactlyOnceWith(
+        '--color-blue-500'
+      );
+
+      themeColour = '#abcdef';
+      expect(getTailwindStyle(undefined, 0x33ceff).canvasFill).toBe('#abcdef');
+      expect(computedStyle).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not read theme styles for an exact LMU colour', () => {
+      const computedStyle = vi.fn();
+      vi.stubGlobal('getComputedStyle', computedStyle);
+      expect(getTailwindStyle(0xff000a, undefined, true).canvasFill).toBe(
+        '#ff000a'
+      );
+      expect(computedStyle).not.toHaveBeenCalled();
+    });
+
+    it('replaces the live declaration when the document root changes', () => {
+      const firstRoot = document.createElement('html');
+      const secondRoot = document.createElement('html');
+      const computedStyle = vi.fn((root: Element) => ({
+        getPropertyValue: () => (root === firstRoot ? '#123456' : '#abcdef'),
+      }));
+      vi.stubGlobal('getComputedStyle', computedStyle);
+      const rootGetter = vi.spyOn(document, 'documentElement', 'get');
+      try {
+        rootGetter.mockReturnValue(firstRoot);
+        expect(getColor('blue')).toBe('#123456');
+        expect(getColor('red')).toBe('#123456');
+        expect(computedStyle).toHaveBeenCalledTimes(1);
+        rootGetter.mockReturnValue(secondRoot);
+        expect(getColor('blue')).toBe('#abcdef');
+        expect(computedStyle).toHaveBeenCalledTimes(2);
+      } finally {
+        rootGetter.mockRestore();
+      }
+    });
 
     // The class colour lookup only runs in multiclass mode. Single class
     // sessions fall through to the highlight colour instead, which is why a

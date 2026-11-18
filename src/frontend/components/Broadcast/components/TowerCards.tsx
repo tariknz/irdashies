@@ -49,7 +49,15 @@ export const BattleCard = ({
 
 /** Lower third for the car on camera; reads speed itself so speed ticks
     re-render only this card, not the tower. */
-export const FocusCard = ({ standing }: { standing: Standings }) => {
+export const FocusCard = ({
+  standing,
+  showLastLap = true,
+  showBestLap = true,
+}: {
+  standing: Standings;
+  showLastLap?: boolean;
+  showBestLap?: boolean;
+}) => {
   const speed = useCarIdxSpeed()[standing.carIdx];
   const displayUnits = useSessionBarSelector(sessionBarSelectors.displayUnits);
   return (
@@ -81,19 +89,25 @@ export const FocusCard = ({ standing }: { standing: Standings }) => {
           </span>
         )}
       </div>
-      <div className="flex gap-4 border-t border-white/10 px-2 py-1 text-sm tabular-nums">
-        <span>
-          <span className="text-white/50">LAST </span>
-          {formatTime(standing.lastTime, 'full') || '-'}
-        </span>
-        <span>
-          <span className="text-white/50">BEST </span>
-          {formatTime(standing.fastestTime, 'full') || '-'}
-        </span>
-        {speed !== undefined && (
-          <span className="ml-auto">{formatSpeed(speed, displayUnits)}</span>
-        )}
-      </div>
+      {(showLastLap || showBestLap || speed !== undefined) && (
+        <div className="flex gap-4 border-t border-white/10 px-2 py-1 text-sm tabular-nums">
+          {showLastLap && (
+            <span>
+              <span className="text-white/50">LAST </span>
+              {formatTime(standing.lastTime, 'full') || '-'}
+            </span>
+          )}
+          {showBestLap && (
+            <span>
+              <span className="text-white/50">BEST </span>
+              {formatTime(standing.fastestTime, 'full') || '-'}
+            </span>
+          )}
+          {speed !== undefined && (
+            <span className="ml-auto">{formatSpeed(speed, displayUnits)}</span>
+          )}
+        </div>
+      )}
     </div>
   );
 };

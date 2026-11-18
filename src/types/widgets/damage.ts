@@ -5,12 +5,13 @@ export default defineWidgetManifest({
   id: 'damage',
   name: 'Damage',
   menuLabel: 'Damage',
+  category: 'Car & Controls',
   enabled: false,
   layout: {
     x: 40,
     y: 480,
-    width: 160,
-    height: 220,
+    width: 170,
+    height: 240,
   },
   config: {
     background: {
@@ -19,7 +20,7 @@ export default defineWidgetManifest({
     showOnlyWhenOnTrack: true,
     showOnlyWhenDamaged: false,
     showIntegrity: true,
-    showStats: true,
+    showStats: false,
     sessionVisibility: {
       race: true,
       loneQualify: true,
@@ -39,14 +40,15 @@ export default defineWidgetManifest({
     },
     showIntegrity: {
       type: 'boolean',
-      label: 'Show Integrity %',
+      label: 'Show Damage %',
       description:
-        'Centre reading: aero integrity when available, otherwise bodywork.',
+        'Draw remaining integrity percentage on the car silhouette (aero when available, otherwise bodywork).',
     },
     showStats: {
       type: 'boolean',
       label: 'Show Integrity Bars',
-      description: 'Aero, body, suspension and tyre remaining integrity rows.',
+      description:
+        'Legacy setting; damage is shown on the silhouette. Bars are no longer displayed.',
     },
     showOnlyWhenOnTrack: {
       type: 'boolean',

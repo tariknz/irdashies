@@ -71,6 +71,18 @@ beforeEach(() => {
 });
 
 describe('SingleFuelWidgetSettings for a Gantry-only layout', () => {
+  it.each(['layout', 'display', 'options', 'history', 'visibility'])(
+    'identifies the edited instance on the %s tab',
+    (tab) => {
+      localStorage.setItem('fuelWidgetTab', tab);
+      render(<SingleFuelWidgetSettings widgetId="fuel-g1" />);
+      expect(
+        screen.getByText(
+          'Configure the Fuel Calculator layout. Editing: fuel-g1 (Gantry).'
+        )
+      ).toBeInTheDocument();
+    }
+  );
   it('shows a Gantry badge and marks it in the layout list', () => {
     localStorage.setItem('fuelWidgetTab', 'layout');
     render(<SingleFuelWidgetSettings widgetId="fuel-g1" />);

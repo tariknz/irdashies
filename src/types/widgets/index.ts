@@ -46,6 +46,8 @@ export const WIDGET_ORDER: readonly WidgetId[] = [
   'cornername',
   'laptrace',
   'gantry',
+  'stintplan',
+  'strategytimeline',
 ];
 
 const rank = (id: string) => {

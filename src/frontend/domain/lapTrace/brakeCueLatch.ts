@@ -414,6 +414,19 @@ export function stepBrakeCueLatch(
       state.brakeOnly = false;
       state.holdUntilTime = NaN;
       state.progressArmDistanceM = NaN;
+      // Look for the next point on this same tick. Waiting for the next one
+      // blanks the strip for a whole snapshot between the two points of a
+      // chicane. Runs once: a point just acquired lies ahead of the car, so
+      // the next step either counts down to it or holds it, and cannot get
+      // back here.
+      //
+      // That step starts from a blank output, so a beep set above for the
+      // point just passed is put back. It wins over a count for the next
+      // point on the same tick: it is the cue to brake now.
+      const fired = out.fire;
+      stepBrakeCueLatch(state, out, tick);
+      if (fired !== null) out.fire = fired;
+      return out;
     }
   }
 

@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'streamchat',
   name: 'Stream Chat',
+  category: 'Broadcast & Streaming',
   alwaysEnabled: true,
   enabled: false,
   layout: {

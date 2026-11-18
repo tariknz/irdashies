@@ -50,7 +50,10 @@ describe('SectorTimingProcessor', () => {
     expect(snapshot.inclusive.previousLapSectorTimes).toEqual([
       32.5, 41.2, 60.8,
     ]);
-    expect(snapshot.clean.sessionBestSectorTimes).toEqual([32.1, 40.8, 59.9]);
+    expect(snapshot.inclusive.sessionBestSectorTimes).toEqual([
+      32.1, 40.8, 59.9,
+    ]);
+    expect(snapshot.clean.sessionBestSectorTimes).toEqual([32.4, 41, 60.8]);
 
     processor.onFrame({
       SessionNum: { value: [2] },
@@ -135,6 +138,140 @@ describe('SectorTimingProcessor', () => {
       const snapshot = processor.snapshot();
       expect(snapshot.inclusive.currentLapSectorUnclean[0]).toBe(false);
       expect(snapshot.clean.sessionBestSectorTimes[0]).not.toBeNull();
+    });
+  });
+
+  describe('LMU per-sector cut handling', () => {
+    type Times = (number | null)[];
+    const thirds = {
+      SplitTimeInfo: {
+        Sectors: [
+          { SectorNum: 0, SectorStartPct: 0 },
+          { SectorNum: 1, SectorStartPct: 1 / 3 },
+          { SectorNum: 2, SectorStartPct: 2 / 3 },
+        ],
+      },
+    } as Session;
+    const lmu = (
+      sectorIdx: number,
+      lapDistPct: number,
+      current: Times,
+      last: Times,
+      best: Times,
+      voided: boolean
+    ) =>
+      ({
+        SessionNum: { value: [1] },
+        LapDistPct: { value: [lapDistPct] },
+        LmuSectorIdx: { value: [sectorIdx] },
+        LmuCurrentSectorTimes: { value: current },
+        LmuLastSectorTimes: { value: last },
+        LmuBestSectorTimes: { value: best },
+        LmuLapInvalidated: { value: [voided] },
+      }) as unknown as Telemetry;
+    const none: Times = [null, null, null];
+    const cleanLap = (processor: SectorTimingProcessor) => {
+      processor.init(thirds);
+      processor.onFrame(lmu(0, 0.1, none, [30, 40, 50], [30, 40, 50], false));
+    };
+
+    it('keeps sectors finished before a cut clean and carries flags to the previous lap', () => {
+      const processor = new SectorTimingProcessor();
+      cleanLap(processor);
+      processor.onFrame(
+        lmu(1, 0.4, [29, null, null], [30, 40, 50], [30, 40, 50], false)
+      );
+      processor.onFrame(
+        lmu(1, 0.5, [29, null, null], [30, 40, 50], [30, 40, 50], true)
+      );
+      processor.onFrame(
+        lmu(2, 0.7, [29, 39, null], [30, 40, 50], [30, 40, 50], true)
+      );
+
+      let snapshot = processor.snapshot();
+      expect(snapshot.inclusive.currentLapSectorUnclean).toEqual([
+        false,
+        true,
+        true,
+      ]);
+      expect(snapshot.clean.currentLapSectorTimes).toEqual([29, null, null]);
+
+      processor.onFrame(lmu(0, 0.01, none, [29, 39, 49], [29, 39, 49], true));
+      processor.onFrame(lmu(0, 0.1, none, [29, 39, 49], [29, 39, 49], false));
+
+      snapshot = processor.snapshot();
+      expect(snapshot.inclusive.previousLapSectorTimes).toEqual([29, 39, 49]);
+      expect(snapshot.inclusive.previousLapSectorUnclean).toEqual([
+        false,
+        true,
+        true,
+      ]);
+      expect(snapshot.inclusive.currentLapSectorUnclean).toEqual([
+        false,
+        false,
+        false,
+      ]);
+      expect(snapshot.clean.previousLapSectorTimes).toEqual([29, null, null]);
+      expect(snapshot.clean.sessionBestSectorTimes).toEqual([29, 40, 50]);
+      expect(snapshot.inclusive.sessionBestSectorTimes).toEqual([29, 39, 49]);
+    });
+
+    it('does not mark the new lap unclean from a flag still set on the crossing frame', () => {
+      const processor = new SectorTimingProcessor();
+      cleanLap(processor);
+      processor.onFrame(
+        lmu(2, 0.8, [29, 39, null], [30, 40, 50], [30, 40, 50], true)
+      );
+      processor.onFrame(lmu(0, 0.01, none, [29, 39, 49], [29, 39, 49], true));
+
+      const snapshot = processor.snapshot();
+      expect(snapshot.inclusive.previousLapSectorUnclean).toEqual([
+        false,
+        false,
+        true,
+      ]);
+      expect(snapshot.inclusive.currentLapSectorUnclean).toEqual([
+        false,
+        false,
+        false,
+      ]);
+      expect(snapshot.clean.previousLapSectorTimes).toEqual([29, 39, null]);
+      expect(snapshot.clean.sessionBestSectorTimes).toEqual([29, 39, 50]);
+    });
+
+    it('clears the flags when the lap is reset mid-lap', () => {
+      const processor = new SectorTimingProcessor();
+      cleanLap(processor);
+      processor.onFrame(
+        lmu(1, 0.5, [29, null, null], [30, 40, 50], [30, 40, 50], true)
+      );
+      processor.onFrame(lmu(0, 0.0, none, [30, 40, 50], [30, 40, 50], false));
+
+      let snapshot = processor.snapshot();
+      expect(snapshot.inclusive.currentLapSectorUnclean).toEqual([
+        false,
+        false,
+        false,
+      ]);
+      expect(snapshot.inclusive.previousLapSectorUnclean).toEqual([
+        false,
+        false,
+        false,
+      ]);
+
+      processor.onFrame(
+        lmu(1, 0.4, [29, null, null], [30, 40, 50], [30, 40, 50], false)
+      );
+      snapshot = processor.snapshot();
+      expect(snapshot.clean.currentLapSectorTimes).toEqual([29, null, null]);
+    });
+
+    it('does not publish or allocate a new snapshot for an identical frame', () => {
+      const processor = new SectorTimingProcessor();
+      cleanLap(processor);
+      const before = processor.snapshot();
+      processor.onFrame(lmu(0, 0.1, none, [30, 40, 50], [30, 40, 50], false));
+      expect(processor.snapshot()).toBe(before);
     });
   });
 

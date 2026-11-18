@@ -58,7 +58,7 @@ describe('createLmuRestTransport', () => {
     expect(seenAccept).toBe('application/json');
   });
 
-  it('reports a non-2xx as a status failure, not as a body', async () => {
+  it('reports a non-2xx as a status failure, with its code and body', async () => {
     const { origin } = await listen((_, res) => {
       res.writeHead(404);
       res.end('not here');
@@ -66,7 +66,33 @@ describe('createLmuRestTransport', () => {
 
     const result = await createLmuRestTransport(origin)('/rest/x');
 
-    expect(result).toEqual({ ok: false, reason: 'status' });
+    // The code and body are what GetGameState answers with outside a game.
+    expect(result).toEqual({
+      ok: false,
+      reason: 'status',
+      status: 404,
+      body: 'not here',
+    });
+  });
+
+  it('keeps its socket usable after an error body', async () => {
+    // The error body is read to the end, so the next reply on the same
+    // keep-alive socket is the next request's and not this one's leftovers.
+    const { origin } = await listen((req, res) => {
+      if (req.url === '/rest/missing') {
+        res.writeHead(404);
+        res.end('not here');
+        return;
+      }
+      res.writeHead(200);
+      res.end('{"total":30}');
+    });
+
+    const transport = createLmuRestTransport(origin);
+    await transport('/rest/missing');
+    const result = await transport('/rest/x');
+
+    expect(result).toEqual({ ok: true, body: '{"total":30}' });
   });
 
   it('reports a closed port as refused, which is how absence looks', async () => {

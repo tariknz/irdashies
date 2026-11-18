@@ -21,17 +21,16 @@ export interface PitSpeedBarProps {
 export const PitSpeedBar = memo(
   ({ speed, limit, orientation }: PitSpeedBarProps) => {
     // The bar represents 0 → 2× the limit. The midpoint (50%) = limit.
-    const hasLimit = limit > 0;
-    const maxSpeed = hasLimit ? limit * 2 : Math.max(speed * 1.25, 1);
+    const maxSpeed = limit * 2;
     const clampedSpeed = Math.max(0, Math.min(speed, maxSpeed));
     const fillPercent = (clampedSpeed / maxSpeed) * 100;
 
     const delta = speed - limit;
 
     let fillColor = 'rgb(34, 197, 94)'; // green-500
-    if (hasLimit && delta >= 0) {
+    if (delta >= 0) {
       fillColor = 'rgb(239, 68, 68)'; // red-500
-    } else if (hasLimit && delta > -5) {
+    } else if (delta > -5) {
       fillColor = 'rgb(234, 179, 8)'; // yellow-500
     }
 
@@ -49,12 +48,10 @@ export const PitSpeedBar = memo(
               style={{ height: `${fillPercent}%`, backgroundColor: fillColor }}
             />
             {/* Limit marker at midpoint */}
-            {hasLimit && (
-              <div
-                className="absolute w-full border-t-2 border-white/70"
-                style={{ bottom: '50%' }}
-              />
-            )}
+            <div
+              className="absolute w-full border-t-2 border-white/70"
+              style={{ bottom: '50%' }}
+            />
           </div>
 
           <div className="flex justify-center items-center text-[11px] w-full">
@@ -80,9 +77,7 @@ export const PitSpeedBar = memo(
             style={{ width: `${fillPercent}%`, backgroundColor: fillColor }}
           />
           {/* Midpoint marker */}
-          {hasLimit && (
-            <div className="absolute left-1/2 top-0 h-full border-l-2 border-white/70" />
-          )}
+          <div className="absolute left-1/2 top-0 h-full border-l-2 border-white/70" />
         </div>
       </div>
     );

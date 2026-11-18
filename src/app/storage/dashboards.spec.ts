@@ -839,6 +839,50 @@ describe('dashboards', () => {
     });
   });
 
+  describe('Lap trace layout migration', () => {
+    const layout = { x: 20, y: 40, width: 400, height: 120 };
+    const lapTraceIn = (dashboard: DashboardLayout) =>
+      dashboard.widgets.find((w) => w.id === 'laptrace')?.config as Record<
+        string,
+        unknown
+      >;
+
+    it('builds the layout from the old settings before the defaults fill in', () => {
+      const migrated = withDashboardDefaults({
+        widgets: [
+          {
+            id: 'laptrace',
+            enabled: true,
+            layout,
+            config: {
+              showLastCorner: true,
+              lastCornerPosition: 'bottom',
+              brakeCueBars: false,
+              brakeCueBarSide: 'right',
+            },
+          },
+        ],
+      });
+      const config = lapTraceIn(migrated);
+      // The panel below the trace and no strip, as the old settings had it,
+      // not the three-column default.
+      expect(JSON.stringify(config.layoutTree)).toContain('corners');
+      expect(JSON.stringify(config.layoutTree)).not.toContain('brakeCue');
+      expect(config).not.toHaveProperty('showLastCorner');
+      expect(config).not.toHaveProperty('brakeCueBarSide');
+      // Everything else still comes from the defaults.
+      expect(config.metersAhead).toBe(200);
+      expect(withDashboardDefaults(migrated)).toEqual(migrated);
+    });
+
+    it('starts a new lap trace from the default layout', () => {
+      const migrated = withDashboardDefaults({ widgets: [] });
+      const defaults = defaultDashboard.widgets.find((w) => w.id === 'laptrace')
+        ?.config as Record<string, unknown>;
+      expect(lapTraceIn(migrated).layoutTree).toEqual(defaults.layoutTree);
+    });
+  });
+
   describe('Radar tuning migration', () => {
     it('drops the pole-side learning tuning and keeps the rest', () => {
       const radarDefaults = defaultDashboard.widgets.find(

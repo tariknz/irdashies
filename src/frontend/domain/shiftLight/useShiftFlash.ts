@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import {
-  useActiveSimulator,
   useDashboard,
-  useDriverControlsSnapshot,
+  useChannelSelector,
   useSessionStore,
 } from '@irdashies/context';
 import { getGearKey, loadCarData } from '@irdashies/utils/carData';
-import type { ShiftPointSettings } from '@irdashies/types';
+import type {
+  DriverControlsSnapshot,
+  ShiftPointSettings,
+} from '@irdashies/types';
 import {
   getCustomShiftRpm,
   getRedlineFlashRpm,
@@ -33,47 +35,46 @@ export const useShiftFlashActive = (
   enabled: boolean,
   source: ShiftFlashSource
 ): boolean => {
-  const snapshot = useDriverControlsSnapshot(enabled);
   const shiftPointSettings = useShiftPointSettings();
   const driverCarRedLine = useSessionStore(
     (state) => state.session?.DriverInfo?.DriverCarRedLine
   );
-  const gameId = useActiveSimulator();
-  const driver = useSessionStore((state) => {
+  const carPath = useSessionStore((state) => {
     const idx = state.session?.DriverInfo?.DriverCarIdx;
     if (idx === undefined) return undefined;
-    return state.session?.DriverInfo?.Drivers?.find((d) => d.CarIdx === idx);
+    return state.session?.DriverInfo?.Drivers?.find((d) => d.CarIdx === idx)
+      ?.CarPath;
   });
-  const carPath = driver?.CarPath;
-  const carData = useMemo(() => {
-    if (!enabled || !carPath) return null;
-    return loadCarData(
-      carPath,
-      gameId,
-      [driver?.CarCfgName, driver?.CarScreenName].filter(
-        (v): v is string => !!v
-      )
-    );
-  }, [enabled, carPath, gameId, driver?.CarCfgName, driver?.CarScreenName]);
-
-  if (!enabled || !snapshot) return false;
-
-  const rpm = snapshot.rpm ?? 0;
-  const gear = snapshot.gear ?? 0;
-  const shiftGrindRpm = snapshot.shiftGrindRpm ?? 0;
-  const maxRpm =
-    driverCarRedLine ||
-    (shiftGrindRpm > 0 ? shiftGrindRpm : null) ||
-    FALLBACK_REDLINE_RPM;
-  const gearRedlineRpm = carData?.ledRpm?.[0]?.[getGearKey(gear)]?.[0];
-
-  const threshold = getShiftFlashRpm(
-    source,
-    getCustomShiftRpm(shiftPointSettings, carData?.carId ?? carPath, gear),
-    getRedlineFlashRpm(maxRpm, snapshot.blinkRpm ?? 0, gearRedlineRpm)
+  const carData = useMemo(
+    () => (enabled && carPath ? loadCarData(carPath) : null),
+    [enabled, carPath]
   );
 
-  return isShiftFlashActive(rpm, threshold);
+  const selectActive = useCallback(
+    (snapshot: DriverControlsSnapshot) => {
+      const rpm = snapshot.rpm ?? 0;
+      const gear = snapshot.gear ?? 0;
+      const shiftGrindRpm = snapshot.shiftGrindRpm ?? 0;
+      const maxRpm =
+        driverCarRedLine ||
+        (shiftGrindRpm > 0 ? shiftGrindRpm : null) ||
+        FALLBACK_REDLINE_RPM;
+      const gearRedlineRpm = carData?.ledRpm?.[0]?.[getGearKey(gear)]?.[0];
+
+      const threshold = getShiftFlashRpm(
+        source,
+        getCustomShiftRpm(shiftPointSettings, carData?.carId ?? carPath, gear),
+        getRedlineFlashRpm(maxRpm, snapshot.blinkRpm ?? 0, gearRedlineRpm)
+      );
+
+      return isShiftFlashActive(rpm, threshold);
+    },
+    [source, shiftPointSettings, carData, carPath, driverCarRedLine]
+  );
+  return (
+    useChannelSelector('driver-controls.snapshot', selectActive, { enabled }) ??
+    false
+  );
 };
 
 /**

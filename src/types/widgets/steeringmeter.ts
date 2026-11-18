@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'steeringmeter',
   name: 'Steering Meter',
+  category: 'Car & Controls',
   enabled: false,
   layout: { x: 600, y: 540, width: 300, height: 100 },
   config: {

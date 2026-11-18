@@ -1,9 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
-import {
-  useSessionStore,
-  useDriverCarIdx,
-  useActiveSimulator,
-} from '@irdashies/context';
+import { useEffect, useState, useCallback } from 'react';
+import { useSessionStore, useDriverCarIdx } from '@irdashies/context';
 import { loadCarData, getGearKey, type CarData } from '../../../utils/carData';
 
 /**
@@ -14,35 +10,45 @@ export const useCarTachometerData = (gear = 0) => {
 
   const driverCarIdx = useDriverCarIdx();
   const session = useSessionStore((state) => state.session);
-  const gameId = useActiveSimulator();
+  // Get current car path and game
+  const carPath = session?.DriverInfo?.Drivers?.find(
+    (driver) => driver.CarIdx === driverCarIdx
+  )?.CarPath;
 
-  const driver = session?.DriverInfo?.Drivers?.find(
-    (d) => d.CarIdx === driverCarIdx
-  );
-  const carPath = driver?.CarPath;
-  const carCfgName = driver?.CarCfgName;
-  const carScreenName = driver?.CarScreenName;
-  const aliases = useMemo(() => {
-    return [carCfgName, carScreenName].filter((v): v is string => !!v);
-  }, [carCfgName, carScreenName]);
+  // Extract game ID from session (this would need to be added to session data)
+  // For now, default to 'iracing' since that's what IRDashies primarily supports
+  const gameId = 'iracing'; // TODO: Get from session data when available
 
+  // Memoized load function
+  const loadData = useCallback((path: string, game: string) => {
+    const data = loadCarData(path, game);
+    return data;
+  }, []);
+
+  // Load car data when car path changes
   useEffect(() => {
     if (!carPath) {
       setCarData(null);
       return;
     }
 
-    setCarData(loadCarData(carPath, gameId, aliases));
-  }, [carPath, gameId, aliases]);
+    const data = loadData(carPath, gameId);
+    setCarData(data);
+  }, [carPath, gameId, loadData]);
 
-  const gearRpmThresholds = useMemo((): number[] | null => {
+  // Get gear-specific RPM thresholds
+  const getGearRpmThresholds = (): number[] | null => {
     if (!carData?.ledRpm?.[0]) return null;
-    return carData.ledRpm[0][getGearKey(gear)] || null;
-  }, [carData, gear]);
+
+    const gearKey = getGearKey(gear);
+    const gearData = carData.ledRpm[0][gearKey];
+
+    return gearData || null;
+  };
 
   return {
     carData,
-    gearRpmThresholds,
+    gearRpmThresholds: getGearRpmThresholds(),
     hasCarData: !!carData,
   };
 };

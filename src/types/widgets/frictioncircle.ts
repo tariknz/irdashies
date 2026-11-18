@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'frictioncircle',
   name: 'Friction Circle',
+  category: 'Car & Controls',
   enabled: false,
   layout: { x: 1040, y: 120, width: 180, height: 210 },
   config: {

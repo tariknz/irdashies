@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'cruiseodometer',
   name: 'Cruise / Odometer',
+  category: 'Car & Controls',
   enabled: false,
   layout: { x: 600, y: 660, width: 300, height: 100 },
   config: {

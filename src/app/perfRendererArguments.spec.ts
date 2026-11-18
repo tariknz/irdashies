@@ -9,6 +9,16 @@ describe('renderer performance arguments', () => {
     expect(createRendererPerfArguments({})).toEqual([]);
   });
 
+  it('omits reporter arguments for an otherwise enabled capture bootstrap', () => {
+    expect(
+      createRendererPerfArguments({
+        PERF_METRICS: '1',
+        PERF_METRICS_COLLECTION: 'off',
+        PERF_RUN_ID: 'overhead-off',
+      })
+    ).toEqual([]);
+  });
+
   it('round-trips a sanitized performance configuration', () => {
     const args = createRendererPerfArguments({
       PERF_METRICS: '1',

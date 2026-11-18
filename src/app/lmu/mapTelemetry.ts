@@ -18,7 +18,11 @@ import { lmuCarCompound, lmuCompoundChannel } from './tireCompound';
 import { lmuTrackLimitsChannel, lmuTrackLimitsMax } from './trackLimits';
 import { lmuEnergyChannel } from './fuelEnergy';
 import { lmuSessionUniqueId, type LmuSessionIdentity } from './sessionIdentity';
-import { estimateLmuLapDistPct, type LmuLapDistanceState } from './lapDistance';
+import {
+  estimateLmuLapDistPct,
+  lmuCompletedLaps,
+  type LmuLapDistanceState,
+} from './lapDistance';
 import {
   refineLmuOpponentLapDistPcts,
   type LmuOpponentLapDistanceState,
@@ -26,6 +30,7 @@ import {
 import type { LmuRestCell, LmuRestCells } from './rest/state';
 import type { LmuLivePenaltyChannels } from './liveStandings/penalties';
 import { isLmuRaceSession } from './mapSession';
+import { lmuInCar, lmuInSession, type LmuGameState } from './gameState';
 import {
   createLmuClassPositionState,
   updateLmuClassPositions,
@@ -119,20 +124,6 @@ const lapDistPctArr = (v: ArrayLike<number> | undefined) => ({
 });
 
 /**
- * Remap LMU mDentSeverity into TinyPedal display order: FL, FC, FR, CL, CR,
- * RL, RC, RR. When the body is detached LMU only loses the rear wing, so the
- * rear-center cell is forced to the detached tier (3).
- */
-export const remapLmuDentSeverity = (
-  dent: ArrayLike<number>,
-  bodyDetached: boolean
-): number[] => {
-  const d = (i: number) => dent[i] ?? 0;
-  const rearCenter = bodyDetached ? 3 : d(4);
-  return [d(1), d(0), d(7), d(2), d(6), d(3), rearCenter, d(5)];
-};
-
-/**
  * Reused across frames. This runs at the poll rate, so the four arrays it
  * fills were ~250 allocations a second; and the derivation used to run three
  * times per frame -- here, again for CarLeftRight, and once more in the bridge
@@ -160,9 +151,13 @@ function sessionFlags(raw: Raw): number {
   if (raw.gamePhase === 7) return GlobalFlags.Red;
   if (
     raw.gamePhase === 6 ||
-    (raw.yellowFlagState >= 1 && raw.yellowFlagState <= 6) ||
-    Array.from(raw.sectorFlags).some((flag) => flag === 1)
+    (raw.yellowFlagState >= 1 && raw.yellowFlagState <= 6)
   ) {
+    // Preserve the yellow display while distinguishing an FCY from a sector
+    // yellow for consumers such as the lap-history filter.
+    return GlobalFlags.Yellow | GlobalFlags.Caution;
+  }
+  if (Array.from(raw.sectorFlags).some((flag) => flag === 1)) {
     return GlobalFlags.Yellow;
   }
   const playerFlag = raw.vehFlag?.[raw.playerVehicleIdx];
@@ -241,6 +236,11 @@ const focusCarIdx = (
   return typeof focus === 'number' && focus >= 0 ? focus : playerIdx;
 };
 
+/**
+ * One LMU shared-memory snapshot as an iRacing-shaped telemetry frame, with
+ * the REST answers and the game state folded in. A value LMU has no
+ * equivalent for is published empty or neutral rather than left out.
+ */
 export function mapLmuTelemetry(
   raw: Raw,
   /**
@@ -282,7 +282,17 @@ export function mapLmuTelemetry(
    * finished cells down. Omitted -- as every spec does -- the channels are
    * absent and the player's badge falls back to the stop estimate.
    */
-  livePenalties?: LmuLivePenaltyChannels
+  livePenalties?: LmuLivePenaltyChannels,
+  /**
+   * Where the player is, from LMU's GetGameState, polled once a second. When
+   * known it decides IsOnTrack outright, and LmuDataStale except at the
+   * monitor, where `dataFrozen` still has its say; the realtime and ignition
+   * flags are not consulted. Omitted -- no REST
+   * API, a tape that never recorded it, or as every spec does -- those
+   * inferences from shared memory stand, as they did before. See
+   * gameState.ts.
+   */
+  gameState?: LmuGameState
 ): Telemetry {
   // Boundary note: a handful of generated Telemetry keys (e.g. SessionTime) are
   // typed with an `undefined[]` value shape although the iRacing native layer
@@ -311,10 +321,17 @@ export function mapLmuTelemetry(
           scoringPct: scoringLapDistPct,
           elapsedTime: raw.elapsedTime ?? -1,
           lapNumber: raw.lapNumber ?? -1,
+          completedLaps: raw.vehTotalLaps[playerIdx],
           speedMs: raw.speed ?? 0,
           trackLengthM: raw.lapDist ?? 0,
         })
       : scoringLapDistPct;
+  // The player's completed laps to go with that position, for LapCompleted
+  // and the player's own CarIdxLap slots below.
+  const playerCompletedLaps =
+    lapDistanceState && playerIdx >= 0
+      ? lmuCompletedLaps(lapDistanceState)
+      : null;
   // The estimator passes the negative "no car here" sentinel straight through;
   // clamping here keeps the published value inside the [0, 1] contract this
   // mapper has always had.
@@ -433,27 +450,44 @@ export function mapLmuTelemetry(
   // The player's own slot takes the smoothed value too, so anything measuring
   // against the player sees continuous motion rather than a 5 Hz step.
   const carIdxLapDistPct = t.CarIdxLapDistPct.value as number[];
+  // Lap plus fraction is how standings and race projections measure progress,
+  // so each refined fraction takes the lap count that goes with it.
+  const carIdxLaps = [
+    t.CarIdxLap.value as number[],
+    t.CarIdxLapCompleted.value as number[],
+  ];
   if (
     playerIdx >= 0 &&
     playerIdx < carIdxLapDistPct.length &&
     estimatedLapDistPct >= 0
   ) {
     carIdxLapDistPct[playerIdx] = lapDistPct;
+    if (playerCompletedLaps !== null) {
+      for (const laps of carIdxLaps) {
+        if (playerIdx < laps.length) laps[playerIdx] = playerCompletedLaps;
+      }
+    }
   }
   // And every other car, from the same 100 Hz telemetry block. Without this
   // they sit at the 5 Hz scoring rate -- ~14 m steps on a long circuit -- and
   // CarSpeedsProcessor differentiates those steps into opponent speed, which
   // the slow-car and faster-car warnings then threshold on.
   if (opponentLapDistanceState) {
-    refineLmuOpponentLapDistPcts(opponentLapDistanceState, carIdxLapDistPct, {
-      scoringPcts: raw.vehLapDistPct,
-      speeds: raw.vehSpeed,
-      lapNumbers: raw.vehLapNumber,
-      elapsedTimes: raw.vehElapsedTime,
-      telemetryAvailable: raw.vehTelemetryAvailable,
-      trackLengthM: raw.lapDist,
-      playerCarIdx: playerIdx,
-    });
+    refineLmuOpponentLapDistPcts(
+      opponentLapDistanceState,
+      carIdxLapDistPct,
+      {
+        scoringPcts: raw.vehLapDistPct,
+        speeds: raw.vehSpeed,
+        lapNumbers: raw.vehLapNumber,
+        completedLaps: raw.vehTotalLaps,
+        elapsedTimes: raw.vehElapsedTime,
+        telemetryAvailable: raw.vehTelemetryAvailable,
+        trackLengthM: raw.lapDist,
+        playerCarIdx: playerIdx,
+      },
+      carIdxLaps
+    );
   }
   t.CarIdxTrackSurface = {
     value: Array.from(raw.vehInPits, (_, carIdx) => trackLocation(raw, carIdx)),
@@ -500,6 +534,8 @@ export function mapLmuTelemetry(
   // so the choice is made per car here rather than once for the grid.
   // Count only: scoring has no field for which penalty it is.
   t.LmuCarIdxPenalties = numArr(raw.vehNumPenalties);
+  // The sim's own per-car finish status, which names the flag outright.
+  t.LmuCarIdxFinishStatus = numArr(raw.vehFinishStatus);
   t.LmuCarIdxEnergyRemaining = numArr(
     lmuEnergyChannel(raw.vehFuelFraction, raw.vehVirtualEnergy)
   );
@@ -583,9 +619,7 @@ export function mapLmuTelemetry(
   if (restCells?.aeroDamage) t.LmuAeroDamage = staged(restCells.aeroDamage);
 
   if (raw.dentSeverity) {
-    t.LmuDentSeverity = {
-      value: remapLmuDentSeverity(raw.dentSeverity, !!raw.bodyDetached),
-    };
+    t.LmuDentSeverity = numArr(raw.dentSeverity);
   }
   if (raw.wheelDetached) {
     t.LmuWheelDetached = boolArr(raw.wheelDetached, (n) => n !== 0);
@@ -622,14 +656,24 @@ export function mapLmuTelemetry(
   );
   t.Gear = num(raw.gear);
   t.RPM = num(raw.engineRPM);
-  t.Lap = num(raw.lapNumber);
-  t.LapCompleted = num(raw.vehTotalLaps[playerIdx] ?? 0);
+  // The lap that goes with LapDistPct rather than LMU's counter as it stands:
+  // the counter flips at the timing line, which can be well short of where
+  // the position wraps, and anything pairing the two -- the fuel calculator
+  // does -- then saw the line twice. Moved in the same frame as the position.
+  t.Lap = num(
+    lapDistanceState && playerIdx >= 0 && lapDistanceState.lap !== null
+      ? lapDistanceState.lap
+      : raw.lapNumber
+  );
+  t.LapCompleted = num(playerCompletedLaps ?? raw.vehTotalLaps[playerIdx] ?? 0);
   t.LapDistPct = num(lapDistPct);
   t.LapBestLapTime = lapTime(raw.vehBestLapTime[playerIdx]);
   t.LapLastLapTime = lapTime(raw.vehLastLapTime[playerIdx]);
-  // LMU's own delta to the player's best lap, negative when ahead -- what
-  // iRacing calls the delta to the session best. Only meaningful once there is
-  // a best lap: until then LMU reports 0, which would read as dead level.
+  // LMU's deltaBest is the delta to the player's own best lap (negative when
+  // ahead) -- the same meaning as iRacing's LapDeltaToBestLap. Also published
+  // as LapDeltaToSessionBestLap because existing widgets already read that.
+  // Only meaningful once there is a best lap: until then LMU reports 0, which
+  // would read as dead level.
   const hasBestLap = (raw.vehBestLapTime[playerIdx] ?? 0) > 0;
   const deltaBest = raw.deltaBest;
   const deltaBestOk =
@@ -805,19 +849,45 @@ export function mapLmuTelemetry(
   t.dcPitSpeedLimiterToggle = bool(raw.speedLimiter);
   t.PitstopActive = bool(false);
   t.OnPitRoad = bool(playerIdx >= 0 ? raw.vehInPits[playerIdx] === 1 : false);
-  // Three conditions, matching TinyPedal's own test for LMU: the data is
-  // flowing, the player has a slot, and either the sim says realtime or the
-  // ignition is on. The first is the one that was missing -- a frozen snapshot
-  // keeps reporting realtime forever, which is why ending a session left every
-  // widget gated on this one on screen. Ignition is the second half of
-  // TinyPedal's OR: a driver sitting in the car before realtime begins is
-  // still in the car.
+  // The sim's own answer when there is one: in the car while driving or
+  // paused, in the session at the monitor too.
+  //
+  // Without it, three conditions, matching TinyPedal's own test for LMU: the
+  // data is flowing, the player has a slot, and either the sim says realtime
+  // or the ignition is on. The first is the one that was missing -- a frozen
+  // snapshot keeps reporting realtime forever, which is why ending a session
+  // left every widget gated on this one on screen. Ignition is the second
+  // half of TinyPedal's OR: a driver sitting in the car before realtime
+  // begins is still in the car.
   const inCar =
-    !dataFrozen &&
-    playerIdx >= 0 &&
-    (raw.inRealtime || (raw.ignitionStarter ?? 0) > 0);
+    gameState !== undefined
+      ? playerIdx >= 0 && lmuInCar(gameState)
+      : !dataFrozen &&
+        playerIdx >= 0 &&
+        (raw.inRealtime || (raw.ignitionStarter ?? 0) > 0);
   t.IsOnTrack = bool(inCar);
-  t.LmuDataStale = bool(dataFrozen ?? false);
+  // In the car, the sim's word stands over a frozen block: a pause stops the
+  // writes and ends nothing. Out of any session, the frame describes nothing.
+  // At the monitor the freeze watch still decides whether the frame is
+  // current. Where the player is comes from LmuOutOfCar below.
+  t.LmuDataStale = bool(
+    gameState === undefined
+      ? (dataFrozen ?? false)
+      : !lmuInCar(gameState) &&
+          (!lmuInSession(gameState) || (dataFrozen ?? false))
+  );
+  // Only the sim's own word, not an inference: this hides widgets, and a
+  // guess from a frozen block is not enough to do that on. Outside a game is
+  // further out of a session still.
+  t.LmuNotInSession = bool(
+    gameState === 'notInSession' || gameState === 'notInGame'
+  );
+  // The sim's word that the player is not in the car. IsOnTrack already says
+  // so, but the driving gate ORs in the pit flags, and a car left in the pit
+  // lane or stall keeps those set, live, while the player sits at the monitor.
+  // Falsifying the pit flags instead would misreport the car to everything
+  // else that reads them.
+  t.LmuOutOfCar = bool(gameState !== undefined && !lmuInCar(gameState));
   // Reported as the snapshot has them, frozen or not. Falsifying these while
   // frozen was a mistake: isDriving reads them as `!isInGarage`, so clearing
   // them removed the one term that would have excluded a parked player.

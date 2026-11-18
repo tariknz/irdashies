@@ -3,21 +3,29 @@ import { GantryTabBar } from './components/GantryTabBar/GantryTabBar';
 import { GantryStandings } from './components/GantryStandings/GantryStandings';
 import { GantryIncidents } from './components/GantryIncidents/GantryIncidents';
 import { LapGraphView } from './components/LapGraph/LapGraphView';
+import {
+  GantryPitStops,
+  type PitStopsClassFilter,
+  type PitStopsMode,
+} from './components/GantryPitStops/GantryPitStops';
 import { SplitPane } from './components/SplitPane/SplitPane';
+import { GantryPanel } from './components/GantryPanel/GantryPanel';
 import { useGantryAlwaysOnTop } from './hooks/useGantryAlwaysOnTop';
 import { GantryReplayNotice } from './components/GantryReplayBanner/GantryReplayBanner';
 import { GantrySessionEndedNotice } from './components/GantrySessionEndedNotice/GantrySessionEndedNotice';
 import { useHeld } from './hooks/useGantrySessionHold';
 import { GantrySessionDataProvider } from './hooks/useGantrySessionData';
 import {
+  useActiveSimulator,
   useRaceControlBridge,
   useReplayContextUpdater,
+  useRunningState,
   useSessionDrivers,
 } from '@irdashies/context';
 import type { LapGraphMode } from '@irdashies/domain';
-import type { LapGraphAxisFit } from '@irdashies/types';
+import { simulatorDisplayName, type LapGraphAxisFit } from '@irdashies/types';
 
-type GantryView = 'standings-incidents' | 'lap-graph';
+type GantryView = 'standings-incidents' | 'lap-graph' | 'pit-stops';
 
 /** Where the standings/incidents divider sits. A UI preference, not config. */
 const SPLIT_STORAGE_KEY = 'gantryStandingsSplitPercent';
@@ -52,9 +60,16 @@ const GantryInner = memo(({ dock, standings }: GantryProps) => {
   const [lapGraphPins, setLapGraphPins] = useState<readonly number[] | null>(
     null
   );
+  const [pitClassFilter, setPitClassFilter] =
+    useState<PitStopsClassFilter | null>(null);
+  const [pitMode, setPitMode] = useState<PitStopsMode>('stops');
+  const [pitTeamFilter, setPitTeamFilter] = useState<number | null>(null);
 
   useReplayContextUpdater();
   useRaceControlBridge(); // subscribe to incidents on mount
+
+  const activeSimulator = useActiveSimulator();
+  const { running } = useRunningState();
 
   // Roster for the follow-driver dropdown — sourced from the session (not
   // standings) so it only changes when drivers join/leave, not every tick.
@@ -75,10 +90,13 @@ const GantryInner = memo(({ dock, standings }: GantryProps) => {
   );
 
   return (
-    <div className="w-full h-full flex flex-col bg-slate-900/(--bg-opacity) text-white overflow-hidden">
+    <div className="w-full h-full flex flex-col bg-settings-page text-white overflow-hidden">
       <GantryTabBar
         activeView={activeView}
         onViewChange={setActiveView}
+        connectedSimulator={
+          running ? simulatorDisplayName(activeSimulator) : null
+        }
         drivers={drivers}
         followedCarIdx={followedCarIdx}
         onFollowChange={setFollowedCarIdx}
@@ -91,34 +109,38 @@ const GantryInner = memo(({ dock, standings }: GantryProps) => {
           held whichever one is showing. */}
       <GantrySessionDataProvider>
         {activeView === 'standings-incidents' && (
-          <SplitPane
-            label="Standings and incidents split"
-            storageKey={SPLIT_STORAGE_KEY}
-            left={
-              standings ? (
-                standings(followedCarIdx)
-              ) : (
-                <GantryStandings followedCarIdx={followedCarIdx} />
-              )
-            }
-            right={
-              dock ? (
-                <SplitPane
-                  orientation="vertical"
-                  label="Incidents and docked panels split"
-                  storageKey={DOCK_SPLIT_STORAGE_KEY}
-                  defaultPercent={60}
-                  left={<GantryIncidents />}
-                  right={dock}
-                />
-              ) : (
-                <GantryIncidents />
-              )
-            }
-          />
+          <div className="flex flex-1 min-h-0 p-3">
+            <SplitPane
+              label="Standings and incidents split"
+              storageKey={SPLIT_STORAGE_KEY}
+              left={
+                standings ? (
+                  <GantryPanel title="Standings" overlayContent>
+                    {standings(followedCarIdx)}
+                  </GantryPanel>
+                ) : (
+                  <GantryStandings followedCarIdx={followedCarIdx} />
+                )
+              }
+              right={
+                dock ? (
+                  <SplitPane
+                    orientation="vertical"
+                    label="Incidents and docked panels split"
+                    storageKey={DOCK_SPLIT_STORAGE_KEY}
+                    defaultPercent={60}
+                    left={<GantryIncidents />}
+                    right={<GantryPanel overlayContent>{dock}</GantryPanel>}
+                  />
+                ) : (
+                  <GantryIncidents />
+                )
+              }
+            />
+          </div>
         )}
         {activeView === 'lap-graph' && (
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden p-3">
             <LapGraphView
               followedCarIdx={followedCarIdx}
               selectedClassId={lapGraphClassId}
@@ -129,6 +151,19 @@ const GantryInner = memo(({ dock, standings }: GantryProps) => {
               onAxisFitChange={setLapGraphAxisFit}
               chosenPins={lapGraphPins}
               onPinsChange={setLapGraphPins}
+            />
+          </div>
+        )}
+        {activeView === 'pit-stops' && (
+          <div className="flex-1 min-h-0 overflow-hidden p-3">
+            <GantryPitStops
+              followedCarIdx={followedCarIdx}
+              classFilter={pitClassFilter}
+              onClassFilterChange={setPitClassFilter}
+              mode={pitMode}
+              onModeChange={setPitMode}
+              teamFilter={pitTeamFilter}
+              onTeamFilterChange={setPitTeamFilter}
             />
           </div>
         )}

@@ -20,22 +20,32 @@ vi.mock('@irdashies/context', () => ({
   useDashboard: () => ({ currentDashboard, onDashboardUpdated, bridge }),
 }));
 vi.mock('./BroadcastSettings', () => ({
-  BroadcastSettings: () => <div>tower settings</div>,
+  BroadcastSettings: ({ obsUrl }: { obsUrl?: string }) => (
+    <div>tower settings {obsUrl}</div>
+  ),
 }));
 vi.mock('./BroadcastTickerSettings', () => ({
-  BroadcastTickerSettings: () => <div>ticker settings</div>,
+  BroadcastTickerSettings: ({ obsUrl }: { obsUrl?: string }) => (
+    <div>ticker settings {obsUrl}</div>
+  ),
 }));
 vi.mock('./BroadcastEventsSettings', () => ({
-  BroadcastEventsSettings: () => <div>events settings</div>,
+  BroadcastEventsSettings: ({ obsUrl }: { obsUrl?: string }) => (
+    <div>events settings {obsUrl}</div>
+  ),
 }));
 vi.mock('./BroadcastPreview', () => ({
   BroadcastPreview: () => null,
 }));
 vi.mock('./BroadcastPodiumSettings', () => ({
-  BroadcastPodiumSettings: () => <div>podium settings</div>,
+  BroadcastPodiumSettings: ({ obsUrl }: { obsUrl?: string }) => (
+    <div>podium settings {obsUrl}</div>
+  ),
 }));
 vi.mock('./BroadcastWeatherSettings', () => ({
-  BroadcastWeatherSettings: () => <div>weather settings</div>,
+  BroadcastWeatherSettings: ({ obsUrl }: { obsUrl?: string }) => (
+    <div>weather settings {obsUrl}</div>
+  ),
 }));
 
 const renderAt = (
@@ -48,57 +58,49 @@ const renderAt = (
   );
 
 describe('BroadcastGroupSettings', () => {
-  it("shows the active module's settings under one tab per module", () => {
+  it("shows only the active module's settings, the Broadcast menu listing the rest", () => {
     renderAt('broadcastticker');
 
-    expect(screen.getByText('ticker settings')).toBeInTheDocument();
-    expect(screen.queryByText('tower settings')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Events/ })).toHaveAttribute(
-      'href',
-      '/settings/broadcastevents'
-    );
+    expect(screen.getByText(/^ticker settings/)).toBeInTheDocument();
+    expect(screen.queryByText(/^tower settings/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 
-  it('marks which modules are switched on', () => {
+  it('has no Broadcast heading, no switch for all modules and no transition', () => {
     renderAt('broadcast');
 
-    expect(screen.getByRole('link', { name: /Tower/ })).toContainHTML(
-      'title="On"'
-    );
-    expect(screen.getByRole('link', { name: /Ticker/ })).toContainHTML(
-      'title="Off"'
-    );
+    expect(
+      screen.queryByRole('heading', { name: 'Broadcast' })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('combobox', { name: 'Transition' })
+    ).not.toBeInTheDocument();
   });
 
-  it('the master switch turns every module off, leaving other widgets', () => {
+  it('gives the module its own OBS URL', async () => {
+    renderAt('broadcastevents');
+
+    expect(
+      await screen.findByText(
+        'events settings http://localhost:3002/widget/broadcastevents'
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('offers no reset for a module at its defaults', () => {
     renderAt('broadcast');
 
-    fireEvent.click(screen.getByRole('switch'));
-
-    expect(onDashboardUpdated).toHaveBeenCalledWith({
-      widgets: [
-        { id: 'broadcast', enabled: false },
-        {
-          id: 'broadcastticker',
-          enabled: false,
-          config: { secondsPerEntry: 9 },
-        },
-        { id: 'standings', enabled: true },
-      ],
-    });
+    expect(
+      screen.queryByRole('button', { name: 'Reset module' })
+    ).not.toBeInTheDocument();
   });
 
-  it('marks a changed module and resets it to the defaults', () => {
+  it('resets a changed module to the defaults', () => {
     onDashboardUpdated.mockClear();
     renderAt('broadcastticker');
 
-    expect(screen.getByRole('link', { name: /Ticker/ })).toContainHTML(
-      'title="Changed"'
-    );
-    expect(screen.getByRole('link', { name: /Tower/ })).not.toContainHTML(
-      'title="Changed"'
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'Reset section' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset module' }));
 
     const saved = onDashboardUpdated.mock.calls[0][0].widgets.find(
       (w: { id: string }) => w.id === 'broadcastticker'
@@ -119,7 +121,6 @@ describe('BroadcastGroupSettings', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('ticker settings')).toBeInTheDocument();
     expect(
       await screen.findByText(/localhost:3002\/widget\/broadcastticker/)
     ).toBeInTheDocument();

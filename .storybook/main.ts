@@ -3,7 +3,11 @@ import { mergeConfig } from 'vite';
 import rendererConfig from '../vite.renderer.config.mts';
 
 const config: StorybookConfig = {
-  stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
+  stories: [
+    '../src/**/*.mdx',
+    '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
+    '../site/src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
+  ],
   addons: ['@storybook/addon-docs'],
   framework: {
     name: '@storybook/react-vite',

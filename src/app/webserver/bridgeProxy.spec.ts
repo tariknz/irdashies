@@ -7,12 +7,14 @@ import type {
   DashboardLayout,
   IrSdkSourceBridge,
   PitLaneBridge,
+  RacePlanState,
   Session,
   Telemetry,
 } from '@irdashies/types';
 import { ChannelBus } from '../bridge/channelBus';
 import logger from '../logger';
 import { createBridgeProxy } from './bridgeProxy';
+import { setRacePlanSource } from '../services/racePlanSource';
 
 // Exercise the real proxy handlers synchronously, without network timing.
 vi.mock('ws', async (importOriginal) => {
@@ -495,5 +497,46 @@ describe('browser pit lane calibration requests', () => {
       })
     );
     client.close();
+  });
+});
+
+describe('browser race plan state', () => {
+  afterEach(() => setRacePlanSource(null));
+
+  it('answers state requests and pushes changes to subscribers only', async () => {
+    const state = { hasApiKey: true, strategyId: 7 } as RacePlanState;
+    const listeners = new Set<(value: RacePlanState) => void>();
+    setRacePlanSource({
+      getActivePlan: () => null,
+      getState: async () => state,
+      onChange: (listener) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+    });
+    const { wss } = createBridgeProxy(new Server(), makeSource().bridge);
+    const subscriber = new Client();
+    const other = new Client();
+    wss.emit('connection', subscriber);
+    wss.emit('connection', other);
+    const send = (client: Client, type: string) =>
+      client.emit(
+        'message',
+        Buffer.from(JSON.stringify({ type, requestId: 'request-one' }))
+      );
+
+    send(subscriber, 'racePlan:getState');
+    await vi.waitFor(() =>
+      expect(subscriber.messages('racePlan:getState')[0]?.data).toEqual(state)
+    );
+
+    send(subscriber, 'racePlan:subscribe');
+    await vi.waitFor(() => expect(listeners.size).toBe(1));
+    listeners.forEach((listener) => listener(state));
+    expect(subscriber.messages('racePlanState')[0]?.data).toEqual(state);
+    expect(other.messages('racePlanState')).toEqual([]);
+
+    subscriber.close();
+    expect(listeners.size).toBe(0);
   });
 });

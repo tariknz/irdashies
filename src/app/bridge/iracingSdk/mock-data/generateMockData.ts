@@ -1,4 +1,5 @@
 import type { IrSdkSourceBridge, Session, Telemetry } from '@irdashies/types';
+import { GlobalFlags, SessionState } from '@irdashies/types';
 import mockSessionInfo from '../../../irsdk/node/utils/mock-data/session.json';
 import mockTelemetry from '../../../irsdk/node/utils/mock-data/telemetry.json';
 
@@ -137,6 +138,7 @@ export function generateMockData(sessionData?: {
             const throttleValue = prevTelemetry.Throttle.value[0];
             const brakeValue = prevTelemetry.Brake.value[0];
             const jitteredBrakeValue = jitterValue(brakeValue);
+            const jitteredThrottleValue = jitterValue(throttleValue);
 
             // Simulate RPM and gear changes for demo mode
             // Check if we're at or above shift RPM
@@ -252,13 +254,39 @@ export function generateMockData(sessionData?: {
 
             t = {
               ...prevTelemetry,
+              // All demo hosts simulate an active race. Recorded input above
+              // retains its original state, including checkered/replay frames.
+              SessionState: {
+                ...prevTelemetry.SessionState,
+                value: [SessionState.Racing],
+              },
+              SessionFlags: {
+                ...prevTelemetry.SessionFlags,
+                value: [GlobalFlags.Green],
+              },
               Brake: {
                 ...prevTelemetry.Brake,
                 value: [jitteredBrakeValue],
               },
               Throttle: {
                 ...prevTelemetry.Throttle,
-                value: [jitterValue(throttleValue)],
+                value: [jitteredThrottleValue],
+              },
+              // The demo drives with no assists, so the raw pedals are the
+              // processed ones. Left as recorded they stayed at 0, and every
+              // widget set to Use Raw Inputs (and the lap trace, which reads
+              // raw pedals first) showed the pedals untouched.
+              BrakeRaw: {
+                ...prevTelemetry.BrakeRaw,
+                value: [jitteredBrakeValue],
+              },
+              ThrottleRaw: {
+                ...prevTelemetry.ThrottleRaw,
+                value: [jitteredThrottleValue],
+              },
+              ClutchRaw: {
+                ...prevTelemetry.ClutchRaw,
+                value: [prevTelemetry.Clutch.value[0]],
               },
               Gear: {
                 ...prevTelemetry.Gear,
@@ -306,6 +334,10 @@ export function generateMockData(sessionData?: {
               },
               SessionLapsRemain: {
                 ...prevTelemetry.SessionLapsRemain,
+                value: [state.sessionLapsRemain],
+              },
+              SessionLapsRemainEx: {
+                ...prevTelemetry.SessionLapsRemainEx,
                 value: [state.sessionLapsRemain],
               },
               SessionTimeRemain: {

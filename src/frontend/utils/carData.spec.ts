@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  loadCarData,
-  getGearKey,
-  getAvailableCars,
-  normalizeLmuCarKey,
-} from './carData';
+import { loadCarData, getGearKey, getAvailableCars } from './carData';
 
 /**
  * NOTE: These tests verify that bundled car data can be loaded synchronously
@@ -26,24 +21,10 @@ describe('carData', () => {
     });
   });
 
-  describe('normalizeLmuCarKey', () => {
-    it('maps LMU vehFilename and lovely LMGT3 names to the same key', () => {
-      expect(normalizeLmuCarKey('ferrari_296_gt3')).toBe('ferrari296gt3');
-      expect(normalizeLmuCarKey('Ferrari 296 LMGT3')).toBe('ferrari296gt3');
-      expect(normalizeLmuCarKey('Ferrari 296 GT3')).toBe('ferrari296gt3');
-    });
-
-    it('collapses duplicate GT3 after LMGT3 rewrite', () => {
-      expect(normalizeLmuCarKey('Porsche 911 GT3 R LMGT3')).toBe(
-        'porsche911gt3r'
-      );
-      expect(normalizeLmuCarKey('porsche_911_gt3_r')).toBe('porsche911gt3r');
-    });
-  });
-
   describe('loadCarData', () => {
-    it('loads car data synchronously from the iRacing bundle', () => {
-      const result = loadCarData('ferrari296gt3', 'iracing');
+    it('loads car data synchronously from bundle', () => {
+      // Ferrari 296 GT3 should be in the bundle
+      const result = loadCarData('ferrari296gt3');
 
       expect(result).not.toBeNull();
       if (result) {
@@ -56,9 +37,9 @@ describe('carData', () => {
     });
 
     it('handles car ID case-insensitively', () => {
-      const result1 = loadCarData('ferrari296gt3', 'iracing');
-      const result2 = loadCarData('Ferrari296GT3', 'iracing');
-      const result3 = loadCarData('FERRARI296GT3', 'iracing');
+      const result1 = loadCarData('ferrari296gt3');
+      const result2 = loadCarData('Ferrari296GT3');
+      const result3 = loadCarData('FERRARI296GT3');
 
       expect(result1).not.toBeNull();
       expect(result2).toEqual(result1);
@@ -66,8 +47,9 @@ describe('carData', () => {
     });
 
     it('handles normalized car IDs (spaces/special chars removed)', () => {
-      const result1 = loadCarData('ferrari296gt3', 'iracing');
-      const result2 = loadCarData('ferrari 296 gt3', 'iracing');
+      // Try loading with a normalized version
+      const result1 = loadCarData('ferrari296gt3');
+      const result2 = loadCarData('ferrari 296 gt3');
 
       expect(result1).not.toBeNull();
       if (result1) {
@@ -76,44 +58,21 @@ describe('carData', () => {
     });
 
     it('returns null for nonexistent cars', () => {
-      const result = loadCarData('nonexistentcarmodel12345', 'iracing');
+      const result = loadCarData('nonexistentcarmodel12345');
       expect(result).toBeNull();
     });
 
-    it('keeps LMU and iRacing LED profiles in separate bundles', () => {
-      // Same normalized letters; without per-sim bundles LMU would inherit
-      // iRacing's blink interval and gear RPM tables.
-      const iracing = loadCarData('ferrari296gt3', 'iracing');
-      const lmu = loadCarData('ferrari_296_gt3', 'lmu');
+    it('ignores game parameter (only iRacing data is bundled)', () => {
+      const result1 = loadCarData('ferrari296gt3', 'iracing');
+      const result2 = loadCarData('ferrari296gt3', 'assettocorsa');
+      const result3 = loadCarData('ferrari296gt3', 'automobilista2');
 
-      expect(iracing).not.toBeNull();
-      expect(lmu).not.toBeNull();
-      expect(lmu?.carId).not.toBe(iracing?.carId);
-      expect(lmu?.redlineBlinkInterval).not.toBe(iracing?.redlineBlinkInterval);
-    });
-
-    it('loads LMU cars by vehFilename or vehicle model alias', () => {
-      const byPath = loadCarData('ferrari_296_gt3', 'lmu');
-      const byModel = loadCarData('unknown_team_livery', 'lmu', [
-        'Ferrari 296 GT3',
-      ]);
-
-      // Skip soft if the LMU bundle has not been fetched yet in this checkout.
-      if (getAvailableCars('lmu').length === 0) return;
-
-      expect(byPath).not.toBeNull();
-      expect(byModel).not.toBeNull();
-      expect(byPath?.carId).toBe(byModel?.carId);
-      expect(byPath?.ledRpm?.[0]?.['3']?.length).toBeGreaterThan(0);
-    });
-
-    it('defaults to the iRacing bundle when gameId is omitted', () => {
-      const result = loadCarData('ferrari296gt3');
-      expect(result?.carId).toBe('ferrari296gt3');
+      expect(result1).toEqual(result2);
+      expect(result2).toEqual(result3);
     });
 
     it('returns car data with expected structure', () => {
-      const result = loadCarData('ferrari296gt3', 'iracing');
+      const result = loadCarData('ferrari296gt3');
 
       if (result) {
         expect(result).toHaveProperty('carName');
@@ -132,15 +91,15 @@ describe('carData', () => {
   });
 
   describe('getAvailableCars', () => {
-    it('returns array of available iRacing cars', () => {
-      const cars = getAvailableCars('iracing');
+    it('returns array of available cars', () => {
+      const cars = getAvailableCars();
 
       expect(Array.isArray(cars)).toBe(true);
       expect(cars.length).toBeGreaterThan(0);
     });
 
     it('returns cars with carId and carName', () => {
-      const cars = getAvailableCars('iracing');
+      const cars = getAvailableCars();
 
       cars.forEach((car) => {
         expect(car).toHaveProperty('carId');
@@ -150,27 +109,17 @@ describe('carData', () => {
       });
     });
 
-    it('includes expected cars in the iRacing bundle', () => {
-      const cars = getAvailableCars('iracing');
+    it('includes expected cars in the bundle', () => {
+      const cars = getAvailableCars();
       const carIds = cars.map((c) => c.carId);
 
+      // These cars should be in the bundle
       expect(carIds).toContain('ferrari296gt3');
     });
 
     it('returns cars sorted by availability', () => {
-      const cars = getAvailableCars('iracing');
+      const cars = getAvailableCars();
       expect(cars.length).toBeGreaterThanOrEqual(60);
-    });
-
-    it('dedupes LMU chassis liveries under a shared carName identity', () => {
-      const cars = getAvailableCars('lmu');
-      if (cars.length === 0) return;
-
-      const mclarens = cars.filter((c) => c.carName === 'McLaren 720S GT3');
-      expect(mclarens.length).toBeLessThanOrEqual(1);
-      if (mclarens[0]) {
-        expect(mclarens[0].carId).toBe('McLaren 720S GT3');
-      }
     });
   });
 });

@@ -25,6 +25,7 @@ export function createTapeReplayWindow(): BrowserWindow {
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
+      backgroundThrottling: false,
     },
   });
   replayWindow = window;
@@ -37,9 +38,11 @@ export function createTapeReplayWindow(): BrowserWindow {
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', (event) => event.preventDefault());
   window.webContents.on('will-redirect', (event) => event.preventDefault());
-  window.once('ready-to-show', () => {
-    if (!window.isDestroyed()) window.showInactive();
-  });
+  const show = () => {
+    if (!window.isDestroyed() && !window.isVisible()) window.showInactive();
+  };
+  window.once('ready-to-show', show);
+  window.webContents.once('did-finish-load', show);
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     void window.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/tape-replay`);
   } else {

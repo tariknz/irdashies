@@ -6,7 +6,6 @@ import { FlatTrackMapCanvas } from './FlatTrackMapCanvas';
 import { useTrackDrawing } from '@irdashies/domain/track';
 import {
   useSessionVisibility,
-  useSessionStore,
   useTrackStateSnapshot,
 } from '@irdashies/context';
 import { useDriverLivePositions } from '@irdashies/domain';
@@ -25,17 +24,13 @@ export const FlatTrackMap = ({ embedded = false }: { embedded?: boolean }) => {
   const driverLivePositions = useDriverLivePositions({
     enabled: (settings?.displayMode ?? 'carNumber') === 'livePosition',
   });
-  const lmuTrackMap = useSessionStore((state) => state.session?.LmuTrackMap);
 
   const sessionVisible = useSessionVisibility(settings?.sessionVisibility);
-  const loadedDrawing = useTrackDrawing(
-    !lmuTrackMap &&
-      sessionVisible &&
-      (!settings?.showOnlyWhenOnTrack || isOnTrack)
+  const trackDrawing = useTrackDrawing(
+    sessionVisible && (!settings?.showOnlyWhenOnTrack || isOnTrack)
       ? trackId
       : undefined
   );
-  const trackDrawing = lmuTrackMap ?? loadedDrawing;
 
   if (!sessionVisible) return <></>;
 
@@ -44,8 +39,7 @@ export const FlatTrackMap = ({ embedded = false }: { embedded?: boolean }) => {
     return <></>;
   }
 
-  // Session-provided LMU drawings can render without a resolved track ID.
-  if (!trackDrawing) {
+  if (!trackId || !trackDrawing) {
     return debug ? (
       <div className="w-full h-full flex items-center justify-center text-white">
         <p>No track data available</p>

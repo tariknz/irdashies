@@ -1,5 +1,5 @@
 import { memo, useRef, useLayoutEffect } from 'react';
-import type { LmuPenaltyKind } from '@irdashies/types';
+import type { LmuFinishState, LmuPenaltyKind } from '@irdashies/types';
 import { SpeakerHighIcon } from '@phosphor-icons/react';
 import { DriverStatusBadges } from './DriverStatusBadges';
 import {
@@ -86,6 +86,8 @@ interface DriverNameCellProps {
   /** LMU's penalty kind: DT for a drive-through, SG for a stop-go. */
   penaltyKind?: LmuPenaltyKind;
   penaltySeconds?: number;
+  /** LMU's finish status, drawn in the penalty badge's place. */
+  finishState?: LmuFinishState;
   slowdown?: boolean;
   showStatusBadges?: boolean;
   isMinimalStatusBadges?: boolean;
@@ -106,6 +108,7 @@ export const DriverNameCell = memo(
     repair,
     penaltyKind,
     penaltySeconds,
+    finishState,
     penalty,
     slowdown,
     showStatusBadges = true,
@@ -222,6 +225,7 @@ export const DriverNameCell = memo(
               repair={repair}
               penaltyKind={penaltyKind}
               penaltySeconds={penaltySeconds}
+              finishState={finishState}
               penalty={penalty}
               slowdown={slowdown}
               isMinimal={isMinimalStatusBadges}

@@ -36,7 +36,14 @@ import {
   markCorrectedBounds,
   trackSettingsWindowMovement,
 } from './trackWindowMovement';
-import { sanitizeWindowBounds } from './windowBounds';
+import {
+  defaultSettingsWindowBounds,
+  sanitizeWindowBounds,
+} from './windowBounds';
+import {
+  initializeSettingsWindowBounds,
+  readSettingsWindowBounds,
+} from './storage/settingsWindowBounds';
 import logger from './logger';
 import { createRendererPerfArguments } from './perfRendererArguments';
 import {
@@ -273,8 +280,12 @@ export class OverlayManager {
         }
       }
 
-      // Always create a window for the primary display (fallback for unmatched widgets)
-      displaysWithWidgets.add(primaryDisplay.id);
+      if (
+        !this.isLocked ||
+        dashboardLayout.widgets.some((widget) => this.isOnOverlay(widget))
+      ) {
+        displaysWithWidgets.add(primaryDisplay.id);
+      }
 
       for (const display of allDisplays) {
         if (!displaysWithWidgets.has(display.id)) {
@@ -808,6 +819,8 @@ export class OverlayManager {
       this.forceRefreshOverlays(this.currentDashboard, {
         createSettingsWindow: false,
       });
+    } else if (this.currentDashboard) {
+      this.ensureDisplayWindows(this.currentDashboard);
     }
 
     if (!this.isLocked) {
@@ -1043,12 +1056,6 @@ export class OverlayManager {
     app.quit();
   }
 
-  /**
-   * Create windows for any displays that need them but don't have one yet.
-   * Uses widget center-point assignment (same logic as createOverlays) to
-   * determine which displays are required. Safe to call during drag operations
-   * since it never destroys existing windows.
-   */
   public ensureDisplayWindows(dashboardLayout: DashboardLayout): void {
     dashboardLayout = this.windowLayoutOverride ?? dashboardLayout;
     const individual =
@@ -1086,7 +1093,23 @@ export class OverlayManager {
         }
       }
     }
-    displaysWithWidgets.add(primaryDisplay.id);
+    if (
+      !this.isLocked ||
+      dashboardLayout.widgets.some((widget) => this.isOnOverlay(widget))
+    ) {
+      displaysWithWidgets.add(primaryDisplay.id);
+    }
+
+    if (this.isLocked) {
+      for (const [displayId, window] of this.displayWindows) {
+        if (typeof displayId !== 'number' || displaysWithWidgets.has(displayId))
+          continue;
+        this.displayWindows.delete(displayId);
+        this.displayBoundsInfo.delete(displayId);
+        this.displayFullBounds.delete(displayId);
+        if (!window.isDestroyed()) window.close();
+      }
+    }
 
     for (const display of allDisplays) {
       if (!displaysWithWidgets.has(display.id)) continue;
@@ -1114,7 +1137,7 @@ export class OverlayManager {
       this.syncGantryWindow(dashboardLayout);
       return;
     }
-    if (this.individualWindows && this.currentDashboard) {
+    if (this.currentDashboard) {
       this.ensureDisplayWindows(this.currentDashboard);
       return;
     }
@@ -1275,7 +1298,11 @@ export class OverlayManager {
 
     this.hasSingleInstanceLock = true;
     app.on('second-instance', () => {
-      this.focusSettingsWindow();
+      // A second launch can arrive while the first is still initializing.
+      void app.whenReady().then(async () => {
+        await initializeSettingsWindowBounds();
+        this.focusSettingsWindow();
+      });
     });
     return true;
   }
@@ -1508,20 +1535,18 @@ export class OverlayManager {
     const defaultOptions: BrowserWindowConstructorOptions = {
       title: `irDashies - Settings`,
       frame: true,
-      // Windows/Linux: the renderer draws its own header (and drag region);
-      // the OS keeps drawing min/max/close, recoloured to match the theme.
-      // macOS keeps its native title bar so the traffic lights don't cover
-      // the header.
-      ...(process.platform !== 'darwin' && {
-        titleBarStyle: 'hidden' as const,
-        titleBarOverlay: {
-          color: '#314158',
-          symbolColor: '#cad5e2',
-          height: 40,
-        },
-      }),
-      width: 800,
-      height: 700,
+      backgroundColor: '#141a21',
+      // The renderer draws the header and drag region on every platform.
+      // The overlay exposes the native controls' safe area to the renderer,
+      // including the traffic lights on the left on macOS.
+      titleBarStyle: 'hidden',
+      titleBarOverlay: {
+        color: '#141a21',
+        symbolColor: '#cad5e2',
+        // Leave the 48px renderer header's bottom border below native controls.
+        height: 47,
+      },
+      ...defaultSettingsWindowBounds(screen.getPrimaryDisplay().workArea),
       autoHideMenuBar: true,
       acceptFirstMouse: true,
       icon: getIconPath(),
@@ -1635,7 +1660,7 @@ function ensureWindowOnScreen(browserWindow: BrowserWindow): void {
 }
 
 function loadWindowBounds(): Electron.Rectangle | undefined {
-  const saved = readData<Electron.Rectangle>('settingsWindowBounds');
+  const saved = readSettingsWindowBounds();
   if (!saved) return undefined;
 
   // Saved bounds outlive the display arrangement that produced them, so they

@@ -104,12 +104,11 @@ function normalizeTrackId(trackName: string): string | null {
   initializeNormalizations();
   if (!trackIdNormalizations) return null;
 
-  const compact = trackName.toLowerCase().replace(/[^a-z0-9]/g, '');
-  if (compact.includes('imola') || compact.includes('enzoedinoferrari')) {
-    return 'imola gp';
-  }
-
-  const variations = [trackName, trackName.toLowerCase(), compact];
+  const variations = [
+    trackName,
+    trackName.toLowerCase(),
+    trackName.toLowerCase().replace(/[^a-z0-9]/g, ''),
+  ];
 
   for (const variation of variations) {
     if (variation in trackIdNormalizations) {

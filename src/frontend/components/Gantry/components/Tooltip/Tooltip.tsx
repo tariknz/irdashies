@@ -161,7 +161,7 @@ export const Tooltip = memo(
               ref={tipRef}
               id={id}
               role="tooltip"
-              className="fixed z-50 pointer-events-none max-w-xs bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white shadow-lg"
+              className="settings-shell fixed z-50 pointer-events-none max-w-xs bg-slate-800 border border-settings-boundary rounded-md px-3 py-2 text-sm text-slate-200 shadow-lg"
               style={{
                 left: position?.left ?? 0,
                 top: position?.top ?? 0,

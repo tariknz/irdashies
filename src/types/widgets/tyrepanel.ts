@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'tyrepanel',
   name: 'Tyre Panel',
+  category: 'Car & Controls',
   enabled: false,
   layout: { x: 1040, y: 350, width: 300, height: 180 },
   config: {

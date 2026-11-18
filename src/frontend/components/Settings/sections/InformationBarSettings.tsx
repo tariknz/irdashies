@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   InformationBarWidgetSettings,
   SettingsTabType,
@@ -64,7 +63,7 @@ export const InformationBarSettings = () => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <div className="flex border-b border-slate-700/50">
+            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
               <TabButton
                 id="display"
                 activeTab={activeTab}
@@ -91,8 +90,10 @@ export const InformationBarSettings = () => {
             <div className="pt-4 space-y-4">
               {activeTab === 'display' && (
                 <>
-                  <WidgetScaleSettings widgetId="infobar" className="px-4" />
-                  <SettingsSection title="Display Order">
+                  <SettingsSection title="Display" scaleWidgetId="infobar">
+                    <h4 className="text-md font-medium text-slate-200">
+                      Display Order
+                    </h4>
                     <p className="text-xs text-slate-400 px-4 mb-4">
                       Enable and reorder items for the information bar.
                     </p>

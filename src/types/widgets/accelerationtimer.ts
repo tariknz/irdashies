@@ -3,6 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'accelerationtimer',
   name: 'Acceleration Timer',
+  category: 'Lap Timing',
   enabled: false,
   layout: { x: 600, y: 240, width: 260, height: 120 },
   config: {

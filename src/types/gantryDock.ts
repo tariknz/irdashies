@@ -75,6 +75,7 @@ export const GANTRY_DOCK_PANEL_LABELS: Readonly<
   fuel: 'Fuel Calculator',
   map: 'Track Map',
   flatmap: 'Flat Track Map',
+  strategytimeline: 'Strategy Timeline',
 };
 
 /**

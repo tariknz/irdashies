@@ -1,7 +1,9 @@
+import { lazyWidget } from '@irdashies/domain/lazyWidget';
 import type { WidgetModule } from '@irdashies/domain';
-import { Damage } from './Damage';
 
 export default {
   id: 'damage',
-  component: Damage,
+  component: lazyWidget(() =>
+    import('./Damage').then((module) => ({ default: module.Damage }))
+  ),
 } satisfies WidgetModule;

@@ -79,7 +79,7 @@ export const GantryStandingsSettings = () => {
               <button
                 type="button"
                 onClick={createLayout}
-                className={`${smallButtonClass} bg-green-800/60 hover:bg-green-700 text-green-100 border-green-700`}
+                className={`settings-button-primary`}
               >
                 <PlusIcon size={12} /> Create Gantry standings layout (copy of
                 overlay)
@@ -90,7 +90,7 @@ export const GantryStandingsSettings = () => {
                 <button
                   type="button"
                   onClick={() => navigate(`/settings/${layoutId}`)}
-                  className={`${smallButtonClass} bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600`}
+                  className={`${smallButtonClass} bg-slate-700 hover:bg-settings-hover text-slate-200 border-settings-boundary`}
                 >
                   Edit standings layout
                 </button>
@@ -101,7 +101,7 @@ export const GantryStandingsSettings = () => {
                       copyOverlayToGantryStandings(currentDashboard, layoutId)
                     )
                   }
-                  className={`${smallButtonClass} bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600`}
+                  className={`${smallButtonClass} bg-slate-700 hover:bg-settings-hover text-slate-200 border-settings-boundary`}
                 >
                   Copy settings from overlay
                 </button>

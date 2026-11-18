@@ -1,6 +1,6 @@
+import { SettingsSection } from '../components/SettingSection';
 import { useState, useEffect, useRef } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { useDashboard } from '@irdashies/context';
 import {
   GarageCoverWidgetSettings,
@@ -176,7 +176,7 @@ export const GarageCoverSettings = () => {
         return (
           <div className="space-y-4">
             {/* Info Banner */}
-            <div className="bg-accent-900/30 border border-accent-700/50 rounded-md p-4 space-y-2">
+            <div className="bg-slate-800/40 border border-slate-700 rounded-md p-4 space-y-2">
               <p className="text-sm text-slate-300">
                 <strong>Note:</strong> The garage cover is intended for use
                 whilst streaming. It only appears when you have the garage
@@ -190,58 +190,62 @@ export const GarageCoverSettings = () => {
               </p>
             </div>
 
-            {/* Image Upload */}
-            <div className="space-y-2">
-              <div className="text-slate-300">Garage Image</div>
-              <div
-                onDrop={handleImageDrop}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                className="w-full border-2 border-dashed border-slate-600 rounded-lg p-6 text-center cursor-pointer hover:border-slate-500 transition-colors"
-              >
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageSelect(e)}
-                  className="hidden"
-                  id="garage-image-input"
-                />
-                <label
-                  htmlFor="garage-image-input"
-                  className="block cursor-pointer"
-                >
-                  {previewUrl ? (
-                    <div className="text-slate-300">
-                      <img
-                        src={previewUrl}
-                        alt="Garage preview"
-                        className="max-h-32 mx-auto mb-2 rounded"
-                      />
-                      <p className="text-sm">Click or drag to replace image</p>
-                    </div>
-                  ) : (
-                    <div className="text-slate-400">
-                      <p className="mb-1">Drag and drop an image here</p>
-                      <p className="text-sm">or click to select an image</p>
-                    </div>
-                  )}
-                </label>
-              </div>
-              {settings.config.imageFilename && (
-                <button
-                  onClick={() => {
-                    localStorage.removeItem(LOCALSTORAGE_KEY);
-                    handleConfigChange({ imageFilename: '' });
+            <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+              {/* Image Upload */}
+              <div className="space-y-2">
+                <div className="text-slate-300">Garage Image</div>
+                <div
+                  onDrop={handleImageDrop}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                   }}
-                  className="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-slate-200 rounded transition-colors"
+                  className="w-full border-2 border-dashed border-settings-boundary rounded-lg p-6 text-center cursor-pointer hover:border-slate-500 focus-within:outline-2 focus-within:outline-accent-300 transition-colors"
                 >
-                  Remove Image
-                </button>
-              )}
-            </div>
-            <WidgetScaleSettings widgetId={SETTING_ID} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageSelect(e)}
+                    aria-label="Garage image"
+                    className="sr-only"
+                    id="garage-image-input"
+                  />
+                  <label
+                    htmlFor="garage-image-input"
+                    className="block cursor-pointer"
+                  >
+                    {previewUrl ? (
+                      <div className="text-slate-300">
+                        <img
+                          src={previewUrl}
+                          alt="Garage preview"
+                          className="max-h-32 mx-auto mb-2 rounded"
+                        />
+                        <p className="text-sm">
+                          Click or drag to replace image
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="text-slate-400">
+                        <p className="mb-1">Drag and drop an image here</p>
+                        <p className="text-sm">or click to select an image</p>
+                      </div>
+                    )}
+                  </label>
+                </div>
+                {settings.config.imageFilename && (
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem(LOCALSTORAGE_KEY);
+                      handleConfigChange({ imageFilename: '' });
+                    }}
+                    className="settings-button-danger"
+                  >
+                    Remove Image
+                  </button>
+                )}
+              </div>
+            </SettingsSection>
           </div>
         );
       }}

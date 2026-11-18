@@ -7,6 +7,8 @@ import {
 
 export const trackStateSelectors = {
   carIdxLapDistPct: (snapshot: TrackStateSnapshot) => snapshot.carIdxLapDistPct,
+  carIdxClassPosition: (snapshot: TrackStateSnapshot) =>
+    snapshot.carIdxClassPosition,
   carIdxOnPitRoad: (snapshot: TrackStateSnapshot) => snapshot.carIdxOnPitRoad,
   carIdxTrackSurface: (snapshot: TrackStateSnapshot) =>
     snapshot.carIdxTrackSurface,
@@ -15,6 +17,7 @@ export const trackStateSelectors = {
   isOnTrack: (snapshot: TrackStateSnapshot) => snapshot.isOnTrack,
   isReplayPlaying: (snapshot: TrackStateSnapshot) => snapshot.isReplayPlaying,
   lapDistPct: (snapshot: TrackStateSnapshot) => snapshot.lapDistPct,
+  notInSession: (snapshot: TrackStateSnapshot) => snapshot.notInSession,
   sessionFlags: (snapshot: TrackStateSnapshot) => snapshot.sessionFlags,
   sessionNum: (snapshot: TrackStateSnapshot) => snapshot.sessionNum,
   sessionTime: (snapshot: TrackStateSnapshot) => snapshot.sessionTime,

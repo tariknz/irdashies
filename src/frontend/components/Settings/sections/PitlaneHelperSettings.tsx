@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { TabButton } from '../components/TabButton';
 import type { PitlaneHelperWidgetSettings } from '@irdashies/types';
 import { getWidgetDefaultConfig } from '@irdashies/types';
@@ -62,7 +61,7 @@ export const PitlaneHelperSettings = () => {
         >
           <div className="space-y-4">
             {/* Tabs */}
-            <div className="flex border-b border-slate-700/50">
+            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
               <TabButton
                 id="options"
                 activeTab={activeTab}
@@ -90,9 +89,11 @@ export const PitlaneHelperSettings = () => {
               {/* OPTIONS TAB */}
               {activeTab === 'options' && (
                 <>
-                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
                   {/* Display Settings */}
-                  <SettingsSection title="Options">
+                  <SettingsSection
+                    title="Widget options"
+                    scaleWidgetId={SETTING_ID}
+                  >
                     <SettingToggleRow
                       title="Show when approaching pit"
                       description="Display overlay before entering pit lane"

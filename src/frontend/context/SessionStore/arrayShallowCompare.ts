@@ -1,5 +1,43 @@
 import { shallow } from 'zustand/shallow';
 
+/** IPC records need no entry pairs or temporary Maps to compare own fields. */
+const sessionElementEqual = (a: unknown, b: unknown): boolean => {
+  if (Object.is(a, b)) return true;
+  if (
+    typeof a !== 'object' ||
+    a === null ||
+    typeof b !== 'object' ||
+    b === null
+  ) {
+    return false;
+  }
+
+  // Keep Zustand's semantics for arrays, Maps, Sets, custom prototypes and
+  // iterable records. The common structured-cloned session record is plain.
+  if (
+    Object.getPrototypeOf(a) !== Object.prototype ||
+    Object.getPrototypeOf(b) !== Object.prototype ||
+    Symbol.iterator in a ||
+    Symbol.iterator in b
+  ) {
+    return shallow(a, b);
+  }
+
+  const keys = Object.keys(a);
+  if (keys.length !== Object.keys(b).length) return false;
+  const recordA = a as Record<string, unknown>;
+  const recordB = b as Record<string, unknown>;
+  for (const key of keys) {
+    if (
+      !Object.prototype.propertyIsEnumerable.call(b, key) ||
+      !Object.is(recordA[key], recordB[key])
+    ) {
+      return false;
+    }
+  }
+  return true;
+};
+
 /**
  * Element-wise `shallow`: own keys compared with `Object.is`.
  *
@@ -19,12 +57,15 @@ import { shallow } from 'zustand/shallow';
  */
 
 export const arrayShallowCompare = (a?: unknown[], b?: unknown[]) => {
+  // Unrelated store updates retain this reference. Avoid comparing every
+  // driver's fields again for each subscriber in that case.
+  if (Object.is(a, b)) return true;
   if (!a && !b) return true;
   if (!a || !b || a.length !== b.length) {
     return false;
   }
   for (let i = 0; i < a.length; i++) {
-    if (!shallow(a[i], b[i])) {
+    if (!sessionElementEqual(a[i], b[i])) {
       return false;
     }
   }

@@ -4,6 +4,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'laptimelog',
   name: 'Lap Timer',
+  category: 'Lap Timing',
   enabled: false,
   layout: {
     x: 300,
@@ -30,6 +31,7 @@ export default defineWidgetManifest({
       count: 10,
       style: 'list',
       hidePittedLaps: false,
+      hideCautionLaps: false,
     },
     background: {
       opacity: 80,
@@ -119,6 +121,12 @@ export default defineWidgetManifest({
       label: 'Hide Pitted Laps',
       description:
         'Leave out laps where you pitted. They are much slower than a green lap, so they stretch the chart and pull the average away from your real pace.',
+    },
+    'history.hideCautionLaps': {
+      type: 'boolean',
+      label: 'Hide Caution Laps',
+      description:
+        'Leave out laps driven under full-course cautions, keeping the graph scale and average focused on green-flag pace. Local yellows are kept.',
     },
     'background.opacity': {
       type: 'number',
