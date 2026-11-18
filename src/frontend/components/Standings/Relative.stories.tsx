@@ -1525,6 +1525,18 @@ const largePushToPassDecorator = (
     { compactMode }
   );
 
+const RelativeOverlayFrame = ({ className }: { className: string }) => (
+  <div
+    className={`overlay-window overlay-theme-font-face-lato overflow-hidden text-white ${className}`}
+  >
+    <Relative />
+  </div>
+);
+
+const renderDefaultSizeRelative = () => (
+  <RelativeOverlayFrame className="overlay-theme-md h-[300px] w-[402px]" />
+);
+
 export const LargePushToPassCounts: Story = {
   beforeEach: () => {
     const { displayStates } = usePushToPassStore.getState();
@@ -1553,9 +1565,7 @@ export const LargePushToPassCounts: Story = {
   },
   decorators: [largePushToPassDecorator('off')],
   render: () => (
-    <div className="overlay-window overlay-theme-3xl overlay-theme-font-face-lato h-[344px] w-[660px] overflow-hidden text-white">
-      <Relative />
-    </div>
+    <RelativeOverlayFrame className="overlay-theme-3xl h-[344px] w-[660px]" />
   ),
   parameters: { layout: 'centered' },
   play: async ({ canvas }) => {
@@ -1579,9 +1589,13 @@ export const LargePushToPassCounts: Story = {
     const footer = table.nextElementSibling;
     if (!frame || !footer)
       throw new Error('Relative frame or footer is missing');
+    const frameBounds = frame.getBoundingClientRect();
+    const tableBounds = table.getBoundingClientRect();
+    await expect(tableBounds.left).toBeGreaterThanOrEqual(frameBounds.left);
+    await expect(tableBounds.right).toBeLessThanOrEqual(frameBounds.right);
     await expect(footer).toHaveTextContent('L3 / 15');
     await expect(footer.getBoundingClientRect().bottom).toBeLessThanOrEqual(
-      frame.getBoundingClientRect().bottom
+      frameBounds.bottom
     );
   },
 };
@@ -1594,4 +1608,19 @@ export const LargePushToPassCountsCompact: Story = {
 export const LargePushToPassCountsUltra: Story = {
   ...LargePushToPassCounts,
   decorators: [largePushToPassDecorator('ultra')],
+};
+
+export const LargePushToPassCountsDefaultSize: Story = {
+  ...LargePushToPassCounts,
+  render: renderDefaultSizeRelative,
+};
+
+export const LargePushToPassCountsDefaultSizeCompact: Story = {
+  ...LargePushToPassCountsCompact,
+  render: renderDefaultSizeRelative,
+};
+
+export const LargePushToPassCountsDefaultSizeUltra: Story = {
+  ...LargePushToPassCountsUltra,
+  render: renderDefaultSizeRelative,
 };
