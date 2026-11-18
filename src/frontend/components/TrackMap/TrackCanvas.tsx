@@ -1,3 +1,4 @@
+import { useCanvasCleanup } from '@irdashies/domain/canvas/useCanvasCleanup';
 import { useWidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Driver } from '@irdashies/types';
@@ -132,6 +133,7 @@ const LoadedTrackCanvas = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const canvasInvalidatedRef = useRef(false);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  useCanvasCleanup(canvasRef, cacheCanvasRef);
   const debounceResizeRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined
   );
@@ -293,7 +295,11 @@ const LoadedTrackCanvas = ({
       if (debounceResizeRef.current) {
         clearTimeout(debounceResizeRef.current);
       }
-      cacheCanvasRef.current = null;
+      if (cacheCanvasRef.current) {
+        cacheCanvasRef.current.width = 0;
+        cacheCanvasRef.current.height = 0;
+        cacheCanvasRef.current = null;
+      }
     };
   }, [trackId, widgetScale]);
 
