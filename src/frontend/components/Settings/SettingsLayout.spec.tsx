@@ -51,7 +51,13 @@ vi.mock('./SettingsLoader', () => ({
   SettingsLoader: () => <h2>{useParams().widgetId}</h2>,
   // The widget types with settings pages of their own that these tests
   // visit. The Telemetry Inspector has none, as in the real list.
-  WIDGET_SETTINGS: { relative: {}, standings: {}, weather: {} },
+  WIDGET_SETTINGS: {
+    relative: {},
+    standings: {},
+    weather: {},
+    broadcast: {},
+    broadcastticker: {},
+  },
 }));
 
 // Routed as the settings window routes it.
@@ -461,6 +467,53 @@ describe('SettingsLayout navigation', () => {
       expect(
         screen.getByRole('link', { name: 'Back to overlays' })
       ).toHaveAttribute('href', '/settings/standings');
+    });
+  });
+
+  describe('Broadcast', () => {
+    const shownPage = () =>
+      within(screen.getByRole('main')).getByRole('heading', { level: 2 });
+
+    it('leaves the Broadcast menu for the overlay page open before it, and comes back to the module left last', () => {
+      renderLayout('/settings/standings');
+      fireEvent.click(screen.getByRole('link', { name: 'Broadcast' }));
+      expect(shownPage()).toHaveTextContent('broadcast');
+      expect(
+        screen.getByRole('main', { name: 'Broadcast settings page' })
+      ).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('link', { name: 'Ticker' }));
+      expect(shownPage()).toHaveTextContent('broadcastticker');
+      expect(
+        screen.getByRole('link', { name: 'Back to overlays' })
+      ).toHaveAttribute('href', '/settings/standings');
+
+      fireEvent.click(screen.getByRole('link', { name: 'Back to overlays' }));
+      expect(shownPage()).toHaveTextContent('standings');
+      expect(screen.getByRole('link', { name: 'Broadcast' })).toHaveAttribute(
+        'href',
+        '/settings/broadcastticker'
+      );
+    });
+
+    it('leaves a broadcast page reopened at start for Relative', () => {
+      localStorage.setItem(
+        'settingsLastWidgetPage',
+        '/settings/broadcastticker'
+      );
+      renderLayout('/settings');
+      expect(shownPage()).toHaveTextContent('broadcastticker');
+      expect(
+        screen.getByRole('link', { name: 'Back to overlays' })
+      ).toHaveAttribute('href', '/settings/relative');
+    });
+
+    it('returns to the broadcast page from App settings', () => {
+      renderLayout('/settings/broadcastticker');
+      fireEvent.click(screen.getByRole('link', { name: 'Go to App settings' }));
+      expect(
+        screen.getByRole('link', { name: 'Back to overlays' })
+      ).toHaveAttribute('href', '/settings/broadcastticker');
     });
   });
 
