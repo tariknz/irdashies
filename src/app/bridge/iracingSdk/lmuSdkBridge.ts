@@ -13,7 +13,7 @@ import type { SessionLifecycle } from '../../sessionLifecycle';
 import type { ChannelBus } from '../channelBridge';
 import { createDefaultProcessorHost } from '../../processors/processorRegistry';
 import { sessionSecondsFrameClock } from '../../processors/ProcessorHost';
-import { mapLmuSession } from '../../lmu/mapSession';
+import { mapLmuSession, resolveLmuTrackId } from '../../lmu/mapSession';
 import { isLmuAiEntry, lmuPlayerSlot } from '../../lmu/aiControl';
 import {
   lmuRosterSignature,
@@ -58,6 +58,11 @@ import {
   tinyPedalTrackMapDirectories,
 } from '../../lmu/trackMap';
 import { LmuSectorBoundaryLearner } from '../../lmu/sectorBoundaries';
+import { LMU_SECTOR_BOUNDARY_DEFAULTS } from '../../lmu/sectorBoundaryDefaults';
+import {
+  loadLmuSectorBoundaries,
+  lmuSectorBoundaryStore,
+} from '../../storage/lmuSectorBoundaries';
 import { createRaceosClient, type RaceosClient } from '../../lmu/raceos/client';
 import { raceosUsername } from '../../lmu/raceos/parse';
 import { createLmuTapeRatingClient } from '../../lmu/raceos/tapeRatings';
@@ -214,7 +219,17 @@ export async function publishLmuSDKEvents(
   const { NativeLmu } = await import('../../lmu/native');
   const sdk = new NativeLmu();
   const mapRecorder = new LmuTrackMapRecorder();
-  const sectorBoundaries = new LmuSectorBoundaryLearner();
+  await loadLmuSectorBoundaries();
+  const sectorBoundaries = new LmuSectorBoundaryLearner({
+    known: (trackKey) =>
+      lmuSectorBoundaryStore.get(trackKey) ??
+      LMU_SECTOR_BOUNDARY_DEFAULTS.get(trackKey) ??
+      null,
+    measured: (trackKey, boundaries) =>
+      lmuSectorBoundaryStore.record(trackKey, boundaries),
+  });
+  const sectorTrackKey = (trackName: string) =>
+    String(resolveLmuTrackId(trackName));
   const mapStorage = new LmuTrackMapStorage(
     path.join(app.getPath('userData'), 'lmu-track-maps.json')
   );
@@ -504,7 +519,7 @@ export async function publishLmuSDKEvents(
           lastSessionSignature = null;
           resetLmuLapDistanceState(lapDistanceState);
           resetLmuOpponentLapDistanceState(opponentLapDistanceState);
-          sectorBoundaries.reset(activeTrackName);
+          sectorBoundaries.reset(sectorTrackKey(activeTrackName));
           rosterGate.reset();
           sessionIdentity.reset();
           dataFreeze.reset();
@@ -554,7 +569,7 @@ export async function publishLmuSDKEvents(
           }
         }
         mapRecorder.reset(activeTrackName);
-        sectorBoundaries.reset(activeTrackName);
+        sectorBoundaries.reset(sectorTrackKey(activeTrackName));
         // Session settings and the forecast are fetched once per activation,
         // and a new track means a new session.
         restPoller.invalidateOnce();

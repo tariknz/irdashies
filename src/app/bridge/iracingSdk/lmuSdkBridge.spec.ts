@@ -132,6 +132,15 @@ vi.mock('electron', () => ({
   app: { getPath: () => '/tmp/irdashies-spec' },
 }));
 
+vi.mock('../../storage/lmuSectorBoundaries', () => ({
+  loadLmuSectorBoundaries: async () => true,
+  lmuSectorBoundaryStore: {
+    get: () => null,
+    record: () => undefined,
+    snapshot: () => ({}),
+  },
+}));
+
 vi.mock('../../perfRunConfig', () => ({
   getPerfRunConfig: () => ({ enabled: false }),
 }));
@@ -179,6 +188,7 @@ vi.mock('../../lmu/lapDistance', () => ({
 
 vi.mock('../../lmu/mapSession', () => ({
   mapLmuSession: mapSessionSpy,
+  resolveLmuTrackId: (trackName: string) => 1_000_000 + trackName.length,
 }));
 
 // The rating client and its IO have their own specs; here only the bridge's

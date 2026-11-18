@@ -1,5 +1,9 @@
-import { describe, expect, it } from 'vitest';
-import { LmuSectorBoundaryLearner } from './sectorBoundaries';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  LmuSectorBoundaryLearner,
+  isPlausibleLmuSectorBoundaries,
+  type LmuSectorBoundaries,
+} from './sectorBoundaries';
 
 const PIT = 0x80000000 | 0;
 const STEP = 0.0005;
@@ -146,5 +150,74 @@ describe('LmuSectorBoundaryLearner', () => {
     drive(instance, 0.389, 0.95, LINES, 1);
 
     expect(instance.boundaries()).toBeNull();
+  });
+});
+
+describe('LmuSectorBoundaryLearner with known boundaries', () => {
+  const KNOWN: LmuSectorBoundaries = [0.4, 0.8];
+
+  const withSources = (known: LmuSectorBoundaries | null) => {
+    const measured =
+      vi.fn<(trackKey: string, boundaries: LmuSectorBoundaries) => void>();
+    const instance = new LmuSectorBoundaryLearner({
+      known: () => known,
+      measured,
+    });
+    instance.reset('1000123');
+    return { instance, measured };
+  };
+
+  it('starts on the known boundaries', () => {
+    const { instance } = withSources(KNOWN);
+    expect(instance.boundaries()).toEqual(KNOWN);
+  });
+
+  it('keeps the known boundaries for the session and hands the measurement on', () => {
+    const { instance, measured } = withSources(KNOWN);
+    const changed = drive(instance, 0.05, 0.95, LINES, 0);
+
+    expect(changed.some(Boolean)).toBe(false);
+    expect(instance.boundaries()).toEqual(KNOWN);
+    expect(measured).toHaveBeenCalledTimes(1);
+    const [trackKey, [s2, s3]] = measured.mock.calls[0];
+    expect(trackKey).toBe('1000123');
+    expect(s2).toBeCloseTo(0.389, 3);
+    expect(s3).toBeCloseTo(0.791, 3);
+  });
+
+  it('publishes and hands on the measurement when nothing was known', () => {
+    const { instance, measured } = withSources(null);
+    const changed = drive(instance, 0.05, 0.95, LINES, 0);
+
+    expect(changed.filter(Boolean)).toHaveLength(1);
+    expect(instance.boundaries()?.[0]).toBeCloseTo(0.389, 3);
+    expect(measured).toHaveBeenCalledTimes(1);
+  });
+
+  it('measures once per reset', () => {
+    const { instance, measured } = withSources(KNOWN);
+    drive(instance, 0.05, 0.95, LINES, 0);
+    drive(instance, 0.05, 0.95, LINES, 0);
+
+    expect(measured).toHaveBeenCalledTimes(1);
+  });
+
+  it('prefers what it measured earlier in the run over the known boundaries', () => {
+    const { instance } = withSources(KNOWN);
+    drive(instance, 0.05, 0.95, LINES, 0);
+    instance.reset('1000123');
+
+    expect(instance.boundaries()?.[0]).toBeCloseTo(0.389, 3);
+  });
+});
+
+describe('isPlausibleLmuSectorBoundaries', () => {
+  it('accepts an ordered pair inside the lap and refuses anything else', () => {
+    expect(isPlausibleLmuSectorBoundaries(0.39, 0.79)).toBe(true);
+    expect(isPlausibleLmuSectorBoundaries(0.79, 0.39)).toBe(false);
+    expect(isPlausibleLmuSectorBoundaries(0.39, 0.4)).toBe(false);
+    expect(isPlausibleLmuSectorBoundaries(0.01, 0.5)).toBe(false);
+    expect(isPlausibleLmuSectorBoundaries(0.5, 0.99)).toBe(false);
+    expect(isPlausibleLmuSectorBoundaries(Number.NaN, 0.5)).toBe(false);
   });
 });
