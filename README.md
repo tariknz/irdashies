@@ -606,11 +606,11 @@ Open **Settings > Tools > Setup Comparison** to compare iRacing car setups side 
 
 **Features:**
 
-- Side-by-side setup diff with changed values highlighted in red
+- Side-by-side setup diff with changed values highlighted in amber
 - Snapshot timestamps for each saved setup
 - Move setups left/right to reorder comparisons
 
-<img src="./docs/assets/setup-comparison.png" alt="Setup Comparison with changes highlighted between snapshots" width="900">
+<img src="./docs/assets/setup-comparison.png" alt="Setup Comparison showing amber highlights on changed tire settings" width="808">
 
 ### Stream Chat Overlay
 
