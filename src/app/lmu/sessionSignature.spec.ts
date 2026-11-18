@@ -43,6 +43,15 @@ describe('lmuSessionSignature', () => {
   });
 });
 
+describe('lmuSessionSignature track state', () => {
+  it('changes when the track grip level changes', () => {
+    const before = { ...fixture(), trackGripLevel: 1 };
+    const after = { ...before, trackGripLevel: 2 };
+
+    expect(lmuSessionSignature(after)).not.toBe(lmuSessionSignature(before));
+  });
+});
+
 describe('lmuSessionSignature running order', () => {
   it('changes when a driver changes place', () => {
     // Without this an overtake moved nothing the signature could see, so the
