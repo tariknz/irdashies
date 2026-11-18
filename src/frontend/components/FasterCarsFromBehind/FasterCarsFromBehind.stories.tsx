@@ -46,11 +46,12 @@ const mockSettings = {
 
 const displayDecorator = (
   compactMode: GeneralSettingsType['compactMode'] = 'off',
-  showBadge = false
+  showBadge = false,
+  overrides: Record<string, unknown> = {}
 ) =>
   TelemetryDecoratorWithConfig(
     '/test-data/1747384033336',
-    { fastercarsfrombehind: { ...mockSettings, showBadge } },
+    { fastercarsfrombehind: { ...mockSettings, showBadge, ...overrides } },
     { compactMode }
   );
 
@@ -182,6 +183,77 @@ export const Ultra: Story = {
 export const WithBadges: Story = {
   ...MultipleDrivers,
   decorators: [displayDecorator('ultra', true)],
+};
+
+export const ReorderedRow: Story = {
+  ...MultipleDrivers,
+  decorators: [
+    displayDecorator('off', true, {
+      displayOrder: ['distance', 'badge', 'driverName'],
+    }),
+  ],
+};
+
+export const LmuRanks: Story = {
+  render: () => (
+    <div
+      role="list"
+      aria-label="Faster cars behind"
+      className="flex w-80 flex-col gap-1"
+    >
+      <FasterCarsFromBehindDisplay
+        name="Lena Morel"
+        license="LMU"
+        rating={0}
+        lmuRating={{
+          driverRank: 'Gold',
+          driverTier: 3,
+          safetyRank: 'Platinum',
+          safetyTier: 2,
+        }}
+        hasDriverRatings={false}
+        distance={-0.6}
+        percent={(1 - 0.6 / 1.5) * 100}
+        isClosest
+        isMultiClass
+        classColor={0xff000a}
+        className="Hypercar"
+        classPosition={4}
+      />
+      <FasterCarsFromBehindDisplay
+        name="Marco Vitale"
+        license="LMU"
+        rating={0}
+        lmuRating={{
+          driverRank: 'Silver',
+          driverTier: 1,
+          safetyRank: 'Gold',
+          safetyTier: 4,
+        }}
+        hasDriverRatings={false}
+        distance={-1.0}
+        percent={(1 - 1.0 / 1.5) * 100}
+        isMultiClass
+        classColor={0x0690ff}
+        className="LMP2"
+        classPosition={2}
+      />
+      <FasterCarsFromBehindDisplay
+        name="Hypercar AI"
+        license="LMU"
+        rating={0}
+        isAI
+        hasDriverRatings={false}
+        distance={-1.3}
+        percent={(1 - 1.3 / 1.5) * 100}
+        isMultiClass
+        classColor={0xff000a}
+        className="Hypercar"
+        classPosition={7}
+      />
+    </div>
+  ),
+  decorators: [displayDecorator('off', true)],
 };
 
 export const SmoothApproach: Story = {
