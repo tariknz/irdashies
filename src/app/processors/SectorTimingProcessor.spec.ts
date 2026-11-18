@@ -25,49 +25,6 @@ const frame = (
   }) as unknown as Telemetry;
 
 describe('SectorTimingProcessor', () => {
-  it('uses direct LMU sector timing values', () => {
-    const processor = new SectorTimingProcessor();
-    processor.init({
-      SplitTimeInfo: {
-        Sectors: [
-          { SectorNum: 0, SectorStartPct: 0 },
-          { SectorNum: 1, SectorStartPct: 1 / 3 },
-          { SectorNum: 2, SectorStartPct: 2 / 3 },
-        ],
-      },
-    } as Session);
-    processor.onFrame({
-      SessionNum: { value: [1] },
-      LmuSectorIdx: { value: [2] },
-      LmuCurrentSectorTimes: { value: [32.4, 41, null] },
-      LmuLastSectorTimes: { value: [32.5, 41.2, 60.8] },
-      LmuBestSectorTimes: { value: [32.1, 40.8, 59.9] },
-    } as unknown as Telemetry);
-
-    const snapshot = processor.snapshot();
-    expect(snapshot.currentSectorIdx).toBe(2);
-    expect(snapshot.inclusive.currentLapSectorTimes).toEqual([32.4, 41, null]);
-    expect(snapshot.inclusive.previousLapSectorTimes).toEqual([
-      32.5, 41.2, 60.8,
-    ]);
-    expect(snapshot.inclusive.sessionBestSectorTimes).toEqual([
-      32.1, 40.8, 59.9,
-    ]);
-    expect(snapshot.clean.sessionBestSectorTimes).toEqual([32.4, 41, 60.8]);
-
-    processor.onFrame({
-      SessionNum: { value: [2] },
-      LmuSectorIdx: { value: [0] },
-      LmuCurrentSectorTimes: { value: [null, null, null] },
-      LmuLastSectorTimes: { value: [null, null, null] },
-      LmuBestSectorTimes: { value: [33, 42, 61] },
-    } as unknown as Telemetry);
-
-    expect(
-      processor.snapshot().inclusive.previousSessionBestSectorTimes
-    ).toEqual([null, null, null]);
-  });
-
   it('interpolates crossings and records clean and inclusive timing views', () => {
     const processor = new SectorTimingProcessor();
     processor.init(session);
@@ -141,137 +98,183 @@ describe('SectorTimingProcessor', () => {
     });
   });
 
-  describe('LMU per-sector cut handling', () => {
-    type Times = (number | null)[];
-    const thirds = {
+  describe('LMU frames over learned sector lines', () => {
+    const lines = {
       SplitTimeInfo: {
         Sectors: [
           { SectorNum: 0, SectorStartPct: 0 },
-          { SectorNum: 1, SectorStartPct: 1 / 3 },
-          { SectorNum: 2, SectorStartPct: 2 / 3 },
+          { SectorNum: 1, SectorStartPct: 0.389 },
+          { SectorNum: 2, SectorStartPct: 0.791 },
         ],
       },
     } as Session;
-    const lmu = (
-      sectorIdx: number,
+
+    const lmuFrame = (
       lapDistPct: number,
-      current: Times,
-      last: Times,
-      best: Times,
-      voided: boolean
+      sessionTime: number,
+      voided: boolean,
+      isOnTrack = true
     ) =>
       ({
-        SessionNum: { value: [1] },
-        LapDistPct: { value: [lapDistPct] },
-        LmuSectorIdx: { value: [sectorIdx] },
-        LmuCurrentSectorTimes: { value: current },
-        LmuLastSectorTimes: { value: last },
-        LmuBestSectorTimes: { value: best },
+        ...frame(lapDistPct, sessionTime, isOnTrack),
         LmuLapInvalidated: { value: [voided] },
       }) as unknown as Telemetry;
-    const none: Times = [null, null, null];
-    const cleanLap = (processor: SectorTimingProcessor) => {
-      processor.init(thirds);
-      processor.onFrame(lmu(0, 0.1, none, [30, 40, 50], [30, 40, 50], false));
+
+    const start = () => {
+      const processor = new SectorTimingProcessor();
+      processor.init(lines);
+      const state = { pct: 0.95, time: 95, voided: false };
+      processor.onFrame(lmuFrame(state.pct, state.time, false));
+      const to = (target: number, seconds: number) => {
+        const from = state.pct;
+        const begin = state.time;
+        for (let step = 1; step <= 10; step += 1) {
+          const pct =
+            step === 10 ? target : from + ((target - from) * step) / 10;
+          state.pct = pct >= 1 ? 0 : pct;
+          state.time = begin + (seconds * step) / 10;
+          processor.onFrame(lmuFrame(state.pct, state.time, state.voided));
+        }
+      };
+      const lap = (s1: number, s2: number, s3: number) => {
+        to(0.389, s1);
+        to(0.791, s2);
+        to(1, s3);
+      };
+      to(1, 5);
+      return { processor, state, to, lap };
     };
 
-    it('keeps sectors finished before a cut clean and carries flags to the previous lap', () => {
-      const processor = new SectorTimingProcessor();
-      cleanLap(processor);
-      processor.onFrame(
-        lmu(1, 0.4, [29, null, null], [30, 40, 50], [30, 40, 50], false)
-      );
-      processor.onFrame(
-        lmu(1, 0.5, [29, null, null], [30, 40, 50], [30, 40, 50], true)
-      );
-      processor.onFrame(
-        lmu(2, 0.7, [29, 39, null], [30, 40, 50], [30, 40, 50], true)
-      );
+    it('times each sector between the learned lines from the moment it began', () => {
+      const { processor, to, lap } = start();
+      to(0.389, 30);
+
+      expect(processor.snapshot().currentSectorIdx).toBe(1);
+      expect(processor.snapshot().sectorEntryTime).toBeCloseTo(130);
+
+      to(0.791, 38);
+      to(1, 48);
+      lap(31, 39, 49);
+
+      const times = processor.snapshot().inclusive.previousLapSectorTimes;
+      expect(times[0]).toBeCloseTo(31);
+      expect(times[1]).toBeCloseTo(39);
+      expect(times[2]).toBeCloseTo(49);
+    });
+
+    it('keeps the fastest time in each sector, not the sectors of the best lap', () => {
+      const { processor, lap } = start();
+      lap(30, 38, 48);
+      lap(29, 40, 46);
+
+      const { inclusive, clean } = processor.snapshot();
+      for (const bests of [
+        inclusive.sessionBestSectorTimes,
+        clean.sessionBestSectorTimes,
+      ]) {
+        expect(bests[0]).toBeCloseTo(29);
+        expect(bests[1]).toBeCloseTo(38);
+        expect(bests[2]).toBeCloseTo(46);
+      }
+    });
+
+    it('measures a faster sector against the best it beat as soon as it ends', () => {
+      const { processor, to, lap } = start();
+      lap(31, 38, 48);
+      lap(30, 38, 48);
+      to(0.389, 29.5);
+
+      const { inclusive } = processor.snapshot();
+      expect(inclusive.sessionBestSectorTimes[0]).toBeCloseTo(29.5);
+      expect(inclusive.previousSessionBestSectorTimes[0]).toBeCloseTo(30);
+    });
+
+    it('keeps S1 clean after a cut in S2 and shows the cut on the previous lap after the line', () => {
+      const { processor, state, to, lap } = start();
+      lap(30, 38, 48);
+      to(0.389, 30);
+      to(0.5, 10);
+      state.voided = true;
+      to(0.791, 18);
 
       let snapshot = processor.snapshot();
       expect(snapshot.inclusive.currentLapSectorUnclean).toEqual([
         false,
         true,
-        true,
+        false,
       ]);
-      expect(snapshot.clean.currentLapSectorTimes).toEqual([29, null, null]);
+      expect(snapshot.clean.currentLapSectorTimes[0]).toBeCloseTo(30);
+      expect(snapshot.clean.currentLapSectorTimes[1]).toBeNull();
 
-      processor.onFrame(lmu(0, 0.01, none, [29, 39, 49], [29, 39, 49], true));
-      processor.onFrame(lmu(0, 0.1, none, [29, 39, 49], [29, 39, 49], false));
-
+      to(1, 48);
       snapshot = processor.snapshot();
-      expect(snapshot.inclusive.previousLapSectorTimes).toEqual([29, 39, 49]);
       expect(snapshot.inclusive.previousLapSectorUnclean).toEqual([
         false,
         true,
         true,
       ]);
-      expect(snapshot.inclusive.currentLapSectorUnclean).toEqual([
-        false,
-        false,
-        false,
-      ]);
-      expect(snapshot.clean.previousLapSectorTimes).toEqual([29, null, null]);
-      expect(snapshot.clean.sessionBestSectorTimes).toEqual([29, 40, 50]);
-      expect(snapshot.inclusive.sessionBestSectorTimes).toEqual([29, 39, 49]);
+      expect(snapshot.inclusive.sessionBestSectorTimes[1]).toBeCloseTo(28);
+      expect(snapshot.clean.sessionBestSectorTimes[1]).toBeCloseTo(38);
     });
 
-    it('does not mark the new lap unclean from a flag still set on the crossing frame', () => {
-      const processor = new SectorTimingProcessor();
-      cleanLap(processor);
-      processor.onFrame(
-        lmu(2, 0.8, [29, 39, null], [30, 40, 50], [30, 40, 50], true)
-      );
-      processor.onFrame(lmu(0, 0.01, none, [29, 39, 49], [29, 39, 49], true));
+    it('does not mark the new lap from a flag still set on the crossing frame', () => {
+      const { processor, state, to, lap } = start();
+      lap(30, 38, 48);
+      to(0.389, 30);
+      to(0.791, 38);
+      to(0.9, 20);
+      state.voided = true;
+      to(1, 28);
+      to(0.03, 2);
+      state.voided = false;
+      to(0.389, 28);
 
-      const snapshot = processor.snapshot();
-      expect(snapshot.inclusive.previousLapSectorUnclean).toEqual([
-        false,
-        false,
-        true,
-      ]);
-      expect(snapshot.inclusive.currentLapSectorUnclean).toEqual([
-        false,
-        false,
-        false,
-      ]);
-      expect(snapshot.clean.previousLapSectorTimes).toEqual([29, 39, null]);
-      expect(snapshot.clean.sessionBestSectorTimes).toEqual([29, 39, 50]);
+      const { inclusive, clean } = processor.snapshot();
+      expect(inclusive.previousLapSectorUnclean[2]).toBe(true);
+      expect(inclusive.currentLapSectorUnclean[0]).toBe(false);
+      expect(clean.currentLapSectorTimes[0]).toBeCloseTo(30);
+      expect(clean.sessionBestSectorTimes[2]).toBeCloseTo(48);
     });
 
-    it('clears the flags when the lap is reset mid-lap', () => {
-      const processor = new SectorTimingProcessor();
-      cleanLap(processor);
-      processor.onFrame(
-        lmu(1, 0.5, [29, null, null], [30, 40, 50], [30, 40, 50], true)
-      );
-      processor.onFrame(lmu(0, 0.0, none, [30, 40, 50], [30, 40, 50], false));
+    it('drops the cut sector on a reset mid-lap and times the next sectors clean', () => {
+      const { processor, state, to, lap } = start();
+      lap(30, 38, 48);
+      to(0.389, 30);
+      state.voided = true;
+      to(0.6, 20);
+      state.voided = false;
+      processor.onFrame(lmuFrame(0.1, state.time + 5, false));
+      state.pct = 0.1;
+      state.time += 5;
+      to(0.389, 25);
+      to(0.791, 36);
 
-      let snapshot = processor.snapshot();
-      expect(snapshot.inclusive.currentLapSectorUnclean).toEqual([
-        false,
-        false,
-        false,
-      ]);
-      expect(snapshot.inclusive.previousLapSectorUnclean).toEqual([
-        false,
-        false,
-        false,
-      ]);
-
-      processor.onFrame(
-        lmu(1, 0.4, [29, null, null], [30, 40, 50], [30, 40, 50], false)
-      );
-      snapshot = processor.snapshot();
-      expect(snapshot.clean.currentLapSectorTimes).toEqual([29, null, null]);
+      const { inclusive, clean } = processor.snapshot();
+      expect(inclusive.currentLapSectorTimes[0]).toBeNull();
+      expect(inclusive.currentLapSectorUnclean[1]).toBe(false);
+      expect(clean.currentLapSectorTimes[1]).toBeCloseTo(36);
+      expect(clean.sessionBestSectorTimes[1]).toBeCloseTo(36);
     });
 
-    it('does not publish or allocate a new snapshot for an identical frame', () => {
-      const processor = new SectorTimingProcessor();
-      cleanLap(processor);
-      const before = processor.snapshot();
-      processor.onFrame(lmu(0, 0.1, none, [30, 40, 50], [30, 40, 50], false));
-      expect(processor.snapshot()).toBe(before);
+    it('keeps a cut sector out of the clean bests when the player leaves the car', () => {
+      const { processor, state, to, lap } = start();
+      lap(30, 38, 48);
+      to(0.389, 30);
+      to(0.791, 38);
+      state.voided = true;
+      to(0.9, 10);
+      processor.onFrame(lmuFrame(0.9, state.time + 1, true, false));
+      processor.onFrame(lmuFrame(0.9, state.time + 30, false, false));
+      state.voided = false;
+      state.time += 60;
+      processor.onFrame(lmuFrame(0.95, state.time, false));
+      state.pct = 0.95;
+      to(1, 5);
+
+      const { inclusive, clean } = processor.snapshot();
+      expect(inclusive.previousLapSectorUnclean[2]).toBe(true);
+      expect(clean.sessionBestSectorTimes[2]).toBeCloseTo(48);
+      expect(clean.previousSessionBestSectorTimes[2]).toBeNull();
     });
   });
 
