@@ -78,7 +78,10 @@ export const RejoinIndicatorSettings = () => {
               {/* DISPLAY TAB */}
               {activeTab === 'options' && (
                 <>
-                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+                  <SettingsSection
+                    title="Widget options"
+                    scaleWidgetId={SETTING_ID}
+                  >
                     <SettingProp path="showAtSpeed" />
                     <SettingProp path="careGap" />
                     <SettingProp path="stopGap" />

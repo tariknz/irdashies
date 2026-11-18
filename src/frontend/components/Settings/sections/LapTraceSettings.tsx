@@ -1020,7 +1020,7 @@ export const LapTraceSettings = () => {
 
               {activeTab === 'styling' && (
                 <>
-                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+                  <SettingsSection title="Styling" scaleWidgetId={SETTING_ID}>
                     <SettingProp path="strokeWidth" />
 
                     <SettingSliderRow

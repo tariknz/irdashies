@@ -455,7 +455,7 @@ export const TrackMapSettings = () => {
                 {/* STYLING TAB */}
                 {activeTab === 'styling' && (
                   <>
-                    <SettingsSection title="Display" scaleWidgetId="map">
+                    <SettingsSection title="Styling" scaleWidgetId="map">
                       <h4 className="text-md font-medium text-slate-200">
                         Minimal Styling
                       </h4>

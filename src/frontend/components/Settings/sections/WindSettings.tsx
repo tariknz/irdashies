@@ -98,7 +98,7 @@ export const WindSettings = () => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+            <SettingsSection title="Widget options" scaleWidgetId={SETTING_ID}>
               <SettingProp path="background.opacity" />
               <SettingProp path="units" />
             </SettingsSection>

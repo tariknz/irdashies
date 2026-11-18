@@ -415,7 +415,7 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
   },
   {
     id: 'look',
-    title: 'Display',
+    title: 'Look',
     group: 'radar',
     items: [
       slider(0, 'range'),

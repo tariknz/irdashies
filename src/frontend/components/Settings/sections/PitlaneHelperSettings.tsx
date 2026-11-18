@@ -90,7 +90,10 @@ export const PitlaneHelperSettings = () => {
               {activeTab === 'options' && (
                 <>
                   {/* Display Settings */}
-                  <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+                  <SettingsSection
+                    title="Widget options"
+                    scaleWidgetId={SETTING_ID}
+                  >
                     <SettingToggleRow
                       title="Show when approaching pit"
                       description="Display overlay before entering pit lane"

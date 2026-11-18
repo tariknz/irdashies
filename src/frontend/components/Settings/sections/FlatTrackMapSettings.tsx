@@ -89,7 +89,10 @@ export const FlatTrackMapSettings = () => {
               {/* TRACK TAB */}
               {activeTab === 'track' && (
                 <>
-                  <SettingsSection title="Display" scaleWidgetId="flatmap">
+                  <SettingsSection
+                    title="Track Settings"
+                    scaleWidgetId="flatmap"
+                  >
                     <SettingProp path="trackLineWidth" />
 
                     <SettingProp path="trackOutlineWidth" />

@@ -57,7 +57,7 @@ export const BroadcastPodiumSettings = ({ obsUrl }: { obsUrl?: string }) => {
           handleConfigChange
         );
         return (
-          <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+          <SettingsSection title="Widget options" scaleWidgetId={SETTING_ID}>
             {mark(
               ['style'],
               <SettingButtonGroupRow<BroadcastPodiumStyle>

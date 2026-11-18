@@ -438,7 +438,7 @@ export const WeatherRoute: Story = {
 export const BroadcastTowerRoute: Story = {
   args: {
     initialPath: '/settings/broadcast',
-    initialTab: { key: 'broadcastTab', value: 'display' },
+    initialTab: { key: 'broadcastTab', value: 'look' },
   },
 };
 
