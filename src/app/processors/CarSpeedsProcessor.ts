@@ -14,12 +14,13 @@ const METERS_PER_SECOND_TO_KILOMETERS_PER_HOUR = 3.6;
 
 const numericValues = (
   frame: Telemetry,
-  key: keyof Telemetry
+  key: keyof Telemetry,
+  invalid = 0
 ): readonly number[] => {
   const values = frame[key]?.value;
   if (!Array.isArray(values)) return [];
   return values.map((value) =>
-    typeof value === 'number' && Number.isFinite(value) ? value : 0
+    typeof value === 'number' && Number.isFinite(value) ? value : invalid
   );
 };
 
@@ -104,7 +105,7 @@ export class CarSpeedsProcessor implements TelemetryProcessor<CarSpeedsSnapshot>
       sessionTime > this.lastSessionTime
     ) {
       const deltaTime = sessionTime - this.lastSessionTime;
-      const measuredSpeeds = numericValues(frame, 'LmuCarIdxSpeed');
+      const measuredSpeeds = numericValues(frame, 'LmuCarIdxSpeed', -1);
       lapDistPct.forEach((pct, carIdx) => {
         const speed =
           measuredSpeed(measuredSpeeds, carIdx) ??

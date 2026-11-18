@@ -160,6 +160,14 @@ describe('CarSpeedsProcessor with LMU measured speeds', () => {
     expect(processor.snapshot().carSpeeds).toEqual([360, 180]);
   });
 
+  it('falls back to position for a car whose measured speed is not a finite number', () => {
+    const processor = new CarSpeedsProcessor();
+    processor.init(session());
+    processor.onFrame(lmuFrame([0.1, 0.2, 0.3], [NaN, Infinity, 0], 1));
+    processor.onFrame(lmuFrame([0.11, 0.21, 0.31], [NaN, Infinity, 0], 1.1));
+    expect(processor.snapshot().carSpeeds).toEqual([360, 360, 0]);
+  });
+
   it('falls back to position for a slot the measured array does not reach', () => {
     const processor = new CarSpeedsProcessor();
     processor.init(session());
