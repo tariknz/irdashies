@@ -428,6 +428,12 @@ export const RelativeRoute: Story = {
   },
 };
 
+export const FasterCarsFromBehindRoute: Story = {
+  args: {
+    initialPath: '/settings/fastercarsfrombehind',
+  },
+};
+
 export const WeatherRoute: Story = {
   args: {
     initialPath: '/settings/weather',
