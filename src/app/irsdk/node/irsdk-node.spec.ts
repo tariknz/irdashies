@@ -129,10 +129,13 @@ describe('irsdk-node', () => {
     const previousValues = first.Speed.value;
     bytes.setFloat32(20, 12.5, true);
     bytes.setInt8(28, 0);
+    bytes.setFloat32(33, 0.25, true);
     const next = sdk.getTelemetry();
     expect(next.Speed.value).toBe(previousValues);
     expect(next.Speed.value).toEqual([12.5]);
     expect(next.IsOnTrack.value).toEqual([false]);
+    expect(next.LapDistPct.value).toBe(first.LapDistPct.value);
+    expect(next.LapDistPct.value).toEqual([0.25]);
   });
 
   it.each(sessionFixtureDirectories)(

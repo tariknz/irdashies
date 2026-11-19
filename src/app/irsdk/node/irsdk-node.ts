@@ -50,8 +50,10 @@ function padCarNum(carNumber: string): number {
 type TelemetryArrayView = Int8Array | Int32Array | Float32Array | Float64Array;
 
 interface CachedTelemetryView {
-  source: ArrayBufferLike;
+  source: ArrayBuffer | Uint8Array;
+  varType: number;
   view: TelemetryArrayView;
+  scratch?: Uint8Array;
 }
 
 type TelemetryViewCache = Map<string, CachedTelemetryView>;
@@ -101,17 +103,27 @@ const telemetryView = (
   key: string,
   views?: TelemetryViewCache
 ): TelemetryArrayView => {
-  const rawValue = src?.value;
-  const source =
-    rawValue instanceof Uint8Array
-      ? rawValue.buffer
-      : rawValue instanceof ArrayBuffer
-        ? rawValue
+  const rawValue = src.value;
+  const varType = src.varType ?? 0;
+  const cached = views?.get(key);
+  if (cached && cached.source === rawValue && cached.varType === varType) {
+    if (rawValue instanceof Uint8Array) cached.scratch?.set(rawValue);
+    return cached.view;
+  }
+
+  const view = createTelemetryView(rawValue, varType);
+  if (
+    views &&
+    (rawValue instanceof Uint8Array || rawValue instanceof ArrayBuffer)
+  ) {
+    const scratch =
+      rawValue instanceof Uint8Array &&
+      view.byteLength > 0 &&
+      rawValue.buffer !== view.buffer
+        ? new Uint8Array(view.buffer)
         : undefined;
-  const cached = source ? views?.get(key) : undefined;
-  if (cached && cached.source === source) return cached.view;
-  const view = createTelemetryView(rawValue, src.varType ?? 0);
-  if (source) views?.set(key, { source, view });
+    views.set(key, { source: rawValue, varType, view, scratch });
+  }
   return view;
 };
 
