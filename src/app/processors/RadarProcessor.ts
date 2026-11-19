@@ -38,8 +38,6 @@ import { wrapDelta } from './radarMath';
  */
 export const RADAR_MAX_RANGE_M = 120;
 
-const LMU_SAME_ROAD_LATERAL_M = 10;
-
 /** Flags under which nobody should be fighting for position. */
 const CAUTION_FLAGS =
   GlobalFlags.Yellow |
@@ -71,8 +69,6 @@ const POLE_NOTICE_S = 3;
  */
 const SMOOTHING_STEP_S = 1 / RADAR_TICK_HZ;
 
-const NO_VALUES: readonly unknown[] = [];
-
 const valuesOf = (frame: Telemetry, key: string): readonly unknown[] =>
   (frame as unknown as Record<string, { value?: unknown[] } | undefined>)[key]
     ?.value ?? [];
@@ -103,10 +99,7 @@ export const parseTrackLength = (raw: string | undefined): number => {
  * Publishes the rivals around the focus car in metres.
  *
  * iRacing gives every car's lap progress but no world position, so distance is
- * measured along the track. LMU also publishes offsets from the player's car,
- * which place a car more precisely while the focus is the player and the car
- * is on the same stretch of road; which cars appear, and their order, still
- * come from lap progress. Per-car speed comes from progress deltas because
+ * measured along the track. Per-car speed comes from progress deltas because
  * the SDK reports speed for the player only, and the renderer needs it to
  * extrapolate between 25 Hz snapshots.
  */
@@ -269,33 +262,13 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         };
       }
 
-      const offsetsFollowFocus = focus === scalarNumber(frame, 'PlayerCarIdx');
-      const offsetAvailable = offsetsFollowFocus
-        ? valuesOf(frame, 'LmuCarIdxRelativeAvailable')
-        : NO_VALUES;
-      const offsetLongitudinal = valuesOf(
-        frame,
-        'LmuCarIdxRelativeLongitudinal'
-      );
-      const offsetLateral = valuesOf(frame, 'LmuCarIdxRelativeLateral');
       for (let carIdx = 0; carIdx < pcts.length; carIdx += 1) {
         if (carIdx === focus || this.excluded.has(carIdx)) continue;
-        const trackDist = dists[carIdx];
-        if (
-          !Number.isFinite(trackDist) ||
-          Math.abs(trackDist) > RADAR_MAX_RANGE_M
-        ) {
+        const dist = dists[carIdx];
+        const surface = numberAt(surfaces, carIdx);
+        if (!Number.isFinite(dist) || Math.abs(dist) > RADAR_MAX_RANGE_M) {
           continue;
         }
-        const longitudinal = numberAt(offsetLongitudinal, carIdx, NaN);
-        const onSameRoad =
-          offsetAvailable[carIdx] === true &&
-          Number.isFinite(longitudinal) &&
-          Math.abs(numberAt(offsetLateral, carIdx, NaN)) <=
-            LMU_SAME_ROAD_LATERAL_M;
-        const dist = onSameRoad ? longitudinal : trackDist;
-        const surface = numberAt(surfaces, carIdx);
-        if (Math.abs(dist) > RADAR_MAX_RANGE_M) continue;
         cars.push({
           carIdx,
           dist,

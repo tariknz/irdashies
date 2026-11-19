@@ -9,7 +9,6 @@ import {
 import {
   createLmuRelativePositionsBuffer,
   deriveLmuRelativePositions,
-  LMU_RADAR_RADIUS_M,
   summariseLmuBlindSpot,
 } from './proximity';
 import { lapTimeOrAbsent } from './sentinels';
@@ -339,8 +338,7 @@ export function mapLmuTelemetry(
   const steeringMaxRad = ((raw.visualSteeringWheelRange ?? 0) * Math.PI) / 360;
   const relativePositions = deriveLmuRelativePositions(
     raw,
-    relativePositionsBuffer,
-    LMU_RADAR_RADIUS_M
+    relativePositionsBuffer
   );
   const blindSpot = summariseLmuBlindSpot(relativePositions);
 
@@ -548,21 +546,17 @@ export function mapLmuTelemetry(
   t.CarIdxSessionFlags = numArr(carSessionFlags(raw));
   t.CarDistAhead = numArr(undefined);
   t.CarDistBehind = numArr(undefined);
-  const relativeForRadar =
-    relativePositions && focusCarIdx(restCells, playerIdx) === playerIdx
-      ? relativePositions
-      : null;
   t.LmuCarIdxRelativeAvailable = {
     // Copied, like the three numeric channels below. `available` is the
     // reusable buffer that deriveLmuRelativePositions overwrites in place
     // every frame, so publishing the reference handed consumers an array that
     // changed under them -- anything holding a previous frame to compare
     // against, and anything serialising one later, saw this frame's values.
-    value: relativeForRadar ? [...relativeForRadar.available] : [],
+    value: relativePositions ? [...relativePositions.available] : [],
   };
-  t.LmuCarIdxRelativeLateral = numArr(relativeForRadar?.lateral);
-  t.LmuCarIdxRelativeLongitudinal = numArr(relativeForRadar?.longitudinal);
-  t.LmuCarIdxRelativeHeading = numArr(relativeForRadar?.heading);
+  t.LmuCarIdxRelativeLateral = numArr(relativePositions?.lateral);
+  t.LmuCarIdxRelativeLongitudinal = numArr(relativePositions?.longitudinal);
+  t.LmuCarIdxRelativeHeading = numArr(relativePositions?.heading);
   // Fore(+)/aft(-) metres of the nearest car each side, straight from the
   // 100 Hz world positions. A display of the car's position alongside reads
   // this instead of subtracting lap-distance percentages, which the 5 Hz
