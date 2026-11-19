@@ -13,10 +13,6 @@ export type Telemetry = {
    * Stands in for PlayerCarMyIncidentCount, which LMU does not publish.
    */
   LmuLapInvalidated?: TelemetryVar<boolean[]>;
-  /**
-   * True when that car has a relative position within 120 m of the focus
-   * car. Empty (all false / absent) when the camera is on another car.
-   */
   LmuCarIdxRelativeAvailable?: TelemetryVar<boolean[]>;
   LmuCarIdxRelativeLateral?: TelemetryVar<number[]>;
   LmuCarIdxRelativeLongitudinal?: TelemetryVar<number[]>;
@@ -135,33 +131,10 @@ export type Telemetry = {
   LmuBrakeWear?: TelemetryVar<number[]>;
   LmuSuspensionDamage?: TelemetryVar<number[]>;
   LmuAeroDamage?: TelemetryVar<number[]>;
-  /**
-   * Body dent severity, passed through unchanged in LMU's own order as
-   * TinyPedal reads it: FC, FL, CL, RL, RC, RR, CR, FR. Values: 0 none,
-   * 1 light, 2 heavy, as rF2 documents mDentSeverity; the recorded Laguna
-   * Seca race shows only 0 and 1. Display remapping belongs in the damage
-   * widget.
-   */
   LmuDentSeverity?: TelemetryVar<number[]>;
-  /** Per-wheel detached flags, LF, RF, LR, RR. */
   LmuWheelDetached?: TelemetryVar<boolean[]>;
-  /** Any detachable body part off (LMU: rear wing). */
   LmuBodyDetached?: TelemetryVar<boolean[]>;
-  /**
-   * Session time of the last impact, seconds, on the same clock as the
-   * telemetry's elapsed time; 0 before the first impact. Confirmed by the
-   * recorded Laguna Seca race.
-   */
   LmuLastImpactET?: TelemetryVar<number[]>;
-  /**
-   * Last impact position [x, y, z], passed through as LMU reports it:
-   * vehicle-local metres in rF2's axes, x to the car's left, y up and z to the
-   * rear, so a hit on the nose has a negative z. TinyPedal reads it this way
-   * for both rF2 and LMU and points its impact cone at atan2(-x, z). The
-   * recorded Laguna Seca race agrees: every impact sits within a few metres of
-   * the car while its world position is hundreds of metres out, and the one
-   * that dented the car (z about -2.45) dented front-centre.
-   */
   LmuLastImpactPos?: TelemetryVar<number[]>;
   /**
    * From shared memory, not REST. Virtual energy remaining; the budget it

@@ -529,9 +529,6 @@ Napi::Value LmuSdkNode::Read(const Napi::CallbackInfo &info)
     out.Set("suspensionDeflection", suspensionDeflection);
     out.Set("wheelDetached", wheelDetached);
 
-    // Body damage: eight dent cells plus whether any body part (LMU: rear wing)
-    // has come off. Impact fields feed an optional last-hit cone in the damage
-    // overlay; TinyPedal reads the same SHM members.
     auto dentSeverity = Napi::Uint8Array::New(env, 8);
     for (size_t i = 0; i < 8; ++i)
       dentSeverity[i] = player->mDentSeverity[i];

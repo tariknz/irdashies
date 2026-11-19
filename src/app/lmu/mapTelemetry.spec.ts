@@ -1078,13 +1078,20 @@ describe('mapLmuTelemetry adjustable dials', () => {
 
 describe('LmuDentSeverity', () => {
   it('publishes LMU dent order and wheel flags from the fixture', () => {
-    // Fixture dentSeverity: FC=0, FL=1, CL=0, RL=0, RC=0, RR=0, CR=2, FR=0
     const t = mapLmuTelemetry(fixture());
     expect(t.LmuDentSeverity?.value).toEqual([0, 1, 0, 0, 0, 0, 2, 0]);
     expect(t.LmuWheelDetached?.value).toEqual([false, false, false, false]);
     expect(t.LmuBodyDetached?.value[0]).toBe(false);
     expect(t.LmuLastImpactET?.value[0]).toBe(240.1);
     expect(t.LmuLastImpactPos?.value).toEqual([0.4, 0, -1.2]);
+  });
+
+  it('keeps a detached wheel in its own slot', () => {
+    const t = mapLmuTelemetry({
+      ...fixture(),
+      wheelDetached: new Uint8Array([0, 1, 0, 0]),
+    });
+    expect(t.LmuWheelDetached?.value).toEqual([false, true, false, false]);
   });
 
   it('does not force rear-center when the body is detached', () => {

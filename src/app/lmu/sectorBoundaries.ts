@@ -6,11 +6,6 @@ const MIN_SECTOR_GAP = 0.02;
 const MAX_FRAME_STEP = 0.01;
 const MIN_STEADY_FRAMES = 10;
 
-/**
- * Learns where S2 and S3 start from the lap fraction at the player's 100 Hz
- * sector changes, since LMU publishes no boundary distances. Both are
- * published together once known, and kept per track for the app's lifetime.
- */
 export class LmuSectorBoundaryLearner {
   private readonly learnedByTrack = new Map<string, readonly number[]>();
   private trackName = '';
@@ -21,10 +16,6 @@ export class LmuSectorBoundaryLearner {
   private lastPct: number | null = null;
   private steadyFrames = 0;
 
-  /**
-   * Starts watching a track. A track learned earlier in this run gets its
-   * boundaries back at once.
-   */
   reset(trackName: string): void {
     this.trackName = trackName;
     this.published = this.learnedByTrack.get(trackName) ?? null;
@@ -35,10 +26,6 @@ export class LmuSectorBoundaryLearner {
     this.steadyFrames = 0;
   }
 
-  /**
-   * Feeds one frame: the player's raw `mCurrentSector` and the lap fraction
-   * published on the same frame. True when the published boundaries changed.
-   */
   update(rawSector: number | undefined, lapPct: number | undefined): boolean {
     if (
       rawSector === undefined ||
@@ -93,7 +80,6 @@ export class LmuSectorBoundaryLearner {
     return true;
   }
 
-  /** The start fractions of S2 and S3, or null until both are known. */
   boundaries(): readonly number[] | null {
     return this.published;
   }

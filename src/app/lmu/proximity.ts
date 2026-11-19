@@ -22,13 +22,6 @@ const MAX_LONGITUDINAL_DISTANCE = VEHICLE_LENGTH * 1.2;
  */
 const RELEVANT_RADIUS_M = 20;
 
-/**
- * How far the radar looks, in metres.
- *
- * The 20 m default above is the blind-spot window. The radar draws rivals
- * out to the same bound as RadarProcessor, so the mapper asks for this
- * instead. Blind-spot classification still applies its own tighter window.
- */
 export const LMU_RADAR_RADIUS_M = 120;
 
 /**
@@ -70,7 +63,6 @@ export function deriveLmuRelativePositions(
   raw: LmuRawTelemetry,
   /** Reused when given; a fresh buffer is allocated when it is not. */
   out: LmuRelativePositions = createLmuRelativePositionsBuffer(),
-  /** Cars further than this are left unavailable. Defaults to the blind-spot window. */
   maxRadiusM = RELEVANT_RADIUS_M
 ): LmuRelativePositions | null {
   const playerIdx = raw.playerHasVehicle ? raw.playerVehicleIdx : -1;

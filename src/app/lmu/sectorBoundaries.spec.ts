@@ -10,7 +10,6 @@ const learner = (trackName = 'WeatherTech Raceway Laguna Seca') => {
   return instance;
 };
 
-/** Drives from `from` to `to` in small steps, crossing into `sector` at `at`. */
 const drive = (
   instance: LmuSectorBoundaryLearner,
   from: number,
