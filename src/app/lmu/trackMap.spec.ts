@@ -29,6 +29,7 @@ function frame(
     lapStartET: 100,
     lapInvalidated: false,
     pos: [progress * 1000, 12, -progress * 500],
+    vehInPits: [0],
     vehLapDistPct: [progress],
     vehLastLapTime: [90],
     ...overrides,
@@ -106,6 +107,26 @@ describe('LMU track map', () => {
     expect(map.active.inside).toMatch(/^M.+ Z$/);
     expect(map.startFinish.point.length).toBe(0);
     expect(map.orientation).toBe('lmu-ccw-v1');
+  });
+
+  it('closes a gap at the line between the two ends of the lap', () => {
+    const lap = [
+      { x: 70, y: 0, distance: 20 },
+      { x: 100, y: 30, distance: 60 },
+      { x: 100, y: 100, distance: 150 },
+      { x: 0, y: 100, distance: 250 },
+      { x: 0, y: 0, distance: 350 },
+      { x: 30, y: 0, distance: 380 },
+    ];
+    const withGap = normalizeLmuTrackMap(lap, 400);
+    const withStart = normalizeLmuTrackMap(
+      [{ x: 50, y: 0, distance: 0 }, ...lap],
+      400
+    );
+
+    expect(withGap.active.trackPathPoints[0]).toEqual(
+      withStart.active.trackPathPoints[0]
+    );
   });
 
   it('promotes one full valid lap', () => {
@@ -215,6 +236,39 @@ describe('LMU track map', () => {
     expect(
       recorder.update(frame(0, { lapStartET: 200, pos: [0, 12, 0] }))
     ).toBeNull();
+  });
+
+  it('records a lap whose timing line comes just before the distance wraps', () => {
+    const recorder = new LmuTrackMapRecorder();
+    recorder.update(frame(0.5));
+    recorder.update(frame(0.9984, { lapStartET: 200 }));
+    recorder.update(frame(0.9992, { lapStartET: 200 }));
+    for (let index = 0; index <= 99; index++) {
+      recorder.update(frame(index / 100, { lapStartET: 200 }));
+    }
+
+    const map = recorder.update(frame(0.9984, { lapStartET: 300 }));
+
+    expect(map?.active.trackPathPoints).toHaveLength(512);
+  });
+
+  it('drops a lap that starts in the pit lane and saves the next one', () => {
+    const recorder = new LmuTrackMapRecorder();
+    recorder.update(frame(0.5, { vehInPits: [1] }));
+    for (let index = 0; index <= 10; index++) {
+      recorder.update(frame(index / 100, { lapStartET: 200, vehInPits: [1] }));
+    }
+    for (let index = 11; index <= 100; index++) {
+      recorder.update(frame(index / 100, { lapStartET: 200 }));
+    }
+    expect(recorder.update(frame(0, { lapStartET: 300 }))).toBeNull();
+
+    for (let index = 1; index <= 100; index++) {
+      recorder.update(frame(index / 100, { lapStartET: 300 }));
+    }
+    const map = recorder.update(frame(0, { lapStartET: 400, pos: [0, 12, 0] }));
+
+    expect(map?.active.trackPathPoints).toHaveLength(512);
   });
 
   it('drops a lap whose recording starts after the line', () => {
