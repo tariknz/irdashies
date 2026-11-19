@@ -12,7 +12,8 @@ overlay stutter, and long-session degradation. It complements
 runs established the memory and telemetry-processing targets. Every tool is
 also reachable through `npm run perf -- <command>` (`doctor`, `diagnose`,
 `run`, `analyze`, `ab`, `branches`, `report`, `trace`, `trace-analyze`); subcommand `--help` prints
-its strict option list.
+its strict option list. See the [CLI quickstart](../tools/perf/README.md)
+for example workflows.
 
 ## What the harness captures
 
@@ -415,10 +416,8 @@ widget types and run with `--widgets <name>` (as does `widgets:<name>`).
 `--profile <directory>` seeds every run from the same saved dashboard. The
 runner declares `overlay` or `widgets` contrast automatically for each stage;
 `--contrast` overrides it and `--ignore-gates memory,FPS` skips named gates.
-Full scenarios set
-`PERF_FORCE_PROCESSOR_DEMAND=1` so widget channels publish even when renderer
-windows have not settled yet; observer and empty baselines stay
-undemand-driven. Analysis now fails on inconclusive evidence by default; pass
+Processor demand follows the dashboard by default.
+Analysis fails on inconclusive evidence by default. Pass
 `--allow-inconclusive` to the A/B runner for exploratory captures and repeat
 any failed pair in reverse order before drawing a conclusion.
 
