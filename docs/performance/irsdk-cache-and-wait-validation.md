@@ -51,7 +51,6 @@ found.
 - `src/app/perfMetrics.spec.ts` — instrumentation tests.
 - `src/app/bridge/iracingSdk/iracingSdkBridge.ts` — opt-in wrapper around
   `sdk.waitForData()`.
-- `docs/performance/overlay-performance-plan.md` — short status reference.
 - This report.
 
 ## 3. Tests and results
@@ -145,3 +144,72 @@ blocking. Do not rewrite the SDK on the basis of Linux replay alone.
 
 Evidence artifacts: `perf-results/cache-fix-regression/` and
 `perf-results/wait-timeout-ab2/` (untracked local captures).
+
+## 9. Reproducibility
+
+Replay fixture: `irdashies-live-1794743072408.irdt`, 390,995,302 bytes,
+SHA-256 `2b234fbee7cd8b5f5b81ff9d30a48ee28b3598bc9a3694fc256365a0d35237ec`.
+Both experiments used the Linux dev target, saved profile (display window
+mode), visible-widget replay override, channel delivery on, allowlisted raw
+telemetry payload, 5 s perf interval and the existing 25 Hz polling path.
+
+Cache-fix check, one AB pair, no instrumentation flag:
+
+```bash
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/perf/branches.ts \
+  --baseline 2e2e7059 --candidate aecb63ba \
+  --input /home/omarchy/OmarchyShared/Projects/irdashies-live-1794743072408.irdt \
+  --smoke --replay-visible-widgets --rebuild-native \
+  --output perf-results/cache-fix-regression
+```
+
+Wait comparison, ABBA, two runs per side, 10 s warmup and 120 s measured per
+run. Variant B was an uncommitted `WAIT_TIMEOUT = 0` change in a detached
+worktree of `aecb63ba`; the production branch still uses `16`:
+
+```bash
+PERF_SDK_WAIT=1 node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \
+  tools/perf/branches.ts \
+  --baseline aecb63ba --candidate-dir /tmp/irdashies-wait0 \
+  --input /home/omarchy/OmarchyShared/Projects/irdashies-live-1794743072408.irdt \
+  --warmup-seconds 10 --duration-seconds 120 --pairs 1 --order abba \
+  --allow-inconclusive --ignore-gates memory,FPS --replay-visible-widgets \
+  --rebuild-native --output perf-results/wait-timeout-ab2
+```
+
+Both commands were run from a detached worktree of `5d56065d`, which contains
+the separate replay CLI tooling. Raw logs, reports and profiles remain local
+and untracked; only the aggregate tables above are committed.
+
+## 10. Final review
+
+- **Confirmed findings:** the array length/type bug is fixed and covered; the
+  native metadata validation from `1d93c4bb` remains intact. No new cache or
+  lifecycle defect was confirmed in this review.
+- **Cache lifecycle:** `stopSDK()` clears JS caches; native `StopSdk()` and
+  `WaitForData()` reset native frames on stop, invalid capture and layout
+  change. Replay seek/pause/resume keep the last frame while paused and
+  replace it when data resumes; source switching creates a new SDK wrapper.
+  No unsupported cache reset was added.
+- **Per-frame type tracking:** kept. Clearing all JS caches on native frame
+  identity change would handle real native layout changes but would also drop
+  reuse for mock feeds that return a new object each frame. The per-key type
+  map is small, bounded by known telemetry keys, preserves steady-state array
+  reuse and handles same-size metadata changes. The 0.0647 → 0.0741 ms
+  observation is a single short pair and is not a proven regression, so no
+  speculative optimization was made.
+- **Instrumentation:** `sdkWaitEnabled` requires both existing perf mode and
+  `PERF_SDK_WAIT=1`. Counters and percentile samples reset each report; the
+  sample buffer is fixed at 2048; no telemetry reference is retained. Failed
+  native reads are reported as `unsuccessful`, not as OS timeouts. Tests cover
+  disabled mode, aggregation and reset.
+- **Documentation scope:** `docs/performance/overlay-performance-plan.md` was
+  temporarily imported from `perf` in an earlier commit. It exists there and
+  not in upstream/main or the base branch, and its 929-line overlay campaign
+  plan is not part of this SDK-cache fix. It was removed from this PR; the
+  focused audit report is the only documentation here.
+- **Evidence:** all numbers are Linux replay measurements. Windows/iRacing,
+  paused/disconnected wait states, allocation rate, GC counters and simulator
+  frametime are unavailable or unmeasured.
+- **Verdict:** READY WITH LIMITATIONS. Recommended PR base: `test-fix-perf`.
+  Suggested title: `fix: correct telemetry cache layout handling and add opt-in SDK wait metrics`.
