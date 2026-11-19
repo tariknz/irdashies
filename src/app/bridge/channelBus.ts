@@ -307,6 +307,9 @@ export class ChannelBus {
       }
     }
     this.subscriptions.clear();
+    this.publicationCounts.clear();
+    this.deliveryCounts.clear();
+    this.latestSnapshots.clear();
   }
 
   private definition(channel: string): ChannelDefinition {
@@ -417,6 +420,20 @@ export class ChannelBus {
       this.clearCachedSnapshot(channel);
     }
     this.notifySubscriberCount(channel);
+    this.forgetRendererMetrics(rendererId);
+  }
+
+  private forgetRendererMetrics(rendererId: number): void {
+    for (const subscribers of this.subscriptions.values()) {
+      if (subscribers.has(rendererId)) return;
+    }
+    const prefix = `${rendererId}:`;
+    for (const key of this.publicationCounts.keys()) {
+      if (key.startsWith(prefix)) this.publicationCounts.delete(key);
+    }
+    for (const key of this.deliveryCounts.keys()) {
+      if (key.startsWith(prefix)) this.deliveryCounts.delete(key);
+    }
   }
 
   private setSubscriptionActive(

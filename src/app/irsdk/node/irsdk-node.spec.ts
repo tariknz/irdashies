@@ -5,6 +5,7 @@ import * as yaml from 'js-yaml';
 import { IRacingSDK } from './irsdk-node';
 import { getSdkOrMock } from './get-sdk';
 import type { INativeSDK, NativeTelemetryDataView } from '../native';
+import type { TelemetryVarList } from '../../../types/irSdk';
 import logger from '../../logger';
 
 vi.mock('../../logger', () => ({ default: { error: vi.fn() } }));
@@ -733,6 +734,52 @@ CarSetup:
       expect(JSON.stringify(vi.mocked(logger.error).mock.calls)).not.toMatch(
         /PrivateDriver|secret|value/
       );
+    });
+  });
+
+  describe('getTelemetry', () => {
+    const TelemetryVar = (
+      varType: number,
+      value: ArrayBuffer
+    ) => ({
+      name: 'Speed',
+      description: '',
+      unit: '',
+      countAsTime: false,
+      length: 1,
+      varType,
+      value,
+    });
+
+    it('reads updated values from a reused native frame object', () => {
+      const buffer = new ArrayBuffer(4);
+      const values = new Float32Array(buffer);
+      values[0] = 10;
+      const raw = { Speed: TelemetryVar(4, buffer) } as unknown as TelemetryVarList;
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue(raw);
+
+      expect(sdk.getTelemetry().Speed.value).toEqual([10]);
+      values[0] = 20;
+      expect(sdk.getTelemetry().Speed.value).toEqual([20]);
+    });
+
+    it('picks up a new variable layout when the native frame changes', () => {
+      const firstBuffer = new ArrayBuffer(4);
+      new Float32Array(firstBuffer)[0] = 10;
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue({
+        Speed: TelemetryVar(4, firstBuffer),
+      } as unknown as TelemetryVarList);
+      expect(sdk.getTelemetry().Speed.value).toEqual([10]);
+
+      const secondBuffer = new ArrayBuffer(4);
+      new Int32Array(secondBuffer)[0] = 3;
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue({
+        Gear: { ...TelemetryVar(3, secondBuffer), name: 'Gear' },
+      } as unknown as TelemetryVarList);
+
+      const telemetry = sdk.getTelemetry();
+      expect(telemetry.Gear.value).toEqual([3]);
+      expect(telemetry.Speed).toBeUndefined();
     });
   });
 });

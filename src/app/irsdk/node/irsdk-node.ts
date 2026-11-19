@@ -47,30 +47,80 @@ function padCarNum(carNumber: string): number {
   return num + 1000 * numPlaces;
 }
 
-type NumericView = Int8Array | Int32Array | Float32Array | Float64Array;
+type TelemetryArrayView =
+  | Int8Array
+  | Int32Array
+  | Float32Array
+  | Float64Array;
 
-function telemetryView<T extends NumericView>(
-  View: {
-    new (values: ArrayLike<number>): T;
-    new (buffer: ArrayBufferLike, byteOffset: number, length: number): T;
-    readonly BYTES_PER_ELEMENT: number;
-  },
-  value: unknown
-): T {
-  if (value instanceof Uint8Array) {
-    const bytes =
-      value.byteOffset % View.BYTES_PER_ELEMENT === 0 ? value : value.slice();
-    return new View(
-      bytes.buffer,
-      bytes.byteOffset,
-      bytes.byteLength / View.BYTES_PER_ELEMENT
-    );
-  }
-  if (value instanceof ArrayBuffer) {
-    return new View(value, 0, value.byteLength / View.BYTES_PER_ELEMENT);
-  }
-  return new View(value as ArrayLike<number>);
+interface CachedTelemetryView {
+  source: ArrayBufferLike;
+  view: TelemetryArrayView;
 }
+
+type TelemetryViewCache = Map<string, CachedTelemetryView>;
+
+const createTelemetryView = (
+  value: unknown,
+  varType: number
+): TelemetryArrayView => {
+  const make = <T extends TelemetryArrayView>(
+    View: {
+      new (values: ArrayLike<number>): T;
+      new (buffer: ArrayBufferLike, byteOffset: number, length: number): T;
+      readonly BYTES_PER_ELEMENT: number;
+    }
+  ): T => {
+    if (value instanceof Uint8Array) {
+      const bytes =
+        value.byteOffset % View.BYTES_PER_ELEMENT === 0
+          ? value
+          : value.slice();
+      return new View(
+        bytes.buffer,
+        bytes.byteOffset,
+        bytes.byteLength / View.BYTES_PER_ELEMENT
+      );
+    }
+    if (value instanceof ArrayBuffer) {
+      return new View(value, 0, value.byteLength / View.BYTES_PER_ELEMENT);
+    }
+    return new View(value as ArrayLike<number>);
+  };
+
+  switch (varType) {
+    case 1:
+      return make(Int8Array);
+    case 2:
+    case 3:
+      return make(Int32Array);
+    case 4:
+      return make(Float32Array);
+    case 5:
+      return make(Float64Array);
+    default:
+      return new Int32Array(0);
+  }
+};
+
+const telemetryView = (
+  src: { value?: unknown; varType?: number },
+  key: string,
+  views?: TelemetryViewCache
+): TelemetryArrayView => {
+  const rawValue = src?.value;
+  const source =
+    rawValue instanceof Uint8Array
+      ? rawValue.buffer
+      : rawValue instanceof ArrayBuffer
+        ? rawValue
+        : undefined;
+  const cached = source ? views?.get(key) : undefined;
+  if (cached && cached.source === source) return cached.view;
+  const view = createTelemetryView(rawValue, src.varType ?? 0);
+  if (source) views?.set(key, { source, view });
+  return view;
+};
 
 function copyTelemData<
   K extends keyof TelemetryVarList = keyof TelemetryVarList,
@@ -79,7 +129,8 @@ function copyTelemData<
   src: T | NativeTelemetryDataView[K],
   key: K,
   dest: TelemetryVarList,
-  cache?: Partial<TelemetryVarList>
+  cache?: Partial<TelemetryVarList>,
+  views?: TelemetryViewCache
 ): void {
   // Check if we have a cached entry to reuse
   const cached = cache?.[key];
@@ -99,7 +150,7 @@ function copyTelemData<
 
   // bool
   if (src.varType === 1) {
-    const arr = telemetryView(Int8Array, src.value);
+    const arr = telemetryView(src, key, views) as Int8Array;
     const targetArray = useCache ? (dest[key].value as boolean[]) : [];
     if (!useCache) {
       dest[key].value = targetArray;
@@ -113,7 +164,7 @@ function copyTelemData<
   // numbers
   if (src.varType === 2 || src.varType === 3) {
     // int
-    const srcArray = telemetryView(Int32Array, src.value);
+    const srcArray = telemetryView(src, key, views) as Int32Array;
     if (useCache) {
       const targetArray = dest[key].value as number[];
       for (let i = 0; i < srcArray.length; i++) {
@@ -124,7 +175,7 @@ function copyTelemData<
     }
   } else if (src.varType === 4) {
     // float
-    const srcArray = telemetryView(Float32Array, src.value);
+    const srcArray = telemetryView(src, key, views) as Float32Array;
     if (useCache) {
       const targetArray = dest[key].value as number[];
       for (let i = 0; i < srcArray.length; i++) {
@@ -135,7 +186,7 @@ function copyTelemData<
     }
   } else if (src.varType === 5) {
     // double
-    const srcArray = telemetryView(Float64Array, src.value);
+    const srcArray = telemetryView(src, key, views) as Float64Array;
     if (useCache) {
       const targetArray = dest[key].value as number[];
       for (let i = 0; i < srcArray.length; i++) {
@@ -170,6 +221,12 @@ export class IRacingSDK {
 
   // Cache for telemetry data to avoid repeated array allocations
   private _telemetryCache: Partial<TelemetryVarList> = {};
+  private _telemetryKeys: (keyof TelemetryVarList)[] = [];
+  private _lastRawTelemetry:
+    | TelemetryVarList
+    | NativeTelemetryDataView
+    | undefined;
+  private _telemetryViews: TelemetryViewCache = new Map();
 
   constructor() {
     this._sdkReq = this._loadSDK();
@@ -571,14 +628,20 @@ export class IRacingSDK {
     const data: Partial<TelemetryVarList> = {};
 
     if (rawData) {
-      Object.keys(rawData).forEach((dataKey) => {
+      if (rawData !== this._lastRawTelemetry) {
+        this._telemetryKeys = Object.keys(rawData) as (keyof TelemetryVarList)[];
+        this._telemetryViews.clear();
+        this._lastRawTelemetry = rawData;
+      }
+      for (const key of this._telemetryKeys) {
         copyTelemData(
-          rawData[dataKey as keyof TelemetryVarList],
-          dataKey as keyof TelemetryVarList,
+          rawData[key],
+          key,
           data as TelemetryVarList,
-          this._telemetryCache
+          this._telemetryCache,
+          this._telemetryViews
         );
-      });
+      }
       // Update cache with the new data
       this._telemetryCache = data;
     }

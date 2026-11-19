@@ -109,6 +109,7 @@ Napi::Value iRacingSdkNode::StopSdk(const Napi::CallbackInfo &info)
 {
   irsdk_shutdown();
   this->_capture = {};
+  this->ResetTelemetryCache();
   this->_lastSessionCt = -1;
   this->_sessionData = nullptr;
   return Napi::Boolean::New(info.Env(), true);
@@ -129,6 +130,7 @@ Napi::Value iRacingSdkNode::WaitForData(const Napi::CallbackInfo &info)
   const irsdk_header previous = this->_capture.header;
   if (!irsdk_isConnected() && !irsdk_startup()) {
     this->_capture.valid = false;
+    this->ResetTelemetryCache();
     this->_lastSessionCt = -1;
     this->_sessionData = nullptr;
     return Napi::Boolean::New(info.Env(), false);
@@ -137,6 +139,7 @@ Napi::Value iRacingSdkNode::WaitForData(const Napi::CallbackInfo &info)
   const bool dataReady = irsdk_waitForDataReady(timeout.Int32Value(), &this->_capture);
   if (dataReady) {
     if (!hadFrame || !irdashies::irsdk::sameLayout(previous, this->_capture.header)) {
+      this->ResetTelemetryCache();
       this->_sessionStatusID++;
       this->_lastSessionCt = -1;
       this->_sessionData = nullptr;
@@ -145,6 +148,7 @@ Napi::Value iRacingSdkNode::WaitForData(const Napi::CallbackInfo &info)
   }
   if (!irsdk_isConnected()) {
     this->_capture.valid = false;
+    this->ResetTelemetryCache();
     this->_lastSessionCt = -1;
     this->_sessionData = nullptr;
   }
@@ -504,34 +508,136 @@ Napi::Value iRacingSdkNode::GetTelemetryVar(const Napi::CallbackInfo &info)
 Napi::Value iRacingSdkNode::GetTelemetryData(const Napi::CallbackInfo &info)
 {
   auto env = info.Env();
-  auto telemVars = Napi::Object::New(env);
+  if (!this->_capture.valid) {
+    this->ResetTelemetryCache();
+    return Napi::Object::New(env);
+  }
 
-  if (!this->_capture.valid) return telemVars;
   const int count = static_cast<int>(this->_capture.variables.size());
-  for (int i = 0; i < count; i++) {
-    auto telemVariable = this->GetTelemetryVarByIndex(env, i);
-    if (telemVariable.IsObject() && telemVariable.Has("name")) {
-      telemVars.Set(telemVariable.Get("name"), telemVariable);
+  const auto sdkString = [env](const char *text, std::size_t capacity) {
+    const auto *end = static_cast<const char *>(std::memchr(text, '\0', capacity));
+    return Napi::String::New(env, text, end ? static_cast<std::size_t>(end - text) : capacity);
+  };
+
+  bool matches = !this->_telemetryFrame.IsEmpty() &&
+                 static_cast<int>(this->_telemetryCache.size()) == count;
+  for (int i = 0; matches && i < count; i++) {
+    const auto *var = irdashies::irsdk::capturedVariable(this->_capture, i);
+    const auto &entry = this->_telemetryCache[static_cast<std::size_t>(i)];
+    if (!var) {
+      matches = !entry.available;
+      continue;
+    }
+    std::size_t dataSize = 0;
+    const bool inRange = irdashies::irsdk::variableRange(
+        *var, this->_capture.data.size(), dataSize);
+    matches = inRange && entry.available && entry.dataSize == dataSize &&
+              entry.offset == var->offset && entry.count == var->count &&
+              entry.type == var->type &&
+              entry.countAsTime == (var->countAsTime != 0) &&
+              std::memcmp(entry.name, var->name, sizeof(var->name)) == 0 &&
+              std::memcmp(entry.description, var->desc, sizeof(var->desc)) == 0 &&
+              std::memcmp(entry.unit, var->unit, sizeof(var->unit)) == 0;
+  }
+
+  if (!matches) {
+    this->ResetTelemetryCache();
+    auto frame = Napi::Object::New(env);
+    for (int i = 0; i < count; i++) {
+      const auto *var = irdashies::irsdk::capturedVariable(this->_capture, i);
+      std::size_t dataSize = 0;
+      if (!var || !irdashies::irsdk::variableRange(
+                      *var, this->_capture.data.size(), dataSize)) {
+        TelemetryVarCacheEntry unavailable{};
+        unavailable.available = false;
+        this->_telemetryCache.push_back(std::move(unavailable));
+        continue;
+      }
+
+      auto telemVariable = Napi::Object::New(env);
+      telemVariable.Set("countAsTime", var->countAsTime);
+      telemVariable.Set("length", var->count);
+      telemVariable.Set("name", sdkString(var->name, sizeof(var->name)));
+      telemVariable.Set("description", sdkString(var->desc, sizeof(var->desc)));
+      telemVariable.Set("unit", sdkString(var->unit, sizeof(var->unit)));
+      telemVariable.Set("varType", var->type);
+      auto entryVal = Napi::ArrayBuffer::New(env, dataSize);
+      std::memcpy(entryVal.Data(), this->_capture.data.data() + var->offset, dataSize);
+      telemVariable.Set("value", entryVal);
+      frame.Set(telemVariable.Get("name"), telemVariable);
+
+      TelemetryVarCacheEntry entry{};
+      entry.object = Napi::Persistent(telemVariable);
+      entry.buffer = Napi::Persistent(entryVal);
+      entry.dataSize = dataSize;
+      entry.offset = var->offset;
+      entry.count = var->count;
+      entry.type = var->type;
+      entry.countAsTime = var->countAsTime != 0;
+      entry.available = true;
+      std::memcpy(entry.name, var->name, sizeof(var->name));
+      std::memcpy(entry.description, var->desc, sizeof(var->desc));
+      std::memcpy(entry.unit, var->unit, sizeof(var->unit));
+      this->_telemetryCache.push_back(std::move(entry));
+    }
+    this->_telemetryFrame = Napi::Persistent(frame);
+  } else {
+    for (const auto &entry : this->_telemetryCache) {
+      if (!entry.available) continue;
+      auto buffer = entry.buffer.Value();
+      std::memcpy(buffer.Data(), this->_capture.data.data() + entry.offset, entry.dataSize);
     }
   }
 
-  return telemVars;
+  return this->_telemetryFrame.Value();
+}
+
+void iRacingSdkNode::ResetTelemetryCache()
+{
+  this->_telemetryCache.clear();
+  this->_telemetryFrame = Napi::ObjectReference();
+  this->_telemetryDataViewCache.clear();
+  this->_telemetryDataViewFrame = Napi::ObjectReference();
+  this->_telemetryDataViewBuffer = Napi::Reference<Napi::ArrayBuffer>();
 }
 
 // Helpers
 Napi::Value iRacingSdkNode::GetTelemetryDataView(const Napi::CallbackInfo &info)
 {
   auto env = info.Env();
-  auto result = Napi::Object::New(env);
-  if (!this->_capture.valid) return result;
+  if (!this->_capture.valid) {
+    this->ResetTelemetryCache();
+    return Napi::Object::New(env);
+  }
 
+  const bool matches = !this->_telemetryDataViewFrame.IsEmpty() &&
+                       this->_telemetryDataViewCache.size() == this->_capture.variables.size();
+  if (matches) {
+    auto frameBuffer = this->_telemetryDataViewBuffer.Value();
+    if (frameBuffer.ByteLength() == this->_capture.data.size()) {
+      std::memcpy(frameBuffer.Data(), this->_capture.data.data(), frameBuffer.ByteLength());
+      return this->_telemetryDataViewFrame.Value();
+    }
+  }
+
+  this->ResetTelemetryCache();
   auto frameBuffer = Napi::ArrayBuffer::New(env, this->_capture.data.size());
   std::memcpy(frameBuffer.Data(), this->_capture.data.data(), this->_capture.data.size());
+  auto result = Napi::Object::New(env);
   for (std::size_t i = 0; i < this->_capture.variables.size(); ++i) {
     auto variable = this->GetTelemetryVarByIndex(env, static_cast<int>(i), &frameBuffer);
-    if (variable.Has("name")) result.Set(variable.Get("name"), variable);
+    if (variable.Has("name")) {
+      result.Set(variable.Get("name"), variable);
+      TelemetryDataViewCacheEntry entry;
+      entry.object = Napi::Persistent(variable);
+      this->_telemetryDataViewCache.push_back(std::move(entry));
+    } else {
+      this->_telemetryDataViewCache.push_back(TelemetryDataViewCacheEntry{});
+    }
   }
-  return result;
+  this->_telemetryDataViewFrame = Napi::Persistent(result);
+  this->_telemetryDataViewBuffer = Napi::Persistent(frameBuffer);
+  return this->_telemetryDataViewFrame.Value();
 }
 
 Napi::Value iRacingSdkNode::__GetTelemetryTypes(const Napi::CallbackInfo &info)

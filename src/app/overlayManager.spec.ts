@@ -421,6 +421,25 @@ describe('individual overlay windows', () => {
     expect(createdWindows[1].webContents.send).not.toHaveBeenCalled();
   });
 
+  it('only reports telemetry inspector demand from visible subscribed windows', () => {
+    const manager = new OverlayManager();
+    manager.createOverlays(dashboard(), { createSettingsWindow: false });
+    createdWindows.forEach(ready);
+    const subscribedIds = new Set(
+      createdWindows.map((win) => win.webContents.id)
+    );
+    manager.setRendererDataSubscriptions({
+      has: (id) => subscribedIds.has(id),
+      hasAny: () => true,
+    });
+
+    expect(manager.hasTelemetryInspectorSubscribers()).toBe(true);
+    createdWindows.forEach((win) => {
+      win.shown = false;
+    });
+    expect(manager.hasTelemetryInspectorSubscribers()).toBe(false);
+  });
+
   it('resolves display readiness IDs without broadcasting', () => {
     const manager = new OverlayManager();
     manager.createOverlays(

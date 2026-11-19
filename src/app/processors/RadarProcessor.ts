@@ -111,6 +111,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
   private readonly excluded = new Set<number>();
   /** The cars on the focus car's side of the pit wall, reused every tick. */
   private readonly sameSide: RadarCar[] = [];
+  /** Per-car track distances for the current frame, reused every tick. */
+  private readonly distances: number[] = [];
   private previousPcts: number[] = [];
   private speeds: number[] = [];
   private previousTime = -1;
@@ -216,7 +218,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     let follow: RadarSnapshot['follow'] = null;
     if (focus >= 0 && playerPct >= 0 && this.trackLength > 0) {
       const playerSpeed = this.speeds[focus] ?? 0;
-      const dists: number[] = [];
+      const dists = this.distances;
+      dists.length = 0;
       for (let carIdx = 0; carIdx < pcts.length; carIdx += 1) {
         const pct = numberAt(pcts, carIdx);
         const surface = numberAt(surfaces, carIdx);
@@ -362,6 +365,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     if (event.type === 'enter') return;
     this.previousPcts = [];
     this.speeds = [];
+    this.distances.length = 0;
     this.previousTime = -1;
     this.speedsSettleUntil = -1;
     this.lanes.reset();
