@@ -14,6 +14,12 @@ export default {
   title: 'widgets/Standings/components/SessionBar',
   decorators: [
     TelemetryDecorator(),
+    (Story: ComponentType) => (
+      <>
+        <SessionTimingStoreUpdater enabled={true} />
+        <Story />
+      </>
+    ),
     ChannelSnapshotDecorator({
       'session-bar.snapshot': {
         sessionName: 'Race',
@@ -65,12 +71,6 @@ export default {
         version: 1,
       },
     }),
-    (Story: ComponentType) => (
-      <>
-        <SessionTimingStoreUpdater enabled={true} />
-        <Story />
-      </>
-    ),
   ],
 } as Meta;
 
@@ -164,6 +164,16 @@ export const LapTimesWithOtherItems: Story = {
 export const Footer: Story = {
   args: {
     settings: standingsDefaults.footerBar,
+    position: 'footer',
+  },
+};
+
+export const FooterWithTrackState: Story = {
+  args: {
+    settings: {
+      ...standingsDefaults.footerBar,
+      trackState: { enabled: true },
+    },
     position: 'footer',
   },
 };
