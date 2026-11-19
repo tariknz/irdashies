@@ -62,6 +62,8 @@ interface TraceEvent {
   pid?: unknown;
   tid?: unknown;
   args?: unknown;
+  id?: unknown;
+  id2?: unknown;
 }
 
 interface CpuNode {
@@ -74,9 +76,10 @@ interface CpuNode {
 }
 
 interface CpuProfileBatch {
+  profileKey: string;
   nodes: CpuNode[];
-  samples: number[];
-  timeDeltas?: number[];
+  samples: unknown[];
+  timeDeltas?: unknown[];
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -98,17 +101,20 @@ const profileBatches = (events: readonly TraceEvent[]): CpuProfileBatch[] => {
     const nodes = Array.isArray(profile.nodes)
       ? profile.nodes.filter(isRecord)
       : [];
-    const samples = Array.isArray(profile.samples)
-      ? profile.samples.filter(
-          (sample): sample is number => typeof sample === 'number'
-        )
+    const samples: unknown[] = Array.isArray(profile.samples)
+      ? profile.samples
       : [];
-    const timeDeltas = Array.isArray(profile.timeDeltas)
-      ? profile.timeDeltas.filter(
-          (delta): delta is number => typeof delta === 'number'
-        )
-      : undefined;
-    if (samples.length > 0) batches.push({ nodes, samples, timeDeltas });
+    const timeDeltas = Array.isArray(data.timeDeltas)
+      ? data.timeDeltas
+      : Array.isArray(profile.timeDeltas)
+        ? profile.timeDeltas
+        : undefined;
+    const id = isRecord(event.id2)
+      ? [event.id2.local ?? null, event.id2.global ?? null]
+      : (event.id ?? null);
+    const profileKey = JSON.stringify([event.pid, event.tid, id]);
+    if (nodes.length || samples.length)
+      batches.push({ profileKey, nodes, samples, timeDeltas });
   }
   return batches;
 };
@@ -116,8 +122,11 @@ const profileBatches = (events: readonly TraceEvent[]): CpuProfileBatch[] => {
 const summarizeProfile = (
   batches: readonly CpuProfileBatch[]
 ): TraceAnalysis['profile'] & { limitations: string[] } => {
-  const nodes = new Map<number, CpuNode>();
+  const nodesByProfile = new Map<string, Map<number, CpuNode>>();
   for (const batch of batches) {
+    const nodes =
+      nodesByProfile.get(batch.profileKey) ?? new Map<number, CpuNode>();
+    nodesByProfile.set(batch.profileKey, nodes);
     for (const node of batch.nodes) {
       const id = finite(node.id);
       if (id !== undefined) nodes.set(id, node);
@@ -129,12 +138,14 @@ const summarizeProfile = (
   let estimatedDeltas = 0;
 
   for (const batch of batches) {
-    batch.samples.forEach((id, index) => {
-      const delta = batch.timeDeltas?.[index];
-      const microseconds =
-        delta !== undefined && delta >= 0 ? delta : 1000;
-      if (delta === undefined) estimatedDeltas++;
-      const node = nodes.get(id);
+    const nodes = nodesByProfile.get(batch.profileKey);
+    batch.samples.forEach((sample, index) => {
+      const id = finite(sample);
+      if (id === undefined) return;
+      const delta = finite(batch.timeDeltas?.[index]);
+      const microseconds = delta !== undefined && delta >= 0 ? delta : 1000;
+      if (delta === undefined || delta < 0) estimatedDeltas++;
+      const node = nodes?.get(id);
       const callFrame = node?.callFrame;
       const functionName = asString(callFrame?.functionName) ?? '(anonymous)';
       const url = asString(callFrame?.url);
@@ -203,10 +214,7 @@ export function analyzeTraceJson(
     const name = asString(event.name) ?? '';
     const duration = finite(event.dur);
     if (duration === undefined || duration < 0) continue;
-    if (
-      /cpu.*profiler.*start/i.test(name) ||
-      /Tracing::Start/i.test(name)
-    )
+    if (/cpu.*profiler.*start/i.test(name) || /Tracing::Start/i.test(name))
       continue;
     if (/gc|collectgarbage/i.test(name))
       gcEvents.push({ durationMs: duration / 1000 });
@@ -253,9 +261,13 @@ export function analyzeTraceJson(
     gc: {
       count: gcEvents.length,
       totalMs:
-        Math.round(gcEvents.reduce((sum, event) => sum + event.durationMs, 0) * 10) /
-        10,
-      maxMs: Math.round(Math.max(0, ...gcEvents.map((event) => event.durationMs)) * 10) / 10,
+        Math.round(
+          gcEvents.reduce((sum, event) => sum + event.durationMs, 0) * 10
+        ) / 10,
+      maxMs:
+        Math.round(
+          Math.max(0, ...gcEvents.map((event) => event.durationMs)) * 10
+        ) / 10,
     },
     processes: [...processMap.values()].sort(
       (left, right) => right.worstTaskMs - left.worstTaskMs
@@ -343,12 +355,9 @@ export function parseTraceAnalysisOptions(
       parsed.value('--output') ??
         inputPath.replace(/\.[^.]+$/, '') + '.trace-summary'
     ),
-    minLongTaskMs: numericArgument(
-      parsed,
-      '--min-long-task-ms',
-      50,
-      { min: 1 }
-    ),
+    minLongTaskMs: numericArgument(parsed, '--min-long-task-ms', 50, {
+      min: 1,
+    }),
   };
 }
 

@@ -1378,7 +1378,9 @@ function workloadMetadata(
     )
   );
   return stableJson({
-    ...(contrast.includes('overlay') ? {} : { overlayMode: summary.overlayMode }),
+    ...(contrast.includes('overlay')
+      ? {}
+      : { overlayMode: summary.overlayMode }),
     metadata,
   });
 }
@@ -1395,10 +1397,27 @@ function workloadMetadataMatch(
   return baselineMetadata === candidateMetadata;
 }
 
+function coreEvidenceReasons(summary: PerfSummary, label: string): string[] {
+  return [
+    ...(!summary.evidence.durationSufficient
+      ? [`${label} analysis duration is shorter than five minutes`]
+      : []),
+    ...(!summary.evidence.scenarioMetadataConsistent
+      ? [`${label} scenario metadata is inconsistent`]
+      : []),
+    ...(!summary.evidence.inputCoverageAvailable
+      ? [`${label} widget input coverage is unavailable`]
+      : !summary.evidence.inputCoverageComplete
+        ? [`${label} visibility phases violated widget input expectations`]
+        : []),
+  ];
+}
+
 export function coreEvidenceComplete(summary: PerfSummary): boolean {
   return (
     summary.evidence.durationSufficient &&
-    summary.evidence.scenarioMetadataConsistent
+    summary.evidence.scenarioMetadataConsistent &&
+    summary.evidence.inputCoverageComplete
   );
 }
 
@@ -1439,14 +1458,6 @@ export function compareSummaries(
     candidate.iracing.meanOnePercentLowFps
   );
   const workloadMatch = workloadMetadataMatch(baseline, candidate, contrast);
-  const coreReasons = (summary: PerfSummary, label: string): string[] => [
-    ...(!summary.evidence.durationSufficient
-      ? [`${label} analysis duration is shorter than five minutes`]
-      : []),
-    ...(!summary.evidence.scenarioMetadataConsistent
-      ? [`${label} scenario metadata is inconsistent`]
-      : []),
-  ];
   const workloadReasons =
     workloadMatch === false
       ? ['baseline and candidate workload metadata differ']
@@ -1454,8 +1465,8 @@ export function compareSummaries(
         ? ['workload metadata is unavailable or inconsistent']
         : [];
   const comparableReasons = [
-    ...coreReasons(baseline, 'baseline'),
-    ...coreReasons(candidate, 'candidate'),
+    ...coreEvidenceReasons(baseline, 'baseline'),
+    ...coreEvidenceReasons(candidate, 'candidate'),
     ...workloadReasons,
   ];
   const memoryReasons = [
@@ -1469,9 +1480,10 @@ export function compareSummaries(
   const tapeReplay = (summary: PerfSummary): boolean =>
     summary.scenarioMetadata.simulatorMode === 'replay' &&
     typeof summary.scenarioMetadata.tapeSha256 === 'string';
-  const gameFpsReasons = tapeReplay(baseline) || tapeReplay(candidate)
-    ? ['game FPS is historical in an isolated replay tape']
-    : [];
+  const gameFpsReasons =
+    tapeReplay(baseline) || tapeReplay(candidate)
+      ? ['game FPS is historical in an isolated replay tape']
+      : [];
   const gate = (
     name: string,
     actual: number,
@@ -1636,7 +1648,9 @@ export function compareSummaries(
 }
 
 function format(value: number | null, digits = 2): string {
-  return value !== null && Number.isFinite(value) ? value.toFixed(digits) : 'n/a';
+  return value !== null && Number.isFinite(value)
+    ? value.toFixed(digits)
+    : 'n/a';
 }
 
 /** Format the summary as a Markdown report. */
@@ -1897,7 +1911,12 @@ async function writeAnalysis(
 
   if (baselinePath) {
     baseline = await readSummary(baselinePath, warmupSeconds, analysisWindow);
-    const comparison = compareSummaries(baseline, candidate, contrast, ignoredGates);
+    const comparison = compareSummaries(
+      baseline,
+      candidate,
+      contrast,
+      ignoredGates
+    );
     workloadMatch = comparison.checks.find(
       (check) => check.name === 'Matched workload metadata'
     )?.passed;
@@ -1920,18 +1939,8 @@ async function writeAnalysis(
       (baseline !== undefined && workloadMatch !== true))
   ) {
     const reasons = [
-      ...(!candidate.evidence.durationSufficient
-        ? ['candidate analysis duration is shorter than five minutes']
-        : []),
-      ...(!candidate.evidence.scenarioMetadataConsistent
-        ? ['candidate scenario metadata is inconsistent']
-        : []),
-      ...(baseline !== undefined && !baseline.evidence.durationSufficient
-        ? ['baseline analysis duration is shorter than five minutes']
-        : []),
-      ...(baseline !== undefined && !baseline.evidence.scenarioMetadataConsistent
-        ? ['baseline scenario metadata is inconsistent']
-        : []),
+      ...coreEvidenceReasons(candidate, 'candidate'),
+      ...(baseline ? coreEvidenceReasons(baseline, 'baseline') : []),
       ...(baseline !== undefined && workloadMatch !== true
         ? ['baseline and candidate workload metadata differ or are unavailable']
         : []),
@@ -2002,9 +2011,7 @@ export function parseCliArgs(args: string[]): {
     warmupSeconds: numericArgument(parsed, '--warmup-seconds', 30, { min: 0 }),
     analysisWindow,
     requireConclusive: !parsed.flag('--allow-inconclusive'),
-    contrast: parseComparisonContrast(
-      listArgument(parsed, '--contrast')
-    ),
+    contrast: parseComparisonContrast(listArgument(parsed, '--contrast')),
     ignoredGates: listArgument(parsed, '--ignore-gates'),
   };
 }

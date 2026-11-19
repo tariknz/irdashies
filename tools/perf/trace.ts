@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { promises as fs } from 'node:fs';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -118,10 +119,15 @@ interface DevToolsTarget {
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
-const waitForTarget = async (port: number): Promise<DevToolsTarget> => {
-  for (let attempt = 0; attempt < 240; attempt++) {
+const waitForTarget = async (
+  port: number,
+  signal: AbortSignal
+): Promise<DevToolsTarget> => {
+  for (let attempt = 0; attempt < 240 && !signal.aborted; attempt++) {
     try {
-      const response = await fetch(`http://127.0.0.1:${port}/json/list`);
+      const response = await fetch(`http://127.0.0.1:${port}/json/list`, {
+        signal,
+      });
       if (response.ok) {
         const targets = (await response.json()) as DevToolsTarget[];
         const target =
@@ -228,11 +234,15 @@ const runTrace = async (args: string[]): Promise<void> => {
     options.userDataDirectory ??
     (await fs.mkdtemp(path.join(tmpdir(), 'irdashies-trace-')));
 
+  const forgeCli = createRequire(import.meta.url).resolve(
+    '@electron-forge/cli/dist/electron-forge.js'
+  );
   const child = spawn(
-    'npm',
+    process.execPath,
     [
+      forgeCli,
       'start',
-      '--',
+      '--enable-logging',
       '--',
       `--remote-debugging-port=${options.port}`,
       `--user-data-dir=${userDataDirectory}`,
@@ -256,6 +266,19 @@ const runTrace = async (args: string[]): Promise<void> => {
     }
   );
   child.stderr?.on('data', () => undefined);
+  const startup = new AbortController();
+  const childFailure = new Promise<never>((_, reject) => {
+    child.once('error', (error) =>
+      reject(new Error('Could not launch Electron.', { cause: error }))
+    );
+    child.once('exit', (code, signal) =>
+      reject(
+        new Error(
+          `Electron launcher exited during capture (${code ?? signal}).`
+        )
+      )
+    );
+  });
 
   const stopChild = (): void => {
     if (child.exitCode !== null || child.signalCode !== null) return;
@@ -269,7 +292,10 @@ const runTrace = async (args: string[]): Promise<void> => {
   };
 
   try {
-    const target = await waitForTarget(options.port);
+    const target = await Promise.race([
+      waitForTarget(options.port, startup.signal),
+      childFailure,
+    ]);
     if (options.warmupSeconds > 0) await sleep(options.warmupSeconds * 1000);
     if (!target.webSocketDebuggerUrl)
       throw new Error('DevTools target has no WebSocket debugger URL.');
@@ -304,6 +330,7 @@ const runTrace = async (args: string[]): Promise<void> => {
         .join('\n') + '\n'
     );
   } finally {
+    startup.abort();
     stopChild();
   }
 };

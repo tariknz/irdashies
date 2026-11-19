@@ -608,7 +608,9 @@ describe('performance analysis', () => {
 
     expect(workloadCheck(strict)?.passed).toBe(false);
     expect(workloadCheck(contrasted)?.passed).toBe(true);
-    expect(contrasted.checks.every((check) => check.passed === true)).toBe(true);
+    expect(contrasted.checks.every((check) => check.passed === true)).toBe(
+      true
+    );
     expect(comparisonMarkdown(contrasted)).toContain(
       'Declared contrast: overlay'
     );
@@ -646,6 +648,25 @@ describe('performance analysis', () => {
       },
     }));
     const summary = summarizeCapture(capture(samples), 0);
+
+    const comparison = compareSummaries(summary, summary);
+    expect(
+      comparison.checks.find(({ name }) => name === 'Telemetry processing p99')
+    ).toMatchObject({
+      passed: null,
+      target: expect.stringContaining(
+        'visibility phases violated widget input expectations'
+      ),
+    });
+    const runs = (['baseline', 'candidate'] as const).map((label, index) => ({
+      label,
+      summary,
+      cycle: 0,
+      position: index + 1,
+      runId: label,
+      logPath: '',
+    }));
+    expect(evaluateBranchRuns(runs, []).aggregate.verdict).toBe('INCONCLUSIVE');
 
     expect(summary.widgetInputs.standings.covered).toBe(false);
     expect(summary.evidence.inputCoverageComplete).toBe(false);

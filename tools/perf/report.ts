@@ -4,10 +4,11 @@ import { pathToFileURL } from 'node:url';
 import type { PerfComparison } from './analyze.ts';
 import { choiceArgument, parseArguments } from './args.ts';
 import {
-  aggregateBranchRuns,
+  evaluateBranchRuns,
   branchAggregateMarkdown,
   type SideLabel,
 } from './branches.ts';
+import { comparisonCheckSatisfied } from './gates.ts';
 
 export const REPORT_USAGE = `Usage: npm run perf:report -- <summary.json>... [options]
   --output <file>            Write markdown to a file instead of stdout
@@ -58,15 +59,22 @@ const commitOf = (summary: ComparisonSummary): string => {
 
 export const runReportCli = async (args: string[]): Promise<void> => {
   const options = parseReportOptions(args);
-  const summaries: ComparisonSummary[] = [];
+  const comparisons: PerfComparison[] = [];
   for (const inputPath of options.inputPaths) {
     const contents = await fs.readFile(inputPath, 'utf8');
     const parsed: unknown = JSON.parse(contents);
     if (!isComparison(parsed))
       throw new Error(`${inputPath} is not an analyzer comparison.json.`);
-    summaries.push(parsed.baseline, parsed.candidate);
+    comparisons.push(parsed);
   }
-  const commits = [...new Set(summaries.map(commitOf))];
+  const commits = [
+    ...new Set(
+      comparisons.flatMap(({ baseline, candidate }) => [
+        commitOf(baseline),
+        commitOf(candidate),
+      ])
+    ),
+  ];
   const matchCommit = (prefix: string): string => {
     const matches = commits.filter((commit) => commit.startsWith(prefix));
     if (matches.length !== 1)
@@ -81,29 +89,44 @@ export const runReportCli = async (args: string[]): Promise<void> => {
   const candidateCommit = options.candidateCommit
     ? matchCommit(options.candidateCommit)
     : commits.find((commit) => commit !== baselineCommit);
-  if (!candidateCommit)
+  if (!candidateCommit || candidateCommit === baselineCommit)
     throw new Error(
       `A combined report needs two distinct commits; found ${commits.join(', ') || 'none'}.`
     );
-  const runs: {
-    label: SideLabel;
-    cycle: number;
-    position: number;
-    runId: string;
-    logPath: string;
-    summary: ComparisonSummary;
-  }[] = [];
-  summaries.forEach((summary, index) => {
-    runs.push({
-      label: commitOf(summary) === baselineCommit ? 'baseline' : 'candidate',
-      cycle: Math.floor(index / 2),
-      position: index % 2 === 0 ? 1 : 2,
+  const selected = comparisons.filter(({ baseline, candidate }) => {
+    const base = commitOf(baseline);
+    const head = commitOf(candidate);
+    return (
+      (base === baselineCommit && head === candidateCommit) ||
+      (base === candidateCommit && head === baselineCommit)
+    );
+  });
+  if (selected.length === 0)
+    throw new Error('No comparison includes both selected commits.');
+
+  const runs = selected.flatMap(({ baseline, candidate }, cycle) =>
+    [baseline, candidate].map((summary, index) => ({
+      label: (commitOf(summary) === baselineCommit
+        ? 'baseline'
+        : 'candidate') as SideLabel,
+      cycle,
+      position: index + 1,
       runId: summary.runId,
       logPath: '',
       summary,
-    });
-  });
-  const aggregate = aggregateBranchRuns(runs);
+    }))
+  );
+  const hasIncompleteEvidence = selected.some(
+    ({ baseline, candidate, checks }) =>
+      !baseline.evidence ||
+      !candidate.evidence ||
+      checks?.some(
+        (check) => check.passed === null && !comparisonCheckSatisfied(check)
+      )
+  );
+  const aggregate = hasIncompleteEvidence
+    ? { runsPerSide: selected.length, metrics: [], verdict: 'INCONCLUSIVE' }
+    : evaluateBranchRuns(runs, []).aggregate;
   const markdown = [
     '# Order-controlled multi-run report',
     '',

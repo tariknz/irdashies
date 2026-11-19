@@ -24,8 +24,8 @@ const trace = {
               },
             ],
             samples: [1, 1],
-            timeDeltas: [1000, 2000],
           },
+          timeDeltas: [1000, 2000],
         },
       },
     },
@@ -69,8 +69,58 @@ describe('trace analysis', () => {
     expect(traceAnalysisMarkdown(analysis)).toContain('expensiveDraw');
   });
 
+  it('scopes nodes to the process, thread and profile, including node-only chunks', () => {
+    const nodes = (
+      pid: number,
+      tid: number,
+      id: string,
+      functionName: string
+    ) => ({
+      name: 'ProfileChunk',
+      pid,
+      tid,
+      id,
+      args: {
+        data: {
+          cpuProfile: { nodes: [{ id: 1, callFrame: { functionName } }] },
+        },
+      },
+    });
+    const sample = (pid: number, tid: number, id: string, delta: number) => ({
+      name: 'ProfileChunk',
+      pid,
+      tid,
+      id,
+      args: { data: { cpuProfile: { samples: [1] }, timeDeltas: [delta] } },
+    });
+    const { profile } = analyzeTraceJson(
+      [
+        nodes(1, 2, '0x1', 'main'),
+        sample(1, 2, '0x1', 100),
+        nodes(2, 2, '0x1', 'renderer'),
+        sample(2, 2, '0x1', 200),
+        nodes(1, 3, '0x1', 'worker'),
+        sample(1, 3, '0x1', 300),
+        nodes(1, 2, '0x2', 'anotherProfile'),
+        sample(1, 2, '0x2', 400),
+      ],
+      'trace.json'
+    );
+    expect(profile.sampledMs).toBe(1);
+    expect(
+      profile.hotspots.map(({ functionName, selfMs }) => [functionName, selfMs])
+    ).toEqual([
+      ['anotherProfile', 0.4],
+      ['worker', 0.3],
+      ['renderer', 0.2],
+      ['main', 0.1],
+    ]);
+  });
+
   it('accepts a raw event array and rejects unusable traces', () => {
-    expect(analyzeTraceJson(trace.traceEvents, 'trace.json').eventCount).toBe(4);
+    expect(analyzeTraceJson(trace.traceEvents, 'trace.json').eventCount).toBe(
+      4
+    );
     expect(() => analyzeTraceJson({ traceEvents: [] }, 'empty.json')).toThrow(
       /No traceEvents/
     );
