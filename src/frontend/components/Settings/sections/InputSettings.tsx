@@ -1,11 +1,12 @@
 import { useDashboard } from '@irdashies/context';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlusIcon } from '@phosphor-icons/react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
 import {
+  DashboardBridge,
   InputWidgetSettings,
   LayoutNode,
   SettingsTabType,
@@ -24,7 +25,20 @@ import {
   getInputLayoutTree,
   isEmptyLayoutTree,
 } from '../../Input/layout';
+import { STEER_WHEEL_IMAGE_STORAGE_KEY } from '../../Input/hooks/useSteerWheelImage';
+import {
+  dataUrlToBuffer,
+  prepareIconForUpload,
+} from '../../TrackMap/playerIconUpload';
 import { SettingProps, settingPropFor } from '../components/SettingProp';
+
+const SUPPORTED_IMAGE_TYPES = [
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+];
 
 const WIDGET_TYPE = 'input';
 const SettingProp = settingPropFor(WIDGET_TYPE);
@@ -65,8 +79,20 @@ export const InputSettings = ({ widgetId }: { widgetId?: string }) => {
 };
 
 const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
-  const { currentDashboard, onDashboardUpdated } = useDashboard();
+  const { currentDashboard, onDashboardUpdated, bridge } = useDashboard();
   const navigate = useNavigate();
+  const configChangeHandlerRef = useRef<
+    ((config: Partial<InputWidgetSettings['config']>) => void) | null
+  >(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [bridgePreview, setBridgePreview] = useState<{
+    filename: string;
+    url: string | null;
+  } | null>(null);
+  const [browserPreviewUrl, setBrowserPreviewUrl] = useState<string | null>(
+    () => localStorage.getItem(STEER_WHEEL_IMAGE_STORAGE_KEY)
+  );
+  const settingsRef = useRef<InputWidgetSettings | null>(null);
 
   const inputWidgets =
     currentDashboard?.widgets.filter((w) => (w.type || w.id) === WIDGET_TYPE) ??
@@ -81,11 +107,50 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
       (savedSettings?.config as InputWidgetSettings['config']) ?? defaultConfig
     ),
   }));
+  settingsRef.current = settings;
 
   const currentTree = useMemo(
     () => getInputLayoutTree(settings.config),
     [settings.config]
   );
+
+  const customImageFilename = settings.config.steer.config?.customImage ?? '';
+  const dashboardBridge = (
+    window as unknown as { dashboardBridge?: DashboardBridge }
+  ).dashboardBridge;
+  const hasBridge = !!(
+    dashboardBridge && 'getPlayerIconImageAsDataUrl' in dashboardBridge
+  );
+  const useBrowserMode = customImageFilename === 'browser-mode' || !hasBridge;
+  const previewUrl = !customImageFilename
+    ? null
+    : useBrowserMode
+      ? browserPreviewUrl
+      : bridgePreview?.filename === customImageFilename
+        ? bridgePreview.url
+        : null;
+
+  useEffect(() => {
+    if (!customImageFilename || useBrowserMode || !dashboardBridge) return;
+
+    let cancelled = false;
+    dashboardBridge
+      .getPlayerIconImageAsDataUrl(customImageFilename)
+      .then((url: string | null) => {
+        if (!cancelled)
+          setBridgePreview({ filename: customImageFilename, url });
+      })
+      .catch(() => {
+        if (!cancelled)
+          setBridgePreview({
+            filename: customImageFilename,
+            url: localStorage.getItem(STEER_WHEEL_IMAGE_STORAGE_KEY),
+          });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [customImageFilename, useBrowserMode, dashboardBridge]);
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(() => {
@@ -145,6 +210,81 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
       widgetId={widgetId}
     >
       {(handleConfigChange) => {
+        configChangeHandlerRef.current = handleConfigChange;
+
+        const updateSteerConfig = (
+          patch: Partial<InputWidgetSettings['config']['steer']['config']>
+        ) => {
+          const apply = configChangeHandlerRef.current ?? handleConfigChange;
+          const current =
+            settingsRef.current?.config.steer ?? settings.config.steer;
+          apply({
+            steer: {
+              ...current,
+              config: {
+                ...current.config,
+                ...patch,
+              },
+            },
+          });
+        };
+
+        const handleWheelImageFile = (file: File) => {
+          if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
+            setImageError(
+              'Unsupported format. Please use PNG, JPG, GIF, WebP or SVG.'
+            );
+            return;
+          }
+          setImageError(null);
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            const originalDataUrl = e.target?.result as string;
+            let buffer: Uint8Array;
+            let storedDataUrl: string;
+            try {
+              const prepared = await prepareIconForUpload(
+                file,
+                originalDataUrl
+              );
+              buffer = prepared.buffer;
+              storedDataUrl = prepared.dataUrl;
+            } catch {
+              buffer = dataUrlToBuffer(originalDataUrl);
+              storedDataUrl = originalDataUrl;
+            }
+
+            const fallbackToLocalStorage = () => {
+              localStorage.setItem(
+                STEER_WHEEL_IMAGE_STORAGE_KEY,
+                storedDataUrl
+              );
+              setBrowserPreviewUrl(storedDataUrl);
+              updateSteerConfig({ customImage: 'browser-mode' });
+            };
+
+            if (bridge && 'savePlayerIconImage' in bridge) {
+              (
+                bridge.savePlayerIconImage as (
+                  buf: Uint8Array
+                ) => Promise<string>
+              )(buffer)
+                .then((filePath) => {
+                  if (!filePath) {
+                    fallbackToLocalStorage();
+                    return;
+                  }
+                  const fileName = filePath.split(/[\\/]/).pop() || '';
+                  updateSteerConfig({ customImage: fileName });
+                })
+                .catch(fallbackToLocalStorage);
+            } else {
+              fallbackToLocalStorage();
+            }
+          };
+          reader.readAsDataURL(file);
+        };
+
         const handleTreeUpdate = (newTree: LayoutNode) => {
           handleConfigChange({ layoutTree: newTree });
         };
@@ -425,7 +565,94 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                     <SettingsSection title="Steer">
                       <SettingProp path="steer.config.style" />
 
-                      <SettingProp path="steer.config.color" />
+                      {settings.config.steer.config?.style !== 'custom' && (
+                        <SettingProp path="steer.config.color" />
+                      )}
+
+                      <SettingProp path="steer.config.rotationScale" />
+
+                      {settings.config.steer.config?.style === 'custom' && (
+                        <div className="space-y-2">
+                          <div className="text-slate-300">
+                            Custom Wheel Image
+                          </div>
+                          <div
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const file = e.dataTransfer.files?.[0];
+                              if (file) handleWheelImageFile(file);
+                            }}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                            className="w-full border-2 border-dashed border-settings-boundary rounded-lg p-4 text-center cursor-pointer hover:border-slate-500 focus-within:outline-2 focus-within:outline-accent-300 transition-colors"
+                          >
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleWheelImageFile(file);
+                                e.target.value = '';
+                              }}
+                              className="sr-only"
+                              aria-label="Steering wheel image"
+                              id="steer-wheel-image-input"
+                            />
+                            <label
+                              htmlFor="steer-wheel-image-input"
+                              className="block cursor-pointer"
+                            >
+                              {previewUrl ? (
+                                <div className="flex items-center gap-3">
+                                  <img
+                                    src={previewUrl}
+                                    alt="Steering wheel"
+                                    className="w-16 h-16 rounded object-contain bg-slate-700"
+                                  />
+                                  <span className="text-sm text-slate-300">
+                                    Click or drag to replace image
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="text-slate-400">
+                                  <p className="mb-1 text-sm">
+                                    Drag and drop an image here
+                                  </p>
+                                  <p className="text-xs">
+                                    or click to select (PNG, JPG, GIF, WebP,
+                                    SVG)
+                                  </p>
+                                </div>
+                              )}
+                            </label>
+                          </div>
+
+                          {imageError && (
+                            <p className="text-sm text-red-400">{imageError}</p>
+                          )}
+
+                          {customImageFilename && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                localStorage.removeItem(
+                                  STEER_WHEEL_IMAGE_STORAGE_KEY
+                                );
+                                setBrowserPreviewUrl(null);
+                                setBridgePreview(null);
+                                updateSteerConfig({ customImage: '' });
+                                setImageError(null);
+                              }}
+                              className="settings-button-danger"
+                            >
+                              Remove Image
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </SettingsSection>
 
                     {/* Gear Settings */}

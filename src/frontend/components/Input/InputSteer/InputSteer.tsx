@@ -16,7 +16,7 @@ import { SteerDial } from './SteerDial';
 import type { SteerDialProps } from './SteerDial';
 
 export type WheelStyle =
-  'formula' | 'lmp' | 'nascar' | 'ushape' | 'default' | 'ring';
+  'formula' | 'lmp' | 'nascar' | 'ushape' | 'default' | 'ring' | 'custom';
 
 const wheelComponentMap = {
   default: {
@@ -45,6 +45,10 @@ export interface InputSteerProps {
   angleRad?: number;
   wheelStyle?: WheelStyle;
   wheelColor?: 'dark' | 'light';
+  /** Data URL for a user-uploaded wheel when style is `custom`. */
+  customImageUrl?: string | null;
+  /** Percent of telemetry angle used for the on-screen wheel (100 = 1:1). */
+  rotationScale?: number;
   /** Used by the `ring` style to render gear + speed inside the dial. */
   gear?: number;
   speedMs?: number;
@@ -57,6 +61,8 @@ export function InputSteer({
   angleRad = 0,
   wheelStyle = 'default',
   wheelColor = 'light',
+  customImageUrl,
+  rotationScale = 100,
   gear,
   speedMs,
   unit,
@@ -64,28 +70,29 @@ export function InputSteer({
   flashColor,
 }: InputSteerProps) {
   const wheelRef = useRef<HTMLDivElement>(null);
+  const useCustomImage = wheelStyle === 'custom' && !!customImageUrl;
+  const scaledAngleRad = angleRad * (rotationScale / 100);
 
-  // Memoize the wheel component selection (only changes when style/color change)
   const WheelComponent = useMemo(() => {
+    if (useCustomImage) return null;
     const entry =
       wheelComponentMap[wheelStyle as keyof typeof wheelComponentMap];
     return (entry ?? wheelComponentMap.default)[wheelColor];
-  }, [wheelStyle, wheelColor]);
+  }, [wheelStyle, wheelColor, useCustomImage]);
 
-  // Use CSS custom properties for smooth updates without React re-renders
   useEffect(() => {
     if (wheelRef.current) {
       wheelRef.current.style.setProperty(
         '--wheel-rotation',
-        `${angleRad * -1}rad`
+        `${scaledAngleRad * -1}rad`
       );
     }
-  }, [angleRad]);
+  }, [scaledAngleRad]);
 
   if (wheelStyle === 'ring') {
     return (
       <SteerDial
-        angleRad={angleRad}
+        angleRad={scaledAngleRad}
         gear={gear}
         speedMs={speedMs}
         unit={unit}
@@ -100,7 +107,7 @@ export function InputSteer({
     <div className="w-full h-full flex fill-white relative">
       <div
         ref={wheelRef}
-        className="w-full h-full flex justify-center"
+        className="w-full h-full flex justify-center items-center"
         style={{
           transform: 'rotate(var(--wheel-rotation, 0rad))',
           transformBox: 'fill-box',
@@ -108,9 +115,18 @@ export function InputSteer({
           willChange: 'transform',
         }}
       >
-        <WheelComponent />
+        {useCustomImage ? (
+          <img
+            src={customImageUrl}
+            alt=""
+            className="max-w-full max-h-full object-contain pointer-events-none select-none"
+            draggable={false}
+          />
+        ) : (
+          WheelComponent && <WheelComponent />
+        )}
       </div>
-      <RotationIndicator currentAngleRad={angleRad} />
+      <RotationIndicator currentAngleRad={scaledAngleRad} />
     </div>
   );
 }
