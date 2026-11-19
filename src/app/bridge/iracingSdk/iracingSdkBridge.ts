@@ -376,7 +376,22 @@ export async function publishIRacingSDKEvents(
         try {
           while (!shouldStop) {
             const pollStartedAt = performance.now();
+            const sdkWaitStartedAt = perfMetrics.sdkWaitEnabled
+              ? performance.now()
+              : 0;
             const hasNewData = sdk.waitForData(WAIT_TIMEOUT);
+            if (perfMetrics.sdkWaitEnabled) {
+              const targetHz = Math.min(
+                60,
+                Math.max(25, channelBus?.maxActiveRateHz() ?? 25)
+              );
+              perfMetrics.recordSdkWait(
+                performance.now() - sdkWaitStartedAt,
+                hasNewData,
+                WAIT_TIMEOUT,
+                targetHz
+              );
+            }
             if (!hasNewData) {
               // A paused replay remains connected but does not advance the SDK's
               // telemetry buffer. Keep the current session and channel snapshots

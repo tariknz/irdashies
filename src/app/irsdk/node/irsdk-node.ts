@@ -55,6 +55,7 @@ interface CachedTelemetryView {
 }
 
 type TelemetryViewCache = Map<string, CachedTelemetryView>;
+type TelemetryTypeCache = Map<string, number>;
 
 const createTelemetryView = (
   value: unknown,
@@ -122,11 +123,16 @@ function copyTelemData<
   key: K,
   dest: TelemetryVarList,
   cache?: Partial<TelemetryVarList>,
-  views?: TelemetryViewCache
+  views?: TelemetryViewCache,
+  varTypes?: TelemetryTypeCache
 ): void {
-  // Check if we have a cached entry to reuse
+  const previousType = varTypes?.get(key);
+  const typeChanged =
+    previousType !== undefined && previousType !== src.varType;
+  varTypes?.set(key, src.varType);
   const cached = cache?.[key];
-  const useCache = cached && cached.value && Array.isArray(cached.value);
+  const useCache =
+    !typeChanged && cached && cached.value && Array.isArray(cached.value);
   if (!useCache) {
     dest[key] = {
       value:
@@ -146,6 +152,8 @@ function copyTelemData<
     const targetArray = useCache ? (dest[key].value as boolean[]) : [];
     if (!useCache) {
       dest[key].value = targetArray;
+    } else {
+      targetArray.length = arr.length;
     }
     // Reuse array by updating in-place
     for (let i = 0; i < arr.length; i++) {
@@ -159,6 +167,7 @@ function copyTelemData<
     const srcArray = telemetryView(src, key, views) as Int32Array;
     if (useCache) {
       const targetArray = dest[key].value as number[];
+      targetArray.length = srcArray.length;
       for (let i = 0; i < srcArray.length; i++) {
         targetArray[i] = srcArray[i];
       }
@@ -170,6 +179,7 @@ function copyTelemData<
     const srcArray = telemetryView(src, key, views) as Float32Array;
     if (useCache) {
       const targetArray = dest[key].value as number[];
+      targetArray.length = srcArray.length;
       for (let i = 0; i < srcArray.length; i++) {
         targetArray[i] = srcArray[i];
       }
@@ -181,6 +191,7 @@ function copyTelemData<
     const srcArray = telemetryView(src, key, views) as Float64Array;
     if (useCache) {
       const targetArray = dest[key].value as number[];
+      targetArray.length = srcArray.length;
       for (let i = 0; i < srcArray.length; i++) {
         targetArray[i] = srcArray[i];
       }
@@ -217,6 +228,7 @@ export class IRacingSDK {
   private _lastRawTelemetry:
     TelemetryVarList | NativeTelemetryDataView | undefined;
   private _telemetryViews: TelemetryViewCache = new Map();
+  private _telemetryVarTypes: TelemetryTypeCache = new Map();
 
   constructor() {
     this._sdkReq = this._loadSDK();
@@ -444,6 +456,11 @@ export class IRacingSDK {
   public stopSDK(): void {
     this._sdk?.stopSDK();
     this.resetSessionData();
+    this._telemetryCache = {};
+    this._telemetryKeys = [];
+    this._lastRawTelemetry = undefined;
+    this._telemetryViews.clear();
+    this._telemetryVarTypes.clear();
   }
 
   /**
@@ -610,6 +627,11 @@ export class IRacingSDK {
 
   /**
    * Get the current value of the telemetry variables.
+   *
+   * The outer object is fresh on every read, but its inner arrays are reused
+   * and overwritten on subsequent reads. Telemetry values are mutable frames
+   * intended for synchronous consumption only. An async consumer must copy
+   * the values it intends to retain.
    */
   public getTelemetry(): TelemetryVarList {
     const rawData = this._sdk?.getTelemetryDataView
@@ -631,7 +653,8 @@ export class IRacingSDK {
           key,
           data as TelemetryVarList,
           this._telemetryCache,
-          this._telemetryViews
+          this._telemetryViews,
+          this._telemetryVarTypes
         );
       }
       // Update cache with the new data
