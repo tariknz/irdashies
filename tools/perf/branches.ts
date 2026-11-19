@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -14,6 +15,7 @@ import {
   numericArgument,
   parseArguments,
 } from './args.ts';
+import { comparisonCheckSatisfied } from './gates.ts';
 
 const DEFAULT_DURATION_SECONDS = 420;
 const DEFAULT_WARMUP_SECONDS = 60;
@@ -296,7 +298,7 @@ export function resolvePrRefs(number: number, cwd: string): PrInfo {
       '--repo',
       'tariknz/irdashies',
       '--json',
-      'number,title,url,baseRefOid,headRefOid',
+      'number,title,url,baseRefName,baseRefOid,headRefOid',
     ],
     { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
   );
@@ -304,6 +306,7 @@ export function resolvePrRefs(number: number, cwd: string): PrInfo {
     number: number;
     title: string;
     url: string;
+    baseRefName: string;
     baseRefOid: string;
     headRefOid: string;
   };
@@ -321,7 +324,7 @@ export function resolvePrRefs(number: number, cwd: string): PrInfo {
       ?.split(/\s+/)[0] ?? 'origin';
   for (const ref of [
     `refs/pull/${number}/head`,
-    info.baseRefOid,
+    `refs/heads/${info.baseRefName}`,
   ]) {
     try {
       execFileSync('git', ['fetch', remote, ref], {
@@ -329,19 +332,29 @@ export function resolvePrRefs(number: number, cwd: string): PrInfo {
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe'],
       });
-    } catch {
-      if (ref === info.baseRefOid) {
-        try {
-          execFileSync('git', ['cat-file', '-e', `${info.baseRefOid}^{commit}`], {
-            cwd,
-            stdio: 'ignore',
-          });
-        } catch {
-          throw new Error(`Cannot fetch PR ${number} base ${info.baseRefOid}`);
-        }
-      }
+    } catch (error) {
+      void error;
     }
   }
+  const ensureCommit = (label: string, oid: string): void => {
+    try {
+      execFileSync('git', ['cat-file', '-e', `${oid}^{commit}`], {
+        cwd,
+        stdio: 'ignore',
+      });
+    } catch {
+      try {
+        execFileSync('git', ['fetch', remote, oid], {
+          cwd,
+          stdio: 'ignore',
+        });
+      } catch {
+        throw new Error(`Cannot fetch PR ${number} ${label} ${oid}`);
+      }
+    }
+  };
+  ensureCommit('base', info.baseRefOid);
+  ensureCommit('head', info.headRefOid);
   return {
     number: info.number,
     title: info.title,
@@ -780,7 +793,20 @@ interface WorktreeCacheEntry {
   createdAt: string;
   native: boolean;
   dependenciesInstalled: boolean;
+  dependencyFingerprint: string;
 }
+
+const hashFiles = async (filePaths: readonly string[]): Promise<string> => {
+  const hash = createHash('sha256');
+  for (const filePath of filePaths) {
+    try {
+      hash.update(await fs.readFile(filePath));
+    } catch {
+      hash.update('missing');
+    }
+  }
+  return hash.digest('hex');
+};
 
 const cacheRootOf = (rootDirectory: string): string =>
   path.join(rootDirectory, 'perf-results', '.cache', 'branches');
@@ -790,12 +816,14 @@ const cacheEntryPath = (rootDirectory: string, commit: string): string =>
 
 const readCacheEntry = async (
   rootDirectory: string,
-  commit: string
+  commit: string,
+  dependencyFingerprint: string
 ): Promise<WorktreeCacheEntry | undefined> => {
   try {
     const raw = await fs.readFile(cacheEntryPath(rootDirectory, commit), 'utf8');
     const entry = JSON.parse(raw) as WorktreeCacheEntry;
     return entry.commit === commit &&
+      entry.dependencyFingerprint === dependencyFingerprint &&
       isRegisteredWorktree(rootDirectory, entry.directory)
       ? entry
       : undefined;
@@ -873,6 +901,10 @@ const readRunSummary = async (
 export const runBranchesCli = async (args: string[]): Promise<void> => {
   const options = parseBranchesOptions(args);
   const rootDirectory = gitValue(['rev-parse', '--show-toplevel'], process.cwd());
+  const dependencyFingerprint = await hashFiles([
+    path.join(rootDirectory, 'package.json'),
+    path.join(rootDirectory, 'package-lock.json'),
+  ]);
   if (options.cleanCache) {
     const removed = await cleanBranchCache(rootDirectory);
     process.stdout.write(`Removed ${removed} cached branch worktrees.\n`);
@@ -928,6 +960,10 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
     throw new Error(
       'The branches change native SDK files. Re-run with --rebuild-native or --install.'
     );
+  if (dependenciesChanged && !options.install)
+    process.stderr.write(
+      'WARNING: dependency files differ between commits; consider --install.\n'
+    );
 
   const worktreeRoot = await fs.mkdtemp(
     path.join(path.dirname(options.outputDirectory), 'irdashies-branches-')
@@ -951,7 +987,7 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
         !options.rebuildNative &&
         !options.install &&
         !sharedDirectory
-          ? await readCacheEntry(rootDirectory, commit)
+          ? await readCacheEntry(rootDirectory, commit, dependencyFingerprint)
           : undefined;
       const directory =
         configuredDirectory ??
@@ -979,6 +1015,7 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
             createdAt: new Date().toISOString(),
             native: options.rebuildNative || nativeChanged,
             dependenciesInstalled: options.install,
+            dependencyFingerprint,
           });
       }
       commitDirectories.set(commit, directory);
@@ -1142,7 +1179,7 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
       dependenciesChanged,
       comparisonPath: summaryPath.replace(/\.json$/, '.md'),
       diagnosisPath: path.join(options.outputDirectory, 'diagnosis.md'),
-      conclusive: comparison.checks.every((check) => check.passed === true),
+      conclusive: comparison.checks.every(comparisonCheckSatisfied),
     };
     const reportPath = await writeBranchReport(report, comparison);
     process.stdout.write(`Branch report: ${reportPath}\n`);

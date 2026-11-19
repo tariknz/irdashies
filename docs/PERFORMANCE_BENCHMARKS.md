@@ -438,7 +438,10 @@ compares the effect to the observed run noise, and prints a verdict such as
 (60 s, two runs, inconclusive allowed), and `--coverage-probe-seconds 30`
 adds a short probe that narrows `--widgets` to fully covered types.
 Several existing comparisons can be combined with
-`npm run perf:report -- <summary.json>...`. Generated worktrees are cached by
+`npm run perf:report -- <summary.json>...`. Summaries from reversed pairs are
+grouped by `sourceCommit`, not by the baseline/candidate role; if captures from
+more than two commits are mixed, select the pair with `--baseline <sha>` and
+`--candidate <sha>`. Generated worktrees are cached by
 commit SHA under `perf-results/.cache/branches` and reused by default; use
 `--no-reuse` for fresh checkouts and `--clean-cache` to remove the cache.
 `--ignore-gates memory,FPS` skips named gates. Temporary non-cached worktrees

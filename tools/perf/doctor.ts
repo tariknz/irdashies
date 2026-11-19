@@ -248,6 +248,9 @@ export async function collectDoctorChecks(
   options: DoctorOptions
 ): Promise<DoctorCheck[]> {
   const checks: DoctorCheck[] = [];
+  const recordingCheck = options.inputPath
+    ? await checkRecording(options.inputPath)
+    : undefined;
   const host = collectHostFacts();
   checks.push({
     name: 'Host hardware',
@@ -299,10 +302,16 @@ export async function collectDoctorChecks(
   });
   checks.push({
     name: 'Simulator process',
-    status: simulatorRunning ? 'PASS' : 'WARN',
+    status: simulatorRunning
+      ? 'PASS'
+      : recordingCheck?.status === 'PASS'
+        ? 'SKIP'
+        : 'WARN',
     detail: simulatorRunning
       ? 'iRacing is running; live comparisons should keep the session and camera fixed.'
-      : 'iRacing is not running; use --replay-input for isolated captures.',
+      : recordingCheck?.status === 'PASS'
+        ? 'iRacing is not running; a valid replay recording was supplied.'
+        : 'iRacing is not running; use --replay-input for isolated captures.',
   });
   let projectPackage: ProjectPackage | undefined;
   try {
@@ -448,15 +457,13 @@ export async function collectDoctorChecks(
     });
   }
 
-  if (options.inputPath) {
-    checks.push(await checkRecording(options.inputPath));
-  } else {
-    checks.push({
+  checks.push(
+    recordingCheck ?? {
       name: 'Replay recording',
       status: 'SKIP',
       detail: 'No --input supplied; recording validation was skipped.',
-    });
-  }
+    }
+  );
 
   const publisherPath = path.join(
     packageRoot,

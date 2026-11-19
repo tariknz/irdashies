@@ -33,3 +33,10 @@ export function parseComparisonContrast(values: readonly string[]): ComparisonCo
 export function contrastDescription(contrast: ComparisonContrast): string {
   return contrast.length > 0 ? contrast.join(', ') : 'none';
 }
+
+export const comparisonCheckSatisfied = (check: {
+  passed: boolean | null;
+  target: string;
+}): boolean =>
+  check.passed === true ||
+  (check.passed === null && check.target.startsWith('not-applicable:'));

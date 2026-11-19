@@ -953,13 +953,38 @@ export function summarizeCapture(
               (sum, wait) => sum + wait.durationMs.count,
               0
             ),
-            avg: average(sdkWaitSamples.map((wait) => wait.durationMs.avg)),
+            avg: weightedAverage(
+              sdkWaitSamples.map((wait) => ({
+                value: wait.durationMs.avg,
+                weight: wait.durationMs.count,
+              }))
+            ),
             min: minimum(sdkWaitSamples.map((wait) => wait.durationMs.min)),
             max: maximum(sdkWaitSamples.map((wait) => wait.durationMs.max)),
-            p1: average(sdkWaitSamples.map((wait) => wait.durationMs.p1)),
-            p50: average(sdkWaitSamples.map((wait) => wait.durationMs.p50)),
-            p95: average(sdkWaitSamples.map((wait) => wait.durationMs.p95)),
-            p99: average(sdkWaitSamples.map((wait) => wait.durationMs.p99)),
+            p1: weightedAverage(
+              sdkWaitSamples.map((wait) => ({
+                value: wait.durationMs.p1,
+                weight: wait.durationMs.count,
+              }))
+            ),
+            p50: weightedAverage(
+              sdkWaitSamples.map((wait) => ({
+                value: wait.durationMs.p50,
+                weight: wait.durationMs.count,
+              }))
+            ),
+            p95: weightedAverage(
+              sdkWaitSamples.map((wait) => ({
+                value: wait.durationMs.p95,
+                weight: wait.durationMs.count,
+              }))
+            ),
+            p99: weightedAverage(
+              sdkWaitSamples.map((wait) => ({
+                value: wait.durationMs.p99,
+                weight: wait.durationMs.count,
+              }))
+            ),
           },
           calls: sdkWaitSamples.reduce((sum, wait) => sum + wait.calls, 0),
           reads: sdkWaitSamples.reduce((sum, wait) => sum + wait.reads, 0),
@@ -1443,25 +1468,28 @@ export function compareSummaries(
     name: string,
     actual: number,
     passed: boolean,
-    applicable: boolean,
-    reasons: string[],
+    evidenceReasons: string[],
+    notApplicableReasons: string[],
     target: string
   ) => {
-    const allReasons = [
-      ...reasons,
-      ...(ignoredGates.some((ignored) =>
-        name.toLowerCase().includes(ignored.toLowerCase())
-      )
-        ? ['ignored by --ignore-gates']
-        : []),
+    const ignored = ignoredGates.some((flag) =>
+      name.toLowerCase().includes(flag.toLowerCase())
+    );
+    const reasons = [
+      ...evidenceReasons,
+      ...notApplicableReasons,
+      ...(ignored ? ['ignored by --ignore-gates'] : []),
     ];
+    const applicable =
+      evidenceReasons.length === 0 &&
+      notApplicableReasons.length === 0 &&
+      !ignored;
     return {
-      passed: applicable && allReasons.length === reasons.length ? passed : null,
+      passed: applicable ? passed : null,
       actual,
-      target:
-        applicable && allReasons.length === reasons.length
-          ? target
-          : `not-applicable: ${allReasons.join('; ')}`,
+      target: applicable
+        ? target
+        : `${evidenceReasons.length > 0 ? 'inconclusive:' : 'not-applicable:'} ${reasons.join('; ')}`,
     };
   };
 
@@ -1534,8 +1562,8 @@ export function compareSummaries(
           'iRacing average FPS regression',
           averageFpsPercent,
           averageFpsPercent >= PERF_GATES.averageFpsPercent.minimum,
-          comparableReasons.length === 0 && gameFpsReasons.length === 0,
-          [...comparableReasons, ...gameFpsReasons],
+          comparableReasons,
+          gameFpsReasons,
           `>= ${PERF_GATES.averageFpsPercent.minimum}%`
         ),
       },
@@ -1545,8 +1573,8 @@ export function compareSummaries(
           'iRacing sampled FPS p1 regression',
           onePercentLowFpsPercent,
           onePercentLowFpsPercent >= PERF_GATES.onePercentLowFpsPercent.minimum,
-          comparableReasons.length === 0 && gameFpsReasons.length === 0,
-          [...comparableReasons, ...gameFpsReasons],
+          comparableReasons,
+          gameFpsReasons,
           `>= ${PERF_GATES.onePercentLowFpsPercent.minimum}%`
         ),
       },
@@ -1557,8 +1585,8 @@ export function compareSummaries(
           candidate.telemetry.processTelemetryP99MeanMs,
           candidate.telemetry.processTelemetryP99MeanMs <
             PERF_GATES.processTelemetryP99Ms.maximum,
-          comparableReasons.length === 0,
           comparableReasons,
+          [],
           `< ${PERF_GATES.processTelemetryP99Ms.maximum} ms`
         ),
       },
@@ -1569,8 +1597,8 @@ export function compareSummaries(
           candidate.telemetry.minimumTickRateHz,
           candidate.telemetry.minimumTickRateHz >=
             PERF_GATES.minimumTickRateHz.minimum,
-          comparableReasons.length === 0,
           comparableReasons,
+          [],
           `>= ${PERF_GATES.minimumTickRateHz.minimum} Hz`
         ),
       },
@@ -1582,8 +1610,8 @@ export function compareSummaries(
           Number.isFinite(candidate.app.privateMemorySlopeMBPerMinute) &&
             candidate.app.privateMemorySlopeMBPerMinute <
               PERF_GATES.privateMemorySlopeMBPerMinute.maximum,
-          comparableReasons.length === 0 && memoryReasons.length === 0,
           [...comparableReasons, ...memoryReasons],
+          [],
           `< ${PERF_GATES.privateMemorySlopeMBPerMinute.maximum} MB/min`
         ),
       },
@@ -1594,8 +1622,8 @@ export function compareSummaries(
           candidate.renderer.framesOver50MsPercent,
           candidate.renderer.framesOver50MsPercent <
             PERF_GATES.framesOver50MsPercent.maximum,
-          comparableReasons.length === 0,
           comparableReasons,
+          [],
           `< ${PERF_GATES.framesOver50MsPercent.maximum}%`
         ),
       },

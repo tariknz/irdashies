@@ -1,3 +1,6 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { compareSummaries, parsePerfLog, summarizeCapture } from './analyze';
 import {
@@ -6,6 +9,7 @@ import {
   diagnoseReplayReport,
   diagnosisMarkdown,
   parseDiagnoseOptions,
+  runDiagnosisCli,
 } from './diagnose';
 
 const sampleLog = `[PerfRunOrigin:JSON] {"timestamp":"2026-01-01T00:00:00.000Z","runId":"diagnose-test"}
@@ -311,6 +315,24 @@ describe('performance diagnosis', () => {
     expect(finding?.evidence[0]).toContain('gates:');
   });
 
+  it('does not call deliberately ignored gates inconclusive', () => {
+    const baseline = summary();
+    const candidate = summary();
+    for (const result of [baseline, candidate]) {
+      result.evidence.durationSufficient = true;
+      result.evidence.privateMemorySamplingAdequate = true;
+      result.app.privateMemorySlopeMBPerMinute = 1;
+    }
+    const comparison = compareSummaries(baseline, candidate, [], ['FPS']);
+    const diagnosis = diagnosePerfComparison(comparison);
+
+    expect(
+      diagnosis.findings.some(
+        (finding) => finding.id === 'baseline-checks-inconclusive'
+      )
+    ).toBe(false);
+  });
+
   it('reports unexercised widget inputs and escapes report text for Markdown', () => {
     const result = summary();
     result.evidence.conclusive = true;
@@ -341,6 +363,27 @@ describe('performance diagnosis', () => {
     expect(markdown).toContain('No evidence limitations');
   });
 });
+
+  it('rejects a summary with malformed sdkWait instrumentation', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'perf-diagnose-'));
+    try {
+      const result = summary();
+      const input = path.join(directory, 'summary.json');
+      await writeFile(
+        input,
+        JSON.stringify({ ...result, sdkWait: {} })
+      );
+      await expect(
+        runDiagnosisCli([
+          input,
+          '--output',
+          path.join(directory, 'diagnosis'),
+        ])
+      ).rejects.toThrow(/not a recognized/);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
 
 describe('diagnose CLI options', () => {
   it('accepts analysis windows and computes sidecar output paths', () => {

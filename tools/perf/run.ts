@@ -258,7 +258,7 @@ function parseArgs(args: string[]): {
         displayGeometry: parsed.value('--display-geometry'),
         fpsCap: optionalNumber('--fps-cap'),
         syncMode: parsed.value('--sync-mode'),
-        replaySpeed,
+        replaySpeed: replayInput ? replaySpeed : undefined,
         sdkWait: parsed.flag('--sdk-wait'),
         ...collectHostFacts(),
       },
@@ -468,7 +468,7 @@ const child = spawn(childCommand, childArguments, {
       process.platform,
       process.env
     ),
-    ...(options.replaySpeed !== undefined
+    ...(replayInputPath && options.replaySpeed !== undefined
       ? { IRDASHIES_TELEMETRY_REPLAY_SPEED: String(options.replaySpeed) }
       : {}),
     ...(options.sdkWait ? { PERF_SDK_WAIT: '1' } : {}),

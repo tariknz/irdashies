@@ -13,6 +13,7 @@ import { correlateCapture, type CorrelationFinding } from './correlate.ts';
 import {
   COMPARISON_CONTRASTS,
   PERF_GATES,
+  comparisonCheckSatisfied,
   contrastDescription,
 } from './gates.ts';
 
@@ -474,7 +475,18 @@ function isPerfSummary(value: unknown): value is PerfSummary {
     typeof evidence.privateMemorySamplingAdequate === 'boolean' &&
     isFiniteNumber(evidence.privateMemorySampleCount) &&
     isFiniteNumber(evidence.privateMemorySpanSeconds) &&
-    isStringArray(evidence.inconclusiveReasons)
+    isStringArray(evidence.inconclusiveReasons) &&
+    (value.sdkWait === undefined ||
+      (isRecord(value.sdkWait) &&
+        isRecord(value.sdkWait.durationMs) &&
+        isFiniteNumber(value.sdkWait.durationMs.count) &&
+        isFiniteNumber(value.sdkWait.durationMs.p50) &&
+        isFiniteNumber(value.sdkWait.durationMs.p95) &&
+        isFiniteNumber(value.sdkWait.durationMs.p99) &&
+        isFiniteNumber(value.sdkWait.calls) &&
+        isFiniteNumber(value.sdkWait.unsuccessful) &&
+        isFiniteNumber(value.sdkWait.timeoutMs) &&
+        isFiniteNumber(value.sdkWait.targetHz)))
   );
 }
 
@@ -601,7 +613,7 @@ export function diagnosePerfComparison(
       check.passed === false && check.name !== 'Matched workload metadata'
   );
   const inconclusive = comparison.checks.filter(
-    (check) => check.passed === null
+    (check) => check.passed === null && !comparisonCheckSatisfied(check)
   );
   diagnosis.findings.push({
     id: 'comparison-provenance',

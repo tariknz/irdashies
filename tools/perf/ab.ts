@@ -4,6 +4,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { listArgument, numericArgument, parseArguments } from './args.ts';
 import {
+  comparisonCheckSatisfied,
   contrastDescription,
   parseComparisonContrast,
   type ComparisonContrast,
@@ -315,9 +316,7 @@ const runAb = async (args: string[]): Promise<void> => {
       const comparison = JSON.parse(
         await fs.readFile(summaryPath, 'utf8')
       ) as ComparisonJson;
-      const conclusive = comparison.checks.every(
-        (check) => check.passed === true
-      );
+      const conclusive = comparison.checks.every(comparisonCheckSatisfied);
       reportLines.push(
         `- Evidence: **${conclusive ? 'CONCLUSIVE' : 'INCONCLUSIVE'}**`,
         ''

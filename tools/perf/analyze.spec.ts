@@ -10,6 +10,7 @@ import {
   parseCliArgs,
   parsePerfLog,
   summarizeCapture,
+  type PerfSummary,
   summaryMarkdown,
 } from './analyze';
 
@@ -75,6 +76,7 @@ type TestMainSample = Omit<
   'totalAppPrivateMemoryMB'
 > & {
   totalAppPrivateMemoryMB?: number;
+  sdkWait?: PerfSummary['sdkWait'];
 };
 
 const capture = (
@@ -107,29 +109,39 @@ const conclusiveSamples = (fps = 100) =>
 describe('performance analysis', () => {
   it('aggregates optional SDK wait instrumentation when present', () => {
     const waitStats = stats(4);
-    const sample = {
-      ...mainSample(5, 100, 100, 100, 5000),
-      sdkWait: {
-        durationMs: waitStats,
-        calls: 10,
-        reads: 9,
-        unsuccessful: 1,
-        totalMs: 40,
-        timeoutMs: 16,
-        targetHz: 60,
-      },
-    };
-    const summary = summarizeCapture(capture([sample]), 0);
-
-    expect(summary.sdkWait).toMatchObject({
-      calls: 10,
-      reads: 9,
+    const sdkWait = (count: number, p95: number) => ({
+      durationMs: { ...waitStats, count, p95 },
+      calls: count / 10,
+      reads: count / 10 - 1,
       unsuccessful: 1,
-      totalMs: 40,
+      totalMs: count / 2,
       timeoutMs: 16,
       targetHz: 60,
     });
-    expect(summary.sdkWait?.durationMs.count).toBe(waitStats.count);
+    const summary = summarizeCapture(
+      capture([
+        {
+          ...mainSample(5, 100, 100, 100, 5000),
+          sdkWait: sdkWait(100, 7),
+        },
+        {
+          ...mainSample(10, 100, 100, 100, 5000),
+          sdkWait: sdkWait(300, 15),
+        },
+      ]),
+      0
+    );
+
+    expect(summary.sdkWait).toMatchObject({
+      calls: 40,
+      reads: 38,
+      unsuccessful: 2,
+      totalMs: 200,
+      timeoutMs: 16,
+      targetHz: 60,
+    });
+    expect(summary.sdkWait?.durationMs.count).toBe(400);
+    expect(summary.sdkWait?.durationMs.p95).toBeCloseTo(13);
     expect(summaryMarkdown(summary)).toContain('SDK wait p50/p95/p99');
   });
 
