@@ -391,7 +391,7 @@ describe('tape-backed native SDK', () => {
     try {
       expect(sdk.startSDK()).toBe(true);
       expect(sdk.waitForData(100)).toBe(true);
-      const readView = sdk.getTelemetryDataView;
+      const readView = sdk.getTelemetryDataView?.bind(sdk);
       if (!readView) throw new Error('Native frame view unavailable');
       const first = readView();
       for (let read = 0; read < 40; read += 1) {
