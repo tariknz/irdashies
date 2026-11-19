@@ -41,17 +41,19 @@ describe('performance run provenance metadata', () => {
     ]);
     vi.mocked(readProcessPrivateMemoryKB).mockResolvedValue(2048);
     const metrics = new TelemetryPerfMetrics(true);
-    metrics.startReporting(1000);
+    const platform = process.platform;
+    Object.defineProperty(process, 'platform', { value: 'linux' });
     try {
+      metrics.startReporting(1000);
       await vi.waitFor(() => {
         expect(metrics.report().totalAppPrivateMemoryMB).toBe(2);
         expect(metrics.report().processes?.[0].privateMemoryMB).toBe(2);
       });
     } finally {
+      Object.defineProperty(process, 'platform', { value: platform });
       metrics.stopReporting();
     }
   });
-
 
   it('preserves source revision and worktree state from the run metadata', () => {
     vi.stubEnv(
