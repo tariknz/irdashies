@@ -24,6 +24,7 @@ import { shallow } from 'zustand/shallow';
 import { PitCountdownBar } from './components/PitCountdownBar';
 import { PitExitInputs } from './components/PitExitInputs';
 import { PitSpeedBar } from './components/PitSpeedBar';
+import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 
 const EMPTY_PIT_STATE: readonly [number, boolean, number | undefined] = [
   3,
@@ -66,9 +67,8 @@ export const PitlaneHelper = () => {
   const limiterWarning = usePitLimiterWarning(config.enablePitLimiterWarning);
   const traffic = usePitlaneTraffic(config.showPitlaneTraffic);
 
-  // Generate demo data when in demo mode
-  if (isDemoMode) {
-    const demoData = getDemoPitlaneData();
+  const demoData = useDemoFrame(isDemoMode, getDemoPitlaneData);
+  if (isDemoMode && demoData) {
     return <PitlaneHelperDisplay {...demoData} config={config} />;
   }
 

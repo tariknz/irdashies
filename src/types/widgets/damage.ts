@@ -42,7 +42,7 @@ export default defineWidgetManifest({
       type: 'boolean',
       label: 'Show Damage %',
       description:
-        'Draw remaining integrity percentage on the car silhouette (aero when available, otherwise bodywork).',
+        'Show remaining integrity next to each damaged body or suspension area (hidden at 100%).',
     },
     showStats: {
       type: 'boolean',

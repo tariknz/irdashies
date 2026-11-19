@@ -5,14 +5,20 @@ import {
   aeroIntegrity,
   bodyIntegrity,
   bodyTier,
+  cornerIntegrity,
+  formatDamagedPct,
+  getDemoDamage,
   hasCarDamage,
   integrityFraction,
   iracingBodyTier,
   isPunctured,
+  panelIntegrity,
+  panelsIntegrity,
   suspTier,
   suspensionIntegrity,
   tyreIntegrity,
   tyreWearTier,
+  worstBodyTier,
 } from './logic';
 
 describe('damage logic', () => {
@@ -64,6 +70,30 @@ describe('damage logic', () => {
     expect(tyreIntegrity([0.9, 0.8, 0.7, 0.6])).toBeCloseTo(0.6);
     expect(isPunctured(0.005)).toBe(true);
     expect(isPunctured(0.5)).toBe(false);
+  });
+
+  it('maps panel and corner integrity for area labels', () => {
+    expect(panelIntegrity(0)).toBe(1);
+    expect(panelIntegrity(1)).toBe(0.5);
+    expect(panelIntegrity(2)).toBe(0);
+    expect(panelsIntegrity([0, 1, 0])).toBe(0.5);
+    expect(worstBodyTier(0, 1, 0)).toBe('light');
+    expect(worstBodyTier(0, 0, 2)).toBe('heavy');
+    expect(cornerIntegrity(false, 0.01, 1, true)).toBe(1);
+    expect(cornerIntegrity(false, 0.2, 1, true)).toBeCloseTo(0.8);
+    expect(cornerIntegrity(true, 0, 1, true)).toBe(0);
+    expect(cornerIntegrity(false, undefined, 0.005, false)).toBe(0);
+    expect(cornerIntegrity(false, undefined, 0.5, false)).toBeNull();
+    expect(formatDamagedPct(1)).toBeNull();
+    expect(formatDamagedPct(0.8)).toBe('80%');
+  });
+
+  it('animates demo damage beyond repair timers', () => {
+    const a = getDemoDamage(0);
+    const b = getDemoDamage(7);
+    expect(a.dentSeverity).not.toEqual(b.dentSeverity);
+    expect(a.suspensionDamage).not.toEqual(b.suspensionDamage);
+    expect(a.aeroDamage).not.toBe(b.aeroDamage);
   });
 
   it('detects damage without treating normal tyre wear as damage', () => {

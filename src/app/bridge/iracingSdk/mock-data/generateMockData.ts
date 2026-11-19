@@ -364,6 +364,38 @@ export function generateMockData(sessionData?: {
                 ...prevTelemetry.CarIdxP2P_Count,
                 value: demoP2PCount,
               },
+              // Drive friction circle / steering meter — frozen JSON values
+              // left those widgets looking dead in demo mode.
+              LatAccel: {
+                ...prevTelemetry.LatAccel,
+                value: [
+                  Math.sin(state.sessionTime * 1.4) * 9.5 +
+                    Math.sin(state.sessionTime * 0.35) * 3,
+                ],
+              },
+              LongAccel: {
+                ...prevTelemetry.LongAccel,
+                value: [
+                  (jitteredThrottleValue - jitteredBrakeValue) * 8 -
+                    Math.sin(state.sessionTime * 0.9) * 2,
+                ],
+              },
+              SteeringWheelAngle: {
+                ...prevTelemetry.SteeringWheelAngle,
+                value: [
+                  Math.sin(state.sessionTime * 0.85) * 1.1 +
+                    Math.sin(state.sessionTime * 2.3) * 0.25,
+                ],
+              },
+              CarLeftRight: {
+                ...prevTelemetry.CarLeftRight,
+                value: [
+                  // Cycle clear / left / right / both every ~3s
+                  ([1, 2, 3, 4, 1, 5, 6] as const)[
+                    Math.floor(state.sessionTime / 3) % 7
+                  ],
+                ],
+              },
             } as unknown as Telemetry;
             prevTelemetry = t;
           }

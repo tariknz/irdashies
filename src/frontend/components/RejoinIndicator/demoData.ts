@@ -21,20 +21,15 @@ export interface RejoinIndicatorDemoData {
   status: 'Clear' | 'Caution' | 'Do Not Rejoin';
 }
 
-// Demo data for rejoin indicator
-export const getDemoRejoinData = (
-  settings: RejoinIndicatorSettings | undefined
-): RejoinIndicatorDemoData => {
-  // Demo: car behind at 1.5 seconds - should show "Caution" status
-  const gap = 1.5;
-  const cfg = settings?.config || { careGap: 2, stopGap: 1 };
+/** Gap sweeps Clear → Caution → Do Not Rejoin over ~12s (default thresholds). */
+export const getDemoRejoinData = (elapsedSec = 0): RejoinIndicatorDemoData => {
+  const careGap = 2;
+  const stopGap = 1;
+  const phase = (elapsedSec % 12) / 12;
+  const gap = 0.2 + Math.abs(1 - 2 * phase) * 2.8;
 
   const status =
-    gap >= cfg.careGap
-      ? 'Clear'
-      : gap >= cfg.stopGap
-        ? 'Caution'
-        : 'Do Not Rejoin';
+    gap >= careGap ? 'Clear' : gap >= stopGap ? 'Caution' : 'Do Not Rejoin';
 
   return {
     gap: gap.toFixed(1),

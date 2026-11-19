@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import {
   useSessionVisibility,
   useDashboard,
@@ -7,6 +7,7 @@ import {
   useDrivingState,
   useActiveSimulator,
 } from '@irdashies/context';
+import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 import {
   simulatorHasDriverRatings,
   type GeneralSettingsType,
@@ -80,15 +81,16 @@ export const FasterCarsFromBehind = () => {
   const simulator = useActiveSimulator();
   const hasDriverRatings = isDemoMode || simulatorHasDriverRatings(simulator);
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
+  const demoAt = useCallback(
+    (elapsedSec: number) =>
+      getDemoCarsBehind(settings?.numberDriversBehind || 1, elapsedSec),
+    [settings?.numberDriversBehind]
+  );
+  const demoCars = useDemoFrame(isDemoMode, demoAt);
+  const demoCarsBehind = isDemoMode && demoCars ? demoCars : carsBehind;
 
   if (!isSessionVisible) return <></>;
   if (!isDemoMode && settings?.showOnlyWhenOnTrack && !isDriving) return <></>;
-
-  // Generate demo data when in demo mode
-  const demoCarsBehind = isDemoMode
-    ? getDemoCarsBehind(settings?.numberDriversBehind || 1)
-    : carsBehind;
-
   if (demoCarsBehind.length === 0) return null;
 
   // Apply alignment based on alignDriverBoxes setting

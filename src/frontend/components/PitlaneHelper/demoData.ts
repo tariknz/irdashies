@@ -64,43 +64,55 @@ export interface PitlaneHelperDemoData {
   surface: number;
 }
 
-// Demo data for pitlane helper
-export const getDemoPitlaneData = (): PitlaneHelperDemoData => {
+/** Approach → pit box → exit over ~16s, with speed/limiter pulsing. */
+export const getDemoPitlaneData = (elapsedSec = 0): PitlaneHelperDemoData => {
+  const cycle = 16;
+  const t = elapsedSec % cycle;
+  const progress = Math.min(100, (t / 12) * 100);
+  const playerPct = Math.min(0.98, 0.15 + (t / 12) * 0.8);
+  const overLimit = t < 5 || (t > 9 && t < 12);
+  const deltaKph = overLimit
+    ? 1.5 + Math.sin(elapsedSec * 3) * 2.5
+    : -2 + Math.sin(elapsedSec * 2);
+  const speedKph = 60 + deltaKph;
+  const isSpeeding = deltaKph > 0;
+  const showLimiter = overLimit;
+
   return {
     speed: {
-      deltaKph: 2.5,
-      deltaMph: 1.6,
+      deltaKph,
+      deltaMph: deltaKph * 0.621,
       limitKph: 60,
       limitMph: 37.3,
       hasLimit: true,
-      speedKph: 62.5,
-      speedMph: 38.8,
-      colorClass: 'text-red-500',
-      isPulsing: false,
-      isSpeeding: true,
-      isSeverelyOver: false,
+      speedKph,
+      speedMph: speedKph * 0.621,
+      colorClass: isSpeeding ? 'text-red-500' : 'text-green-400',
+      isPulsing: isSpeeding,
+      isSpeeding,
+      isSeverelyOver: deltaKph > 3,
     },
     position: {
-      distanceToPit: 45,
-      distanceToPitEntry: 0,
-      distanceToPitExit: 85,
-      progressPercent: 75,
-      isApproaching: true,
-      pitboxPct: 0.85,
-      playerPct: 0.8,
-      isEarlyPitbox: false,
+      distanceToPit: Math.max(0, 120 - t * 12),
+      distanceToPitEntry: Math.max(0, 40 - t * 8),
+      distanceToPitExit: Math.max(0, 160 - t * 12),
+      progressPercent: progress,
+      isApproaching: t < 4,
+      pitboxPct: 0.75,
+      playerPct,
+      isEarlyPitbox: t > 3 && t < 5,
     },
     isVisible: true,
     limiterWarning: {
-      showWarning: true,
-      warningText: 'ENGAGE PIT LIMITER',
+      showWarning: showLimiter,
+      warningText: showLimiter ? 'ENGAGE PIT LIMITER' : '',
       isTeamRaceWarning: false,
     },
     traffic: {
-      carsAhead: 2,
-      carsBehind: 1,
+      carsAhead: t < 8 ? 2 : 1,
+      carsBehind: t < 6 ? 1 : 2,
       totalCars: 3,
     },
-    surface: 2, // On pit road
+    surface: 2,
   };
 };

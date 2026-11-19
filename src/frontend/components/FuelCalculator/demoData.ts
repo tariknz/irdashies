@@ -36,7 +36,7 @@ export const demoFuelGraph = {
   maxFuel: Math.max(...fuelValues),
 };
 
-export const demoFuelData: FuelCalculation = {
+const DEMO_FUEL_BASE: FuelCalculation = {
   fuelLevel: 32.6,
   lastLapUsage: fuelValues[fuelValues.length - 1],
   currentLapUsage: 1.3,
@@ -72,4 +72,51 @@ export const demoFuelData: FuelCalculation = {
   fuelStatus: 'safe',
   lapsRange: [31, 34],
   maxQualify: null,
+};
+
+/** Static snapshot for stories / specs. */
+export const demoFuelData: FuelCalculation = DEMO_FUEL_BASE;
+
+/** Fuel burns and lap advances over a ~90s stint loop. */
+export const getDemoFuelData = (elapsedSec = 0): FuelCalculation => {
+  const lapSec = 90;
+  const fuelPerLap = 2.35;
+  const startFuel = 45;
+  const startLap = 3;
+  const lapsDone = Math.floor(elapsedSec / lapSec);
+  const lapFrac = (elapsedSec % lapSec) / lapSec;
+  const fuelLevel = Math.max(
+    0,
+    startFuel - lapsDone * fuelPerLap - lapFrac * fuelPerLap
+  );
+  const currentLap = startLap + lapsDone;
+  const lapsWithFuel = fuelLevel / fuelPerLap;
+  const lapsRemaining = Math.max(0, 35 - currentLap);
+  const fuelToFinish = lapsRemaining * fuelPerLap;
+  const fuelToAdd = Math.max(0, fuelToFinish - fuelLevel);
+  const canFinish = fuelLevel >= fuelToFinish;
+  const fuelStatus =
+    lapsWithFuel < lapsRemaining - 1
+      ? 'danger'
+      : lapsWithFuel < lapsRemaining + 1
+        ? 'caution'
+        : 'safe';
+
+  return {
+    ...DEMO_FUEL_BASE,
+    fuelLevel: Number(fuelLevel.toFixed(1)),
+    currentLapUsage: Number((lapFrac * fuelPerLap).toFixed(2)),
+    currentLap,
+    lastFinishedLap: Math.max(0, currentLap - 1),
+    lapsWithFuel: Number(lapsWithFuel.toFixed(1)),
+    lapsRemaining,
+    fuelToFinish: Number(fuelToFinish.toFixed(1)),
+    fuelToAdd: Number(fuelToAdd.toFixed(1)),
+    fuelAtFinish: Number((fuelLevel - fuelToFinish).toFixed(1)),
+    canFinish,
+    fuelStatus,
+    pitWindowOpen: Math.max(0, currentLap + Math.floor(lapsWithFuel) - 2),
+    pitWindowClose: Math.max(0, currentLap + Math.floor(lapsWithFuel)),
+    stopsRemaining: canFinish ? 0 : 1,
+  };
 };

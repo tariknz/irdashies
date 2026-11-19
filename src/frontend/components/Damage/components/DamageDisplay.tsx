@@ -13,14 +13,16 @@ import {
   CORNER_OK_BG,
   SUSP_FILL,
   bodyTier,
-  formatIntegrityPct,
-  integrityFraction,
+  cornerIntegrity,
+  formatDamagedPct,
   iracingBodyTier,
   isPunctured,
+  panelsIntegrity,
   suspTier,
   tyreWearTier,
+  worstBodyTier,
 } from '../logic';
-import { CarSilhouette } from './CarSilhouette';
+import { CarSilhouette, type DamageAreaLabels } from './CarSilhouette';
 
 export interface DamageDisplayProps {
   data: DamageSnapshot;
@@ -76,12 +78,21 @@ function cornerStyle(fill: string): {
   className: string;
 } {
   if (fill === SUSP_FILL.ok) {
-    return { backgroundColor: CORNER_OK_BG, className: 'text-[#39ff14]' };
+    return { backgroundColor: CORNER_OK_BG, className: 'text-teal-300' };
   }
   if (fill === SUSP_FILL.detached) {
     return { backgroundColor: fill, className: 'text-slate-200' };
   }
   return { backgroundColor: fill, className: 'text-slate-950' };
+}
+
+function iracingBodyIntegrity(
+  repairNeeded: boolean,
+  optRepairNeeded: boolean
+): number {
+  if (repairNeeded) return 0.5;
+  if (optRepairNeeded) return 0.75;
+  return 1;
 }
 
 export const DamageDisplay = ({
@@ -95,28 +106,87 @@ export const DamageDisplay = ({
     ? data.dentSeverity
     : Array.from({ length: 8 }, () => 0);
   const fallbackTier = iracingBodyTier(data.repairNeeded, data.optRepairNeeded);
-  const panelFill = Array.from(
-    { length: 8 },
-    (_, index) => BODY_FILL[hasDents ? bodyTier(dents[index]) : fallbackTier]
-  );
 
-  const centre =
-    integrityFraction(data.aeroDamage, hasDents ? dents : []) ??
-    (data.repairNeeded ? 0.5 : data.optRepairNeeded ? 0.75 : 1);
+  const frontTier = hasDents
+    ? worstBodyTier(dents[0], dents[1], dents[2])
+    : fallbackTier;
+  const rightTier = hasDents
+    ? worstBodyTier(dents[2], dents[4], dents[7])
+    : fallbackTier;
+  const rearTier = hasDents
+    ? worstBodyTier(dents[5], dents[6], dents[7])
+    : fallbackTier;
+  const leftTier = hasDents
+    ? worstBodyTier(dents[0], dents[3], dents[5])
+    : fallbackTier;
+
+  const bodyStroke: [string, string, string, string] = [
+    BODY_FILL[frontTier],
+    BODY_FILL[rightTier],
+    BODY_FILL[rearTier],
+    BODY_FILL[leftTier],
+  ];
+  const wingFill = BODY_FILL[hasDents ? bodyTier(dents[6]) : fallbackTier];
+
   const hasSusp = data.suspensionDamage.some(
     (v) => Number.isFinite(v) && v >= 0
   );
 
   const wheelFill = [0, 1, 2, 3].map((index) => {
+    if (data.wheelDetached[index]) return SUSP_FILL.detached;
+    return SUSP_FILL[tyreWearTier(data.tyreWear[index])];
+  });
+
+  const suspFill = [0, 1, 2, 3].map((index) => {
     const detached = !!data.wheelDetached[index];
     if (hasSusp || detached) {
       return SUSP_FILL[suspTier(detached, data.suspensionDamage[index])];
     }
-    return SUSP_FILL[tyreWearTier(data.tyreWear[index])];
+    if (isPunctured(data.tyreWear[index])) return SUSP_FILL.detached;
+    return BODY_FILL.ok;
   });
+
   const punctured = [0, 1, 2, 3].map(
     (index) => isPunctured(data.tyreWear[index]) && !data.wheelDetached[index]
   );
+
+  const labels: DamageAreaLabels = {};
+  if (showIntegrity) {
+    if (hasDents) {
+      labels.front = formatDamagedPct(
+        panelsIntegrity([dents[0], dents[1], dents[2]])
+      );
+      labels.right = formatDamagedPct(
+        panelsIntegrity([dents[2], dents[4], dents[7]])
+      );
+      labels.rear = formatDamagedPct(
+        panelsIntegrity([dents[5], dents[6], dents[7]])
+      );
+      labels.left = formatDamagedPct(
+        panelsIntegrity([dents[0], dents[3], dents[5]])
+      );
+    } else {
+      const bodyPct = formatDamagedPct(
+        iracingBodyIntegrity(data.repairNeeded, data.optRepairNeeded)
+      );
+      if (bodyPct) {
+        labels.front = bodyPct;
+        labels.rear = bodyPct;
+      }
+    }
+
+    const cornerKeys = ['fl', 'fr', 'rl', 'rr'] as const;
+    for (let index = 0; index < 4; index++) {
+      labels[cornerKeys[index]] = formatDamagedPct(
+        cornerIntegrity(
+          !!data.wheelDetached[index],
+          data.suspensionDamage[index],
+          data.tyreWear[index],
+          hasSusp || !!data.wheelDetached[index]
+        )
+      );
+    }
+  }
 
   return (
     <div
@@ -131,8 +201,11 @@ export const DamageDisplay = ({
         <div className="relative min-h-0 min-w-0 flex-1">
           <CarSilhouette
             style={bodyStyle}
-            panelFill={panelFill}
-            integrityLabel={showIntegrity ? formatIntegrityPct(centre) : null}
+            bodyStroke={bodyStroke}
+            wingFill={wingFill}
+            wheelFill={wheelFill}
+            suspFill={suspFill}
+            labels={labels}
           />
         </div>
         <StatusIcons warnings={data.engineWarnings ?? 0} />
@@ -140,7 +213,11 @@ export const DamageDisplay = ({
 
       <div className="grid shrink-0 grid-cols-2 gap-1">
         {CORNER_LABELS.map((label, index) => {
-          const style = cornerStyle(wheelFill[index]);
+          const badgeFill =
+            hasSusp || data.wheelDetached[index]
+              ? suspFill[index]
+              : wheelFill[index];
+          const style = cornerStyle(badgeFill);
           const hole = punctured[index];
           return (
             <div

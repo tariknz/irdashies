@@ -82,7 +82,7 @@ export const DamageSettings = () => {
   return (
     <BaseSettingsSection
       title="Damage"
-      description="iRacing-style vehicle damage wireframe. Body and wheel damage colour the silhouette; engine warnings show as side icons. Shape follows car class (GT front/mid/rear engine, prototype, open-wheel, hatch, stock, truck)."
+      description="Top-down chassis schematic with wheels and suspension markers. Damaged areas turn yellow/red and show remaining % when enabled. Engine warnings appear as side icons."
       settings={settings}
       onSettingsChange={(s) => setSettings(s)}
       widgetId={SETTING_ID}
