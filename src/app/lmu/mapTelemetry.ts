@@ -548,10 +548,6 @@ export function mapLmuTelemetry(
   t.CarIdxSessionFlags = numArr(carSessionFlags(raw));
   t.CarDistAhead = numArr(undefined);
   t.CarDistBehind = numArr(undefined);
-  // Radar treats these offsets as relative to CamCarIdx. They are measured
-  // from the player, so withhold them when the camera is on another car and
-  // let RadarProcessor fall back to lap-distance. Blind-spot still uses the
-  // player-relative buffer above.
   const relativeForRadar =
     relativePositions && focusCarIdx(restCells, playerIdx) === playerIdx
       ? relativePositions
@@ -772,10 +768,6 @@ export function mapLmuTelemetry(
   t.FuelLevelPct = num(
     raw.fuelCapacity && raw.fuel !== undefined ? raw.fuel / raw.fuelCapacity : 0
   );
-  // iRacing publishes PitSpeedLimiter on EngineWarnings when the limiter is
-  // engaged; LMU splits that into a switch (speedLimiter) and an active cut
-  // (speedLimiterActive). Either means "limiter on" for overlays that key off
-  // the iRacing bit (tach blink, pitlane helper).
   t.EngineWarnings = num(
     raw.speedLimiterActive || raw.speedLimiter
       ? EngineWarnings.PitSpeedLimiter

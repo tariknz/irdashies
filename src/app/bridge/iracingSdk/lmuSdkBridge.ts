@@ -57,6 +57,7 @@ import {
   LmuTrackMapStorage,
   tinyPedalTrackMapDirectories,
 } from '../../lmu/trackMap';
+import { LmuSectorBoundaryLearner } from '../../lmu/sectorBoundaries';
 import { createRaceosClient, type RaceosClient } from '../../lmu/raceos/client';
 import { raceosUsername } from '../../lmu/raceos/parse';
 import { createLmuTapeRatingClient } from '../../lmu/raceos/tapeRatings';
@@ -213,6 +214,7 @@ export async function publishLmuSDKEvents(
   const { NativeLmu } = await import('../../lmu/native');
   const sdk = new NativeLmu();
   const mapRecorder = new LmuTrackMapRecorder();
+  const sectorBoundaries = new LmuSectorBoundaryLearner();
   const mapStorage = new LmuTrackMapStorage(
     path.join(app.getPath('userData'), 'lmu-track-maps.json')
   );
@@ -502,6 +504,7 @@ export async function publishLmuSDKEvents(
           lastSessionSignature = null;
           resetLmuLapDistanceState(lapDistanceState);
           resetLmuOpponentLapDistanceState(opponentLapDistanceState);
+          sectorBoundaries.reset(activeTrackName);
           rosterGate.reset();
           sessionIdentity.reset();
           dataFreeze.reset();
@@ -551,6 +554,7 @@ export async function publishLmuSDKEvents(
           }
         }
         mapRecorder.reset(activeTrackName);
+        sectorBoundaries.reset(activeTrackName);
         // Session settings and the forecast are fetched once per activation,
         // and a new track means a new session.
         restPoller.invalidateOnce();
@@ -718,7 +722,8 @@ export async function publishLmuSDKEvents(
             trackMap,
             restData.session,
             (driverName) => ratingClient.get(driverName),
-            sessionIdentity
+            sessionIdentity,
+            sectorBoundaries.boundaries()
           );
           mapSessionMs = performance.now() - mapStartedAt;
           perfMetrics.markEnd('mapSession');
@@ -821,6 +826,18 @@ export async function publishLmuSDKEvents(
             logger.error('[lmuSdkBridge] Failed to save track map', error);
           }
         }
+      }
+      if (
+        sectorBoundaries.update(
+          raw.currentSector,
+          telemetry.LapDistPct?.value[0] as number | undefined
+        )
+      ) {
+        lastSessionSignature = null;
+        const [s2, s3] = sectorBoundaries.boundaries() ?? [];
+        logger.info(
+          `[lmuSdkBridge] Learned sector boundaries for ${activeTrackName}: S2 ${s2?.toFixed(4)}, S3 ${s3?.toFixed(4)}`
+        );
       }
       processorHost?.onFrame(telemetry);
 

@@ -184,6 +184,51 @@ describe('LMU track map', () => {
     expect(map?.active.trackPathPoints).toHaveLength(512);
   });
 
+  it('drops a lap cut short by a trip to the garage and saves the next full lap', () => {
+    const recorder = new LmuTrackMapRecorder();
+    for (let index = 0; index <= 40; index++) {
+      expect(recorder.update(frame(index / 100))).toBeNull();
+    }
+    for (let index = 0; index < 10; index++) {
+      expect(
+        recorder.update(frame(0.4, { playerHasVehicle: false }))
+      ).toBeNull();
+    }
+    expect(recorder.update(frame(0, { lapStartET: 300 }))).toBeNull();
+    for (let index = 1; index <= 100; index++) {
+      expect(
+        recorder.update(frame(index / 100, { lapStartET: 300 }))
+      ).toBeNull();
+    }
+    const map = recorder.update(frame(0, { lapStartET: 400, pos: [0, 12, 0] }));
+    expect(map?.active.trackPathPoints).toHaveLength(512);
+  });
+
+  it('drops a lap with a hole in the middle of its recording', () => {
+    const recorder = new LmuTrackMapRecorder();
+    for (let index = 0; index <= 40; index++) {
+      recorder.update(frame(index / 100));
+    }
+    for (let index = 90; index <= 100; index++) {
+      recorder.update(frame(index / 100));
+    }
+    expect(
+      recorder.update(frame(0, { lapStartET: 200, pos: [0, 12, 0] }))
+    ).toBeNull();
+  });
+
+  it('drops a lap whose recording starts after the line', () => {
+    const recorder = new LmuTrackMapRecorder();
+    expect(recorder.update(frame(0.99))).toBeNull();
+    expect(recorder.update(frame(0.2, { lapStartET: 200 }))).toBeNull();
+    for (let index = 21; index <= 100; index++) {
+      recorder.update(frame(index / 100, { lapStartET: 200 }));
+    }
+    expect(
+      recorder.update(frame(0, { lapStartET: 300, pos: [0, 12, 0] }))
+    ).toBeNull();
+  });
+
   it('parses TinyPedal raw map coordinates', () => {
     const points = Array.from(
       { length: 20 },

@@ -8,6 +8,7 @@ const HEIGHT = 1080;
 const MARGIN = 80;
 const RESAMPLED_POINTS = 512;
 const MIN_RECORDED_POINTS = 20;
+const MAX_COVERAGE_GAP_FRACTION = 0.05;
 
 interface RecordedPoint {
   x: number;
@@ -319,18 +320,38 @@ export class LmuTrackMapRecorder {
     trackLength: number,
     lastLapTime: number
   ): LmuTrackMap | null {
-    const first = this.points[0];
-    const last = this.points[this.points.length - 1];
     if (
       !finite(lastLapTime) ||
       lastLapTime <= 0 ||
       this.points.length < MIN_RECORDED_POINTS ||
-      !first ||
-      !last
+      !this.coversLap(trackLength)
     ) {
       return null;
     }
     return normalizeLmuTrackMap(this.points, trackLength);
+  }
+
+  private coversLap(trackLength: number): boolean {
+    const maxGap = trackLength * MAX_COVERAGE_GAP_FRACTION;
+    const first = this.points[0];
+    const last = this.points[this.points.length - 1];
+    if (
+      !first ||
+      !last ||
+      first.distance > maxGap ||
+      last.distance < trackLength - maxGap
+    ) {
+      return false;
+    }
+    for (let index = 1; index < this.points.length; index += 1) {
+      if (
+        this.points[index].distance - this.points[index - 1].distance >
+        maxGap
+      ) {
+        return false;
+      }
+    }
+    return true;
   }
 }
 

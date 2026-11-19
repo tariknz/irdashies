@@ -31,19 +31,12 @@ import { lmuShiftPointRpm } from './shiftPoints';
  */
 export const LMU_PIT_SPEED_LIMIT_KPH = 60;
 
-/**
- * LMU's mTrackGripLevel as the words the rubber readout already prints.
- *
- * TinyPedal maps the same four steps onto 0.25 / 0.5 / 0.75 / 0.9. The
- * weather widget only has a string, so the steps are named instead.
- * 0 is "not reported" and stays blank. Confirm 1–4 against a recording if
- * the names ever look wrong in live weather.
- */
 export const lmuGripRubber = (grip: number): string => {
+  if (grip === 0) return 'green';
   if (grip === 1) return 'low';
-  if (grip === 2) return 'moderate';
-  if (grip === 3) return 'high';
-  if (grip === 4) return 'maximum';
+  if (grip === 2) return 'medium';
+  if (grip === 3) return 'heavy';
+  if (grip === 4) return 'saturated';
   return '';
 };
 
@@ -379,7 +372,8 @@ export function mapLmuSession(
    * SessionUniqueID on the frame, and a disagreement would read as a session
    * change on every other tick.
    */
-  sessionIdentity?: LmuSessionIdentity
+  sessionIdentity?: LmuSessionIdentity,
+  sectorBoundaries?: readonly number[] | null
 ): Session {
   const trackLengthM = raw.lapDist;
   const playerDriver = raw.drivers.find((d) => d.isPlayer);
@@ -445,8 +439,6 @@ export function mapLmuSession(
     CarScreenName: d.vehicleName,
     CarScreenNameShort: d.vehicleName.split(' ')[0] ?? '',
     CarCfg: 0,
-    // vehicleModel is the chassis name when vehicleName is a team livery;
-    // tachometer / shift-light car LED lookup uses it as an alias.
     CarCfgName: d.vehicleModel ?? null,
     CarCfgCustomPaintExt: null,
     // The canonical class, so the standings group by "LMP2" rather than the
@@ -753,13 +745,13 @@ export function mapLmuSession(
       DriverTires: lmuDriverTires(raw.drivers, rest?.tireCompounds),
       Drivers: drivers,
     },
-    // Nominal thirds label sectors until LMU exposes boundary distances.
-    // Sector Delta reads LMU's own sector times via SectorTimingProcessor.
+    // LMU publishes no boundary distances: the real ones are learned from the
+    // player's sector changes (sectorBoundaries.ts), nominal thirds until then.
     SplitTimeInfo: {
       Sectors: [
         { SectorNum: 0, SectorStartPct: 0 },
-        { SectorNum: 1, SectorStartPct: 1 / 3 },
-        { SectorNum: 2, SectorStartPct: 2 / 3 },
+        { SectorNum: 1, SectorStartPct: sectorBoundaries?.[0] ?? 1 / 3 },
+        { SectorNum: 2, SectorStartPct: sectorBoundaries?.[1] ?? 2 / 3 },
       ],
     },
     CarSetup: { UpdateCount: 0 },

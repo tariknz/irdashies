@@ -77,6 +77,8 @@ export const lmuStateSignature = (session: LmuRawSession): string => {
   out += SEP;
   out += session.cloudCoverage;
   out += SEP;
+  out += session.trackGripLevel;
+  out += SEP;
   out += session.wind;
   out += SEP;
   out += session.raining;
