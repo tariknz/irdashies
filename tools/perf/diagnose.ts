@@ -293,6 +293,21 @@ export function diagnosePerfSummary(summary: PerfSummary): PerfDiagnosis {
     });
   }
 
+  if (summary.sdkWait && summary.sdkWait.durationMs.count > 0) {
+    add({
+      id: 'sdk-wait-duration',
+      severity:
+        summary.sdkWait.unsuccessful > 0 ? 'caution' : 'info',
+      title: 'SDK wait durations were recorded',
+      evidence: [
+        `wait p50/p95/p99: ${format(summary.sdkWait.durationMs.p50, 3)} / ${format(summary.sdkWait.durationMs.p95, 3)} / ${format(summary.sdkWait.durationMs.p99, 3)} ms across ${summary.sdkWait.durationMs.count} samples.`,
+        `${summary.sdkWait.unsuccessful} unsuccessful reads of ${summary.sdkWait.calls} waits; timeout ${summary.sdkWait.timeoutMs} ms, target ${format(summary.sdkWait.targetHz)} Hz.`,
+      ],
+      nextStep:
+        'Compare matched runs with the same replay speed and polling configuration. An unsuccessful native read is not by itself evidence of an OS timeout.',
+    });
+  }
+
   if (
     summary.renderer.framesOver50MsPercent > PERF_GATES.framesOver50MsPercent.maximum
   ) {

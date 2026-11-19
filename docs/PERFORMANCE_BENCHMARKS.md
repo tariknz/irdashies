@@ -58,6 +58,11 @@ connection and pass `--simulator-mode replay` to label the metadata. This flag
 does not start a tape publisher; `--replay-input` selects the isolated publisher.
 Pin and verify replay frame/session/camera and normal-speed playback separately.
 
+`--replay-speed N` sets `IRDASHIES_TELEMETRY_REPLAY_SPEED` for the replay
+(0.25–100) and records it in scenario metadata; it is useful for reproducing
+max-speed stress captures. `perf:trace` accepts the same value via `--speed`
+or `--replay-speed`.
+
 `--user-data-dir <directory>` forwards an isolated profile directory to
 Electron, including through Forge for the development target. Use a path
 without spaces or shell metacharacters. Seed it from the saved profile,
@@ -366,6 +371,24 @@ additive CPU time.
 Tracing adds overhead, so keep these runs separate from A/B baselines. Use the
 same replay segment for paired runs, and pass `--speed`, `--port` or
 `--user-data-dir` when needed.
+
+### SDK wait instrumentation
+
+When a checkout contains the opt-in SDK wait instrumentation, pass `--sdk-wait`
+to `perf:run` or `perf:branches` to set `PERF_SDK_WAIT=1` for the capture. The
+analyzer then aggregates wait duration p50/p95/p99, call/read/unsuccessful
+counts and target cadence into the summary, and `diagnose` reports them as a
+lead. Without the app-side instrumentation the flag is harmless and the summary
+simply omits `sdkWait`. An unsuccessful native read is not assumed to be an OS
+timeout.
+
+A matched wait comparison uses the same ABBA scheduling as other A/B runs:
+
+```bash
+npm run perf:branches -- --pr 949 --input <tape> \
+  --sdk-wait --warmup-seconds 10 --duration-seconds 120 \
+  --ignore-gates memory,FPS --order abba --pairs 1
+```
 
 ### Running a full A/B matrix
 

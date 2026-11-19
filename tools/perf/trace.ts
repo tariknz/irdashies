@@ -31,6 +31,7 @@ export const TRACE_USAGE = `Usage: npm run perf:trace [options]
   --output <file>             JSON trace file (default perf-results/<timestamp>.json)
   --port N                    Remote debugging port (default ${DEFAULT_PORT})
   --speed N                   Replay speed (default 1)
+  --replay-speed N            Alias for --speed
   --user-data-dir <directory> Isolated Electron profile
   --no-analyze                Skip the generated trace summary
 `;
@@ -56,6 +57,7 @@ export const parseTraceOptions = (args: string[]): TraceOptions => {
       '--output',
       '--port',
       '--speed',
+      '--replay-speed',
       '--user-data-dir',
     ],
     booleans: ['--no-analyze'],
@@ -82,7 +84,9 @@ export const parseTraceOptions = (args: string[]): TraceOptions => {
       max: 65535,
       integer: true,
     });
-    speed = numericArgument(parsed, '--speed', 1, { min: 0.000001 });
+    speed = parsed.has('--speed')
+      ? numericArgument(parsed, '--speed', 1, { min: 0.000001 })
+      : numericArgument(parsed, '--replay-speed', 1, { min: 0.000001 });
   } catch {
     throw new Error(`Invalid trace option\n${TRACE_USAGE}`);
   }

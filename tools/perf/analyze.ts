@@ -29,6 +29,16 @@ interface SectionStats {
   p99Ms: number;
 }
 
+export interface SdkWaitSummary {
+  durationMs: NumericSampleStats;
+  calls: number;
+  reads: number;
+  unsuccessful: number;
+  totalMs: number;
+  timeoutMs: number;
+  targetHz: number;
+}
+
 interface MainPerfSample {
   timestamp: string;
   runId: string;
@@ -38,6 +48,15 @@ interface MainPerfSample {
   tickRateHz: number;
   sections: Record<string, SectionStats>;
   eventLoopDelayMs: { mean: number; max: number; p99: number };
+  sdkWait?: {
+    durationMs: NumericSampleStats;
+    calls: number;
+    reads: number;
+    unsuccessful: number;
+    totalMs: number;
+    timeoutMs: number;
+    targetHz: number;
+  };
   iracing: {
     frameRate: NumericSampleStats;
     cpuUsageForeground: NumericSampleStats;
@@ -165,6 +184,7 @@ export interface PerfSummary {
     processTelemetryP99WorstMs: number;
     broadcastP99MeanMs: number;
   };
+  sdkWait?: SdkWaitSummary;
   eventLoop: {
     p99MeanMs: number;
     p99WorstMs: number;
@@ -919,6 +939,40 @@ export function summarizeCapture(
         : []),
   ];
 
+  const sdkWaitSamples = effectiveMain
+    .map((sample) => sample.sdkWait)
+    .filter(
+      (wait): wait is NonNullable<MainPerfSample['sdkWait']> =>
+        wait !== undefined
+    );
+  const sdkWait: SdkWaitSummary | undefined =
+    sdkWaitSamples.length > 0
+      ? {
+          durationMs: {
+            count: sdkWaitSamples.reduce(
+              (sum, wait) => sum + wait.durationMs.count,
+              0
+            ),
+            avg: average(sdkWaitSamples.map((wait) => wait.durationMs.avg)),
+            min: minimum(sdkWaitSamples.map((wait) => wait.durationMs.min)),
+            max: maximum(sdkWaitSamples.map((wait) => wait.durationMs.max)),
+            p1: average(sdkWaitSamples.map((wait) => wait.durationMs.p1)),
+            p50: average(sdkWaitSamples.map((wait) => wait.durationMs.p50)),
+            p95: average(sdkWaitSamples.map((wait) => wait.durationMs.p95)),
+            p99: average(sdkWaitSamples.map((wait) => wait.durationMs.p99)),
+          },
+          calls: sdkWaitSamples.reduce((sum, wait) => sum + wait.calls, 0),
+          reads: sdkWaitSamples.reduce((sum, wait) => sum + wait.reads, 0),
+          unsuccessful: sdkWaitSamples.reduce(
+            (sum, wait) => sum + wait.unsuccessful,
+            0
+          ),
+          totalMs: sdkWaitSamples.reduce((sum, wait) => sum + wait.totalMs, 0),
+          timeoutMs: sdkWaitSamples.at(-1)?.timeoutMs ?? 0,
+          targetHz: average(sdkWaitSamples.map((wait) => wait.targetHz)),
+        }
+      : undefined;
+
   return {
     runId: effectiveMain[0].runId,
     scenario: effectiveMain[0].scenario,
@@ -1150,6 +1204,7 @@ export function summarizeCapture(
       ),
       broadcastP99MeanMs: average(broadcast.map((stats) => stats.p99Ms)),
     },
+    sdkWait,
     eventLoop: {
       p99MeanMs: average(
         effectiveMain.map((sample) => sample.eventLoopDelayMs.p99)
@@ -1635,6 +1690,7 @@ export function summaryMarkdown(summary: PerfSummary): string {
 | broadcast p99 mean | ${format(summary.telemetry.broadcastP99MeanMs)} ms |
 | Main event-loop p99, mean / worst interval | ${format(summary.eventLoop.p99MeanMs)} / ${format(summary.eventLoop.p99WorstMs)} ms |
 | Worst main event-loop stall | ${format(summary.eventLoop.worstStallMs)} ms |
+${summary.sdkWait ? `| SDK wait p50/p95/p99, mean | ${format(summary.sdkWait.durationMs.p50, 3)} / ${format(summary.sdkWait.durationMs.p95, 3)} / ${format(summary.sdkWait.durationMs.p99, 3)} ms (${format(summary.sdkWait.targetHz)} Hz target, ${summary.sdkWait.unsuccessful}/${summary.sdkWait.calls} unsuccessful) |` : ''}
 | Renderer frame-time p99 mean | ${format(summary.renderer.frameTimeP99MeanMs)} ms |
 | Renderer telemetry callbacks / second | ${format(summary.renderer.telemetryCallbackRateHz)} |
 | Renderer telemetry callback p99, mean / worst interval | ${format(summary.renderer.telemetryCallbackP99MeanMs, 3)} / ${format(summary.renderer.telemetryCallbackP99WorstMs, 3)} ms |

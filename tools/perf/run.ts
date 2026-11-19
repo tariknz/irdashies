@@ -24,6 +24,8 @@ export const PERF_RUN_USAGE = `Usage: npm run perf:run -- [options]
   --duration-seconds N             Fixed capture length; 0 waits for Ctrl+C
   --interval-ms N                  Sample interval (default 5000)
   --replay-input <file>            .irdt/.ibt recording to replay
+  --replay-speed N                 Tape playback speed, 0.25–100
+  --sdk-wait                       Record opt-in SDK wait metrics
   --widgets <a,b>                  Widget type filter
   --window-mode display|widget     Overlay window mode override
   --visibility-phases <schedule>   visible:120,hidden:120,visible:120
@@ -55,6 +57,8 @@ interface RunOptions {
   channelDelivery: 'on' | 'off';
   visibilityPhases: string;
   replayInput: string;
+  replaySpeed?: number;
+  sdkWait: boolean;
   outputDirectory?: string;
   windowMode?: 'display' | 'widget';
   replayVisibleWidgets: boolean;
@@ -66,6 +70,8 @@ interface RunOptions {
     displayGeometry?: string;
     fpsCap?: number;
     syncMode?: string;
+    replaySpeed?: number;
+    sdkWait?: boolean;
     hostPlatform: string;
     hostArch: string;
     hostRelease: string;
@@ -123,6 +129,7 @@ function parseArgs(args: string[]): {
       '--duration-seconds',
       '--visibility-phases',
       '--replay-input',
+      '--replay-speed',
       '--window-mode',
       '--run-id',
       '--telemetry-delivery',
@@ -137,7 +144,7 @@ function parseArgs(args: string[]): {
       '--user-data-dir',
       '--output-directory',
     ],
-    booleans: ['--replay-visible-widgets'],
+    booleans: ['--replay-visible-widgets', '--sdk-wait'],
   });
   const mode = choiceArgument(
     parsed,
@@ -208,6 +215,9 @@ function parseArgs(args: string[]): {
   );
   if (!runId) throw new Error('--run-id must contain usable characters.');
   const replayInput = parsed.value('--replay-input') ?? '';
+  const replaySpeed = parsed.has('--replay-speed')
+    ? numericArgument(parsed, '--replay-speed', 1, { min: 0.25, max: 100 })
+    : undefined;
   const requestedWindowMode = parsed.value('--window-mode');
   const windowMode =
     requestedWindowMode === 'display' || requestedWindowMode === 'widget'
@@ -233,6 +243,8 @@ function parseArgs(args: string[]): {
       channelDelivery,
       visibilityPhases,
       replayInput,
+      replaySpeed,
+      sdkWait: parsed.flag('--sdk-wait'),
       outputDirectory: parsed.value('--output-directory')
         ? path.resolve(parsed.value('--output-directory') as string)
         : undefined,
@@ -246,6 +258,8 @@ function parseArgs(args: string[]): {
         displayGeometry: parsed.value('--display-geometry'),
         fpsCap: optionalNumber('--fps-cap'),
         syncMode: parsed.value('--sync-mode'),
+        replaySpeed,
+        sdkWait: parsed.flag('--sdk-wait'),
         ...collectHostFacts(),
       },
     },
@@ -373,6 +387,8 @@ process.stdout.write(
       displayGeometry: options.metadata.displayGeometry,
       fpsCap: options.metadata.fpsCap,
       syncMode: options.metadata.syncMode,
+      replaySpeed: options.replaySpeed,
+      sdkWait: options.sdkWait,
       hostCpuModel: options.metadata.hostCpuModel,
       hostTotalMemoryGB: options.metadata.hostTotalMemoryGB,
     })}`,
@@ -452,6 +468,10 @@ const child = spawn(childCommand, childArguments, {
       process.platform,
       process.env
     ),
+    ...(options.replaySpeed !== undefined
+      ? { IRDASHIES_TELEMETRY_REPLAY_SPEED: String(options.replaySpeed) }
+      : {}),
+    ...(options.sdkWait ? { PERF_SDK_WAIT: '1' } : {}),
     IRDASHIES_SIM: simulator.simulator,
     ELECTRON_ENABLE_LOGGING: '1',
   },

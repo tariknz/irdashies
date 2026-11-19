@@ -105,6 +105,34 @@ const conclusiveSamples = (fps = 100) =>
   );
 
 describe('performance analysis', () => {
+  it('aggregates optional SDK wait instrumentation when present', () => {
+    const waitStats = stats(4);
+    const sample = {
+      ...mainSample(5, 100, 100, 100, 5000),
+      sdkWait: {
+        durationMs: waitStats,
+        calls: 10,
+        reads: 9,
+        unsuccessful: 1,
+        totalMs: 40,
+        timeoutMs: 16,
+        targetHz: 60,
+      },
+    };
+    const summary = summarizeCapture(capture([sample]), 0);
+
+    expect(summary.sdkWait).toMatchObject({
+      calls: 10,
+      reads: 9,
+      unsuccessful: 1,
+      totalMs: 40,
+      timeoutMs: 16,
+      targetHz: 60,
+    });
+    expect(summary.sdkWait?.durationMs.count).toBe(waitStats.count);
+    expect(summaryMarkdown(summary)).toContain('SDK wait p50/p95/p99');
+  });
+
   it('parses structured records mixed with normal logs', () => {
     const main = mainSample(5, 100, 100, 100, 5000);
     const contents = [

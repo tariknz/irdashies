@@ -56,6 +56,15 @@ describe('branch performance runner options', () => {
       parseBranchesOptions([
         '--input',
         'session.irdt',
+        '--replay-speed',
+        '100',
+        '--sdk-wait',
+      ])
+    ).toMatchObject({ replaySpeed: 100, sdkWait: true });
+    expect(
+      parseBranchesOptions([
+        '--input',
+        'session.irdt',
         '--no-reuse',
         '--ignore-gates',
         'memory,FPS',

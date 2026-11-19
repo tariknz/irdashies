@@ -21,4 +21,22 @@ describe('performance runner window-mode validation', () => {
     expect(result.stderr).toContain('--window-mode must be display or widget');
     expect(result.stdout).not.toContain('Performance run:');
   });
+
+  it.each([
+    ['--replay-speed', '200'],
+    ['--replay-speed', 'abc'],
+    ['--sdk-wait', '--unknown', '1'],
+  ])('rejects %j before launching the app', (...args) => {
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--disable-warning=MODULE_TYPELESS_PACKAGE_JSON',
+        resolve('tools/perf/run.ts'),
+        ...args,
+      ],
+      { encoding: 'utf8', env: { ...process.env, NODE_OPTIONS: '' } }
+    );
+    expect(result.status).toBe(1);
+    expect(result.stdout).not.toContain('Performance run:');
+  });
 });

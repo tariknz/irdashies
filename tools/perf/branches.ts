@@ -27,6 +27,8 @@ export const BRANCHES_USAGE = `Usage: npm run perf:branches [options]
   --baseline-dir <path>      Existing checkout instead of a baseline worktree
   --candidate-dir <path>     Existing checkout instead of a candidate worktree
   --input <file>             Required .irdt/.ibt recording to replay
+  --replay-speed N           Tape playback speed, 0.25–100
+  --sdk-wait                 Record opt-in SDK wait metrics
   --duration-seconds N       Capture length per side (default ${DEFAULT_DURATION_SECONDS})
   --warmup-seconds N         Ignored startup window (default ${DEFAULT_WARMUP_SECONDS})
   --profile <directory>      Seed profile copied for every side
@@ -63,6 +65,8 @@ export interface BranchesOptions {
   baselineDir?: string;
   candidateDir?: string;
   inputPath: string;
+  replaySpeed?: number;
+  sdkWait: boolean;
   durationSeconds: number;
   warmupSeconds: number;
   seedProfile?: string;
@@ -139,6 +143,7 @@ export function parseBranchesOptions(args: string[]): BranchesOptions {
       '--candidate-dir',
       '--input',
       '--duration-seconds',
+      '--replay-speed',
       '--warmup-seconds',
       '--profile',
       '--output',
@@ -155,6 +160,7 @@ export function parseBranchesOptions(args: string[]): BranchesOptions {
     ],
     booleans: [
       '--replay-visible-widgets',
+      '--sdk-wait',
       '--install',
       '--rebuild-native',
       '--keep-worktrees',
@@ -167,6 +173,9 @@ export function parseBranchesOptions(args: string[]): BranchesOptions {
     ],
   });
   const inputPath = parsed.value('--input');
+  const replaySpeed = parsed.has('--replay-speed')
+    ? numericArgument(parsed, '--replay-speed', 1, { min: 0.25, max: 100 })
+    : undefined;
   if (!inputPath && !parsed.flag('--clean-cache'))
     throw new Error(`--input is required\n${BRANCHES_USAGE}`);
   const diffRefs = parsed.has('--diff')
@@ -211,6 +220,8 @@ export function parseBranchesOptions(args: string[]): BranchesOptions {
       ? path.resolve(parsed.value('--candidate-dir') as string)
       : undefined,
     inputPath: inputPath ? path.resolve(inputPath) : '',
+    replaySpeed,
+    sdkWait: parsed.flag('--sdk-wait'),
     durationSeconds,
     warmupSeconds,
     seedProfile: seedProfile ? path.resolve(seedProfile) : undefined,
@@ -497,6 +508,10 @@ const captureSide = async (
     String(options.durationSeconds),
     '--replay-input',
     options.inputPath,
+    ...(options.replaySpeed !== undefined
+      ? ['--replay-speed', String(options.replaySpeed)]
+      : []),
+    ...(options.sdkWait ? ['--sdk-wait'] : []),
     '--user-data-dir',
     profile,
     '--output-directory',
@@ -888,6 +903,8 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
         `Baseline: ${options.refs.baseline} (${baselineCommit})`,
         `Candidate: ${options.refs.candidate} (${candidateCommit})`,
         `Replay: ${options.inputPath}`,
+        `Replay speed: ${options.replaySpeed ?? 1}`,
+        `SDK wait instrumentation: ${options.sdkWait}`,
         `Duration: ${options.durationSeconds}s; warmup: ${options.warmupSeconds}s`,
         `Order: ${options.order}; pairs: ${options.pairs}`,
         `Output: ${options.outputDirectory}`,
