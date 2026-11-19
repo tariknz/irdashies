@@ -1420,7 +1420,7 @@ const p2pRelativeDrivers: P2PRelativeDriver[] = [
     position: 3,
     isPlayer: true,
     delta: 0,
-    state: { status: 'inactive', count: 80 },
+    state: { status: 'active', count: 15 },
   },
   {
     carNum: '10',
@@ -1428,7 +1428,7 @@ const p2pRelativeDrivers: P2PRelativeDriver[] = [
     position: 4,
     isPlayer: false,
     delta: 1.4,
-    state: { status: 'cooldown', count: 60 },
+    state: { status: 'cooldown', count: 14 },
   },
   {
     carNum: '8',
