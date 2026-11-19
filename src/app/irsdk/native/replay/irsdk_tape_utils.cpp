@@ -13,9 +13,31 @@
 #include <thread>
 #include <vector>
 
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
 namespace replay = irdashies::irsdk_replay;
 
 namespace {
+
+std::string readReplayEnvironment(const char* name) {
+#ifdef _WIN32
+  const auto size = GetEnvironmentVariableA(name, nullptr, 0);
+  if (size == 0) return {};
+  std::string value(size, '\0');
+  const auto length = GetEnvironmentVariableA(name, value.data(), size);
+  if (length == 0 || length >= size) return {};
+  value.resize(length);
+  return value;
+#else
+  const char* value = std::getenv(name);
+  return value == nullptr ? std::string{} : std::string{value};
+#endif
+}
 
 enum class PlaybackState {
   Stopped,
@@ -101,8 +123,9 @@ bool indexTape(std::string& error) {
 }
 
 bool parsePlaybackOptions(std::string& error) {
-  const char* speedText = std::getenv("IRDASHIES_TELEMETRY_REPLAY_SPEED");
-  if (speedText != nullptr && speedText[0] != '\0') {
+  const auto speed = readReplayEnvironment("IRDASHIES_TELEMETRY_REPLAY_SPEED");
+  if (!speed.empty()) {
+    const char* speedText = speed.c_str();
     char* end = nullptr;
     const double parsed = std::strtod(speedText, &end);
     if (end == speedText || end == nullptr || *end != '\0' ||
@@ -115,8 +138,7 @@ bool parsePlaybackOptions(std::string& error) {
     playbackSpeed = 1.0;
   }
 
-  const char* loopText = std::getenv("IRDASHIES_TELEMETRY_REPLAY_LOOP");
-  loopPlayback = loopText != nullptr && std::strcmp(loopText, "1") == 0;
+  loopPlayback = readReplayEnvironment("IRDASHIES_TELEMETRY_REPLAY_LOOP") == "1";
   return true;
 }
 
@@ -139,8 +161,8 @@ void resetPublishedData() {
 }
 
 bool openTape(std::string& error) {
-  const char* input = std::getenv("IRDASHIES_TELEMETRY_REPLAY");
-  if (input == nullptr || input[0] == '\0') {
+  const auto input = readReplayEnvironment("IRDASHIES_TELEMETRY_REPLAY");
+  if (input.empty()) {
     error = "IRDASHIES_TELEMETRY_REPLAY is not set";
     return false;
   }
