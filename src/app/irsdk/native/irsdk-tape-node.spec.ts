@@ -384,8 +384,6 @@ describe('tape-backed native SDK', () => {
   it('keeps repeated native frames consistent with the legacy read path', async () => {
     await writeFile(tapePath, createTapeFixture());
     process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
-    process.env.IRDASHIES_TELEMETRY_REPLAY_LOOP = '1';
-    process.env.IRDASHIES_TELEMETRY_REPLAY_SPEED = '100';
     const { iRacingSdkNode } = loadAddon();
     const sdk = new iRacingSdkNode();
     try {
