@@ -503,6 +503,7 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
     vi.clearAllMocks();
     sdkState.running = true;
     sdkState.readThrows = false;
+    sdkState.sessionEndEvents = 0;
     restState.data.revision = 0;
     restState.data.session = {};
   });
@@ -559,7 +560,6 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
   });
 
   it('restarts the track-map recording when a new session starts on the same track', async () => {
-    sdkState.sessionEndEvents = 0;
     const overlayManager = createOverlayManager();
     const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
     const bridge = await publishLmuSDKEvents(overlayManager);
