@@ -1,10 +1,11 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGeneralSettings, useSessionBarSnapshot } from '@irdashies/context';
 import { useCurrentTime } from '../../hooks/useCurrentTime';
 import { SessionBar } from './SessionBar';
 import type { SessionBarConfig } from '@irdashies/types';
 import { isSessionBarItemEnabled } from './sessionBarItemRegistry';
+import { useTrackRubberedState } from '@irdashies/domain/weather/useTrackRubberedState';
 
 vi.mock('@irdashies/context', async () => {
   const actual = await vi.importActual('@irdashies/context');
@@ -15,6 +16,7 @@ vi.mock('@irdashies/context', async () => {
   };
 });
 vi.mock('../../hooks/useCurrentTime');
+vi.mock('@irdashies/domain/weather/useTrackRubberedState');
 
 const baseSettings = {
   enabled: true,
@@ -200,5 +202,46 @@ describe('SessionBar humidity', () => {
     expect(isSessionBarItemEnabled('humidity', baseSettings, 'footer')).toBe(
       false
     );
+  });
+});
+
+describe('SessionBar track state', () => {
+  it('shows rubber state alongside wetness when enabled', () => {
+    vi.mocked(useTrackRubberedState).mockReturnValue('moderate usage');
+    vi.mocked(useSessionBarSnapshot).mockReturnValue({
+      trackWetness: 1,
+    } as never);
+    render(
+      <SessionBar
+        settings={{
+          ...baseSettings,
+          trackWetness: { enabled: true },
+          trackState: { enabled: true },
+          displayOrder: ['trackWetness', 'trackState'],
+        }}
+        position="footer"
+      />
+    );
+
+    expect(screen.getByTitle('Track State')).toHaveTextContent(
+      'moderate usage'
+    );
+    expect(screen.getByText('Dry')).toBeVisible();
+  });
+
+  it('omits the item when the sim does not report track state', () => {
+    vi.mocked(useTrackRubberedState).mockReturnValue(undefined);
+    render(
+      <SessionBar
+        settings={{
+          ...baseSettings,
+          trackState: { enabled: true },
+          displayOrder: ['trackState'],
+        }}
+        standalone
+      />
+    );
+
+    expect(screen.queryByTitle('Track State')).toBeNull();
   });
 });

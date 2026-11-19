@@ -154,6 +154,7 @@ export default defineWidgetManifest({
       trackWetness: {
         enabled: false,
       },
+      trackState: { enabled: false },
       precipitation: {
         enabled: false,
       },
@@ -201,6 +202,7 @@ export default defineWidgetManifest({
         'localTime',
         'sessionClockTime',
         'trackWetness',
+        'trackState',
         'precipitation',
         'humidity',
         'airTemperature',
@@ -243,6 +245,7 @@ export default defineWidgetManifest({
       trackWetness: {
         enabled: true,
       },
+      trackState: { enabled: false },
       precipitation: {
         enabled: false,
       },
@@ -290,6 +293,7 @@ export default defineWidgetManifest({
         'localTime',
         'sessionClockTime',
         'trackWetness',
+        'trackState',
         'precipitation',
         'humidity',
         'airTemperature',
