@@ -47,6 +47,8 @@ export default defineWidgetManifest({
       config: {
         style: 'default',
         color: 'light',
+        customImage: '',
+        rotationScale: 100,
       },
     },
     background: {
@@ -122,6 +124,7 @@ export default defineWidgetManifest({
         { value: 'nascar', label: 'NASCAR' },
         { value: 'ushape', label: 'U-Shape' },
         { value: 'ring', label: 'Ring (gear inside)' },
+        { value: 'custom', label: 'Custom Image' },
       ],
       control: 'select',
     },
@@ -133,6 +136,16 @@ export default defineWidgetManifest({
         { value: 'dark', label: 'Dark' },
       ],
       control: 'select',
+    },
+    'steer.config.rotationScale': {
+      type: 'number',
+      label: 'Rotation Scale',
+      description:
+        'Match the overlay wheel to your physical wheel. Use 50 if the overlay turns about twice as far as your hands.',
+      min: 25,
+      max: 200,
+      step: 1,
+      units: '%',
     },
     'gear.size': {
       type: 'number',

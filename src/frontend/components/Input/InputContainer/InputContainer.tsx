@@ -5,6 +5,7 @@ import { InputBar } from '../InputBar/InputBar';
 import { InputGear } from '../InputGear/InputGear';
 import { InputSteer } from '../InputSteer/InputSteer';
 import { InputTrace } from '../InputTrace/InputTrace';
+import { useSteerWheelImage } from '../hooks/useSteerWheelImage';
 import { getInputLayoutTree } from '../layout';
 
 export interface InputProps {
@@ -77,6 +78,11 @@ export const InputContainer = memo(
     gearFlashColor,
   }: InputProps) => {
     const tree = useMemo(() => getInputLayoutTree(settings), [settings]);
+    const customImageFilename =
+      settings.steer.config?.style === 'custom'
+        ? settings.steer.config?.customImage
+        : undefined;
+    const customImageUrl = useSteerWheelImage(customImageFilename);
 
     const traceInput = useMemo(
       () => ({ brake, throttle, clutch, brakeAbsActive, steer, traceTick }),
@@ -122,6 +128,8 @@ export const InputContainer = memo(
                 angleRad={steer}
                 wheelStyle={settings.steer.config?.style}
                 wheelColor={settings.steer.config?.color}
+                customImageUrl={customImageUrl}
+                rotationScale={settings.steer.config?.rotationScale}
                 gear={gear}
                 speedMs={speed}
                 unit={unit}
@@ -145,6 +153,7 @@ export const InputContainer = memo(
         brakeAbsActive,
         settings,
         gearFlashColor,
+        customImageUrl,
       ]
     );
 

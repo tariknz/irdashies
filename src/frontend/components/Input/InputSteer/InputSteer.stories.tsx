@@ -85,6 +85,29 @@ export const RingAspectRatios: Story = {
   ),
 };
 
+const SAMPLE_WHEEL_DATA_URL =
+  'data:image/svg+xml;base64,' +
+  btoa(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="46" fill="none" stroke="#e2e8f0" stroke-width="8"/>
+      <circle cx="50" cy="50" r="10" fill="#e2e8f0"/>
+      <rect x="46" y="8" width="8" height="28" fill="#f59e0b" rx="2"/>
+    </svg>`
+  );
+
+export const CustomImage: Story = {
+  args: {
+    angleRad: 0.4,
+    wheelStyle: 'custom',
+    customImageUrl: SAMPLE_WHEEL_DATA_URL,
+  },
+  render: (args) => (
+    <div className="w-40 h-40 bg-slate-800 p-2 rounded-md">
+      <InputSteer {...args} />
+    </div>
+  ),
+};
+
 export const AllWheels: Story = {
   args: {
     angleRad: 0,
@@ -121,6 +144,16 @@ export const AllWheels: Story = {
             </div>
           </div>
         ))}
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold">Custom Image</h3>
+          <div className="w-40 h-40 bg-slate-800 p-2 rounded-md">
+            <InputSteer
+              angleRad={angleRad}
+              wheelStyle="custom"
+              customImageUrl={SAMPLE_WHEEL_DATA_URL}
+            />
+          </div>
+        </div>
       </div>
     );
   },

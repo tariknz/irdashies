@@ -182,10 +182,13 @@ export function useWidgetPreviewSession(
           )?.config;
         const playerIcon = config?.playerIcon as
           { fileName?: unknown } | undefined;
+        const steerConfig = (
+          config?.steer as { config?: { customImage?: unknown } } | undefined
+        )?.config;
         const expected =
           request.kind === 'garageCover'
             ? config?.imageFilename
-            : playerIcon?.fileName;
+            : (playerIcon?.fileName ?? steerConfig?.customImage);
         const assets = latest.current.dashboardBridge;
         const read =
           request.kind === 'garageCover'
