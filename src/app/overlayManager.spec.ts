@@ -438,6 +438,16 @@ describe('individual overlay windows', () => {
       win.shown = false;
     });
     expect(manager.hasTelemetryInspectorSubscribers()).toBe(false);
+
+    createdWindows.forEach((win) => {
+      win.shown = true;
+    });
+    manager.setRendererDataSubscriptions({
+      has: (id) => id === createdWindows[0].webContents.id,
+      hasAny: () => true,
+    });
+    createdWindows[0].isDestroyed.mockReturnValue(true);
+    expect(manager.hasTelemetryInspectorSubscribers()).toBe(false);
   });
 
   it('resolves display readiness IDs without broadcasting', () => {

@@ -738,10 +738,7 @@ CarSetup:
   });
 
   describe('getTelemetry', () => {
-    const TelemetryVar = (
-      varType: number,
-      value: ArrayBuffer
-    ) => ({
+    const TelemetryVar = (varType: number, value: ArrayBuffer) => ({
       name: 'Speed',
       description: '',
       unit: '',
@@ -755,7 +752,9 @@ CarSetup:
       const buffer = new ArrayBuffer(4);
       const values = new Float32Array(buffer);
       values[0] = 10;
-      const raw = { Speed: TelemetryVar(4, buffer) } as unknown as TelemetryVarList;
+      const raw = {
+        Speed: TelemetryVar(4, buffer),
+      } as unknown as TelemetryVarList;
       vi.mocked(mockSdk.getTelemetryData).mockReturnValue(raw);
 
       expect(sdk.getTelemetry().Speed.value).toEqual([10]);
@@ -779,6 +778,32 @@ CarSetup:
 
       const telemetry = sdk.getTelemetry();
       expect(telemetry.Gear.value).toEqual([3]);
+      expect(telemetry.Speed).toBeUndefined();
+    });
+
+    it('rebuilds cached keys and views when the data-view frame is replaced', () => {
+      const firstBuffer = new ArrayBuffer(4);
+      new Float32Array(firstBuffer)[0] = 12.5;
+      mockSdk.getTelemetryDataView = vi.fn().mockReturnValue({
+        Speed: {
+          ...TelemetryVar(4, firstBuffer),
+          value: new Uint8Array(firstBuffer),
+        },
+      } as NativeTelemetryDataView);
+      expect(sdk.getTelemetry().Speed.value).toEqual([12.5]);
+
+      const secondBuffer = new ArrayBuffer(4);
+      new Int32Array(secondBuffer)[0] = 4;
+      mockSdk.getTelemetryDataView = vi.fn().mockReturnValue({
+        Gear: {
+          ...TelemetryVar(3, secondBuffer),
+          name: 'Gear',
+          value: new Uint8Array(secondBuffer),
+        },
+      } as NativeTelemetryDataView);
+
+      const telemetry = sdk.getTelemetry();
+      expect(telemetry.Gear.value).toEqual([4]);
       expect(telemetry.Speed).toBeUndefined();
     });
   });

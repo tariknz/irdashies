@@ -344,6 +344,89 @@ describe('tape-backed native SDK', () => {
     });
   });
 
+  it('reads changed variable metadata from a fresh native frame cache', async () => {
+    await writeFile(
+      tapePath,
+      createTapeFixture({
+        transformVariables: (variables) => {
+          variables[4].writeInt32LE(2, 0);
+          variables[4].writeInt32LE(16, 4);
+          variables[4].fill(0, 16, 48);
+          writeCString(variables[4], 16, 32, 'Gear');
+        },
+      })
+    );
+    const script = `
+      const assert = require('node:assert/strict');
+      const { iRacingSdkNode } = require(process.argv[1]);
+      const sdk = new iRacingSdkNode();
+      try {
+        assert.equal(sdk.startSDK(), true);
+        assert.equal(sdk.waitForData(100), true);
+        const frame = sdk.getTelemetryDataView();
+        assert.ok(Object.keys(frame).includes('Gear'), JSON.stringify(Object.keys(frame)));
+        assert.ok(!Object.keys(frame).includes('Speed'));
+        assert.equal(frame.Gear.varType, 2);
+        assert.equal(frame.Gear.value.length, 4);
+        assert.equal(sdk.getTelemetryDataView(), frame);
+        sdk.stopSDK();
+        assert.deepEqual(sdk.getTelemetryDataView(), {});
+      } finally {
+        sdk.stopSDK();
+      }
+    `;
+    await execFileAsync(process.execPath, ['-e', script, addonPath], {
+      env: { ...process.env, IRDASHIES_TELEMETRY_REPLAY: tapePath },
+      timeout: 5000,
+    });
+  });
+
+  it('keeps repeated native frames consistent with the legacy read path', async () => {
+    await writeFile(tapePath, createTapeFixture());
+    process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
+    process.env.IRDASHIES_TELEMETRY_REPLAY_LOOP = '1';
+    process.env.IRDASHIES_TELEMETRY_REPLAY_SPEED = '100';
+    const { iRacingSdkNode } = loadAddon();
+    const sdk = new iRacingSdkNode();
+    try {
+      expect(sdk.startSDK()).toBe(true);
+      expect(sdk.waitForData(100)).toBe(true);
+      const readView = sdk.getTelemetryDataView;
+      if (!readView) throw new Error('Native frame view unavailable');
+      const first = readView();
+      for (let read = 0; read < 40; read += 1) {
+        expect(readView()).toBe(first);
+      }
+      const legacy = sdk.getTelemetryData();
+      for (const name of ['SessionTime', 'SessionTick', 'Speed'] as const) {
+        const bytes = new DataView(
+          first[name].value.buffer,
+          first[name].value.byteOffset,
+          first[name].value.byteLength
+        );
+        const observed =
+          name === 'SessionTime'
+            ? bytes.getFloat64(0, true)
+            : name === 'Speed'
+              ? bytes.getFloat32(0, true)
+              : bytes.getInt32(0, true);
+        const legacyBytes = new DataView(
+          legacy[name].value as unknown as ArrayBuffer
+        );
+        const expected =
+          name === 'SessionTime'
+            ? legacyBytes.getFloat64(0, true)
+            : name === 'Speed'
+              ? legacyBytes.getFloat32(0, true)
+              : legacyBytes.getInt32(0, true);
+        expect(observed).toBeCloseTo(expected, 5);
+        expect(Number.isFinite(observed)).toBe(true);
+      }
+    } finally {
+      sdk.stopSDK();
+    }
+  });
+
   it.each([
     // Names from the 7 November 2026 F7 captures, before double decoding.
     ['captured Catalan name', Buffer.from('Jaime Perpinyà'), 'Jaime Perpinyà'],

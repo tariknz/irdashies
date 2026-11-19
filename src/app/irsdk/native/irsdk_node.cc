@@ -610,14 +610,34 @@ Napi::Value iRacingSdkNode::GetTelemetryDataView(const Napi::CallbackInfo &info)
     return Napi::Object::New(env);
   }
 
-  const bool matches = !this->_telemetryDataViewFrame.IsEmpty() &&
-                       this->_telemetryDataViewCache.size() == this->_capture.variables.size();
+  bool matches = !this->_telemetryDataViewFrame.IsEmpty() &&
+                 this->_telemetryDataViewCache.size() == this->_capture.variables.size();
   if (matches) {
     auto frameBuffer = this->_telemetryDataViewBuffer.Value();
-    if (frameBuffer.ByteLength() == this->_capture.data.size()) {
-      std::memcpy(frameBuffer.Data(), this->_capture.data.data(), frameBuffer.ByteLength());
-      return this->_telemetryDataViewFrame.Value();
+    matches = frameBuffer.ByteLength() == this->_capture.data.size();
+  }
+  for (std::size_t i = 0; matches && i < this->_capture.variables.size(); ++i) {
+    const auto *var = irdashies::irsdk::capturedVariable(this->_capture, static_cast<int>(i));
+    const auto &entry = this->_telemetryDataViewCache[i];
+    if (!var) {
+      matches = !entry.available;
+      continue;
     }
+    std::size_t dataSize = 0;
+    const bool inRange = irdashies::irsdk::variableRange(
+        *var, this->_capture.data.size(), dataSize);
+    matches = inRange && entry.available && entry.dataSize == dataSize &&
+              entry.offset == var->offset && entry.count == var->count &&
+              entry.type == var->type &&
+              entry.countAsTime == (var->countAsTime != 0) &&
+              std::memcmp(entry.name, var->name, sizeof(var->name)) == 0 &&
+              std::memcmp(entry.description, var->desc, sizeof(var->desc)) == 0 &&
+              std::memcmp(entry.unit, var->unit, sizeof(var->unit)) == 0;
+  }
+  if (matches) {
+    auto frameBuffer = this->_telemetryDataViewBuffer.Value();
+    std::memcpy(frameBuffer.Data(), this->_capture.data.data(), frameBuffer.ByteLength());
+    return this->_telemetryDataViewFrame.Value();
   }
 
   this->ResetTelemetryCache();
@@ -625,15 +645,30 @@ Napi::Value iRacingSdkNode::GetTelemetryDataView(const Napi::CallbackInfo &info)
   std::memcpy(frameBuffer.Data(), this->_capture.data.data(), this->_capture.data.size());
   auto result = Napi::Object::New(env);
   for (std::size_t i = 0; i < this->_capture.variables.size(); ++i) {
-    auto variable = this->GetTelemetryVarByIndex(env, static_cast<int>(i), &frameBuffer);
-    if (variable.Has("name")) {
-      result.Set(variable.Get("name"), variable);
-      TelemetryDataViewCacheEntry entry;
-      entry.object = Napi::Persistent(variable);
+    const auto *var = irdashies::irsdk::capturedVariable(this->_capture, static_cast<int>(i));
+    std::size_t dataSize = 0;
+    if (!var || !irdashies::irsdk::variableRange(
+                    *var, this->_capture.data.size(), dataSize)) {
+      TelemetryDataViewCacheEntry entry{};
+      entry.available = false;
       this->_telemetryDataViewCache.push_back(std::move(entry));
-    } else {
-      this->_telemetryDataViewCache.push_back(TelemetryDataViewCacheEntry{});
+      continue;
     }
+
+    auto variable = this->GetTelemetryVarByIndex(env, static_cast<int>(i), &frameBuffer);
+    result.Set(variable.Get("name"), variable);
+    TelemetryDataViewCacheEntry entry{};
+    entry.object = Napi::Persistent(variable);
+    entry.dataSize = dataSize;
+    entry.offset = var->offset;
+    entry.count = var->count;
+    entry.type = var->type;
+    entry.countAsTime = var->countAsTime != 0;
+    entry.available = true;
+    std::memcpy(entry.name, var->name, sizeof(var->name));
+    std::memcpy(entry.description, var->desc, sizeof(var->desc));
+    std::memcpy(entry.unit, var->unit, sizeof(var->unit));
+    this->_telemetryDataViewCache.push_back(std::move(entry));
   }
   this->_telemetryDataViewFrame = Napi::Persistent(result);
   this->_telemetryDataViewBuffer = Napi::Persistent(frameBuffer);

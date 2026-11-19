@@ -47,11 +47,7 @@ function padCarNum(carNumber: string): number {
   return num + 1000 * numPlaces;
 }
 
-type TelemetryArrayView =
-  | Int8Array
-  | Int32Array
-  | Float32Array
-  | Float64Array;
+type TelemetryArrayView = Int8Array | Int32Array | Float32Array | Float64Array;
 
 interface CachedTelemetryView {
   source: ArrayBufferLike;
@@ -64,18 +60,14 @@ const createTelemetryView = (
   value: unknown,
   varType: number
 ): TelemetryArrayView => {
-  const make = <T extends TelemetryArrayView>(
-    View: {
-      new (values: ArrayLike<number>): T;
-      new (buffer: ArrayBufferLike, byteOffset: number, length: number): T;
-      readonly BYTES_PER_ELEMENT: number;
-    }
-  ): T => {
+  const make = <T extends TelemetryArrayView>(View: {
+    new (values: ArrayLike<number>): T;
+    new (buffer: ArrayBufferLike, byteOffset: number, length: number): T;
+    readonly BYTES_PER_ELEMENT: number;
+  }): T => {
     if (value instanceof Uint8Array) {
       const bytes =
-        value.byteOffset % View.BYTES_PER_ELEMENT === 0
-          ? value
-          : value.slice();
+        value.byteOffset % View.BYTES_PER_ELEMENT === 0 ? value : value.slice();
       return new View(
         bytes.buffer,
         bytes.byteOffset,
@@ -223,9 +215,7 @@ export class IRacingSDK {
   private _telemetryCache: Partial<TelemetryVarList> = {};
   private _telemetryKeys: (keyof TelemetryVarList)[] = [];
   private _lastRawTelemetry:
-    | TelemetryVarList
-    | NativeTelemetryDataView
-    | undefined;
+    TelemetryVarList | NativeTelemetryDataView | undefined;
   private _telemetryViews: TelemetryViewCache = new Map();
 
   constructor() {
@@ -629,7 +619,9 @@ export class IRacingSDK {
 
     if (rawData) {
       if (rawData !== this._lastRawTelemetry) {
-        this._telemetryKeys = Object.keys(rawData) as (keyof TelemetryVarList)[];
+        this._telemetryKeys = Object.keys(
+          rawData
+        ) as (keyof TelemetryVarList)[];
         this._telemetryViews.clear();
         this._lastRawTelemetry = rawData;
       }

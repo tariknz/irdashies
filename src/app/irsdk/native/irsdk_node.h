@@ -11,6 +11,15 @@
 struct TelemetryDataViewCacheEntry
 {
   Napi::ObjectReference object;
+  std::size_t dataSize;
+  int offset;
+  int count;
+  int type;
+  bool countAsTime;
+  bool available;
+  char name[IRSDK_MAX_STRING];
+  char description[IRSDK_MAX_DESC];
+  char unit[IRSDK_MAX_STRING];
 };
 
 struct TelemetryVarCacheEntry
