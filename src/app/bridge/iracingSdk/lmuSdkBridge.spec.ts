@@ -74,6 +74,7 @@ const restState = vi.hoisted(() => ({
 
 /** Shared so the specs can observe how the bridge drives them. */
 const recorderUpdate = vi.hoisted(() => vi.fn(() => null));
+const recorderReset = vi.hoisted(() => vi.fn());
 const lapDistanceSpies = vi.hoisted(() => ({
   create: vi.fn(() => ({ marker: 'lap-distance-state' })),
   reset: vi.fn(),
@@ -155,7 +156,7 @@ vi.mock('../../lmu/trackMap', () => ({
   loadLmuTrackMap: () => null,
   tinyPedalTrackMapDirectories: () => [],
   LmuTrackMapRecorder: class {
-    reset = vi.fn();
+    reset = recorderReset;
     update = recorderUpdate;
   },
   LmuTrackMapStorage: class {
@@ -554,6 +555,24 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
     await vi.waitFor(() =>
       expect(sessionPublishCount(overlayManager)).toBeGreaterThan(1)
     );
+    bridge.stop();
+  });
+
+  it('restarts the track-map recording when a new session starts on the same track', async () => {
+    sdkState.sessionEndEvents = 0;
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(sessionPublishCount(overlayManager)).toBe(1));
+    const resetsBefore = recorderReset.mock.calls.length;
+
+    sdkState.sessionEndEvents = 1;
+
+    await vi.waitFor(() =>
+      expect(recorderReset.mock.calls.length).toBeGreaterThan(resetsBefore)
+    );
+    expect(recorderReset).toHaveBeenLastCalledWith(rawFrame().trackName);
     bridge.stop();
   });
 
