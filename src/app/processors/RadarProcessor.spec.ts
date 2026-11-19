@@ -40,6 +40,7 @@ interface FrameOptions {
   sessionFlags?: number;
   relativeAvailable?: boolean[];
   relativeLongitudinal?: number[];
+  relativeLateral?: number[];
 }
 
 const frame = ({
@@ -55,11 +56,13 @@ const frame = ({
   sessionFlags = 0,
   relativeAvailable,
   relativeLongitudinal,
+  relativeLateral,
 }: FrameOptions) =>
   ({
     ...(relativeAvailable && {
       LmuCarIdxRelativeAvailable: { value: relativeAvailable },
       LmuCarIdxRelativeLongitudinal: { value: relativeLongitudinal ?? [] },
+      LmuCarIdxRelativeLateral: { value: relativeLateral ?? [] },
     }),
     SessionTime: { value: [time] },
     CarIdxLapDistPct: { value: pcts },
@@ -96,21 +99,54 @@ describe('parseTrackLength', () => {
 });
 
 describe('RadarProcessor with LMU relative positions', () => {
-  it('places and keeps a rival across a bend by its offset from the player', () => {
+  it('places a rival on the same stretch of road by its offset from the player', () => {
     const processor = createProcessor();
     processor.onFrame(
       frame({
         time: 1,
-        pcts: [0.5, 0.5 + m(175), 0.5 + m(20)],
+        pcts: [0.5, 0.5 + m(30), 0.5 + m(20)],
         relativeAvailable: [false, true, true],
-        relativeLongitudinal: [0, 45, 18],
+        relativeLongitudinal: [0, 28, 18],
+        relativeLateral: [0, 3, -2],
       })
     );
 
     const cars = processor.snapshot().cars;
     expect(cars.map((car) => car.carIdx)).toEqual([2, 1]);
     expect(cars[0].dist).toBeCloseTo(18);
-    expect(cars[1].dist).toBeCloseTo(45);
+    expect(cars[1].dist).toBeCloseTo(28);
+  });
+
+  it('leaves out a rival across a bend that is out of range along the track', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      frame({
+        time: 1,
+        pcts: [0.5, 0.5 + m(175)],
+        relativeAvailable: [false, true],
+        relativeLongitudinal: [0, 45],
+        relativeLateral: [0, 2],
+      })
+    );
+
+    expect(processor.snapshot().cars).toEqual([]);
+  });
+
+  it('places a rival far to the side by its lap distance, not beside the player', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      frame({
+        time: 1,
+        pcts: [0.5, 0.5 - m(80)],
+        relativeAvailable: [false, true],
+        relativeLongitudinal: [0, 0],
+        relativeLateral: [0, 40],
+      })
+    );
+
+    const cars = processor.snapshot().cars;
+    expect(cars.map((car) => car.carIdx)).toEqual([1]);
+    expect(cars[0].dist).toBeCloseTo(-80);
   });
 
   it('falls back to lap distance for a car without an offset', () => {
@@ -155,6 +191,7 @@ describe('RadarProcessor with LMU relative positions', () => {
         pcts: [0.5 + m(175), 0.5 + m(30), 0.5],
         relativeAvailable: [false, true, false],
         relativeLongitudinal: [0, 5, 0],
+        relativeLateral: [0, 0, 0],
       })
     );
 
