@@ -175,8 +175,6 @@ export interface RaceControlBridge {
   /** Points the sim's camera at a car, without moving the replay position. */
   focusDriver: (carNumber: string) => Promise<void>;
   clearIncidents: () => Promise<void>;
-  updateThresholds: (thresholds: IncidentThresholds) => Promise<void>;
-  updateRetention: (retention: 'all' | 5 | 10 | 20) => Promise<void>;
   /** Resolves false when the Gantry widget is disabled and nothing opened. */
   showGantryWindow: () => Promise<boolean>;
 }

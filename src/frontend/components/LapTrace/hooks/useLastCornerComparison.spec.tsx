@@ -6,7 +6,7 @@ import type {
   LovelyTrackSection,
 } from '@irdashies/types';
 import { useLapTraceStore } from '@irdashies/context';
-import { hydrateLapTrace } from '../../../domain/lapTrace/hydrateLapTrace';
+import { hydrateLapTrace } from '@irdashies/utils/lapTrace/hydrateLapTrace';
 import { makeSyntheticLapTrace } from '../fixtures/syntheticLap';
 import {
   MAX_LAST_CORNER_HISTORY,

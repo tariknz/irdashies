@@ -1,7 +1,6 @@
-import * as yaml from 'js-yaml';
-import type { Session, Telemetry } from '../../src/types';
+import { parseSession, telemetryFrom } from './processorInputs';
 import { ReferenceLapProcessor } from '../../src/app/processors/ReferenceLapProcessor';
-import type { ReplayProbe, TelemetryFrame } from './validator';
+import type { ReplayProbe } from './validator';
 
 interface ReferenceLapProbeState {
   bestLapTimes: readonly (readonly [number, number])[];
@@ -9,14 +8,6 @@ interface ReferenceLapProbeState {
   sessionNum: number | null;
   version: number;
 }
-
-const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
-  Object.fromEntries(
-    Object.entries(frame).map(([name, entry]) => [
-      name,
-      { value: Array.isArray(entry) ? entry : [entry] },
-    ])
-  ) as unknown as Telemetry;
 
 const lapTimes = (
   laps: ReturnType<ReferenceLapProcessor['snapshot']>['bestLaps']
@@ -47,7 +38,7 @@ export const createReferenceLapsProbe =
           previousBestCount = 0;
           needsEnter = false;
         }
-        processor.init(yaml.load(sessionYaml, { json: true }) as Session);
+        processor.init(parseSession(sessionYaml));
       },
       onFrame(frame) {
         processor.onFrame(telemetryFrom(frame));

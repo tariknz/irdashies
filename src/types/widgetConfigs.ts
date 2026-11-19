@@ -69,6 +69,7 @@ export interface SessionBarConfig {
   localTime: { enabled: boolean };
   sessionClockTime: { enabled: boolean };
   trackWetness: { enabled: boolean };
+  trackState?: { enabled: boolean };
   precipitation?: { enabled: boolean };
   humidity?: { enabled: boolean };
   airTemperature: { enabled: boolean; unit: TemperatureUnit };

@@ -9,6 +9,7 @@ import {
 import { TelemetryInspectorSettings } from './TelemetryInspectorSettings';
 import { ChromiumFlagsSettings } from './ChromiumFlagsSettings';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SettingsTabType } from '@irdashies/types';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import logger from '@irdashies/utils/logger';
@@ -100,7 +101,7 @@ export const AdvancedSettings = () => {
       </div>
 
       <div className="flex-none mt-4 px-4">
-        <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+        <SettingsTabBar>
           <TabButton
             id="dashboard"
             activeTab={activeTab}
@@ -122,7 +123,7 @@ export const AdvancedSettings = () => {
           >
             Chromium
           </TabButton>
-        </div>
+        </SettingsTabBar>
       </div>
 
       {activeTab === 'dashboard' && (

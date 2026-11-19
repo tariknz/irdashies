@@ -55,13 +55,14 @@ Choose **Auto**, **iRacing**, or **Le Mans Ultimate** in **Settings > General > 
 1. In LMU, enable **Settings > Gameplay > Enable Plugins**, then restart the simulator.
 2. Start irDashies and load into an LMU session to receive telemetry.
 
-**Supported overlays** include Standings, Relative, Input, Lap Trace, Pitlane Helper, Corner Names, Battle, Flag, Information Bar, Faster Cars From Behind, Shift Light, Sector Delta, Weather, Lap Timer, Delta Speed, and Garage Cover. Telemetry Inspector is also available for diagnostics. The Gantry, the iRacePlan widgets, Broadcast overlays, Fuel Calculator, both track maps, Radar, Car Systems, and Tachometer are iRacing-only.
+**Supported overlays** include Standings, Relative, Input, Lap Trace, Pitlane Helper, Corner Names, Battle, Flag, Information Bar, Faster Cars From Behind, Slow Car Ahead, Shift Light, Sector Delta, Weather, Lap Timer, Delta Speed, Garage Cover, Heart Rate, and Stream Chat. Telemetry Inspector is also available for diagnostics. The Gantry, the iRacePlan widgets, Broadcast overlays, Fuel Calculator, both track maps, Radar, Car Systems, and Tachometer are iRacing-only.
 
 - Standings use class colours and manufacturer badges, with best-lap ordering in practice and position ordering in races. The Rating column shows LMU driver and safety ranks and marks AI entries. Country flags and ranks can take a few seconds to appear after drivers join. Team names and car numbers come from LMU. Standings and Relative show finish, DNF, and disqualification badges, and can display LMU track-limits points.
 - Corner Names and Lap Trace corner feedback depend on available LMU track data. Unnamed turns use turn numbers where provided.
 - Lap Trace saves clean LMU laps once the official lap time arrives. Reference imports support iRacing `.ibt` files and Garage 61 CSV laps.
 - Input and Lap Trace need your own car's telemetry, which can be unavailable while spectating or in the garage. Overlays set to show only while driving stay visible when you pause on track and hide when you return to the session monitor.
 - Lap positions are estimated between updates; cars without full telemetry may update in larger steps. Automatic units are metric, and Pitlane Helper currently uses a fixed 60 km/h pit limit.
+- Slow Car Ahead cannot tell a car that has left the track from one stopped on it, so a car stopped off the track shows the red "stopped" bar rather than the green "off track" one.
 - LMU in-game replays do not yet have iRacing's replay-aware handling. LMU session recording and playback tools are development tools.
 
 ## Available overlays

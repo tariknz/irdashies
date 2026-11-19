@@ -18,9 +18,9 @@ export interface AeroPackageInfo {
 
 export interface AeroCalculatorInfo {
   FrontRhAtSpeed: string;
-   RearRhAtSpeed: string;
-   AeroBalance: string;
-   DownforceToDrag: string;
+  RearRhAtSpeed: string;
+  AeroBalance: string;
+  DownforceToDrag: string;
 }
 
 export interface TiresAeroInfo {
@@ -70,7 +70,7 @@ export interface ChassisRearInfo {
 }
 
 export interface ChassisInfo {
-  Front: ChassisFrontInfo,
+  Front: ChassisFrontInfo;
   LeftFront: ChassisCornerInfo;
   LeftRear: ChassisCornerInfo;
   RightFront: ChassisCornerInfo;
@@ -87,7 +87,7 @@ export interface DifferentialInfo {
 
 export interface PowerUnitConfig {
   MguKDeployMode: string;
-   EngineBraking: string;
+  EngineBraking: string;
 }
 
 export interface BrakeSystemConfig {

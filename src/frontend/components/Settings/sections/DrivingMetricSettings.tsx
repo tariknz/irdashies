@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentType } from 'react';
+import type { ComponentType } from 'react';
 import { useDashboard } from '@irdashies/context';
 import {
   getWidgetDefaultConfig,
@@ -49,25 +49,16 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
     (widget) => widget.id === widgetId
   );
   const defaults = getWidgetDefaultConfig(id);
-  const [settings, setSettings] = useState<
-    BaseWidgetSettings<WidgetConfigMap[K]>
-  >({
+  const settings: BaseWidgetSettings<WidgetConfigMap[K]> = {
     enabled: saved?.enabled ?? false,
     config: (saved?.config as unknown as WidgetConfigMap[K]) ?? defaults,
-  });
-  useEffect(() => {
-    setSettings({
-      enabled: saved?.enabled ?? false,
-      config: (saved?.config as unknown as WidgetConfigMap[K]) ?? defaults,
-    });
-  }, [defaults, saved, widgetId]);
+  };
 
   return (
     <BaseSettingsSection
       title={titles[id] ?? id}
       description="Configure this driving telemetry widget."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={widgetId}
     >
       {(handleConfigChange) => (

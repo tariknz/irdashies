@@ -46,6 +46,11 @@ export interface PitStopRecord {
   fastRepairs: number;
 }
 
+export interface PitStopSessionKey {
+  subSessionId: number;
+  sessionNum: number;
+}
+
 export interface PitStopsSnapshot {
   /** The event, or null when no session is loaded. */
   subSessionId: number | null;

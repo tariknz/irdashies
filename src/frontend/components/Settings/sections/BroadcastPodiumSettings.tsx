@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { BroadcastModuleDescription } from './BroadcastModuleDescription';
 import { changeMarker } from '../components/ChangedMark';
@@ -27,10 +26,10 @@ export const BroadcastPodiumSettings = ({ obsUrl }: { obsUrl?: string }) => {
     (w) => w.id === SETTING_ID
   ) as BroadcastPodiumWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<BroadcastPodiumWidgetSettings>({
+  const settings: BroadcastPodiumWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config: { ...defaultConfig, ...savedSettings?.config },
-  });
+  };
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -47,7 +46,6 @@ export const BroadcastPodiumSettings = ({ obsUrl }: { obsUrl?: string }) => {
         </BroadcastModuleDescription>
       }
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => {

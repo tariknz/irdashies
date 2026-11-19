@@ -1,5 +1,4 @@
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'fs';
-import { getAccessToken } from './auth';
 
 interface TrackAsset {
   track_id: string;
@@ -7,9 +6,8 @@ interface TrackAsset {
   track_map_layers: Record<string, string>;
 }
 
-export const downloadTrackSvgs = async () => {
+export const downloadTrackSvgs = async (accessToken: string) => {
   const tracks = readFileSync('./asset-data/tracks.json', 'utf8');
-  const accessToken = getAccessToken();
 
   const allTracks: Record<string, TrackAsset> = JSON.parse(tracks);
 
@@ -19,13 +17,13 @@ export const downloadTrackSvgs = async () => {
   const workers = Array.from({ length: CONCURRENCY }, async () => {
     while (cursor < queue.length) {
       const track = queue[cursor++];
-      await downloadTrackSvgs(track);
+      await downloadLayers(track);
     }
   });
   await Promise.all(workers);
 
-  async function downloadTrackSvgs(track: TrackAsset) {
-    for (const [, layer] of Object.entries(track.track_map_layers)) {
+  async function downloadLayers(track: TrackAsset) {
+    for (const layer of Object.values(track.track_map_layers)) {
       try {
         console.log(`Downloading ${layer} for track ${track.track_id}`);
         const response = await fetch(`${track.track_map}${layer}`, {

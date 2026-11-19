@@ -19,7 +19,6 @@ vi.mock('@irdashies/context', () => ({
   TopSpeedStoreUpdater: vi.fn(),
   SessionTimingUpdater: vi.fn(() => null),
   TrackTemperatureStoreUpdater: vi.fn(),
-  SessionBestLapStoreUpdater: vi.fn(),
   SectorTimingUpdater: vi.fn(() => null),
 }));
 vi.mock('@irdashies/domain', () => ({

@@ -86,33 +86,11 @@ export default defineConfig({
     // main app's renderer dev server (electron-forge vite plugin on 5173).
     port: 5174,
     fs: {
-      allow: [
-        // Allow serving files from the parent project
-        path.resolve(import.meta.dirname, '..'),
-      ],
+      allow: [path.resolve(import.meta.dirname, '..')],
     },
   },
   resolve: {
-    alias: {
-      '@irdashies/frontend': path.resolve(
-        import.meta.dirname,
-        '../src/frontend'
-      ),
-      '@irdashies/utils': path.resolve(
-        import.meta.dirname,
-        '../src/frontend/utils'
-      ),
-      '@irdashies/context': path.resolve(
-        import.meta.dirname,
-        '../src/frontend/context'
-      ),
-      '@irdashies/domain': path.resolve(
-        import.meta.dirname,
-        '../src/frontend/domain'
-      ),
-      '@irdashies/types': path.resolve(import.meta.dirname, '../src/types'),
-      '@irdashies/shared': path.resolve(import.meta.dirname, '../src/shared'),
-    },
+    tsconfigPaths: true,
   },
   css: {
     postcss: {

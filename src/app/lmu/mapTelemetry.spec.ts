@@ -1206,3 +1206,18 @@ describe('mapLmuTelemetry spectator focus', () => {
     expect(camCarIdx(undefined, spectating as never)).toBe(-1);
   });
 });
+
+describe('mapLmuTelemetry per-car speed', () => {
+  it("publishes each car's own speed, and -1 where it reported no telemetry", () => {
+    const raw = {
+      ...fixture(),
+      vehSpeed: Float64Array.from([41.5, 0, 63]),
+      vehTelemetryAvailable: Uint8Array.from([1, 1, 0]),
+    };
+    expect(mapLmuTelemetry(raw).LmuCarIdxSpeed?.value).toEqual([41.5, 0, -1]);
+  });
+
+  it('leaves the channel absent without per-car speeds', () => {
+    expect(mapLmuTelemetry(fixture()).LmuCarIdxSpeed).toBeUndefined();
+  });
+});

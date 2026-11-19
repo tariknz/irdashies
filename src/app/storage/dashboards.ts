@@ -367,7 +367,8 @@ export const updateDashboardWidget = (
 
 export const saveDashboard = (
   id: string | 'default',
-  value: DashboardLayout
+  value: DashboardLayout,
+  saveId?: string
 ) => {
   const dashboards = listDashboards();
   const existingDashboard = dashboards[id];
@@ -408,7 +409,7 @@ export const saveDashboard = (
     // This prevents overlay refreshes when creating/modifying non-active profiles
     const currentProfileId = getCurrentProfileId();
     if (id === currentProfileId) {
-      emitDashboardUpdated(mergedDashboard);
+      emitDashboardUpdated(mergedDashboard, saveId);
     } else {
       logger.info(
         '[saveDashboard] Not emitting update - not current profile (saved:',

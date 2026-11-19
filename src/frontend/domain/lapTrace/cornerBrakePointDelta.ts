@@ -17,7 +17,10 @@
  * non-exclusive per-corner window could afford.
  */
 
-import { nextEventIndex, signedLapDelta } from './pedalEvents';
+import {
+  nextEventIndex,
+  signedLapDelta,
+} from '@irdashies/utils/lapTrace/pedalEvents';
 
 export interface CornerBrakePointAssignment {
   /** Corner starts as lap fractions, in track order. */

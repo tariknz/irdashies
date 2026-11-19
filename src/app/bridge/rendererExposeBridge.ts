@@ -13,6 +13,7 @@ import type {
   GameDetectionStatus,
   SimulatorPreference,
   SaveDashboardOptions,
+  DashboardUpdateListener,
   ContainerBoundsInfo,
   FuelCalculatorBridge,
   FuelLapData,
@@ -28,8 +29,6 @@ import type {
   RaceControlBridge,
   LapHistoryBridge,
   Incident,
-  IncidentThresholds,
-  SessionRetention,
   TelemetryInspectorBridge,
   RendererPerfBridge,
   ReleaseNotesBridge,
@@ -202,15 +201,14 @@ export function exposeBridge() {
     reloadDashboard: () => {
       ipcRenderer.send('reloadDashboard');
     },
-    dashboardUpdated: (
-      callback: (dashboard: DashboardLayout, profileId?: string) => void
-    ) => {
+    dashboardUpdated: (callback: DashboardUpdateListener) => {
       const handler = (
         _: Electron.IpcRendererEvent,
         dashboard: DashboardLayout,
-        profileId?: string
+        profileId?: string,
+        saveId?: string
       ) => {
-        callback(dashboard, profileId);
+        callback(dashboard, profileId, saveId);
       };
       ipcRenderer.on('dashboardUpdated', handler);
       return () => ipcRenderer.removeListener('dashboardUpdated', handler);
@@ -585,10 +583,6 @@ export function exposeBridge() {
     focusDriver: (carNumber: string) =>
       ipcRenderer.invoke('raceControl:focusDriver', carNumber),
     clearIncidents: () => ipcRenderer.invoke('raceControl:clearIncidents'),
-    updateThresholds: (thresholds: IncidentThresholds) =>
-      ipcRenderer.invoke('raceControl:updateThresholds', thresholds),
-    updateRetention: (retention: SessionRetention) =>
-      ipcRenderer.invoke('raceControl:updateRetention', retention),
     showGantryWindow: () => ipcRenderer.invoke('raceControl:showGantryWindow'),
   });
   defineBridge<LapHistoryBridge>('lapHistoryBridge', {

@@ -489,6 +489,13 @@ export function mapLmuTelemetry(
       carIdxLaps
     );
   }
+  if (raw.vehSpeed) {
+    t.LmuCarIdxSpeed = {
+      value: Array.from(raw.vehSpeed, (speed, carIdx) =>
+        raw.vehTelemetryAvailable[carIdx] ? speed : -1
+      ),
+    };
+  }
   t.CarIdxTrackSurface = {
     value: Array.from(raw.vehInPits, (_, carIdx) => trackLocation(raw, carIdx)),
   };

@@ -4,15 +4,11 @@ import type {
   Session,
   Telemetry,
 } from '@irdashies/types';
-import type { ChannelBus } from '../bridge/channelBridge';
+import type { ChannelBus } from '../bridge/channelBus';
 import type { SessionLifecycle } from '../sessionLifecycle';
 import { IncidentProcessor } from './IncidentProcessor';
 import logger from '../logger';
-
-export interface PerformanceSections {
-  markStart(label: string): void;
-  markEnd(label: string): void;
-}
+import type { PerformanceSections } from '../perfMetrics';
 
 export interface IncidentPersistence {
   save(sessionId: string, incident: Incident): void;
