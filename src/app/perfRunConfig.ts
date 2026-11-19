@@ -33,6 +33,11 @@ export const usesIsolatedReplayPublisher = (
   platform: NodeJS.Platform
 ): boolean => Boolean(replayInputPath) && platform === 'win32';
 
+export const replayPublisherArguments = (
+  inputPath: string,
+  speed: number
+): string[] => ['play', '--input', inputPath, '--speed', String(speed), '--loop'];
+
 export const replayRunEnvironment = (
   replayInputPath: string,
   platform: NodeJS.Platform,

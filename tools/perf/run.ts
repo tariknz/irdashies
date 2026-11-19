@@ -10,6 +10,7 @@ import {
   PERF_REPLAY_READY_LOG_MARKER,
   parsePerfVisibilityPhases,
   perfRunSimulator,
+  replayPublisherArguments,
   replayRunEnvironment,
   usesIsolatedReplayPublisher,
 } from '../../src/app/perfRunConfig.ts';
@@ -215,9 +216,10 @@ function parseArgs(args: string[]): {
   );
   if (!runId) throw new Error('--run-id must contain usable characters.');
   const replayInput = parsed.value('--replay-input') ?? '';
-  const replaySpeed = parsed.has('--replay-speed')
-    ? numericArgument(parsed, '--replay-speed', 1, { min: 0.25, max: 100 })
-    : undefined;
+  const replaySpeed = numericArgument(parsed, '--replay-speed', 1, {
+    min: 0.25,
+    max: 100,
+  });
   const requestedWindowMode = parsed.value('--window-mode');
   const windowMode =
     requestedWindowMode === 'display' || requestedWindowMode === 'widget'
@@ -243,7 +245,7 @@ function parseArgs(args: string[]): {
       channelDelivery,
       visibilityPhases,
       replayInput,
-      replaySpeed,
+      replaySpeed: replayInput ? replaySpeed : undefined,
       sdkWait: parsed.flag('--sdk-wait'),
       outputDirectory: parsed.value('--output-directory')
         ? path.resolve(parsed.value('--output-directory') as string)
@@ -281,6 +283,7 @@ try {
   process.exit(1);
 }
 const options = parsedRun.options;
+const forceProcessorDemand = process.env.PERF_FORCE_PROCESSOR_DEMAND === '1';
 const userDataDirectory = parsedRun.userDataDirectory;
 if (
   userDataDirectory &&
@@ -435,10 +438,7 @@ const child = spawn(childCommand, childArguments, {
     PERF_WINDOW_MODE: options.windowMode ?? '',
     PERF_REPLAY_VISIBLE_WIDGETS: options.replayVisibleWidgets ? '1' : '0',
     PERF_WIDGET_TYPES: options.widgets,
-    PERF_FORCE_PROCESSOR_DEMAND:
-      options.mode === 'full'
-        ? process.env.PERF_FORCE_PROCESSOR_DEMAND ?? '1'
-        : process.env.PERF_FORCE_PROCESSOR_DEMAND,
+    PERF_FORCE_PROCESSOR_DEMAND: forceProcessorDemand ? '1' : '0',
     PERF_REPORT_INTERVAL_MS: String(options.intervalMs),
     PERF_DURATION_SECONDS: String(options.durationSeconds),
     PERF_BUILD: build,
@@ -457,6 +457,7 @@ const child = spawn(childCommand, childArguments, {
       telemetryDelivery: options.telemetryDelivery,
       telemetryPayload: options.telemetryPayload,
       replayVisibleWidgets: options.replayVisibleWidgets,
+      forceProcessorDemand: forceProcessorDemand || undefined,
       tapeSha256: tapeFingerprint?.sha256,
       tapeBytes: tapeFingerprint?.bytes,
       sourceCommit,
@@ -538,7 +539,7 @@ const startReplayPublisher = (): void => {
   const publisherPath = path.resolve('build/Release/irsdk_replay.exe');
   const publisher = spawn(
     publisherPath,
-    ['play', '--input', replayInputPath, '--loop'],
+    replayPublisherArguments(replayInputPath, options.replaySpeed ?? 1),
     {
       cwd: process.cwd(),
       stdio: ['ignore', 'pipe', 'pipe'],

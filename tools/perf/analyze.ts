@@ -208,9 +208,9 @@ export interface PerfSummary {
     radarFrameRateHz: number;
     radarFrameP99MeanMs: number;
     radarFrameP99WorstMs: number;
-    widgetRenderRateHz: number;
-    widgetRenderP99MeanMs: number;
-    widgetRenderP99WorstMs: number;
+    widgetRenderRateHz: number | null;
+    widgetRenderP99MeanMs: number | null;
+    widgetRenderP99WorstMs: number | null;
     lapTraceFrameRateHz: number;
     lapTraceFrameP99MeanMs: number;
     lapTraceFrameP99WorstMs: number;
@@ -278,8 +278,8 @@ export interface PerfComparison {
     inputTraceFrameP99Ms: number;
     radarFrameRateHz: number;
     radarFrameP99Ms: number;
-    widgetRenderRateHz: number;
-    widgetRenderP99Ms: number;
+    widgetRenderRateHz: number | null;
+    widgetRenderP99Ms: number | null;
     lapTraceFrameRateHz: number;
     lapTraceFrameP99Ms: number;
     lapTraceBrakeCueRateHz: number;
@@ -631,10 +631,9 @@ export function summarizeCapture(
     renderer,
     (sample) => sample.radarFrameMs
   );
-  const widgetRender = summarizeRendererMeasure(
-    renderer,
-    (sample) => sample.widgetRenderMs
-  );
+  const widgetRender = renderer.some((sample) => sample.widgetRenderMs?.count)
+    ? summarizeRendererMeasure(renderer, (sample) => sample.widgetRenderMs)
+    : undefined;
   const lapTraceFrame = summarizeRendererMeasure(
     renderer,
     (sample) => sample.lapTraceFrameMs
@@ -1281,9 +1280,9 @@ export function summarizeCapture(
       radarFrameRateHz: radarFrame.rateHz,
       radarFrameP99MeanMs: radarFrame.p99MeanMs,
       radarFrameP99WorstMs: radarFrame.p99WorstMs,
-      widgetRenderRateHz: widgetRender.rateHz,
-      widgetRenderP99MeanMs: widgetRender.p99MeanMs,
-      widgetRenderP99WorstMs: widgetRender.p99WorstMs,
+      widgetRenderRateHz: widgetRender?.rateHz ?? null,
+      widgetRenderP99MeanMs: widgetRender?.p99MeanMs ?? null,
+      widgetRenderP99WorstMs: widgetRender?.p99WorstMs ?? null,
       lapTraceFrameRateHz: lapTraceFrame.rateHz,
       lapTraceFrameP99MeanMs: lapTraceFrame.p99MeanMs,
       lapTraceFrameP99WorstMs: lapTraceFrame.p99WorstMs,
@@ -1422,6 +1421,15 @@ export function compareSummaries(
   contrast: ComparisonContrast = [],
   ignoredGates: readonly string[] = []
 ): PerfComparison {
+  const widgetRenderDelta = (
+    metric: 'widgetRenderRateHz' | 'widgetRenderP99MeanMs'
+  ): number | null => {
+    const before = baseline.renderer[metric];
+    const after = candidate.renderer[metric];
+    return typeof before === 'number' && typeof after === 'number'
+      ? after - before
+      : null;
+  };
   const averageFpsPercent = percentChange(
     baseline.iracing.averageFps,
     candidate.iracing.averageFps
@@ -1526,12 +1534,8 @@ export function compareSummaries(
       radarFrameP99Ms:
         candidate.renderer.radarFrameP99MeanMs -
         baseline.renderer.radarFrameP99MeanMs,
-      widgetRenderRateHz:
-        candidate.renderer.widgetRenderRateHz -
-        baseline.renderer.widgetRenderRateHz,
-      widgetRenderP99Ms:
-        candidate.renderer.widgetRenderP99MeanMs -
-        baseline.renderer.widgetRenderP99MeanMs,
+      widgetRenderRateHz: widgetRenderDelta('widgetRenderRateHz'),
+      widgetRenderP99Ms: widgetRenderDelta('widgetRenderP99MeanMs'),
       lapTraceFrameRateHz:
         candidate.renderer.lapTraceFrameRateHz -
         baseline.renderer.lapTraceFrameRateHz,
@@ -1631,8 +1635,8 @@ export function compareSummaries(
   };
 }
 
-function format(value: number, digits = 2): string {
-  return Number.isFinite(value) ? value.toFixed(digits) : 'n/a';
+function format(value: number | null, digits = 2): string {
+  return value !== null && Number.isFinite(value) ? value.toFixed(digits) : 'n/a';
 }
 
 /** Format the summary as a Markdown report. */

@@ -6,6 +6,7 @@ import {
   getPerfRunConfig,
   parsePerfVisibilityPhases,
   perfRunSimulator,
+  replayPublisherArguments,
   replayRunEnvironment,
   updatePerfDashboardMetadata,
   usesIsolatedReplayPublisher,
@@ -200,6 +201,17 @@ describe('performance run configuration', () => {
 });
 
 describe('perf:run replay transport', () => {
+  it('passes playback speed to the Windows publisher', () => {
+    expect(replayPublisherArguments('C:\\tapes\\race one.irdt', 2)).toEqual([
+      'play',
+      '--input',
+      'C:\\tapes\\race one.irdt',
+      '--speed',
+      '2',
+      '--loop',
+    ]);
+  });
+
   it('uses the isolated publisher only on Windows', () => {
     expect(usesIsolatedReplayPublisher('session.irdt', 'win32')).toBe(true);
     expect(usesIsolatedReplayPublisher('session.irdt', 'linux')).toBe(false);

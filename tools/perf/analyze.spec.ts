@@ -13,6 +13,7 @@ import {
   type PerfSummary,
   summaryMarkdown,
 } from './analyze';
+import { evaluateBranchRuns } from './branches';
 
 const stats = (
   avg: number,
@@ -107,6 +108,87 @@ const conclusiveSamples = (fps = 100) =>
   );
 
 describe('performance analysis', () => {
+  it('validates both ABBA pairs and withholds the verdict for an unmatched run', () => {
+    const matched = summarizeCapture(capture(conclusiveSamples()), 0);
+    const changedDemand = {
+      ...matched,
+      scenarioMetadata: {
+        ...matched.scenarioMetadata,
+        forceProcessorDemand: true,
+      },
+    };
+    const runs = [
+      { label: 'baseline', runId: 'a1', summary: matched },
+      { label: 'candidate', runId: 'b1', summary: matched },
+      { label: 'candidate', runId: 'b2', summary: changedDemand },
+      { label: 'baseline', runId: 'a2', summary: matched },
+    ] as const;
+    const scheduled = runs.map((run, index) => ({
+      ...run,
+      cycle: 0,
+      position: index + 1,
+      logPath: '',
+    }));
+    const result = evaluateBranchRuns(scheduled, []);
+    expect(result.inconclusiveRunIds).toEqual(['b2']);
+    expect(result.aggregate).toMatchObject({
+      verdict: 'INCONCLUSIVE',
+      metrics: [],
+    });
+    expect(result.checks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'a1 / b1 — Matched workload metadata',
+          passed: true,
+        }),
+        expect.objectContaining({
+          name: 'a2 / b2 — Matched workload metadata',
+          passed: false,
+        }),
+      ])
+    );
+    expect(
+      evaluateBranchRuns(
+        scheduled.map((run) => ({ ...run, summary: matched })),
+        []
+      ).aggregate.verdict
+    ).toBe('NO REPRODUCIBLE EFFECT');
+    const missingMemory = {
+      ...matched,
+      evidence: { ...matched.evidence, privateMemorySamplingAdequate: false },
+    };
+    expect(
+      evaluateBranchRuns(
+        scheduled.map((run) => ({
+          ...run,
+          summary: run.runId === 'b2' ? missingMemory : matched,
+        })),
+        []
+      ).aggregate.verdict
+    ).toBe('INCONCLUSIVE');
+  });
+
+  it('reports unavailable widget profiler measurements without a numeric delta', () => {
+    const summary = summarizeCapture(capture(conclusiveSamples()), 0);
+    const measured = {
+      ...summary,
+      renderer: {
+        ...summary.renderer,
+        widgetRenderRateHz: 20,
+        widgetRenderP99MeanMs: 2,
+      },
+    };
+
+    expect(summary.renderer.widgetRenderRateHz).toBeNull();
+    expect(summaryMarkdown(summary)).toContain(
+      '| Widget React commits / second | n/a |'
+    );
+    expect(compareSummaries(summary, measured).delta).toMatchObject({
+      widgetRenderRateHz: null,
+      widgetRenderP99Ms: null,
+    });
+  });
+
   it('aggregates optional SDK wait instrumentation when present', () => {
     const waitStats = stats(4);
     const sdkWait = (count: number, p95: number) => ({

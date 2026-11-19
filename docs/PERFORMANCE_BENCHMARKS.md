@@ -58,10 +58,18 @@ connection and pass `--simulator-mode replay` to label the metadata. This flag
 does not start a tape publisher; `--replay-input` selects the isolated publisher.
 Pin and verify replay frame/session/camera and normal-speed playback separately.
 
-`--replay-speed N` sets `IRDASHIES_TELEMETRY_REPLAY_SPEED` for the replay
-(0.25–100) and records it in scenario metadata; it is useful for reproducing
-max-speed stress captures. `perf:trace` accepts the same value via `--speed`
-or `--replay-speed`.
+`--replay-speed N` sets the playback speed (0.25–100, default 1) and records it
+in scenario metadata. On Windows, `perf:run` passes the speed to the separate
+replay publisher. `perf:trace` accepts the same value via `--speed` or
+`--replay-speed`.
+
+Processor demand follows the dashboard by default. Standalone diagnostic runs
+can set `PERF_FORCE_PROCESSOR_DEMAND=1` to keep all processors active.
+The branch runner disables that override for both checkouts.
+
+Widget React commit measurements require a profiling-enabled React build.
+The analyzer reports `n/a` when the capture contains no widget profiler samples,
+including standard packaged builds.
 
 `--user-data-dir <directory>` forwards an isolated profile directory to
 Electron, including through Forge for the development target. Use a path
@@ -434,7 +442,9 @@ The default order is ABBA: `base, candidate, candidate, base` per pair;
 `--pairs 2` repeats that cycle, and `--order ab` restores the old two-run
 behaviour. The report aggregates each metric by commit with median/range,
 compares the effect to the observed run noise, and prints a verdict such as
-`NO REPRODUCIBLE EFFECT`. A short harness check is available via `--smoke`
+`NO REPRODUCIBLE EFFECT`. Every pair is checked, and a run with incomplete
+or mismatched evidence makes the aggregate verdict inconclusive.
+A short harness check is available via `--smoke`
 (60 s, two runs, inconclusive allowed), and `--coverage-probe-seconds 30`
 adds a short probe that narrows `--widgets` to fully covered types.
 Several existing comparisons can be combined with
@@ -442,8 +452,9 @@ Several existing comparisons can be combined with
 grouped by `sourceCommit`, not by the baseline/candidate role; if captures from
 more than two commits are mixed, select the pair with `--baseline <sha>` and
 `--candidate <sha>`. Generated worktrees are cached by
-commit SHA under `perf-results/.cache/branches` and reused by default; use
-`--no-reuse` for fresh checkouts and `--clean-cache` to remove the cache.
+commit SHA under `perf-results/.cache/branches` and reused by default.
+`--no-reuse`, `--install`, and `--rebuild-native` use fresh worktrees.
+Use `--clean-cache` to remove cached worktrees.
 `--ignore-gates memory,FPS` skips named gates. Temporary non-cached worktrees
 are removed afterwards unless `--keep-worktrees` is set. Dependencies and the native build are linked from the current checkout;
 use `--install` for a clean `npm ci`, and add `--rebuild-native` when the diff

@@ -127,6 +127,15 @@ describe('branch performance runner options', () => {
     expect(() => parseBranchesOptions([])).toThrow(/--input is required/);
   });
 
+  it.each(['--install', '--rebuild-native'])(
+    'uses fresh worktrees for %s',
+    (flag) => {
+      expect(
+        parseBranchesOptions(['--input', 'session.irdt', '--reuse', flag])
+      ).toMatchObject({ reuse: false });
+    }
+  );
+
   it('separates reproducible effects from run-order noise', () => {
     const summary = (peak: number, cpu: number) =>
       ({

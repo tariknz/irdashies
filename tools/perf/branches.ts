@@ -5,6 +5,8 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
+  compareSummaries,
+  comparisonCoreComplete,
   parsePerfLog,
   summarizeCapture,
   type PerfSummary,
@@ -123,6 +125,7 @@ export interface BranchesReport {
   comparisonPath: string;
   diagnosisPath: string;
   conclusive: boolean;
+  inconclusiveRunIds?: string[];
 }
 
 export function parseDiffSpec(value: string): BranchRefs {
@@ -275,7 +278,11 @@ export function parseBranchesOptions(args: string[]): BranchesOptions {
     dryRun: parsed.flag('--dry-run'),
     allowInconclusive: smoke || parsed.flag('--allow-inconclusive'),
     ignoreGates: listArgument(parsed, '--ignore-gates'),
-    reuse: !parsed.flag('--no-reuse') && !parsed.flag('--clean-cache'),
+    reuse:
+      !parsed.flag('--no-reuse') &&
+      !parsed.flag('--clean-cache') &&
+      !parsed.flag('--install') &&
+      !parsed.flag('--rebuild-native'),
     cleanCache: parsed.flag('--clean-cache'),
   };
 }
@@ -410,14 +417,15 @@ const runTool = async (
   args: string[],
   cwd: string,
   logPath: string,
-  shell = false
+  shell = false,
+  env: NodeJS.ProcessEnv = process.env
 ): Promise<void> => {
   let stderr = '';
   const child = spawn(command, args, {
     cwd,
     shell,
     stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, NODE_OPTIONS: '' },
+    env: { ...env, NODE_OPTIONS: '' },
   });
   child.stderr?.on('data', (chunk: Buffer) => {
     stderr += chunk.toString();
@@ -445,7 +453,6 @@ const npmCommand = (): string =>
   process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
 const prepareWorktree = async (
-  commit: string,
   directory: string,
   options: BranchesOptions,
   rootDirectory: string,
@@ -453,7 +460,6 @@ const prepareWorktree = async (
   logDirectory: string,
   label: string
 ): Promise<void> => {
-  await gitValue(['worktree', 'add', '--detach', directory, commit], rootDirectory);
   if (options.install) {
     await runTool(
       npmCommand(),
@@ -549,7 +555,9 @@ const captureSide = async (
       ...args,
     ],
     side.directory,
-    path.join(logDirectory, `${side.label}.run.log`)
+    path.join(logDirectory, `${runId}.run.log`),
+    false,
+    { ...process.env, PERF_FORCE_PROCESSOR_DEMAND: '0' }
   );
   return path.join(options.outputDirectory, `${runId}.log`);
 };
@@ -579,8 +587,11 @@ export function branchesReportMarkdown(report: BranchesReport): string {
     `- Native files changed: ${report.nativeChanged}`,
     `- Dependency files changed: ${report.dependenciesChanged}`,
     `- Evidence: **${report.conclusive ? 'CONCLUSIVE' : 'INCONCLUSIVE'}**`,
-    `- Comparison: \`${report.comparisonPath}\``,
-    `- Diagnosis: \`${report.diagnosisPath}\``,
+    ...(report.inconclusiveRunIds?.length
+      ? [`- Runs with incomplete or mismatched evidence: ${report.inconclusiveRunIds.join(', ')}`]
+      : []),
+    `- First pair comparison: \`${report.comparisonPath}\``,
+    `- First pair diagnosis: \`${report.diagnosisPath}\``,
     '',
     '## Changed files',
     '',
@@ -763,6 +774,45 @@ export function aggregateBranchRuns(
         ? 'NO REPRODUCIBLE EFFECT'
         : `REPRODUCIBLE DIFFERENCE: ${reproducible.map((metric) => metric.key).join(', ')}`,
   };
+}
+
+export function evaluateBranchRuns(
+  runs: readonly (BranchRun & { summary: PerfSummary })[],
+  ignoredGates: readonly string[]
+): {
+  aggregate: BranchAggregate;
+  checks: ComparisonCheck[];
+  inconclusiveRunIds: string[];
+} {
+  const baselines = runs.filter((run) => run.label === 'baseline');
+  const candidates = runs.filter((run) => run.label === 'candidate');
+  const reference = baselines[0];
+  if (!reference || baselines.length !== candidates.length)
+    throw new Error('Each baseline capture requires a candidate capture.');
+
+  const inconclusiveRunIds = runs
+    .filter((run) => !comparisonCoreComplete(reference.summary, run.summary))
+    .map((run) => run.runId);
+  const checks = baselines.flatMap((baseline, index) => {
+    const candidate = candidates[index];
+    const comparison = compareSummaries(
+      baseline.summary,
+      candidate.summary,
+      [],
+      ignoredGates
+    );
+    return comparison.checks.map((check) => ({
+      ...check,
+      name: `${baseline.runId} / ${candidate.runId} — ${check.name}`,
+    }));
+  });
+  const incomplete = checks.some(
+    (check) => check.passed === null && !comparisonCheckSatisfied(check)
+  );
+  const aggregate = inconclusiveRunIds.length || incomplete
+    ? { runsPerSide: baselines.length, metrics: [], verdict: 'INCONCLUSIVE' }
+    : aggregateBranchRuns(runs);
+  return { aggregate, checks, inconclusiveRunIds };
 }
 
 export function branchAggregateMarkdown(
@@ -971,7 +1021,7 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
   const logDirectory = path.join(options.outputDirectory, 'logs');
   const prefix = path.basename(options.outputDirectory);
   const sides = new Map<SideLabel, BranchSideResult>();
-  const generated: string[] = [];
+  const temporaryWorktrees = new Set<string>();
   const runs: (BranchRun & { summary: PerfSummary })[] = [];
 
   try {
@@ -995,11 +1045,12 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
         cached?.directory ??
         (options.reuse
           ? path.join(cacheRootOf(rootDirectory), 'worktrees', commit)
-          : path.join(worktreeRoot, label, `${prefix}-${label}`));
+          : path.join(worktreeRoot, label));
       if (!configuredDirectory && !sharedDirectory && !cached) {
         await fs.mkdir(path.dirname(directory), { recursive: true });
+        gitValue(['worktree', 'add', '--detach', directory, commit], rootDirectory);
+        temporaryWorktrees.add(directory);
         await prepareWorktree(
-          commit,
           directory,
           options,
           rootDirectory,
@@ -1007,8 +1058,7 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
           logDirectory,
           label
         );
-        generated.push(directory);
-        if (options.reuse)
+        if (options.reuse) {
           await writeCacheEntry(rootDirectory, {
             commit,
             directory,
@@ -1017,6 +1067,8 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
             dependenciesInstalled: options.install,
             dependencyFingerprint,
           });
+          temporaryWorktrees.delete(directory);
+        }
       }
       commitDirectories.set(commit, directory);
       sides.set(label, {
@@ -1117,7 +1169,10 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
       process.stdout.write(`Captured ${entry.label} (${runId}): ${logPath}\n`);
     }
 
-    const aggregate = aggregateBranchRuns(runs);
+    const { aggregate, checks, inconclusiveRunIds } = evaluateBranchRuns(
+      runs,
+      options.ignoreGates
+    );
     const baselineRun = runs.find((run) => run.label === 'baseline');
     const candidateRun = runs.find((run) => run.label === 'candidate');
     if (!baselineRun || !candidateRun)
@@ -1132,8 +1187,8 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
       String(options.warmupSeconds),
       '--analysis-end-seconds',
       String(options.durationSeconds),
+      '--allow-inconclusive',
     ];
-    if (options.allowInconclusive) analyzeArgs.push('--allow-inconclusive');
     if (options.ignoreGates.length > 0)
       analyzeArgs.push('--ignore-gates', options.ignoreGates.join(','));
     await runTool(
@@ -1160,9 +1215,6 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
       rootDirectory,
       path.join(logDirectory, 'diagnose.log')
     );
-    const comparison = JSON.parse(
-      await fs.readFile(summaryPath, 'utf8')
-    ) as { checks: ComparisonCheck[] };
     const baseline = sides.get('baseline');
     const candidate = sides.get('candidate');
     if (!baseline || !candidate)
@@ -1179,14 +1231,21 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
       dependenciesChanged,
       comparisonPath: summaryPath.replace(/\.json$/, '.md'),
       diagnosisPath: path.join(options.outputDirectory, 'diagnosis.md'),
-      conclusive: comparison.checks.every(comparisonCheckSatisfied),
+      conclusive:
+        inconclusiveRunIds.length === 0 && checks.every(comparisonCheckSatisfied),
+      inconclusiveRunIds,
     };
-    const reportPath = await writeBranchReport(report, comparison);
+    const reportPath = await writeBranchReport(report, { checks });
     process.stdout.write(`Branch report: ${reportPath}\n`);
     process.stdout.write(`Verdict: ${aggregate.verdict}\n`);
+    if (inconclusiveRunIds.length > 0 && !options.allowInconclusive) {
+      throw new Error(
+        `Performance evidence is inconclusive for: ${inconclusiveRunIds.join(', ')}`
+      );
+    }
   } finally {
     if (!options.keepWorktrees) {
-      for (const directory of generated) {
+      for (const directory of temporaryWorktrees) {
         try {
           await gitValue(
             ['worktree', 'remove', '--force', directory],
@@ -1197,6 +1256,7 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
         }
       }
     }
+    await fs.rmdir(worktreeRoot).catch(() => undefined);
   }
 };
 
