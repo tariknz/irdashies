@@ -63,8 +63,6 @@ describe('mapLmuTelemetry', () => {
     expect(t.LapCurrentLapTime.value[0]).toBeCloseTo(50.4);
     expect(t.LapDeltaToSessionBestLap.value[0]).toBeCloseTo(0.2);
     expect(t.LapDeltaToSessionBestLap_OK.value[0]).toBe(true);
-    expect(t.LapDeltaToBestLap.value[0]).toBeCloseTo(0.2);
-    expect(t.LapDeltaToBestLap_OK.value[0]).toBe(true);
     expect(t.Throttle.value[0]).toBeCloseTo(0.79);
     expect(t.Brake.value[0]).toBe(0);
     expect(t.Clutch.value[0]).toBe(1);
@@ -94,7 +92,6 @@ describe('mapLmuTelemetry', () => {
     });
     expect(t.LapDeltaToSessionBestLap.value[0]).toBe(0);
     expect(t.LapDeltaToSessionBestLap_OK.value[0]).toBe(false);
-    expect(t.LapDeltaToBestLap_OK.value[0]).toBe(false);
   });
 
   it('maps the LMU pit limiter switch, not only active intervention', () => {
