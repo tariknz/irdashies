@@ -114,6 +114,44 @@ const occupiedArr = (
     : [],
 });
 
+interface HeldCell<T> {
+  value: T[];
+}
+
+const asNumber = (n: number) => n;
+const isNonZero = (n: number) => n !== 0;
+
+const heldArray = <T>(
+  cell: HeldCell<T> | undefined,
+  values: ArrayLike<number>,
+  convert: (n: number) => T
+): HeldCell<T> => {
+  if (cell && cell.value.length === values.length) {
+    let index = 0;
+    while (
+      index < values.length &&
+      cell.value[index] === convert(values[index])
+    ) {
+      index += 1;
+    }
+    if (index === values.length) return cell;
+  }
+  return { value: Array.from(values, convert) };
+};
+
+const heldScalar = <T>(cell: HeldCell<T> | undefined, value: T): HeldCell<T> =>
+  cell && cell.value.length === 1 && cell.value[0] === value
+    ? cell
+    : { value: [value] };
+
+const damageCells: {
+  dentSeverity?: HeldCell<number>;
+  wheelDetached?: HeldCell<boolean>;
+  bodyDetached?: HeldCell<boolean>;
+  lastImpactET?: HeldCell<number>;
+  lastImpactPos?: HeldCell<number>;
+} = {};
+
 const lapDistPctArr = (v: ArrayLike<number> | undefined) => ({
   value: v
     ? Array.from(v, (value) =>
@@ -609,19 +647,42 @@ export function mapLmuTelemetry(
   if (restCells?.aeroDamage) t.LmuAeroDamage = staged(restCells.aeroDamage);
 
   if (raw.dentSeverity) {
-    t.LmuDentSeverity = numArr(raw.dentSeverity);
+    damageCells.dentSeverity = heldArray(
+      damageCells.dentSeverity,
+      raw.dentSeverity,
+      asNumber
+    );
+    t.LmuDentSeverity = damageCells.dentSeverity;
   }
   if (raw.wheelDetached) {
-    t.LmuWheelDetached = boolArr(raw.wheelDetached, (n) => n !== 0);
+    damageCells.wheelDetached = heldArray(
+      damageCells.wheelDetached,
+      raw.wheelDetached,
+      isNonZero
+    );
+    t.LmuWheelDetached = damageCells.wheelDetached;
   }
   if (raw.bodyDetached !== undefined) {
-    t.LmuBodyDetached = bool(raw.bodyDetached);
+    damageCells.bodyDetached = heldScalar(
+      damageCells.bodyDetached,
+      raw.bodyDetached
+    );
+    t.LmuBodyDetached = damageCells.bodyDetached;
   }
   if (raw.lastImpactET !== undefined) {
-    t.LmuLastImpactET = num(raw.lastImpactET);
+    damageCells.lastImpactET = heldScalar(
+      damageCells.lastImpactET,
+      raw.lastImpactET
+    );
+    t.LmuLastImpactET = damageCells.lastImpactET;
   }
   if (raw.lastImpactPos) {
-    t.LmuLastImpactPos = numArr(raw.lastImpactPos);
+    damageCells.lastImpactPos = heldArray(
+      damageCells.lastImpactPos,
+      raw.lastImpactPos,
+      asNumber
+    );
+    t.LmuLastImpactPos = damageCells.lastImpactPos;
   }
 
   // Shared memory, unlike the cells above. The addon always writes these when

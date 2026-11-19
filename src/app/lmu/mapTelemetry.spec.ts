@@ -1094,6 +1094,26 @@ describe('LmuDentSeverity', () => {
     expect(t.LmuWheelDetached?.value).toEqual([false, true, false, false]);
   });
 
+  it('republishes the same damage cells while nothing is damaged further', () => {
+    const first = mapLmuTelemetry(fixture());
+    const second = mapLmuTelemetry(fixture());
+
+    expect(second.LmuDentSeverity).toBe(first.LmuDentSeverity);
+    expect(second.LmuWheelDetached).toBe(first.LmuWheelDetached);
+    expect(second.LmuBodyDetached).toBe(first.LmuBodyDetached);
+    expect(second.LmuLastImpactET).toBe(first.LmuLastImpactET);
+    expect(second.LmuLastImpactPos).toBe(first.LmuLastImpactPos);
+  });
+
+  it('publishes a new damage cell when a value changes', () => {
+    const before = mapLmuTelemetry(fixture());
+    const after = mapLmuTelemetry({ ...fixture(), lastImpactET: 300.5 });
+
+    expect(after.LmuLastImpactET).not.toBe(before.LmuLastImpactET);
+    expect(after.LmuLastImpactET?.value[0]).toBe(300.5);
+    expect(after.LmuDentSeverity).toBe(before.LmuDentSeverity);
+  });
+
   it('does not force rear-center when the body is detached', () => {
     const t = mapLmuTelemetry({
       ...fixture(),
