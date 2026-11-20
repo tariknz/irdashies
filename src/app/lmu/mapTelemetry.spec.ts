@@ -1111,6 +1111,14 @@ describe('LmuDentSeverity', () => {
     expect(after.LmuDentSeverity).toBe(before.LmuDentSeverity);
   });
 
+  it('keeps the same damage cell across an unrelated change', () => {
+    const before = mapLmuTelemetry(fixture());
+    const after = mapLmuTelemetry({ ...fixture(), filteredThrottle: 0.1 });
+
+    expect(after.LmuWheelDetached).toBe(before.LmuWheelDetached);
+    expect(after.LmuLastImpactPos).toBe(before.LmuLastImpactPos);
+  });
+
   it('does not force rear-center when the body is detached', () => {
     const t = mapLmuTelemetry({
       ...fixture(),
@@ -1119,6 +1127,85 @@ describe('LmuDentSeverity', () => {
     });
     expect(t.LmuDentSeverity?.value?.[4]).toBe(1);
     expect(t.LmuBodyDetached?.value[0]).toBe(true);
+  });
+});
+
+describe('mapLmuTelemetry held cells', () => {
+  it('republishes the same scalar cells while nothing changes', () => {
+    const first = mapLmuTelemetry(fixture());
+    const second = mapLmuTelemetry(fixture());
+
+    expect(second.Throttle).toBe(first.Throttle);
+    expect(second.SessionTime).toBe(first.SessionTime);
+    expect(second.IsOnTrack).toBe(first.IsOnTrack);
+    expect(second.LFtempCL).toBe(first.LFtempCL);
+  });
+
+  it('publishes a new scalar cell when the value changes', () => {
+    const before = mapLmuTelemetry(fixture());
+    const after = mapLmuTelemetry({ ...fixture(), filteredThrottle: 0.25 });
+
+    expect(after.Throttle).not.toBe(before.Throttle);
+    expect(after.Throttle.value[0]).toBe(0.25);
+    expect(before.Throttle.value[0]).toBe(0.79);
+    expect(after.SessionTime).toBe(before.SessionTime);
+  });
+
+  it('republishes the same per-car arrays while no car changes', () => {
+    const first = mapLmuTelemetry(fixture());
+    const second = mapLmuTelemetry(fixture());
+
+    expect(second.CarIdxLapDistPct).toBe(first.CarIdxLapDistPct);
+    expect(second.CarIdxLastLapTime).toBe(first.CarIdxLastLapTime);
+    expect(second.CarIdxOnPitRoad).toBe(first.CarIdxOnPitRoad);
+    expect(second.LmuCarIdxRelativeLateral).toBe(
+      first.LmuCarIdxRelativeLateral
+    );
+    expect(second.LmuCurrentSectorTimes).toBe(first.LmuCurrentSectorTimes);
+  });
+
+  it('publishes a new per-car array when one car changes', () => {
+    const before = mapLmuTelemetry(fixture());
+    const after = mapLmuTelemetry({
+      ...fixture(),
+      vehLastLapTime: Float64Array.from([135.6, 133.4, 137.2]),
+    });
+
+    expect(after.CarIdxLastLapTime).not.toBe(before.CarIdxLastLapTime);
+    expect(after.CarIdxLastLapTime.value).toEqual([135.6, 133.4, 137.2]);
+    expect(after.CarIdxBestLapTime).toBe(before.CarIdxBestLapTime);
+  });
+
+  it('leaves a frame already handed out exactly as it was', () => {
+    const before = mapLmuTelemetry(fixture());
+    const laps = [...(before.CarIdxLastLapTime.value as number[])];
+    const pits = [...(before.CarIdxOnPitRoad.value as boolean[])];
+    const lateral = [...(before.LmuCarIdxRelativeLateral?.value ?? [])];
+
+    mapLmuTelemetry({
+      ...fixture(),
+      vehLastLapTime: Float64Array.from([0, 0, 0]),
+      vehInPits: Uint8Array.from([1, 1, 0]),
+      vehPosX: Float64Array.from([2, 0, 20]),
+    });
+
+    expect(before.CarIdxLastLapTime.value).toEqual(laps);
+    expect(before.CarIdxOnPitRoad.value).toEqual(pits);
+    expect(before.LmuCarIdxRelativeLateral?.value).toEqual(lateral);
+  });
+
+  it('never publishes the arrays it fills internally', () => {
+    const first = mapLmuTelemetry(fixture());
+    const second = mapLmuTelemetry({
+      ...fixture(),
+      vehLapDistPct: Float64Array.from([0.41, 0.61, 0.21]),
+    });
+
+    expect(second.CarIdxLapDistPct.value).not.toBe(
+      first.CarIdxLapDistPct.value
+    );
+    expect(first.CarIdxLapDistPct.value).toEqual([0.4, 0.6, 0.2]);
+    expect(second.CarIdxLapDistPct.value).toEqual([0.41, 0.61, 0.21]);
   });
 });
 

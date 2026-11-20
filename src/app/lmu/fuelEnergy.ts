@@ -65,12 +65,13 @@ export const lmuEnergyRemaining = (
  */
 export const lmuEnergyChannel = (
   fuel: ArrayLike<number> | undefined,
-  virtualEnergy: ArrayLike<number> | undefined
+  virtualEnergy: ArrayLike<number> | undefined,
+  out: number[] = []
 ): number[] => {
   const cars = Math.max(fuel?.length ?? 0, virtualEnergy?.length ?? 0);
-  const out = new Array<number>(cars);
   for (let carIdx = 0; carIdx < cars; carIdx += 1) {
     out[carIdx] = lmuEnergyRemaining(fuel?.[carIdx], virtualEnergy?.[carIdx]);
   }
+  out.length = cars;
   return out;
 };
