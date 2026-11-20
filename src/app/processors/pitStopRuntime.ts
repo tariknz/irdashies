@@ -1,14 +1,14 @@
-import type { PitStopRecord, Session, Telemetry } from '@irdashies/types';
+import type {
+  PitStopRecord,
+  PitStopSessionKey,
+  Session,
+  Telemetry,
+} from '@irdashies/types';
 import type { ChannelBus } from '../bridge/channelBus';
 import type { SessionLifecycle } from '../sessionLifecycle';
-import type { PerformanceSections } from './lapHistoryRuntime';
 import { PitStopProcessor } from './PitStopProcessor';
 import logger from '../logger';
-
-export interface PitStopSessionKey {
-  subSessionId: number;
-  sessionNum: number;
-}
+import type { PerformanceSections } from '../perfMetrics';
 
 export interface PitStopPersistence {
   load(key: PitStopSessionKey): Promise<PitStopRecord[] | null>;

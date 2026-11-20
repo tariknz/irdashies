@@ -68,6 +68,8 @@ export const useCarBehind = ({
           name: car.driver?.name,
           license: car.driver?.license,
           rating: car.driver?.rating,
+          lmuRating: car.driver?.lmuRating,
+          isAI: car.driver?.isAI,
           distance: car.delta,
           classColor: car.carClass?.color,
           className: car.carClass?.name,

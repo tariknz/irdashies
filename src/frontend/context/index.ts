@@ -14,6 +14,11 @@ export * from './PitLaneStore/PitLaneProvider';
 export * from './PitLaneStore/usePitLaneDetection';
 export * from './ReferenceLapStore/ReferenceLapStoreProvider';
 export { useReferenceLapStore } from './ReferenceLapStore/ReferenceLapStore';
+export {
+  MAX_LAP_HISTORY,
+  selectLapHistorySize,
+  useFuelStore,
+} from './FuelStore/FuelStore';
 export * from './LapTimesStore/LapTimesStore';
 export * from './LapTimesStore/LapTimesStoreUpdater';
 export * from './SectorTimingStore/SectorTimingStore';
@@ -35,7 +40,5 @@ export * from './SessionTimingStore/SessionTimingStoreUpdater';
 export * from './SessionTimingStore/SessionTimingUpdater';
 export * from './TrackTemperatureStore/TrackTemperatureStore';
 export * from './TrackTemperatureStore/TrackTemperatureStoreUpdater';
-export * from './SessionBestLapStore/SessionBestLapStore';
-export * from './SessionBestLapStore/SessionBestLapStoreUpdater';
 
 export { useNativeWindowVisibility } from './shared/useNativeWindowVisibility';

@@ -6,7 +6,7 @@ import {
   type ChannelBridge,
   type LapTraceSampleSnapshot,
 } from '@irdashies/types';
-import { hydrateLapTrace } from '@irdashies/domain/lapTrace/hydrateLapTrace';
+import { hydrateLapTrace } from '@irdashies/utils/lapTrace/hydrateLapTrace';
 import { tileLayout } from '@irdashies/domain/lapTrace/lapTraceTiles';
 import { LapTracePlot } from './LapTracePlot';
 import { makeSyntheticLapTrace } from './fixtures/syntheticLap';

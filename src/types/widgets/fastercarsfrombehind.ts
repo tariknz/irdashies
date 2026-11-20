@@ -24,6 +24,7 @@ export default defineWidgetManifest({
     removeNumbersFromName: false,
     showDistance: true,
     showBadge: false,
+    displayOrder: ['driverName', 'badge', 'distance'],
     sessionVisibility: {
       race: true,
       loneQualify: false,
@@ -50,8 +51,9 @@ export default defineWidgetManifest({
     },
     showBadge: {
       type: 'boolean',
-      label: 'Show Driver Badge',
-      description: 'Display the driver license and iRating badge.',
+      label: 'Rating',
+      description:
+        "Display the driver's iRacing licence and iRating, or their LMU rank.",
     },
     numberDriversBehind: {
       type: 'enum',

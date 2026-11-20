@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   StandingsWidgetSettings,
@@ -8,6 +8,7 @@ import {
 import { useDashboard } from '@irdashies/context';
 import { copyOverlayToGantryStandings } from './gantryStandingsEdits';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SortableList } from '../../SortableList';
 import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
@@ -421,38 +422,22 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
   const savedWidget = currentDashboard?.widgets.find((w) => w.id === widgetId);
   const savedSettings = savedWidget as StandingsWidgetSettings | undefined;
   const isGantryOnly = savedWidget?.placement === 'gantry';
-  const [settings, setSettings] = useState<StandingsWidgetSettings>({
+  const settings: StandingsWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config:
       (savedSettings?.config as StandingsWidgetSettings['config']) ??
       defaultConfig,
-  });
-  const [itemsOrder, setItemsOrder] = useState(() =>
-    buildItemsOrder(settings.config.displayOrder)
-  );
+  };
+  const itemsOrder = buildItemsOrder(settings.config.displayOrder);
 
-  // Re-seed when the saved widget changes under us, such as after copying the
-  // overlay's settings in.
-  const [prevSaved, setPrevSaved] = useState(savedSettings);
-  if (JSON.stringify(savedSettings) !== JSON.stringify(prevSaved)) {
-    setPrevSaved(savedSettings);
-    if (savedSettings) {
-      setSettings({
-        enabled: savedSettings.enabled ?? false,
-        config: savedSettings.config,
-      });
-      setItemsOrder(buildItemsOrder(savedSettings.config?.displayOrder));
-    }
-  }
-
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('standingsTab') as SettingsTabType) || 'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('standingsTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('standingsTab', [
+    'display',
+    'options',
+    'header',
+    'footer',
+    'styling',
+    'visibility',
+  ]);
 
   const shownTab: SettingsTabType =
     isGantryOnly && activeTab === 'visibility' ? 'display' : activeTab;
@@ -466,13 +451,11 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
       title={isGantryOnly ? `Standings - ${widgetId}` : 'Standings'}
       description="Configure how the standings widget appears and behaves."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={widgetId}
       hidePositionReset={isGantryOnly}
     >
       {(handleConfigChange) => {
         const handleDisplayOrderChange = (newOrder: string[]) => {
-          setItemsOrder(newOrder);
           handleConfigChange({ displayOrder: newOrder });
         };
 
@@ -507,7 +490,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                 </div>
               )}
               {/* Tabs */}
-              <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+              <SettingsTabBar>
                 <TabButton
                   id="display"
                   activeTab={activeTab}
@@ -552,7 +535,7 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                     Visibility
                   </TabButton>
                 )}
-              </div>
+              </SettingsTabBar>
 
               <div>
                 {/* DISPLAY TAB */}
@@ -575,7 +558,6 @@ const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
                           const defaultOrder = sortableSettings.map(
                             (s) => s.id
                           );
-                          setItemsOrder(defaultOrder);
                           handleConfigChange({ displayOrder: defaultOrder });
                         }}
                       />

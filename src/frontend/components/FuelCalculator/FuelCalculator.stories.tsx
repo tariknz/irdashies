@@ -6,7 +6,7 @@ import {
   ChannelSnapshotDecorator,
   TelemetryDecorator,
 } from '@irdashies/storybook';
-import { useFuelStore } from './FuelStore';
+import { useFuelStore } from '@irdashies/context';
 import { defaultFuelCalculatorSettings } from './defaults';
 import type { FuelLapData } from './types';
 import { demoFuelData } from './demoData';

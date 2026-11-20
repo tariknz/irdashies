@@ -16,12 +16,21 @@ import {
   X,
 } from '@phosphor-icons/react';
 import logo from '@irdashies/frontend/assets/icons/logo.svg';
+import {
+  settingsPageKind,
+  type SettingsPageKind,
+} from '@irdashies/frontend/components/Settings/settingsPageKind';
 
 const SettingsLoader = lazy(() =>
   import('@irdashies/frontend/components/Settings/SettingsLoader').then(
     (module) => ({ default: module.SettingsLoader })
   )
 );
+
+const MAIN_LABELS: Partial<Record<SettingsPageKind, string>> = {
+  app: 'App settings page',
+  broadcast: 'Broadcast settings page',
+};
 
 interface SettingsContentProps {
   onClose: () => void;
@@ -316,9 +325,8 @@ function SettingsContent({ onClose, request }: SettingsContentProps) {
               ref={mainRef}
               tabIndex={-1}
               aria-label={
-                pathname === '/settings/general'
-                  ? 'App settings page'
-                  : 'Overlay settings page'
+                MAIN_LABELS[settingsPageKind(pathname)] ??
+                'Overlay settings page'
               }
               className="min-w-0 flex-1 bg-slate-900 p-4 focus:outline-none"
             >

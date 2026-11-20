@@ -9,7 +9,7 @@ import type {
 } from '@irdashies/types';
 import { defaultFuelCalculatorSettings } from './defaults';
 import { useFuelCalculation } from './useFuelCalculation';
-import { useFuelStore } from './FuelStore';
+import { useFuelStore } from '@irdashies/context';
 
 const projection: FuelProjectionSnapshot = {
   isReplay: false,

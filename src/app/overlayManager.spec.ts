@@ -164,6 +164,17 @@ beforeEach(() => {
 });
 
 describe('OverlayManager display windows', () => {
+  const withOverlay = (): DashboardLayout =>
+    ({
+      widgets: [
+        {
+          id: 'standings',
+          enabled: true,
+          layout: { x: 20, y: 20, width: 400, height: 300 },
+        },
+      ],
+    }) as DashboardLayout;
+
   beforeEach(() => {
     vi.clearAllMocks();
     createdWindows.length = 0;
@@ -171,7 +182,7 @@ describe('OverlayManager display windows', () => {
 
   it.each([
     ['an overlay widget', undefined, 2],
-    ['a Gantry-only widget', 'gantry' as const, 1],
+    ['a Gantry-only widget', 'gantry' as const, 0],
   ])(
     'opens a window for a display holding %s',
     (_label, placement, expectedWindows) => {
@@ -199,7 +210,7 @@ describe('OverlayManager display windows', () => {
     (overlayAlwaysOnTop) => {
       const manager = new OverlayManager();
       const dashboard = {
-        widgets: [],
+        widgets: withOverlay().widgets,
         generalSettings: { overlayAlwaysOnTop },
       } as DashboardLayout;
 
@@ -220,7 +231,7 @@ describe('OverlayManager display windows', () => {
 
     manager.createOverlays(
       {
-        widgets: [],
+        widgets: withOverlay().widgets,
         generalSettings: { overlayAlwaysOnTop: true },
       } as DashboardLayout,
       { createSettingsWindow: false }
@@ -238,7 +249,7 @@ describe('OverlayManager display windows', () => {
 
     manager.createOverlays(
       {
-        widgets: [],
+        widgets: withOverlay().widgets,
         generalSettings: { overlayAlwaysOnTop: false },
       } as DashboardLayout,
       { createSettingsWindow: false }
@@ -249,9 +260,12 @@ describe('OverlayManager display windows', () => {
 
   it('shows a ready display overlay without activating it', () => {
     const manager = new OverlayManager();
-    manager.createOverlays({ widgets: [] } as DashboardLayout, {
-      createSettingsWindow: false,
-    });
+    manager.createOverlays(
+      { widgets: withOverlay().widgets } as DashboardLayout,
+      {
+        createSettingsWindow: false,
+      }
+    );
     const displayWindow = createdWindows[0];
     const readyHandler = displayWindow.once.mock.calls.find(
       ([event]) => event === 'ready-to-show'
@@ -266,7 +280,7 @@ describe('OverlayManager display windows', () => {
 
   it('keeps the rebuilt overlay when the old one reports closed late', () => {
     const manager = new OverlayManager();
-    const dashboard = { widgets: [] } as DashboardLayout;
+    const dashboard = { widgets: withOverlay().widgets } as DashboardLayout;
     manager.createOverlays(dashboard, { createSettingsWindow: false });
     const oldWindow = createdWindows[0];
 
@@ -279,6 +293,51 @@ describe('OverlayManager display windows', () => {
     closedHandler();
 
     expect(manager.getOverlays().map((o) => o.window)).toEqual([newWindow]);
+  });
+
+  it('releases empty display renderers and recreates them when widgets return', () => {
+    screenState.displays = [PRIMARY_DISPLAY, SECOND_DISPLAY];
+    const manager = new OverlayManager();
+    const layout = withOverlay();
+    manager.createOverlays(
+      {
+        ...layout,
+        widgets: [
+          ...layout.widgets,
+          {
+            ...layout.widgets[0],
+            id: 'relative',
+            layout: { x: 2000, y: 20, width: 400, height: 300 },
+          },
+        ],
+      },
+      { createSettingsWindow: false }
+    );
+    expect(manager.getOverlays()).toHaveLength(2);
+    manager.ensureDisplayWindows(layout);
+    expect(createdWindows[1].close).toHaveBeenCalledOnce();
+    expect(manager.getOverlays()).toHaveLength(1);
+    manager.ensureDisplayWindows({ ...layout, widgets: [] });
+    expect(createdWindows[0].close).toHaveBeenCalledOnce();
+    expect(manager.getOverlays()).toEqual([]);
+    manager.ensureDisplayWindows(layout);
+    expect(manager.getOverlays().map((entry) => entry.window)).toEqual([
+      createdWindows[2],
+    ]);
+  });
+
+  it('creates edit controls for an empty profile and releases them on locking', () => {
+    const manager = new OverlayManager();
+    manager.createOverlays({ widgets: [] } as DashboardLayout, {
+      createSettingsWindow: false,
+    });
+    expect(manager.getOverlays()).toEqual([]);
+    expect(manager.toggleLockOverlays()).toBe(false);
+    expect(manager.getOverlays()).toHaveLength(1);
+    expect(createdWindows[0].focus).toHaveBeenCalledOnce();
+    expect(manager.toggleLockOverlays()).toBe(true);
+    expect(createdWindows[0].close).toHaveBeenCalledOnce();
+    expect(manager.getOverlays()).toEqual([]);
   });
 });
 

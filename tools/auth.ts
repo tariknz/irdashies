@@ -1,6 +1,4 @@
 import crypto from 'crypto';
-import fs from 'fs';
-import path from 'path';
 
 /**
  * iRacing's required OAuth wire masking, not a password-storage hash.
@@ -22,16 +20,4 @@ export interface TokenData {
   token_type: string;
   scope?: string;
   expires_at?: number;
-}
-
-export function getAccessToken(): string {
-  const tokenPath = path.join(process.cwd(), 'asset-data', 'tokens.json');
-
-  if (!fs.existsSync(tokenPath)) {
-    throw new Error('No tokens found. Please run login first to authenticate.');
-  }
-
-  const tokenData: TokenData = JSON.parse(fs.readFileSync(tokenPath, 'utf8'));
-
-  return tokenData.access_token;
 }

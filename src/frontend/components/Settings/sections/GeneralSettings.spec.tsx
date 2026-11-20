@@ -3,23 +3,44 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DashboardLayout } from '@irdashies/types';
 import { GeneralSettings } from './GeneralSettings';
+import { mockDashboardUpdater } from '../mockDashboardUpdater';
 
 const mocks = vi.hoisted(() => ({
   dashboard: {
     widgets: [],
     generalSettings: { fontSize: 'md' },
   } as DashboardLayout,
-  update: vi.fn(),
+  listeners: new Set<() => void>(),
+  update: vi.fn((dashboard: DashboardLayout) => {
+    mocks.dashboard = dashboard;
+    mocks.listeners.forEach((listener) => listener());
+  }),
+  bridge: {
+    setAutoStart: vi.fn(),
+    notifySimulatorPreferenceChanged: vi.fn(),
+  },
 }));
 
-vi.mock('@irdashies/context', () => ({
-  useAvailableSimulators: () => [],
-  useDashboard: () => ({
-    currentDashboard: mocks.dashboard,
-    onDashboardUpdated: mocks.update,
-    bridge: {},
-  }),
-}));
+vi.mock('@irdashies/context', async () => {
+  const { useSyncExternalStore } = await import('react');
+  return {
+    useAvailableSimulators: () => ['iracing', 'lmu'],
+    useDashboard: () => ({
+      currentDashboard: useSyncExternalStore(
+        (onChange) => {
+          mocks.listeners.add(onChange);
+          return () => mocks.listeners.delete(onChange);
+        },
+        () => mocks.dashboard
+      ),
+      onDashboardUpdated: mockDashboardUpdater(
+        () => mocks.dashboard,
+        mocks.update
+      ),
+      bridge: mocks.bridge,
+    }),
+  };
+});
 vi.mock('../components/BaseSettingsSection', () => ({
   BaseSettingsSection: ({ children }: { children: ReactNode }) => (
     <>{children}</>
@@ -46,7 +67,7 @@ describe('individual window setting', () => {
     }
   });
   beforeEach(() => {
-    mocks.update.mockClear();
+    vi.clearAllMocks();
     mocks.dashboard = { widgets: [], generalSettings: { fontSize: 'md' } };
   });
 
@@ -117,5 +138,70 @@ describe('individual window setting', () => {
         }),
       })
     );
+  });
+
+  it('shows the new profile settings without saving an unsupported font weight on render', () => {
+    const view = render(<GeneralSettings />);
+    mocks.dashboard = {
+      widgets: [],
+      generalSettings: {
+        fontType: 'lato',
+        fontWeight: 'medium',
+        fontSize: 'xl',
+        overlayWindowMode: 'widget',
+      },
+    };
+    view.rerender(<GeneralSettings />);
+
+    expect(
+      screen.getByRole('figure', { name: 'Overlay font sample' })
+    ).toHaveTextContent('Lato / Normal / Extra Large');
+    expect(mocks.update).not.toHaveBeenCalled();
+
+    fireEvent.click(
+      screen.getByRole('switch', { name: 'Individual Overlay Windows' })
+    );
+    expect(mocks.dashboard.generalSettings).toEqual({
+      fontType: 'lato',
+      fontWeight: 'medium',
+      fontSize: 'xl',
+      overlayWindowMode: 'display',
+    });
+  });
+
+  it('saves the new font and its compatible weight together', () => {
+    mocks.dashboard.generalSettings = {
+      fontType: 'inter',
+      fontWeight: 'medium',
+    };
+    render(<GeneralSettings />);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Overlay font' }), {
+      target: { value: 'lato' },
+    });
+    expect(mocks.update).toHaveBeenCalledExactlyOnceWith({
+      widgets: [],
+      generalSettings: { fontType: 'lato', fontWeight: 'normal' },
+    });
+  });
+
+  it('updates system autostart and refreshes the simulator preference when changed', () => {
+    render(<GeneralSettings />);
+    fireEvent.click(screen.getByRole('switch', { name: /start.*system/i }));
+    fireEvent.change(
+      screen
+        .getByRole('option', { name: 'Auto' })
+        .closest('select') as HTMLSelectElement,
+      {
+        target: { value: 'lmu' },
+      }
+    );
+    expect(mocks.bridge.setAutoStart).toHaveBeenCalledExactlyOnceWith(true);
+    expect(
+      mocks.bridge.notifySimulatorPreferenceChanged
+    ).toHaveBeenCalledOnce();
+    expect(mocks.dashboard.generalSettings).toMatchObject({
+      enableAutoStart: true,
+      simulator: 'lmu',
+    });
   });
 });

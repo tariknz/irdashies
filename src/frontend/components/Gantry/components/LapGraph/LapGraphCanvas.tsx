@@ -1,3 +1,4 @@
+import { useCanvasCleanup } from '@irdashies/domain/canvas/useCanvasCleanup';
 import {
   memo,
   useCallback,
@@ -272,6 +273,9 @@ export const LapGraphCanvas = memo(
     const baseCanvasRef = useRef<HTMLCanvasElement>(null);
     const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
     const brushCanvasRef = useRef<HTMLCanvasElement>(null);
+    useCanvasCleanup(baseCanvasRef);
+    useCanvasCleanup(overlayCanvasRef);
+    useCanvasCleanup(brushCanvasRef);
     const readoutRef = useRef<ReadoutHandle | null>(null);
 
     const plotSize = useElementSize(plotRef);

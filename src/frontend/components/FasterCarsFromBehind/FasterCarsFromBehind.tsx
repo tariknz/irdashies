@@ -4,23 +4,36 @@ import {
   useDashboard,
   useWeekendInfoNumCarClasses,
   useGeneralSettings,
+  useDrivingState,
+  useActiveSimulator,
 } from '@irdashies/context';
-import type { GeneralSettingsType } from '@irdashies/types';
+import {
+  simulatorHasDriverRatings,
+  type GeneralSettingsType,
+  type LmuDriverRating,
+} from '@irdashies/types';
 import { useCarBehind } from './hooks/useCarBehind';
 import { useFasterCarsSettings } from './hooks/useFasterCarsSettings';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import {
-  DriverRatingBadge,
-  type DriverRatingBadgeProps,
-} from '../shared/DriverRatingBadge/DriverRatingBadge';
+  RatingBadge,
+  type RatingBadgeProps,
+} from '../shared/DriverRatingBadge/RatingBadge';
 import { getDemoCarsBehind } from './demoData';
 import { formatClassLabel } from './formatClassLabel';
+import {
+  normalizeFasterCarsDisplayOrder,
+  type FasterCarsDisplayItem,
+} from './displayOrder';
 
 export interface FasterCarsFromBehindProps {
   carIdx?: number;
   name?: string;
   license?: string;
   rating?: number;
+  lmuRating?: LmuDriverRating;
+  isAI?: boolean;
+  hasDriverRatings?: boolean;
   distance?: number;
   percent?: number;
   classColor?: number;
@@ -63,8 +76,13 @@ export const FasterCarsFromBehind = () => {
   const carsBehind = useCarBehind({
     distanceThreshold: settings?.distanceThreshold,
   });
+  const { isDriving } = useDrivingState();
+  const simulator = useActiveSimulator();
+  const hasDriverRatings = isDemoMode || simulatorHasDriverRatings(simulator);
+  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
-  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
+  if (!isSessionVisible) return <></>;
+  if (!isDemoMode && settings?.showOnlyWhenOnTrack && !isDriving) return <></>;
 
   // Generate demo data when in demo mode
   const demoCarsBehind = isDemoMode
@@ -93,6 +111,7 @@ export const FasterCarsFromBehind = () => {
         <FasterCarsFromBehindDisplay
           key={car.carIdx}
           {...car}
+          hasDriverRatings={hasDriverRatings}
           isMultiClass={isMultiClass}
           isClosest={car.carIdx === demoCarsBehind[0]?.carIdx}
         />
@@ -106,6 +125,9 @@ export const FasterCarsFromBehindDisplay = memo(
     name,
     license,
     rating,
+    lmuRating,
+    isAI,
+    hasDriverRatings,
     distance,
     percent,
     classColor,
@@ -139,6 +161,63 @@ export const FasterCarsFromBehindDisplay = memo(
 
     name = settings?.removeNumbersFromName ? name.replace(/\d/g, '') : name;
 
+    const order = normalizeFasterCarsDisplayOrder(settings?.displayOrder);
+    const distanceIndex = settings?.showDistance
+      ? order.indexOf('distance')
+      : -1;
+
+    const nameItem = settings?.showName && (
+      <div
+        key="driverName"
+        className="min-w-0 flex-1 truncate font-medium"
+        title={name}
+      >
+        {name}
+      </div>
+    );
+
+    const badgeItem = settings?.showBadge && (
+      <div key="badge" className="flex shrink-0 items-center empty:hidden">
+        <RatingBadge
+          license={license}
+          rating={rating}
+          lmuRating={lmuRating}
+          badgeFormat={settings.badgeFormat as RatingBadgeProps['badgeFormat']}
+          hasDriverRatings={hasDriverRatings}
+          isAI={isAI}
+        />
+      </div>
+    );
+
+    const distanceItem = (
+      <span
+        aria-label={
+          validDistance
+            ? `${Math.abs(distance).toFixed(1)} seconds behind`
+            : 'Gap unavailable'
+        }
+        className={`min-w-[5ch] shrink-0 text-right leading-none font-semibold tabular-nums ${density.countdown} ${urgent ? 'text-red-300' : ''}`}
+      >
+        {validDistance ? `−${Math.abs(distance).toFixed(1)}` : '—'}
+        <span className="ml-1 text-[11px] font-normal text-[#a5afbd]">s</span>
+      </span>
+    );
+
+    const labels = (items: FasterCarsDisplayItem[]) =>
+      items.includes('driverName') ? (
+        <div className="flex min-w-0 flex-1 items-center gap-1">
+          {items.map((item) =>
+            item === 'driverName'
+              ? nameItem
+              : item === 'badge'
+                ? badgeItem
+                : null
+          )}
+        </div>
+      ) : items.includes('badge') ? (
+        badgeItem
+      ) : null;
+
     return (
       <div
         role="listitem"
@@ -163,38 +242,14 @@ export const FasterCarsFromBehindDisplay = memo(
               {position === undefined ? '—' : `P${position}`}
             </span>
           </span>
-          <div className="flex min-w-0 flex-1 items-center gap-1">
-            {settings?.showName && (
-              <div className="min-w-0 flex-1 truncate font-medium" title={name}>
-                {name}
-              </div>
-            )}
-            {settings?.showBadge && (
-              <div className="flex shrink-0 items-center">
-                <DriverRatingBadge
-                  license={license}
-                  rating={rating}
-                  format={
-                    settings.badgeFormat as DriverRatingBadgeProps['format']
-                  }
-                />
-              </div>
-            )}
-          </div>
-          {settings?.showDistance && (
-            <span
-              aria-label={
-                validDistance
-                  ? `${Math.abs(distance).toFixed(1)} seconds behind`
-                  : 'Gap unavailable'
-              }
-              className={`min-w-[5ch] shrink-0 text-right leading-none font-semibold tabular-nums ${density.countdown} ${urgent ? 'text-red-300' : ''}`}
-            >
-              {validDistance ? `−${Math.abs(distance).toFixed(1)}` : '—'}
-              <span className="ml-1 text-[11px] font-normal text-[#a5afbd]">
-                s
-              </span>
-            </span>
+          {distanceIndex < 0 ? (
+            labels(order)
+          ) : (
+            <>
+              {labels(order.slice(0, distanceIndex))}
+              {distanceItem}
+              {labels(order.slice(distanceIndex + 1))}
+            </>
           )}
         </div>
 

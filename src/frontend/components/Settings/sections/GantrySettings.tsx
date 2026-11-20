@@ -1,4 +1,6 @@
-import { memo, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
+import { memo } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   GantryWidgetSettings,
@@ -6,7 +8,6 @@ import {
   LapGraphAxisFit,
   LapGraphYAxisMode,
   SessionRetention,
-  SettingsTabType,
   INCIDENT_THRESHOLD_BOUNDS,
   LAP_GRAPH_GAP_MAX_BOUNDS,
   LAP_GRAPH_LAP_WINDOW_BOUNDS,
@@ -21,6 +22,7 @@ import {
 } from '@irdashies/context';
 import type { CameraGroup, TrackStateSnapshot } from '@irdashies/types';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingActionButton } from '../components/SettingActionButton';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
@@ -218,49 +220,28 @@ const axisFitButtons: { value: LapGraphAxisFit; label: string }[] = [
   { value: 'all', label: 'All drivers' },
 ];
 
-const thresholdKeys = thresholdFields.map((f) => f.key);
-
 export const GantrySettings = memo(() => {
   const { currentDashboard } = useDashboard();
   const displayUnits = useTrackStateSelector(selectDisplayUnits); // 0 = imperial, 1 = metric
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as GantryWidgetSettings | undefined;
-  const [settings, setSettings] = useState<GantryWidgetSettings>({
+  const settings: GantryWidgetSettings = {
     enabled: savedSettings?.enabled ?? true,
     config:
       (savedSettings?.config as GantryWidgetSettings['config']) ??
       defaultConfig,
-  });
+  };
 
-  // `useState` only reads its initialiser on the first render. If this mounts
-  // before the dashboard has loaded — or the user switches profile — the local
-  // copy keeps the defaults, so the fields below show defaults and the next
-  // edit writes them back over the persisted config. Re-seed whenever the
-  // saved widget changes, using the same guarded set-during-render sync as
-  // BaseSettingsSection so there is no stale first paint.
-  const [prevSaved, setPrevSaved] = useState(savedSettings);
-  if (JSON.stringify(savedSettings) !== JSON.stringify(prevSaved)) {
-    setPrevSaved(savedSettings);
-    if (savedSettings) {
-      setSettings({
-        enabled: savedSettings.enabled ?? true,
-        config:
-          (savedSettings.config as GantryWidgetSettings['config']) ??
-          defaultConfig,
-      });
-    }
-  }
-
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('gantryTab') as SettingsTabType) || 'options'
-  );
+  const [activeTab, setActiveTab] = useStoredTab('gantryTab', [
+    'options',
+    'standings',
+    'incidents',
+    'dock',
+    'pitstops',
+  ]);
   const [showDisabledHint, setShowDisabledHint] = useState(false);
   const cameraGroups = useSessionCameraGroups();
-
-  useEffect(() => {
-    localStorage.setItem('gantryTab', activeTab);
-  }, [activeTab]);
 
   if (!currentDashboard) return <>Loading...</>;
 
@@ -281,27 +262,7 @@ export const GantrySettings = memo(() => {
       title="Gantry"
       description="Race control window with live standings, an incident feed and a lap gap graph."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
-      onConfigChange={(newConfig) => {
-        const merged = { ...config, ...newConfig };
-
-        if (thresholdKeys.some((key) => key in newConfig)) {
-          window.raceControlBridge?.updateThresholds({
-            slowSpeedThreshold: merged.slowSpeedThreshold,
-            slowDurationSeconds: merged.slowDurationSeconds,
-            impactDecelKmhPerSec: merged.impactDecelKmhPerSec,
-            impactMinSpeed: merged.impactMinSpeed,
-            offTrackDurationSeconds: merged.offTrackDurationSeconds,
-            pitEntryDurationSeconds: merged.pitEntryDurationSeconds,
-            cooldownSeconds: merged.cooldownSeconds,
-          });
-        }
-
-        if ('sessionRetention' in newConfig) {
-          window.raceControlBridge?.updateRetention(merged.sessionRetention);
-        }
-      }}
     >
       {(handleConfigChange) => (
         <SettingProps
@@ -310,7 +271,7 @@ export const GantrySettings = memo(() => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="options"
                 activeTab={activeTab}
@@ -346,7 +307,7 @@ export const GantrySettings = memo(() => {
               >
                 Pit Stops
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div>
               {activeTab === 'options' && (

@@ -14,7 +14,6 @@ export {
   useRelativeSettings,
   useStandingsSettings,
 } from '@irdashies/domain';
-export * from './useSessionBestLapTime';
 export * from './useSessionLapCount';
 export * from './useClassLapEstimates';
 export * from './useTrackMapSettings';

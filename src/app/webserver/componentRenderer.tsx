@@ -6,6 +6,7 @@ import {
   type ChannelBridge,
   type ChannelName,
   type ChannelPayloads,
+  type DashboardUpdateListener,
   type IrSdkBridge,
   type PitLaneBridge,
   type PitLaneCalibration,
@@ -56,9 +57,7 @@ export class WebSocketBridge
   private reconnectDelay: number;
   private reconnectDelayMax: number;
 
-  private dashboardUpdateCallbacks: Set<
-    (value: any, profileId?: string) => void
-  >;
+  private dashboardUpdateCallbacks: Set<DashboardUpdateListener>;
   private demoModeCallbacks: Set<(value: boolean) => void>;
   private simulatorCallbacks: Set<(value: ActiveSimulator | null) => void>;
   private lastDashboard: any = null;
@@ -265,13 +264,16 @@ export class WebSocketBridge
           });
           break;
         case 'dashboardUpdated': {
-          const { dashboard: updatedDashboard, profileId: updatedProfileId } =
-            data || {};
+          const {
+            dashboard: updatedDashboard,
+            profileId: updatedProfileId,
+            saveId,
+          } = data || {};
           if (updatedDashboard) {
             this.lastDashboard = updatedDashboard;
             this.dashboardUpdateCallbacks.forEach((cb) => {
               try {
-                cb(updatedDashboard, updatedProfileId);
+                cb(updatedDashboard, updatedProfileId, saveId);
               } catch (e) {
                 logger.error('Error in dashboard update callback:', e);
               }
@@ -705,7 +707,7 @@ export class WebSocketBridge
   }
 
   dashboardUpdated(
-    callback: (value: any, profileId?: string) => void
+    callback: DashboardUpdateListener
   ): (() => void) | undefined {
     this.dashboardUpdateCallbacks.add(callback);
     if (this.lastDashboard) {

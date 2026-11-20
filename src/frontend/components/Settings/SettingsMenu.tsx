@@ -16,11 +16,18 @@ import { WIDGET_CATEGORIES, widgetDisabledMessage } from '@irdashies/types';
 import {
   generalItems,
   toolItems,
+  broadcastItems,
+  BROADCAST_SETTINGS_PAGE,
   widgetItems,
   bottomItems,
   menuHasToggle,
   type MenuItem,
 } from './menuItems';
+import {
+  broadcastModuleChanged,
+  broadcastTransitionChanged,
+  isBroadcastModuleType,
+} from './broadcastModules';
 import { settingsPageKind, type SettingsPageKind } from './settingsPageKind';
 import { ToggleSwitch } from './components/ToggleSwitch';
 import { MenuSortControl } from './components/MenuSortControl';
@@ -33,8 +40,10 @@ import {
 } from './menuSort';
 
 /** Whether the row is the current one: its page, or a layout copy's of it. */
-const isMenuItemActive = (item: MenuItem, pathname: string) =>
-  pathname.startsWith(`/settings${item.path}`);
+const isMenuItemActive = (item: MenuItem, pathname: string, exact = false) =>
+  exact
+    ? pathname === `/settings${item.path}`
+    : pathname.startsWith(`/settings${item.path}`);
 
 const MenuLink = ({
   item,
@@ -43,6 +52,8 @@ const MenuLink = ({
   isEnabled,
   onToggle,
   isNew,
+  changed,
+  exact = false,
   disabledReason,
   onNavigate,
   revealKey,
@@ -52,6 +63,8 @@ const MenuLink = ({
   showIcon?: boolean;
   isEnabled?: boolean;
   isNew?: boolean;
+  changed?: boolean;
+  exact?: boolean;
   /** Set for a widget the running sim cannot support: listed, dimmed, no switch. */
   disabledReason?: string;
   /** Present when the row controls a widget that exists in the dashboard. */
@@ -64,7 +77,7 @@ const MenuLink = ({
    */
   revealKey?: string;
 }) => {
-  const isActive = isMenuItemActive(item, pathname);
+  const isActive = isMenuItemActive(item, pathname, exact);
   const linkRef = useRef<HTMLAnchorElement>(null);
   useEffect(() => {
     const link = linkRef.current;
@@ -136,6 +149,12 @@ const MenuLink = ({
             New
           </span>
         )}
+        {changed && (
+          <span
+            title="Changed"
+            className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-400"
+          />
+        )}
       </Link>
       {onToggle && (
         <ToggleSwitch
@@ -152,12 +171,14 @@ const MenuLink = ({
 const NAV_LABELS: Record<SettingsPageKind, string> = {
   app: 'App settings pages',
   tool: 'Tools pages',
+  broadcast: 'Broadcast pages',
   overlay: 'Overlay settings',
 };
 
 export const SettingsMenu = ({
   appTo = '/settings/general',
   toolsTo = '/settings/profiles',
+  broadcastTo = '/settings/broadcast',
   returnTo = '/settings/relative',
   previewMode = false,
   excludedWidgetTypes,
@@ -165,6 +186,7 @@ export const SettingsMenu = ({
   appTo?: string;
   /** Where the Tools link goes: the tool page visited last. */
   toolsTo?: string;
+  broadcastTo?: string;
   returnTo?: string;
   previewMode?: boolean;
   excludedWidgetTypes?: ReadonlySet<string>;
@@ -191,7 +213,8 @@ export const SettingsMenu = ({
     previewMode && kind === 'tool' ? 'overlay' : kind;
   const appPage = pageKind === 'app';
   const toolPage = pageKind === 'tool';
-  const asidePage = appPage || toolPage;
+  const broadcastPage = pageKind === 'broadcast';
+  const asidePage = appPage || toolPage || broadcastPage;
   const overlayPath = useRef(pathname);
   const overlayScroll = useRef<HTMLDivElement>(null);
   const asideScroll = useRef<HTMLElement>(null);
@@ -220,7 +243,9 @@ export const SettingsMenu = ({
   // share a page and have no single widget to switch.
   const widgetIds = currentDashboard?.widgets.map((w) => w.id) ?? [];
   const canToggle = (item: MenuItem) =>
-    !!item.widgetType && menuHasToggle(item.widgetType, widgetIds);
+    !!item.widgetType &&
+    !item.groupTypes &&
+    menuHasToggle(item.widgetType, widgetIds);
 
   // Off switches every copy off; on revives only the primary widget.
   const setWidgetEnabled = (widgetType: string, enabled: boolean) => {
@@ -239,10 +264,21 @@ export const SettingsMenu = ({
   // Switching one off leaves the page shown as it is, and so does switching
   // on the row already current (a layout copy's page shows its type's row).
   const toggleWidget =
-    (item: MenuItem, widgetType: string) => (enabled: boolean) => {
+    (item: MenuItem, widgetType: string, exact = false) =>
+    (enabled: boolean) => {
       setWidgetEnabled(widgetType, enabled);
-      if (enabled && !isMenuItemActive(item, pathname)) navigate(item.to);
+      if (enabled && !isMenuItemActive(item, pathname, exact))
+        navigate(item.to);
     };
+
+  const widgetConfig = (widgetType: string) =>
+    currentDashboard?.widgets.find((w) => (w.type ?? w.id) === widgetType)
+      ?.config;
+  const broadcastItemChanged = (item: MenuItem) =>
+    isBroadcastModuleType(item.widgetType)
+      ? broadcastModuleChanged(item.widgetType, widgetConfig(item.widgetType))
+      : item.to === BROADCAST_SETTINGS_PAGE &&
+        broadcastTransitionChanged(widgetConfig('broadcast'));
 
   // A grouped item is on while any widget sharing its page is.
   const isItemEnabled = (item: MenuItem) =>
@@ -283,7 +319,11 @@ export const SettingsMenu = ({
   const renderLink = (item: MenuItem) => (
     <MenuLink
       key={item.path}
-      item={item}
+      item={
+        settingsPageKind(item.to) === 'broadcast'
+          ? { ...item, to: broadcastTo }
+          : item
+      }
       pathname={asidePage ? overlayPath.current : pathname}
       revealKey={`${sortMode}:${isItemEnabled(item)}`}
       isEnabled={item.widgetType ? isItemEnabled(item) : undefined}
@@ -379,6 +419,36 @@ export const SettingsMenu = ({
           </ul>
         </section>
       )}
+      {broadcastPage && (
+        <section
+          ref={asideScroll}
+          aria-label="Broadcast modules"
+          className="settings-menu-scroll min-h-0 flex-1 overflow-y-auto pb-3"
+        >
+          <h2 className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+            Broadcast
+          </h2>
+          <ul className="space-y-0.5">
+            {broadcastItems.map((item) => (
+              <MenuLink
+                key={item.path}
+                item={item}
+                pathname={pathname}
+                showIcon
+                exact
+                isEnabled={isItemEnabled(item)}
+                changed={broadcastItemChanged(item)}
+                disabledReason={unsupported(item) ?? undefined}
+                onToggle={
+                  canToggle(item) && item.widgetType && !unsupported(item)
+                    ? toggleWidget(item, item.widgetType, true)
+                    : undefined
+                }
+              />
+            ))}
+          </ul>
+        </section>
+      )}
       <div
         hidden={asidePage}
         className={asidePage ? 'hidden' : 'flex min-h-0 flex-1 flex-col'}
@@ -451,27 +521,37 @@ export const SettingsMenu = ({
           )}
         </div>
       </div>
-      <div className="shrink-0 space-y-0.5 pt-1">
-        {!asidePage && !previewMode && (
+      <div className="flex shrink-0 items-center gap-2 pt-1">
+        {asidePage ? (
           <Link
-            to={toolsTo}
-            className="flex min-h-9 items-center gap-2 rounded-md border-l-2 border-transparent px-2 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white"
+            to={returnTo}
+            className="flex h-10 items-center gap-2 rounded-md border-l-2 border-transparent px-2 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white"
           >
-            <ToolboxIcon size={14} aria-hidden="true" />
-            Tools
-          </Link>
-        )}
-        <Link
-          to={asidePage ? returnTo : appTo}
-          className="flex min-h-9 items-center gap-2 rounded-md border-l-2 border-transparent px-2 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white"
-        >
-          {asidePage ? (
             <ArrowLeftIcon size={14} aria-hidden="true" />
-          ) : (
-            <GearIcon size={14} aria-hidden="true" />
-          )}
-          {asidePage ? 'Back to overlays' : 'App settings'}
-        </Link>
+            Back to overlays
+          </Link>
+        ) : (
+          <>
+            <Link
+              to={appTo}
+              aria-label="App settings"
+              title="App settings"
+              className="grid size-10 place-items-center rounded-md text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white focus-visible:text-white"
+            >
+              <GearIcon size={24} aria-hidden="true" />
+            </Link>
+            {!previewMode && (
+              <Link
+                to={toolsTo}
+                aria-label="Tools"
+                title="Tools"
+                className="grid size-10 place-items-center rounded-md text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white focus-visible:text-white"
+              >
+                <ToolboxIcon size={24} aria-hidden="true" />
+              </Link>
+            )}
+          </>
+        )}
       </div>
     </nav>
   );

@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, waitFor } from 'storybook/test';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { DashboardProvider, RunningStateProvider } from '@irdashies/context';
+import {
+  DashboardProvider,
+  RunningStateProvider,
+  useSessionStore,
+} from '@irdashies/context';
 import type {
   ActiveSimulator,
   DashboardBridge,
@@ -10,6 +15,7 @@ import type {
   IrSdkBridge,
   ReleaseNotesBridge,
   ReleaseNotesStatus,
+  Session,
 } from '@irdashies/types';
 import { DEFAULT_KEYBINDINGS, releaseNotesFixture } from '@irdashies/types';
 import { SettingsLayout } from './SettingsLayout';
@@ -18,6 +24,7 @@ import {
   ChannelSnapshotDecorator,
   mockDashboardBridge,
 } from '@irdashies/storybook';
+import setupSessionFixture from '../../../../test-data/1770713899767/session.json';
 
 interface StoryProps {
   initialPath: string;
@@ -410,6 +417,54 @@ export const SetupComparisonRoute: Story = {
   args: { initialPath: '/settings/car-setup' },
 };
 
+export const SetupComparisonSnapshots: Story = {
+  args: SetupComparisonRoute.args,
+  beforeEach: () => {
+    const { session } = useSessionStore.getState();
+    return () => useSessionStore.setState({ session });
+  },
+  play: async ({ canvas, userEvent }) => {
+    const { CarSetup: setup } = setupSessionFixture;
+    const setSetup = (index: number, pressure: number, temperatures: string) =>
+      useSessionStore.getState().setSession({
+        ...setupSessionFixture,
+        CarSetup: {
+          ...setup,
+          UpdateCount: setup.UpdateCount + index,
+          TiresAero: {
+            ...setup.TiresAero,
+            LeftFront: {
+              ...setup.TiresAero.LeftFront,
+              ColdPressure: `${pressure} kPa`,
+              LastTempsOMI: temperatures,
+            },
+          },
+        },
+      } as unknown as Session);
+
+    const variants = [
+      [124, '41C, 41C, 41C'],
+      [131, '92C, 88C, 84C'],
+      [131, '106C, 101C, 98C'],
+    ] as const;
+    for (const [index, [pressure, temperatures]] of variants.entries()) {
+      setSetup(index, pressure, temperatures);
+      const capture = await canvas.findByRole('button', {
+        name: 'Take Snapshot',
+      });
+      await waitFor(() => expect(capture).toBeEnabled());
+      await userEvent.click(capture);
+      await expect(capture).toBeDisabled();
+    }
+    setSetup(variants.length, 138, '92C, 89C, 85C');
+    await waitFor(() =>
+      expect(
+        canvas.getByRole('button', { name: 'Take Snapshot' })
+      ).toBeEnabled()
+    );
+  },
+};
+
 export const CalibrationRoute: Story = {
   args: { initialPath: '/settings/pitlanehelper' },
 };
@@ -428,9 +483,43 @@ export const RelativeRoute: Story = {
   },
 };
 
+export const FasterCarsFromBehindRoute: Story = {
+  args: {
+    initialPath: '/settings/fastercarsfrombehind',
+  },
+};
+
 export const WeatherRoute: Story = {
   args: {
     initialPath: '/settings/weather',
+  },
+};
+
+/** The Broadcast menu, with the Tower's Look tab. */
+export const BroadcastTowerRoute: Story = {
+  args: {
+    initialPath: '/settings/broadcast',
+    initialTab: { key: 'broadcastTab', value: 'look' },
+  },
+};
+
+export const BroadcastTowerOptions: Story = {
+  args: {
+    initialPath: '/settings/broadcast',
+    initialTab: { key: 'broadcastTab', value: 'options' },
+  },
+};
+
+export const BroadcastEventsRoute: Story = {
+  args: {
+    initialPath: '/settings/broadcastevents',
+    initialTab: { key: 'broadcasteventsTab', value: 'events' },
+  },
+};
+
+export const BroadcastSettingsRoute: Story = {
+  args: {
+    initialPath: '/settings/broadcast-settings',
   },
 };
 

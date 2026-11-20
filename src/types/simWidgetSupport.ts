@@ -42,8 +42,10 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'battle',
   'cornername',
   'deltaspeed',
+  'fastercarsfrombehind',
   'flag',
   'garagecover',
+  'heartrate',
   'infobar',
   'input',
   'laptimelog',
@@ -56,7 +58,9 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   // Shift point from shiftPoints.ts for GT3 and LMP2, else 95% of the rev
   // limit. LMU publishes no shift point of its own.
   'shiftlight',
+  'slowcarahead',
   'standings',
+  'streamchat',
   // Not a sim-specific widget: it reports whatever channels the running sim
   // publishes, which is how LMU's own mapping gets checked. It is also the
   // one widget absent from the settings menu, so there would be no toggle to
@@ -77,20 +81,16 @@ export const LMU_DISABLED_WIDGETS: readonly string[] = [
   'broadcastticker',
   'broadcastweather',
   'carsystems',
-  'fastercarsfrombehind',
   'flatmap',
   'fuel',
   'gantry',
-  'heartrate',
   'map',
   'radar',
   'rejoin',
-  'slowcarahead',
   // Race plans name drivers by iRacing customer id.
   'stintplan',
   'strategytimeline',
   'tachometer',
-  'streamchat',
   // LMU simulates no wind: its wind vector is always zero.
   'wind',
 ];
@@ -123,7 +123,7 @@ export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
  * it did, which costs a user their hand edits once per change and is why the
  * number is bumped only for a real one.
  */
-export const SIM_WIDGET_SUPPORT_VERSION = 8;
+export const SIM_WIDGET_SUPPORT_VERSION = 10;
 
 /**
  * Whether a widget is unavailable under the running sim.

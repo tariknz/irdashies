@@ -1,15 +1,8 @@
-import type { LapLogSnapshot, Telemetry } from '@irdashies/types';
+import { telemetryFrom } from './processorInputs';
+import type { LapLogSnapshot } from '@irdashies/types';
 import { LapLogProcessor } from '../../src/app/processors/LapLogProcessor';
-import type { ReplayProbe, TelemetryFrame } from './validator';
+import type { ReplayProbe } from './validator';
 import { rateLimited } from './rateLimited';
-
-const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
-  Object.fromEntries(
-    Object.entries(frame).map(([name, entry]) => [
-      name,
-      { value: Array.isArray(entry) ? entry : [entry] },
-    ])
-  ) as unknown as Telemetry;
 
 export const createLapLogProbe = (): ReplayProbe<LapLogSnapshot> => {
   const processor = rateLimited(new LapLogProcessor());

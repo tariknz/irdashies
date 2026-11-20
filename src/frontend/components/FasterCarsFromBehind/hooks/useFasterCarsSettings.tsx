@@ -1,8 +1,9 @@
 import { useDashboard } from '@irdashies/context';
 import { FasterCarsFromBehindWidgetSettings } from '@irdashies/types';
+import { normalizeFasterCarsDisplayOrder } from '../displayOrder';
 
 const DEFAULT_CONFIG: FasterCarsFromBehindWidgetSettings['config'] = {
-  showOnlyWhenOnTrack: true,
+  showOnlyWhenOnTrack: false,
   distanceThreshold: -1.5,
   numberDriversBehind: 1,
   alignDriverBoxes: 'Top',
@@ -47,6 +48,7 @@ export const useFasterCarsSettings = () => {
     showDistance: settings?.showDistance ?? DEFAULT_CONFIG.showDistance,
     showBadge: settings?.showBadge ?? DEFAULT_CONFIG.showBadge,
     badgeFormat: settings?.badgeFormat ?? DEFAULT_CONFIG.badgeFormat,
+    displayOrder: normalizeFasterCarsDisplayOrder(settings?.displayOrder),
     onlyShowFasterClasses:
       settings?.onlyShowFasterClasses ?? DEFAULT_CONFIG.onlyShowFasterClasses,
     sessionVisibility:

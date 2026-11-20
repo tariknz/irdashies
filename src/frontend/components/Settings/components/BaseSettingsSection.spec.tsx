@@ -1,3 +1,4 @@
+import { mockDashboardUpdater } from '../mockDashboardUpdater';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -13,7 +14,10 @@ vi.mock('@irdashies/context', async () => {
   return {
     useDashboard: () => ({
       currentDashboard: mocks.dashboard,
-      onDashboardUpdated: mocks.update,
+      onDashboardUpdated: mockDashboardUpdater(
+        () => mocks.dashboard,
+        mocks.update
+      ),
     }),
     useActiveSimulator: () => null,
     useSimWidgetSupport: () => DEFAULT_SIM_WIDGET_SUPPORT,
@@ -49,7 +53,6 @@ function renderSection() {
         description="Relative settings"
         widgetId="relative"
         settings={{ enabled: true, config: {} }}
-        onSettingsChange={vi.fn()}
       />
     </main>
   );
@@ -99,5 +102,44 @@ describe('overlay position reset confirmation', () => {
         mocks.dashboard.widgets[1],
       ],
     });
+  });
+});
+
+it('composes two edits to the same nested config without a rerender', async () => {
+  const user = userEvent.setup();
+  const settings = {
+    enabled: true,
+    config: { background: { opacity: 80, color: 'black' } },
+  };
+  mocks.update.mockImplementationOnce((dashboard: DashboardLayout) => {
+    mocks.dashboard = dashboard;
+  });
+  render(
+    <BaseSettingsSection
+      title="Relative"
+      description="Relative settings"
+      widgetId="relative"
+      settings={settings}
+    >
+      {(changeConfig) => (
+        <button
+          onClick={() => {
+            changeConfig({
+              background: { ...settings.config.background, opacity: 30 },
+            });
+            changeConfig({
+              background: { ...settings.config.background, color: 'white' },
+            });
+          }}
+        >
+          Apply edits
+        </button>
+      )}
+    </BaseSettingsSection>
+  );
+  await user.click(screen.getByRole('button', { name: 'Apply edits' }));
+  expect(mocks.update.mock.lastCall?.[0].widgets[0].config.background).toEqual({
+    opacity: 30,
+    color: 'white',
   });
 });

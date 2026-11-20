@@ -2,16 +2,18 @@
 const path = require('path');
 const fs = require('fs');
 
-// Prefer Debug build but fall back to Release if Debug is not built.
-const debugBinary = path.resolve(__dirname, '../build/Debug/irsdk_node.node');
-const releaseBinary = path.resolve(
-  __dirname,
-  '../build/Release/irsdk_node.node'
-);
-let nativeBinary = null;
-if (fs.existsSync(debugBinary)) nativeBinary = debugBinary;
-else if (fs.existsSync(releaseBinary)) nativeBinary = releaseBinary;
-else {
+const buildDirectories = [
+  path.resolve(__dirname, '../../../../../build'),
+  path.resolve(__dirname, '../build'),
+];
+const nativeBinary = buildDirectories
+  .flatMap((directory) =>
+    ['Debug', 'Release'].map((configuration) =>
+      path.join(directory, configuration, 'irsdk_node.node')
+    )
+  )
+  .find((candidate) => fs.existsSync(candidate));
+if (!nativeBinary) {
   console.error(
     'Native module not found. Build the native addon (run the build script) and try again.'
   );
@@ -20,7 +22,11 @@ else {
 const NativeSDK = require(nativeBinary).iRacingSdkNode;
 
 const TARGET_FILE = '_GENERATED_telemetry.ts';
-const OUT_PATH = path.resolve(__dirname, '../../types/', TARGET_FILE);
+const OUT_PATH = path.resolve(
+  __dirname,
+  '../../../../types/irSdk',
+  TARGET_FILE
+);
 
 // Ensure the output directory exists (robust when script is run from different CWDs)
 fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true });

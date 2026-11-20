@@ -1,3 +1,4 @@
+import { useCanvasCleanup } from '@irdashies/domain/canvas/useCanvasCleanup';
 import { memo, useEffect, useLayoutEffect, useRef } from 'react';
 import { useWidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import { perfMetrics } from '@irdashies/utils/perfMetrics';
@@ -15,6 +16,7 @@ export interface InputTraceProps {
 /** Canvas trace sampled on input updates and painted on animation frames. */
 export const InputTrace = memo(({ input, settings }: InputTraceProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  useCanvasCleanup(canvasRef);
   const drawingRef = useRef<InputTraceDrawing | null>(null);
   const widgetScale = useWidgetScale();
 

@@ -1,7 +1,10 @@
 import React, { useMemo } from 'react';
 import type { FuelCalculatorSettings, FuelCalculation } from '../types';
-import { MAX_LAP_HISTORY, useFuelStore } from '../FuelStore';
-import { useDashboard } from '@irdashies/context';
+import {
+  MAX_LAP_HISTORY,
+  useDashboard,
+  useFuelStore,
+} from '@irdashies/context';
 import { formatFuel } from '../fuelCalculations';
 import { demoFuelHistory } from '../demoData';
 import {

@@ -15,13 +15,21 @@ import type {
 } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
 
+type DashboardUpdate =
+  DashboardLayout | ((dashboard: DashboardLayout) => DashboardLayout);
+
+interface DashboardState {
+  dashboard: DashboardLayout;
+  profileId?: string;
+}
+
 interface DashboardContextProps {
   editMode: boolean;
   currentDashboard: DashboardLayout | undefined;
   currentProfile: DashboardProfile | null;
   profiles: DashboardProfile[];
   onDashboardUpdated?: (
-    dashboard: DashboardLayout,
+    update: DashboardUpdate,
     options?: SaveDashboardOptions
   ) => void;
   resetDashboard: (resetEverything: boolean) => Promise<DashboardLayout>;
@@ -47,7 +55,19 @@ export const DashboardProvider: React.FC<{
   children: ReactNode;
   profileId?: string;
 }> = ({ bridge, children, profileId }) => {
-  const [dashboard, setDashboard] = useState<DashboardLayout>();
+  const [dashboardState, setDashboardState] = useState<DashboardState>();
+  const latestDashboard = React.useRef<DashboardState | undefined>(undefined);
+  const pendingProfile = React.useRef<string | undefined>(undefined);
+  const saveSource = React.useRef<string | undefined>(undefined);
+  const saveSequence = React.useRef(0);
+  const setDashboard = React.useCallback(
+    (dashboard: DashboardLayout, updatedProfileId?: string) => {
+      const state = { dashboard, profileId: updatedProfileId };
+      latestDashboard.current = state;
+      setDashboardState(state);
+    },
+    []
+  );
   const [editMode, setEditMode] = useState(false);
   const [version, setVersion] = useState('');
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -103,18 +123,30 @@ export const DashboardProvider: React.FC<{
 
   useEffect(() => {
     const unsubDashboard = bridge.dashboardUpdated(
-      (updatedDashboard, updatedProfileId) => {
+      (updatedDashboard, updatedProfileId, saveId) => {
+        const source = saveSource.current;
+        if (
+          source &&
+          saveId?.startsWith(source) &&
+          (saveId !== `${source}${saveSequence.current}` ||
+            (updatedProfileId !== undefined &&
+              latestDashboard.current?.profileId !== undefined &&
+              updatedProfileId !== latestDashboard.current.profileId))
+        ) {
+          return;
+        }
+
         const contextProfileId = initialProfileIdRef.current;
 
         // If this context is for a specific profile (i.e., a browser view)
         if (contextProfileId) {
           // Only accept updates that are specifically for our profile
           if (updatedProfileId === contextProfileId) {
-            setDashboard(updatedDashboard);
+            setDashboard(updatedDashboard, updatedProfileId);
           }
         } else {
           // Otherwise, this is the main Electron app context, so we should accept any update
-          setDashboard(updatedDashboard);
+          setDashboard(updatedDashboard, updatedProfileId);
         }
 
         // Refresh profiles to pick up on theme changes etc.
@@ -130,7 +162,7 @@ export const DashboardProvider: React.FC<{
         .getDashboardForProfile(profileId)
         .then((dashboard) => {
           if (dashboard) {
-            setDashboard(dashboard);
+            setDashboard(dashboard, profileId);
           } else {
             // Fallback for safety, should not be hit in normal operation
             bridge.reloadDashboard();
@@ -176,7 +208,7 @@ export const DashboardProvider: React.FC<{
       if (unsubContainerBounds) unsubContainerBounds();
       bridge.stop();
     };
-  }, [bridge, profileId, loadProfiles]);
+  }, [bridge, profileId, loadProfiles, setDashboard]);
 
   // Load profiles after mount to avoid cascading renders
   useEffect(() => {
@@ -190,25 +222,43 @@ export const DashboardProvider: React.FC<{
   }, [loadProfiles, profileId]);
 
   const saveDashboard = (
-    dashboard: DashboardLayout,
+    update: DashboardUpdate,
     options?: SaveDashboardOptions
   ) => {
-    // Immediately update local state for responsive UI
-    setDashboard(dashboard);
-
-    // Ensure we save to the current profile by adding profileId to options
-    const saveOptions = {
+    const latest = latestDashboard.current;
+    const renderedProfileId = dashboardState?.profileId ?? currentProfile?.id;
+    const targetProfileId = options?.profileId ?? renderedProfileId;
+    if (
+      (pendingProfile.current && pendingProfile.current !== targetProfileId) ||
+      (latest?.profileId && latest.profileId !== targetProfileId)
+    ) {
+      return;
+    }
+    let dashboard: DashboardLayout;
+    if (typeof update === 'function') {
+      if (!latest) return;
+      dashboard = update(latest.dashboard);
+      if (dashboard === latest.dashboard) return;
+    } else {
+      dashboard = update;
+    }
+    const source =
+      (saveSource.current ??= `${crypto.getRandomValues(new Uint32Array(4)).join('-')}:`);
+    const saveId = `${source}${++saveSequence.current}`;
+    setDashboard(dashboard, targetProfileId);
+    bridge.saveDashboard(dashboard, {
       ...options,
-      profileId: options?.profileId || currentProfile?.id,
-    };
-
-    // Then save to bridge
-    bridge.saveDashboard(dashboard, saveOptions);
+      profileId: targetProfileId,
+      saveId,
+    });
   };
 
   const resetDashboard = async (resetEverything: boolean) => {
     const result = await bridge.resetDashboard(resetEverything);
-    setDashboard(result);
+    const renderedProfileId = dashboardState?.profileId ?? currentProfile?.id;
+    if (latestDashboard.current?.profileId === renderedProfileId) {
+      setDashboard(result, renderedProfileId);
+    }
     return result;
   };
 
@@ -235,22 +285,32 @@ export const DashboardProvider: React.FC<{
   };
 
   const switchProfile = async (profileId: string) => {
-    await bridge.switchProfile(profileId);
-    await loadProfiles();
+    pendingProfile.current = profileId;
+    try {
+      await bridge.switchProfile(profileId);
+      await loadProfiles();
 
-    // Force reload dashboard for the new profile
-    if (bridge.getDashboardForProfile) {
-      try {
-        const newDashboard = await bridge.getDashboardForProfile(profileId);
-        if (newDashboard) {
-          setDashboard(newDashboard);
+      if (bridge.getDashboardForProfile) {
+        try {
+          const newDashboard = await bridge.getDashboardForProfile(profileId);
+          if (newDashboard && pendingProfile.current === profileId) {
+            setDashboard(newDashboard, profileId);
+          }
+        } catch (error) {
+          logger.error(
+            'Failed to load dashboard for profile:',
+            profileId,
+            error
+          );
         }
-      } catch (error) {
-        logger.error('Failed to load dashboard for profile:', profileId, error);
+      }
+
+      bridge.reloadDashboard();
+    } finally {
+      if (pendingProfile.current === profileId) {
+        pendingProfile.current = undefined;
       }
     }
-
-    bridge.reloadDashboard();
   };
 
   const refreshProfiles = async () => {
@@ -268,7 +328,7 @@ export const DashboardProvider: React.FC<{
     <DashboardContext.Provider
       value={{
         editMode: editMode,
-        currentDashboard: dashboard,
+        currentDashboard: dashboardState?.dashboard,
         currentProfile,
         profiles,
         onDashboardUpdated: saveDashboard,

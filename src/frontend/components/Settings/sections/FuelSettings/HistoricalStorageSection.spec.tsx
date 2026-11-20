@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HistoricalStorageSection } from './HistoricalStorageSection';
-import { useFuelStore } from '../../../FuelCalculator/FuelStore';
+import { useFuelStore } from '@irdashies/context';
 import { SettingProps } from '../../components/SettingProp';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 

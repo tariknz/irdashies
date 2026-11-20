@@ -147,6 +147,11 @@ const setActivePerfMetrics = (instance: TelemetryPerfMetrics | null): void => {
 export const getActivePerfMetrics = (): TelemetryPerfMetrics | null =>
   activePerfMetrics;
 
+export type PerformanceSections = Pick<
+  TelemetryPerfMetrics,
+  'markStart' | 'markEnd'
+>;
+
 export class TelemetryPerfMetrics {
   private sections = new Map<string, SectionBuffer>();
   private tickIntervals = new FixedSampleBuffer();

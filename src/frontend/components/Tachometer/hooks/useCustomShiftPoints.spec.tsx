@@ -2,7 +2,7 @@ import { renderHook } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useCustomShiftPoints } from './useCustomShiftPoints';
 import * as Context from '@irdashies/context';
-import * as CarTachometerData from './useCarTachometerData';
+import * as CarTachometerData from '@irdashies/domain/tachometer/useCarTachometerData';
 import type { ShiftPointSettings } from '@irdashies/types';
 
 // Mock the dependencies
@@ -13,7 +13,7 @@ vi.mock('@irdashies/context', async (importOriginal) => {
     useDriverControlsSnapshot: vi.fn(),
   };
 });
-vi.mock('./useCarTachometerData');
+vi.mock('@irdashies/domain/tachometer/useCarTachometerData');
 
 const mockUseDriverControlsSnapshot = vi.mocked(
   Context.useDriverControlsSnapshot

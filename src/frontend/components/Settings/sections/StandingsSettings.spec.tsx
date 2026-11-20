@@ -1,3 +1,4 @@
+import { mockDashboardUpdater } from '../mockDashboardUpdater';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -9,16 +10,30 @@ import { StandingsSettings } from './StandingsSettings';
 
 const mocks = vi.hoisted(() => ({
   dashboard: undefined as DashboardLayout | undefined,
-  onDashboardUpdated: vi.fn(),
+  listeners: new Set<() => void>(),
+  onDashboardUpdated: vi.fn((dashboard: DashboardLayout) => {
+    mocks.dashboard = dashboard;
+    mocks.listeners.forEach((listener) => listener());
+  }),
 }));
 
 vi.mock('@irdashies/context', async () => {
+  const { useSyncExternalStore } = await import('react');
   const { DEFAULT_SIM_WIDGET_SUPPORT: support } =
     await import('@irdashies/types');
   return {
     useDashboard: () => ({
-      currentDashboard: mocks.dashboard,
-      onDashboardUpdated: mocks.onDashboardUpdated,
+      currentDashboard: useSyncExternalStore(
+        (onChange) => {
+          mocks.listeners.add(onChange);
+          return () => mocks.listeners.delete(onChange);
+        },
+        () => mocks.dashboard
+      ),
+      onDashboardUpdated: mockDashboardUpdater(
+        () => mocks.dashboard,
+        mocks.onDashboardUpdated
+      ),
     }),
     useActiveSimulator: () => null,
     useSimWidgetSupport: () => support,

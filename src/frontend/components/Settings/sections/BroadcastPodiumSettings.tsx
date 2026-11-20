@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { BroadcastModuleDescription } from './BroadcastModuleDescription';
 import { changeMarker } from '../components/ChangedMark';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
@@ -20,16 +20,16 @@ const STYLE_OPTIONS: { label: string; value: BroadcastPodiumStyle }[] = [
   { label: 'Trophies', value: 'trophy' },
 ];
 
-export const BroadcastPodiumSettings = () => {
+export const BroadcastPodiumSettings = ({ obsUrl }: { obsUrl?: string }) => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as BroadcastPodiumWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<BroadcastPodiumWidgetSettings>({
+  const settings: BroadcastPodiumWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config: { ...defaultConfig, ...savedSettings?.config },
-  });
+  };
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -38,11 +38,14 @@ export const BroadcastPodiumSettings = () => {
   return (
     <BaseSettingsSection
       disableInternalScroll
-      headingLevel="h3"
       title="Broadcast Podium"
-      description="The top three of each class on steps, up after the checkered flag of a race. Demo mode shows it all the time so it can be placed."
+      description={
+        <BroadcastModuleDescription obsUrl={obsUrl}>
+          The top three of each class on steps, up after the checkered flag of a
+          race. Demo mode shows it all the time so it can be placed.
+        </BroadcastModuleDescription>
+      }
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => {

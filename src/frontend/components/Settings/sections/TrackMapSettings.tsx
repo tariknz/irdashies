@@ -1,8 +1,8 @@
+import { useStoredTab } from '../hooks/useStoredTab';
 import { useState, useEffect, useRef } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   TrackMapWidgetSettings,
-  SettingsTabType,
   getWidgetDefaultConfig,
   DashboardBridge,
 } from '@irdashies/types';
@@ -10,6 +10,7 @@ import type { SectorDeltaConfig } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { getSectorDeltaThresholdPercentages } from '../../SectorDelta/sectorColorUtils';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
@@ -48,14 +49,14 @@ export const TrackMapSettings = () => {
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as TrackMapWidgetSettings | undefined;
-  const [settings, setSettings] = useState<TrackMapWidgetSettings>({
+  const settings: TrackMapWidgetSettings = {
     enabled:
       currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
       false,
     config:
       (savedSettings?.config as TrackMapWidgetSettings['config']) ??
       defaultConfig,
-  });
+  };
 
   const [imageError, setImageError] = useState<string | null>(null);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
@@ -66,14 +67,12 @@ export const TrackMapSettings = () => {
     ((newConfig: Partial<TrackMapWidgetSettings['config']>) => void) | null
   >(null);
 
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('trackMapTab') as SettingsTabType) || 'track'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('trackMapTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('trackMapTab', [
+    'track',
+    'drivers',
+    'styling',
+    'visibility',
+  ]);
 
   const imageFilename = settings.config.playerIcon?.fileName ?? '';
 
@@ -129,7 +128,6 @@ export const TrackMapSettings = () => {
       title="Track Map"
       description="Configure track map visualization settings."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId="map"
     >
       {(handleConfigChange) => {
@@ -209,7 +207,7 @@ export const TrackMapSettings = () => {
           >
             <div className="space-y-4">
               {/* Tabs */}
-              <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+              <SettingsTabBar>
                 <TabButton
                   id="track"
                   activeTab={activeTab}
@@ -238,7 +236,7 @@ export const TrackMapSettings = () => {
                 >
                   Visibility
                 </TabButton>
-              </div>
+              </SettingsTabBar>
 
               <div>
                 {/* TRACK TAB */}

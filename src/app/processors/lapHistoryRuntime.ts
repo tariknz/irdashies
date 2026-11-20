@@ -1,13 +1,9 @@
 import type { LapHistorySnapshot, Session, Telemetry } from '@irdashies/types';
-import type { ChannelBus } from '../bridge/channelBridge';
+import type { ChannelBus } from '../bridge/channelBus';
 import type { SessionLifecycle } from '../sessionLifecycle';
 import { LapHistoryProcessor } from './LapHistoryProcessor';
 import logger from '../logger';
-
-export interface PerformanceSections {
-  markStart(label: string): void;
-  markEnd(label: string): void;
-}
+import type { PerformanceSections } from '../perfMetrics';
 
 /** Writes stored crossings into a snapshot. Returns false when they do not fit. */
 export type LapHistoryRestore = (target: LapHistorySnapshot) => boolean;
@@ -37,6 +33,7 @@ export class LapHistoryRuntime {
   private readonly processor: LapHistoryProcessor;
   private enabled = true;
   private replayPaused = false;
+  private tapeReplay = false;
   private currentSessionId = '';
   private lastPublishedVersion = -1;
   private subscribers = 0;
@@ -59,9 +56,11 @@ export class LapHistoryRuntime {
     // Delivery stays demand-gated - the bus only sends to subscribed windows.
     this.processor = new LapHistoryProcessor();
     this.disconnects = [
-      lifecycle.onEnter((event) =>
-        this.processor.onLifecycle({ type: 'enter', replay: event.replay })
-      ),
+      lifecycle.onEnter((event) => {
+        this.tapeReplay = event.replay;
+        this.processor.onLifecycle({ type: 'enter', replay: event.replay });
+        this.load(this.currentSessionId);
+      }),
       lifecycle.onSessionNumChange(() => {
         this.sealCurrentSession();
         this.processor.onLifecycle({ type: 'sessionNumChange' });
@@ -89,7 +88,7 @@ export class LapHistoryRuntime {
   }
 
   onFrame(frame: Telemetry): void {
-    if (!this.enabled || this.replayPaused) return;
+    if (!this.enabled || (this.replayPaused && !this.tapeReplay)) return;
     this.metrics.markStart('lapHistoryProcessing');
     this.processor.onFrame(frame);
     this.metrics.markEnd('lapHistoryProcessing');
@@ -138,7 +137,7 @@ export class LapHistoryRuntime {
     this.restoreToken += 1;
     const token = this.restoreToken;
     this.pendingRestore = null;
-    if (!sessionId) {
+    if (!sessionId || this.tapeReplay) {
       this.restorePending = false;
       return;
     }
@@ -196,6 +195,7 @@ export class LapHistoryRuntime {
     // reset never reaches disk and a pending read is left to finish first.
     if (
       this.currentSessionId &&
+      !this.tapeReplay &&
       !this.restorePending &&
       hasCrossings(snapshot)
     ) {
@@ -229,7 +229,8 @@ export class LapHistoryRuntime {
    */
   private sealCurrentSession(): void {
     const snapshot = this.processor.snapshot();
-    if (!this.currentSessionId || this.restorePending) return;
+    if (!this.currentSessionId || this.restorePending || this.tapeReplay)
+      return;
     if (!hasCrossings(snapshot)) return;
     this.persistence.seal(this.currentSessionId, snapshot);
   }
