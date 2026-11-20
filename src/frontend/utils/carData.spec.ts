@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { loadCarData, getGearKey, getAvailableCars } from './carData';
+import {
+  loadCarData,
+  loadLmuCarData,
+  getGearKey,
+  getAvailableCars,
+} from './carData';
 
 /**
  * NOTE: These tests verify that bundled car data can be loaded synchronously
@@ -120,6 +125,48 @@ describe('carData', () => {
     it('returns cars sorted by availability', () => {
       const cars = getAvailableCars();
       expect(cars.length).toBeGreaterThanOrEqual(60);
+    });
+  });
+
+  describe('loadLmuCarData', () => {
+    it.each([
+      ['Ferrari 296 LMGT3 Evo', 'ferrari-296-lmgt3-evo'],
+      ['Porsche 911 GT3 R LMGT3', 'porsche-911-gt3-r-lmgt3'],
+      ['Mercedes-AMG LMGT3', 'mercedes-amg-lmgt3'],
+      ['Chevrolet Corvette Z06 LMGT3.', 'chevrolet-corvette-z06-lmgt3'],
+      ['Ligier JS P325', 'ligier-js-p325'],
+    ])('finds %s by the model LMU reports', (carModel, key) => {
+      const result = loadLmuCarData(carModel, 'Some Team #7:WEC');
+
+      expect(result?.carName).toBe(carModel);
+      expect(result).toBe(loadLmuCarData(key));
+    });
+
+    it('takes the series variant when the entry names one', () => {
+      const elms = loadLmuCarData('Oreca 07', 'DKR Engineering #3:ELMS26');
+      const wec = loadLmuCarData('Oreca 07', 'United Autosports #22:WEC');
+
+      expect(elms?.carName).toBe('Oreca 07 ELMS');
+      expect(elms?.carClass).toBe('LMP2_ELMS');
+      expect(wec?.carName).toBe('Oreca 07');
+      expect(wec?.carClass).toBe('LMP2');
+      expect(elms?.ledRpm[0]['1'][0]).not.toBe(wec?.ledRpm[0]['1'][0]);
+    });
+
+    it('falls back to the model when the entry has no series', () => {
+      expect(loadLmuCarData('Oreca 07', 'Oreca 07')?.carClass).toBe('LMP2');
+    });
+
+    it.each([undefined, '', 'Unreleased Prototype 2030'])(
+      'returns null for the model %s',
+      (carModel) => {
+        expect(loadLmuCarData(carModel, 'Team #1:WEC')).toBeNull();
+      }
+    );
+
+    it('leaves the iRacing lookup on the iRacing bundle', () => {
+      expect(loadCarData('Ferrari 296 LMGT3 Evo')).toBeNull();
+      expect(loadCarData('ferrari296gt3')?.carName).toBe('Ferrari 296 GT3');
     });
   });
 });

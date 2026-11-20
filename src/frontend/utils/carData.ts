@@ -12,6 +12,7 @@
  */
 
 import carDataBundle from '../assets/data/cars-bundle.json';
+import lmuCarDataBundle from '../assets/data/lmu-cars-bundle.json';
 import logger from '@irdashies/utils/logger';
 
 export interface CarData {
@@ -89,7 +90,7 @@ function normalizeCarId(carPath: string): string | null {
  * Loads car-specific tachometer data from the bundled data
  * This loads instantly from the bundled data without any network requests
  * @param carPath The car path from the game
- * @param _gameId The current game identifier (ignored, only iRacing data is bundled currently)
+ * @param _gameId The current game identifier (ignored, LMU cars are looked up with loadLmuCarData)
  * @returns The car data or null if not found
  */
 export const loadCarData = (
@@ -110,6 +111,41 @@ export const loadCarData = (
     logger.warn('Failed to load car data:', error);
     return null;
   }
+};
+
+const LMU_SERIES = /:\s*([A-Za-z]+)\d*\s*$/;
+
+let lmuCarKeys: Map<string, string> | null = null;
+
+const normalizeLmuName = (value: string): string =>
+  value.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+function findLmuCarKey(name: string): string | undefined {
+  if (!lmuCarKeys) {
+    const keys = new Map<string, string>();
+    const cars = (lmuCarDataBundle as CarDataBundleType).cars;
+    for (const key of Object.keys(cars)) {
+      keys.set(normalizeLmuName(key), key);
+    }
+    for (const [key, car] of Object.entries(cars)) {
+      const name = normalizeLmuName(car.carName);
+      if (!keys.has(name)) keys.set(name, key);
+    }
+    lmuCarKeys = keys;
+  }
+  return lmuCarKeys.get(normalizeLmuName(name));
+}
+
+export const loadLmuCarData = (
+  carModel: string | undefined,
+  entryName?: string
+): CarData | null => {
+  if (!carModel) return null;
+  const series = LMU_SERIES.exec(entryName ?? '')?.[1];
+  const key =
+    (series && findLmuCarKey(`${carModel} ${series}`)) ||
+    findLmuCarKey(carModel);
+  return key ? (lmuCarDataBundle as CarDataBundleType).cars[key] : null;
 };
 
 /**
