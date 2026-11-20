@@ -273,6 +273,7 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       pitSvFlags,
       repairLeft: numberAt(frame, 'PitRepairLeft') ?? 0,
       playerTowing: (numberAt(frame, 'PlayerCarTowTime') ?? 0) > 0,
+      playerReversing: (numberAt(frame, 'Gear') ?? 0) < 0,
       beforePct: window.before,
       afterPct: window.after,
     });

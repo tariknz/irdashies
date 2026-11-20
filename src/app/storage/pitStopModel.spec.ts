@@ -84,6 +84,36 @@ describe('PitStopModelStore', () => {
     expect(samples[0].at).toBe(3);
   });
 
+  it("keeps the player's samples when opponents' stops fill the key", async () => {
+    await store.load();
+    store.addTransit('10:20', { ...transit(0), source: 'player' });
+    for (let i = 1; i <= MAX_SAMPLES_PER_KEY + 3; i++) {
+      store.addTransit('10:20', transit(i));
+    }
+    const samples = store.read().transit['10:20'];
+    const player = samples.filter((sample) => sample.source === 'player');
+    const opponents = samples.filter((sample) => sample.source === 'opponent');
+    expect(player.map((sample) => sample.at)).toEqual([0]);
+    expect(opponents).toHaveLength(MAX_SAMPLES_PER_KEY);
+    expect(opponents[0].at).toBe(4);
+  });
+
+  it("keeps the player's samples when loading a file full of opponents' stops", () => {
+    const opponents = Array.from({ length: MAX_SAMPLES_PER_KEY + 3 }, (_, i) =>
+      transit(i + 1)
+    );
+    const { data } = parsePitStopModel({
+      version: 1,
+      transit: { '10:20': [{ ...transit(0), source: 'player' }, ...opponents] },
+      service: {},
+    });
+    const samples = data.transit['10:20'];
+    expect(samples.filter((s) => s.source === 'player')).toHaveLength(1);
+    expect(samples.filter((s) => s.source === 'opponent')).toHaveLength(
+      MAX_SAMPLES_PER_KEY
+    );
+  });
+
   it('drops the least recently used key past the cap', async () => {
     await store.load();
     for (let i = 0; i <= MAX_KEYS; i++) store.addTransit(`${i}:1`, transit());

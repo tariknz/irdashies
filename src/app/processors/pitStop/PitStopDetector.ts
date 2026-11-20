@@ -31,6 +31,7 @@ export interface DetectorFrame {
   pitSvFlags: number;
   repairLeft: number;
   playerTowing: boolean;
+  playerReversing: boolean;
   /** Window margins around the lane, as lap fractions. */
   beforePct: number;
   afterPct: number;
@@ -207,6 +208,9 @@ export class PitStopDetector {
         taint(stop, 'notInWorld', frame.time);
       }
       if (isPlayer && frame.playerTowing) taint(stop, 'towed', frame.time);
+      if (isPlayer && frame.playerReversing) {
+        taint(stop, 'reversed', frame.time);
+      }
       if (surface === TrackLocation.InPitStall) stop.stationary += dt;
     }
 

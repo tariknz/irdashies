@@ -97,6 +97,23 @@ const isOverride = (value: unknown): value is Partial<PitServiceRule> => {
 
 const orderKey = (kind: 'transit' | 'service', key: string) => `${kind}|${key}`;
 
+export const capTransitSamples = (
+  samples: readonly PitTransitSample[]
+): PitTransitSample[] => {
+  const counts = { player: 0, opponent: 0 };
+  const kept: PitTransitSample[] = [];
+  for (let i = samples.length - 1; i >= 0; i--) {
+    const sample = samples[i];
+    if (counts[sample.source] >= MAX_SAMPLES_PER_KEY) continue;
+    counts[sample.source]++;
+    kept.push(sample);
+  }
+  return kept.reverse();
+};
+
+const capServiceSamples = <T>(samples: readonly T[]): T[] =>
+  samples.slice(-MAX_SAMPLES_PER_KEY);
+
 export interface ParseResult {
   data: PitStopModelFile;
   /** False when the file holds something we must not overwrite. */
@@ -120,6 +137,7 @@ export const parsePitStopModel = (raw: unknown): ParseResult => {
   const readSamples = <T>(
     source: unknown,
     guard: (value: unknown) => value is T,
+    cap: (samples: readonly T[]) => T[],
     target: Record<string, T[]>
   ) => {
     if (!isObject(source)) return;
@@ -128,13 +146,13 @@ export const parsePitStopModel = (raw: unknown): ParseResult => {
         droppedSamples++;
         continue;
       }
-      const valid = samples.filter(guard).slice(-MAX_SAMPLES_PER_KEY);
+      const valid = cap(samples.filter(guard));
       droppedSamples += samples.length - valid.length;
       if (valid.length > 0) target[key] = valid;
     }
   };
-  readSamples(raw.transit, isTransitSample, data.transit);
-  readSamples(raw.service, isServiceSample, data.service);
+  readSamples(raw.transit, isTransitSample, capTransitSamples, data.transit);
+  readSamples(raw.service, isServiceSample, capServiceSamples, data.service);
 
   if (raw.overrides !== undefined) {
     if (!isObject(raw.overrides)) writable = false;
@@ -240,24 +258,22 @@ export class PitStopModelStore implements PitStopModelPersistence {
   }
 
   addTransit(key: string, sample: PitTransitSample): void {
-    this.add('transit', key, sample, this.data.transit);
+    this.add('transit', key, sample, this.data.transit, capTransitSamples);
   }
 
   addService(key: string, sample: PitServiceSample): void {
-    this.add('service', key, sample, this.data.service);
+    this.add('service', key, sample, this.data.service, capServiceSamples);
   }
 
   private add<T>(
     kind: 'transit' | 'service',
     key: string,
     sample: T,
-    target: Record<string, T[]>
+    target: Record<string, T[]>,
+    cap: (samples: readonly T[]) => T[]
   ) {
     if (!this.writable) return;
-    const samples = [...(target[key] ?? []), sample].slice(
-      -MAX_SAMPLES_PER_KEY
-    );
-    target[key] = samples;
+    target[key] = cap([...(target[key] ?? []), sample]);
     const marker = orderKey(kind, key);
     this.data.order = [...this.data.order.filter((k) => k !== marker), marker];
     prune(this.data);
