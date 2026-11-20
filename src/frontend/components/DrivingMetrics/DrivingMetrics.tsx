@@ -1,26 +1,26 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { shallow } from 'zustand/shallow';
 import {
   useActiveSimulator,
-  useCarConditionSnapshot,
-  useCarDynamicsSnapshot,
+  useChannelListener,
   useChannelSelector,
   useDashboard,
-  useDriverControlsSnapshot,
   useFuelProjectionSnapshot,
   useSessionBarSnapshot,
   useSessionVisibility,
   useTrackLength,
   useTrackStateSelector,
-  useTrackStateSnapshot,
   trackStateSelectors,
 } from '@irdashies/context';
 import type {
   AccelerationTimerConfig,
+  CarConditionSnapshot,
   CarDynamicsSnapshot,
   CompactTelemetryWidgetConfig,
   CruiseOdometerConfig,
+  DriverControlsSnapshot,
   StintHistoryConfig,
+  TrackStateSnapshot,
   WidgetConfigMap,
 } from '@irdashies/types';
 import {
@@ -91,32 +91,44 @@ const formatTime = (seconds: number) => {
   return `${minutes}:${(seconds % 60).toFixed(1).padStart(4, '0')}`;
 };
 
+const selectGear = (snapshot: DriverControlsSnapshot) => snapshot.gear;
+
+const selectCarDynamics = (snapshot: CarDynamicsSnapshot) => snapshot;
+
 export function AccelerationTimer() {
   const config = useSettings('accelerationtimer') as
     AccelerationTimerConfig | undefined;
-  const dynamics = useCarDynamicsSnapshot();
-  const gear = useDriverControlsSnapshot()?.gear;
-  const speed = dynamics?.speed;
-  const now = dynamics?.sessionTime;
   const ranges = useMemo(
     () => (Array.isArray(config?.ranges) ? config.ranges : []),
     [config?.ranges]
   );
-  const [timers, setTimers] = useState<AccelerationTimerState[]>([]);
-  useEffect(() => {
-    if (speed === undefined || now === undefined) return;
-    setTimers((current) =>
-      ranges.map((range, index) =>
-        updateAccelerationTimer(
-          current[index] ?? IDLE_ACCELERATION_TIMER,
-          range,
-          speed * 3.6,
-          now,
-          gear ?? 0
-        )
-      )
-    );
-  }, [gear, now, ranges, speed]);
+  const gear = useRef(0);
+  const timers = useRef<AccelerationTimerState[]>([]);
+  const [texts, setTexts] = useState<readonly string[]>([]);
+  useChannelListener('driver-controls.snapshot', selectGear, (value) => {
+    gear.current = value ?? 0;
+  });
+  useChannelListener(
+    'car-dynamics.snapshot',
+    selectCarDynamics,
+    ({ speed, sessionTime }) => {
+      if (speed !== undefined && sessionTime !== undefined) {
+        timers.current = ranges.map((range, index) =>
+          updateAccelerationTimer(
+            timers.current[index] ?? IDLE_ACCELERATION_TIMER,
+            range,
+            speed * 3.6,
+            sessionTime,
+            gear.current
+          )
+        );
+      }
+      const next = ranges.map((_, index) =>
+        timerText(timers.current[index], sessionTime)
+      );
+      if (!shallow(texts, next)) setTexts(next);
+    }
+  );
   return (
     <MetricFrame config={config} title="Acceleration">
       <div className="space-y-1">
@@ -126,7 +138,7 @@ export function AccelerationTimer() {
               {range.fromKph}–{range.toKph} km/h
             </span>
             <span className="font-mono font-semibold">
-              {timerText(timers[index], now)}
+              {texts[index] ?? '—'}
             </span>
           </div>
         ))}
@@ -170,11 +182,23 @@ export function StintHistory() {
   );
 }
 
+const selectAcceleration = (snapshot: CarDynamicsSnapshot) => ({
+  lateralAccel: snapshot.lateralAccel,
+  longitudinalAccel: snapshot.longitudinalAccel,
+});
+
 export function FrictionCircle() {
   const config = useSettings('frictioncircle');
-  const car = useCarDynamicsSnapshot();
+  const acceleration = useChannelSelector(
+    'car-dynamics.snapshot',
+    selectAcceleration,
+    { equality: shallow }
+  );
   const sessionNum = useTrackStateSelector(trackStateSelectors.sessionNum);
-  const g = mapGForce(car?.lateralAccel, car?.longitudinalAccel);
+  const g = mapGForce(
+    acceleration?.lateralAccel,
+    acceleration?.longitudinalAccel
+  );
   const [peak, setPeak] = useState({ sessionNum, value: 0 });
   const peakBrake =
     g.longitudinal === null
@@ -301,15 +325,23 @@ export function TrackClock() {
   );
 }
 
+const selectSteeringWheelAngle = (snapshot: DriverControlsSnapshot) =>
+  snapshot.steeringWheelAngle;
+
+const selectSteeringWheelAngleMax = (snapshot: CarConditionSnapshot) =>
+  snapshot.steeringWheelAngleMax;
+
 export function SteeringMeter() {
   const config = useSettings('steeringmeter');
-  const controls = useDriverControlsSnapshot();
-  const car = useCarConditionSnapshot();
-  const angle =
-    controls?.steeringWheelAngle === undefined
-      ? undefined
-      : -controls.steeringWheelAngle;
-  const max = car?.steeringWheelAngleMax;
+  const wheelAngle = useChannelSelector(
+    'driver-controls.snapshot',
+    selectSteeringWheelAngle
+  );
+  const max = useChannelSelector(
+    'car-condition.snapshot',
+    selectSteeringWheelAngleMax
+  );
+  const angle = wheelAngle === undefined ? undefined : -wheelAngle;
   const ratio =
     Number.isFinite(angle) && Number.isFinite(max) && max
       ? Math.max(-1, Math.min(1, (angle as number) / (max as number)))
@@ -335,42 +367,61 @@ export function SteeringMeter() {
   );
 }
 
+const selectTrackState = (snapshot: TrackStateSnapshot) => snapshot;
+
+const formatDistance = (meters: number, divisor: number) =>
+  (meters / divisor).toFixed(2);
+
 export function CruiseOdometer() {
   const config = useSettings('cruiseodometer') as
     CruiseOdometerConfig | undefined;
-  const track = useTrackStateSnapshot();
   const trackLength = useTrackLength();
-  const [odometer, setOdometer] = useState(0);
-  const previousTime = useRef<number | null>(null);
-  useEffect(() => {
-    if (!track) return;
-    const previous = previousTime.current;
-    if (previous !== null) {
-      setOdometer((value) =>
-        integrateDistance(value, track.speed, track.sessionTime - previous)
-      );
-    }
-    previousTime.current = track.sessionTime;
-  }, [track]);
-  const position =
-    !track || !Number.isFinite(trackLength) || trackLength <= 0
-      ? null
-      : track.lapDistPct * trackLength;
   const divisor = config?.distanceUnit === 'mi' ? 1609.344 : 1000;
   const unit = config?.distanceUnit ?? 'km';
+  const selectPosition = useCallback(
+    (snapshot: TrackStateSnapshot) =>
+      !Number.isFinite(trackLength) || trackLength <= 0
+        ? null
+        : formatDistance(snapshot.lapDistPct * trackLength, divisor),
+    [divisor, trackLength]
+  );
+  const position = useTrackStateSelector(selectPosition);
+  const [odometer, setOdometer] = useState(0);
+  const distance = useRef(0);
+  const previousTime = useRef<number | null>(null);
+  useChannelListener(
+    'track-state.snapshot',
+    selectTrackState,
+    ({ speed, sessionTime }) => {
+      const previous = previousTime.current;
+      previousTime.current = sessionTime;
+      if (previous === null) return;
+      distance.current = integrateDistance(
+        distance.current,
+        speed,
+        sessionTime - previous
+      );
+      if (
+        formatDistance(distance.current, divisor) !==
+        formatDistance(odometer, divisor)
+      ) {
+        setOdometer(distance.current);
+      }
+    }
+  );
   return (
     <MetricFrame config={config} title="Cruise / odometer">
       <div className="grid grid-cols-2 text-center">
         <div>
           <div className="text-xs text-slate-500">Track</div>
           <div className="font-mono text-lg">
-            {position === null ? '—' : (position / divisor).toFixed(2)} {unit}
+            {position ?? '—'} {unit}
           </div>
         </div>
         <div>
           <div className="text-xs text-slate-500">Trip</div>
           <div className="font-mono text-lg">
-            {(odometer / divisor).toFixed(2)} {unit}
+            {formatDistance(odometer, divisor)} {unit}
           </div>
         </div>
       </div>
