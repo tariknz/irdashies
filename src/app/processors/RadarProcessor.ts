@@ -111,7 +111,6 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
   private readonly excluded = new Set<number>();
   /** The cars on the focus car's side of the pit wall, reused every tick. */
   private readonly sameSide: RadarCar[] = [];
-  /** Per-car track distances for the current frame, reused every tick. */
   private readonly distances: number[] = [];
   private previousPcts: number[] = [];
   private speeds: number[] = [];

@@ -41,7 +41,6 @@ export interface INativeSDK {
   waitForData(timeout?: number): boolean;
   getSessionData(): string; // full yaml
   getTelemetryData(): TelemetryVarList;
-  /** Byte views into a reused native frame; valid only until the next read. */
   getTelemetryDataView?: () => NativeTelemetryDataView;
 
   getTelemetryVariable<T extends boolean | number | string>(

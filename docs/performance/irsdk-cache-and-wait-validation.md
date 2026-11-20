@@ -39,14 +39,14 @@ overwritten. This is documented at the SDK API. In-tree consumers were traced:
 processors, lifecycle, bridges and IPC publish synchronously; the webserver and
 widget-preview stores keep only the latest value and read it as a current
 snapshot, not as an immutable historical frame. No unsafe async retention was
-found.
+found. The native `getTelemetryDataView()` method exposes byte views into a
+reused frame that are valid only until the next read.
 
 ## 2. Files changed
 
 - `src/app/irsdk/node/irsdk-node.ts` — array truncation, type invalidation,
   stop-time cache reset, ownership documentation.
 - `src/app/irsdk/node/irsdk-node.spec.ts` — seven permanent regression tests.
-- `src/app/irsdk/native/index.d.ts` — native frame-view ownership note.
 - `src/app/perfMetrics.ts` — opt-in `sdkWait` samples and report fields.
 - `src/app/perfMetrics.spec.ts` — instrumentation tests.
 - `src/app/bridge/iracingSdk/iracingSdkBridge.ts` — opt-in wrapper around
