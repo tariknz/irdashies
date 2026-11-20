@@ -1,5 +1,5 @@
 import { TrackLocation, type PitStopTaintReason } from '@irdashies/types';
-import { PitSvFlags } from '../../irsdk/types/enums';
+import { PitSvFlags } from '../../../types/irSdk/enums';
 import { forwardPct } from './pitStopModel';
 
 /** Buckets per lap for each car's "last passed at" times. */

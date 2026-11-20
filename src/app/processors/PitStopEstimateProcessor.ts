@@ -13,7 +13,7 @@ import type {
   Telemetry,
 } from '@irdashies/types';
 import { GlobalFlags, TrackLocation } from '@irdashies/types';
-import { PitSvFlags } from '../irsdk/types/enums';
+import { PitSvFlags } from '../../types/irSdk/enums';
 import type { PitStopModelPersistence } from '../storage/pitStopModel';
 import type { TelemetryProcessor } from './TelemetryProcessor';
 import { PitStopDetector } from './pitStop/PitStopDetector';
