@@ -1,7 +1,8 @@
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useActiveSimulator, useSessionStore } from '@irdashies/context';
 import type { Session } from '@irdashies/types';
+import { isLmuCarBundleLoaded } from '@irdashies/utils/carData';
 import { useCarTachometerData } from './useCarTachometerData';
 
 vi.mock('@irdashies/context', async (importOriginal) => ({
@@ -66,7 +67,11 @@ describe('useCarTachometerData', () => {
     }
   );
 
-  it('reads LMU thresholds by model and series under LMU', () => {
+  it('has not loaded the LMU car data for iRacing', () => {
+    expect(isLmuCarBundleLoaded()).toBe(false);
+  });
+
+  it('reads LMU thresholds by model and series under LMU', async () => {
     vi.mocked(useActiveSimulator).mockReturnValue('lmu');
     useSessionStore.getState().setSession({
       DriverInfo: {
@@ -83,7 +88,10 @@ describe('useCarTachometerData', () => {
     } as Session);
     const { result } = renderHook(() => useCarTachometerData(3));
 
-    expect(result.current.carData?.carName).toBe('Oreca 07 ELMS');
+    expect(result.current.carData).toBeNull();
+    await waitFor(() =>
+      expect(result.current.carData?.carName).toBe('Oreca 07 ELMS')
+    );
     expect(result.current.gearRpmThresholds).toEqual(
       result.current.carData?.ledRpm[0]['3']
     );

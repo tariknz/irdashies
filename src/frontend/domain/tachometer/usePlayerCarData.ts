@@ -1,9 +1,12 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useSyncExternalStore } from 'react';
 import { useActiveSimulator, useSessionStore } from '@irdashies/context';
 import type { Session } from '@irdashies/types';
 import {
+  isLmuCarBundleLoaded,
   loadCarData,
+  loadLmuCarBundle,
   loadLmuCarData,
+  subscribeLmuCarBundle,
   type CarData,
 } from '@irdashies/utils/carData';
 
@@ -24,8 +27,17 @@ export const usePlayerCarData = (): CarData | null => {
     ({ session }) => playerDriver(session)?.CarScreenName
   );
 
+  const isLmu = simulator === 'lmu';
+  useEffect(() => {
+    if (isLmu) void loadLmuCarBundle();
+  }, [isLmu]);
+  const lmuLoaded = useSyncExternalStore(
+    subscribeLmuCarBundle,
+    isLmuCarBundleLoaded
+  );
+
   return useMemo(() => {
-    if (simulator === 'lmu') return loadLmuCarData(carModel, entryName);
+    if (isLmu) return lmuLoaded ? loadLmuCarData(carModel, entryName) : null;
     return carPath ? loadCarData(carPath) : null;
-  }, [simulator, carPath, carModel, entryName]);
+  }, [isLmu, lmuLoaded, carPath, carModel, entryName]);
 };

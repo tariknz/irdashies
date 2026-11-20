@@ -1,7 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect, vi } from 'vitest';
 import {
+  isLmuCarBundleLoaded,
   loadCarData,
+  loadLmuCarBundle,
   loadLmuCarData,
+  subscribeLmuCarBundle,
   getGearKey,
   getAvailableCars,
 } from './carData';
@@ -128,7 +131,30 @@ describe('carData', () => {
     });
   });
 
+  describe('loadLmuCarBundle', () => {
+    it('holds no LMU data until it is asked to load', async () => {
+      expect(isLmuCarBundleLoaded()).toBe(false);
+      expect(loadLmuCarData('Oreca 07', 'Team #1:WEC')).toBeNull();
+
+      const listener = vi.fn();
+      const unsubscribe = subscribeLmuCarBundle(listener);
+      await loadLmuCarBundle();
+      await loadLmuCarBundle();
+      unsubscribe();
+
+      expect(isLmuCarBundleLoaded()).toBe(true);
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(loadLmuCarData('Oreca 07', 'Team #1:WEC')?.carName).toBe(
+        'Oreca 07'
+      );
+    });
+  });
+
   describe('loadLmuCarData', () => {
+    beforeAll(async () => {
+      await loadLmuCarBundle();
+    });
+
     it.each([
       ['Ferrari 296 LMGT3 Evo', 'ferrari-296-lmgt3-evo'],
       ['Porsche 911 GT3 R LMGT3', 'porsche-911-gt3-r-lmgt3'],
