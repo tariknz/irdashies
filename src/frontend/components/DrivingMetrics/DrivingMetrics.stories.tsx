@@ -1,8 +1,10 @@
 import type { Decorator, Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useRef, type ComponentType } from 'react';
+import { DashboardProvider } from '@irdashies/context';
 import {
   ChannelSnapshotDecorator,
   TelemetryDecoratorWithConfig,
+  createMockBridgeWithConfig,
   sessionBarStorySnapshot,
   trackStateStorySnapshot,
 } from '@irdashies/storybook';
@@ -76,6 +78,17 @@ const MovingChannelsDecorator = (
   };
   return DecoratorComponent;
 };
+
+const lmuBridge = {
+  ...createMockBridgeWithConfig({}),
+  getActiveSimulator: async () => 'lmu' as const,
+};
+
+const LmuDecorator: Decorator = (Story) => (
+  <DashboardProvider bridge={lmuBridge}>
+    <Story />
+  </DashboardProvider>
+);
 
 const sized =
   (width: number, height: number): Decorator =>
@@ -255,6 +268,20 @@ export const BrakePressureUnderBraking: Story = {
     ChannelSnapshotDecorator({
       'car-dynamics.snapshot': carDynamics({
         brakeLinePressure: [58.2, 57.9, 41.3, 41.0],
+      }),
+      'track-state.snapshot': trackState(),
+    }),
+  ],
+};
+
+export const BrakePressureLmu: Story = {
+  render: () => <BrakePressure />,
+  decorators: [
+    sized(220, 150),
+    LmuDecorator,
+    ChannelSnapshotDecorator({
+      'car-dynamics.snapshot': carDynamics({
+        brakeLinePressure: [0.517, 0.514, 0.372, 0.369],
       }),
       'track-state.snapshot': trackState(),
     }),

@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import { useDashboard } from '@irdashies/context';
 import {
   getWidgetDefaultConfig,
+  getWidgetManifest,
   type BaseWidgetSettings,
   type WidgetConfigMap,
 } from '@irdashies/types';
@@ -11,18 +12,6 @@ import { SettingNumberRow } from '../components/SettingNumberRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingsSection } from '../components/SettingSection';
-
-const titles: Record<string, string> = {
-  accelerationtimer: 'Acceleration Timer',
-  stinthistory: 'Stint History',
-  frictioncircle: 'Friction Circle',
-  tyrepanel: 'Tyre Panel',
-  brakepressure: 'Brake Pressure',
-  suspensionposition: 'Suspension Position',
-  trackclock: 'Track Clock',
-  steeringmeter: 'Steering Meter',
-  cruiseodometer: 'Cruise / Odometer',
-};
 
 type DrivingMetricId =
   | 'accelerationtimer'
@@ -51,10 +40,15 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
     enabled: saved?.enabled ?? false,
     config: (saved?.config as unknown as WidgetConfigMap[K]) ?? defaults,
   };
+  const savedRanges = (settings.config as WidgetConfigMap['accelerationtimer'])
+    .ranges;
+  const accelerationRanges = Array.isArray(savedRanges)
+    ? savedRanges
+    : getWidgetDefaultConfig('accelerationtimer').ranges;
 
   return (
     <BaseSettingsSection
-      title={titles[id] ?? id}
+      title={getWidgetManifest(id)?.name ?? id}
       description="Configure this driving telemetry widget."
       settings={settings}
       widgetId={widgetId}
@@ -63,22 +57,16 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
         <div className="space-y-4">
           {id === 'accelerationtimer' && (
             <SettingsSection title="Speed ranges">
-              {(
-                settings.config as WidgetConfigMap['accelerationtimer']
-              ).ranges.map((range, index) => (
+              {accelerationRanges.map((range, index) => (
                 <div className="grid grid-cols-2 gap-2" key={index}>
                   <SettingNumberRow
                     title={`Range ${index + 1} start`}
                     value={range.fromKph}
                     min={0}
-                    max={400}
+                    max={range.toKph - 1}
                     step={1}
                     onChange={(fromKph) => {
-                      const ranges = [
-                        ...(
-                          settings.config as WidgetConfigMap['accelerationtimer']
-                        ).ranges,
-                      ];
+                      const ranges = [...accelerationRanges];
                       ranges[index] = { ...ranges[index], fromKph };
                       handleConfigChange({ ranges } as unknown as Partial<
                         WidgetConfigMap[K]
@@ -88,15 +76,11 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
                   <SettingNumberRow
                     title={`Range ${index + 1} end`}
                     value={range.toKph}
-                    min={1}
+                    min={range.fromKph + 1}
                     max={500}
                     step={1}
                     onChange={(toKph) => {
-                      const ranges = [
-                        ...(
-                          settings.config as WidgetConfigMap['accelerationtimer']
-                        ).ranges,
-                      ];
+                      const ranges = [...accelerationRanges];
                       ranges[index] = { ...ranges[index], toKph };
                       handleConfigChange({ ranges } as unknown as Partial<
                         WidgetConfigMap[K]

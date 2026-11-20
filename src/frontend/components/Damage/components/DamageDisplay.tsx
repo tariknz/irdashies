@@ -111,7 +111,9 @@ export const DamageDisplay = ({
           panelFill={panelFill}
           wheelFill={wheelFill}
           punctured={punctured}
-          integrityLabel={showIntegrity ? formatIntegrityPct(centre) : null}
+          integrityLabel={
+            showIntegrity && centre !== null ? formatIntegrityPct(centre) : null
+          }
         />
       </div>
 

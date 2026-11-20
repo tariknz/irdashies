@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { shallow } from 'zustand/shallow';
 import {
+  useActiveSimulator,
   useCarConditionSnapshot,
   useCarDynamicsSnapshot,
+  useChannelSelector,
   useDashboard,
   useDriverControlsSnapshot,
   useFuelProjectionSnapshot,
@@ -14,6 +17,7 @@ import {
 } from '@irdashies/context';
 import type {
   AccelerationTimerConfig,
+  CarDynamicsSnapshot,
   CompactTelemetryWidgetConfig,
   CruiseOdometerConfig,
   StintHistoryConfig,
@@ -94,7 +98,10 @@ export function AccelerationTimer() {
   const gear = useDriverControlsSnapshot()?.gear;
   const speed = dynamics?.speed;
   const now = dynamics?.sessionTime;
-  const ranges = useMemo(() => config?.ranges ?? [], [config?.ranges]);
+  const ranges = useMemo(
+    () => (Array.isArray(config?.ranges) ? config.ranges : []),
+    [config?.ranges]
+  );
   const [timers, setTimers] = useState<AccelerationTimerState[]>([]);
   useEffect(() => {
     if (speed === undefined || now === undefined) return;
@@ -114,10 +121,7 @@ export function AccelerationTimer() {
     <MetricFrame config={config} title="Acceleration">
       <div className="space-y-1">
         {ranges.map((range, index) => (
-          <div
-            className="flex justify-between"
-            key={`${range.fromKph}-${range.toKph}`}
-          >
+          <div className="flex justify-between" key={index}>
             <span className="text-slate-400">
               {range.fromKph}–{range.toKph} km/h
             </span>
@@ -136,7 +140,9 @@ export function StintHistory() {
   const fuel = useFuelProjectionSnapshot();
   const stints = useMemo(
     () =>
-      groupStints(fuel?.completedLaps ?? []).slice(-(config?.maxStints ?? 3)),
+      groupStints(fuel?.completedLaps ?? []).slice(
+        -Math.max(1, config?.maxStints ?? 3)
+      ),
     [config?.maxStints, fuel?.completedLaps]
   );
   return (
@@ -167,14 +173,19 @@ export function StintHistory() {
 export function FrictionCircle() {
   const config = useSettings('frictioncircle');
   const car = useCarDynamicsSnapshot();
+  const sessionNum = useTrackStateSelector(trackStateSelectors.sessionNum);
   const g = mapGForce(car?.lateralAccel, car?.longitudinalAccel);
-  const [peakBrake, setPeakBrake] = useState(0);
-  useEffect(() => {
-    const longitudinal = g.longitudinal;
-    setPeakBrake((peak) =>
-      longitudinal === null ? 0 : Math.max(peak, -longitudinal)
-    );
-  }, [g.longitudinal]);
+  const [peak, setPeak] = useState({ sessionNum, value: 0 });
+  const peakBrake =
+    g.longitudinal === null
+      ? 0
+      : Math.max(
+          peak.sessionNum === sessionNum ? peak.value : 0,
+          -g.longitudinal
+        );
+  if (peak.sessionNum !== sessionNum || peak.value !== peakBrake) {
+    setPeak({ sessionNum, value: peakBrake });
+  }
   const x = Math.max(-2, Math.min(2, g.lateral ?? 0));
   const y = Math.max(-2, Math.min(2, g.longitudinal ?? 0));
   return (
@@ -202,10 +213,12 @@ function FourCorners({
   values,
   transform = (value) => value,
   suffix,
+  digits = 1,
 }: {
   values?: readonly (number | null)[];
   transform?: (value: number) => number;
   suffix: string;
+  digits?: number;
 }) {
   return (
     <div className="grid h-[calc(100%-18px)] grid-cols-2 gap-2">
@@ -214,7 +227,7 @@ function FourCorners({
           <div className="text-[10px] text-slate-500">{corner}</div>
           <div className="font-mono font-semibold">
             {Number.isFinite(values?.[index])
-              ? `${transform(values?.[index] as number).toFixed(1)}${suffix}`
+              ? `${transform(values?.[index] as number).toFixed(digits)}${suffix}`
               : '—'}
           </div>
         </div>
@@ -223,23 +236,49 @@ function FourCorners({
   );
 }
 
+const selectBrakeLinePressure = (snapshot: CarDynamicsSnapshot) =>
+  snapshot.brakeLinePressure;
+
+const toPercent = (fraction: number) => fraction * 100;
+
+const selectSuspensionDeflection = (snapshot: CarDynamicsSnapshot) =>
+  snapshot.suspensionDeflection;
+
 export function BrakePressure() {
   const config = useSettings('brakepressure');
-  const car = useCarDynamicsSnapshot();
+  const pressure = useChannelSelector(
+    'car-dynamics.snapshot',
+    selectBrakeLinePressure,
+    { equality: shallow }
+  );
+  const isLmu = useActiveSimulator() === 'lmu';
   return (
     <MetricFrame config={config} title="Brake pressure">
-      <FourCorners values={car?.brakeLinePressure} suffix="" />
+      {isLmu ? (
+        <FourCorners
+          values={pressure}
+          transform={toPercent}
+          suffix="%"
+          digits={0}
+        />
+      ) : (
+        <FourCorners values={pressure} suffix="" />
+      )}
     </MetricFrame>
   );
 }
 
 export function SuspensionPosition() {
   const config = useSettings('suspensionposition');
-  const car = useCarDynamicsSnapshot();
+  const deflection = useChannelSelector(
+    'car-dynamics.snapshot',
+    selectSuspensionDeflection,
+    { equality: shallow }
+  );
   return (
     <MetricFrame config={config} title="Suspension">
       <FourCorners
-        values={car?.suspensionDeflection}
+        values={deflection}
         transform={(value) => value * 1000}
         suffix=" mm"
       />

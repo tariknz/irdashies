@@ -51,22 +51,24 @@ export const assignField = <
   return true;
 };
 
+export const CORNERS_CHANGED = 1;
+export const CORNERS_PRESENT = 2;
+
 export const syncCorners = (
   frame: Telemetry,
   values: (number | null)[],
   keys: CornerKeys
-): { changed: boolean; present: boolean } => {
-  let changed = false;
-  let present = false;
+): number => {
+  let result = 0;
   for (let index = 0; index < values.length; index += 1) {
     const value = meanOf(frame, keys[index]);
-    if (value !== null) present = true;
+    if (value !== null) result |= CORNERS_PRESENT;
     if (!Object.is(values[index], value)) {
       values[index] = value;
-      changed = true;
+      result |= CORNERS_CHANGED;
     }
   }
-  return { changed, present };
+  return result;
 };
 
 export const syncList = (

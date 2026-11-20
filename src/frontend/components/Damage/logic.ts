@@ -58,27 +58,6 @@ export const tyreWearTier = (wear: number | undefined): SuspDamageTier => {
   return 'ok';
 };
 
-export const integrityFraction = (
-  aeroDamage: number | undefined,
-  dentSeverity: readonly number[],
-  preferAero = true
-): number | null => {
-  let damage: number;
-  if (
-    preferAero &&
-    aeroDamage !== undefined &&
-    Number.isFinite(aeroDamage) &&
-    aeroDamage >= 0
-  ) {
-    damage = aeroDamage;
-  } else if (dentSeverity.length > 0) {
-    damage = dentSeverity.reduce((sum, v) => sum + v, 0) / 16;
-  } else {
-    return null;
-  }
-  return Math.max(0, Math.min(1, 1 - damage));
-};
-
 export const aeroIntegrity = (
   aeroDamage: number | undefined
 ): number | null => {
@@ -100,6 +79,11 @@ export const bodyIntegrity = (
     Math.min(1, 1 - dentSeverity.reduce((sum, v) => sum + v, 0) / 16)
   );
 };
+
+export const integrityFraction = (
+  aeroDamage: number | undefined,
+  dentSeverity: readonly number[]
+): number | null => aeroIntegrity(aeroDamage) ?? bodyIntegrity(dentSeverity);
 
 export const suspensionIntegrity = (
   suspensionDamage: readonly number[],
@@ -171,7 +155,7 @@ export const hasCarDamage = (data: DamageSnapshot): boolean => {
   return false;
 };
 
-const DEMO_DAMAGE_BASE: DamageSnapshot = {
+export const DEMO_DAMAGE: DamageSnapshot = {
   dentSeverity: [1, 0, 2, 0, 0, 0, 1, 0],
   wheelDetached: [false, false, false, false],
   suspensionDamage: [0.01, 0.2, 0.05, 0.5],
@@ -183,8 +167,6 @@ const DEMO_DAMAGE_BASE: DamageSnapshot = {
   optRepairNeeded: true,
 };
 
-export const DEMO_DAMAGE: DamageSnapshot = DEMO_DAMAGE_BASE;
-
 export const getDemoDamage = (elapsedSec = 0): DamageSnapshot => {
   const repairCycle = 20;
   const optCycle = 8;
@@ -194,7 +176,7 @@ export const getDemoDamage = (elapsedSec = 0): DamageSnapshot => {
   );
   const optRepairTime = Math.max(0, optCycle - (elapsedSec % (optCycle + 2)));
   return {
-    ...DEMO_DAMAGE_BASE,
+    ...DEMO_DAMAGE,
     repairTime,
     optRepairTime,
     repairNeeded: repairTime > 0,

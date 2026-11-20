@@ -54,6 +54,20 @@ describe('driving metrics logic', () => {
     expect(restarted.startedAt).toBeCloseTo(30 + (20 / 21) * 5);
   });
 
+  it('never times a window whose end is not above its start', () => {
+    const window = { fromKph: 150, toKph: 100 };
+    let state = updateAccelerationTimer(
+      IDLE_ACCELERATION_TIMER,
+      window,
+      0,
+      0,
+      1
+    );
+    state = updateAccelerationTimer(state, window, 160, 1, 3);
+    state = updateAccelerationTimer(state, window, 200, 2, 4);
+    expect(state).toMatchObject({ startedAt: null, elapsed: null });
+  });
+
   it('drops a run in progress when the session clock goes backwards', () => {
     const window = { fromKph: 0, toKph: 100 };
     const running = {

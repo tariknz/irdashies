@@ -7,6 +7,8 @@ import type {
 import type { TelemetryProcessor } from './TelemetryProcessor';
 import {
   assignField,
+  CORNERS_CHANGED,
+  CORNERS_PRESENT,
   cornerKeys,
   emptyCorners,
   numberOf,
@@ -55,8 +57,12 @@ export class CarDynamicsProcessor implements TelemetryProcessor<CarDynamicsSnaps
       const values = this.corners[field];
       const corners = syncCorners(frame, values, keys);
       changed =
-        assignField(this.latest, field, corners.present ? values : undefined) ||
-        corners.changed ||
+        assignField(
+          this.latest,
+          field,
+          corners & CORNERS_PRESENT ? values : undefined
+        ) ||
+        (corners & CORNERS_CHANGED) !== 0 ||
         changed;
     }
     if (changed) this.latest.version += 1;

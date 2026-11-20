@@ -62,6 +62,9 @@ export function updateAccelerationTimer(
   gear: number
 ): AccelerationTimerState {
   const sample = { lastSpeedKph: speedKph, lastTime: sessionTime };
+  if (!(window.toKph > Math.max(MOVING_KPH, window.fromKph))) {
+    return { ...IDLE_ACCELERATION_TIMER, ...sample };
+  }
   if (state.lastTime !== null && sessionTime < state.lastTime) {
     return { startedAt: null, elapsed: state.elapsed, armed: false, ...sample };
   }

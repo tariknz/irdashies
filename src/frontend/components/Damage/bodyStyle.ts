@@ -110,25 +110,5 @@ export function resolveDamageBodyStyle(
   if (/\b(mx.?5|miata|gr86|clio|tcr|tour.?2|m2|caterham|gr.?86)\b/.test(h)) {
     return 'hatch';
   }
-  if (/\b(gt3|gt4|gte|911|296|lambo|mclaren|ferrari|porsche)\b/.test(h)) {
-    return 'gt';
-  }
   return 'gt';
-}
-
-export function damageBodyStyleLabel(style: DamageBodyStyle): string {
-  switch (style) {
-    case 'prototype':
-      return 'Prototype';
-    case 'openwheel':
-      return 'Open wheel';
-    case 'hatch':
-      return 'Street';
-    case 'stock':
-      return 'Stock car';
-    case 'truck':
-      return 'Truck';
-    default:
-      return 'GT';
-  }
 }
