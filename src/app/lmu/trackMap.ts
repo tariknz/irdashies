@@ -9,6 +9,8 @@ const MARGIN = 80;
 const RESAMPLED_POINTS = 512;
 const MIN_RECORDED_POINTS = 20;
 const MAX_COVERAGE_GAP_FRACTION = 0.05;
+const LAP_TIME_TOLERANCE_SECONDS = 0.05;
+const LAP_TIME_WAIT_SECONDS = 5;
 
 interface RecordedPoint {
   x: number;
@@ -21,6 +23,7 @@ export interface LmuMapFrame {
   lapDist: number;
   playerHasVehicle: boolean;
   playerVehicleIdx: number;
+  elapsedTime?: number;
   lapStartET?: number;
   lapInvalidated?: boolean;
   pos?: ArrayLike<number>;
@@ -264,6 +267,9 @@ export class LmuTrackMapRecorder {
   private lapStartET: number | null = null;
   private recording = false;
   private points: RecordedPoint[] = [];
+  private completedPoints: RecordedPoint[] | null = null;
+  private completedLapTime = 0;
+  private completedTrackLength = 0;
 
   /**
    * @param smoothedProgress The player's lap fraction reconstructed at the
@@ -300,20 +306,16 @@ export class LmuTrackMapRecorder {
       this.reset(frame.trackName);
       return null;
     } else if (frame.lapStartET > this.lapStartET) {
-      const completed = this.finishLap(
-        frame.lapDist,
-        frame.vehLastLapTime[frame.playerVehicleIdx]
-      );
+      this.holdCompletedLap(frame.lapDist, frame.lapStartET - this.lapStartET);
       this.lapStartET = frame.lapStartET;
       this.recording = true;
       this.points = [];
       this.sample(frame, progress);
-      return completed;
+      return this.resolveCompletedLap(frame);
     }
 
-    if (!this.recording) return null;
-    this.sample(frame, progress);
-    return null;
+    if (this.recording) this.sample(frame, progress);
+    return this.resolveCompletedLap(frame);
   }
 
   reset(trackName = ''): void {
@@ -321,6 +323,7 @@ export class LmuTrackMapRecorder {
     this.lapStartET = null;
     this.recording = false;
     this.points = [];
+    this.completedPoints = null;
   }
 
   private sample(frame: LmuMapFrame, progress: number): void {
@@ -344,19 +347,35 @@ export class LmuTrackMapRecorder {
     this.points.push({ ...position, distance });
   }
 
-  private finishLap(
-    trackLength: number,
-    lastLapTime: number
-  ): LmuTrackMap | null {
+  private holdCompletedLap(trackLength: number, lapTime: number): void {
+    this.completedPoints =
+      this.points.length >= MIN_RECORDED_POINTS && this.coversLap(trackLength)
+        ? this.points
+        : null;
+    this.completedLapTime = lapTime;
+    this.completedTrackLength = trackLength;
+  }
+
+  private resolveCompletedLap(frame: LmuMapFrame): LmuTrackMap | null {
+    const points = this.completedPoints;
+    if (!points || this.lapStartET === null) return null;
+    const reportedLapTime = frame.vehLastLapTime[frame.playerVehicleIdx];
     if (
-      !finite(lastLapTime) ||
-      lastLapTime <= 0 ||
-      this.points.length < MIN_RECORDED_POINTS ||
-      !this.coversLap(trackLength)
+      finite(reportedLapTime) &&
+      reportedLapTime > 0 &&
+      Math.abs(reportedLapTime - this.completedLapTime) <=
+        LAP_TIME_TOLERANCE_SECONDS
     ) {
-      return null;
+      this.completedPoints = null;
+      return normalizeLmuTrackMap(points, this.completedTrackLength);
     }
-    return normalizeLmuTrackMap(this.points, trackLength);
+    if (
+      finite(frame.elapsedTime) &&
+      frame.elapsedTime - this.lapStartET > LAP_TIME_WAIT_SECONDS
+    ) {
+      this.completedPoints = null;
+    }
+    return null;
   }
 
   private coversLap(trackLength: number): boolean {
