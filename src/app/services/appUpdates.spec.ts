@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import logger from '../logger';
 
 const electron = vi.hoisted(() => ({
   app: {
@@ -136,6 +137,33 @@ describe('app updates', () => {
     expect(updater.checkForUpdates).toHaveBeenCalledTimes(2);
     updater.emit('update-downloaded', {}, '', '3.1.2');
     expect(electron.dialog.showMessageBox).toHaveBeenCalledOnce();
+  });
+
+  it('prompts for an automatic download after a manual check finds no update', async () => {
+    await writeFile(path.join(dir, 'auto-update.json'), 'false');
+    updates = await createAppUpdates(vi.fn());
+
+    updates.install();
+    updater.emit('update-not-available');
+    updates.setAutoUpdate(true);
+    expect(updater.checkForUpdates).toHaveBeenCalledTimes(2);
+    updater.emit('update-available');
+    updater.emit('update-downloaded', {}, '', '3.1.2');
+
+    expect(electron.dialog.showMessageBox).toHaveBeenCalledOnce();
+  });
+
+  it('uses the default and logs safe diagnostics for a corrupt preference', async () => {
+    await writeFile(path.join(dir, 'auto-update.json'), 'unexpected content');
+
+    updates = await createAppUpdates(vi.fn());
+
+    expect(updates.snapshot().autoUpdate).toBe(true);
+    expect(logger.warn).toHaveBeenCalledWith(
+      '[Updates] Could not read the automatic update preference',
+      'auto-update.json',
+      'Invalid JSON'
+    );
   });
 
   it('keeps the last known version visible when the release lookup fails', async () => {

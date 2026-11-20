@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import logger from '../logger';
 import { createDebouncedAtomicWriter } from './debouncedAtomicWriter';
 
@@ -12,7 +13,18 @@ export async function openAppUpdatePreference(
     enabled = stored !== false;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-      logger.warn('[Updates] Could not read the automatic update preference');
+      const fileName = path.basename(filePath);
+      const detail =
+        error instanceof SyntaxError
+          ? 'Invalid JSON'
+          : error instanceof Error
+            ? error.message.replaceAll(filePath, fileName)
+            : 'Unknown read error';
+      logger.warn(
+        '[Updates] Could not read the automatic update preference',
+        fileName,
+        detail
+      );
     }
   }
 

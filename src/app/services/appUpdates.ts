@@ -59,10 +59,17 @@ export async function createAppUpdates(
     if (!stopped) publish(snapshot());
   };
 
-  const reportUpdaterError = (error: Error) => {
+  const finishCheck = () => {
+    const wasManual = manual;
+    manual = false;
+    return wasManual;
+  };
+
+  const reportUpdaterError = (error: unknown) => {
+    const wasManual = finishCheck();
     logger.warn('[Updates] Native updater failed', error);
     if (status.phase === 'restarting') update({ phase: 'restart-error' });
-    else update({ phase: manual || !status.canUpdate ? 'error' : 'idle' });
+    else update({ phase: wasManual || !status.canUpdate ? 'error' : 'idle' });
   };
 
   const restart = () => {
@@ -97,8 +104,7 @@ export async function createAppUpdates(
     try {
       autoUpdater.checkForUpdates();
     } catch (error) {
-      update({ phase: isManual ? 'error' : 'idle' });
-      logger.warn('[Updates] Could not check the update feed', error);
+      reportUpdaterError(error);
     }
   };
 
@@ -118,10 +124,12 @@ export async function createAppUpdates(
     const format = process.windowsStore ? '/msix' : '';
     autoUpdater.on('error', reportUpdaterError);
     autoUpdater.on('update-available', () => update({ phase: 'downloading' }));
-    autoUpdater.on('update-not-available', () =>
-      update({ phase: 'no-update' })
-    );
+    autoUpdater.on('update-not-available', () => {
+      finishCheck();
+      update({ phase: 'no-update' });
+    });
     autoUpdater.on('update-downloaded', (_event, _notes, releaseName) => {
+      const wasManual = finishCheck();
       const downloadedVersion = normalizeVersion(releaseName);
       const latestVersion = status.latestVersion;
       update({
@@ -133,7 +141,7 @@ export async function createAppUpdates(
             ? downloadedVersion
             : latestVersion,
       });
-      if (stopped || manual || !status.autoUpdate) return;
+      if (stopped || wasManual || !status.autoUpdate) return;
       void dialog
         .showMessageBox({
           type: 'info',
