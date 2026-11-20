@@ -489,12 +489,13 @@ describe('SettingsMenu', () => {
       renderMenu();
       const tools = screen.getByRole('link', { name: 'Tools' });
       const appSettings = screen.getByRole('link', { name: 'App settings' });
-      // Just above App settings, at the bottom.
-      expect(tools.compareDocumentPosition(appSettings)).toBe(
+      expect(appSettings.compareDocumentPosition(tools)).toBe(
         Node.DOCUMENT_POSITION_FOLLOWING
       );
-      expect(tools.textContent).toBe('Tools');
-      expect(tools.querySelector('svg')).not.toBeNull();
+      for (const link of [appSettings, tools]) {
+        expect(link.textContent).toBe('');
+        expect(link.querySelector('svg')).not.toBeNull();
+      }
 
       fireEvent.click(tools);
       expect(screen.getByTestId('current-path')).toHaveTextContent(
