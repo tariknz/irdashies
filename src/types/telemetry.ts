@@ -146,6 +146,8 @@ export type Telemetry = {
   LmuVirtualEnergy?: TelemetryVar<number[]>;
   LmuStateOfCharge?: TelemetryVar<number[]>;
   LmuRegen?: TelemetryVar<number[]>;
+  LmuTCSlip?: TelemetryVar<number[]>;
+  LmuTCCut?: TelemetryVar<number[]>;
 };
 /**
  * What SessionLapsRemain and SessionLapsTotal carry when the session has no

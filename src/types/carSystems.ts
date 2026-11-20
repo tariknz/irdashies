@@ -125,6 +125,20 @@ export const CAR_SYSTEM_ADJUSTMENTS: readonly CarSystemDefinition[] = [
     chip: 'bg-sky-600',
   },
   {
+    key: 'LmuTCCut',
+    label: 'TC Cut (LMU only)',
+    short: 'TCC',
+    precision: 0,
+    chip: 'bg-sky-700',
+  },
+  {
+    key: 'LmuTCSlip',
+    label: 'TC Slip (LMU only)',
+    short: 'TCS',
+    precision: 0,
+    chip: 'bg-sky-800',
+  },
+  {
     key: 'dcThrottleShape',
     label: 'Throttle Shape',
     short: 'THR',

@@ -148,18 +148,6 @@ const fillWith = <T>(
 const isOne = (n: number) => n === 1;
 const isNonZero = (n: number) => n !== 0;
 
-const tractionDial = (
-  t: Frame,
-  slot: number,
-  value?: number,
-  max?: number
-): number => {
-  if ((max ?? 0) <= 0 || slot > 1) return slot;
-  if (slot === 0) t.dcTractionControl = num('dcTractionControl', value);
-  else t.dcTractionControl2 = num('dcTractionControl2', value);
-  return slot + 1;
-};
-
 /**
  * Whether a per-car slot holds a real car.
  *
@@ -1143,23 +1131,11 @@ export function mapLmuTelemetry(
   if ((raw.rearAntiSwayMax ?? 0) > 0) {
     t.dcAntiRollRear = num('dcAntiRollRear', raw.rearAntiSway);
   }
-
-  // Three traction dials into the catalogue's two generic traction slots.
-  //
-  // LMU splits traction control into an overall level, a slip target and a
-  // throttle cut, and which of them a car actually offers varies -- a GT3 has
-  // the level alone, a Hypercar the slip and cut pair. iRacing's catalogue has
-  // Traction Control and Traction Control 2, named generically because the
-  // channel means whatever the car wires to it, so the dials the car has are
-  // filled in in order rather than each being pinned to a fixed slot. A car
-  // with only slip and cut would otherwise leave the TC column blank and show
-  // its first dial under TC2.
-  //
-  // The maxes are fixed per car and a car change resets the processor, so a
-  // column cannot change meaning underneath a driver mid-session.
-  let tcSlot = tractionDial(t, 0, raw.tc, raw.tcMax);
-  tcSlot = tractionDial(t, tcSlot, raw.tcSlip, raw.tcSlipMax);
-  tractionDial(t, tcSlot, raw.tcCut, raw.tcCutMax);
+  if ((raw.tcMax ?? 0) > 0) {
+    t.dcTractionControl = num('dcTractionControl', raw.tc);
+  }
+  if ((raw.tcSlipMax ?? 0) > 0) t.LmuTCSlip = num('LmuTCSlip', raw.tcSlip);
+  if ((raw.tcCutMax ?? 0) > 0) t.LmuTCCut = num('LmuTCCut', raw.tcCut);
   t.dcPitSpeedLimiterToggle = bool('dcPitSpeedLimiterToggle', raw.speedLimiter);
   t.PitstopActive = bool('PitstopActive', false);
   t.OnPitRoad = bool(

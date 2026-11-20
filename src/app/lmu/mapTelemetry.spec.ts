@@ -1022,35 +1022,7 @@ describe('mapLmuTelemetry adjustable dials', () => {
     expect(dial(t, 'dcABS')?.value[0]).toBe(0);
   });
 
-  it('fills the traction slots in order', () => {
-    const t = mapLmuTelemetry({
-      ...fixture(),
-      tc: 5,
-      tcMax: 11,
-      tcSlip: 3,
-      tcSlipMax: 6,
-    });
-
-    expect(dial(t, 'dcTractionControl')?.value[0]).toBe(5);
-    expect(dial(t, 'dcTractionControl2')?.value[0]).toBe(3);
-  });
-
-  it('starts at the first traction slot when the car has no overall level', () => {
-    // A car offering only slip and cut would otherwise leave the TC column
-    // blank and show its first dial under TC2.
-    const t = mapLmuTelemetry({
-      ...fixture(),
-      tcSlip: 3,
-      tcSlipMax: 6,
-      tcCut: 2,
-      tcCutMax: 6,
-    });
-
-    expect(dial(t, 'dcTractionControl')?.value[0]).toBe(3);
-    expect(dial(t, 'dcTractionControl2')?.value[0]).toBe(2);
-  });
-
-  it('drops the third traction dial rather than inventing a slot', () => {
+  it('publishes each traction dial on its own channel and leaves TC2 empty', () => {
     const t = mapLmuTelemetry({
       ...fixture(),
       tc: 5,
@@ -1062,7 +1034,23 @@ describe('mapLmuTelemetry adjustable dials', () => {
     });
 
     expect(dial(t, 'dcTractionControl')?.value[0]).toBe(5);
-    expect(dial(t, 'dcTractionControl2')?.value[0]).toBe(3);
+    expect(dial(t, 'LmuTCSlip')?.value[0]).toBe(3);
+    expect(dial(t, 'LmuTCCut')?.value[0]).toBe(2);
+    expect(dial(t, 'dcTractionControl2')).toBeUndefined();
+  });
+
+  it('keeps slip and cut off the TC column when the car has no overall level', () => {
+    const t = mapLmuTelemetry({
+      ...fixture(),
+      tcSlip: 3,
+      tcSlipMax: 6,
+      tcCut: 2,
+      tcCutMax: 6,
+    });
+
+    expect(dial(t, 'dcTractionControl')).toBeUndefined();
+    expect(dial(t, 'LmuTCSlip')?.value[0]).toBe(3);
+    expect(dial(t, 'LmuTCCut')?.value[0]).toBe(2);
   });
 
   it('publishes no traction row for a car with no traction control', () => {
@@ -1070,6 +1058,8 @@ describe('mapLmuTelemetry adjustable dials', () => {
 
     expect(dial(t, 'dcTractionControl')).toBeUndefined();
     expect(dial(t, 'dcTractionControl2')).toBeUndefined();
+    expect(dial(t, 'LmuTCSlip')).toBeUndefined();
+    expect(dial(t, 'LmuTCCut')).toBeUndefined();
   });
 });
 
