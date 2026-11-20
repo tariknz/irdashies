@@ -94,6 +94,7 @@ describe('CarConditionProcessor', () => {
         PitRepairLeft: 12.5,
         PitOptRepairLeft: 30,
         PitRepairNeeded: true,
+        LmuBodyDetached: true,
       })
     );
 
@@ -106,6 +107,7 @@ describe('CarConditionProcessor', () => {
       pitRepairLeft: 12.5,
       pitOptRepairLeft: 30,
       repairNeeded: true,
+      bodyDetached: true,
     });
   });
 

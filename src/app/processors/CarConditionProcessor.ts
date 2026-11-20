@@ -26,7 +26,7 @@ type ScalarField =
   | 'pitRepairLeft'
   | 'pitOptRepairLeft';
 
-type FlagField = 'repairNeeded' | 'optRepairNeeded';
+type FlagField = 'repairNeeded' | 'optRepairNeeded' | 'bodyDetached';
 
 type CornerField = 'tyreTemperature' | 'tyrePressure' | 'tyreWear';
 
@@ -43,6 +43,7 @@ const SCALARS: readonly (readonly [ScalarField, string])[] = [
 const FLAGS: readonly (readonly [FlagField, string])[] = [
   ['repairNeeded', 'PitRepairNeeded'],
   ['optRepairNeeded', 'PitOptRepairNeeded'],
+  ['bodyDetached', 'LmuBodyDetached'],
 ];
 
 const CORNER_FIELDS: readonly (readonly [CornerField, CornerKeys])[] = [

@@ -11,6 +11,7 @@ import {
   iracingBodyTier,
   isPunctured,
   LMU_DENT_PANELS,
+  lmuDents,
   suspTier,
   suspensionIntegrity,
   tyreIntegrity,
@@ -63,19 +64,15 @@ export const DamageDisplay = ({
   bodyStyle = 'gt',
 }: DamageDisplayProps) => {
   const hasDents = data.dentSeverity.length === 8;
-  const dents = hasDents
-    ? data.dentSeverity
-    : Array.from({ length: 8 }, () => 0);
+  const dents = hasDents ? lmuDents(data) : Array.from({ length: 8 }, () => 0);
   const repairNeeded = data.repairNeeded || (data.repairTime ?? 0) > 0;
   const optRepairNeeded = data.optRepairNeeded || (data.optRepairTime ?? 0) > 0;
   const fallbackTier = iracingBodyTier(repairNeeded, optRepairNeeded);
-  const panelFill = Array.from(
-    { length: 8 },
-    (_, index) =>
-      BODY_FILL[
-        hasDents ? bodyTier(dents[LMU_DENT_PANELS[index]]) : fallbackTier
-      ]
+  const panelTiers = Array.from({ length: 8 }, (_, index) =>
+    hasDents ? bodyTier(dents[LMU_DENT_PANELS[index]]) : fallbackTier
   );
+  const panelFill = panelTiers.map((tier) => BODY_FILL[tier]);
+  const panelLost = panelTiers.map((tier) => tier === 'detached');
 
   const centre = integrityFraction(data.aeroDamage, hasDents ? dents : []);
   const aero = aeroIntegrity(data.aeroDamage);
@@ -114,6 +111,7 @@ export const DamageDisplay = ({
           wheelFill={wheelFill}
           punctured={punctured}
           detached={detached}
+          panelLost={panelLost}
           integrityLabel={
             showIntegrity && centre !== null ? formatIntegrityPct(centre) : null
           }

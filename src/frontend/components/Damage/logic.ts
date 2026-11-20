@@ -9,6 +9,9 @@ export const PUNCTURE_WEAR = 0.01;
 export const PUNCTURE_PRESSURE_KPA = 1;
 
 export const LMU_DENT_PANELS = [1, 0, 7, 2, 6, 3, 4, 5] as const;
+export const REAR_PANEL = 6;
+export const LMU_REAR_DENT = 4;
+export const DETACHED_SEVERITY = 3;
 
 export type BodyDamageTier = 'ok' | 'light' | 'heavy' | 'detached';
 export type SuspDamageTier =
@@ -31,7 +34,7 @@ export const SUSP_FILL: Record<SuspDamageTier, string> = {
 };
 
 export const bodyTier = (severity: number): BodyDamageTier => {
-  if (severity >= 3) return 'detached';
+  if (severity >= DETACHED_SEVERITY) return 'detached';
   if (severity === 2) return 'heavy';
   if (severity === 1) return 'light';
   return 'ok';
@@ -144,10 +147,19 @@ export interface DamageSnapshot {
   optRepairTime: number | undefined;
   repairNeeded: boolean;
   optRepairNeeded: boolean;
+  bodyDetached: boolean;
 }
+
+export const lmuDents = (data: DamageSnapshot): readonly number[] =>
+  data.bodyDetached && data.dentSeverity.length === 8
+    ? data.dentSeverity.map((severity, slot) =>
+        slot === LMU_REAR_DENT ? DETACHED_SEVERITY : severity
+      )
+    : data.dentSeverity;
 
 export const hasCarDamage = (data: DamageSnapshot): boolean => {
   if (data.repairNeeded || data.optRepairNeeded) return true;
+  if (data.bodyDetached) return true;
   if ((data.repairTime ?? 0) > 0 || (data.optRepairTime ?? 0) > 0) return true;
   if (data.dentSeverity.some((v) => v > 0)) return true;
   if (data.wheelDetached.some(Boolean)) return true;
@@ -186,6 +198,7 @@ export const DEMO_DAMAGE: DamageSnapshot = {
   optRepairTime: 4.0,
   repairNeeded: true,
   optRepairNeeded: true,
+  bodyDetached: false,
 };
 
 export const getDemoDamage = (elapsedSec = 0): DamageSnapshot => {
@@ -216,4 +229,5 @@ export const UNDAMAGED: DamageSnapshot = {
   optRepairTime: undefined,
   repairNeeded: false,
   optRepairNeeded: false,
+  bodyDetached: false,
 };

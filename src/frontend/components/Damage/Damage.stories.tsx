@@ -81,6 +81,23 @@ export const WheelLost: Story = {
   decorators: box(),
 };
 
+export const RearWingLost: Story = {
+  args: {
+    data: {
+      ...DEMO_DAMAGE,
+      dentSeverity: [0, 0, 0, 0, 0, 0, 0, 0],
+      suspensionDamage: [0, 0, 0, 0],
+      tyreWear: [0.92, 0.88, 0.9, 0.75],
+      bodyDetached: true,
+    },
+    opacity: 80,
+    showIntegrity: true,
+    showStats: true,
+    bodyStyle: 'prototype',
+  },
+  decorators: box(),
+};
+
 export const Puncture: Story = {
   args: {
     data: {
@@ -111,6 +128,7 @@ export const IracingRepairNeeded: Story = {
       optRepairTime: 6.5,
       repairNeeded: true,
       optRepairNeeded: true,
+      bodyDetached: false,
     },
     opacity: 80,
     showIntegrity: true,

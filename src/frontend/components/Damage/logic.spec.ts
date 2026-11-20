@@ -10,6 +10,7 @@ import {
   iracingBodyTier,
   isPunctured,
   LMU_DENT_PANELS,
+  lmuDents,
   suspTier,
   suspensionIntegrity,
   tyreIntegrity,
@@ -87,6 +88,16 @@ describe('damage logic', () => {
     expect(
       hasCarDamage({ ...UNDAMAGED, tyrePressure: [170, 0, 170, 170] })
     ).toBe(true);
+  });
+
+  it('marks the rear zone detached when LMU reports a body part off', () => {
+    const lost = { ...UNDAMAGED, bodyDetached: true };
+    expect(lmuDents(lost)).toEqual([0, 0, 0, 0, 3, 0, 0, 0]);
+    expect(bodyTier(lmuDents(lost)[LMU_DENT_PANELS[6]])).toBe('detached');
+    expect(bodyIntegrity(lmuDents(lost))).toBeCloseTo(13 / 16);
+    expect(hasCarDamage(lost)).toBe(true);
+    expect(lmuDents(UNDAMAGED)).toBe(UNDAMAGED.dentSeverity);
+    expect(lmuDents({ ...lost, dentSeverity: [] })).toEqual([]);
   });
 
   it('places each LMU dent slot on its own panel', () => {

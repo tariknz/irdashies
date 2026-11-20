@@ -324,6 +324,7 @@ export interface CarConditionSnapshot {
   pitOptRepairLeft?: number;
   repairNeeded?: boolean;
   optRepairNeeded?: boolean;
+  bodyDetached?: boolean;
   version: number;
 }
 

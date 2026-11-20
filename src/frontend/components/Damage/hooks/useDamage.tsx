@@ -25,6 +25,7 @@ export const useDamage = (): DamageSnapshot => {
       optRepairTime: positive(car?.pitOptRepairLeft),
       repairNeeded: car?.repairNeeded === true,
       optRepairNeeded: car?.optRepairNeeded === true,
+      bodyDetached: car?.bodyDetached === true,
     }),
     [car]
   );
