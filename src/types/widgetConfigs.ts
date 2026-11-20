@@ -948,11 +948,6 @@ export interface LapTimeLogConfig {
   delta: {
     enabled: boolean;
     method: 'lastlap' | 'bestlap';
-    /**
-     * LMU-style live delta bar under the current lap: green hatch from the
-     * left when faster, red from the right when slower, on a 1s full scale.
-     * Independent of the predicted-lap delta.
-     */
     showOnCurrentLap?: boolean;
   };
   history: {
@@ -1513,19 +1508,6 @@ export interface CompactTelemetryWidgetConfig {
   sessionVisibility: SessionVisibilitySettings;
 }
 
-export interface TrackNote {
-  id: string;
-  trackId: string;
-  lapDistPct: number;
-  text: string;
-  scope: 'always' | 'pit' | 'session';
-}
-
-export interface TrackNotesConfig extends CompactTelemetryWidgetConfig {
-  triggerDistancePct: number;
-  notes: TrackNote[];
-}
-
 export interface AccelerationTimerConfig extends CompactTelemetryWidgetConfig {
   ranges: { fromKph: number; toKph: number }[];
 }
@@ -1551,7 +1533,6 @@ export interface CruiseOdometerConfig extends CompactTelemetryWidgetConfig {
   distanceUnit: 'km' | 'mi';
 }
 
-/** Top-down LMU body/suspension damage overlay (TinyPedal-style). */
 export interface DamageConfig {
   background: { opacity: number };
   showOnlyWhenOnTrack: boolean;
@@ -1618,7 +1599,6 @@ export interface WidgetConfigMap {
   broadcastevents: BroadcastEventsConfig;
   broadcastweather: BroadcastWeatherConfig;
   broadcastpodium: BroadcastPodiumConfig;
-  tracknotes: TrackNotesConfig;
   accelerationtimer: AccelerationTimerConfig;
   stinthistory: StintHistoryConfig;
   frictioncircle: CompactTelemetryWidgetConfig;

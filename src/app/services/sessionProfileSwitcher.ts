@@ -19,11 +19,6 @@ export interface SessionProfileSwitcherDeps {
   getCurrentProfileId: () => string;
   profileExists: (profileId: string) => boolean;
   switchProfile: (profileId: string) => void;
-  /**
-   * When true, a running game's widget profile owns the layout and this
-   * switcher leaves it alone until that game closes.
-   */
-  shouldYield?: () => boolean;
   dwellMs?: number;
 }
 
@@ -67,8 +62,6 @@ export const createSessionProfileSwitcher = (
   };
 
   const apply = (reason: string) => {
-    if (deps.shouldYield?.()) return;
-
     const map = deps.getMap();
     const trigger =
       spotting && map[SPOTTING_TRIGGER_KEY] ? SPOTTING_TRIGGER_KEY : sessionKey;

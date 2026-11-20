@@ -21,6 +21,8 @@ export interface ChannelPayloads {
   'blind-spot.snapshot': BlindSpotSnapshot;
   'car-speeds.snapshot': CarSpeedsSnapshot;
   'car-systems.snapshot': CarSystemsSnapshot;
+  'car-condition.snapshot': CarConditionSnapshot;
+  'car-dynamics.snapshot': CarDynamicsSnapshot;
   'driver-controls.snapshot': DriverControlsSnapshot;
   'fuel.projection': FuelProjectionSnapshot;
   'lap-times.snapshot': LapTimesSnapshot;
@@ -298,6 +300,33 @@ export interface CarSystemAdjustment {
   unit?: string;
 }
 
+export interface CarDynamicsSnapshot {
+  sessionTime?: number;
+  speed?: number;
+  lateralAccel?: number;
+  longitudinalAccel?: number;
+  brakeLinePressure?: readonly (number | null)[];
+  suspensionDeflection?: readonly (number | null)[];
+  version: number;
+}
+
+export interface CarConditionSnapshot {
+  steeringWheelAngleMax?: number;
+  tyreTemperature?: readonly (number | null)[];
+  tyrePressure?: readonly (number | null)[];
+  tyreWear?: readonly (number | null)[];
+  dentSeverity?: readonly number[];
+  wheelDetached?: readonly boolean[];
+  suspensionDamage?: readonly number[];
+  aeroDamage?: number;
+  lmuRepairTime?: number;
+  pitRepairLeft?: number;
+  pitOptRepairLeft?: number;
+  repairNeeded?: boolean;
+  optRepairNeeded?: boolean;
+  version: number;
+}
+
 /**
  * Driver-adjustable systems for the player's car: brake bias, ABS, traction
  * control and similar.
@@ -334,14 +363,6 @@ export interface DriverControlsSnapshot {
   engineWarnings?: number;
   shiftRpm?: number;
   blinkRpm?: number;
-  steeringWheelAngleMax?: number;
-  lateralAccel?: number;
-  longitudinalAccel?: number;
-  tyreTemperature?: readonly (number | null)[];
-  tyrePressure?: readonly (number | null)[];
-  tyreWear?: readonly (number | null)[];
-  brakeLinePressure?: readonly (number | null)[];
-  suspensionDeflection?: readonly (number | null)[];
   version: number;
 }
 
@@ -713,6 +734,16 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 25,
     maxRateHz: 25,
+  },
+  'car-dynamics.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 25,
+    maxRateHz: 60,
+  },
+  'car-condition.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 5,
+    maxRateHz: 5,
   },
   // Adjustments change when the driver turns a dial, not per frame, so this
   // publishes on change and is capped low deliberately.

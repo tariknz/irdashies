@@ -67,7 +67,9 @@ export const DamageDisplay = ({
   const dents = hasDents
     ? data.dentSeverity
     : Array.from({ length: 8 }, () => 0);
-  const fallbackTier = iracingBodyTier(data.repairNeeded, data.optRepairNeeded);
+  const repairNeeded = data.repairNeeded || (data.repairTime ?? 0) > 0;
+  const optRepairNeeded = data.optRepairNeeded || (data.optRepairTime ?? 0) > 0;
+  const fallbackTier = iracingBodyTier(repairNeeded, optRepairNeeded);
   const panelFill = Array.from(
     { length: 8 },
     (_, index) => BODY_FILL[hasDents ? bodyTier(dents[index]) : fallbackTier]
@@ -129,9 +131,9 @@ export const DamageDisplay = ({
               Opt {data.optRepairTime.toFixed(1)}s
             </div>
           )}
-          {!hasDents && (data.repairNeeded || data.optRepairNeeded) && (
+          {!hasDents && (repairNeeded || optRepairNeeded) && (
             <div className="text-center text-[10px] text-amber-400">
-              {data.repairNeeded ? 'Repair needed' : 'Optional repair'}
+              {repairNeeded ? 'Repair needed' : 'Optional repair'}
             </div>
           )}
         </div>

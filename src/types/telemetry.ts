@@ -122,10 +122,6 @@ export type Telemetry = {
    */
   LmuPitStopTime?: TelemetryVar<number[]>;
   LmuRepairTime?: TelemetryVar<number[]>;
-  /**
-   * iRacing Season 3+ — true when the car needs mandatory / optional repairs.
-   * Not in every generated snapshot yet; optional so older builds still typecheck.
-   */
   PitRepairNeeded?: TelemetryVar<boolean[]>;
   PitOptRepairNeeded?: TelemetryVar<boolean[]>;
   /**

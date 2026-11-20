@@ -26,10 +26,6 @@ import logger from '@irdashies/utils/logger';
 import { WidgetRuntimeProvider } from '../../widgetRuntime';
 import { WidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 
-const singleWidgetId = new URLSearchParams(window.location.search).get(
-  'widget'
-);
-
 interface WidgetPosition {
   x: number;
   y: number;
@@ -323,14 +319,7 @@ export const DashboardView = ({ soloWidgetId }: DashboardViewProps = {}) => {
         WidgetPosition | undefined;
 
       // Use saved browserPosition if available, otherwise use layout dimensions from Electron config
-      if (singleWidgetId) {
-        positions[widget.id] = {
-          x: 0,
-          y: 0,
-          width: widget.layout?.width ?? window.innerWidth,
-          height: widget.layout?.height ?? window.innerHeight,
-        };
-      } else if (browserPos && typeof browserPos.x === 'number') {
+      if (browserPos && typeof browserPos.x === 'number') {
         positions[widget.id] = browserPos;
       } else {
         positions[widget.id] = {

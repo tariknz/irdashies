@@ -73,10 +73,6 @@ function haystack(
     .replace(/[^a-z0-9]+/g, ' ');
 }
 
-/**
- * Pick a top-down silhouette family from session / lovely-car-data class.
- * Exact per-car meshes are not in the SDK; class shape is the honest match.
- */
 export function resolveDamageBodyStyle(
   carPath?: string,
   carClass?: string,

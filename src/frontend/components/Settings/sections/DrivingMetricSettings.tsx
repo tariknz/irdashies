@@ -13,7 +13,6 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingsSection } from '../components/SettingSection';
 
 const titles: Record<string, string> = {
-  tracknotes: 'Track Notes',
   accelerationtimer: 'Acceleration Timer',
   stinthistory: 'Stint History',
   frictioncircle: 'Friction Circle',
@@ -26,7 +25,6 @@ const titles: Record<string, string> = {
 };
 
 type DrivingMetricId =
-  | 'tracknotes'
   | 'accelerationtimer'
   | 'stinthistory'
   | 'frictioncircle'
@@ -107,75 +105,6 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
                   />
                 </div>
               ))}
-            </SettingsSection>
-          )}
-          {id === 'tracknotes' && (
-            <SettingsSection title="Notes">
-              <SettingNumberRow
-                title="Trigger tolerance"
-                description="Distance around each note as a percentage of the lap."
-                value={
-                  (settings.config as WidgetConfigMap['tracknotes'])
-                    .triggerDistancePct * 100
-                }
-                min={0.05}
-                max={5}
-                step={0.05}
-                onChange={(value) =>
-                  handleConfigChange({
-                    triggerDistancePct: value / 100,
-                  } as unknown as Partial<WidgetConfigMap[K]>)
-                }
-              />
-              <textarea
-                className="min-h-36 w-full rounded bg-slate-800 p-2 font-mono text-sm"
-                aria-label="Track notes"
-                value={(settings.config as WidgetConfigMap['tracknotes']).notes
-                  .map(
-                    (note) =>
-                      `${note.trackId}|${(note.lapDistPct * 100).toFixed(2)}|${note.scope}|${note.text}`
-                  )
-                  .join('\n')}
-                onChange={(event) => {
-                  const notes: WidgetConfigMap['tracknotes']['notes'] =
-                    event.target.value
-                      .split('\n')
-                      .map<WidgetConfigMap['tracknotes']['notes'][number]>(
-                        (line, index) => {
-                          const [
-                            trackId = '',
-                            pct = '',
-                            scope = 'always',
-                            ...text
-                          ] = line.split('|');
-                          return {
-                            id: `${trackId}-${index}`,
-                            trackId,
-                            lapDistPct: Number(pct) / 100,
-                            scope:
-                              scope === 'pit' || scope === 'session'
-                                ? (scope as 'pit' | 'session')
-                                : 'always',
-                            text: text.join('|'),
-                          };
-                        }
-                      )
-                      .filter(
-                        (note) =>
-                          Number.isFinite(note.lapDistPct) &&
-                          note.lapDistPct >= 0 &&
-                          note.lapDistPct <= 1 &&
-                          note.text.length > 0
-                      );
-                  handleConfigChange({ notes } as unknown as Partial<
-                    WidgetConfigMap[K]
-                  >);
-                  void window.trackNotesBridge?.saveNotes(notes);
-                }}
-              />
-              <div className="text-xs text-slate-400">
-                One per line: TrackID|lap %|always/pit/session|note
-              </div>
             </SettingsSection>
           )}
           {id === 'stinthistory' && (
@@ -388,7 +317,6 @@ const drivingMetricPage = (
   };
 
 export const drivingMetricSettingsPages = {
-  tracknotes: drivingMetricPage('tracknotes'),
   accelerationtimer: drivingMetricPage('accelerationtimer'),
   stinthistory: drivingMetricPage('stinthistory'),
   frictioncircle: drivingMetricPage('frictioncircle'),

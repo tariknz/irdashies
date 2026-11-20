@@ -1,9 +1,10 @@
 import {
+  useCarConditionSnapshot,
   useDashboard,
-  useDriverControlsSnapshot,
   useSessionStore,
   useSessionVisibility,
-  useTrackStateSnapshot,
+  useTrackStateSelector,
+  trackStateSelectors,
 } from '@irdashies/context';
 import type { TyrePanelConfig } from '@irdashies/types';
 import {
@@ -101,7 +102,13 @@ export function TyrePanelView({
                 <span className={temperatureStyles[temperatureCondition]}>
                   {displayValue(displayedTemperature, 0)}
                 </span>
-                <span className={temperatureStyles[temperatureCondition]}>
+                <span
+                  className={
+                    isAvailable(pressureKpa)
+                      ? 'text-slate-200'
+                      : 'text-slate-500'
+                  }
+                >
                   {displayValue(displayedPressure, 1)}
                 </span>
                 <span className={wearStyles[wearCondition]}>
@@ -123,9 +130,11 @@ export function TyrePanel() {
   const config = currentDashboard?.widgets.find(
     (widget) => (widget.type || widget.id) === 'tyrepanel'
   )?.config as TyrePanelConfig | undefined;
-  const controls = useDriverControlsSnapshot();
-  const track = useTrackStateSnapshot();
-  const session = useSessionStore((state) => state.session);
+  const car = useCarConditionSnapshot();
+  const isOnTrack = useTrackStateSelector(trackStateSelectors.isOnTrack);
+  const simMode = useSessionStore(
+    (state) => state.session?.WeekendInfo?.SimMode
+  );
   const visible = useSessionVisibility(
     config?.sessionVisibility ?? {
       race: true,
@@ -136,21 +145,17 @@ export function TyrePanel() {
     }
   );
 
-  if (
-    !config ||
-    !visible ||
-    (config.showOnlyWhenOnTrack && !track?.isOnTrack)
-  ) {
+  if (!config || !visible || (config.showOnlyWhenOnTrack && !isOnTrack)) {
     return null;
   }
 
   return (
     <TyrePanelView
       config={config}
-      temperature={controls?.tyreTemperature}
-      pressure={controls?.tyrePressure}
-      wear={controls?.tyreWear}
-      isLive={session?.WeekendInfo?.SimMode === 'Le Mans Ultimate'}
+      temperature={car?.tyreTemperature}
+      pressure={car?.tyrePressure}
+      wear={car?.tyreWear}
+      isLive={simMode === 'Le Mans Ultimate'}
     />
   );
 }

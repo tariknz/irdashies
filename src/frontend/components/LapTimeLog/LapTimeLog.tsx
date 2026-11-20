@@ -11,8 +11,8 @@ import {
   useGeneralSettings,
 } from '@irdashies/context';
 import { useLapTimeLog } from './hooks/useLapTimeLog';
-import { useDemoLapTimeLog } from './hooks/useDemoLapTimeLog';
-import { LapEntry } from './demoData';
+import { getDemoLapTimeLogData, LapEntry } from './demoData';
+import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 import { TimerIcon, TargetIcon, XIcon } from '@phosphor-icons/react';
 import { LapTimeRow } from './components/LapTimeRow';
 import { LapHistoryChart } from './components/LapHistoryChart';
@@ -28,7 +28,7 @@ export const LapTimeLog = () => {
   const { isDriving } = useDrivingState();
   const playerIndex = useFocusCarIdx();
   const data = useLapTimeLog();
-  const demoData = useDemoLapTimeLog(isDemoMode);
+  const demoData = useDemoFrame(isDemoMode, getDemoLapTimeLogData);
   const isSessionVisible = useSessionVisibility(
     data.settings?.sessionVisibility
   );
@@ -37,7 +37,7 @@ export const LapTimeLog = () => {
     return null;
   }
 
-  if (!isDemoMode && data.settings.showOnlyWhenOnTrack && !isDriving) {
+  if (data.settings.showOnlyWhenOnTrack && !isDriving) {
     return null;
   }
 

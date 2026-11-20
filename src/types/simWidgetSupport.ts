@@ -28,14 +28,15 @@ export interface SimWidgetSupportConfig {
 }
 
 /**
- * The widgets that work under Le Mans Ultimate.
+ * The widgets verified to work under Le Mans Ultimate.
  *
- * LMU's shared memory and REST API are mapped onto the same channels iRacing
- * publishes, with the gaps TinyPedal fills the same way: relative positions
- * from world coordinates, grip from mTrackGripLevel.
- * A spec asserts this list and the one below are exact complements over
- * WIDGET_MAP, so a widget added to the app cannot quietly appear under LMU
- * without someone deciding which list it belongs in.
+ * LMU's data comes from a shared-memory block and a local REST API that carry
+ * a fraction of what iRacing publishes, so support is per widget and has to be
+ * established one at a time. This is the list that has been, and it is the
+ * reason for the one below rather than a second opinion about it: a spec
+ * asserts the two are exact complements over WIDGET_MAP, so a widget added to
+ * the app cannot quietly appear under LMU without someone deciding which list
+ * it belongs in.
  */
 export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'accelerationtimer',
@@ -69,7 +70,11 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'radar',
   'rejoin',
   'relative',
+  // Timed over LMU's real sector lines once the player has crossed both, as
+  // learned in sectorBoundaries.ts; nominal thirds of the lap until then.
   'sectordelta',
+  // Shift point from shiftPoints.ts for GT3 and LMP2, else 95% of the rev
+  // limit. LMU publishes no shift point of its own.
   'shiftlight',
   'slowcarahead',
   'standings',
@@ -84,15 +89,12 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   // grey out if it were listed as unsupported.
   'telemetryinspector',
   'trackclock',
-  'tracknotes',
   'tyrepanel',
+  // Without its wind cell, which the widget drops under LMU.
   'weather',
 ];
 
-/**
- * Hidden while LMU is the running sim. A widget that cannot be fed from LMU
- * goes here, not into the supported list.
- */
+/** Everything else, hidden while LMU is the running sim. */
 export const LMU_DISABLED_WIDGETS: readonly string[] = [
   // Race plans name drivers by iRacing customer id.
   'stintplan',
@@ -100,6 +102,7 @@ export const LMU_DISABLED_WIDGETS: readonly string[] = [
   // LMU simulates no wind: its wind vector is always zero.
   'wind',
 ];
+
 /**
  * Seeds the JSON on first run, and the fallback if it cannot be read.
  *
@@ -153,15 +156,6 @@ export const widgetDisabledMessage = (
   simulator: ActiveSimulator | null | undefined
 ): string | null =>
   isWidgetDisabledForSim(config, widgetId, simulator) ? config.message : null;
-
-export type WidgetGameFilter = 'all' | ActiveSimulator;
-
-export const isWidgetVisibleInGameFilter = (
-  config: SimWidgetSupportConfig,
-  widgetId: string | undefined,
-  filter: WidgetGameFilter
-): boolean =>
-  filter === 'all' || !isWidgetDisabledForSim(config, widgetId, filter);
 
 /** The label under a greyed-out toggle, e.g. "Not iRacing compatible". */
 export const widgetIncompatibleLabel = (

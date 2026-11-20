@@ -4,7 +4,6 @@ import type {
   LogLevel,
   PitLaneBridge,
   PitLaneTrackData,
-  TrackNotesBridge,
 } from '@irdashies/types';
 import { defineBridge } from './bridge/defineBridge';
 
@@ -92,10 +91,4 @@ export function exposeInMainWorld() {
   };
 
   defineBridge<PitLaneBridge>('pitLaneBridge', pitLaneBridge);
-
-  const trackNotesBridge: TrackNotesBridge = {
-    getNotes: () => ipcRenderer.invoke('trackNotes:get'),
-    saveNotes: (notes) => ipcRenderer.invoke('trackNotes:save', notes),
-  };
-  defineBridge<TrackNotesBridge>('trackNotesBridge', trackNotesBridge);
 }

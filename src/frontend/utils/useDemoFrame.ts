@@ -1,9 +1,5 @@
 import { useEffect, useState } from 'react';
 
-/**
- * Ticks `at(elapsedSec)` while `enabled`, matching Radar / Lap Timer demo
- * packs. `at` must be a stable module-level function (or a memoised callback).
- */
 export const useDemoFrame = <T>(
   enabled: boolean,
   at: (elapsedSec: number) => T,

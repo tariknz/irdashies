@@ -1,4 +1,4 @@
-import type { FuelLapData, TrackNote } from '@irdashies/types';
+import type { FuelLapData } from '@irdashies/types';
 
 export const STANDARD_GRAVITY = 9.80665;
 
@@ -16,27 +16,6 @@ export function mapGForce(
   };
 }
 
-export function noteIsTriggered(
-  note: TrackNote,
-  lapDistPct: number,
-  previousLapDistPct: number,
-  tolerancePct: number,
-  onPitRoad: boolean
-) {
-  if (note.scope === 'pit' && !onPitRoad) return false;
-  if (note.scope === 'session' && onPitRoad) return false;
-  const target = note.lapDistPct;
-  const crossed =
-    previousLapDistPct <= lapDistPct
-      ? target > previousLapDistPct && target <= lapDistPct
-      : target > previousLapDistPct || target <= lapDistPct;
-  const distance = Math.min(
-    Math.abs(lapDistPct - target),
-    1 - Math.abs(lapDistPct - target)
-  );
-  return crossed || distance <= tolerancePct;
-}
-
 export interface AccelerationWindow {
   fromKph: number;
   toKph: number;
@@ -46,7 +25,34 @@ export interface AccelerationTimerState {
   startedAt: number | null;
   elapsed: number | null;
   armed: boolean;
+  lastSpeedKph: number | null;
+  lastTime: number | null;
 }
+
+const MOVING_KPH = 0.5;
+
+export const IDLE_ACCELERATION_TIMER: AccelerationTimerState = {
+  startedAt: null,
+  elapsed: null,
+  armed: false,
+  lastSpeedKph: null,
+  lastTime: null,
+};
+
+const crossingTime = (
+  state: AccelerationTimerState,
+  thresholdKph: number,
+  speedKph: number,
+  sessionTime: number
+) =>
+  state.lastSpeedKph !== null &&
+  state.lastTime !== null &&
+  state.lastSpeedKph < thresholdKph &&
+  speedKph > state.lastSpeedKph
+    ? state.lastTime +
+      ((thresholdKph - state.lastSpeedKph) / (speedKph - state.lastSpeedKph)) *
+        (sessionTime - state.lastTime)
+    : sessionTime;
 
 export function updateAccelerationTimer(
   state: AccelerationTimerState,
@@ -55,25 +61,40 @@ export function updateAccelerationTimer(
   sessionTime: number,
   gear: number
 ): AccelerationTimerState {
-  if (gear < 0 || speedKph <= Math.max(0.5, window.fromKph - 2)) {
-    return { startedAt: null, elapsed: null, armed: true };
+  const sample = { lastSpeedKph: speedKph, lastTime: sessionTime };
+  if (state.lastTime !== null && sessionTime < state.lastTime) {
+    return { startedAt: null, elapsed: state.elapsed, armed: false, ...sample };
   }
-  if (state.armed && state.startedAt === null && speedKph >= window.fromKph) {
-    return {
-      startedAt: sessionTime,
-      elapsed: null,
-      armed: false,
-    };
+  if (gear < 0 || speedKph <= Math.max(MOVING_KPH, window.fromKph - 2)) {
+    return { startedAt: null, elapsed: state.elapsed, armed: true, ...sample };
   }
-  if (state.startedAt !== null && speedKph >= window.toKph) {
-    return {
-      startedAt: null,
-      elapsed: Math.max(0, sessionTime - state.startedAt),
-      armed: false,
-    };
+  let { startedAt, elapsed, armed } = state;
+  const startKph = Math.max(MOVING_KPH, window.fromKph);
+  if (armed && startedAt === null && speedKph >= startKph) {
+    startedAt = crossingTime(state, startKph, speedKph, sessionTime);
+    elapsed = null;
+    armed = false;
   }
-  return state;
+  if (startedAt !== null && speedKph >= window.toKph) {
+    elapsed = Math.max(
+      0,
+      crossingTime(state, window.toKph, speedKph, sessionTime) - startedAt
+    );
+    startedAt = null;
+  }
+  return { startedAt, elapsed, armed, ...sample };
 }
+
+export const runningTime = (
+  state: AccelerationTimerState,
+  now: number | undefined
+): number | null =>
+  state.startedAt === null ||
+  now === undefined ||
+  now < state.startedAt ||
+  now - state.startedAt >= 100
+    ? null
+    : now - state.startedAt;
 
 export interface StintSummary {
   firstLap: number;
@@ -87,7 +108,10 @@ export interface StintSummary {
 
 export function groupStints(laps: readonly FuelLapData[]): StintSummary[] {
   const groups: FuelLapData[][] = [];
-  for (const lap of laps.filter((item) => !item.isHistorical)) {
+  const chronological = laps
+    .filter((item) => !item.isHistorical)
+    .sort((a, b) => a.timestamp - b.timestamp || a.lapNumber - b.lapNumber);
+  for (const lap of chronological) {
     if (
       groups.length === 0 ||
       lap.isOutLap ||

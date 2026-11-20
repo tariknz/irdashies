@@ -20,30 +20,6 @@ const booleanValue = (frame: Telemetry, key: string): boolean | undefined => {
   return typeof current === 'boolean' ? current : undefined;
 };
 
-const meanValues = (
-  frame: Telemetry,
-  keys: readonly string[]
-): number | undefined => {
-  const values = keys
-    .map((key) => numberValue(frame, key))
-    .filter((value): value is number => value !== undefined);
-  return values.length
-    ? values.reduce((sum, value) => sum + value, 0) / values.length
-    : undefined;
-};
-
-const cornerValues = (
-  frame: Telemetry,
-  keys: readonly (string | readonly string[])[]
-): (number | null)[] | undefined => {
-  const values = keys.map((key) =>
-    typeof key === 'string' ? numberValue(frame, key) : meanValues(frame, key)
-  );
-  return values.some((value) => value !== undefined)
-    ? values.map((value) => value ?? null)
-    : undefined;
-};
-
 export class DriverControlsProcessor implements TelemetryProcessor<DriverControlsSnapshot> {
   readonly channel = 'driver-controls.snapshot';
   readonly tickRateHz = 60;
@@ -87,65 +63,6 @@ export class DriverControlsProcessor implements TelemetryProcessor<DriverControl
     changed =
       this.set('engineWarnings', numberValue(frame, 'EngineWarnings')) ||
       changed;
-    changed =
-      this.set(
-        'steeringWheelAngleMax',
-        numberValue(frame, 'SteeringWheelAngleMax')
-      ) || changed;
-    changed =
-      this.set('lateralAccel', numberValue(frame, 'LatAccel')) || changed;
-    changed =
-      this.set('longitudinalAccel', numberValue(frame, 'LongAccel')) || changed;
-    changed =
-      this.set(
-        'tyreTemperature',
-        cornerValues(frame, [
-          ['LFtempCL', 'LFtempCM', 'LFtempCR'],
-          ['RFtempCL', 'RFtempCM', 'RFtempCR'],
-          ['LRtempCL', 'LRtempCM', 'LRtempCR'],
-          ['RRtempCL', 'RRtempCM', 'RRtempCR'],
-        ])
-      ) || changed;
-    changed =
-      this.set(
-        'tyrePressure',
-        cornerValues(frame, [
-          'LFcoldPressure',
-          'RFcoldPressure',
-          'LRcoldPressure',
-          'RRcoldPressure',
-        ])
-      ) || changed;
-    changed =
-      this.set(
-        'tyreWear',
-        cornerValues(frame, [
-          ['LFwearL', 'LFwearM', 'LFwearR'],
-          ['RFwearL', 'RFwearM', 'RFwearR'],
-          ['LRwearL', 'LRwearM', 'LRwearR'],
-          ['RRwearL', 'RRwearM', 'RRwearR'],
-        ])
-      ) || changed;
-    changed =
-      this.set(
-        'brakeLinePressure',
-        cornerValues(frame, [
-          'LFbrakeLinePress',
-          'RFbrakeLinePress',
-          'LRbrakeLinePress',
-          'RRbrakeLinePress',
-        ])
-      ) || changed;
-    changed =
-      this.set(
-        'suspensionDeflection',
-        cornerValues(frame, [
-          'LFshockDefl',
-          'RFshockDefl',
-          'LRshockDefl',
-          'RRshockDefl',
-        ])
-      ) || changed;
     if (changed) this.latest.version += 1;
   }
 
@@ -169,14 +86,6 @@ export class DriverControlsProcessor implements TelemetryProcessor<DriverControl
     this.latest.engineWarnings = undefined;
     this.latest.shiftRpm = undefined;
     this.latest.blinkRpm = undefined;
-    this.latest.steeringWheelAngleMax = undefined;
-    this.latest.lateralAccel = undefined;
-    this.latest.longitudinalAccel = undefined;
-    this.latest.tyreTemperature = undefined;
-    this.latest.tyrePressure = undefined;
-    this.latest.tyreWear = undefined;
-    this.latest.brakeLinePressure = undefined;
-    this.latest.suspensionDeflection = undefined;
     this.latest.version += 1;
   }
 
@@ -188,15 +97,7 @@ export class DriverControlsProcessor implements TelemetryProcessor<DriverControl
     key: K,
     value: DriverControlsSnapshot[K]
   ): boolean {
-    const current = this.latest[key];
-    if (
-      current === value ||
-      (Array.isArray(current) &&
-        Array.isArray(value) &&
-        current.length === value.length &&
-        current.every((item, index) => Object.is(item, value[index])))
-    )
-      return false;
+    if (this.latest[key] === value) return false;
     this.latest[key] = value;
     return true;
   }

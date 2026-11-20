@@ -24,12 +24,7 @@ export interface LapTimeLogDemoData {
 
 const LAST_LAP = 83.457;
 const BEST_LAP = 82.301;
-/** Demo lap length before it wraps. */
 const DEMO_LAP_S = 90;
-/**
- * Peak |delta| the live bar swings through. Kept under the bar's 1s full
- * scale so the hatch visibly grows and shrinks rather than sitting pinned.
- */
 const DEMO_DELTA_PEAK_S = 0.85;
 
 const HISTORY: LapEntry[] = [
@@ -55,15 +50,8 @@ const HISTORY: LapEntry[] = [
   { lap: 20, time: 83.457, delta: 1.056 },
 ];
 
-/**
- * Demo snapshot at `elapsedSec` seconds into the loop.
- *
- * The current lap ticks in real time and the delta swings green↔red so the
- * live bar and predicted row both move in the editor preview.
- */
 export const getDemoLapTimeLogData = (elapsedSec = 0): LapTimeLogDemoData => {
   const current = elapsedSec % DEMO_LAP_S;
-  // Slow sine so the bar spends time on both sides rather than flickering.
   const delta = Math.sin(elapsedSec * 0.55) * DEMO_DELTA_PEAK_S;
 
   return {

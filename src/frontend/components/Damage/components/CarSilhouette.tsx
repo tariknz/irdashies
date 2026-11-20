@@ -2,7 +2,6 @@ import type { DamageBodyStyle } from '../bodyStyle';
 
 export interface CarSilhouetteProps {
   style: DamageBodyStyle;
-  /** FL FC FR CL CR RL RC RR */
   panelFill: string[];
   wheelFill: string[];
   punctured: boolean[];

@@ -1,4 +1,3 @@
-/** TinyPedal default suspension damage thresholds (fraction damaged). */
 export const SUSP_THRESHOLDS = {
   light: 0.02,
   medium: 0.15,
@@ -6,14 +5,12 @@ export const SUSP_THRESHOLDS = {
   totaled: 0.8,
 } as const;
 
-/** Remaining tread at or below this is treated as a puncture. */
 export const PUNCTURE_WEAR = 0.01;
 
 export type BodyDamageTier = 'ok' | 'light' | 'heavy' | 'detached';
 export type SuspDamageTier =
   'ok' | 'light' | 'medium' | 'heavy' | 'totaled' | 'detached';
 
-/** Fill colours for SVG body panels (native iRacing-style wireframe). */
 export const BODY_FILL: Record<BodyDamageTier, string> = {
   ok: '#64748b',
   light: '#facc15',
@@ -52,7 +49,6 @@ export const suspTier = (
   return 'totaled';
 };
 
-/** Wheel colour from remaining tread when suspension damage is unavailable. */
 export const tyreWearTier = (wear: number | undefined): SuspDamageTier => {
   if (wear === undefined || !Number.isFinite(wear)) return 'ok';
   if (wear <= PUNCTURE_WEAR) return 'detached';
@@ -62,10 +58,6 @@ export const tyreWearTier = (wear: number | undefined): SuspDamageTier => {
   return 'ok';
 };
 
-/**
- * Centre integrity reading, matching TinyPedal damage.py:
- * prefer aero damage when available (≥0), else body dent average / 16.
- */
 export const integrityFraction = (
   aeroDamage: number | undefined,
   dentSeverity: readonly number[],
@@ -135,10 +127,6 @@ export const formatIntegrityPct = (value: number | null): string => {
   return `${Math.round(value * 100)}%`;
 };
 
-/**
- * Coarse iRacing body hint when panel dents are not in the SDK.
- * Mandatory repair → heavy, optional-only → light, else ok.
- */
 export const iracingBodyTier = (
   repairNeeded: boolean,
   optRepairNeeded: boolean
@@ -160,7 +148,6 @@ export interface DamageSnapshot {
   optRepairNeeded: boolean;
 }
 
-/** True when the car has reportable damage (not ordinary tyre wear). */
 export const hasCarDamage = (data: DamageSnapshot): boolean => {
   if (data.repairNeeded || data.optRepairNeeded) return true;
   if ((data.repairTime ?? 0) > 0 || (data.optRepairTime ?? 0) > 0) return true;
@@ -196,10 +183,8 @@ const DEMO_DAMAGE_BASE: DamageSnapshot = {
   optRepairNeeded: true,
 };
 
-/** Static pack for stories / specs. */
 export const DEMO_DAMAGE: DamageSnapshot = DEMO_DAMAGE_BASE;
 
-/** Demo snapshot at `elapsedSec` with repair times counting down. */
 export const getDemoDamage = (elapsedSec = 0): DamageSnapshot => {
   const repairCycle = 20;
   const optCycle = 8;
