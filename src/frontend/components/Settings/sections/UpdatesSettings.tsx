@@ -15,18 +15,17 @@ const getUpdateMessage = (status: AppUpdateStatus): string => {
     case 'restarting':
       return 'Restarting irDashies…';
     case 'no-update':
-      if (status.newerVersionAvailable)
-        return 'The latest release is not available for this installation yet.';
-      break;
+      return status.newerVersionAvailable
+        ? 'The latest release is not available for this installation yet.'
+        : 'No update is available for this installation.';
     case 'error':
       return 'Could not check for or download an update. Try again.';
     case 'restart-error':
       return 'Could not restart irDashies to install the update. Try again.';
   }
-  if (status.newerVersionAvailable) return 'An update is available.';
-  if (status.latestVersion && !status.latestCheckFailed)
-    return 'You’re up to date.';
-  return '';
+  return status.newerVersionAvailable
+    ? 'A newer release is listed on GitHub.'
+    : '';
 };
 
 export const UpdatesSettings = () => {
@@ -55,13 +54,6 @@ export const UpdatesSettings = () => {
     status?.phase === 'checking' ||
     status?.phase === 'downloading' ||
     status?.phase === 'restarting';
-  const showInstall =
-    status?.canUpdate &&
-    (status.newerVersionAvailable ||
-      status.latestCheckFailed ||
-      updating ||
-      ready);
-
   return (
     <div className="h-full overflow-y-auto">
       <h2 className="mb-5 border-b border-slate-700 pb-5 pt-1 text-xl font-semibold tracking-tight text-white">
@@ -134,11 +126,11 @@ export const UpdatesSettings = () => {
                   ? 'Checking for updates…'
                   : 'Check for updates'}
               </button>
-              {showInstall && (
+              {status.canUpdate && (
                 <button
                   type="button"
                   className="settings-button-primary"
-                  disabled={busy || updating || status.checkingLatest}
+                  disabled={busy || updating}
                   onClick={() =>
                     void run(
                       bridge.install,

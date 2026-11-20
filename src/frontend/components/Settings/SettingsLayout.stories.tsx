@@ -583,9 +583,9 @@ export const ReleaseNotesPage: Story = {
   beforeEach: withReleaseNotesBadge,
 };
 
-export const UpdatesPage: Story = {
-  args: { initialPath: '/settings/updates' },
-  beforeEach: () => {
+const withUpdatesStatus =
+  (initial: Partial<AppUpdateStatus> = {}) =>
+  () => {
     const previous = window.appUpdatesBridge;
     let notify: (status: AppUpdateStatus) => void;
     let status: AppUpdateStatus = {
@@ -598,6 +598,7 @@ export const UpdatesPage: Story = {
       checkingLatest: false,
       latestCheckFailed: false,
       phase: 'idle',
+      ...initial,
     };
     const update = (partial: Partial<AppUpdateStatus>) => {
       status = { ...status, ...partial };
@@ -611,13 +612,35 @@ export const UpdatesPage: Story = {
       },
       checkLatest: async () => notify(status),
       setAutoUpdate: async (autoUpdate) => update({ autoUpdate }),
-      install: async () =>
-        update({ phase: status.phase === 'ready' ? 'restarting' : 'ready' }),
+      install: async () => {
+        if (status.phase === 'ready') {
+          update({ phase: 'restarting' });
+        } else {
+          update({
+            phase: 'ready',
+            latestVersion: '3.1.0',
+            newerVersionAvailable: true,
+          });
+        }
+      },
     };
     return () => {
       window.appUpdatesBridge = previous;
     };
-  },
+  };
+
+export const UpdatesPage: Story = {
+  args: { initialPath: '/settings/updates' },
+  beforeEach: withUpdatesStatus(),
+};
+
+export const UpdatesCurrentRelease: Story = {
+  args: { initialPath: '/settings/updates' },
+  beforeEach: withUpdatesStatus({
+    latestVersion: '3.0.0',
+    autoUpdate: false,
+    newerVersionAvailable: false,
+  }),
 };
 
 // Controlled disk-full bridge response; no disk space is consumed.
