@@ -521,27 +521,37 @@ export const SettingsMenu = ({
           )}
         </div>
       </div>
-      <div className="shrink-0 space-y-0.5 pt-1">
-        {!asidePage && !previewMode && (
+      <div className="flex shrink-0 items-center gap-2 pt-1">
+        {asidePage ? (
           <Link
-            to={toolsTo}
-            className="flex min-h-9 items-center gap-2 rounded-md border-l-2 border-transparent px-2 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white"
+            to={returnTo}
+            className="flex h-10 items-center gap-2 rounded-md border-l-2 border-transparent px-2 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white"
           >
-            <ToolboxIcon size={14} aria-hidden="true" />
-            Tools
-          </Link>
-        )}
-        <Link
-          to={asidePage ? returnTo : appTo}
-          className="flex min-h-9 items-center gap-2 rounded-md border-l-2 border-transparent px-2 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white"
-        >
-          {asidePage ? (
             <ArrowLeftIcon size={14} aria-hidden="true" />
-          ) : (
-            <GearIcon size={14} aria-hidden="true" />
-          )}
-          {asidePage ? 'Back to overlays' : 'App settings'}
-        </Link>
+            Back to overlays
+          </Link>
+        ) : (
+          <>
+            <Link
+              to={appTo}
+              aria-label="App settings"
+              title="App settings"
+              className="grid size-10 place-items-center rounded-md text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white focus-visible:text-white"
+            >
+              <GearIcon size={24} aria-hidden="true" />
+            </Link>
+            {!previewMode && (
+              <Link
+                to={toolsTo}
+                aria-label="Tools"
+                title="Tools"
+                className="grid size-10 place-items-center rounded-md text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-white focus-visible:text-white"
+              >
+                <ToolboxIcon size={24} aria-hidden="true" />
+              </Link>
+            )}
+          </>
+        )}
       </div>
     </nav>
   );
