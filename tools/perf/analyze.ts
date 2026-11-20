@@ -9,6 +9,8 @@ import { listArgument, numericArgument, parseArguments } from './args.ts';
 import {
   MIN_ANALYSIS_SECONDS,
   PERF_GATES,
+  comparisonCheckSatisfied,
+  comparisonCheckStatus,
   contrastDescription,
   parseComparisonContrast,
   type ComparisonContrast,
@@ -109,6 +111,7 @@ export interface AnalysisWindow {
 
 export interface PerfSummary {
   runId: string;
+  captureOrigin?: string;
   scenario: string;
   overlayMode: string;
   durationMinutes: number;
@@ -219,6 +222,7 @@ export interface PerfSummary {
     lapTraceBrakeCueP99WorstMs: number;
     framesOver25MsPercent: number;
     framesOver50MsPercent: number;
+    frameCount: number;
   };
   channels: Record<
     string,
@@ -441,7 +445,7 @@ const overlaps = (
     ? bounds.end >= start && bounds.end < end
     : bounds.end > start && bounds.start < end;
 
-const coveredDurationSeconds = (
+export const coveredDurationSeconds = (
   samples: readonly MainPerfSample[],
   start: number,
   end: number
@@ -944,6 +948,26 @@ export function summarizeCapture(
       (wait): wait is NonNullable<MainPerfSample['sdkWait']> =>
         wait !== undefined
     );
+  for (const wait of sdkWaitSamples) {
+    if (
+      !wait ||
+      typeof wait !== 'object' ||
+      !wait.durationMs ||
+      !['count', 'avg', 'min', 'max', 'p1', 'p50', 'p95', 'p99'].every((key) =>
+        Number.isFinite(wait.durationMs[key as keyof NumericSampleStats])
+      ) ||
+      ![
+        wait.calls,
+        wait.reads,
+        wait.unsuccessful,
+        wait.totalMs,
+        wait.timeoutMs,
+        wait.targetHz,
+      ].every(Number.isFinite)
+    ) {
+      throw new Error('Malformed SDK wait instrumentation in performance log.');
+    }
+  }
   const sdkWait: SdkWaitSummary | undefined =
     sdkWaitSamples.length > 0
       ? {
@@ -999,13 +1023,15 @@ export function summarizeCapture(
 
   return {
     runId: effectiveMain[0].runId,
+    captureOrigin: runOriginAvailable ? validOrigins[0].timestamp : undefined,
     scenario: effectiveMain[0].scenario,
     overlayMode: effectiveMain[0].overlayMode,
     durationMinutes: durationSeconds / 60,
     sampleCount: effectiveMain.length,
     analysisWindow: {
       startSeconds,
-      endSeconds: analysisWindow.endSeconds,
+      endSeconds:
+        analysisWindow.endSeconds ?? (lastSampleEnd - originTimestamp) / 1000,
     },
     scenarioMetadata,
     // Keep the complete schedule in the summary. The first visibility marker
@@ -1289,6 +1315,7 @@ export function summarizeCapture(
       lapTraceBrakeCueRateHz: lapTraceBrakeCue.rateHz,
       lapTraceBrakeCueP99MeanMs: lapTraceBrakeCue.p99MeanMs,
       lapTraceBrakeCueP99WorstMs: lapTraceBrakeCue.p99WorstMs,
+      frameCount: rendererFrameCount,
       framesOver25MsPercent:
         rendererFrameCount === 0
           ? 0
@@ -1406,6 +1433,17 @@ function workloadMetadata(
     ...(contrast.includes('overlay')
       ? {}
       : { overlayMode: summary.overlayMode }),
+    analysisWindow: summary.analysisWindow,
+    ...(summary.analysisWindow?.endSeconds === undefined
+      ? { observedDurationMinutes: summary.durationMinutes }
+      : {}),
+    visibilitySchedule: (summary.visibilityPhases ?? [])
+      .map(({ index, visibility, durationSeconds }) => ({
+        index,
+        visibility,
+        durationSeconds,
+      }))
+      .sort((left, right) => left.index - right.index),
     metadata,
   });
 }
@@ -1511,6 +1549,17 @@ export function compareSummaries(
     isTapeReplay(candidate.scenarioMetadata)
       ? ['game FPS is historical in an isolated replay tape']
       : [];
+  const rendererNotApplicable =
+    candidate.overlayMode === 'observer' ||
+    candidate.overlayMode === 'empty' ||
+    (Array.isArray(candidate.scenarioMetadata.activeWidgetTypes) &&
+      candidate.scenarioMetadata.activeWidgetTypes.length === 0)
+      ? ['no dashboard widgets were active']
+      : [];
+  const rendererReasons =
+    rendererNotApplicable.length === 0 && !(candidate.renderer.frameCount > 0)
+      ? ['candidate renderer frame observations are unavailable']
+      : [];
   const gate = (
     name: string,
     actual: number,
@@ -1536,7 +1585,7 @@ export function compareSummaries(
       actual,
       target: applicable
         ? target
-        : `${evidenceReasons.length > 0 ? 'inconclusive:' : 'not-applicable:'} ${reasons.join('; ')}`,
+        : `${!ignored && notApplicableReasons.length === 0 ? 'inconclusive:' : 'not-applicable:'} ${reasons.join('; ')}`,
     };
   };
 
@@ -1665,8 +1714,8 @@ export function compareSummaries(
           candidate.renderer.framesOver50MsPercent,
           candidate.renderer.framesOver50MsPercent <
             PERF_GATES.framesOver50MsPercent.maximum,
-          comparableReasons,
-          [],
+          [...comparableReasons, ...rendererReasons],
+          rendererNotApplicable,
           `< ${PERF_GATES.framesOver50MsPercent.maximum}%`
         ),
       },
@@ -1763,8 +1812,7 @@ export function summaryMarkdown(summary: PerfSummary): string {
 | broadcast p99 mean | ${format(summary.telemetry.broadcastP99MeanMs)} ms |
 | Main event-loop p99, mean / worst interval | ${format(summary.eventLoop.p99MeanMs)} / ${format(summary.eventLoop.p99WorstMs)} ms |
 | Worst main event-loop stall | ${format(summary.eventLoop.worstStallMs)} ms |
-${summary.sdkWait ? `| SDK wait p50/p95/p99, mean | ${format(summary.sdkWait.durationMs.p50, 3)} / ${format(summary.sdkWait.durationMs.p95, 3)} / ${format(summary.sdkWait.durationMs.p99, 3)} ms (${format(summary.sdkWait.targetHz)} Hz target, ${summary.sdkWait.unsuccessful}/${summary.sdkWait.calls} unsuccessful) |` : ''}
-| Renderer frame-time p99 mean | ${format(summary.renderer.frameTimeP99MeanMs)} ms |
+${summary.sdkWait ? `| SDK wait p50/p95/p99, mean | ${format(summary.sdkWait.durationMs.p50, 3)} / ${format(summary.sdkWait.durationMs.p95, 3)} / ${format(summary.sdkWait.durationMs.p99, 3)} ms (${format(summary.sdkWait.targetHz)} Hz target, ${summary.sdkWait.unsuccessful}/${summary.sdkWait.calls} unsuccessful) |\n` : ''}| Renderer frame-time p99 mean | ${format(summary.renderer.frameTimeP99MeanMs)} ms |
 | Renderer telemetry callbacks / second | ${format(summary.renderer.telemetryCallbackRateHz)} |
 | Renderer telemetry callback p99, mean / worst interval | ${format(summary.renderer.telemetryCallbackP99MeanMs, 3)} / ${format(summary.renderer.telemetryCallbackP99WorstMs, 3)} ms |
 | Input trace frames / second | ${format(summary.renderer.inputTraceFrameRateHz)} |
@@ -1842,6 +1890,30 @@ function workloadConditions(summary: PerfSummary): string {
   });
 }
 
+export function comparisonEvidenceReasons(
+  comparison: PerfComparison
+): string[] {
+  const { baseline, candidate, checks } = comparison;
+  const matched = checks.find(
+    (check) => check.name === 'Matched workload metadata'
+  );
+  return [
+    ...coreEvidenceReasons(candidate, 'candidate'),
+    ...coreEvidenceReasons(baseline, 'baseline'),
+    ...(matched?.passed === true
+      ? []
+      : ['workload metadata differs or is unavailable']),
+    ...checks
+      .filter(
+        (check) =>
+          check.passed === null &&
+          !comparisonCheckSatisfied(check) &&
+          check !== matched
+      )
+      .map((check) => `${check.name}: ${check.target}`),
+  ];
+}
+
 /** Format the comparison as a Markdown table. */
 export function comparisonMarkdown(comparison: PerfComparison): string {
   const { baseline, candidate, delta } = comparison;
@@ -1849,15 +1921,13 @@ export function comparisonMarkdown(comparison: PerfComparison): string {
     (check) => check.name === 'Matched workload metadata'
   )?.passed;
   const evidenceStatus =
-    baseline.evidence.conclusive &&
-    candidate.evidence.conclusive &&
-    workloadMatch === true
+    comparisonEvidenceReasons(comparison).length === 0
       ? 'CONCLUSIVE'
       : 'INCONCLUSIVE';
   const checks = comparison.checks
     .map(
       (check) =>
-        `| ${check.name} | ${check.passed === null ? 'INCONCLUSIVE' : check.passed ? 'PASS' : 'FAIL'} | ${format(check.actual, 3)} | ${check.target} |`
+        `| ${check.name} | ${comparisonCheckStatus(check)} | ${format(check.actual, 3)} | ${check.target} |`
     )
     .join('\n');
 
@@ -1934,7 +2004,7 @@ async function writeAnalysis(
   const summaryPath = `${outputBase}.summary.json`;
   const markdownPath = `${outputBase}.summary.md`;
   let baseline: PerfSummary | undefined;
-  let workloadMatch: boolean | null | undefined;
+  let inconclusiveReasons = candidate.evidence.inconclusiveReasons;
 
   if (baselinePath) {
     baseline = await readSummary(baselinePath, warmupSeconds, analysisWindow);
@@ -1944,9 +2014,7 @@ async function writeAnalysis(
       contrast,
       ignoredGates
     );
-    workloadMatch = comparison.checks.find(
-      (check) => check.name === 'Matched workload metadata'
-    )?.passed;
+    inconclusiveReasons = comparisonEvidenceReasons(comparison);
     await Promise.all([
       fs.writeFile(summaryPath, JSON.stringify(comparison, null, 2), 'utf8'),
       fs.writeFile(markdownPath, comparisonMarkdown(comparison), 'utf8'),
@@ -1959,27 +2027,15 @@ async function writeAnalysis(
   }
 
   process.stdout.write(`${markdownPath}\n`);
-  if (
-    requireConclusive &&
-    (!coreEvidenceComplete(candidate) ||
-      (baseline !== undefined && !coreEvidenceComplete(baseline)) ||
-      (baseline !== undefined && workloadMatch !== true))
-  ) {
-    const reasons = [
-      ...coreEvidenceReasons(candidate, 'candidate'),
-      ...(baseline ? coreEvidenceReasons(baseline, 'baseline') : []),
-      ...(baseline !== undefined && workloadMatch !== true
-        ? ['baseline and candidate workload metadata differ or are unavailable']
-        : []),
-    ];
+  if (requireConclusive && inconclusiveReasons.length > 0) {
     throw new Error(
-      `Performance evidence is inconclusive: ${reasons.join('; ')}`
+      `Performance evidence is inconclusive: ${inconclusiveReasons.join('; ')}`
     );
   }
 }
 
 export const ANALYZE_USAGE = `Usage: npm run perf:analyze -- <candidate.log> [options]
-  --baseline <file>            Baseline raw log or analyzer summary
+  --baseline <file>            Baseline raw performance log
   --warmup-seconds N           Ignore startup samples (default 30)
   --analysis-start-seconds N   Start analysis after capture origin
   --analysis-end-seconds N     End analysis after capture origin

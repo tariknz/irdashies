@@ -16,16 +16,17 @@ describe('Linux process private memory', () => {
     expect(parsePrivateMemoryKB(rollup)).toBe(3072);
   });
 
-  it('reads the same counters from proc status without them being present on every kernel', () => {
-    const status = [
-      'Name:\tirdashies',
-      'VmRSS:\t 100000 kB',
+  it('sums private-memory counters from multiple proc smaps entries', () => {
+    const smaps = [
+      '00400000-00401000 r-xp 00000000 00:00 0',
+      'Private_Dirty:\t  128 kB',
       'Private_Clean:\t  1024 kB',
-      'Private_Dirty:\t  2048 kB',
+      '00401000-00402000 rw-p 00001000 00:00 0',
+      'Private_Dirty:\t  1920 kB',
       '',
     ].join('\n');
 
-    expect(parsePrivateMemoryKB(status)).toBe(3072);
+    expect(parsePrivateMemoryKB(smaps)).toBe(3072);
     expect(parsePrivateMemoryKB('Name:\tirdashies\n')).toBeUndefined();
   });
 });

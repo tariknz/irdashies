@@ -3,7 +3,12 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream, promises as fs } from 'node:fs';
 import path from 'node:path';
-import { choiceArgument, numericArgument, parseArguments } from './args.ts';
+import {
+  choiceArgument,
+  numericArgument,
+  parseArguments,
+  safeName,
+} from './args.ts';
 import { collectHostFacts } from './hostFacts.ts';
 import { readWidgetInputRequirements } from './widgetInputMetadata.ts';
 import {
@@ -99,26 +104,11 @@ const fingerprintTape = async (
   return { sha256: hash.digest('hex'), bytes: size };
 };
 
-function safeName(value: string): string {
-  return value.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '');
-}
-
 /** Parse capture options, keeping replay metadata independent of tape input. */
 function parseArgs(args: string[]): {
   options: RunOptions;
   userDataDirectory?: string;
 } {
-  const windowModeIndex = args.indexOf('--window-mode');
-  const windowModeValue =
-    windowModeIndex >= 0 ? args[windowModeIndex + 1] : undefined;
-  if (
-    windowModeIndex >= 0 &&
-    (windowModeValue === undefined ||
-      windowModeValue.startsWith('--') ||
-      (windowModeValue !== 'display' && windowModeValue !== 'widget'))
-  )
-    throw new Error('--window-mode must be display or widget');
-
   const parsed = parseArguments(args, {
     usage: PERF_RUN_USAGE,
     values: [
@@ -220,11 +210,14 @@ function parseArgs(args: string[]): {
     min: 0.25,
     max: 100,
   });
-  const requestedWindowMode = parsed.value('--window-mode');
-  const windowMode =
-    requestedWindowMode === 'display' || requestedWindowMode === 'widget'
-      ? requestedWindowMode
-      : undefined;
+  const windowMode = parsed.has('--window-mode')
+    ? choiceArgument(
+        parsed,
+        '--window-mode',
+        ['display', 'widget'] as const,
+        'display'
+      )
+    : undefined;
   const optionalNumber = (flag: string): number | undefined =>
     parsed.has(flag)
       ? numericArgument(parsed, flag, 0, { min: 0 })
@@ -487,6 +480,7 @@ let replayPublisher: ReturnType<typeof spawn> | undefined;
 let startupOutput = '';
 let fatalError: Error | undefined;
 let stopping = false;
+let replayReady = false;
 let replayStartupTimeout: NodeJS.Timeout | undefined;
 process.stdout.on('error', (error: NodeJS.ErrnoException) => {
   if (error.code === 'EPIPE') {
@@ -567,6 +561,7 @@ const copyAppOutput = (chunk: Buffer): void => {
   if (!replayInputPath) return;
   startupOutput = `${startupOutput}${chunk.toString('utf8')}`.slice(-2048);
   if (!startupOutput.includes(PERF_REPLAY_READY_LOG_MARKER)) return;
+  replayReady = true;
   if (useIsolatedReplayPublisher) {
     startReplayPublisher();
   } else if (replayStartupTimeout) {
@@ -590,6 +585,10 @@ if (replayInputPath) {
 
 process.once('SIGINT', stopChild);
 process.once('SIGTERM', stopChild);
+process.on('message', (message) => {
+  if (message === 'cancel-perf-run') stopChild();
+});
+process.channel?.unref();
 
 const childExitCode = await Promise.race([
   new Promise<number>((resolve) => {
@@ -601,7 +600,7 @@ const childExitCode = await Promise.race([
   }),
 ]);
 if (replayStartupTimeout) clearTimeout(replayStartupTimeout);
-if (useIsolatedReplayPublisher && !replayPublisher && !fatalError) {
+if (replayInputPath && !replayReady && !fatalError) {
   fatalError = new Error('App exited before emitting replay readiness');
 }
 if (replayPublisher?.exitCode === null) {

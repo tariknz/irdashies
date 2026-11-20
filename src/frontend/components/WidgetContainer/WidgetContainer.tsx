@@ -21,7 +21,7 @@ import { displayCenterX } from './displayCenter';
 import { getWidgetName } from '../../constants/widgetNames';
 import { ResizeIcon, GearIcon, XIcon } from '@phosphor-icons/react';
 import { useContainerOffset, useDashboard } from '@irdashies/context';
-import { perfMetrics } from '../../utils/perfMetrics';
+import { perfMetrics } from '@irdashies/utils/perfMetrics';
 
 export interface WidgetContainerProps {
   widget: DashboardWidget;

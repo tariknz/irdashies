@@ -100,9 +100,7 @@ const isDirectoryWritable = async (directory: string): Promise<boolean> => {
         return false;
       }
     }
-    const parent = path.dirname(current);
-    if (parent === current) return false;
-    current = parent;
+    return false;
   }
 };
 
@@ -113,7 +111,7 @@ const readIrdtHeader = async (
   try {
     const buffer = Buffer.alloc(96);
     const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
-    if (bytesRead < 32)
+    if (bytesRead < buffer.length)
       return {
         valid: false,
         variableCount: 0,
@@ -186,7 +184,7 @@ const iracingProcessRunning = (): boolean => {
         : ['-f', 'iRacing'],
       { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
     );
-    return /iRacing/i.test(output);
+    return process.platform === 'win32' ? /iRacing/i.test(output) : true;
   } catch {
     return false;
   }
@@ -361,21 +359,22 @@ export async function collectDoctorChecks(
     }
   }
 
+  const replayAddon =
+    process.platform === 'win32'
+      ? 'irsdk_node_replay.node'
+      : 'irsdk_tape_node.node';
   try {
-    await fs.access(
-      path.join(packageRoot, 'build/Release/irsdk_tape_node.node')
-    );
+    await fs.access(path.join(packageRoot, 'build', 'Release', replayAddon));
     checks.push({
-      name: 'Native tape addon',
+      name: 'Native replay addon',
       status: 'PASS',
       detail: 'Built addon is available for recorded telemetry replay.',
     });
   } catch {
     checks.push({
-      name: 'Native tape addon',
+      name: 'Native replay addon',
       status: 'FAIL',
-      detail:
-        'Missing build/Release/irsdk_tape_node.node; run npm run irsdk:build.',
+      detail: `Missing build/Release/${replayAddon}; run npm run irsdk:build.`,
     });
   }
 

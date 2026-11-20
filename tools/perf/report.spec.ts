@@ -12,6 +12,7 @@ const summary = (
 ) => ({
   runId,
   scenarioMetadata: { sourceCommit: commit },
+  analysisWindow: { startSeconds: 0, endSeconds: 360 },
   evidence: {
     runOriginAvailable: true,
     durationSufficient,
@@ -29,7 +30,11 @@ const summary = (
   },
   telemetry: { processTelemetryP99MeanMs: 2, minimumTickRateHz: 60 },
   eventLoop: { p99MeanMs: 35 },
-  renderer: { trackMapAnimationFrameP99MeanMs: 2, framesOver50MsPercent: 0 },
+  renderer: {
+    trackMapAnimationFrameP99MeanMs: 2,
+    framesOver50MsPercent: 0,
+    frameCount: 100,
+  },
 });
 
 describe('multi-run perf report CLI', () => {
@@ -167,6 +172,25 @@ describe('multi-run perf report CLI', () => {
           'Verdict: **INCONCLUSIVE**'
         );
       }
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects the same captures when a comparison is supplied twice', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'perf-report-'));
+    try {
+      const input = path.join(directory, 'comparison.json');
+      await writeFile(
+        input,
+        JSON.stringify({
+          baseline: summary('base', 'aaa', 1100),
+          candidate: summary('pr', 'bbb', 600),
+        })
+      );
+      await expect(runReportCli([input, input])).rejects.toThrow(
+        /appears more than once/
+      );
     } finally {
       await rm(directory, { recursive: true, force: true });
     }

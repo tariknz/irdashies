@@ -40,3 +40,12 @@ export const comparisonCheckSatisfied = (check: {
 }): boolean =>
   check.passed === true ||
   (check.passed === null && check.target.startsWith('not-applicable:'));
+
+export const comparisonCheckStatus = (check: {
+  passed: boolean | null;
+  target: string;
+}): 'PASS' | 'FAIL' | 'NOT_APPLICABLE' | 'INCONCLUSIVE' => {
+  if (check.passed === null)
+    return comparisonCheckSatisfied(check) ? 'NOT_APPLICABLE' : 'INCONCLUSIVE';
+  return check.passed ? 'PASS' : 'FAIL';
+};

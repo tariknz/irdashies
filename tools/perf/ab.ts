@@ -2,9 +2,15 @@ import { spawn } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { listArgument, numericArgument, parseArguments } from './args.ts';
+import {
+  listArgument,
+  numericArgument,
+  parseArguments,
+  safeName,
+} from './args.ts';
 import {
   comparisonCheckSatisfied,
+  comparisonCheckStatus,
   contrastDescription,
   parseComparisonContrast,
   type ComparisonContrast,
@@ -53,13 +59,11 @@ const scenarioNamePattern = /^[a-z0-9][a-z0-9-]*$/i;
 export function parseScenarioSpecs(names: readonly string[]): AbScenarioSpec[] {
   return names.map((raw) => {
     const name = raw.trim();
-    if (!scenarioNamePattern.test(name))
-      throw new Error(`Invalid scenario: ${raw}\n${AB_USAGE}`);
     if ((BASE_MODES as readonly string[]).includes(name))
       return { name, mode: name as AbOverlayMode };
     const widgets = name.startsWith('widgets:') ? name.slice(8) : name;
     if (!scenarioNamePattern.test(widgets))
-      throw new Error(`Invalid widget scenario: ${raw}\n${AB_USAGE}`);
+      throw new Error(`Invalid scenario: ${raw}\n${AB_USAGE}`);
     return { name: widgets, mode: 'full', widgets };
   });
 }
@@ -217,7 +221,7 @@ const deltaSections = (comparison: ComparisonJson): string[] => {
 const checkRows = (comparison: ComparisonJson): string[] =>
   comparison.checks.map(
     (check) =>
-      `| ${check.name} | ${check.passed === null ? 'INCONCLUSIVE' : check.passed ? 'PASS' : 'FAIL'} | ${Number.isFinite(check.actual) ? check.actual.toFixed(3) : 'n/a'} | ${check.target} |`
+      `| ${check.name} | ${comparisonCheckStatus(check)} | ${Number.isFinite(check.actual) ? check.actual.toFixed(3) : 'n/a'} | ${check.target} |`
   );
 
 const runAb = async (args: string[]): Promise<void> => {
@@ -237,7 +241,7 @@ const runAb = async (args: string[]): Promise<void> => {
     } else {
       await fs.mkdir(profile, { recursive: true });
     }
-    const runId = `${runPrefix}-${spec.name}`;
+    const runId = safeName(`${runPrefix}-${spec.name}`);
     const runArguments = [
       '--mode',
       spec.mode,
@@ -249,6 +253,8 @@ const runAb = async (args: string[]): Promise<void> => {
       runId,
       '--replay-input',
       options.inputPath,
+      '--output-directory',
+      options.outputDirectory,
       '--user-data-dir',
       profile,
     ];
@@ -261,7 +267,7 @@ const runAb = async (args: string[]): Promise<void> => {
     if (capture.exitCode !== 0)
       throw new Error(`Scenario ${spec.name} failed: ${capture.stderr.slice(-1000)}`);
 
-    const candidateLog = path.join('perf-results', `${runId}.log`);
+    const candidateLog = path.join(options.outputDirectory, `${runId}.log`);
     const analyzeArgs = [
       candidateLog,
       '--warmup-seconds',

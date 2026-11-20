@@ -494,7 +494,7 @@ Private memory is the acceptance metric because aggregate working set includes
 shared Chromium pages and can double-count them across processes. Electron does
 not expose `privateBytes` on Linux, so while `PERF_METRICS=1` is active the
 collector also samples `Private_Clean` plus `Private_Dirty` from
-`/proc/<pid>/smaps_rollup` (falling back to `/proc/<pid>/status` where
+`/proc/<pid>/smaps_rollup` (falling back to `/proc/<pid>/smaps` where
 available) for every app process and reports them as `privateMemoryMB` and
 `totalAppPrivateMemoryMB`. Working-set slope remains in the report as
 diagnostic context. The private-memory gate is

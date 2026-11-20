@@ -116,6 +116,19 @@ export const runReportCli = async (args: string[]): Promise<void> => {
       summary,
     }))
   );
+  const captureIds = new Set<string>();
+  for (const { summary } of runs) {
+    const id = JSON.stringify([
+      commitOf(summary),
+      summary.runId,
+      summary.captureOrigin,
+    ]);
+    if (captureIds.has(id))
+      throw new Error(
+        `Capture ${summary.runId} appears more than once in the selected comparisons.`
+      );
+    captureIds.add(id);
+  }
   const hasIncompleteEvidence = selected.some(
     ({ baseline, candidate, checks }) =>
       !baseline.evidence ||

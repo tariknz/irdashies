@@ -29,6 +29,8 @@ const args = process.argv.slice(2);
 const usage = `${DIAGNOSE_USAGE}\n${DOCTOR_USAGE}${DELEGATED_USAGE}`;
 
 const runDelegated = async (script: string, commandArgs: string[]) => {
+  const cancelViaIpc =
+    process.platform === 'win32' && script === DELEGATED_COMMANDS.run;
   const child = spawn(
     process.execPath,
     [
@@ -39,11 +41,18 @@ const runDelegated = async (script: string, commandArgs: string[]) => {
     {
       cwd: process.cwd(),
       env: { ...process.env, NODE_OPTIONS: '' },
-      stdio: 'inherit',
+      stdio: cancelViaIpc
+        ? ['inherit', 'inherit', 'inherit', 'ipc']
+        : 'inherit',
     }
   );
-  const forwardInterrupt = () => child.kill('SIGINT');
-  const forwardTermination = () => child.kill('SIGTERM');
+  const cancel = (signal: NodeJS.Signals) => {
+    if (cancelViaIpc) {
+      if (child.connected) child.send('cancel-perf-run', () => undefined);
+    } else child.kill(signal);
+  };
+  const forwardInterrupt = () => cancel('SIGINT');
+  const forwardTermination = () => cancel('SIGTERM');
   process.once('SIGINT', forwardInterrupt);
   process.once('SIGTERM', forwardTermination);
   try {

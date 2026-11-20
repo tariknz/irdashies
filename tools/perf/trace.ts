@@ -1,8 +1,10 @@
 import { spawn } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import { createRequire } from 'node:module';
+import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 import WebSocket from 'ws';
 import { numericArgument, parseArguments } from './args.ts';
@@ -116,94 +118,170 @@ interface DevToolsTarget {
   webSocketDebuggerUrl?: string;
 }
 
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+const checkPortAvailable = (port: number): Promise<void> =>
+  new Promise((resolve, reject) => {
+    const server = createServer();
+    server.once('error', (error) =>
+      reject(
+        new Error(`DevTools port ${port} is unavailable.`, { cause: error })
+      )
+    );
+    server.listen(port, '127.0.0.1', () =>
+      server.close((error) => {
+        if (error) reject(error);
+        else resolve();
+      })
+    );
+  });
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const isDevToolsTarget = (value: unknown): value is DevToolsTarget =>
+  isRecord(value) &&
+  typeof value.type === 'string' &&
+  typeof value.url === 'string' &&
+  (value.webSocketDebuggerUrl === undefined ||
+    typeof value.webSocketDebuggerUrl === 'string');
 
 const waitForTarget = async (
-  port: number,
+  browserUrl: URL,
   signal: AbortSignal
-): Promise<DevToolsTarget> => {
-  for (let attempt = 0; attempt < 240 && !signal.aborted; attempt++) {
-    try {
-      const response = await fetch(`http://127.0.0.1:${port}/json/list`, {
-        signal,
-      });
-      if (response.ok) {
-        const targets = (await response.json()) as DevToolsTarget[];
-        const target =
-          targets.find(
-            (item) =>
-              item.type === 'page' &&
-              item.webSocketDebuggerUrl &&
-              /localhost:5173|127\.0\.0\.1:5173/.test(item.url)
-          ) ??
-          targets.find(
-            (item) => item.type === 'page' && item.webSocketDebuggerUrl
-          );
-        if (target) return target;
-      }
-    } catch {
-      // DevTools endpoint is not listening yet.
+): Promise<string> => {
+  const endpoint = `http://127.0.0.1:${browserUrl.port}`;
+  const version = await fetch(`${endpoint}/json/version`, { signal });
+  const identity: unknown = await version.json();
+  if (
+    !version.ok ||
+    !isRecord(identity) ||
+    identity.webSocketDebuggerUrl !== browserUrl.href
+  )
+    throw new Error(
+      'The DevTools endpoint does not belong to the launched browser.'
+    );
+
+  for (;;) {
+    const response = await fetch(`${endpoint}/json/list`, { signal });
+    const targets: unknown = await response.json();
+    if (
+      !response.ok ||
+      !Array.isArray(targets) ||
+      !targets.every(isDevToolsTarget)
+    )
+      throw new Error('Invalid DevTools target list.');
+    const pages = targets.filter(
+      (target) => target.type === 'page' && target.webSocketDebuggerUrl
+    );
+    const target =
+      pages.find((item) => /localhost:5173|127\.0\.0\.1:5173/.test(item.url)) ??
+      pages[0];
+    if (target?.webSocketDebuggerUrl) {
+      const url = new URL(target.webSocketDebuggerUrl);
+      if (
+        url.origin !== browserUrl.origin ||
+        !url.pathname.startsWith('/devtools/page/')
+      )
+        throw new Error('Invalid DevTools page endpoint.');
+      return url.href;
     }
-    await sleep(500);
+    await delay(500, undefined, { signal });
   }
-  throw new Error(`DevTools endpoint on port ${port} did not become ready.`);
 };
 
 type TraceEvent = Record<string, unknown>;
 
 const collectTrace = async (
   webSocketDebuggerUrl: string,
-  durationSeconds: number
+  durationSeconds: number,
+  signal: AbortSignal
 ): Promise<TraceEvent[]> => {
-  const socket = new WebSocket(webSocketDebuggerUrl);
-  await new Promise<void>((resolve, reject) => {
-    socket.once('open', resolve);
-    socket.once('error', reject);
+  signal.throwIfAborted();
+  const socket = new WebSocket(webSocketDebuggerUrl, {
+    handshakeTimeout: 10_000,
   });
+  const disconnected = new AbortController();
+  const stop = (error: Error) => disconnected.abort(error);
+  socket.on('error', stop);
+  socket.on('close', () => stop(new Error('DevTools connection closed.')));
+  const captureSignal = AbortSignal.any([signal, disconnected.signal]);
+  const wait = async <T>(
+    operation: Promise<T>,
+    timeoutMs?: number
+  ): Promise<T> => {
+    const deadline =
+      timeoutMs === undefined
+        ? captureSignal
+        : AbortSignal.any([captureSignal, AbortSignal.timeout(timeoutMs)]);
+    const onAbort = Promise.withResolvers<never>();
+    const reject = () => onAbort.reject(deadline.reason);
+    deadline.addEventListener('abort', reject, { once: true });
+    if (deadline.aborted) reject();
+    try {
+      return await Promise.race([operation, onAbort.promise]);
+    } finally {
+      deadline.removeEventListener('abort', reject);
+    }
+  };
 
   const events: TraceEvent[] = [];
   const pending = new Map<
     number,
-    { resolve: (value: unknown) => void; reject: (error: Error) => void }
+    ReturnType<typeof Promise.withResolvers<unknown>>
   >();
-  let resolveCompletion: (() => void) | undefined;
-  const completion = new Promise<void>((resolve) => {
-    resolveCompletion = resolve;
-  });
-
+  const completion = Promise.withResolvers<undefined>();
   socket.on('message', (raw) => {
-    const message = JSON.parse(raw.toString()) as {
-      id?: number;
-      method?: string;
-      result?: unknown;
-      error?: { message: string };
-      params?: { value?: TraceEvent[] };
-    };
-    if (message.id !== undefined) {
-      const callbacks = pending.get(message.id);
-      if (!callbacks) return;
-      pending.delete(message.id);
-      if (message.error) callbacks.reject(new Error(message.error.message));
-      else callbacks.resolve(message.result);
-      return;
-    }
-    if (message.method === 'Tracing.dataCollected') {
-      events.push(...(message.params?.value ?? []));
-    } else if (message.method === 'Tracing.tracingComplete') {
-      resolveCompletion?.();
+    try {
+      const message: unknown = JSON.parse(raw.toString());
+      if (!isRecord(message))
+        throw new Error('Expected a DevTools message object.');
+      if (typeof message.id === 'number') {
+        const callbacks = pending.get(message.id);
+        if (!callbacks) return;
+        if (message.error !== undefined) {
+          if (
+            !isRecord(message.error) ||
+            typeof message.error.message !== 'string'
+          )
+            throw new Error('Invalid DevTools command error.');
+          callbacks.reject(new Error(message.error.message));
+        } else callbacks.resolve(message.result);
+      } else if (message.method === 'Tracing.dataCollected') {
+        if (
+          !isRecord(message.params) ||
+          !Array.isArray(message.params.value) ||
+          !message.params.value.every(isRecord)
+        )
+          throw new Error('Invalid trace event batch.');
+        for (const event of message.params.value) events.push(event);
+      } else if (message.method === 'Tracing.tracingComplete') {
+        completion.resolve(undefined);
+      }
+    } catch (error) {
+      stop(new Error('Invalid DevTools response.', { cause: error }));
     }
   });
 
   let nextId = 1;
-  const send = (method: string, params?: Record<string, unknown>) =>
-    new Promise<unknown>((resolve, reject) => {
-      const id = nextId++;
-      pending.set(id, { resolve, reject });
-      socket.send(JSON.stringify({ id, method, params }));
-    });
+  const send = async (method: string, params?: Record<string, unknown>) => {
+    captureSignal.throwIfAborted();
+    const id = nextId++;
+    const response = Promise.withResolvers<unknown>();
+    pending.set(id, response);
+    try {
+      socket.send(JSON.stringify({ id, method, params }), (error) => {
+        if (error) stop(error);
+      });
+      return await wait(response.promise, 10_000);
+    } finally {
+      pending.delete(id);
+    }
+  };
 
   try {
+    await wait(
+      new Promise<void>((resolve) => socket.once('open', resolve)),
+      10_000
+    );
     await send('Tracing.start', {
       transferMode: 'ReportEvents',
       streamFormat: 'json',
@@ -212,23 +290,19 @@ const collectTrace = async (
         includedCategories: TRACE_CATEGORIES.split(','),
       },
     });
-    await sleep(durationSeconds * 1000);
+    await delay(durationSeconds * 1000, undefined, { signal: captureSignal });
     await send('Tracing.end');
-    await Promise.race([
-      completion,
-      sleep(30_000).then(() => {
-        throw new Error('Timed out waiting for tracing completion.');
-      }),
-    ]);
+    await wait(completion.promise, 30_000);
     return events;
   } finally {
-    socket.close();
+    socket.terminate();
   }
 };
 
 const runTrace = async (args: string[]): Promise<void> => {
   const options = parseTraceOptions(args);
   await fs.access(options.inputPath);
+  await checkPortAvailable(options.port);
   await fs.mkdir(path.dirname(options.outputPath), { recursive: true });
   const userDataDirectory =
     options.userDataDirectory ??
@@ -265,20 +339,28 @@ const runTrace = async (args: string[]): Promise<void> => {
       detached: process.platform !== 'win32',
     }
   );
-  child.stderr?.on('data', () => undefined);
   const startup = new AbortController();
-  const childFailure = new Promise<never>((_, reject) => {
-    child.once('error', (error) =>
-      reject(new Error('Could not launch Electron.', { cause: error }))
-    );
-    child.once('exit', (code, signal) =>
-      reject(
-        new Error(
-          `Electron launcher exited during capture (${code ?? signal}).`
-        )
-      )
-    );
+  const browser = Promise.withResolvers<URL>();
+  let stderr = '';
+  child.stderr?.on('data', (chunk: Buffer) => {
+    stderr = (stderr + chunk.toString()).slice(-4096);
+    const match =
+      /DevTools listening on (ws:\/\/127\.0\.0\.1:\d+\/devtools\/browser\/[^\s]+)[\r\n]/.exec(
+        stderr
+      );
+    if (match) {
+      const url = new URL(match[1]);
+      if (url.port === String(options.port)) browser.resolve(url);
+    }
   });
+  child.once('error', (error) =>
+    startup.abort(new Error('Could not launch Electron.', { cause: error }))
+  );
+  child.once('exit', (code, signal) =>
+    startup.abort(
+      new Error(`Electron launcher exited during capture (${code ?? signal}).`)
+    )
+  );
 
   const stopChild = (): void => {
     if (child.exitCode !== null || child.signalCode !== null) return;
@@ -292,16 +374,28 @@ const runTrace = async (args: string[]): Promise<void> => {
   };
 
   try {
-    const target = await Promise.race([
-      waitForTarget(options.port, startup.signal),
-      childFailure,
+    const startupSignal = AbortSignal.any([
+      startup.signal,
+      AbortSignal.timeout(120_000),
     ]);
-    if (options.warmupSeconds > 0) await sleep(options.warmupSeconds * 1000);
-    if (!target.webSocketDebuggerUrl)
-      throw new Error('DevTools target has no WebSocket debugger URL.');
+    const aborted = Promise.withResolvers<never>();
+    const onAbort = () => aborted.reject(startupSignal.reason);
+    startupSignal.addEventListener('abort', onAbort, { once: true });
+    let browserUrl: URL;
+    try {
+      browserUrl = await Promise.race([browser.promise, aborted.promise]);
+    } finally {
+      startupSignal.removeEventListener('abort', onAbort);
+    }
+    const webSocketDebuggerUrl = await waitForTarget(browserUrl, startupSignal);
+    if (options.warmupSeconds > 0)
+      await delay(options.warmupSeconds * 1000, undefined, {
+        signal: startup.signal,
+      });
     const events = await collectTrace(
-      target.webSocketDebuggerUrl,
-      options.durationSeconds
+      webSocketDebuggerUrl,
+      options.durationSeconds,
+      startup.signal
     );
     await fs.writeFile(
       options.outputPath,

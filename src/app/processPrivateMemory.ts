@@ -16,7 +16,7 @@ export const readProcessPrivateMemoryKB = async (
   pid: number
 ): Promise<number | undefined> => {
   if (!Number.isSafeInteger(pid) || pid <= 0) return undefined;
-  for (const file of ['smaps_rollup', 'status']) {
+  for (const file of ['smaps_rollup', 'smaps']) {
     try {
       const content = await fs.readFile(`/proc/${pid}/${file}`, 'utf8');
       const kilobytes = parsePrivateMemoryKB(content);

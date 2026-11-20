@@ -16,8 +16,9 @@ import {
   listArgument,
   numericArgument,
   parseArguments,
+  safeName,
 } from './args.ts';
-import { comparisonCheckSatisfied } from './gates.ts';
+import { comparisonCheckSatisfied, comparisonCheckStatus } from './gates.ts';
 
 const DEFAULT_DURATION_SECONDS = 420;
 const DEFAULT_WARMUP_SECONDS = 60;
@@ -190,7 +191,14 @@ export function parseBranchesOptions(args: string[]): BranchesOptions {
     baseline: parsed.value('--baseline') ?? diffRefs.baseline,
     candidate: parsed.value('--candidate') ?? diffRefs.candidate,
   };
-  const requestedWindowMode = parsed.value('--window-mode');
+  const windowMode = parsed.has('--window-mode')
+    ? choiceArgument(
+        parsed,
+        '--window-mode',
+        ['display', 'widget'] as const,
+        'display'
+      )
+    : undefined;
   const smoke = parsed.flag('--smoke');
   const durationSeconds = smoke
     ? 60
@@ -241,10 +249,7 @@ export function parseBranchesOptions(args: string[]): BranchesOptions {
       'dev'
     ),
     widgets: parsed.value('--widgets'),
-    windowMode:
-      requestedWindowMode === 'display' || requestedWindowMode === 'widget'
-        ? requestedWindowMode
-        : undefined,
+    windowMode,
     channelDelivery: parsed.has('--channel-delivery')
       ? choiceArgument(
           parsed,
@@ -391,7 +396,7 @@ const changedFiles = (
   candidate: string,
   cwd: string
 ): string[] =>
-  gitValue(['diff', '--name-status', baseline, candidate], cwd)
+  gitValue(['diff', '--no-renames', '--name-status', baseline, candidate], cwd)
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
@@ -475,6 +480,13 @@ const prepareWorktree = async (
     );
   }
   if (options.target === 'packaged') {
+    await runTool(
+      npmCommand(),
+      ['run', 'irsdk:build'],
+      directory,
+      path.join(logDirectory, `${label}.native.log`),
+      process.platform === 'win32'
+    );
     await runTool(
       npmCommand(),
       ['run', 'package'],
@@ -565,7 +577,7 @@ const captureSide = async (
 const formatCheckRows = (checks: ComparisonCheck[]): string[] =>
   checks.map(
     (check) =>
-      `| ${check.name} | ${check.passed === null ? 'INCONCLUSIVE' : check.passed ? 'PASS' : 'FAIL'} | ${Number.isFinite(check.actual) ? check.actual.toFixed(3) : 'n/a'} | ${check.target} |`
+      `| ${check.name} | ${comparisonCheckStatus(check)} | ${Number.isFinite(check.actual) ? check.actual.toFixed(3) : 'n/a'} | ${check.target} |`
   );
 
 export function branchesReportMarkdown(report: BranchesReport): string {
@@ -862,15 +874,22 @@ const hashFiles = async (filePaths: readonly string[]): Promise<string> => {
 const cacheRootOf = (rootDirectory: string): string =>
   path.join(rootDirectory, 'perf-results', '.cache', 'branches');
 
-const cacheKey = (commit: string, target: BranchesOptions['target']): string =>
-  `${commit}-${target}`;
+const cacheKey = (
+  commit: string,
+  target: BranchesOptions['target'],
+  fingerprint: string
+): string => `${commit}-${target}-${fingerprint.slice(0, 16)}`;
 
 const cacheEntryPath = (
   rootDirectory: string,
   commit: string,
-  target: BranchesOptions['target']
+  target: BranchesOptions['target'],
+  fingerprint: string
 ): string =>
-  path.join(cacheRootOf(rootDirectory), `${cacheKey(commit, target)}.json`);
+  path.join(
+    cacheRootOf(rootDirectory),
+    `${cacheKey(commit, target, fingerprint)}.json`
+  );
 
 const readCacheEntry = async (
   rootDirectory: string,
@@ -880,14 +899,15 @@ const readCacheEntry = async (
 ): Promise<WorktreeCacheEntry | undefined> => {
   try {
     const raw = await fs.readFile(
-      cacheEntryPath(rootDirectory, commit, target),
+      cacheEntryPath(rootDirectory, commit, target, dependencyFingerprint),
       'utf8'
     );
     const entry = JSON.parse(raw) as WorktreeCacheEntry;
     return entry.commit === commit &&
       entry.target === target &&
       entry.dependencyFingerprint === dependencyFingerprint &&
-      isRegisteredWorktree(rootDirectory, entry.directory)
+      isRegisteredWorktree(rootDirectory, entry.directory) &&
+      resolveCommit('HEAD', entry.directory) === commit
       ? entry
       : undefined;
   } catch {
@@ -902,7 +922,12 @@ const writeCacheEntry = async (
   const root = cacheRootOf(rootDirectory);
   await fs.mkdir(root, { recursive: true });
   await fs.writeFile(
-    cacheEntryPath(rootDirectory, entry.commit, entry.target),
+    cacheEntryPath(
+      rootDirectory,
+      entry.commit,
+      entry.target,
+      entry.dependencyFingerprint
+    ),
     JSON.stringify(entry, null, 2),
     'utf8'
   );
@@ -929,21 +954,22 @@ export const cleanBranchCache = async (rootDirectory: string): Promise<number> =
   }
   let removed = 0;
   for (const name of entries) {
-    let directory: string | undefined;
-    try {
-      const entry = JSON.parse(
-        await fs.readFile(path.join(root, name), 'utf8')
-      ) as WorktreeCacheEntry;
-      directory = entry.directory;
-      await gitValue(
-        ['worktree', 'remove', '--force', entry.directory],
-        rootDirectory
-      );
-    } catch {
-      await fs.rm(path.join(root, name), { force: true });
+    const entry = JSON.parse(
+      await fs.readFile(path.join(root, name), 'utf8')
+    ) as WorktreeCacheEntry;
+    if (isRegisteredWorktree(rootDirectory, entry.directory)) {
+      try {
+        gitValue(
+          ['worktree', 'remove', '--force', entry.directory],
+          rootDirectory
+        );
+      } catch (error) {
+        throw new Error(
+          `Could not remove cached worktree: ${entry.directory}`,
+          { cause: error }
+        );
+      }
     }
-    if (directory)
-      await fs.rm(directory, { recursive: true, force: true });
     await fs.rm(path.join(root, name), { force: true });
     removed++;
   }
@@ -979,8 +1005,12 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
     ? resolvePrRefs(options.pr, rootDirectory)
     : undefined;
   if (prInfo) options.refs = { baseline: prInfo.base, candidate: prInfo.head };
-  const baselineCommit = resolveCommit(options.refs.baseline, rootDirectory);
-  const candidateCommit = resolveCommit(options.refs.candidate, rootDirectory);
+  const baselineCommit = options.baselineDir
+    ? resolveCommit('HEAD', options.baselineDir)
+    : resolveCommit(options.refs.baseline, rootDirectory);
+  const candidateCommit = options.candidateDir
+    ? resolveCommit('HEAD', options.candidateDir)
+    : resolveCommit(options.refs.candidate, rootDirectory);
   const files = changedFiles(baselineCommit, candidateCommit, rootDirectory);
   const filePath = (line: string): string => line.split('\t').at(-1) ?? '';
   const nativeChanged = files.some((line) =>
@@ -1065,7 +1095,7 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
           ? path.join(
               cacheRootOf(rootDirectory),
               'worktrees',
-              cacheKey(commit, options.target)
+              cacheKey(commit, options.target, dependencyFingerprint)
             )
           : path.join(worktreeRoot, label));
       if (!configuredDirectory && !sharedDirectory && !cached) {
@@ -1093,7 +1123,7 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
           temporaryWorktrees.delete(directory);
         }
       }
-      commitDirectories.set(commit, directory);
+      if (!configuredDirectory) commitDirectories.set(commit, directory);
       sides.set(label, {
         label,
         ref,
@@ -1122,7 +1152,7 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
         candidate,
         probeOptions,
         path.join(toolDirectory, 'run.ts'),
-        `${prefix}-coverage-probe`,
+        safeName(`${prefix}-coverage-probe`),
         logDirectory
       );
       await runTool(
@@ -1175,7 +1205,9 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
     for (const entry of schedule) {
       const side = sides.get(entry.label);
       if (!side) throw new Error(`Missing ${entry.label} checkout.`);
-      const runId = `${prefix}-${entry.label}-c${entry.cycle + 1}p${entry.position}`;
+      const runId = safeName(
+        `${prefix}-${entry.label}-c${entry.cycle + 1}p${entry.position}`
+      );
       const logPath = await captureSide(
         side,
         effectiveOptions,
@@ -1261,9 +1293,14 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
     const reportPath = await writeBranchReport(report, { checks });
     process.stdout.write(`Branch report: ${reportPath}\n`);
     process.stdout.write(`Verdict: ${aggregate.verdict}\n`);
-    if (inconclusiveRunIds.length > 0 && !options.allowInconclusive) {
+    if (aggregate.verdict === 'INCONCLUSIVE' && !options.allowInconclusive) {
+      const reasons = checks
+        .filter(
+          (check) => check.passed === null && !comparisonCheckSatisfied(check)
+        )
+        .map((check) => check.name);
       throw new Error(
-        `Performance evidence is inconclusive for: ${inconclusiveRunIds.join(', ')}`
+        `Performance evidence is inconclusive for: ${[...inconclusiveRunIds, ...reasons].join(', ')}`
       );
     }
   } finally {

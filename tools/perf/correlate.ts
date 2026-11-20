@@ -3,6 +3,7 @@ import type {
   RendererPerfSample,
 } from '../../src/types/performance.ts';
 import {
+  coveredDurationSeconds,
   isTapeReplay,
   type AnalysisWindow,
   type PerfCapture,
@@ -95,7 +96,6 @@ export function correlateCapture(
       ? Math.max(...capture.main.map((sample) => Date.parse(sample.timestamp))) +
         1
       : origin + options.analysisWindow.endSeconds * 1000;
-  if (analysisEnd - analysisStart < MIN_ANALYSIS_SECONDS * 1000) return [];
 
   const main = capture.main.filter((sample) => {
     const bounds = boundsOf(sample);
@@ -106,7 +106,12 @@ export function correlateCapture(
       Number.isFinite(sample.iracing.frameRate.avg)
     );
   });
-  if (main.length < 3) return [];
+  if (
+    main.length < 3 ||
+    coveredDurationSeconds(main, analysisStart, analysisEnd) <
+      MIN_ANALYSIS_SECONDS
+  )
+    return [];
 
   const rendererSamples = (capture.renderer ?? []).filter((sample) => {
     const bounds = boundsOf(sample);
@@ -130,22 +135,33 @@ export function correlateCapture(
     [...sectionValues].map(([name, values]) => [name, percentile(values, 0.75)])
   );
   const eventLoopBaseline = percentile(
-    main.map((sample) => sample.eventLoopDelayMs.p99),
+    main.map((sample) => sample.eventLoopDelayMs.max),
     0.75
   );
-  const channelValues = new Map<string, number[]>();
-  for (const sample of main) {
-    const intervalSeconds = Math.max(0.001, (sample.intervalMs ?? 5000) / 1000);
-    for (const [channel, count] of Object.entries(
-      sample.channelMetrics?.publications ?? {}
-    )) {
-      const values = channelValues.get(channel) ?? [];
-      values.push(count / intervalSeconds);
-      channelValues.set(channel, values);
-    }
-  }
+  const publicationSamples = main.flatMap((sample) => {
+    const publications = sample.channelMetrics?.publications;
+    if (publications === undefined) return [];
+    return [
+      {
+        publications,
+        intervalSeconds: Math.max(0.001, (sample.intervalMs ?? 5000) / 1000),
+      },
+    ];
+  });
+  const channelNames = new Set(
+    publicationSamples.flatMap(({ publications }) => Object.keys(publications))
+  );
   const channelBaselines = new Map(
-    [...channelValues].map(([name, values]) => [name, percentile(values, 0.75)])
+    [...channelNames].map((name) => [
+      name,
+      percentile(
+        publicationSamples.map(
+          ({ publications, intervalSeconds }) =>
+            (publications[name] ?? 0) / intervalSeconds
+        ),
+        0.75
+      ),
+    ])
   );
   const rendererBaselines = new Map<RendererMeasure, number>();
   for (const measure of rendererMeasures) {
@@ -186,7 +202,7 @@ export function correlateCapture(
       Math.max(eventLoopBaseline * 1.5, eventLoopBaseline + 2)
     )
       contributors.push(
-        `main event-loop max ${formatMs(sample.eventLoopDelayMs.max)} ms vs ${formatMs(eventLoopBaseline)} ms p95 baseline`
+        `main event-loop max ${formatMs(sample.eventLoopDelayMs.max)} ms vs ${formatMs(eventLoopBaseline)} ms p75 of interval maxima`
       );
 
     const intervalSeconds = Math.max(0.001, (sample.intervalMs ?? 5000) / 1000);
@@ -230,7 +246,7 @@ export function correlateCapture(
       ],
       nextStep:
         contributors.length > 0
-          ? `Capture a short trace covering T+${Math.max(0, offsetSeconds - 5).toFixed(0)}s to ${(offsetSeconds + 5).toFixed(0)}s and inspect the listed measures; isolate the matching widget or channel afterwards.`
+          ? `Capture a short trace covering T+${Math.max(0, (candidateBounds.start - origin) / 1000 - 5).toFixed(0)}s to ${(offsetSeconds + 5).toFixed(0)}s and inspect the listed measures; isolate the matching widget or channel afterwards.`
           : 'Check game, GPU and host saturation for this interval. The absence of an instrumented peak does not rule out an unmeasured path.',
     });
     if (findings.length >= 5) break;

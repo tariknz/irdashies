@@ -7,6 +7,7 @@ describe('performance runner window-mode validation', () => {
     ['--window-mode'],
     ['--window-mode', '--target', 'dev'],
     ['--window-mode', 'invalid'],
+    ['--window-mode=invalid'],
   ])('rejects invalid arguments %j before launching the app', (...args) => {
     const result = spawnSync(
       process.execPath,
@@ -18,7 +19,9 @@ describe('performance runner window-mode validation', () => {
       { encoding: 'utf8', env: { ...process.env, NODE_OPTIONS: '' } }
     );
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain('--window-mode must be display or widget');
+    expect(result.stderr).toMatch(
+      /(?:Invalid --window-mode|--window-mode requires a value)/
+    );
     expect(result.stdout).not.toContain('Performance run:');
   });
 

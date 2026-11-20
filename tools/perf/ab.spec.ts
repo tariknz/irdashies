@@ -39,6 +39,7 @@ describe('performance CLI A/B runner', () => {
       { name: 'full', mode: 'full' },
       { name: 'map', mode: 'full', widgets: 'map' },
     ]);
+    expect(parseScenarioSpecs(['widgets:map'])).toEqual([specs[2]]);
     expect(contrastBetween(specs[0], specs[1])).toEqual(['overlay']);
     expect(contrastBetween(specs[1], specs[2])).toEqual(['widgets']);
     expect(() => parseScenarioSpecs(['full', 'bad name'])).toThrow(

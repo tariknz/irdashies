@@ -162,6 +162,8 @@ export class TelemetryPerfMetrics {
   private eventLoopDelay = monitorEventLoopDelay({ resolution: 20 });
   private reportTimer: NodeJS.Timeout | null = null;
   private privateMemorySampler: NodeJS.Timeout | null = null;
+  private linuxMemorySampleId = 0;
+  private appliedLinuxMemorySampleId = 0;
   private linuxPrivateMemoryKB = new Map<number, number>();
   private lastReportTime = 0;
   private lastTickTime = 0;
@@ -220,11 +222,14 @@ export class TelemetryPerfMetrics {
       clearInterval(this.privateMemorySampler);
       this.privateMemorySampler = null;
     }
+    this.appliedLinuxMemorySampleId = this.linuxMemorySampleId;
+    this.linuxPrivateMemoryKB.clear();
     this.eventLoopDelay.disable();
     if (activePerfMetrics === this) setActivePerfMetrics(null);
   }
 
   private sampleLinuxPrivateMemory(): void {
+    const sampleId = ++this.linuxMemorySampleId;
     const pids = app
       .getAppMetrics()
       .map((metric) => metric.pid)
@@ -241,6 +246,8 @@ export class TelemetryPerfMetrics {
         }
       })
     ).then((entries) => {
+      if (sampleId <= this.appliedLinuxMemorySampleId) return;
+      this.appliedLinuxMemorySampleId = sampleId;
       const next = new Map<number, number>();
       for (const entry of entries) {
         if (entry) next.set(entry[0], entry[1]);

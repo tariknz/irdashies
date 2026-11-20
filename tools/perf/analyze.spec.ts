@@ -93,7 +93,19 @@ const capture = (
   originSeconds = 0
 ) => ({
   main,
-  renderer: [] as RendererPerfSample[],
+  renderer: main.map((sample): RendererPerfSample => ({
+    schemaVersion: 1,
+    timestamp: sample.timestamp,
+    runId: sample.runId,
+    scenario: sample.scenario,
+    pid: 1,
+    route: '/',
+    visibilityState: 'visible',
+    intervalMs: sample.intervalMs ?? 5000,
+    frameTimeMs: stats(16),
+    framesOver25Ms: 0,
+    framesOver50Ms: 0,
+  })),
   visibility,
   origins: [
     {
@@ -537,6 +549,45 @@ describe('performance analysis', () => {
     candidate.scenarioMetadata.widgetInputRequirements = {
       standings: ['driver.snapshot'],
     };
+    expect(comparisonCoreComplete(baseline, candidate)).toBe(false);
+  });
+
+  it('withholds the renderer gate without observations and passes a measured zero', () => {
+    const input = capture(conclusiveSamples());
+    const measured = summarizeCapture(input, 0);
+    const unmeasured = summarizeCapture({ ...input, renderer: [] }, 0);
+    const rendererCheck = (candidate: PerfSummary) =>
+      compareSummaries(measured, candidate).checks.find(
+        ({ name }) => name === 'Renderer frames over 50 ms'
+      );
+    expect(rendererCheck(unmeasured)?.passed).toBeNull();
+    expect(rendererCheck(measured)).toMatchObject({ passed: true, actual: 0 });
+  });
+
+  it('matches visibility schedules and effective windows across captures', () => {
+    const baseline = summarizeCapture(capture(conclusiveSamples()), 0);
+    const candidate = summarizeCapture(capture(conclusiveSamples()), 0);
+    candidate.visibilityPhases = [
+      {
+        runId: 'different',
+        timestamp: new Date(0).toISOString(),
+        index: 0,
+        visibility: 'hidden',
+        durationSeconds: 120,
+      },
+    ];
+    expect(comparisonCoreComplete(baseline, candidate)).toBe(false);
+
+    baseline.visibilityPhases = [
+      {
+        ...candidate.visibilityPhases[0],
+        runId: 'baseline',
+        timestamp: new Date(5000).toISOString(),
+      },
+    ];
+    expect(comparisonCoreComplete(baseline, candidate)).toBe(true);
+
+    candidate.analysisWindow.endSeconds = 310;
     expect(comparisonCoreComplete(baseline, candidate)).toBe(false);
   });
 

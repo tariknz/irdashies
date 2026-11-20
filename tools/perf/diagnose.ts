@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import {
-  comparisonCoreComplete,
+  comparisonEvidenceReasons,
   parsePerfLog,
   summarizeCapture,
   type AnalysisWindow,
@@ -310,12 +310,13 @@ export function diagnosePerfSummary(summary: PerfSummary): PerfDiagnosis {
   }
 
   if (
-    summary.renderer.framesOver50MsPercent > PERF_GATES.framesOver50MsPercent.maximum
+    summary.renderer.framesOver50MsPercent >=
+    PERF_GATES.framesOver50MsPercent.maximum
   ) {
     add({
       id: 'renderer-long-frames',
       severity: 'attention',
-      title: 'Renderer frames over 50 ms exceeded the project target',
+      title: 'Renderer frames over 50 ms reached the project limit',
       evidence: [
         `${format(summary.renderer.framesOver50MsPercent, 3)}% of observed renderer frames exceeded 50 ms; target is below ${PERF_GATES.framesOver50MsPercent.maximum}%.`,
         `Worst observed renderer frame: ${format(summary.renderer.worstFrameMs)} ms.`,
@@ -445,6 +446,7 @@ function isPerfSummary(value: unknown): value is PerfSummary {
   return (
     typeof value.runId === 'string' &&
     typeof value.scenario === 'string' &&
+    isRecord(value.scenarioMetadata) &&
     isFiniteNumber(value.durationMinutes) &&
     isRecord(app) &&
     (isFiniteNumber(app.privateMemorySlopeMBPerMinute) ||
@@ -506,8 +508,10 @@ function isPerfComparison(value: unknown): value is PerfComparison {
     ) &&
     (value.contrast === undefined ||
       (Array.isArray(value.contrast) &&
-        value.contrast.every((item) =>
-          (COMPARISON_CONTRASTS as readonly string[]).includes(String(item))
+        value.contrast.every(
+          (item) =>
+            typeof item === 'string' &&
+            (COMPARISON_CONTRASTS as readonly string[]).includes(item)
         )))
   );
 }
@@ -589,25 +593,6 @@ export function diagnosePerfComparison(
     typeof comparison.baseline.scenarioMetadata.sourceDirty === 'boolean' &&
     typeof comparison.candidate.scenarioMetadata.sourceCommit === 'string' &&
     typeof comparison.candidate.scenarioMetadata.sourceDirty === 'boolean';
-  const comparisonReasons = [
-    ...comparison.baseline.evidence.inconclusiveReasons.map(
-      (reason) => `baseline ${reason}`
-    ),
-    ...comparison.candidate.evidence.inconclusiveReasons.map(
-      (reason) => `candidate ${reason}`
-    ),
-    ...(workloadCheck?.passed === false
-      ? ['baseline and candidate workload metadata differ']
-      : workloadCheck?.passed === null || workloadCheck === undefined
-        ? ['workload metadata is unavailable or inconsistent']
-        : []),
-  ];
-  diagnosis.run.evidenceConclusive = comparisonCoreComplete(
-    comparison.baseline,
-    comparison.candidate,
-    comparison.contrast ?? []
-  );
-  diagnosis.run.inconclusiveReasons = [...new Set(comparisonReasons)];
   const failed = comparison.checks.filter(
     (check) =>
       check.passed === false && check.name !== 'Matched workload metadata'
@@ -615,6 +600,8 @@ export function diagnosePerfComparison(
   const inconclusive = comparison.checks.filter(
     (check) => check.passed === null && !comparisonCheckSatisfied(check)
   );
+  diagnosis.run.inconclusiveReasons = comparisonEvidenceReasons(comparison);
+  diagnosis.run.evidenceConclusive = diagnosis.run.inconclusiveReasons.length === 0;
   diagnosis.findings.push({
     id: 'comparison-provenance',
     severity: workloadMatches && sourceProvenanceComplete ? 'info' : 'caution',
@@ -1004,6 +991,22 @@ export async function runDiagnosisCli(args: string[]): Promise<void> {
     )
   )
     throw new Error('Diagnosis output must not overwrite its input file.');
+  const inputStat = await fs.stat(options.inputPath, { bigint: true });
+  for (const outputPath of [jsonPath, markdownPath]) {
+    const outputStat = await fs
+      .stat(outputPath, { bigint: true })
+      .catch((error: NodeJS.ErrnoException) => {
+        if (error.code !== 'ENOENT') throw error;
+        return undefined;
+      });
+    if (
+      outputStat &&
+      outputStat.dev === inputStat.dev &&
+      outputStat.ino === inputStat.ino
+    ) {
+      throw new Error('Diagnosis output must not overwrite its input file.');
+    }
+  }
   await fs.mkdir(path.dirname(jsonPath), { recursive: true });
   await Promise.all([
     fs.writeFile(jsonPath, JSON.stringify(diagnosis, null, 2), 'utf8'),

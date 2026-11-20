@@ -88,6 +88,7 @@ export function numericArgument(
   if (raw === undefined) return fallback;
   const value = Number(raw);
   if (
+    raw.trim() === '' ||
     !Number.isFinite(value) ||
     (options.integer && !Number.isInteger(value)) ||
     (options.min !== undefined && value < options.min) ||
@@ -122,3 +123,6 @@ export function listArgument(
     .map((item) => item.trim())
     .filter(Boolean);
 }
+
+export const safeName = (value: string): string =>
+  value.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '');

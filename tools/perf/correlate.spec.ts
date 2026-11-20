@@ -65,7 +65,7 @@ describe('perf log correlation', () => {
     expect(findings[0].title).toContain('T+180s');
     expect(findings[0].evidence[0]).toContain('40.0');
     expect(findings[0].evidence.join(' ')).toContain('processTelemetry');
-    expect(findings[0].nextStep).toContain('T+175s');
+    expect(findings[0].nextStep).toContain('T+115s');
   });
 
   it('stays quiet for a stable workload', () => {
@@ -87,9 +87,20 @@ describe('perf log correlation', () => {
     ).toEqual([]);
   });
 
+  it('does not count gaps between short observations as evidence', () => {
+    const capture = buildCapture(true);
+    for (const sample of capture.main) sample.intervalMs = 5000;
+    expect(
+      correlateCapture(capture, {
+        warmupSeconds: 0,
+        analysisWindow: { endSeconds: 600 },
+      })
+    ).toEqual([]);
+  });
+
   it('does not speculate when the analysis window is too short', () => {
     const capture = buildCapture(true);
-    capture.main = capture.main.slice(0, 3);
+    capture.main = capture.main.slice(0, 4);
     expect(
       correlateCapture(capture, {
         warmupSeconds: 0,
