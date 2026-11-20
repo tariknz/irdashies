@@ -10,6 +10,7 @@ import {
   integrityFraction,
   iracingBodyTier,
   isPunctured,
+  LMU_DENT_PANELS,
   suspTier,
   suspensionIntegrity,
   tyreIntegrity,
@@ -70,27 +71,35 @@ export const DamageDisplay = ({
   const fallbackTier = iracingBodyTier(repairNeeded, optRepairNeeded);
   const panelFill = Array.from(
     { length: 8 },
-    (_, index) => BODY_FILL[hasDents ? bodyTier(dents[index]) : fallbackTier]
+    (_, index) =>
+      BODY_FILL[
+        hasDents ? bodyTier(dents[LMU_DENT_PANELS[index]]) : fallbackTier
+      ]
   );
 
   const centre = integrityFraction(data.aeroDamage, hasDents ? dents : []);
   const aero = aeroIntegrity(data.aeroDamage);
   const body = bodyIntegrity(hasDents ? dents : []);
   const susp = suspensionIntegrity(data.suspensionDamage, data.wheelDetached);
-  const tyre = tyreIntegrity(data.tyreWear);
   const hasSusp = data.suspensionDamage.some(
     (v) => Number.isFinite(v) && v >= 0
   );
 
+  const detached = [0, 1, 2, 3].map((index) => !!data.wheelDetached[index]);
   const wheelFill = [0, 1, 2, 3].map((index) => {
-    const detached = !!data.wheelDetached[index];
-    if (hasSusp || detached) {
-      return SUSP_FILL[suspTier(detached, data.suspensionDamage[index])];
+    if (hasSusp || detached[index]) {
+      return SUSP_FILL[suspTier(detached[index], data.suspensionDamage[index])];
     }
     return SUSP_FILL[tyreWearTier(data.tyreWear[index])];
   });
   const punctured = [0, 1, 2, 3].map(
-    (index) => isPunctured(data.tyreWear[index]) && !data.wheelDetached[index]
+    (index) =>
+      isPunctured(data.tyreWear[index], data.tyrePressure[index]) &&
+      !detached[index]
+  );
+  const tyre = tyreIntegrity(
+    data.tyreWear,
+    detached.map((lost, index) => lost || punctured[index])
   );
 
   return (
@@ -104,6 +113,7 @@ export const DamageDisplay = ({
           panelFill={panelFill}
           wheelFill={wheelFill}
           punctured={punctured}
+          detached={detached}
           integrityLabel={
             showIntegrity && centre !== null ? formatIntegrityPct(centre) : null
           }

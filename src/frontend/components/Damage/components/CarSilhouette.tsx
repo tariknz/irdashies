@@ -5,6 +5,7 @@ export interface CarSilhouetteProps {
   panelFill: string[];
   wheelFill: string[];
   punctured: boolean[];
+  detached: boolean[];
   integrityLabel: string | null;
 }
 
@@ -17,6 +18,7 @@ const Wheel = ({
   h = 18,
   fill,
   punctured,
+  detached,
 }: {
   x: number;
   y: number;
@@ -24,6 +26,7 @@ const Wheel = ({
   h?: number;
   fill: string;
   punctured: boolean;
+  detached: boolean;
 }) => (
   <rect
     x={x}
@@ -31,9 +34,10 @@ const Wheel = ({
     width={w}
     height={h}
     rx={1.5}
-    fill={punctured ? 'none' : fill}
-    stroke={punctured ? '#ef4444' : stroke}
-    strokeWidth={punctured ? 1.4 : 0.6}
+    fill={punctured || detached ? 'none' : fill}
+    stroke={punctured || detached ? '#ef4444' : stroke}
+    strokeWidth={punctured || detached ? 1.4 : 0.6}
+    strokeDasharray={detached ? '2 1.5' : undefined}
   />
 );
 
@@ -57,11 +61,13 @@ function GtCar({
   p,
   w,
   punctured,
+  detached,
   integrityLabel,
 }: {
   p: string[];
   w: string[];
   punctured: boolean[];
+  detached: boolean[];
   integrityLabel: string | null;
 }) {
   return (
@@ -147,10 +153,34 @@ function GtCar({
         stroke={stroke}
         strokeWidth="0.6"
       />
-      <Wheel x={8} y={34} fill={w[0]} punctured={punctured[0]} />
-      <Wheel x={84} y={34} fill={w[1]} punctured={punctured[1]} />
-      <Wheel x={8} y={108} fill={w[2]} punctured={punctured[2]} />
-      <Wheel x={84} y={108} fill={w[3]} punctured={punctured[3]} />
+      <Wheel
+        x={8}
+        y={34}
+        fill={w[0]}
+        punctured={punctured[0]}
+        detached={detached[0]}
+      />
+      <Wheel
+        x={84}
+        y={34}
+        fill={w[1]}
+        punctured={punctured[1]}
+        detached={detached[1]}
+      />
+      <Wheel
+        x={8}
+        y={108}
+        fill={w[2]}
+        punctured={punctured[2]}
+        detached={detached[2]}
+      />
+      <Wheel
+        x={84}
+        y={108}
+        fill={w[3]}
+        punctured={punctured[3]}
+        detached={detached[3]}
+      />
       <Integrity label={integrityLabel} />
     </>
   );
@@ -160,11 +190,13 @@ function PrototypeCar({
   p,
   w,
   punctured,
+  detached,
   integrityLabel,
 }: {
   p: string[];
   w: string[];
   punctured: boolean[];
+  detached: boolean[];
   integrityLabel: string | null;
 }) {
   return (
@@ -240,10 +272,34 @@ function PrototypeCar({
         stroke={stroke}
         strokeWidth="0.7"
       />
-      <Wheel x={6} y={32} fill={w[0]} punctured={punctured[0]} />
-      <Wheel x={86} y={32} fill={w[1]} punctured={punctured[1]} />
-      <Wheel x={6} y={110} fill={w[2]} punctured={punctured[2]} />
-      <Wheel x={86} y={110} fill={w[3]} punctured={punctured[3]} />
+      <Wheel
+        x={6}
+        y={32}
+        fill={w[0]}
+        punctured={punctured[0]}
+        detached={detached[0]}
+      />
+      <Wheel
+        x={86}
+        y={32}
+        fill={w[1]}
+        punctured={punctured[1]}
+        detached={detached[1]}
+      />
+      <Wheel
+        x={6}
+        y={110}
+        fill={w[2]}
+        punctured={punctured[2]}
+        detached={detached[2]}
+      />
+      <Wheel
+        x={86}
+        y={110}
+        fill={w[3]}
+        punctured={punctured[3]}
+        detached={detached[3]}
+      />
       <Integrity label={integrityLabel} />
     </>
   );
@@ -253,11 +309,13 @@ function OpenWheelCar({
   p,
   w,
   punctured,
+  detached,
   integrityLabel,
 }: {
   p: string[];
   w: string[];
   punctured: boolean[];
+  detached: boolean[];
   integrityLabel: string | null;
 }) {
   return (
@@ -332,9 +390,33 @@ function OpenWheelCar({
         stroke={stroke}
         strokeWidth="0.8"
       />
-      <Wheel x={4} y={28} w={10} h={20} fill={w[0]} punctured={punctured[0]} />
-      <Wheel x={86} y={28} w={10} h={20} fill={w[1]} punctured={punctured[1]} />
-      <Wheel x={4} y={108} w={10} h={20} fill={w[2]} punctured={punctured[2]} />
+      <Wheel
+        x={4}
+        y={28}
+        w={10}
+        h={20}
+        fill={w[0]}
+        punctured={punctured[0]}
+        detached={detached[0]}
+      />
+      <Wheel
+        x={86}
+        y={28}
+        w={10}
+        h={20}
+        fill={w[1]}
+        punctured={punctured[1]}
+        detached={detached[1]}
+      />
+      <Wheel
+        x={4}
+        y={108}
+        w={10}
+        h={20}
+        fill={w[2]}
+        punctured={punctured[2]}
+        detached={detached[2]}
+      />
       <Wheel
         x={86}
         y={108}
@@ -342,6 +424,7 @@ function OpenWheelCar({
         h={20}
         fill={w[3]}
         punctured={punctured[3]}
+        detached={detached[3]}
       />
       <Integrity label={integrityLabel} />
     </>
@@ -352,11 +435,13 @@ function HatchCar({
   p,
   w,
   punctured,
+  detached,
   integrityLabel,
 }: {
   p: string[];
   w: string[];
   punctured: boolean[];
+  detached: boolean[];
   integrityLabel: string | null;
 }) {
   return (
@@ -422,10 +507,34 @@ function HatchCar({
         stroke={stroke}
         strokeWidth="0.7"
       />
-      <Wheel x={6} y={40} fill={w[0]} punctured={punctured[0]} />
-      <Wheel x={86} y={40} fill={w[1]} punctured={punctured[1]} />
-      <Wheel x={6} y={112} fill={w[2]} punctured={punctured[2]} />
-      <Wheel x={86} y={112} fill={w[3]} punctured={punctured[3]} />
+      <Wheel
+        x={6}
+        y={40}
+        fill={w[0]}
+        punctured={punctured[0]}
+        detached={detached[0]}
+      />
+      <Wheel
+        x={86}
+        y={40}
+        fill={w[1]}
+        punctured={punctured[1]}
+        detached={detached[1]}
+      />
+      <Wheel
+        x={6}
+        y={112}
+        fill={w[2]}
+        punctured={punctured[2]}
+        detached={detached[2]}
+      />
+      <Wheel
+        x={86}
+        y={112}
+        fill={w[3]}
+        punctured={punctured[3]}
+        detached={detached[3]}
+      />
       <Integrity label={integrityLabel} />
     </>
   );
@@ -435,11 +544,13 @@ function StockCar({
   p,
   w,
   punctured,
+  detached,
   integrityLabel,
 }: {
   p: string[];
   w: string[];
   punctured: boolean[];
+  detached: boolean[];
   integrityLabel: string | null;
 }) {
   return (
@@ -505,10 +616,34 @@ function StockCar({
         stroke={stroke}
         strokeWidth="0.7"
       />
-      <Wheel x={4} y={38} fill={w[0]} punctured={punctured[0]} />
-      <Wheel x={88} y={38} fill={w[1]} punctured={punctured[1]} />
-      <Wheel x={4} y={112} fill={w[2]} punctured={punctured[2]} />
-      <Wheel x={88} y={112} fill={w[3]} punctured={punctured[3]} />
+      <Wheel
+        x={4}
+        y={38}
+        fill={w[0]}
+        punctured={punctured[0]}
+        detached={detached[0]}
+      />
+      <Wheel
+        x={88}
+        y={38}
+        fill={w[1]}
+        punctured={punctured[1]}
+        detached={detached[1]}
+      />
+      <Wheel
+        x={4}
+        y={112}
+        fill={w[2]}
+        punctured={punctured[2]}
+        detached={detached[2]}
+      />
+      <Wheel
+        x={88}
+        y={112}
+        fill={w[3]}
+        punctured={punctured[3]}
+        detached={detached[3]}
+      />
       <Integrity label={integrityLabel} />
     </>
   );
@@ -518,11 +653,13 @@ function TruckCar({
   p,
   w,
   punctured,
+  detached,
   integrityLabel,
 }: {
   p: string[];
   w: string[];
   punctured: boolean[];
+  detached: boolean[];
   integrityLabel: string | null;
 }) {
   return (
@@ -588,10 +725,42 @@ function TruckCar({
         stroke={stroke}
         strokeWidth="0.7"
       />
-      <Wheel x={2} y={44} w={9} h={20} fill={w[0]} punctured={punctured[0]} />
-      <Wheel x={89} y={44} w={9} h={20} fill={w[1]} punctured={punctured[1]} />
-      <Wheel x={2} y={116} w={9} h={20} fill={w[2]} punctured={punctured[2]} />
-      <Wheel x={89} y={116} w={9} h={20} fill={w[3]} punctured={punctured[3]} />
+      <Wheel
+        x={2}
+        y={44}
+        w={9}
+        h={20}
+        fill={w[0]}
+        punctured={punctured[0]}
+        detached={detached[0]}
+      />
+      <Wheel
+        x={89}
+        y={44}
+        w={9}
+        h={20}
+        fill={w[1]}
+        punctured={punctured[1]}
+        detached={detached[1]}
+      />
+      <Wheel
+        x={2}
+        y={116}
+        w={9}
+        h={20}
+        fill={w[2]}
+        punctured={punctured[2]}
+        detached={detached[2]}
+      />
+      <Wheel
+        x={89}
+        y={116}
+        w={9}
+        h={20}
+        fill={w[3]}
+        punctured={punctured[3]}
+        detached={detached[3]}
+      />
       <Integrity label={integrityLabel} />
     </>
   );
@@ -602,6 +771,7 @@ export const CarSilhouette = ({
   panelFill,
   wheelFill,
   punctured,
+  detached,
   integrityLabel,
 }: CarSilhouetteProps) => {
   const p =
@@ -614,6 +784,7 @@ export const CarSilhouette = ({
       : Array.from({ length: 4 }, () => '#10b981');
   const punct =
     punctured.length === 4 ? punctured : [false, false, false, false];
+  const lost = detached.length === 4 ? detached : [false, false, false, false];
 
   const body =
     style === 'prototype' ? (
@@ -621,6 +792,7 @@ export const CarSilhouette = ({
         p={p}
         w={w}
         punctured={punct}
+        detached={lost}
         integrityLabel={integrityLabel}
       />
     ) : style === 'openwheel' ? (
@@ -628,16 +800,41 @@ export const CarSilhouette = ({
         p={p}
         w={w}
         punctured={punct}
+        detached={lost}
         integrityLabel={integrityLabel}
       />
     ) : style === 'hatch' ? (
-      <HatchCar p={p} w={w} punctured={punct} integrityLabel={integrityLabel} />
+      <HatchCar
+        p={p}
+        w={w}
+        punctured={punct}
+        detached={lost}
+        integrityLabel={integrityLabel}
+      />
     ) : style === 'stock' ? (
-      <StockCar p={p} w={w} punctured={punct} integrityLabel={integrityLabel} />
+      <StockCar
+        p={p}
+        w={w}
+        punctured={punct}
+        detached={lost}
+        integrityLabel={integrityLabel}
+      />
     ) : style === 'truck' ? (
-      <TruckCar p={p} w={w} punctured={punct} integrityLabel={integrityLabel} />
+      <TruckCar
+        p={p}
+        w={w}
+        punctured={punct}
+        detached={lost}
+        integrityLabel={integrityLabel}
+      />
     ) : (
-      <GtCar p={p} w={w} punctured={punct} integrityLabel={integrityLabel} />
+      <GtCar
+        p={p}
+        w={w}
+        punctured={punct}
+        detached={lost}
+        integrityLabel={integrityLabel}
+      />
     );
 
   return (

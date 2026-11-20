@@ -54,12 +54,46 @@ export const Hatch: Story = {
   args: {
     data: {
       ...DEMO_DAMAGE,
-      dentSeverity: [0, 1, 0, 0, 0, 0, 0, 0],
+      dentSeverity: [1, 0, 0, 0, 0, 0, 0, 0],
     },
     opacity: 80,
     showIntegrity: true,
     showStats: true,
     bodyStyle: 'hatch',
+  },
+  decorators: box(),
+};
+
+export const WheelLost: Story = {
+  args: {
+    data: {
+      ...DEMO_DAMAGE,
+      dentSeverity: [0, 0, 0, 0, 2, 0, 0, 0],
+      wheelDetached: [false, false, false, true],
+      suspensionDamage: [0.01, 0.05, 0.02, 0.1],
+      tyreWear: [0.92, 0.88, 0.9, 0.75],
+    },
+    opacity: 80,
+    showIntegrity: true,
+    showStats: true,
+    bodyStyle: 'gt',
+  },
+  decorators: box(),
+};
+
+export const Puncture: Story = {
+  args: {
+    data: {
+      ...DEMO_DAMAGE,
+      dentSeverity: [0, 0, 0, 0, 0, 0, 0, 0],
+      suspensionDamage: [0, 0, 0, 0],
+      tyreWear: [0.92, 0.88, 0.9, 0.75],
+      tyrePressure: [172, 0, 169, 170],
+    },
+    opacity: 80,
+    showIntegrity: true,
+    showStats: true,
+    bodyStyle: 'gt',
   },
   decorators: box(),
 };
@@ -71,6 +105,7 @@ export const IracingRepairNeeded: Story = {
       wheelDetached: [false, false, false, false],
       suspensionDamage: [],
       tyreWear: [0.85, 0.9, 0.4, 0.88],
+      tyrePressure: [],
       aeroDamage: undefined,
       repairTime: 18.2,
       optRepairTime: 6.5,

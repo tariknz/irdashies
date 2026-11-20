@@ -17,6 +17,9 @@ export const useDamage = (): DamageSnapshot => {
       tyreWear: car?.tyreWear?.length
         ? car.tyreWear.map((value) => value ?? Number.NaN)
         : [],
+      tyrePressure: car?.tyrePressure?.length
+        ? car.tyrePressure.map((value) => value ?? Number.NaN)
+        : [],
       aeroDamage: car?.aeroDamage,
       repairTime: positive(car?.lmuRepairTime) ?? positive(car?.pitRepairLeft),
       optRepairTime: positive(car?.pitOptRepairLeft),

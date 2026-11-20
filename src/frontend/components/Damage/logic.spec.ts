@@ -9,6 +9,7 @@ import {
   integrityFraction,
   iracingBodyTier,
   isPunctured,
+  LMU_DENT_PANELS,
   suspTier,
   suspensionIntegrity,
   tyreIntegrity,
@@ -64,6 +65,34 @@ describe('damage logic', () => {
     expect(tyreIntegrity([0.9, 0.8, 0.7, 0.6])).toBeCloseTo(0.6);
     expect(isPunctured(0.005)).toBe(true);
     expect(isPunctured(0.5)).toBe(false);
+  });
+
+  it('reads a lost wheel as 0% even when suspension damage is reported', () => {
+    expect(
+      suspensionIntegrity([0.01, 0.05, 0.02, 0.1], [false, false, false, true])
+    ).toBe(0);
+    expect(
+      tyreIntegrity([0.92, 0.88, 0.9, 0.75], [false, false, false, true])
+    ).toBe(0);
+    expect(
+      tyreIntegrity([0.92, 0.88, 0.9, 0.75], [false, false, false, false])
+    ).toBeCloseTo(0.75);
+  });
+
+  it('treats a deflated tyre as punctured', () => {
+    expect(isPunctured(0.9, 0)).toBe(true);
+    expect(isPunctured(0.9, 0.8)).toBe(true);
+    expect(isPunctured(0.9, 167.7)).toBe(false);
+    expect(isPunctured(0.9, Number.NaN)).toBe(false);
+    expect(
+      hasCarDamage({ ...UNDAMAGED, tyrePressure: [170, 0, 170, 170] })
+    ).toBe(true);
+  });
+
+  it('places each LMU dent slot on its own panel', () => {
+    const panels = ['FL', 'F', 'FR', 'L', 'R', 'RL', 'Rear', 'RR'];
+    const slots = ['F', 'FL', 'L', 'RL', 'Rear', 'RR', 'R', 'FR'];
+    expect(LMU_DENT_PANELS.map((slot) => slots[slot])).toEqual(panels);
   });
 
   it('detects damage without treating normal tyre wear as damage', () => {

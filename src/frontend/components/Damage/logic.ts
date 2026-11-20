@@ -6,6 +6,9 @@ export const SUSP_THRESHOLDS = {
 } as const;
 
 export const PUNCTURE_WEAR = 0.01;
+export const PUNCTURE_PRESSURE_KPA = 1;
+
+export const LMU_DENT_PANELS = [1, 0, 7, 2, 6, 3, 4, 5] as const;
 
 export type BodyDamageTier = 'ok' | 'light' | 'heavy' | 'detached';
 export type SuspDamageTier =
@@ -89,22 +92,32 @@ export const suspensionIntegrity = (
   suspensionDamage: readonly number[],
   wheelDetached: readonly boolean[]
 ): number | null => {
+  if (wheelDetached.some(Boolean)) return 0;
   const valid = suspensionDamage.filter((v) => Number.isFinite(v) && v >= 0);
   if (valid.length > 0) {
     return Math.max(0, Math.min(1, 1 - Math.max(...valid)));
   }
-  if (wheelDetached.some(Boolean)) return 0;
   return null;
 };
 
-export const tyreIntegrity = (tyreWear: readonly number[]): number | null => {
+export const tyreIntegrity = (
+  tyreWear: readonly number[],
+  lost: readonly boolean[] = []
+): number | null => {
+  if (lost.some(Boolean)) return 0;
   const valid = tyreWear.filter((v) => Number.isFinite(v));
   if (valid.length === 0) return null;
   return Math.max(0, Math.min(1, Math.min(...valid)));
 };
 
-export const isPunctured = (wear: number | undefined): boolean =>
-  wear !== undefined && Number.isFinite(wear) && wear <= PUNCTURE_WEAR;
+export const isPunctured = (
+  wear: number | undefined,
+  pressure?: number
+): boolean =>
+  (wear !== undefined && Number.isFinite(wear) && wear <= PUNCTURE_WEAR) ||
+  (pressure !== undefined &&
+    Number.isFinite(pressure) &&
+    pressure <= PUNCTURE_PRESSURE_KPA);
 
 export const formatIntegrityPct = (value: number | null): string => {
   if (value === null) return '—';
@@ -125,6 +138,7 @@ export interface DamageSnapshot {
   wheelDetached: boolean[];
   suspensionDamage: number[];
   tyreWear: number[];
+  tyrePressure: number[];
   aeroDamage: number | undefined;
   repairTime: number | undefined;
   optRepairTime: number | undefined;
@@ -151,15 +165,22 @@ export const hasCarDamage = (data: DamageSnapshot): boolean => {
   ) {
     return true;
   }
-  if (data.tyreWear.some((wear) => isPunctured(wear))) return true;
+  if (
+    data.tyreWear.some((wear, index) =>
+      isPunctured(wear, data.tyrePressure[index])
+    )
+  ) {
+    return true;
+  }
   return false;
 };
 
 export const DEMO_DAMAGE: DamageSnapshot = {
-  dentSeverity: [1, 0, 2, 0, 0, 0, 1, 0],
+  dentSeverity: [0, 1, 0, 0, 1, 0, 0, 2],
   wheelDetached: [false, false, false, false],
   suspensionDamage: [0.01, 0.2, 0.05, 0.5],
   tyreWear: [0.92, 0.88, 0.005, 0.75],
+  tyrePressure: [172, 171, 169, 170],
   aeroDamage: 0.18,
   repairTime: 12.5,
   optRepairTime: 4.0,
@@ -189,6 +210,7 @@ export const UNDAMAGED: DamageSnapshot = {
   wheelDetached: [false, false, false, false],
   suspensionDamage: [0, 0, 0, 0],
   tyreWear: [1, 1, 1, 1],
+  tyrePressure: [],
   aeroDamage: 0,
   repairTime: undefined,
   optRepairTime: undefined,
