@@ -120,7 +120,8 @@ export type PitStopTaintReason =
   | 'notInWorld'
   | 'approachNotSeen'
   | 'approachTooOld'
-  | 'longStop';
+  | 'longStop'
+  | 'reversed';
 
 export interface PitStopEstimateBreakdown {
   lossSeconds: number;

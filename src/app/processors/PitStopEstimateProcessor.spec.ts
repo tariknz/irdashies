@@ -180,10 +180,11 @@ const frame = (
   t: number,
   player: CarState,
   opponent: CarState,
-  extra: { caution?: boolean } = {}
+  extra: { caution?: boolean; gear?: number } = {}
 ): Telemetry =>
   ({
     SessionTime: { value: [t] },
+    Gear: { value: [extra.gear ?? 1] },
     SessionNum: { value: [0] },
     CarIdxLap: { value: [3, 3] },
     SessionFlags: {
@@ -339,6 +340,24 @@ describe('PitStopEstimateProcessor', () => {
     expect(sent.taintReasons).toEqual(['caution']);
     expect(sent.firstTaintSeconds).toBeCloseTo(20, 1);
     expect(sent.actualLossSeconds).toBeNull();
+  });
+
+  it('does not learn the lane from a stop where the player reversed', () => {
+    const store = memoryStore(learnedFile());
+    const report = vi.fn();
+    const processor = create(store, report);
+    const opponent = drivingCar(0.2);
+    for (let i = 0; i <= 1100; i++) {
+      const t = i / 10;
+      const gear = t >= 49 && t < 50 ? -1 : 1;
+      processor.onFrame(frame(t, pittingCar(t), opponent(t), { gear }));
+    }
+    const sent = report.mock.calls[0][0] as PitStopReport;
+    expect(sent.taintReasons).toEqual(['reversed']);
+    expect(store.addTransit).not.toHaveBeenCalledWith(
+      '10:20',
+      expect.objectContaining({ source: 'player' })
+    );
   });
 
   it('measures the actual gaps at the window end, back at racing speed', () => {

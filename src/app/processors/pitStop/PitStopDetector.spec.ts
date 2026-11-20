@@ -54,6 +54,7 @@ const run = (options: {
   stall?: number;
   cautionAt?: number;
   towedAt?: number;
+  reversedAt?: number;
   until?: number;
   car?: (t: number) => CarState;
   /** Called after each frame, for looking at a stop in progress. */
@@ -83,6 +84,10 @@ const run = (options: {
         options.towedAt !== undefined &&
         t >= options.towedAt &&
         t < options.towedAt + 1,
+      playerReversing:
+        options.reversedAt !== undefined &&
+        t >= options.reversedAt &&
+        t < options.reversedAt + 1,
       beforePct: 0.02,
       afterPct: 0.02,
     };
@@ -145,6 +150,18 @@ describe('PitStopDetector', () => {
     const stop = run({ towedAt: 55 }).completed[0];
     expect(stop.taintReasons).toEqual(['towed']);
     expect(stop.firstTaintSeconds).toBeCloseTo(15, 1);
+  });
+
+  it('taints a stop where the player reverses in the pit lane', () => {
+    const stop = run({ reversedAt: 49 }).completed[0];
+    expect(stop.tainted).toBe(true);
+    expect(stop.taintReasons).toEqual(['reversed']);
+    expect(stop.firstTaintSeconds).toBeCloseTo(9, 1);
+  });
+
+  it('ignores reversing before the player reaches the pit lane', () => {
+    const stop = run({ reversedAt: 10 }).completed[0];
+    expect(stop.taintReasons).toEqual([]);
   });
 
   it('names a lost position in the stall, once per reason', () => {

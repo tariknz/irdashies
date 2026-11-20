@@ -150,6 +150,20 @@ describe('resolveLaneLoss', () => {
     expect(result).toMatchObject({ seconds: 20, source: 'learnedCar' });
   });
 
+  it("prefers the player's own lane samples over opponents' in the same car", () => {
+    const file = emptyFile();
+    file.transit['10:20'] = [
+      transit({ at: 1, source: 'player', windowSeconds: 57 }),
+      transit({ at: 2, windowSeconds: 63 }),
+      transit({ at: 3, windowSeconds: 63 }),
+      transit({ at: 4, windowSeconds: 64 }),
+    ];
+    expect(resolveLaneLoss({ ...base, file })).toMatchObject({
+      seconds: 17,
+      source: 'learnedCar',
+    });
+  });
+
   it('falls back to the same class, then any car at the track', () => {
     const file = emptyFile();
     file.transit['10:21'] = [transit({ carId: 21, windowSeconds: 62 })];

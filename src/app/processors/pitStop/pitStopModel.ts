@@ -239,10 +239,13 @@ const lossesFrom = (
 export const resolveLaneLoss = (input: LaneLossInput): Estimate | null => {
   const { file, trackId, carId, carClassId, reference } = input;
 
-  const own = lossesFrom(
-    file.transit[transitKey(trackId, carId)] ?? [],
+  const carSamples = file.transit[transitKey(trackId, carId)] ?? [];
+  const player = lossesFrom(
+    carSamples.filter((sample) => sample.source === 'player'),
     reference
   );
+  if (player.length > 0) return fromLosses(player, 'learnedCar');
+  const own = lossesFrom(carSamples, reference);
   if (own.length > 0) return fromLosses(own, 'learnedCar');
 
   const prefix = `${trackId}:`;
