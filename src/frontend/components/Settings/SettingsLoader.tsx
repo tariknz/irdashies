@@ -13,6 +13,7 @@ import { InputSettings } from './sections/InputSettings';
 import { TachometerSettings } from './sections/TachometerSettings';
 import { ShiftLightSettings } from './sections/ShiftLightSettings';
 import { AboutSettings } from './sections/AboutSettings';
+import { UpdatesSettings } from './sections/UpdatesSettings';
 import { FasterCarsFromBehindSettings } from './sections/FasterCarsFromBehindSettings';
 import { FuelSettings } from './sections/FuelSettings';
 import { RejoinIndicatorSettings } from './sections/RejoinIndicatorSettings';
@@ -113,6 +114,7 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
   if (widgetId === 'advanced') return <AdvancedSettings />;
   if (widgetId === 'car-setup') return <CarSetupSettings />;
   if (widgetId === 'about') return <AboutSettings />;
+  if (widgetId === 'updates') return <UpdatesSettings />;
   if (widgetId === 'release-notes') return <ReleaseNotesSettings />;
   if (widgetId === 'driver-tags') return <DriverTagsSettings />;
   if (widgetId === 'keybindings') return <KeybindingsSettings />;

@@ -39,6 +39,7 @@ export * from './displayFallback';
 export * from './lapHistoryBridge';
 export * from './widgets';
 export * from './releaseNotes';
+export type { AppUpdatesBridge, AppUpdateStatus } from './appUpdates';
 export * from './releaseNotesFixture';
 export * from './tapeReplay';
 export * from './radarPoleSideSettings';

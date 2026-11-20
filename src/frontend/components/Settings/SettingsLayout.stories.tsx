@@ -9,6 +9,7 @@ import {
 } from '@irdashies/context';
 import type {
   ActiveSimulator,
+  AppUpdateStatus,
   DashboardBridge,
   DriverTagSettings,
   PitLaneBridge,
@@ -580,6 +581,43 @@ export const NewReleaseNotesBadge: Story = {
 export const ReleaseNotesPage: Story = {
   args: { initialPath: '/settings/release-notes' },
   beforeEach: withReleaseNotesBadge,
+};
+
+export const UpdatesPage: Story = {
+  args: { initialPath: '/settings/updates' },
+  beforeEach: () => {
+    const previous = window.appUpdatesBridge;
+    let notify: (status: AppUpdateStatus) => void;
+    let status: AppUpdateStatus = {
+      currentVersion: '3.0.0',
+      latestVersion: '3.1.0',
+      autoUpdate: true,
+      preferenceSaveFailed: false,
+      canUpdate: true,
+      newerVersionAvailable: true,
+      checkingLatest: false,
+      latestCheckFailed: false,
+      phase: 'idle',
+    };
+    const update = (partial: Partial<AppUpdateStatus>) => {
+      status = { ...status, ...partial };
+      notify(status);
+    };
+    window.appUpdatesBridge = {
+      onStatus: (callback) => {
+        notify = callback;
+        notify(status);
+        return () => undefined;
+      },
+      checkLatest: async () => notify(status),
+      setAutoUpdate: async (autoUpdate) => update({ autoUpdate }),
+      install: async () =>
+        update({ phase: status.phase === 'ready' ? 'restarting' : 'ready' }),
+    };
+    return () => {
+      window.appUpdatesBridge = previous;
+    };
+  },
 };
 
 // Controlled disk-full bridge response; no disk space is consumed.
