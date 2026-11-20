@@ -768,7 +768,7 @@ export function mapLmuTelemetry(
   t.SteeringWheelAngleMax = num(steeringMaxRad);
   if (raw.localAccel) {
     t.LatAccel = num(raw.localAccel[0]);
-    t.LongAccel = num(raw.localAccel[2]);
+    t.LongAccel = num(-raw.localAccel[2]);
   }
 
   const corners = ['LF', 'RF', 'LR', 'RR'] as const;
