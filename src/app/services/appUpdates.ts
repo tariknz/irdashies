@@ -8,6 +8,11 @@ import { openAppUpdatePreference } from '../storage/appUpdatePreference';
 const UPDATE_INTERVAL = 10 * 60 * 1000;
 const REPOSITORY = 'tariknz/irdashies';
 
+const newerVersion = (version: string, otherVersion: string | null): string =>
+  otherVersion && compareVersions(otherVersion, version) > 0
+    ? otherVersion
+    : version;
+
 async function fetchLatestVersion(): Promise<string> {
   const response = await fetch(
     `https://api.github.com/repos/${REPOSITORY}/releases/latest`,
@@ -49,6 +54,7 @@ export async function createAppUpdates(
   let timer: ReturnType<typeof setInterval> | undefined;
   let stopped = false;
   let manual = false;
+  let downloadedVersion: string | null = null;
 
   const snapshot = () => ({ ...status });
   const update = (next: Partial<AppUpdateStatus>) => {
@@ -130,16 +136,12 @@ export async function createAppUpdates(
     });
     autoUpdater.on('update-downloaded', (_event, _notes, releaseName) => {
       const wasManual = finishCheck();
-      const downloadedVersion = normalizeVersion(releaseName);
-      const latestVersion = status.latestVersion;
+      downloadedVersion = normalizeVersion(releaseName);
       update({
         phase: 'ready',
-        latestVersion:
-          downloadedVersion &&
-          (!latestVersion ||
-            compareVersions(downloadedVersion, latestVersion) > 0)
-            ? downloadedVersion
-            : latestVersion,
+        latestVersion: downloadedVersion
+          ? newerVersion(downloadedVersion, status.latestVersion)
+          : status.latestVersion,
       });
       if (stopped || wasManual || !status.autoUpdate) return;
       void dialog
@@ -176,7 +178,8 @@ export async function createAppUpdates(
       if (status.checkingLatest || stopped) return;
       update({ checkingLatest: true, latestCheckFailed: false });
       try {
-        const latestVersion = await fetchLatestVersion();
+        const releaseVersion = await fetchLatestVersion();
+        const latestVersion = newerVersion(releaseVersion, downloadedVersion);
         if (
           status.phase === 'no-update' &&
           status.latestVersion &&

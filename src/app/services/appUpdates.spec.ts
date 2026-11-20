@@ -185,6 +185,32 @@ describe('app updates', () => {
     });
   });
 
+  it('keeps a newer downloaded version when the release lookup returns an older one', async () => {
+    const response = Promise.withResolvers<Response>();
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockReturnValueOnce(response.promise)
+        .mockResolvedValueOnce(Response.json({ tag_name: 'v3.1.0' }))
+    );
+    updates = await createAppUpdates(vi.fn());
+
+    const lookup = updates.checkLatest();
+    updater.emit('update-available');
+    updater.emit('update-downloaded', {}, '', '3.2.0');
+    response.resolve(Response.json({ tag_name: 'v3.1.0' }));
+    await lookup;
+
+    expect(updates.snapshot()).toMatchObject({
+      checkingLatest: false,
+      latestVersion: '3.2.0',
+      phase: 'ready',
+    });
+    await updates.checkLatest();
+    expect(updates.snapshot().latestVersion).toBe('3.2.0');
+  });
+
   it('keeps side-by-side builds off the production update feed', async () => {
     electron.app.getName.mockReturnValue('irdashies-beta');
     updates = await createAppUpdates(vi.fn());
