@@ -34,7 +34,6 @@ export const Damage = () => {
       showIntegrity={settings.showIntegrity}
       showStats={settings.showStats}
       bodyStyle={isDemoMode ? 'gt' : car.bodyStyle}
-      carLabel={isDemoMode ? 'Ferrari 296 GT3' : car.label}
     />
   );
 };

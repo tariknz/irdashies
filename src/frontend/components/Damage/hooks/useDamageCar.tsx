@@ -8,7 +8,6 @@ import { resolveDamageBodyStyle, type DamageBodyStyle } from '../bodyStyle';
 
 export interface DamageCarInfo {
   bodyStyle: DamageBodyStyle;
-  label: string;
 }
 
 export const useDamageCar = (): DamageCarInfo => {
@@ -28,12 +27,5 @@ export const useDamageCar = (): DamageCarInfo => {
     carName ?? carData?.carName
   );
 
-  const label =
-    carData?.carName ??
-    driver?.CarScreenNameShort ??
-    driver?.CarScreenName ??
-    carPath ??
-    '';
-
-  return { bodyStyle, label };
+  return { bodyStyle };
 };

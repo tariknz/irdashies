@@ -23,7 +23,6 @@ export interface DamageDisplayProps {
   showIntegrity: boolean;
   showStats: boolean;
   bodyStyle?: DamageBodyStyle;
-  carLabel?: string;
 }
 
 function IntegrityRow({
@@ -61,7 +60,6 @@ export const DamageDisplay = ({
   showIntegrity,
   showStats,
   bodyStyle = 'gt',
-  carLabel,
 }: DamageDisplayProps) => {
   const hasDents = data.dentSeverity.length === 8;
   const dents = hasDents
@@ -100,11 +98,6 @@ export const DamageDisplay = ({
       className="flex h-full w-full flex-col gap-1 overflow-hidden rounded-sm p-2 text-slate-100 bg-slate-800/(--bg-opacity)"
       style={{ ['--bg-opacity' as string]: `${opacity}%` }}
     >
-      {carLabel ? (
-        <div className="truncate text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-          {carLabel}
-        </div>
-      ) : null}
       <div className="relative mx-auto w-full max-w-[140px] flex-1 min-h-0">
         <CarSilhouette
           style={bodyStyle}

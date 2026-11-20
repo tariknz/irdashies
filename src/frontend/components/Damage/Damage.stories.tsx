@@ -24,7 +24,6 @@ export const GtDamaged: Story = {
     showIntegrity: true,
     showStats: true,
     bodyStyle: 'gt',
-    carLabel: 'Ferrari 296 GT3',
   },
   decorators: box(),
 };
@@ -36,7 +35,6 @@ export const Prototype: Story = {
     showIntegrity: true,
     showStats: true,
     bodyStyle: 'prototype',
-    carLabel: 'Porsche 963',
   },
   decorators: box(),
 };
@@ -48,7 +46,6 @@ export const OpenWheel: Story = {
     showIntegrity: true,
     showStats: false,
     bodyStyle: 'openwheel',
-    carLabel: 'Ray FF1600',
   },
   decorators: box(140, 200),
 };
@@ -63,7 +60,6 @@ export const Hatch: Story = {
     showIntegrity: true,
     showStats: true,
     bodyStyle: 'hatch',
-    carLabel: 'Mazda MX-5 Cup',
   },
   decorators: box(),
 };
@@ -85,7 +81,6 @@ export const IracingRepairNeeded: Story = {
     showIntegrity: true,
     showStats: true,
     bodyStyle: 'gt',
-    carLabel: 'Porsche 992 GT3 R',
   },
   decorators: box(),
 };
