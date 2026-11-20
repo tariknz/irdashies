@@ -222,7 +222,7 @@ export function analyzeTraceJson(
     longTasks.push({
       name,
       durationMs: Math.round(duration / 100) / 10,
-      timestampMs: Math.round((finite(event.ts) ?? 0) / 1000) / 1000,
+      timestampMs: (finite(event.ts) ?? 0) / 1000,
       pid: finite(event.pid) ?? 0,
       tid: finite(event.tid) ?? 0,
     });

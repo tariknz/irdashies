@@ -1342,9 +1342,12 @@ const contrastExcludedKeys = (
 ): ReadonlySet<string> => {
   const keys = new Set<string>();
   if (contrast.includes('overlay')) {
-    ['activeWidgetTypes', 'requestedWidgetTypes', 'overlayWindowMode'].forEach(
-      (key) => keys.add(key)
-    );
+    [
+      'activeWidgetTypes',
+      'requestedWidgetTypes',
+      'overlayWindowMode',
+      'widgetInputRequirements',
+    ].forEach((key) => keys.add(key));
   }
   if (contrast.includes('widgets')) {
     [
@@ -1360,6 +1363,15 @@ const contrastExcludedKeys = (
   }
   return keys;
 };
+
+export function isTapeReplay(
+  metadata: Record<string, unknown> | undefined
+): boolean {
+  return (
+    metadata?.simulatorMode === 'replay' &&
+    typeof metadata.tapeSha256 === 'string'
+  );
+}
 
 function workloadMetadata(
   summary: PerfSummary,
@@ -1377,6 +1389,19 @@ function workloadMetadata(
         key !== 'sourceCommit' && key !== 'sourceDirty' && !excluded.has(key)
     )
   );
+  const { activeWidgetTypes, widgetInputRequirements } = metadata;
+  if (
+    Array.isArray(activeWidgetTypes) &&
+    widgetInputRequirements !== null &&
+    typeof widgetInputRequirements === 'object'
+  ) {
+    const active = new Set(activeWidgetTypes);
+    metadata.widgetInputRequirements = Object.fromEntries(
+      Object.entries(widgetInputRequirements).filter(([widget]) =>
+        active.has(widget)
+      )
+    );
+  }
   return stableJson({
     ...(contrast.includes('overlay')
       ? {}
@@ -1399,6 +1424,9 @@ function workloadMetadataMatch(
 
 function coreEvidenceReasons(summary: PerfSummary, label: string): string[] {
   return [
+    ...(!summary.evidence.runOriginAvailable
+      ? [`${label} lacks a single explicit capture origin`]
+      : []),
     ...(!summary.evidence.durationSufficient
       ? [`${label} analysis duration is shorter than five minutes`]
       : []),
@@ -1415,6 +1443,7 @@ function coreEvidenceReasons(summary: PerfSummary, label: string): string[] {
 
 export function coreEvidenceComplete(summary: PerfSummary): boolean {
   return (
+    summary.evidence.runOriginAvailable &&
     summary.evidence.durationSufficient &&
     summary.evidence.scenarioMetadataConsistent &&
     summary.evidence.inputCoverageComplete
@@ -1477,11 +1506,9 @@ export function compareSummaries(
       ? ['candidate private-memory samples are unavailable or incomplete']
       : []),
   ];
-  const tapeReplay = (summary: PerfSummary): boolean =>
-    summary.scenarioMetadata.simulatorMode === 'replay' &&
-    typeof summary.scenarioMetadata.tapeSha256 === 'string';
   const gameFpsReasons =
-    tapeReplay(baseline) || tapeReplay(candidate)
+    isTapeReplay(baseline.scenarioMetadata) ||
+    isTapeReplay(candidate.scenarioMetadata)
       ? ['game FPS is historical in an isolated replay tape']
       : [];
   const gate = (

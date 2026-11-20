@@ -77,6 +77,16 @@ describe('perf log correlation', () => {
     ).toEqual([]);
   });
 
+  it('ignores historical FPS dips from tape replay', () => {
+    const capture = buildCapture(true);
+    for (const sample of capture.main) {
+      sample.scenarioMetadata = { simulatorMode: 'replay', tapeSha256: 'tape' };
+    }
+    expect(
+      correlateCapture(capture, { warmupSeconds: 0, analysisWindow: {} })
+    ).toEqual([]);
+  });
+
   it('does not speculate when the analysis window is too short', () => {
     const capture = buildCapture(true);
     capture.main = capture.main.slice(0, 3);

@@ -63,6 +63,7 @@ describe('trace analysis', () => {
     });
     expect(analysis.longTasks.count).toBe(1);
     expect(analysis.longTasks.worstMs).toBe(120);
+    expect(analysis.longTasks.top[0].timestampMs).toBe(1000);
     expect(analysis.gc).toMatchObject({ count: 1, totalMs: 10, maxMs: 10 });
     expect(analysis.processes[0]).toMatchObject({ pid: 7, longTasks: 1 });
     expect(analysis.limitations.join(' ')).toContain('overhead');

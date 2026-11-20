@@ -226,15 +226,18 @@ describe('perf:run replay transport', () => {
     ).toEqual({
       IRDASHIES_IRSDK_REPLAY: '1',
       IRDASHIES_TELEMETRY_REPLAY: 'session.irdt',
+      IRDASHIES_TELEMETRY_REPLAY_LOOP: '1',
     });
     expect(replayRunEnvironment('session.irdt', 'win32')).toEqual({
       IRDASHIES_IRSDK_REPLAY: '1',
       IRDASHIES_TELEMETRY_REPLAY: '',
+      IRDASHIES_TELEMETRY_REPLAY_LOOP: undefined,
     });
     expect(replayRunEnvironment('', 'linux', { IRDASHIES_SIM: 'lmu' })).toEqual(
       {
         IRDASHIES_IRSDK_REPLAY: undefined,
         IRDASHIES_TELEMETRY_REPLAY: undefined,
+        IRDASHIES_TELEMETRY_REPLAY_LOOP: undefined,
       }
     );
   });

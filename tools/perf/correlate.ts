@@ -2,7 +2,11 @@ import type {
   NumericSampleStats,
   RendererPerfSample,
 } from '../../src/types/performance.ts';
-import type { AnalysisWindow, PerfCapture } from './analyze.ts';
+import {
+  isTapeReplay,
+  type AnalysisWindow,
+  type PerfCapture,
+} from './analyze.ts';
 import { MIN_ANALYSIS_SECONDS } from './gates.ts';
 
 export interface CorrelationFinding {
@@ -98,6 +102,7 @@ export function correlateCapture(
     return (
       bounds.end > analysisStart &&
       bounds.start < analysisEnd &&
+      !isTapeReplay(sample.scenarioMetadata) &&
       Number.isFinite(sample.iracing.frameRate.avg)
     );
   });

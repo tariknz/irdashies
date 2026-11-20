@@ -6,6 +6,7 @@ import type {
 } from '../../src/types/performance';
 import {
   compareSummaries,
+  comparisonCoreComplete,
   comparisonMarkdown,
   parseCliArgs,
   parsePerfLog,
@@ -505,6 +506,38 @@ describe('performance analysis', () => {
       startSeconds: 0,
       endSeconds: 12,
     });
+  });
+
+  it.each([0, 2])('rejects comparisons with %i capture origins', (count) => {
+    const input = capture(conclusiveSamples());
+    input.origins = Array.from({ length: count }, () => input.origins[0]);
+    const summary = summarizeCapture(input, 0);
+
+    expect(comparisonCoreComplete(summary, summary)).toBe(false);
+    expect(compareSummaries(summary, summary).checks).toContainEqual(
+      expect.objectContaining({
+        name: 'Telemetry processing p99',
+        passed: null,
+        target: expect.stringContaining(
+          'lacks a single explicit capture origin'
+        ),
+      })
+    );
+  });
+
+  it('matches only active widget input requirements', () => {
+    const baseline = summarizeCapture(capture(conclusiveSamples()), 0);
+    const candidate = summarizeCapture(capture(conclusiveSamples()), 0);
+    candidate.scenarioMetadata.widgetInputRequirements = {
+      standings: ['standings.snapshot'],
+      radar: ['radar.snapshot'],
+    };
+
+    expect(comparisonCoreComplete(baseline, candidate)).toBe(true);
+    candidate.scenarioMetadata.widgetInputRequirements = {
+      standings: ['driver.snapshot'],
+    };
+    expect(comparisonCoreComplete(baseline, candidate)).toBe(false);
   });
 
   it('uses private memory as the conclusive memory gate', () => {

@@ -13,6 +13,7 @@ const summary = (
   runId,
   scenarioMetadata: { sourceCommit: commit },
   evidence: {
+    runOriginAvailable: true,
     durationSufficient,
     scenarioMetadataConsistent: true,
     inputCoverageComplete: true,

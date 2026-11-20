@@ -839,6 +839,7 @@ ${rows}
 
 interface WorktreeCacheEntry {
   commit: string;
+  target: BranchesOptions['target'];
   directory: string;
   createdAt: string;
   native: boolean;
@@ -861,18 +862,30 @@ const hashFiles = async (filePaths: readonly string[]): Promise<string> => {
 const cacheRootOf = (rootDirectory: string): string =>
   path.join(rootDirectory, 'perf-results', '.cache', 'branches');
 
-const cacheEntryPath = (rootDirectory: string, commit: string): string =>
-  path.join(cacheRootOf(rootDirectory), `${commit}.json`);
+const cacheKey = (commit: string, target: BranchesOptions['target']): string =>
+  `${commit}-${target}`;
+
+const cacheEntryPath = (
+  rootDirectory: string,
+  commit: string,
+  target: BranchesOptions['target']
+): string =>
+  path.join(cacheRootOf(rootDirectory), `${cacheKey(commit, target)}.json`);
 
 const readCacheEntry = async (
   rootDirectory: string,
   commit: string,
-  dependencyFingerprint: string
+  dependencyFingerprint: string,
+  target: BranchesOptions['target']
 ): Promise<WorktreeCacheEntry | undefined> => {
   try {
-    const raw = await fs.readFile(cacheEntryPath(rootDirectory, commit), 'utf8');
+    const raw = await fs.readFile(
+      cacheEntryPath(rootDirectory, commit, target),
+      'utf8'
+    );
     const entry = JSON.parse(raw) as WorktreeCacheEntry;
     return entry.commit === commit &&
+      entry.target === target &&
       entry.dependencyFingerprint === dependencyFingerprint &&
       isRegisteredWorktree(rootDirectory, entry.directory)
       ? entry
@@ -889,7 +902,7 @@ const writeCacheEntry = async (
   const root = cacheRootOf(rootDirectory);
   await fs.mkdir(root, { recursive: true });
   await fs.writeFile(
-    cacheEntryPath(rootDirectory, entry.commit),
+    cacheEntryPath(rootDirectory, entry.commit, entry.target),
     JSON.stringify(entry, null, 2),
     'utf8'
   );
@@ -1037,14 +1050,23 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
         !options.rebuildNative &&
         !options.install &&
         !sharedDirectory
-          ? await readCacheEntry(rootDirectory, commit, dependencyFingerprint)
+          ? await readCacheEntry(
+              rootDirectory,
+              commit,
+              dependencyFingerprint,
+              options.target
+            )
           : undefined;
       const directory =
         configuredDirectory ??
         sharedDirectory ??
         cached?.directory ??
         (options.reuse
-          ? path.join(cacheRootOf(rootDirectory), 'worktrees', commit)
+          ? path.join(
+              cacheRootOf(rootDirectory),
+              'worktrees',
+              cacheKey(commit, options.target)
+            )
           : path.join(worktreeRoot, label));
       if (!configuredDirectory && !sharedDirectory && !cached) {
         await fs.mkdir(path.dirname(directory), { recursive: true });
@@ -1061,6 +1083,7 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
         if (options.reuse) {
           await writeCacheEntry(rootDirectory, {
             commit,
+            target: options.target,
             directory,
             createdAt: new Date().toISOString(),
             native: options.rebuildNative || nativeChanged,

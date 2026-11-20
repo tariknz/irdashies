@@ -44,7 +44,9 @@ export const replayRunEnvironment = (
   env: NodeJS.ProcessEnv = process.env
 ): Pick<
   NodeJS.ProcessEnv,
-  'IRDASHIES_IRSDK_REPLAY' | 'IRDASHIES_TELEMETRY_REPLAY'
+  | 'IRDASHIES_IRSDK_REPLAY'
+  | 'IRDASHIES_TELEMETRY_REPLAY'
+  | 'IRDASHIES_TELEMETRY_REPLAY_LOOP'
 > => {
   const isolated = usesIsolatedReplayPublisher(replayInputPath, platform);
   return {
@@ -56,6 +58,8 @@ export const replayRunEnvironment = (
         ? ''
         : replayInputPath
       : env.IRDASHIES_TELEMETRY_REPLAY,
+    IRDASHIES_TELEMETRY_REPLAY_LOOP:
+      replayInputPath && !isolated ? '1' : env.IRDASHIES_TELEMETRY_REPLAY_LOOP,
   };
 };
 
