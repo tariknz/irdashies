@@ -652,7 +652,10 @@ export async function publishLmuSDKEvents(
       // neither the epoch nor the server or length in the stamp, so an
       // online practice that ends with the clock and grid standing still
       // would never be rebuilt.
-      if (sessionChange) lastSessionSignature = null;
+      if (sessionChange) {
+        lastSessionSignature = null;
+        mapRecorder.reset(activeTrackName);
+      }
       if (sessionChange && sessionChange !== 'stamp') {
         // 'event' is the sim's own StartSession/EndSession callback. The other
         // two are inferences from the clock or the lap count, and worth

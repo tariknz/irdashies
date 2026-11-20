@@ -439,7 +439,7 @@ export function mapLmuSession(
     CarScreenName: d.vehicleName,
     CarScreenNameShort: d.vehicleName.split(' ')[0] ?? '',
     CarCfg: 0,
-    CarCfgName: d.vehicleModel ?? null,
+    CarCfgName: null,
     CarCfgCustomPaintExt: null,
     // The canonical class, so the standings group by "LMP2" rather than the
     // championship-qualified "LMP2_ELMS" the sim reports. An unrecognised

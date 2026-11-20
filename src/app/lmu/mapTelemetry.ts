@@ -9,7 +9,6 @@ import {
 import {
   createLmuRelativePositionsBuffer,
   deriveLmuRelativePositions,
-  LMU_RADAR_RADIUS_M,
   summariseLmuBlindSpot,
 } from './proximity';
 import { lapTimeOrAbsent } from './sentinels';
@@ -114,6 +113,44 @@ const occupiedArr = (
       )
     : [],
 });
+
+interface HeldCell<T> {
+  value: T[];
+}
+
+const asNumber = (n: number) => n;
+const isNonZero = (n: number) => n !== 0;
+
+const heldArray = <T>(
+  cell: HeldCell<T> | undefined,
+  values: ArrayLike<number>,
+  convert: (n: number) => T
+): HeldCell<T> => {
+  if (cell && cell.value.length === values.length) {
+    let index = 0;
+    while (
+      index < values.length &&
+      cell.value[index] === convert(values[index])
+    ) {
+      index += 1;
+    }
+    if (index === values.length) return cell;
+  }
+  return { value: Array.from(values, convert) };
+};
+
+const heldScalar = <T>(cell: HeldCell<T> | undefined, value: T): HeldCell<T> =>
+  cell && cell.value.length === 1 && cell.value[0] === value
+    ? cell
+    : { value: [value] };
+
+const damageCells: {
+  dentSeverity?: HeldCell<number>;
+  wheelDetached?: HeldCell<boolean>;
+  bodyDetached?: HeldCell<boolean>;
+  lastImpactET?: HeldCell<number>;
+  lastImpactPos?: HeldCell<number>;
+} = {};
 
 const lapDistPctArr = (v: ArrayLike<number> | undefined) => ({
   value: v
@@ -339,8 +376,7 @@ export function mapLmuTelemetry(
   const steeringMaxRad = ((raw.visualSteeringWheelRange ?? 0) * Math.PI) / 360;
   const relativePositions = deriveLmuRelativePositions(
     raw,
-    relativePositionsBuffer,
-    LMU_RADAR_RADIUS_M
+    relativePositionsBuffer
   );
   const blindSpot = summariseLmuBlindSpot(relativePositions);
 
@@ -555,21 +591,17 @@ export function mapLmuTelemetry(
   t.CarIdxSessionFlags = numArr(carSessionFlags(raw));
   t.CarDistAhead = numArr(undefined);
   t.CarDistBehind = numArr(undefined);
-  const relativeForRadar =
-    relativePositions && focusCarIdx(restCells, playerIdx) === playerIdx
-      ? relativePositions
-      : null;
   t.LmuCarIdxRelativeAvailable = {
     // Copied, like the three numeric channels below. `available` is the
     // reusable buffer that deriveLmuRelativePositions overwrites in place
     // every frame, so publishing the reference handed consumers an array that
     // changed under them -- anything holding a previous frame to compare
     // against, and anything serialising one later, saw this frame's values.
-    value: relativeForRadar ? [...relativeForRadar.available] : [],
+    value: relativePositions ? [...relativePositions.available] : [],
   };
-  t.LmuCarIdxRelativeLateral = numArr(relativeForRadar?.lateral);
-  t.LmuCarIdxRelativeLongitudinal = numArr(relativeForRadar?.longitudinal);
-  t.LmuCarIdxRelativeHeading = numArr(relativeForRadar?.heading);
+  t.LmuCarIdxRelativeLateral = numArr(relativePositions?.lateral);
+  t.LmuCarIdxRelativeLongitudinal = numArr(relativePositions?.longitudinal);
+  t.LmuCarIdxRelativeHeading = numArr(relativePositions?.heading);
   // Fore(+)/aft(-) metres of the nearest car each side, straight from the
   // 100 Hz world positions. A display of the car's position alongside reads
   // this instead of subtracting lap-distance percentages, which the 5 Hz
@@ -622,19 +654,42 @@ export function mapLmuTelemetry(
   if (restCells?.aeroDamage) t.LmuAeroDamage = staged(restCells.aeroDamage);
 
   if (raw.dentSeverity) {
-    t.LmuDentSeverity = numArr(raw.dentSeverity);
+    damageCells.dentSeverity = heldArray(
+      damageCells.dentSeverity,
+      raw.dentSeverity,
+      asNumber
+    );
+    t.LmuDentSeverity = damageCells.dentSeverity;
   }
   if (raw.wheelDetached) {
-    t.LmuWheelDetached = boolArr(raw.wheelDetached, (n) => n !== 0);
+    damageCells.wheelDetached = heldArray(
+      damageCells.wheelDetached,
+      raw.wheelDetached,
+      isNonZero
+    );
+    t.LmuWheelDetached = damageCells.wheelDetached;
   }
   if (raw.bodyDetached !== undefined) {
-    t.LmuBodyDetached = bool(raw.bodyDetached);
+    damageCells.bodyDetached = heldScalar(
+      damageCells.bodyDetached,
+      raw.bodyDetached
+    );
+    t.LmuBodyDetached = damageCells.bodyDetached;
   }
   if (raw.lastImpactET !== undefined) {
-    t.LmuLastImpactET = num(raw.lastImpactET);
+    damageCells.lastImpactET = heldScalar(
+      damageCells.lastImpactET,
+      raw.lastImpactET
+    );
+    t.LmuLastImpactET = damageCells.lastImpactET;
   }
   if (raw.lastImpactPos) {
-    t.LmuLastImpactPos = numArr(raw.lastImpactPos);
+    damageCells.lastImpactPos = heldArray(
+      damageCells.lastImpactPos,
+      raw.lastImpactPos,
+      asNumber
+    );
+    t.LmuLastImpactPos = damageCells.lastImpactPos;
   }
 
   // Shared memory, unlike the cells above. The addon always writes these when
@@ -672,11 +727,9 @@ export function mapLmuTelemetry(
   t.LapDistPct = num(lapDistPct);
   t.LapBestLapTime = lapTime(raw.vehBestLapTime[playerIdx]);
   t.LapLastLapTime = lapTime(raw.vehLastLapTime[playerIdx]);
-  // LMU's deltaBest is the delta to the player's own best lap (negative when
-  // ahead) -- the same meaning as iRacing's LapDeltaToBestLap. Also published
-  // as LapDeltaToSessionBestLap because existing widgets already read that.
-  // Only meaningful once there is a best lap: until then LMU reports 0, which
-  // would read as dead level.
+  // LMU's own delta to the player's best lap, negative when ahead -- what
+  // iRacing calls the delta to the session best. Only meaningful once there is
+  // a best lap: until then LMU reports 0, which would read as dead level.
   const hasBestLap = (raw.vehBestLapTime[playerIdx] ?? 0) > 0;
   const deltaBest = raw.deltaBest;
   const deltaBestOk =
@@ -686,8 +739,6 @@ export function mapLmuTelemetry(
   t.LapCurrentLapTime = num(
     Math.max(0, (raw.elapsedTime ?? 0) - (raw.lapStartET ?? 0))
   );
-  t.LapDeltaToBestLap = num(deltaBestOk ? deltaBest : 0);
-  t.LapDeltaToBestLap_OK = bool(deltaBestOk);
   t.LmuCurrentSectorTimes = {
     value: mapLmuSectorTimes(
       raw.vehCurSector1?.[playerIdx],

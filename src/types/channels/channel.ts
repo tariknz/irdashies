@@ -182,10 +182,7 @@ export interface BlindSpotSnapshot {
 /** One rival close enough to the focus car to appear on the radar. */
 export interface RadarCar {
   carIdx: number;
-  /**
-   * Metres from the focus car, positive ahead: along the track, or straight
-   * ahead of the player's car where LMU publishes relative positions.
-   */
+  /** Metres along the track from the focus car; positive is ahead. */
   dist: number;
   /** Rate of change of `dist` in m/s; positive means pulling away ahead. */
   relativeSpeed: number;

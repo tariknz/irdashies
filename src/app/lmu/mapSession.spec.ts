@@ -56,7 +56,6 @@ describe('mapLmuSession', () => {
     expect(player.CarIdx).toBe(1);
     expect(player.UserName).toBe('Driver B');
     expect(player.CarScreenName).toBe('Ferrari 296 GT3');
-    expect(player.CarCfgName).toBe('Ferrari 296 GT3');
     expect(player.CarPath).toBe('ferrari_296_gt3');
     expect(player.CarID).toBe(10006);
     expect(s.DriverInfo.Drivers[0].CarID).toBe(10003);

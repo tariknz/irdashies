@@ -24,6 +24,7 @@ export interface LmuMapFrame {
   lapStartET?: number;
   lapInvalidated?: boolean;
   pos?: ArrayLike<number>;
+  vehInPits: ArrayLike<number>;
   vehLapDistPct: ArrayLike<number>;
   vehLastLapTime: ArrayLike<number>;
 }
@@ -48,8 +49,24 @@ export const rotateLmuMapPointCounterClockwise = <
 
 function interpolatePoint(
   points: readonly RecordedPoint[],
-  distance: number
+  distance: number,
+  trackLength: number
 ): RecordedPoint {
+  const first = points[0];
+  const last = points[points.length - 1];
+  if (distance < first.distance || distance > last.distance) {
+    const span = first.distance + trackLength - last.distance;
+    const travelled =
+      distance > last.distance
+        ? distance - last.distance
+        : distance + trackLength - last.distance;
+    const amount = span > 0 ? travelled / span : 0;
+    return {
+      x: last.x + (first.x - last.x) * amount,
+      y: last.y + (first.y - last.y) * amount,
+      distance,
+    };
+  }
   let upper = 1;
   while (upper < points.length && points[upper].distance < distance) upper++;
   const high = points[Math.min(upper, points.length - 1)];
@@ -69,7 +86,11 @@ export function normalizeLmuTrackMap(
 ): LmuTrackMap {
   const points = Array.from({ length: RESAMPLED_POINTS }, (_, index) =>
     rotateLmuMapPointCounterClockwise(
-      interpolatePoint(recorded, (trackLength * index) / RESAMPLED_POINTS)
+      interpolatePoint(
+        recorded,
+        (trackLength * index) / RESAMPLED_POINTS,
+        trackLength
+      )
     )
   );
   const minX = Math.min(...points.map((point) => point.x));
@@ -303,6 +324,11 @@ export class LmuTrackMapRecorder {
   }
 
   private sample(frame: LmuMapFrame, progress: number): void {
+    if (frame.vehInPits[frame.playerVehicleIdx] === 1) {
+      this.recording = false;
+      this.points = [];
+      return;
+    }
     if (!frame.pos) return;
     const position = lmuGroundPosition(frame.pos);
     const distance = progress * frame.lapDist;
@@ -310,7 +336,9 @@ export class LmuTrackMapRecorder {
     if (
       !position ||
       distance < 0 ||
-      (previous && distance <= previous.distance)
+      (previous
+        ? distance <= previous.distance
+        : distance > frame.lapDist * MAX_COVERAGE_GAP_FRACTION)
     )
       return;
     this.points.push({ ...position, distance });
@@ -338,8 +366,7 @@ export class LmuTrackMapRecorder {
     if (
       !first ||
       !last ||
-      first.distance > maxGap ||
-      last.distance < trackLength - maxGap
+      first.distance + trackLength - last.distance > maxGap
     ) {
       return false;
     }

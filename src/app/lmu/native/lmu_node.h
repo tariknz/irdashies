@@ -39,6 +39,9 @@ private:
     LMUObjectOut _snapshot;
     bool _hasSnapshot;
     mutable std::map<std::string, int> _classIds;
+    Napi::Reference<Napi::Uint8Array> _wheelDetached;
+    Napi::Reference<Napi::Uint8Array> _dentSeverity;
+    Napi::Reference<Napi::Float64Array> _lastImpactPos;
 };
 
 #endif

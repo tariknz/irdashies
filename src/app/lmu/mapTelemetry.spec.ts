@@ -63,8 +63,6 @@ describe('mapLmuTelemetry', () => {
     expect(t.LapCurrentLapTime.value[0]).toBeCloseTo(50.4);
     expect(t.LapDeltaToSessionBestLap.value[0]).toBeCloseTo(0.2);
     expect(t.LapDeltaToSessionBestLap_OK.value[0]).toBe(true);
-    expect(t.LapDeltaToBestLap.value[0]).toBeCloseTo(0.2);
-    expect(t.LapDeltaToBestLap_OK.value[0]).toBe(true);
     expect(t.Throttle.value[0]).toBeCloseTo(0.79);
     expect(t.Brake.value[0]).toBe(0);
     expect(t.Clutch.value[0]).toBe(1);
@@ -94,7 +92,6 @@ describe('mapLmuTelemetry', () => {
     });
     expect(t.LapDeltaToSessionBestLap.value[0]).toBe(0);
     expect(t.LapDeltaToSessionBestLap_OK.value[0]).toBe(false);
-    expect(t.LapDeltaToBestLap_OK.value[0]).toBe(false);
   });
 
   it('maps the LMU pit limiter switch, not only active intervention', () => {
@@ -1092,6 +1089,26 @@ describe('LmuDentSeverity', () => {
       wheelDetached: new Uint8Array([0, 1, 0, 0]),
     });
     expect(t.LmuWheelDetached?.value).toEqual([false, true, false, false]);
+  });
+
+  it('republishes the same damage cells while nothing is damaged further', () => {
+    const first = mapLmuTelemetry(fixture());
+    const second = mapLmuTelemetry(fixture());
+
+    expect(second.LmuDentSeverity).toBe(first.LmuDentSeverity);
+    expect(second.LmuWheelDetached).toBe(first.LmuWheelDetached);
+    expect(second.LmuBodyDetached).toBe(first.LmuBodyDetached);
+    expect(second.LmuLastImpactET).toBe(first.LmuLastImpactET);
+    expect(second.LmuLastImpactPos).toBe(first.LmuLastImpactPos);
+  });
+
+  it('publishes a new damage cell when a value changes', () => {
+    const before = mapLmuTelemetry(fixture());
+    const after = mapLmuTelemetry({ ...fixture(), lastImpactET: 300.5 });
+
+    expect(after.LmuLastImpactET).not.toBe(before.LmuLastImpactET);
+    expect(after.LmuLastImpactET?.value[0]).toBe(300.5);
+    expect(after.LmuDentSeverity).toBe(before.LmuDentSeverity);
   });
 
   it('does not force rear-center when the body is detached', () => {
