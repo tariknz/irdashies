@@ -8,11 +8,11 @@ import {
   useDrivingState,
   useSessionVisibility,
   useDashboard,
+  useDemoFrame,
   useGeneralSettings,
 } from '@irdashies/context';
 import { useLapTimeLog } from './hooks/useLapTimeLog';
 import { getDemoLapTimeLogData, LapEntry } from './demoData';
-import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 import { TimerIcon, TargetIcon, XIcon } from '@phosphor-icons/react';
 import { LapTimeRow } from './components/LapTimeRow';
 import { LapHistoryChart } from './components/LapHistoryChart';

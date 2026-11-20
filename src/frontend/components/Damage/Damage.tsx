@@ -1,5 +1,6 @@
 import {
   useDashboard,
+  useDemoFrame,
   useSessionVisibility,
   trackStateSelectors,
   useTrackStateSelector,
@@ -9,7 +10,6 @@ import { useDamage } from './hooks/useDamage';
 import { useDamageCar } from './hooks/useDamageCar';
 import { useDamageSettings } from './hooks/useDamageSettings';
 import { getDemoDamage, hasCarDamage } from './logic';
-import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 
 export const Damage = () => {
   const { isDemoMode } = useDashboard();
