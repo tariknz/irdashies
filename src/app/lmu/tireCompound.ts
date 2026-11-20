@@ -127,13 +127,13 @@ export const lmuCarCompound = (
  * stopped reporting falls out instead of keeping a stale compound.
  */
 export const lmuCompoundChannel = (
-  flat: ArrayLike<number> | undefined
+  flat: ArrayLike<number> | undefined,
+  out: number[] = []
 ): number[] => {
-  if (!flat) return [];
-  const cars = Math.floor(flat.length / WHEELS_PER_CAR);
-  const out = new Array<number>(cars);
+  const cars = flat ? Math.floor(flat.length / WHEELS_PER_CAR) : 0;
   for (let carIdx = 0; carIdx < cars; carIdx += 1) {
     out[carIdx] = lmuCarCompound(flat, carIdx);
   }
+  out.length = cars;
   return out;
 };

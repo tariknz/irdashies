@@ -56,17 +56,110 @@ const TRACK_IN_PIT_STALL = 1;
 const TRACK_APPROACHING_PITS = 2;
 const TRACK_ON_TRACK = 3;
 
-const num = (v: number | undefined) => ({ value: [v ?? 0] });
-const bool = (v: boolean | number | undefined) => ({ value: [Boolean(v)] });
-const numArr = (v: ArrayLike<number> | undefined) => ({
-  value: v ? Array.from(v) : [],
-});
-const boolArr = (
-  v: ArrayLike<number> | undefined,
-  get: (n: number) => boolean
-) => ({
-  value: v ? Array.from(v, get) : [],
-});
+type Frame = Record<string, { value: unknown[] }>;
+
+interface HeldCell<T> {
+  value: T[];
+}
+
+const heldCells = new Map<string, HeldCell<unknown>>();
+const scratchArrays = new Map<string, unknown[]>();
+const NO_VALUES: readonly never[] = [];
+
+const scratch = <T>(key: string): T[] => {
+  let values = scratchArrays.get(key);
+  if (!values) {
+    values = [];
+    scratchArrays.set(key, values);
+  }
+  return values as T[];
+};
+
+const hold = <T>(key: string, value: T): HeldCell<T> => {
+  const cell = heldCells.get(key) as HeldCell<T> | undefined;
+  if (cell && cell.value.length === 1 && Object.is(cell.value[0], value)) {
+    return cell;
+  }
+  const next: HeldCell<T> = { value: [value] };
+  heldCells.set(key, next);
+  return next;
+};
+
+const num = (key: string, v: number | undefined) => hold(key, v ?? 0);
+const bool = (key: string, v: boolean | number | undefined) =>
+  hold(key, Boolean(v));
+
+const sameValues = (
+  held: readonly unknown[],
+  values: ArrayLike<unknown>
+): boolean => {
+  if (held.length !== values.length) return false;
+  for (let index = 0; index < held.length; index += 1) {
+    if (!Object.is(held[index], values[index])) return false;
+  }
+  return true;
+};
+
+const copyNumbers = (values: ArrayLike<number>): number[] => {
+  const copy = new Array<number>(values.length);
+  for (let index = 0; index < values.length; index += 1) {
+    copy[index] = values[index];
+  }
+  return copy;
+};
+
+const copyValues = <T>(values: ArrayLike<T>): T[] => {
+  const copy = new Array<T>(values.length);
+  for (let index = 0; index < values.length; index += 1) {
+    copy[index] = values[index];
+  }
+  return copy;
+};
+
+const holdArray = <T>(
+  key: string,
+  values: ArrayLike<T> | undefined,
+  copy: (values: ArrayLike<T>) => T[]
+): HeldCell<T> => {
+  const source = values ?? NO_VALUES;
+  const cell = heldCells.get(key) as HeldCell<T> | undefined;
+  if (cell && sameValues(cell.value, source)) return cell;
+  const next: HeldCell<T> = { value: copy(source) };
+  heldCells.set(key, next);
+  return next;
+};
+
+const fillWith = <T>(
+  out: T[],
+  source: ArrayLike<number> | undefined,
+  convert: (value: number) => T
+): T[] => {
+  if (!source) {
+    out.length = 0;
+    return out;
+  }
+  for (let index = 0; index < source.length; index += 1) {
+    out[index] = convert(source[index]);
+  }
+  out.length = source.length;
+  return out;
+};
+
+const isOne = (n: number) => n === 1;
+const isNonZero = (n: number) => n !== 0;
+
+const tractionDial = (
+  t: Frame,
+  slot: number,
+  value?: number,
+  max?: number
+): number => {
+  if ((max ?? 0) <= 0 || slot > 1) return slot;
+  if (slot === 0) t.dcTractionControl = num('dcTractionControl', value);
+  else t.dcTractionControl2 = num('dcTractionControl2', value);
+  return slot + 1;
+};
+
 /**
  * Whether a per-car slot holds a real car.
  *
@@ -87,12 +180,12 @@ const isOccupied = (raw: Raw, carIdx: number) =>
  * occupancy because 0 is never a legitimate lap time, so this also covers a
  * zero LMU writes for a car that is really there.
  */
-const lapTimeArr = (v: ArrayLike<number> | undefined) => ({
-  value: v ? Array.from(v, lapTimeOrAbsent) : [],
-});
+const lapTimes = (out: number[], v: ArrayLike<number> | undefined) =>
+  fillWith(out, v, lapTimeOrAbsent);
 
 /** A lap time for a single car, under the same rule. */
-const lapTime = (v: number | undefined) => num(lapTimeOrAbsent(v));
+const lapTime = (key: string, v: number | undefined) =>
+  num(key, lapTimeOrAbsent(v));
 
 /**
  * Per-car values where 0 is a legitimate reading, so only an empty slot may
@@ -102,63 +195,30 @@ const lapTime = (v: number | undefined) => num(lapTimeOrAbsent(v));
  * normalises a falsy lap count to 1; turning that 0 into -1 would corrupt the
  * lap-gap arithmetic for a real car.
  */
-const occupiedArr = (
+const occupied = (
+  out: number[],
   v: ArrayLike<number> | undefined,
   raw: Raw,
   absent: number
-) => ({
-  value: v
-    ? Array.from(v, (value, carIdx) =>
-        isOccupied(raw, carIdx) ? value : absent
-      )
-    : [],
-});
-
-interface HeldCell<T> {
-  value: T[];
-}
-
-const asNumber = (n: number) => n;
-const isNonZero = (n: number) => n !== 0;
-
-const heldArray = <T>(
-  cell: HeldCell<T> | undefined,
-  values: ArrayLike<number>,
-  convert: (n: number) => T
-): HeldCell<T> => {
-  if (cell && cell.value.length === values.length) {
-    let index = 0;
-    while (
-      index < values.length &&
-      cell.value[index] === convert(values[index])
-    ) {
-      index += 1;
-    }
-    if (index === values.length) return cell;
+): number[] => {
+  if (!v) {
+    out.length = 0;
+    return out;
   }
-  return { value: Array.from(values, convert) };
+  for (let carIdx = 0; carIdx < v.length; carIdx += 1) {
+    out[carIdx] = isOccupied(raw, carIdx) ? v[carIdx] : absent;
+  }
+  out.length = v.length;
+  return out;
 };
 
-const heldScalar = <T>(cell: HeldCell<T> | undefined, value: T): HeldCell<T> =>
-  cell && cell.value.length === 1 && cell.value[0] === value
-    ? cell
-    : { value: [value] };
+const clampLapDistPct = (value: number) =>
+  value < 0 ? -1 : Math.min(1, Math.max(0, value));
 
-const damageCells: {
-  dentSeverity?: HeldCell<number>;
-  wheelDetached?: HeldCell<boolean>;
-  bodyDetached?: HeldCell<boolean>;
-  lastImpactET?: HeldCell<number>;
-  lastImpactPos?: HeldCell<number>;
-} = {};
-
-const lapDistPctArr = (v: ArrayLike<number> | undefined) => ({
-  value: v
-    ? Array.from(v, (value) =>
-        value < 0 ? -1 : Math.min(1, Math.max(0, value))
-      )
-    : [],
-});
+const carIdxLapScratch: number[] = [];
+const carIdxLapCompletedScratch: number[] = [];
+const carIdxLapDistPctScratch: number[] = [];
+const carIdxLapsScratch = [carIdxLapScratch, carIdxLapCompletedScratch];
 
 /**
  * Reused across frames. This runs at the poll rate, so the four arrays it
@@ -194,22 +254,32 @@ function sessionFlags(raw: Raw): number {
     // yellow for consumers such as the lap-history filter.
     return GlobalFlags.Yellow | GlobalFlags.Caution;
   }
-  if (Array.from(raw.sectorFlags).some((flag) => flag === 1)) {
-    return GlobalFlags.Yellow;
+  for (const flag of raw.sectorFlags) {
+    if (flag === 1) return GlobalFlags.Yellow;
   }
   const playerFlag = raw.vehFlag?.[raw.playerVehicleIdx];
   if (playerFlag === 6) return GlobalFlags.Blue;
   return 0;
 }
 
-function carSessionFlags(raw: Raw): number[] {
-  return Array.from(raw.vehIds, (_, carIdx) => {
+function carSessionFlags(raw: Raw, out: number[]): number[] {
+  for (let carIdx = 0; carIdx < raw.vehIds.length; carIdx += 1) {
     let flags = 0;
     if (raw.vehFlag?.[carIdx] === 6) flags |= GlobalFlags.Blue;
     if (raw.vehUnderYellow?.[carIdx] === 1) flags |= GlobalFlags.Yellow;
     if (raw.vehFinishStatus?.[carIdx] === 3) flags |= GlobalFlags.Disqualify;
-    return flags;
-  });
+    out[carIdx] = flags;
+  }
+  out.length = raw.vehIds.length;
+  return out;
+}
+
+function trackLocations(raw: Raw, out: number[]): number[] {
+  for (let carIdx = 0; carIdx < raw.vehInPits.length; carIdx += 1) {
+    out[carIdx] = trackLocation(raw, carIdx);
+  }
+  out.length = raw.vehInPits.length;
+  return out;
 }
 
 const validTime = (value: number | undefined): number | null =>
@@ -218,7 +288,8 @@ const validTime = (value: number | undefined): number | null =>
 export function mapLmuSectorTimes(
   sector1: number | undefined,
   sector1And2: number | undefined,
-  lapTime?: number
+  lapTime?: number,
+  out: (number | null)[] = []
 ): (number | null)[] {
   const first = validTime(sector1);
   const cumulativeSecond = validTime(sector1And2);
@@ -231,7 +302,11 @@ export function mapLmuSectorTimes(
     cumulativeSecond !== null && fullLap !== null && fullLap > cumulativeSecond
       ? fullLap - cumulativeSecond
       : null;
-  return [first, second, third];
+  out[0] = first;
+  out[1] = second;
+  out[2] = third;
+  out.length = 3;
+  return out;
 }
 
 function sectorIdx(rawSector: number | undefined): number {
@@ -331,12 +406,6 @@ export function mapLmuTelemetry(
    */
   gameState?: LmuGameState
 ): Telemetry {
-  // Boundary note: a handful of generated Telemetry keys (e.g. SessionTime) are
-  // typed with an `undefined[]` value shape although the iRacing native layer
-  // emits numbers there at runtime. Building into a plain record and casting is
-  // the same boundary trick; values match iRacing's observable behaviour.
-  const t: Record<string, { value: unknown[] }> = {};
-
   const playerIdx =
     raw.playerHasVehicle && raw.playerVehicleIdx >= 0
       ? raw.playerVehicleIdx
@@ -380,7 +449,6 @@ export function mapLmuTelemetry(
   );
   const blindSpot = summariseLmuBlindSpot(relativePositions);
 
-  // Session-level
   // Both clocks come from the player's mElapsedTime, measured at 100 Hz,
   // rather than scoring's mCurrentET at 5 Hz. They are the same quantity --
   // seconds since the session began -- but LapTrace timestamps every sample
@@ -396,18 +464,6 @@ export function mapLmuTelemetry(
     typeof raw.elapsedTime === 'number' && raw.elapsedTime >= 0
       ? raw.elapsedTime
       : raw.currentET;
-  t.SessionTick = num(sessionClock);
-  t.SessionNum = num(raw.session);
-  // Derived, because LMU has no unique id and the session type is not one.
-  // Must agree with WeekendInfo.SubSessionID: consumers compare the two
-  // halves of the same fact. See sessionIdentity.ts.
-  t.SessionUniqueID = num(
-    sessionIdentity?.current() ?? lmuSessionUniqueId(raw)
-  );
-  t.SessionState = num(PHASE_TO_SESSION_STATE[raw.gamePhase] ?? 0);
-  t.SessionTime = num(sessionClock);
-  t.SessionTimeRemain = num(raw.sessionTimeRemaining);
-  t.SessionTimeTotal = num(raw.endET);
   // Only a race can be lap-limited; practice and qualifying are always timed,
   // and an endurance race usually is too. In those, mMaxLaps is not a lap
   // count -- rF2 signals "no limit" with a value far beyond any real race, so
@@ -422,76 +478,15 @@ export function mapLmuTelemetry(
     isLmuRaceSession(raw.session) &&
     raw.maxLaps > 0 &&
     raw.maxLaps < TIMED_SESSION_LAPS;
-  t.SessionLapsRemain = num(
-    hasLapLimit
-      ? Math.max(
-          0,
-          raw.maxLaps -
-            (playerIdx >= 0 ? (raw.vehTotalLaps[playerIdx] ?? 0) : 0)
-        )
-      : TIMED_SESSION_LAPS
-  );
-  t.SessionLapsTotal = num(hasLapLimit ? raw.maxLaps : TIMED_SESSION_LAPS);
-  t.SessionTimeOfDay = num(raw.timeOfDay);
-  t.SessionFlags = num(sessionFlags(raw));
-  // Metric. iRacing carries the driver's own unit preference here and widgets
-  // resolve 'auto' from it; LMU's shared memory has no equivalent, and 0
-  // (imperial) meant every 'auto' widget showed mph for a sim whose own UI,
-  // pit limits and timing are all metric.
-  t.DisplayUnits = num(1);
-  t.IsReplayPlaying = bool(false);
-  t.ReplayFrameNum = num(0);
-  t.ReplayFrameNumEnd = num(0);
-
-  // Player
-  t.PlayerCarIdx = num(playerIdx);
-  // LMU keeps no incident count. Consumers that need to know whether the lap
-  // still counts read LmuLapInvalidated below instead.
-  t.PlayerCarMyIncidentCount = num(0);
-  t.LmuLapInvalidated = bool(raw.lapInvalidated === true);
-  t.PlayerCarTeamIncidentCount = num(0);
-  t.PlayerCarTowTime = num(0);
-  t.PlayerCarInPitStall = bool(
-    playerIdx >= 0 &&
-      (raw.vehInGarageStall[playerIdx] || raw.vehPitState[playerIdx] === 3)
-  );
-  t.PlayerTireCompound = num(lmuCarCompound(raw.vehWheelCompounds, playerIdx));
-  t.PlayerFastRepairsUsed = num(0);
-  t.PlayerTrackSurface = num(
-    playerIdx >= 0 ? trackLocation(raw, playerIdx) : TRACK_NOT_IN_WORLD
-  );
-  t.PlayerCarPosition = num(raw.vehPlaces[playerIdx] ?? 0);
-  t.PlayerCarClass = num(raw.vehClass[playerIdx] ?? 0);
-  // The car the overlays are about, which is not the player's while
-  // spectating -- and while spectating `playerHasVehicle` is false, so
-  // `playerIdx` is -1 and there would be nothing to focus on at all.
-  //
-  // Every processor derives its focus from this one channel with the same
-  // `CamCarIdx >= 0 ? CamCarIdx : driverCarIdx` fallback (StandingsProcessor,
-  // RelativeGapProcessor, RadarProcessor, SessionTimingProcessor,
-  // FuelProjectionProcessor, TrackStateProcessor), so publishing the watched
-  // slot here is the whole of following the camera: there is no change to
-  // detect and nothing to subscribe to, because it is re-read every frame.
-  //
-  // This used to be hardcoded to `playerIdx`, which made every widget show
-  // the viewer's own car -- or no car -- whoever the camera was on.
-  t.CamCarIdx = num(focusCarIdx(restCells, playerIdx));
-  t.PlayerCarPitSvStatus = num(0);
-  t.CarLeftRight = num(blindSpot?.state ?? CarLeftRight.Off);
-
-  // Per-car
-  t.CarIdxLap = occupiedArr(raw.vehTotalLaps, raw, -1);
-  t.CarIdxLapCompleted = occupiedArr(raw.vehTotalLaps, raw, -1);
-  t.CarIdxLapDistPct = lapDistPctArr(raw.vehLapDistPct);
+  occupied(carIdxLapScratch, raw.vehTotalLaps, raw, -1);
+  occupied(carIdxLapCompletedScratch, raw.vehTotalLaps, raw, -1);
+  fillWith(carIdxLapDistPctScratch, raw.vehLapDistPct, clampLapDistPct);
   // The player's own slot takes the smoothed value too, so anything measuring
   // against the player sees continuous motion rather than a 5 Hz step.
-  const carIdxLapDistPct = t.CarIdxLapDistPct.value as number[];
+  const carIdxLapDistPct = carIdxLapDistPctScratch;
   // Lap plus fraction is how standings and race projections measure progress,
   // so each refined fraction takes the lap count that goes with it.
-  const carIdxLaps = [
-    t.CarIdxLap.value as number[],
-    t.CarIdxLapCompleted.value as number[],
-  ];
+  const carIdxLaps = carIdxLapsScratch;
   if (
     playerIdx >= 0 &&
     playerIdx < carIdxLapDistPct.length &&
@@ -525,10 +520,6 @@ export function mapLmuTelemetry(
       carIdxLaps
     );
   }
-  t.CarIdxTrackSurface = {
-    value: Array.from(raw.vehInPits, (_, carIdx) => trackLocation(raw, carIdx)),
-  };
-  t.CarIdxOnPitRoad = boolArr(raw.vehInPits, (v) => v === 1);
   // Both position channels come out of one ordering pass, which must run
   // before either is read. LMU publishes mPlace but nothing per class, and the
   // standings read class position; left empty it fell through to the
@@ -540,70 +531,254 @@ export function mapLmuTelemetry(
     lapDistPcts: raw.vehLapDistPct,
     isRace: isLmuRaceSession(raw.session),
   });
-  t.CarIdxClassPosition = numArr(classPositionState.positions);
-  // Outright position. A race takes the sim's own mPlace, which already
-  // accounts for laps and sector order; practice and qualifying take the
-  // best-lap ordering above, because LMU leaves mPlace at entry order there --
-  // and the standings sort their rows on this, so a correct class column was
-  // still being rendered in car-number order.
-  t.CarIdxPosition = numArr(
-    isLmuRaceSession(raw.session) ? raw.vehPlaces : classPositionState.overall
-  );
-  t.CarIdxClass = occupiedArr(raw.vehClass, raw, -1);
-  t.CarIdxF2Time = numArr(raw.vehTimeBehindLeader);
-  t.CarIdxEstTime = numArr(raw.vehTimeIntoLap);
-  t.CarIdxLastLapTime = lapTimeArr(raw.vehLastLapTime);
-  t.CarIdxBestLapTime = lapTimeArr(raw.vehBestLapTime);
-  t.CarIdxGear = numArr(undefined);
-  // The front-left of each car, which is all a one-value-per-car channel can
-  // say about a grid that may be on four different compounds. The whole set
-  // goes out beside it as LmuCarIdxWheelCompounds.
-  t.CarIdxTireCompound = numArr(lmuCompoundChannel(raw.vehWheelCompounds));
-  t.LmuCarIdxWheelCompounds = numArr(raw.vehWheelCompounds);
-  // Points, not the sim's steps: the step count is an encoding detail of this
-  // sim, and the ceiling has to be comparable with the figure.
-  t.LmuCarIdxTrackLimitsPoints = numArr(
-    lmuTrackLimitsChannel(raw.vehTrackLimitsSteps, raw.trackLimitsStepsPerPoint)
-  );
-  // One figure per car: virtual energy where the car runs on it, fuel
-  // otherwise. Which budget applies is a property of the car, not the session,
-  // so the choice is made per car here rather than once for the grid.
-  // Count only: scoring has no field for which penalty it is.
-  t.LmuCarIdxPenalties = numArr(raw.vehNumPenalties);
-  // The sim's own per-car finish status, which names the flag outright.
-  t.LmuCarIdxFinishStatus = numArr(raw.vehFinishStatus);
-  t.LmuCarIdxEnergyRemaining = numArr(
-    lmuEnergyChannel(raw.vehFuelFraction, raw.vehVirtualEnergy)
-  );
-  t.LmuTrackLimitsPointsMax = num(
-    lmuTrackLimitsMax(
-      raw.trackLimitsStepsPerPenalty,
-      raw.trackLimitsStepsPerPoint
-    ) ?? 0
-  );
-  t.CarIdxSessionFlags = numArr(carSessionFlags(raw));
-  t.CarDistAhead = numArr(undefined);
-  t.CarDistBehind = numArr(undefined);
-  t.LmuCarIdxRelativeAvailable = {
+  // Boundary note: a handful of generated Telemetry keys (e.g. SessionTime) are
+  // typed with an `undefined[]` value shape although the iRacing native layer
+  // emits numbers there at runtime. Building into a plain record and casting is
+  // the same boundary trick; values match iRacing's observable behaviour.
+  const t: Frame = {
+    // Session-level
+    SessionTick: num('SessionTick', sessionClock),
+    SessionNum: num('SessionNum', raw.session),
+    // Derived, because LMU has no unique id and the session type is not one.
+    // Must agree with WeekendInfo.SubSessionID: consumers compare the two
+    // halves of the same fact. See sessionIdentity.ts.
+    SessionUniqueID: num(
+      'SessionUniqueID',
+      sessionIdentity?.current() ?? lmuSessionUniqueId(raw)
+    ),
+    SessionState: num(
+      'SessionState',
+      PHASE_TO_SESSION_STATE[raw.gamePhase] ?? 0
+    ),
+    SessionTime: num('SessionTime', sessionClock),
+    SessionTimeRemain: num('SessionTimeRemain', raw.sessionTimeRemaining),
+    SessionTimeTotal: num('SessionTimeTotal', raw.endET),
+    SessionLapsRemain: num(
+      'SessionLapsRemain',
+      hasLapLimit
+        ? Math.max(
+            0,
+            raw.maxLaps -
+              (playerIdx >= 0 ? (raw.vehTotalLaps[playerIdx] ?? 0) : 0)
+          )
+        : TIMED_SESSION_LAPS
+    ),
+    SessionLapsTotal: num(
+      'SessionLapsTotal',
+      hasLapLimit ? raw.maxLaps : TIMED_SESSION_LAPS
+    ),
+    SessionTimeOfDay: num('SessionTimeOfDay', raw.timeOfDay),
+    SessionFlags: num('SessionFlags', sessionFlags(raw)),
+    // Metric. iRacing carries the driver's own unit preference here and widgets
+    // resolve 'auto' from it; LMU's shared memory has no equivalent, and 0
+    // (imperial) meant every 'auto' widget showed mph for a sim whose own UI,
+    // pit limits and timing are all metric.
+    DisplayUnits: num('DisplayUnits', 1),
+    IsReplayPlaying: bool('IsReplayPlaying', false),
+    ReplayFrameNum: num('ReplayFrameNum', 0),
+    ReplayFrameNumEnd: num('ReplayFrameNumEnd', 0),
+
+    // Player
+    PlayerCarIdx: num('PlayerCarIdx', playerIdx),
+    // LMU keeps no incident count. Consumers that need to know whether the lap
+    // still counts read LmuLapInvalidated below instead.
+    PlayerCarMyIncidentCount: num('PlayerCarMyIncidentCount', 0),
+    LmuLapInvalidated: bool('LmuLapInvalidated', raw.lapInvalidated === true),
+    PlayerCarTeamIncidentCount: num('PlayerCarTeamIncidentCount', 0),
+    PlayerCarTowTime: num('PlayerCarTowTime', 0),
+    PlayerCarInPitStall: bool(
+      'PlayerCarInPitStall',
+      playerIdx >= 0 &&
+        (raw.vehInGarageStall[playerIdx] || raw.vehPitState[playerIdx] === 3)
+    ),
+    PlayerTireCompound: num(
+      'PlayerTireCompound',
+      lmuCarCompound(raw.vehWheelCompounds, playerIdx)
+    ),
+    PlayerFastRepairsUsed: num('PlayerFastRepairsUsed', 0),
+    PlayerTrackSurface: num(
+      'PlayerTrackSurface',
+      playerIdx >= 0 ? trackLocation(raw, playerIdx) : TRACK_NOT_IN_WORLD
+    ),
+    PlayerCarPosition: num('PlayerCarPosition', raw.vehPlaces[playerIdx] ?? 0),
+    PlayerCarClass: num('PlayerCarClass', raw.vehClass[playerIdx] ?? 0),
+    // The car the overlays are about, which is not the player's while
+    // spectating -- and while spectating `playerHasVehicle` is false, so
+    // `playerIdx` is -1 and there would be nothing to focus on at all.
+    //
+    // Every processor derives its focus from this one channel with the same
+    // `CamCarIdx >= 0 ? CamCarIdx : driverCarIdx` fallback (StandingsProcessor,
+    // RelativeGapProcessor, RadarProcessor, SessionTimingProcessor,
+    // FuelProjectionProcessor, TrackStateProcessor), so publishing the watched
+    // slot here is the whole of following the camera: there is no change to
+    // detect and nothing to subscribe to, because it is re-read every frame.
+    //
+    // This used to be hardcoded to `playerIdx`, which made every widget show
+    // the viewer's own car -- or no car -- whoever the camera was on.
+    CamCarIdx: num('CamCarIdx', focusCarIdx(restCells, playerIdx)),
+    PlayerCarPitSvStatus: num('PlayerCarPitSvStatus', 0),
+    CarLeftRight: num('CarLeftRight', blindSpot?.state ?? CarLeftRight.Off),
+
+    // Per-car
+    CarIdxLap: holdArray('CarIdxLap', carIdxLapScratch, copyNumbers),
+    CarIdxLapCompleted: holdArray(
+      'CarIdxLapCompleted',
+      carIdxLapCompletedScratch,
+      copyNumbers
+    ),
+    CarIdxLapDistPct: holdArray(
+      'CarIdxLapDistPct',
+      carIdxLapDistPct,
+      copyNumbers
+    ),
+    CarIdxTrackSurface: holdArray(
+      'CarIdxTrackSurface',
+      trackLocations(raw, scratch('CarIdxTrackSurface')),
+      copyNumbers
+    ),
+    CarIdxOnPitRoad: holdArray(
+      'CarIdxOnPitRoad',
+      fillWith(scratch<boolean>('CarIdxOnPitRoad'), raw.vehInPits, isOne),
+      copyValues
+    ),
+    CarIdxClassPosition: holdArray(
+      'CarIdxClassPosition',
+      classPositionState.positions,
+      copyNumbers
+    ),
+    // Outright position. A race takes the sim's own mPlace, which already
+    // accounts for laps and sector order; practice and qualifying take the
+    // best-lap ordering above, because LMU leaves mPlace at entry order there --
+    // and the standings sort their rows on this, so a correct class column was
+    // still being rendered in car-number order.
+    CarIdxPosition: holdArray(
+      'CarIdxPosition',
+      isLmuRaceSession(raw.session)
+        ? raw.vehPlaces
+        : classPositionState.overall,
+      copyNumbers
+    ),
+    CarIdxClass: holdArray(
+      'CarIdxClass',
+      occupied(scratch('CarIdxClass'), raw.vehClass, raw, -1),
+      copyNumbers
+    ),
+    CarIdxF2Time: holdArray(
+      'CarIdxF2Time',
+      raw.vehTimeBehindLeader,
+      copyNumbers
+    ),
+    CarIdxEstTime: holdArray('CarIdxEstTime', raw.vehTimeIntoLap, copyNumbers),
+    CarIdxLastLapTime: holdArray(
+      'CarIdxLastLapTime',
+      lapTimes(scratch('CarIdxLastLapTime'), raw.vehLastLapTime),
+      copyNumbers
+    ),
+    CarIdxBestLapTime: holdArray(
+      'CarIdxBestLapTime',
+      lapTimes(scratch('CarIdxBestLapTime'), raw.vehBestLapTime),
+      copyNumbers
+    ),
+    CarIdxGear: holdArray('CarIdxGear', undefined, copyNumbers),
+    // The front-left of each car, which is all a one-value-per-car channel can
+    // say about a grid that may be on four different compounds. The whole set
+    // goes out beside it as LmuCarIdxWheelCompounds.
+    CarIdxTireCompound: holdArray(
+      'CarIdxTireCompound',
+      lmuCompoundChannel(raw.vehWheelCompounds, scratch('CarIdxTireCompound')),
+      copyNumbers
+    ),
+    LmuCarIdxWheelCompounds: holdArray(
+      'LmuCarIdxWheelCompounds',
+      raw.vehWheelCompounds,
+      copyNumbers
+    ),
+    // Points, not the sim's steps: the step count is an encoding detail of this
+    // sim, and the ceiling has to be comparable with the figure.
+    LmuCarIdxTrackLimitsPoints: holdArray(
+      'LmuCarIdxTrackLimitsPoints',
+      lmuTrackLimitsChannel(
+        raw.vehTrackLimitsSteps,
+        raw.trackLimitsStepsPerPoint,
+        scratch('LmuCarIdxTrackLimitsPoints')
+      ),
+      copyNumbers
+    ),
+    // One figure per car: virtual energy where the car runs on it, fuel
+    // otherwise. Which budget applies is a property of the car, not the session,
+    // so the choice is made per car here rather than once for the grid.
+    // Count only: scoring has no field for which penalty it is.
+    LmuCarIdxPenalties: holdArray(
+      'LmuCarIdxPenalties',
+      raw.vehNumPenalties,
+      copyNumbers
+    ),
+    // The sim's own per-car finish status, which names the flag outright.
+    LmuCarIdxFinishStatus: holdArray(
+      'LmuCarIdxFinishStatus',
+      raw.vehFinishStatus,
+      copyNumbers
+    ),
+    LmuCarIdxEnergyRemaining: holdArray(
+      'LmuCarIdxEnergyRemaining',
+      lmuEnergyChannel(
+        raw.vehFuelFraction,
+        raw.vehVirtualEnergy,
+        scratch('LmuCarIdxEnergyRemaining')
+      ),
+      copyNumbers
+    ),
+    LmuTrackLimitsPointsMax: num(
+      'LmuTrackLimitsPointsMax',
+      lmuTrackLimitsMax(
+        raw.trackLimitsStepsPerPenalty,
+        raw.trackLimitsStepsPerPoint
+      ) ?? 0
+    ),
+    CarIdxSessionFlags: holdArray(
+      'CarIdxSessionFlags',
+      carSessionFlags(raw, scratch('CarIdxSessionFlags')),
+      copyNumbers
+    ),
+    CarDistAhead: holdArray('CarDistAhead', undefined, copyNumbers),
+    CarDistBehind: holdArray('CarDistBehind', undefined, copyNumbers),
     // Copied, like the three numeric channels below. `available` is the
     // reusable buffer that deriveLmuRelativePositions overwrites in place
     // every frame, so publishing the reference handed consumers an array that
     // changed under them -- anything holding a previous frame to compare
     // against, and anything serialising one later, saw this frame's values.
-    value: relativePositions ? [...relativePositions.available] : [],
-  };
-  t.LmuCarIdxRelativeLateral = numArr(relativePositions?.lateral);
-  t.LmuCarIdxRelativeLongitudinal = numArr(relativePositions?.longitudinal);
-  t.LmuCarIdxRelativeHeading = numArr(relativePositions?.heading);
-  // Fore(+)/aft(-) metres of the nearest car each side, straight from the
-  // 100 Hz world positions. A display of the car's position alongside reads
-  // this instead of subtracting lap-distance percentages, which the 5 Hz
-  // scoring block quantises far more coarsely than such a display spans.
-  t.LmuBlindSpotLeftLongitudinal = {
-    value: [blindSpot?.leftLongitudinalM ?? null],
-  };
-  t.LmuBlindSpotRightLongitudinal = {
-    value: [blindSpot?.rightLongitudinalM ?? null],
+    LmuCarIdxRelativeAvailable: holdArray(
+      'LmuCarIdxRelativeAvailable',
+      relativePositions?.available,
+      copyValues
+    ),
+    LmuCarIdxRelativeLateral: holdArray(
+      'LmuCarIdxRelativeLateral',
+      relativePositions?.lateral,
+      copyValues
+    ),
+    LmuCarIdxRelativeLongitudinal: holdArray(
+      'LmuCarIdxRelativeLongitudinal',
+      relativePositions?.longitudinal,
+      copyValues
+    ),
+    LmuCarIdxRelativeHeading: holdArray(
+      'LmuCarIdxRelativeHeading',
+      relativePositions?.heading,
+      copyValues
+    ),
+    // Fore(+)/aft(-) metres of the nearest car each side, straight from the
+    // 100 Hz world positions. A display of the car's position alongside reads
+    // this instead of subtracting lap-distance percentages, which the 5 Hz
+    // scoring block quantises far more coarsely than such a display spans.
+    LmuBlindSpotLeftLongitudinal: hold(
+      'LmuBlindSpotLeftLongitudinal',
+      blindSpot?.leftLongitudinalM ?? null
+    ),
+    LmuBlindSpotRightLongitudinal: hold(
+      'LmuBlindSpotRightLongitudinal',
+      blindSpot?.rightLongitudinalM ?? null
+    ),
   };
 
   // Reference assignments, not copies: the poller replaces a cell when its
@@ -647,42 +822,35 @@ export function mapLmuTelemetry(
   if (restCells?.aeroDamage) t.LmuAeroDamage = staged(restCells.aeroDamage);
 
   if (raw.dentSeverity) {
-    damageCells.dentSeverity = heldArray(
-      damageCells.dentSeverity,
+    t.LmuDentSeverity = holdArray(
+      'LmuDentSeverity',
       raw.dentSeverity,
-      asNumber
+      copyNumbers
     );
-    t.LmuDentSeverity = damageCells.dentSeverity;
   }
   if (raw.wheelDetached) {
-    damageCells.wheelDetached = heldArray(
-      damageCells.wheelDetached,
-      raw.wheelDetached,
-      isNonZero
+    t.LmuWheelDetached = holdArray(
+      'LmuWheelDetached',
+      fillWith(
+        scratch<boolean>('LmuWheelDetached'),
+        raw.wheelDetached,
+        isNonZero
+      ),
+      copyValues
     );
-    t.LmuWheelDetached = damageCells.wheelDetached;
   }
   if (raw.bodyDetached !== undefined) {
-    damageCells.bodyDetached = heldScalar(
-      damageCells.bodyDetached,
-      raw.bodyDetached
-    );
-    t.LmuBodyDetached = damageCells.bodyDetached;
+    t.LmuBodyDetached = hold('LmuBodyDetached', raw.bodyDetached);
   }
   if (raw.lastImpactET !== undefined) {
-    damageCells.lastImpactET = heldScalar(
-      damageCells.lastImpactET,
-      raw.lastImpactET
-    );
-    t.LmuLastImpactET = damageCells.lastImpactET;
+    t.LmuLastImpactET = hold('LmuLastImpactET', raw.lastImpactET);
   }
   if (raw.lastImpactPos) {
-    damageCells.lastImpactPos = heldArray(
-      damageCells.lastImpactPos,
+    t.LmuLastImpactPos = holdArray(
+      'LmuLastImpactPos',
       raw.lastImpactPos,
-      asNumber
+      copyNumbers
     );
-    t.LmuLastImpactPos = damageCells.lastImpactPos;
   }
 
   // Shared memory, unlike the cells above. The addon always writes these when
@@ -691,35 +859,43 @@ export function mapLmuTelemetry(
   // consumer wanting "does this car use virtual energy?" should ask the pit
   // menu via LmuRefuelTargetIsVirtualEnergy, not infer it from a 0 here.
   if (raw.virtualEnergy !== undefined) {
-    t.LmuVirtualEnergy = num(raw.virtualEnergy);
+    t.LmuVirtualEnergy = num('LmuVirtualEnergy', raw.virtualEnergy);
   }
   if (raw.stateOfCharge !== undefined) {
-    t.LmuStateOfCharge = num(raw.stateOfCharge);
+    t.LmuStateOfCharge = num('LmuStateOfCharge', raw.stateOfCharge);
   }
-  if (raw.regen !== undefined) t.LmuRegen = num(raw.regen);
+  if (raw.regen !== undefined) t.LmuRegen = num('LmuRegen', raw.regen);
 
   // LMU reports steering as a fraction of the full wheel range; iRacing uses radians.
-  t.SteeringWheelAngle = num(-(raw.filteredSteering ?? 0) * steeringMaxRad);
-  t.Throttle = num(raw.filteredThrottle);
-  t.Brake = num(raw.filteredBrake);
+  t.SteeringWheelAngle = num(
+    'SteeringWheelAngle',
+    -(raw.filteredSteering ?? 0) * steeringMaxRad
+  );
+  t.Throttle = num('Throttle', raw.filteredThrottle);
+  t.Brake = num('Brake', raw.filteredBrake);
   t.Clutch = num(
+    'Clutch',
     raw.filteredClutch === undefined ? undefined : 1 - raw.filteredClutch
   );
-  t.Gear = num(raw.gear);
-  t.RPM = num(raw.engineRPM);
+  t.Gear = num('Gear', raw.gear);
+  t.RPM = num('RPM', raw.engineRPM);
   // The lap that goes with LapDistPct rather than LMU's counter as it stands:
   // the counter flips at the timing line, which can be well short of where
   // the position wraps, and anything pairing the two -- the fuel calculator
   // does -- then saw the line twice. Moved in the same frame as the position.
   t.Lap = num(
+    'Lap',
     lapDistanceState && playerIdx >= 0 && lapDistanceState.lap !== null
       ? lapDistanceState.lap
       : raw.lapNumber
   );
-  t.LapCompleted = num(playerCompletedLaps ?? raw.vehTotalLaps[playerIdx] ?? 0);
-  t.LapDistPct = num(lapDistPct);
-  t.LapBestLapTime = lapTime(raw.vehBestLapTime[playerIdx]);
-  t.LapLastLapTime = lapTime(raw.vehLastLapTime[playerIdx]);
+  t.LapCompleted = num(
+    'LapCompleted',
+    playerCompletedLaps ?? raw.vehTotalLaps[playerIdx] ?? 0
+  );
+  t.LapDistPct = num('LapDistPct', lapDistPct);
+  t.LapBestLapTime = lapTime('LapBestLapTime', raw.vehBestLapTime[playerIdx]);
+  t.LapLastLapTime = lapTime('LapLastLapTime', raw.vehLastLapTime[playerIdx]);
   // LMU's own delta to the player's best lap, negative when ahead -- what
   // iRacing calls the delta to the session best. Only meaningful once there is
   // a best lap: until then LMU reports 0, which would read as dead level.
@@ -727,85 +903,160 @@ export function mapLmuTelemetry(
   const deltaBest = raw.deltaBest;
   const deltaBestOk =
     hasBestLap && typeof deltaBest === 'number' && Number.isFinite(deltaBest);
-  t.LapDeltaToSessionBestLap = num(deltaBestOk ? deltaBest : 0);
-  t.LapDeltaToSessionBestLap_OK = bool(deltaBestOk);
+  t.LapDeltaToSessionBestLap = num(
+    'LapDeltaToSessionBestLap',
+    deltaBestOk ? deltaBest : 0
+  );
+  t.LapDeltaToSessionBestLap_OK = bool(
+    'LapDeltaToSessionBestLap_OK',
+    deltaBestOk
+  );
   t.LapCurrentLapTime = num(
+    'LapCurrentLapTime',
     Math.max(0, (raw.elapsedTime ?? 0) - (raw.lapStartET ?? 0))
   );
-  t.LmuCurrentSectorTimes = {
-    value: mapLmuSectorTimes(
+  t.LmuCurrentSectorTimes = holdArray(
+    'LmuCurrentSectorTimes',
+    mapLmuSectorTimes(
       raw.vehCurSector1?.[playerIdx],
-      raw.vehCurSector2?.[playerIdx]
+      raw.vehCurSector2?.[playerIdx],
+      undefined,
+      scratch('LmuCurrentSectorTimes')
     ),
-  };
-  t.LmuLastSectorTimes = {
-    value: mapLmuSectorTimes(
+    copyValues
+  );
+  t.LmuLastSectorTimes = holdArray(
+    'LmuLastSectorTimes',
+    mapLmuSectorTimes(
       raw.vehLastSector1?.[playerIdx],
       raw.vehLastSector2?.[playerIdx],
-      raw.vehLastLapTime?.[playerIdx]
+      raw.vehLastLapTime?.[playerIdx],
+      scratch('LmuLastSectorTimes')
     ),
-  };
-  t.LmuBestSectorTimes = {
-    value: mapLmuSectorTimes(
+    copyValues
+  );
+  t.LmuBestSectorTimes = holdArray(
+    'LmuBestSectorTimes',
+    mapLmuSectorTimes(
       raw.vehBestSector1?.[playerIdx],
       raw.vehBestSector2?.[playerIdx],
-      raw.vehBestLapTime?.[playerIdx]
+      raw.vehBestLapTime?.[playerIdx],
+      scratch('LmuBestSectorTimes')
     ),
-  };
-  t.LmuSectorIdx = num(sectorIdx(raw.vehSector?.[playerIdx]));
-  t.Speed = num(raw.speed);
-  t.Yaw = num(0);
-  t.YawNorth = num(0);
-  t.Pitch = num(0);
-  t.Roll = num(0);
-  t.SteeringWheelAngleMax = num(steeringMaxRad);
+    copyValues
+  );
+  t.LmuSectorIdx = num('LmuSectorIdx', sectorIdx(raw.vehSector?.[playerIdx]));
+  t.Speed = num('Speed', raw.speed);
+  t.Yaw = num('Yaw', 0);
+  t.YawNorth = num('YawNorth', 0);
+  t.Pitch = num('Pitch', 0);
+  t.Roll = num('Roll', 0);
+  t.SteeringWheelAngleMax = num('SteeringWheelAngleMax', steeringMaxRad);
   if (raw.localAccel) {
-    t.LatAccel = num(raw.localAccel[0]);
-    t.LongAccel = num(raw.localAccel[2]);
+    t.LatAccel = num('LatAccel', raw.localAccel[0]);
+    t.LongAccel = num('LongAccel', raw.localAccel[2]);
   }
 
-  const corners = ['LF', 'RF', 'LR', 'RR'] as const;
-  corners.forEach((corner, index) => {
-    const temperature = raw.tyreTemperature?.[index];
-    if (temperature !== undefined) {
-      t[`${corner}tempCL`] = num(temperature);
-      t[`${corner}tempCM`] = num(temperature);
-      t[`${corner}tempCR`] = num(temperature);
-    }
-    const pressure = raw.tyrePressure?.[index];
-    if (pressure !== undefined) t[`${corner}coldPressure`] = num(pressure);
-    const wear = raw.tyreWear?.[index];
-    if (wear !== undefined) {
-      t[`${corner}wearL`] = num(wear);
-      t[`${corner}wearM`] = num(wear);
-      t[`${corner}wearR`] = num(wear);
-    }
-    const brakePressure = raw.brakePressure?.[index];
-    if (brakePressure !== undefined) {
-      t[`${corner}brakeLinePress`] = num(brakePressure);
-    }
-    const deflection = raw.suspensionDeflection?.[index];
-    if (deflection !== undefined) t[`${corner}shockDefl`] = num(deflection);
-  });
+  const tyreTemperature = raw.tyreTemperature;
+  const tyrePressure = raw.tyrePressure;
+  const tyreWear = raw.tyreWear;
+  const brakePressure = raw.brakePressure;
+  const suspensionDeflection = raw.suspensionDeflection;
+  if (tyreTemperature?.[0] !== undefined) {
+    t.LFtempCL = num('LFtempCL', tyreTemperature[0]);
+    t.LFtempCM = num('LFtempCM', tyreTemperature[0]);
+    t.LFtempCR = num('LFtempCR', tyreTemperature[0]);
+  }
+  if (tyrePressure?.[0] !== undefined) {
+    t.LFcoldPressure = num('LFcoldPressure', tyrePressure[0]);
+  }
+  if (tyreWear?.[0] !== undefined) {
+    t.LFwearL = num('LFwearL', tyreWear[0]);
+    t.LFwearM = num('LFwearM', tyreWear[0]);
+    t.LFwearR = num('LFwearR', tyreWear[0]);
+  }
+  if (brakePressure?.[0] !== undefined) {
+    t.LFbrakeLinePress = num('LFbrakeLinePress', brakePressure[0]);
+  }
+  if (suspensionDeflection?.[0] !== undefined) {
+    t.LFshockDefl = num('LFshockDefl', suspensionDeflection[0]);
+  }
+  if (tyreTemperature?.[1] !== undefined) {
+    t.RFtempCL = num('RFtempCL', tyreTemperature[1]);
+    t.RFtempCM = num('RFtempCM', tyreTemperature[1]);
+    t.RFtempCR = num('RFtempCR', tyreTemperature[1]);
+  }
+  if (tyrePressure?.[1] !== undefined) {
+    t.RFcoldPressure = num('RFcoldPressure', tyrePressure[1]);
+  }
+  if (tyreWear?.[1] !== undefined) {
+    t.RFwearL = num('RFwearL', tyreWear[1]);
+    t.RFwearM = num('RFwearM', tyreWear[1]);
+    t.RFwearR = num('RFwearR', tyreWear[1]);
+  }
+  if (brakePressure?.[1] !== undefined) {
+    t.RFbrakeLinePress = num('RFbrakeLinePress', brakePressure[1]);
+  }
+  if (suspensionDeflection?.[1] !== undefined) {
+    t.RFshockDefl = num('RFshockDefl', suspensionDeflection[1]);
+  }
+  if (tyreTemperature?.[2] !== undefined) {
+    t.LRtempCL = num('LRtempCL', tyreTemperature[2]);
+    t.LRtempCM = num('LRtempCM', tyreTemperature[2]);
+    t.LRtempCR = num('LRtempCR', tyreTemperature[2]);
+  }
+  if (tyrePressure?.[2] !== undefined) {
+    t.LRcoldPressure = num('LRcoldPressure', tyrePressure[2]);
+  }
+  if (tyreWear?.[2] !== undefined) {
+    t.LRwearL = num('LRwearL', tyreWear[2]);
+    t.LRwearM = num('LRwearM', tyreWear[2]);
+    t.LRwearR = num('LRwearR', tyreWear[2]);
+  }
+  if (brakePressure?.[2] !== undefined) {
+    t.LRbrakeLinePress = num('LRbrakeLinePress', brakePressure[2]);
+  }
+  if (suspensionDeflection?.[2] !== undefined) {
+    t.LRshockDefl = num('LRshockDefl', suspensionDeflection[2]);
+  }
+  if (tyreTemperature?.[3] !== undefined) {
+    t.RRtempCL = num('RRtempCL', tyreTemperature[3]);
+    t.RRtempCM = num('RRtempCM', tyreTemperature[3]);
+    t.RRtempCR = num('RRtempCR', tyreTemperature[3]);
+  }
+  if (tyrePressure?.[3] !== undefined) {
+    t.RRcoldPressure = num('RRcoldPressure', tyrePressure[3]);
+  }
+  if (tyreWear?.[3] !== undefined) {
+    t.RRwearL = num('RRwearL', tyreWear[3]);
+    t.RRwearM = num('RRwearM', tyreWear[3]);
+    t.RRwearR = num('RRwearR', tyreWear[3]);
+  }
+  if (brakePressure?.[3] !== undefined) {
+    t.RRbrakeLinePress = num('RRbrakeLinePress', brakePressure[3]);
+  }
+  if (suspensionDeflection?.[3] !== undefined) {
+    t.RRshockDefl = num('RRshockDefl', suspensionDeflection[3]);
+  }
 
   // Environment
-  t.TrackTemp = num(raw.trackTemp);
-  t.TrackTempCrew = num(raw.trackTemp);
-  t.AirTemp = num(raw.ambientTemp);
-  t.TrackWetness = num(lmuTrackWetness(raw.avgPathWetness));
-  t.Skies = num(raw.cloudCoverage);
+  t.TrackTemp = num('TrackTemp', raw.trackTemp);
+  t.TrackTempCrew = num('TrackTempCrew', raw.trackTemp);
+  t.AirTemp = num('AirTemp', raw.ambientTemp);
+  t.TrackWetness = num('TrackWetness', lmuTrackWetness(raw.avgPathWetness));
+  t.Skies = num('Skies', raw.cloudCoverage);
   // No WindVel or WindDir: LMU simulates no wind, and its wind vector is
   // always zero. Published, that read as a dead calm with the arrow fixed on a
   // headwind in every widget showing wind; absent, they show no reading.
   // LMU does not expose humidity; leave it absent rather than report dry air.
-  t.FogLevel = num(0);
-  t.Precipitation = num(raw.raining);
-  t.WeatherDeclaredWet = bool(raw.raining > 0);
+  t.FogLevel = num('FogLevel', 0);
+  t.Precipitation = num('Precipitation', raw.raining);
+  t.WeatherDeclaredWet = bool('WeatherDeclaredWet', raw.raining > 0);
 
   // Car condition
-  t.WaterTemp = num(raw.engineWaterTemp);
-  t.OilTemp = num(raw.engineOilTemp);
-  t.FuelLevel = num(raw.fuel);
+  t.WaterTemp = num('WaterTemp', raw.engineWaterTemp);
+  t.OilTemp = num('OilTemp', raw.engineOilTemp);
+  t.FuelLevel = num('FuelLevel', raw.fuel);
   // Derived, because LMU publishes litres and a capacity on the player's
   // 100 Hz telemetry but no fraction there -- mFuelFraction is per-car on the
   // 5 Hz scoring block, and its scale is unverified.
@@ -817,26 +1068,30 @@ export function mapLmuTelemetry(
   // calculateRealTankCapacity only trusts a fraction between 0.01 and 0.99
   // and otherwise estimates the tank, which is what absence would do anyway.
   t.FuelLevelPct = num(
+    'FuelLevelPct',
     raw.fuelCapacity && raw.fuel !== undefined ? raw.fuel / raw.fuelCapacity : 0
   );
   t.EngineWarnings = num(
+    'EngineWarnings',
     raw.speedLimiterActive || raw.speedLimiter
       ? EngineWarnings.PitSpeedLimiter
       : 0
   );
-  t.ShiftGrindRPM = num(raw.engineMaxRPM ?? 0);
-  t.ThrottleRaw = num(raw.unfilteredThrottle);
-  t.BrakeRaw = num(raw.unfilteredBrake);
+  t.ShiftGrindRPM = num('ShiftGrindRPM', raw.engineMaxRPM ?? 0);
+  t.ThrottleRaw = num('ThrottleRaw', raw.unfilteredThrottle);
+  t.BrakeRaw = num('BrakeRaw', raw.unfilteredBrake);
   t.ClutchRaw = num(
+    'ClutchRaw',
     raw.unfilteredClutch === undefined ? undefined : 1 - raw.unfilteredClutch
   );
-  t.BrakeABSactive = bool(raw.absActive);
+  t.BrakeABSactive = bool('BrakeABSactive', raw.absActive);
   // Percent front, which is what dcBrakeBias means and what the widget
   // formats with a '%' unit. LMU publishes only mRearBrakeBias, as a 0-1
   // fraction -- there is no mFrontBrakeBias, front is its complement -- so the
   // complement alone gave 0.508 where 50.8 was wanted, and the widget showed a
   // bias of "0.5%" that barely moved as it was adjusted.
   t.dcBrakeBias = num(
+    'dcBrakeBias',
     raw.rearBrakeBias === undefined ? 0 : (1 - raw.rearBrakeBias) * 100
   );
   // Driver-adjustable dials.
@@ -859,13 +1114,16 @@ export function mapLmuTelemetry(
   // absent row. raw.migration is exported and waiting; giving it a column
   // needs a label that does not come from an iRacing CarPath, which is a
   // change to shared code rather than to this mapping.
-  const dial = (key: string, value?: number, max?: number) => {
-    if ((max ?? 0) > 0) t[key] = num(value);
-  };
-  dial('dcABS', raw.abs, raw.absMax);
-  dial('dcEnginePower', raw.motorMap, raw.motorMapMax);
-  dial('dcAntiRollFront', raw.frontAntiSway, raw.frontAntiSwayMax);
-  dial('dcAntiRollRear', raw.rearAntiSway, raw.rearAntiSwayMax);
+  if ((raw.absMax ?? 0) > 0) t.dcABS = num('dcABS', raw.abs);
+  if ((raw.motorMapMax ?? 0) > 0) {
+    t.dcEnginePower = num('dcEnginePower', raw.motorMap);
+  }
+  if ((raw.frontAntiSwayMax ?? 0) > 0) {
+    t.dcAntiRollFront = num('dcAntiRollFront', raw.frontAntiSway);
+  }
+  if ((raw.rearAntiSwayMax ?? 0) > 0) {
+    t.dcAntiRollRear = num('dcAntiRollRear', raw.rearAntiSway);
+  }
 
   // Three traction dials into the catalogue's two generic traction slots.
   //
@@ -880,18 +1138,15 @@ export function mapLmuTelemetry(
   //
   // The maxes are fixed per car and a car change resets the processor, so a
   // column cannot change meaning underneath a driver mid-session.
-  let tcSlot = 0;
-  const tcDial = (value?: number, max?: number) => {
-    if ((max ?? 0) <= 0 || tcSlot > 1) return;
-    t[tcSlot === 0 ? 'dcTractionControl' : 'dcTractionControl2'] = num(value);
-    tcSlot += 1;
-  };
-  tcDial(raw.tc, raw.tcMax);
-  tcDial(raw.tcSlip, raw.tcSlipMax);
-  tcDial(raw.tcCut, raw.tcCutMax);
-  t.dcPitSpeedLimiterToggle = bool(raw.speedLimiter);
-  t.PitstopActive = bool(false);
-  t.OnPitRoad = bool(playerIdx >= 0 ? raw.vehInPits[playerIdx] === 1 : false);
+  let tcSlot = tractionDial(t, 0, raw.tc, raw.tcMax);
+  tcSlot = tractionDial(t, tcSlot, raw.tcSlip, raw.tcSlipMax);
+  tractionDial(t, tcSlot, raw.tcCut, raw.tcCutMax);
+  t.dcPitSpeedLimiterToggle = bool('dcPitSpeedLimiterToggle', raw.speedLimiter);
+  t.PitstopActive = bool('PitstopActive', false);
+  t.OnPitRoad = bool(
+    'OnPitRoad',
+    playerIdx >= 0 ? raw.vehInPits[playerIdx] === 1 : false
+  );
   // The sim's own answer when there is one: in the car while driving or
   // paused, in the session at the monitor too.
   //
@@ -908,12 +1163,13 @@ export function mapLmuTelemetry(
       : !dataFrozen &&
         playerIdx >= 0 &&
         (raw.inRealtime || (raw.ignitionStarter ?? 0) > 0);
-  t.IsOnTrack = bool(inCar);
+  t.IsOnTrack = bool('IsOnTrack', inCar);
   // In the car, the sim's word stands over a frozen block: a pause stops the
   // writes and ends nothing. Out of any session, the frame describes nothing.
   // At the monitor the freeze watch still decides whether the frame is
   // current. Where the player is comes from LmuOutOfCar below.
   t.LmuDataStale = bool(
+    'LmuDataStale',
     gameState === undefined
       ? (dataFrozen ?? false)
       : !lmuInCar(gameState) &&
@@ -923,6 +1179,7 @@ export function mapLmuTelemetry(
   // guess from a frozen block is not enough to do that on. Outside a game is
   // further out of a session still.
   t.LmuNotInSession = bool(
+    'LmuNotInSession',
     gameState === 'notInSession' || gameState === 'notInGame'
   );
   // The sim's word that the player is not in the car. IsOnTrack already says
@@ -930,29 +1187,38 @@ export function mapLmuTelemetry(
   // lane or stall keeps those set, live, while the player sits at the monitor.
   // Falsifying the pit flags instead would misreport the car to everything
   // else that reads them.
-  t.LmuOutOfCar = bool(gameState !== undefined && !lmuInCar(gameState));
+  t.LmuOutOfCar = bool(
+    'LmuOutOfCar',
+    gameState !== undefined && !lmuInCar(gameState)
+  );
   // Reported as the snapshot has them, frozen or not. Falsifying these while
   // frozen was a mistake: isDriving reads them as `!isInGarage`, so clearing
   // them removed the one term that would have excluded a parked player.
   // LmuDataStale above is what consumers should gate on.
-  t.IsInGarage = bool(playerIdx >= 0 && raw.vehInGarageStall[playerIdx]);
-  t.IsGarageVisible = bool(playerIdx >= 0 && raw.vehInGarageStall[playerIdx]);
+  t.IsInGarage = bool(
+    'IsInGarage',
+    playerIdx >= 0 && raw.vehInGarageStall[playerIdx]
+  );
+  t.IsGarageVisible = bool(
+    'IsGarageVisible',
+    playerIdx >= 0 && raw.vehInGarageStall[playerIdx]
+  );
 
   // Defaults for everything not meaningful in LMU (pit service, radios, FFB,
   // tyre models, dash controls...). Kept long but explicit so the shape stays
   // stable if slots get consumed later.
-  t.RadioTransmitCarIdx = num(-1);
-  t.RadioTransmitRadioIdx = num(0);
-  t.RadioTransmitFrequencyIdx = num(0);
-  t.PushToTalk = bool(false);
-  t.PushToPass = bool(false);
-  t.PitOptRepairLeft = num(0);
-  t.PitRepairLeft = num(0);
-  t.PlayerIncidents = num(0);
-  t.FastRepairUsed = num(0);
-  t.FastRepairAvailable = num(0);
-  t.TireSetsUsed = num(0);
-  t.TireSetsAvailable = num(0);
+  t.RadioTransmitCarIdx = num('RadioTransmitCarIdx', -1);
+  t.RadioTransmitRadioIdx = num('RadioTransmitRadioIdx', 0);
+  t.RadioTransmitFrequencyIdx = num('RadioTransmitFrequencyIdx', 0);
+  t.PushToTalk = bool('PushToTalk', false);
+  t.PushToPass = bool('PushToPass', false);
+  t.PitOptRepairLeft = num('PitOptRepairLeft', 0);
+  t.PitRepairLeft = num('PitRepairLeft', 0);
+  t.PlayerIncidents = num('PlayerIncidents', 0);
+  t.FastRepairUsed = num('FastRepairUsed', 0);
+  t.FastRepairAvailable = num('FastRepairAvailable', 0);
+  t.TireSetsUsed = num('TireSetsUsed', 0);
+  t.TireSetsAvailable = num('TireSetsAvailable', 0);
 
   return t as unknown as Telemetry;
 }
