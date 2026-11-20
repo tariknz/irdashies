@@ -14,7 +14,6 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingsSection } from '../components/SettingSection';
 
 type DrivingMetricId =
-  | 'accelerationtimer'
   | 'stinthistory'
   | 'frictioncircle'
   | 'tyrepanel'
@@ -40,12 +39,6 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
     enabled: saved?.enabled ?? false,
     config: (saved?.config as unknown as WidgetConfigMap[K]) ?? defaults,
   };
-  const savedRanges = (settings.config as WidgetConfigMap['accelerationtimer'])
-    .ranges;
-  const accelerationRanges = Array.isArray(savedRanges)
-    ? savedRanges
-    : getWidgetDefaultConfig('accelerationtimer').ranges;
-
   return (
     <BaseSettingsSection
       title={getWidgetManifest(id)?.name ?? id}
@@ -55,42 +48,6 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
-          {id === 'accelerationtimer' && (
-            <SettingsSection title="Speed ranges">
-              {accelerationRanges.map((range, index) => (
-                <div className="grid grid-cols-2 gap-2" key={index}>
-                  <SettingNumberRow
-                    title={`Range ${index + 1} start`}
-                    value={range.fromKph}
-                    min={0}
-                    max={range.toKph - 1}
-                    step={1}
-                    onChange={(fromKph) => {
-                      const ranges = [...accelerationRanges];
-                      ranges[index] = { ...ranges[index], fromKph };
-                      handleConfigChange({ ranges } as unknown as Partial<
-                        WidgetConfigMap[K]
-                      >);
-                    }}
-                  />
-                  <SettingNumberRow
-                    title={`Range ${index + 1} end`}
-                    value={range.toKph}
-                    min={range.fromKph + 1}
-                    max={500}
-                    step={1}
-                    onChange={(toKph) => {
-                      const ranges = [...accelerationRanges];
-                      ranges[index] = { ...ranges[index], toKph };
-                      handleConfigChange({ ranges } as unknown as Partial<
-                        WidgetConfigMap[K]
-                      >);
-                    }}
-                  />
-                </div>
-              ))}
-            </SettingsSection>
-          )}
           {id === 'stinthistory' && (
             <SettingsSection title="History">
               <SettingNumberRow
@@ -301,7 +258,6 @@ const drivingMetricPage = (
   };
 
 export const drivingMetricSettingsPages = {
-  accelerationtimer: drivingMetricPage('accelerationtimer'),
   stinthistory: drivingMetricPage('stinthistory'),
   frictioncircle: drivingMetricPage('frictioncircle'),
   tyrepanel: drivingMetricPage('tyrepanel'),

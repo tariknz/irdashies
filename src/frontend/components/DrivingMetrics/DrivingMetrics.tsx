@@ -13,7 +13,6 @@ import {
   trackStateSelectors,
 } from '@irdashies/context';
 import type {
-  AccelerationTimerConfig,
   CarConditionSnapshot,
   CarDynamicsSnapshot,
   CompactTelemetryWidgetConfig,
@@ -23,15 +22,7 @@ import type {
   TrackStateSnapshot,
   WidgetConfigMap,
 } from '@irdashies/types';
-import {
-  groupStints,
-  IDLE_ACCELERATION_TIMER,
-  integrateDistance,
-  mapGForce,
-  runningTime,
-  updateAccelerationTimer,
-  type AccelerationTimerState,
-} from './logic';
+import { groupStints, integrateDistance, mapGForce } from './logic';
 
 const emptyVisibility = {
   race: true,
@@ -77,75 +68,10 @@ function MetricFrame({
   );
 }
 
-const timerText = (
-  timer: AccelerationTimerState | undefined,
-  now: number | undefined
-) => {
-  if (timer?.elapsed != null) return `${timer.elapsed.toFixed(2)} s`;
-  const running = timer ? runningTime(timer, now) : null;
-  return running === null ? '—' : `${running.toFixed(2)} s`;
-};
-
 const formatTime = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
   return `${minutes}:${(seconds % 60).toFixed(1).padStart(4, '0')}`;
 };
-
-const selectGear = (snapshot: DriverControlsSnapshot) => snapshot.gear;
-
-const selectCarDynamics = (snapshot: CarDynamicsSnapshot) => snapshot;
-
-export function AccelerationTimer() {
-  const config = useSettings('accelerationtimer') as
-    AccelerationTimerConfig | undefined;
-  const ranges = useMemo(
-    () => (Array.isArray(config?.ranges) ? config.ranges : []),
-    [config?.ranges]
-  );
-  const gear = useRef(0);
-  const timers = useRef<AccelerationTimerState[]>([]);
-  const [texts, setTexts] = useState<readonly string[]>([]);
-  useChannelListener('driver-controls.snapshot', selectGear, (value) => {
-    gear.current = value ?? 0;
-  });
-  useChannelListener(
-    'car-dynamics.snapshot',
-    selectCarDynamics,
-    ({ speed, sessionTime }) => {
-      if (speed !== undefined && sessionTime !== undefined) {
-        timers.current = ranges.map((range, index) =>
-          updateAccelerationTimer(
-            timers.current[index] ?? IDLE_ACCELERATION_TIMER,
-            range,
-            speed * 3.6,
-            sessionTime,
-            gear.current
-          )
-        );
-      }
-      const next = ranges.map((_, index) =>
-        timerText(timers.current[index], sessionTime)
-      );
-      if (!shallow(texts, next)) setTexts(next);
-    }
-  );
-  return (
-    <MetricFrame config={config} title="Acceleration">
-      <div className="space-y-1">
-        {ranges.map((range, index) => (
-          <div className="flex justify-between" key={index}>
-            <span className="text-slate-400">
-              {range.fromKph}–{range.toKph} km/h
-            </span>
-            <span className="font-mono font-semibold">
-              {texts[index] ?? '—'}
-            </span>
-          </div>
-        ))}
-      </div>
-    </MetricFrame>
-  );
-}
 
 export function StintHistory() {
   const config = useSettings('stinthistory') as StintHistoryConfig | undefined;
@@ -237,12 +163,10 @@ function FourCorners({
   values,
   transform = (value) => value,
   suffix,
-  digits = 1,
 }: {
   values?: readonly (number | null)[];
   transform?: (value: number) => number;
   suffix: string;
-  digits?: number;
 }) {
   return (
     <div className="grid h-[calc(100%-18px)] grid-cols-2 gap-2">
@@ -251,7 +175,7 @@ function FourCorners({
           <div className="text-[10px] text-slate-500">{corner}</div>
           <div className="font-mono font-semibold">
             {Number.isFinite(values?.[index])
-              ? `${transform(values?.[index] as number).toFixed(digits)}${suffix}`
+              ? `${transform(values?.[index] as number).toFixed(1)}${suffix}`
               : '—'}
           </div>
         </div>
@@ -279,12 +203,7 @@ export function BrakePressure() {
   return (
     <MetricFrame config={config} title="Brake pressure">
       {isLmu ? (
-        <FourCorners
-          values={pressure}
-          transform={toPercent}
-          suffix="%"
-          digits={0}
-        />
+        <FourCorners values={pressure} transform={toPercent} suffix="%" />
       ) : (
         <FourCorners values={pressure} suffix="" />
       )}

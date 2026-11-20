@@ -7,9 +7,7 @@ import type {
   ChannelPayloads,
   TrackStateSnapshot,
 } from '@irdashies/types';
-import { WidgetRuntimeProvider } from '../../widgetRuntime';
 import {
-  AccelerationTimer,
   CruiseOdometer,
   FrictionCircle,
   SteeringMeter,
@@ -29,10 +27,6 @@ const frame = {
 
 const dashboard = {
   widgets: [
-    {
-      id: 'accelerationtimer',
-      config: { ...frame, ranges: [{ fromKph: 0, toKph: 100 }] },
-    },
     { id: 'cruiseodometer', config: { ...frame, distanceUnit: 'km' } },
     { id: 'frictioncircle', config: frame },
     { id: 'steeringmeter', config: frame },
@@ -106,72 +100,6 @@ beforeEach(() => {
 
 afterEach(() => {
   window.channelBridge = previousBridge;
-});
-
-describe('AccelerationTimer', () => {
-  it('asks for the car-dynamics rate its runtime definition sets', () => {
-    render(
-      <WidgetRuntimeProvider widgetType="accelerationtimer">
-        <AccelerationTimer />
-      </WidgetRuntimeProvider>
-    );
-    expect(source.rates.get('car-dynamics.snapshot')).toBe(60);
-    expect(source.rates.get('driver-controls.snapshot')).toBe(25);
-  });
-
-  it('stays still while parked and renders only while a run is shown', () => {
-    const { container, commits } = renderCounted(<AccelerationTimer />);
-    source.publish('driver-controls.snapshot', {
-      gear: 1,
-      rpm: 900,
-      version: 1,
-    });
-    source.publish('car-dynamics.snapshot', {
-      speed: 0,
-      sessionTime: 100,
-      version: 1,
-    });
-    const parkedCommits = commits.count;
-
-    for (let index = 1; index <= 60; index++) {
-      source.publish('driver-controls.snapshot', {
-        gear: 1,
-        rpm: 900 + index,
-        version: index + 1,
-      });
-      source.publish('car-dynamics.snapshot', {
-        speed: 0,
-        sessionTime: 100 + index / 60,
-        version: index + 1,
-      });
-    }
-    expect(commits.count).toBe(parkedCommits);
-    expect(container.textContent).toContain('—');
-
-    const start = 101;
-    let runFrames = 0;
-    for (let index = 0; index <= 180; index++) {
-      const speedKph = Math.min(120, 50 * (index / 60));
-      if (speedKph < 120) runFrames += 1;
-      source.publish('car-dynamics.snapshot', {
-        speed: speedKph / 3.6,
-        sessionTime: start + index / 60,
-        version: 100 + index,
-      });
-    }
-
-    expect(container.textContent).toContain('1.99 s');
-    expect(commits.count - parkedCommits).toBeLessThanOrEqual(runFrames);
-    const finishedCommits = commits.count;
-    for (let index = 181; index <= 240; index++) {
-      source.publish('car-dynamics.snapshot', {
-        speed: 120 / 3.6,
-        sessionTime: start + index / 60,
-        version: 100 + index,
-      });
-    }
-    expect(commits.count).toBe(finishedCommits);
-  });
 });
 
 describe('CruiseOdometer', () => {

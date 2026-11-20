@@ -1508,10 +1508,6 @@ export interface CompactTelemetryWidgetConfig {
   sessionVisibility: SessionVisibilitySettings;
 }
 
-export interface AccelerationTimerConfig extends CompactTelemetryWidgetConfig {
-  ranges: { fromKph: number; toKph: number }[];
-}
-
 export interface StintHistoryConfig extends CompactTelemetryWidgetConfig {
   maxStints: number;
 }
@@ -1599,7 +1595,6 @@ export interface WidgetConfigMap {
   broadcastevents: BroadcastEventsConfig;
   broadcastweather: BroadcastWeatherConfig;
   broadcastpodium: BroadcastPodiumConfig;
-  accelerationtimer: AccelerationTimerConfig;
   stinthistory: StintHistoryConfig;
   frictioncircle: CompactTelemetryWidgetConfig;
   tyrepanel: TyrePanelConfig;

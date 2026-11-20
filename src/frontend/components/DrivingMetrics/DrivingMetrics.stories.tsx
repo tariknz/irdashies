@@ -19,7 +19,6 @@ import type {
   TrackStateSnapshot,
 } from '@irdashies/types';
 import {
-  AccelerationTimer,
   BrakePressure,
   CruiseOdometer,
   FrictionCircle,
@@ -165,25 +164,7 @@ const fuelProjection = (
   },
 });
 
-const ACCELERATION_RUN_S = 12;
 const DRIVE_SPEED_MPS = 62;
-
-const accelerationFrame = (elapsedSec: number): ChannelFrame => {
-  const t = elapsedSec % ACCELERATION_RUN_S;
-  const speed = t < 1 ? 0 : 85 * (1 - Math.exp(-(t - 1) / 5));
-  return {
-    'car-dynamics.snapshot': carDynamics({
-      speed,
-      sessionTime: 100 + elapsedSec,
-      version: Math.round(elapsedSec * 20),
-    }),
-    'driver-controls.snapshot': {
-      gear: speed === 0 ? 1 : Math.min(6, 1 + Math.floor(speed / 15)),
-      version: Math.round(elapsedSec * 20),
-    },
-    'track-state.snapshot': trackState(),
-  };
-};
 
 const cruiseFrame = (elapsedSec: number): ChannelFrame => ({
   'track-state.snapshot': trackState({
@@ -220,11 +201,6 @@ const meta: Meta = {
 export default meta;
 
 type Story = StoryObj;
-
-export const AccelerationTimerRun: Story = {
-  render: () => <AccelerationTimer />,
-  decorators: [sized(260, 120), MovingChannelsDecorator(accelerationFrame)],
-};
 
 export const StintHistoryTwoStints: Story = {
   render: () => <StintHistory />,

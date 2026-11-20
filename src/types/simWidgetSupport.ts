@@ -39,9 +39,7 @@ export interface SimWidgetSupportConfig {
  * it belongs in.
  */
 export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
-  'accelerationtimer',
   'battle',
-  'blindspotmonitor',
   'brakepressure',
   'broadcast',
   'broadcastevents',
@@ -96,6 +94,7 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
 
 /** Everything else, hidden while LMU is the running sim. */
 export const LMU_DISABLED_WIDGETS: readonly string[] = [
+  'blindspotmonitor',
   // Race plans name drivers by iRacing customer id.
   'stintplan',
   'strategytimeline',
@@ -131,7 +130,7 @@ export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
  * it did, which costs a user their hand edits once per change and is why the
  * number is bumped only for a real one.
  */
-export const SIM_WIDGET_SUPPORT_VERSION = 11;
+export const SIM_WIDGET_SUPPORT_VERSION = 12;
 
 /**
  * Whether a widget is unavailable under the running sim.
