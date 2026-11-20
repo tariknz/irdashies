@@ -17,7 +17,6 @@ const OPEN_WHEEL = new Set([
   'sf',
   'sfl',
   'ir01',
-  'enas',
 ]);
 
 const PROTOTYPE = new Set([
@@ -27,7 +26,6 @@ const PROTOTYPE = new Set([
   'lmp3',
   'hyp',
   'hyp2026',
-  'nxg',
   'dpi',
 ]);
 
@@ -42,7 +40,9 @@ const HATCH = new Set([
   'scca',
 ]);
 
-const STOCK = new Set(['gen4', 'cts', 'cup', 'sup', 'mini']);
+const STOCK = new Set(['gen4', 'nxg', 'enas', 'cts', 'sup', 'mini']);
+
+const STOCK_CAR_PATHS = ['stockcars', 'euronascar'];
 
 const TRUCK = new Set(['ore', 'pro2', 'truck']);
 
@@ -78,6 +78,8 @@ export function resolveDamageBodyStyle(
   carClass?: string,
   carName?: string
 ): DamageBodyStyle {
+  const path = (carPath ?? '').trim().toLowerCase();
+  if (STOCK_CAR_PATHS.some((prefix) => path.startsWith(prefix))) return 'stock';
   const cls = normalizeClass(carClass);
   if (OPEN_WHEEL.has(cls)) return 'openwheel';
   if (PROTOTYPE.has(cls) || cls.startsWith('lmp') || cls.startsWith('hyp'))

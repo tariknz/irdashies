@@ -1,7 +1,7 @@
 import {
+  useActiveSimulator,
   useCarConditionSnapshot,
   useDashboard,
-  useSessionStore,
   useSessionVisibility,
   useTrackStateSelector,
   trackStateSelectors,
@@ -56,9 +56,9 @@ export function TyrePanelView({
 
   return (
     <div
-      className="h-full w-full overflow-hidden rounded border border-slate-600/60 p-2 text-slate-100"
+      className="h-full w-full overflow-hidden rounded border border-slate-600/60 bg-slate-900/(--bg-opacity) p-2 text-slate-100"
       style={{
-        backgroundColor: `rgb(15 23 42 / ${(config.background.opacity ?? 80) / 100})`,
+        ['--bg-opacity' as string]: `${config.background.opacity ?? 80}%`,
       }}
     >
       <div className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider">
@@ -132,9 +132,7 @@ export function TyrePanel() {
   )?.config as TyrePanelConfig | undefined;
   const car = useCarConditionSnapshot();
   const isOnTrack = useTrackStateSelector(trackStateSelectors.isOnTrack);
-  const simMode = useSessionStore(
-    (state) => state.session?.WeekendInfo?.SimMode
-  );
+  const isLmu = useActiveSimulator() === 'lmu';
   const visible = useSessionVisibility(
     config?.sessionVisibility ?? {
       race: true,
@@ -155,7 +153,7 @@ export function TyrePanel() {
       temperature={car?.tyreTemperature}
       pressure={car?.tyrePressure}
       wear={car?.tyreWear}
-      isLive={simMode === 'Le Mans Ultimate'}
+      isLive={isLmu}
     />
   );
 }

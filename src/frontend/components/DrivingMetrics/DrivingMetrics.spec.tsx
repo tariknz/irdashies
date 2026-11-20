@@ -178,8 +178,6 @@ describe('FrictionCircle', () => {
     source.publish('car-dynamics.snapshot', {
       lateralAccel: 4.9,
       longitudinalAccel: -9.80665,
-      speed: 40,
-      sessionTime: 100,
       version: 1,
     });
     expect(container.textContent).toContain('brake 1.00 g');
@@ -189,11 +187,22 @@ describe('FrictionCircle', () => {
       source.publish('car-dynamics.snapshot', {
         lateralAccel: 4.9,
         longitudinalAccel: -9.80665,
-        speed: 40 + index,
-        sessionTime: 100 + index / 60,
+        brakeLinePressure: [index, index, index, index],
         version: index + 1,
       });
     }
     expect(commits.count).toBe(steadyCommits);
+  });
+
+  it('keeps the peak brake through a frame without a reading', () => {
+    const { container } = renderCounted(<FrictionCircle />);
+    source.publish('car-dynamics.snapshot', {
+      longitudinalAccel: -9.80665,
+      version: 1,
+    });
+    expect(container.textContent).toContain('brake 1.00 g');
+
+    source.publish('car-dynamics.snapshot', { version: 2 });
+    expect(container.textContent).toContain('brake 1.00 g');
   });
 });

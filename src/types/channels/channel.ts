@@ -301,8 +301,6 @@ export interface CarSystemAdjustment {
 }
 
 export interface CarDynamicsSnapshot {
-  sessionTime?: number;
-  speed?: number;
   lateralAccel?: number;
   longitudinalAccel?: number;
   brakeLinePressure?: readonly (number | null)[];

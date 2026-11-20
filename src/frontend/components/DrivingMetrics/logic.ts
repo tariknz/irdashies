@@ -17,6 +17,7 @@ export function mapGForce(
 }
 
 export interface StintSummary {
+  sessionNum: number | undefined;
   firstLap: number;
   lastLap: number;
   laps: number;
@@ -53,6 +54,7 @@ export function groupStints(laps: readonly FuelLapData[]): StintSummary[] {
         times.reduce((sum, time) => sum + (time - averageLap) ** 2, 0) /
         Math.max(1, times.length);
       return {
+        sessionNum: group[0].sessionNum,
         firstLap: group[0].lapNumber,
         lastLap: group.at(-1)?.lapNumber ?? group[0].lapNumber,
         laps: group.length,

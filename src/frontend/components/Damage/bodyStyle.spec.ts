@@ -13,6 +13,20 @@ describe('resolveDamageBodyStyle', () => {
     expect(resolveDamageBodyStyle('pro2truck', 'ORE')).toBe('truck');
   });
 
+  it('draws the NASCAR classes and cup cars with their own bodies', () => {
+    expect(resolveDamageBodyStyle('stockcars chevycamarozl12022', 'NXG')).toBe(
+      'stock'
+    );
+    expect(resolveDamageBodyStyle('stockcars2 camaro2019', 'ORE')).toBe(
+      'stock'
+    );
+    expect(resolveDamageBodyStyle('euronascar', 'ENAS')).toBe('stock');
+    expect(resolveDamageBodyStyle('porsche992cup', 'CUP')).toBe('gt');
+    expect(
+      resolveDamageBodyStyle('renaultcliocup', 'CUP', 'Renault Clio Cup')
+    ).toBe('hatch');
+  });
+
   it('falls back to path keywords when class is missing', () => {
     expect(resolveDamageBodyStyle('ray_ff1600', undefined, 'Ray FF1600')).toBe(
       'openwheel'

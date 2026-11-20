@@ -8,7 +8,7 @@ const frame = (values: Record<string, number>): Telemetry =>
   ) as unknown as Telemetry;
 
 describe('CarDynamicsProcessor', () => {
-  it('publishes g-forces, speed, time and the per-corner travel readings', () => {
+  it('publishes g-forces and the per-corner travel readings', () => {
     const processor = new CarDynamicsProcessor();
     processor.onFrame(
       frame({
@@ -22,9 +22,9 @@ describe('CarDynamicsProcessor', () => {
     );
 
     const snapshot = processor.snapshot();
+    expect(snapshot).not.toHaveProperty('sessionTime');
+    expect(snapshot).not.toHaveProperty('speed');
     expect(snapshot).toMatchObject({
-      sessionTime: 120.25,
-      speed: 41.5,
       lateralAccel: 9.8,
       longitudinalAccel: -4.9,
       version: 1,
@@ -39,6 +39,13 @@ describe('CarDynamicsProcessor', () => {
     processor.onFrame(frame({ LatAccel: 1, LFtempCM: 80, LmuAeroDamage: 0.2 }));
     expect(processor.snapshot().version).toBe(1);
     expect(processor.snapshot().brakeLinePressure).toBeUndefined();
+  });
+
+  it('publishes nothing new while only the clock and speed move', () => {
+    const processor = new CarDynamicsProcessor();
+    processor.onFrame(frame({ SessionTime: 1, Speed: 40, LatAccel: 2 }));
+    processor.onFrame(frame({ SessionTime: 1.1, Speed: 41, LatAccel: 2 }));
+    expect(processor.snapshot().version).toBe(1);
   });
 
   it('updates the corner arrays in place', () => {

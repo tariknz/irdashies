@@ -210,7 +210,7 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
               />
             </SettingsSection>
           )}
-          <SettingsSection title="Display">
+          <SettingsSection title="Display" scaleWidgetId={widgetId}>
             <SettingSliderRow
               title="Background opacity"
               value={settings.config.background.opacity}

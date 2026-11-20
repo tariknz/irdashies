@@ -16,14 +16,11 @@ import {
   type CornerKeys,
 } from './carReadings';
 
-type ScalarField =
-  'sessionTime' | 'speed' | 'lateralAccel' | 'longitudinalAccel';
+type ScalarField = 'lateralAccel' | 'longitudinalAccel';
 
 type CornerField = 'brakeLinePressure' | 'suspensionDeflection';
 
 const SCALARS: readonly (readonly [ScalarField, string])[] = [
-  ['sessionTime', 'SessionTime'],
-  ['speed', 'Speed'],
   ['lateralAccel', 'LatAccel'],
   ['longitudinalAccel', 'LongAccel'],
 ];

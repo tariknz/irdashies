@@ -22,6 +22,7 @@ import type {
   TrackStateSnapshot,
   WidgetConfigMap,
 } from '@irdashies/types';
+import { formatTime } from '@irdashies/utils/time';
 import { groupStints, integrateDistance, mapGForce } from './logic';
 
 const emptyVisibility = {
@@ -55,9 +56,9 @@ function MetricFrame({
   if (!visible || (config?.showOnlyWhenOnTrack && !isOnTrack)) return null;
   return (
     <div
-      className="h-full w-full overflow-hidden rounded border border-slate-600/60 p-2 text-slate-100"
+      className="h-full w-full overflow-hidden rounded border border-slate-600/60 bg-slate-900/(--bg-opacity) p-2 text-slate-100"
       style={{
-        backgroundColor: `rgb(15 23 42 / ${(config?.background.opacity ?? 80) / 100})`,
+        ['--bg-opacity' as string]: `${config?.background.opacity ?? 80}%`,
       }}
     >
       <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
@@ -67,11 +68,6 @@ function MetricFrame({
     </div>
   );
 }
-
-const formatTime = (seconds: number) => {
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}:${(seconds % 60).toFixed(1).padStart(4, '0')}`;
-};
 
 export function StintHistory() {
   const config = useSettings('stinthistory') as StintHistoryConfig | undefined;
@@ -92,14 +88,14 @@ export function StintHistory() {
         {stints.map((stint) => (
           <div
             className="grid grid-cols-5 gap-2"
-            key={`${stint.firstLap}-${stint.lastLap}`}
+            key={`${stint.sessionNum}-${stint.firstLap}-${stint.lastLap}`}
           >
             <span>
               L{stint.firstLap}–{stint.lastLap}
             </span>
-            <span>{formatTime(stint.duration)}</span>
+            <span>{formatTime(stint.duration, 'mixed')}</span>
             <span>{stint.fuelUsed.toFixed(1)} L</span>
-            <span>{formatTime(stint.averageLap)}</span>
+            <span>{formatTime(stint.averageLap, 'mixed')}</span>
             <span>±{stint.consistency.toFixed(2)} s</span>
           </div>
         ))}
@@ -126,13 +122,11 @@ export function FrictionCircle() {
     acceleration?.longitudinalAccel
   );
   const [peak, setPeak] = useState({ sessionNum, value: 0 });
+  const sessionPeak = peak.sessionNum === sessionNum ? peak.value : 0;
   const peakBrake =
     g.longitudinal === null
-      ? 0
-      : Math.max(
-          peak.sessionNum === sessionNum ? peak.value : 0,
-          -g.longitudinal
-        );
+      ? sessionPeak
+      : Math.max(sessionPeak, -g.longitudinal);
   if (peak.sessionNum !== sessionNum || peak.value !== peakBrake) {
     setPeak({ sessionNum, value: peakBrake });
   }
@@ -299,7 +293,9 @@ export function CruiseOdometer() {
   const unit = config?.distanceUnit ?? 'km';
   const selectPosition = useCallback(
     (snapshot: TrackStateSnapshot) =>
-      !Number.isFinite(trackLength) || trackLength <= 0
+      !Number.isFinite(trackLength) ||
+      trackLength <= 0 ||
+      snapshot.lapDistPct < 0
         ? null
         : formatDistance(snapshot.lapDistPct * trackLength, divisor),
     [divisor, trackLength]

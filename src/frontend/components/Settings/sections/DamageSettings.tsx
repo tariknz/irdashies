@@ -52,7 +52,7 @@ export const DamageSettings = () => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <SettingsSection title="Display">
+            <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
               <SettingProp path="background.opacity" />
               <SettingProp path="showIntegrity" />
               <SettingProp path="showStats" />
