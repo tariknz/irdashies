@@ -29,6 +29,14 @@ const examples: { label: string; state: P2PDisplayState }[] = [
   { label: 'Race available', state: { status: 'inactive', count: 65 } },
   { label: 'Race active', state: { status: 'active', count: 65 } },
   { label: 'Race low remaining', state: { status: 'inactive', count: 15 } },
+  {
+    label: 'Race active, low remaining',
+    state: { status: 'active', count: 15 },
+  },
+  {
+    label: 'Race cooldown, low remaining',
+    state: { status: 'cooldown', count: 14 },
+  },
   { label: 'Race exhausted', state: { status: 'exhausted', count: 0 } },
 ];
 
