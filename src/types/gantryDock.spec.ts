@@ -48,6 +48,17 @@ describe('sanitizeGantryDock', () => {
     ]);
   });
 
+  it('accepts a lap timer panel once', () => {
+    const result = sanitizeGantryDock({
+      enabled: true,
+      panels: [
+        { id: 'a', type: 'laptimelog', widgetId: 'fuel' },
+        { id: 'b', type: 'laptimelog' },
+      ],
+    });
+    expect(result.panels).toEqual([{ id: 'a', type: 'laptimelog' }]);
+  });
+
   it('drops panel types that are not on the allowlist', () => {
     const result = sanitizeGantryDock({
       enabled: true,

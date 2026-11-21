@@ -58,7 +58,11 @@ vi.mock('@irdashies/utils/logger', () => ({
   default: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }));
 
-import { GantryDockHost, useGantryDock } from './GantryDockHost';
+import {
+  GantryDockHost,
+  groupDockPanels,
+  useGantryDock,
+} from './GantryDockHost';
 
 const layout = { x: 0, y: 0, width: 100, height: 100 };
 
@@ -243,5 +247,124 @@ describe('GantryDockHost', () => {
 
     expect(screen.getByText(/This panel hit a problem/)).toBeInTheDocument();
     expect(screen.getByTestId('widget-fuel')).toBeInTheDocument();
+  });
+});
+
+const withLapTimer: ResolvedDock = {
+  arrangement: 'row',
+  panels: [
+    ...fuelAndMap.panels,
+    {
+      panel: { id: 'p3', type: 'laptimelog' },
+      status: 'ready',
+      widget: { id: 'laptimelog', enabled: false, layout },
+    },
+  ],
+};
+
+describe('GantryDockHost panel dividers', () => {
+  it('puts a draggable divider between side-by-side panels', () => {
+    render(<GantryDockHost dock={fuelAndMap} />);
+
+    expect(screen.getAllByRole('separator')).toHaveLength(1);
+    expect(
+      screen.getByRole('separator', {
+        name: 'Fuel Calculator and Track Map split',
+      })
+    ).toBeInTheDocument();
+  });
+
+  it('starts three panels at equal widths, with a divider between each', () => {
+    render(<GantryDockHost dock={withLapTimer} />);
+
+    const [first, second] = screen.getAllByRole('separator');
+    expect(screen.getAllByRole('separator')).toHaveLength(2);
+    expect(first).toHaveAccessibleName('Fuel Calculator and Track Map split');
+    expect(first).toHaveAttribute('aria-valuenow', '33');
+    expect(second).toHaveAccessibleName('Track Map and Lap Timer split');
+    expect(second).toHaveAttribute('aria-valuenow', '50');
+    expect(screen.getByTestId('widget-laptimelog')).toBeInTheDocument();
+  });
+
+  it('drops the divider next to a collapsed panel', () => {
+    render(<GantryDockHost dock={fuelAndMap} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse Track Map' }));
+
+    expect(screen.queryAllByRole('separator')).toHaveLength(0);
+    expect(
+      screen.getByRole('region', { name: 'Track Map' })
+    ).toBeInTheDocument();
+  });
+
+  it('remembers where a divider was moved to', () => {
+    const { unmount } = render(<GantryDockHost dock={fuelAndMap} />);
+    const divider = screen.getByRole('separator');
+    fireEvent.keyDown(divider, { key: 'ArrowRight' });
+    fireEvent.keyDown(divider, { key: 'ArrowRight' });
+    expect(divider).toHaveAttribute('aria-valuenow', '54');
+
+    unmount();
+    render(<GantryDockHost dock={fuelAndMap} />);
+    expect(screen.getByRole('separator')).toHaveAttribute(
+      'aria-valuenow',
+      '54'
+    );
+  });
+
+  it('starts afresh when collapsing a panel changes what a divider separates', () => {
+    render(<GantryDockHost dock={withLapTimer} />);
+    const [first] = screen.getAllByRole('separator');
+    for (let i = 0; i < 5; i++) fireEvent.keyDown(first, { key: 'ArrowLeft' });
+    expect(first).toHaveAttribute('aria-valuenow', '23');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse Track Map' }));
+
+    const [remaining] = screen.getAllByRole('separator');
+    expect(screen.getAllByRole('separator')).toHaveLength(1);
+    expect(remaining).toHaveAccessibleName(
+      'Fuel Calculator and Lap Timer split'
+    );
+    expect(remaining).toHaveAttribute('aria-valuenow', '50');
+  });
+
+  it('has no dividers in tabs, which show one panel at a time', () => {
+    render(<GantryDockHost dock={{ ...withLapTimer, arrangement: 'tabs' }} />);
+
+    expect(screen.queryAllByRole('separator')).toHaveLength(0);
+  });
+});
+
+describe('groupDockPanels', () => {
+  const [fuel, map, laps] = withLapTimer.panels;
+  const ids = (groups: ReturnType<typeof groupDockPanels>) =>
+    groups.map((group) => group.map((resolved) => resolved.panel.id));
+
+  it('gives each expanded panel its own group', () => {
+    expect(ids(groupDockPanels([fuel, map, laps], new Set()))).toEqual([
+      ['p1'],
+      ['p2'],
+      ['p3'],
+    ]);
+  });
+
+  it('keeps a collapsed panel beside the expanded panel before it', () => {
+    expect(ids(groupDockPanels([fuel, map, laps], new Set(['p2'])))).toEqual([
+      ['p1', 'p2'],
+      ['p3'],
+    ]);
+  });
+
+  it('keeps a leading collapsed panel with the first expanded panel', () => {
+    expect(ids(groupDockPanels([fuel, map, laps], new Set(['p1'])))).toEqual([
+      ['p1', 'p2'],
+      ['p3'],
+    ]);
+  });
+
+  it('puts panels in one group when all are collapsed', () => {
+    expect(ids(groupDockPanels([fuel, map], new Set(['p1', 'p2'])))).toEqual([
+      ['p1', 'p2'],
+    ]);
   });
 });

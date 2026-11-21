@@ -45,7 +45,7 @@ export const isOffTrackSurface = (surface: number): boolean =>
 const MAX_HISTORY_ENTRIES = 60;
 const FREEZE_TIME = 5;
 
-export const useLapTimeLog = () => {
+export const useLapTimeLog = (embedded = false) => {
   // reset functions
   const resetSessionState = () => {
     setHistory([]);
@@ -276,7 +276,7 @@ export const useLapTimeLog = () => {
   // 5. check personal best
   useEffect(() => {
     const isValidTime = bestLapTime > 0;
-    if (!isValidTime) return;
+    if (embedded || !isValidTime) return;
     const {
       trackId: currentTrackId,
       playerCarName: currentCar,
@@ -289,7 +289,7 @@ export const useLapTimeLog = () => {
     if (hasPersonalBestKey && isBetter) {
       setPersonalBest(currentTrackId, currentCar, bestLapTime);
     }
-  }, [bestLapTime, setPersonalBest]);
+  }, [bestLapTime, setPersonalBest, embedded]);
 
   return {
     current: displayTime,

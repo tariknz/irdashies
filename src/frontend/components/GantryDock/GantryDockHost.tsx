@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState, type ReactNode } from 'react';
 import { GearIcon } from '@phosphor-icons/react';
 import {
   SectorTimingUpdater,
@@ -21,6 +21,7 @@ import {
   dockPanelSettingsTarget,
 } from './components/DockPanel';
 import { useDockCollapsed } from './hooks/useDockCollapsed';
+import { SplitPane } from '../Gantry/components/SplitPane/SplitPane';
 
 const SECTOR_TIMING_TYPES = new Set(['map', 'flatmap']);
 
@@ -44,45 +45,107 @@ interface ArrangementProps {
   onOpenSettings: (target: string) => void;
 }
 
+const PANEL_SPLIT_STORAGE_PREFIX = 'gantryDockPanelSplitPercent:';
+
+export const groupDockPanels = (
+  panels: readonly ResolvedDockPanel[],
+  collapsed: ReadonlySet<string>
+): ResolvedDockPanel[][] => {
+  const groups: ResolvedDockPanel[][] = [];
+  let leading: ResolvedDockPanel[] = [];
+  for (const resolved of panels) {
+    if (!collapsed.has(resolved.panel.id)) {
+      groups.push([...leading, resolved]);
+      leading = [];
+    } else if (groups.length > 0) {
+      groups[groups.length - 1].push(resolved);
+    } else {
+      leading.push(resolved);
+    }
+  }
+  if (leading.length > 0) groups.push(leading);
+  return groups;
+};
+
 const RowArrangement = ({
   panels,
   running,
   onOpenSettings,
 }: ArrangementProps) => {
   const { collapsed, toggleCollapsed } = useDockCollapsed();
-  return (
-    <div className="flex flex-1 min-h-0 divide-x divide-slate-700/50">
-      {panels.map((resolved) => {
-        const isCollapsed = collapsed.has(resolved.panel.id);
-        return (
-          <section
-            key={resolved.panel.id}
-            aria-label={dockPanelLabel(resolved)}
-            className={[
-              'flex flex-col min-w-0 min-h-0',
-              isCollapsed ? 'flex-none' : 'flex-1',
-            ].join(' ')}
-          >
-            <DockPanelHeader
-              panelId={resolved.panel.id}
-              label={dockPanelLabel(resolved)}
-              settingsTarget={dockPanelSettingsTarget(resolved)}
-              collapsed={isCollapsed}
-              onToggleCollapsed={toggleCollapsed}
+  const groups = groupDockPanels(panels, collapsed);
+
+  const renderPanel = (resolved: ResolvedDockPanel) => {
+    const isCollapsed = collapsed.has(resolved.panel.id);
+    return (
+      <section
+        key={resolved.panel.id}
+        aria-label={dockPanelLabel(resolved)}
+        className={[
+          'flex flex-col min-w-0 min-h-0',
+          isCollapsed ? 'flex-none' : 'flex-1',
+        ].join(' ')}
+      >
+        <DockPanelHeader
+          panelId={resolved.panel.id}
+          label={dockPanelLabel(resolved)}
+          settingsTarget={dockPanelSettingsTarget(resolved)}
+          collapsed={isCollapsed}
+          onToggleCollapsed={toggleCollapsed}
+          onOpenSettings={onOpenSettings}
+        />
+        {!isCollapsed && (
+          <div className="flex-1 min-h-0 overflow-auto">
+            <DockPanelContent
+              resolved={resolved}
+              running={running}
               onOpenSettings={onOpenSettings}
             />
-            {!isCollapsed && (
-              <div className="flex-1 min-h-0 overflow-auto">
-                <DockPanelContent
-                  resolved={resolved}
-                  running={running}
-                  onOpenSettings={onOpenSettings}
-                />
-              </div>
-            )}
-          </section>
-        );
-      })}
+          </div>
+        )}
+      </section>
+    );
+  };
+
+  const renderGroup = (group: readonly ResolvedDockPanel[]) => (
+    <div className="flex flex-1 h-full min-w-0 min-h-0 divide-x divide-slate-700/50">
+      {group.map(renderPanel)}
+    </div>
+  );
+
+  const groupLabel = (group: readonly ResolvedDockPanel[]) => {
+    const expanded = group.find(
+      (resolved) => !collapsed.has(resolved.panel.id)
+    );
+    return dockPanelLabel(expanded ?? group[0]);
+  };
+
+  const renderFrom = (index: number): ReactNode => {
+    const group = groups[index];
+    if (index === groups.length - 1) return renderGroup(group);
+    const rest = groups.slice(index);
+    const storageKey = `${PANEL_SPLIT_STORAGE_PREFIX}${rest
+      .map((g) => g.map((resolved) => resolved.panel.id).join('+'))
+      .join(',')}`;
+    return (
+      <SplitPane
+        key={storageKey}
+        label={`${groupLabel(group)} and ${groupLabel(groups[index + 1])} split`}
+        storageKey={storageKey}
+        defaultPercent={100 / rest.length}
+        left={renderGroup(group)}
+        right={
+          <div className="flex w-full h-full min-h-0">
+            {renderFrom(index + 1)}
+          </div>
+        }
+      />
+    );
+  };
+
+  return (
+    <div className="flex flex-1 min-h-0">
+      {groups.length > 0 && renderFrom(0)}
     </div>
   );
 };

@@ -22,29 +22,42 @@ import { LapTimeCell } from './components/LapTimeCell';
 import { LiveDeltaBar } from './components/LiveDeltaBar';
 
 const FREEZE_TIME = 5;
+const EMBEDDED_HISTORY_LAPS = 20;
 
-export const LapTimeLog = () => {
+export const LapTimeLog = ({ embedded = false }: { embedded?: boolean }) => {
   const { isDemoMode } = useDashboard();
   const { isDriving } = useDrivingState();
   const playerIndex = useFocusCarIdx();
-  const data = useLapTimeLog();
+  const data = useLapTimeLog(embedded);
   const demoData = useDemoFrame(isDemoMode, getDemoLapTimeLogData);
-  const isSessionVisible = useSessionVisibility(
-    data.settings?.sessionVisibility
+  const settings = useMemo(
+    () =>
+      embedded && data.settings
+        ? {
+            ...data.settings,
+            history: {
+              ...data.settings.history,
+              enabled: true,
+              count: EMBEDDED_HISTORY_LAPS,
+            },
+          }
+        : data.settings,
+    [embedded, data.settings]
   );
+  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
-  if (!data.settings || playerIndex === undefined || !isSessionVisible) {
+  if (!settings || playerIndex === undefined || !isSessionVisible) {
     return null;
   }
 
-  if (data.settings.showOnlyWhenOnTrack && !isDriving) {
+  if (settings.showOnlyWhenOnTrack && !isDriving) {
     return null;
   }
 
   if (isDemoMode && demoData) {
     return (
       <LapTimeLogDisplay
-        settings={data.settings}
+        settings={settings}
         current={demoData.current}
         lastlap={demoData.lastlap}
         bestlap={demoData.bestlap}
@@ -54,13 +67,14 @@ export const LapTimeLog = () => {
         overall={demoData.overall}
         dirty={demoData.dirty}
         history={demoData.history}
+        embedded={embedded}
       />
     );
   }
 
   return (
     <LapTimeLogDisplay
-      settings={data.settings}
+      settings={settings}
       current={isDriving ? data.current : undefined}
       lastlap={data.lastlap}
       bestlap={data.bestlap}
@@ -70,6 +84,7 @@ export const LapTimeLog = () => {
       overall={data.overall}
       dirty={data.dirty}
       history={data.history}
+      embedded={embedded}
     />
   );
 };
@@ -85,6 +100,7 @@ export const LapTimeLogDisplay = ({
   overall,
   dirty,
   history,
+  embedded = false,
 }: {
   settings: LapTimeLogConfig;
   current?: number;
@@ -96,6 +112,7 @@ export const LapTimeLogDisplay = ({
   overall?: number;
   dirty?: boolean;
   history?: LapEntry[];
+  embedded?: boolean;
 }) => {
   // sort laps
   const sortedHistory = useMemo(() => {
@@ -162,7 +179,11 @@ export const LapTimeLogDisplay = ({
   const reverse = settings.reverse ? 'flex-col-reverse' : 'flex-col';
 
   return (
-    <div className={`h-full flex ${alignment}`}>
+    <div
+      className={
+        embedded ? 'h-full overflow-y-auto' : `h-full flex ${alignment}`
+      }
+    >
       <div
         className={`w-full text-sm bg-slate-800/[var(--bg-opacity)] rounded-md text-white ${!isCompact ? 'p-2' : 'p-0.5'}`}
         style={
