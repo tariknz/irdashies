@@ -893,6 +893,23 @@ CarSetup:
       expect(next.Gear.value).toEqual([3]);
     });
 
+    it('handles a same-size layout change with a different element count', () => {
+      const frame = (varType: number, values: number[]) => {
+        const buffer = new ArrayBuffer(4);
+        if (varType === 4) new Float32Array(buffer).set(values);
+        else new Int32Array(buffer).set(values);
+        return {
+          Speed: TelemetryVar(varType, buffer),
+        } as unknown as TelemetryVarList;
+      };
+
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue(frame(4, [1]));
+      expect(sdk.getTelemetry().Speed.value).toEqual([1]);
+
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue(frame(3, [2]));
+      expect(sdk.getTelemetry().Speed.value).toEqual([2]);
+    });
+
     it('clears cached telemetry on stop and reconnect', () => {
       const buffer = new ArrayBuffer(4);
       new Float32Array(buffer)[0] = 5;

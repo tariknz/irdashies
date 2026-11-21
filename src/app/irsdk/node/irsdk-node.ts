@@ -142,7 +142,6 @@ function copyTelemData<
   const typeChanged =
     previousType !== undefined && previousType !== src.varType;
   varTypes?.set(key, src.varType);
-  // Check if we have a cached entry to reuse
   const cached = cache?.[key];
   const useCache =
     !typeChanged && cached && cached.value && Array.isArray(cached.value);

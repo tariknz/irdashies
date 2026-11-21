@@ -20,6 +20,22 @@ void SetString(Napi::Object &obj, const char *key, const char *ptr, size_t maxLe
   obj.Set(key, Napi::String::New(obj.Env(), ReadCString(ptr, maxLen).c_str()));
 }
 
+template <typename Array, typename Value>
+Array HeldArray(Napi::Env env, Napi::Reference<Array> &held, const Value *values, size_t length)
+{
+  if (!held.IsEmpty())
+  {
+    Array array = held.Value();
+    if (array.ElementLength() == length &&
+        std::memcmp(array.Data(), values, length * sizeof(Value)) == 0)
+      return array;
+  }
+  Array array = Array::New(env, length);
+  std::memcpy(array.Data(), values, length * sizeof(Value));
+  held = Napi::Persistent(array);
+  return array;
+}
+
 void SetVect3(Napi::Object &obj, const char *key, const LMUVect3 &v)
 {
   auto arr = Napi::Float64Array::New(obj.Env(), 3);
@@ -510,6 +526,7 @@ Napi::Value LmuSdkNode::Read(const Napi::CallbackInfo &info)
     auto tyreWear = Napi::Float64Array::New(env, 4);
     auto brakePressure = Napi::Float64Array::New(env, 4);
     auto suspensionDeflection = Napi::Float64Array::New(env, 4);
+    uint8_t wheelDetached[4];
     for (size_t i = 0; i < 4; ++i)
     {
       const auto &wheel = player->mWheels[i];
@@ -519,12 +536,19 @@ Napi::Value LmuSdkNode::Read(const Napi::CallbackInfo &info)
       tyreWear[i] = wheel.mWear;
       brakePressure[i] = wheel.mBrakePressure;
       suspensionDeflection[i] = wheel.mSuspensionDeflection;
+      wheelDetached[i] = wheel.mDetached ? 1 : 0;
     }
     out.Set("tyreTemperature", tyreTemperature);
     out.Set("tyrePressure", tyrePressure);
     out.Set("tyreWear", tyreWear);
     out.Set("brakePressure", brakePressure);
     out.Set("suspensionDeflection", suspensionDeflection);
+    out.Set("wheelDetached", HeldArray(env, _wheelDetached, wheelDetached, 4));
+    out.Set("dentSeverity", HeldArray(env, _dentSeverity, player->mDentSeverity, 8));
+    out.Set("bodyDetached", player->mDetached);
+    out.Set("lastImpactET", player->mLastImpactET);
+    const double lastImpactPos[3] = {player->mLastImpactPos.x, player->mLastImpactPos.y, player->mLastImpactPos.z};
+    out.Set("lastImpactPos", HeldArray(env, _lastImpactPos, lastImpactPos, 3));
 
     double vx = player->mLocalVel.x;
     double vy = player->mLocalVel.y;
