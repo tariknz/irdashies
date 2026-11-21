@@ -741,7 +741,7 @@ CarSetup:
   });
 
   describe('getTelemetry', () => {
-    const TelemetryVar = (varType: number, value: ArrayBuffer) => ({
+    const TelemetryVar = (varType: number, value: ArrayBuffer | Uint8Array) => ({
       name: 'Speed',
       description: '',
       unit: '',
@@ -831,6 +831,25 @@ CarSetup:
 
       vi.mocked(mockSdk.getTelemetryData).mockReturnValue(frame([1, 2, 4]));
       expect(sdk.getTelemetry().Speed.value).toEqual([1, 2, 4]);
+    });
+
+    it('truncates reused arrays when the native data-view layout shrinks', () => {
+      const frame = (values: number[]) => {
+        const buffer = new ArrayBuffer(values.length * 4);
+        new Float32Array(buffer).set(values);
+        return {
+          Speed: {
+            ...TelemetryVar(4, new Uint8Array(buffer)),
+            varType: 4,
+          },
+        } as unknown as NativeTelemetryDataView;
+      };
+
+      mockSdk.getTelemetryDataView = vi.fn().mockReturnValue(frame([3, 2]));
+      expect(sdk.getTelemetry().Speed.value).toEqual([3, 2]);
+
+      mockSdk.getTelemetryDataView = vi.fn().mockReturnValue(frame([3]));
+      expect(sdk.getTelemetry().Speed.value).toEqual([3]);
     });
 
     it('rebuilds cached arrays when a variable changes type', () => {

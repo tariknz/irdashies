@@ -104,12 +104,12 @@ describe('RadarProcessor', () => {
   it('does not mutate a published snapshot when the next frame arrives', () => {
     const processor = createProcessor();
     processor.onFrame(frame({ time: 1, pcts: [0.5, 0.5 + m(30)] }));
-    const published = processor.snapshot().cars.map((car) => ({ ...car }));
+    const published = processor.snapshot();
 
     processor.onFrame(frame({ time: 2, pcts: [0.5, 0.5 + m(5)] }));
 
     expect(processor.snapshot().cars[0].dist).toBeCloseTo(5);
-    expect(published[0].dist).toBeCloseTo(30);
+    expect(published.cars[0].dist).toBeCloseTo(30);
   });
 
   it('measures across the start/finish line by the short way', () => {

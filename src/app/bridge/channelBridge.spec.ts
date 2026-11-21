@@ -278,13 +278,14 @@ describe('ChannelBus', () => {
     });
 
     bus.removeRenderer(9);
-    expect(bus.metricsSnapshot()).toMatchObject({
-      publications: { '10:event': 1 },
-      deliveries: { '10:event': 1 },
-    });
+    const remaining = bus.metricsSnapshot();
+    expect(remaining.publications).toEqual({ '10:event': 1 });
+    expect(remaining.deliveries).toEqual({ '10:event': 1 });
 
     bus.unsubscribe(10, 'event');
-    expect(bus.metricsSnapshot().deliveries).toEqual({});
+    const unsubscribed = bus.metricsSnapshot();
+    expect(unsubscribed.publications).toEqual({});
+    expect(unsubscribed.deliveries).toEqual({});
   });
 
   it('keeps processor demand and publication counts with delivery disabled', () => {
