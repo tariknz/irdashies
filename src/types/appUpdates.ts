@@ -21,9 +21,11 @@ export interface AppUpdateStatus {
   phase: (typeof APP_UPDATE_PHASES)[number];
 }
 
+export type AppUpdateAction = 'download' | 'restart';
+
 export interface AppUpdatesBridge {
   onStatus: (callback: (status: AppUpdateStatus) => void) => () => void;
   checkLatest: () => Promise<void>;
   setAutoUpdate: (enabled: boolean) => Promise<void>;
-  install: () => Promise<void>;
+  install: (action: AppUpdateAction) => Promise<void>;
 }

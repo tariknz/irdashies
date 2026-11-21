@@ -10,6 +10,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SIM_WIDGET_SUPPORT } from '@irdashies/types';
+import type { AppUpdateAction, AppUpdateStatus } from '@irdashies/types';
 import { SettingsLayout } from './SettingsLayout';
 import { TrailingSlashRedirect } from './TrailingSlashRedirect';
 
@@ -79,6 +80,76 @@ const layoutAt = (path: string) => (
 function renderLayout(path = '/settings/relative') {
   return render(layoutAt(path));
 }
+
+it('keeps the sidebar update control in sync as the user downloads and restarts', async () => {
+  const previousBridge = window.appUpdatesBridge;
+  const status: AppUpdateStatus = {
+    currentVersion: '3.0.0',
+    latestVersion: '3.0.0',
+    autoUpdate: false,
+    preferenceSaveFailed: false,
+    canUpdate: true,
+    newerVersionAvailable: false,
+    checkingLatest: false,
+    latestCheckFailed: false,
+    phase: 'idle',
+  };
+  let publish: (next: AppUpdateStatus) => void = () => undefined;
+  const install = vi.fn(async (action: AppUpdateAction) => {
+    publish({
+      ...status,
+      phase: action === 'download' ? 'downloading' : 'restarting',
+    });
+  });
+  window.appUpdatesBridge = {
+    onStatus: (callback) => {
+      publish = callback;
+      publish(status);
+      return () => undefined;
+    },
+    checkLatest: vi.fn(),
+    setAutoUpdate: vi.fn(),
+    install,
+  };
+  try {
+    const user = userEvent.setup();
+    renderLayout();
+    const sidebar = () => within(screen.getByRole('navigation'));
+    const downloadLabel = 'Download update';
+    const download = () =>
+      sidebar().getByRole('button', { name: downloadLabel });
+    expect(sidebar().queryByRole('button', { name: downloadLabel })).toBeNull();
+
+    act(() =>
+      publish({
+        ...status,
+        latestVersion: '3.1.0',
+        newerVersionAvailable: true,
+      })
+    );
+    await user.click(download());
+
+    const downloading = () =>
+      sidebar().getByRole('button', { name: 'Downloading update…' });
+    expect(downloading()).toHaveAttribute('aria-disabled', 'true');
+    await user.click(downloading());
+    expect(install).toHaveBeenCalledExactlyOnceWith('download');
+
+    await user.click(sidebar().getByRole('link', { name: 'Tools' }));
+    expect(downloading()).toBeVisible();
+    act(() => publish({ ...status, phase: 'ready' }));
+
+    await user.click(
+      sidebar().getByRole('button', { name: 'Restart app to install update' })
+    );
+    expect(install).toHaveBeenNthCalledWith(2, 'restart');
+    expect(
+      sidebar().getByRole('button', { name: 'Restarting irDashies…' })
+    ).toHaveAttribute('aria-disabled', 'true');
+  } finally {
+    window.appUpdatesBridge = previousBridge;
+  }
+});
 
 describe('SettingsLayout navigation', () => {
   beforeEach(() => {

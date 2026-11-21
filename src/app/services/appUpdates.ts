@@ -1,6 +1,6 @@
 import { app, autoUpdater, dialog } from 'electron';
 import path from 'node:path';
-import type { AppUpdateStatus } from '../../types/appUpdates';
+import type { AppUpdateAction, AppUpdateStatus } from '../../types/appUpdates';
 import logger from '../logger';
 import { compareVersions, normalizeVersion } from '../releaseNotes/version';
 import { openAppUpdatePreference } from '../storage/appUpdatePreference';
@@ -200,9 +200,8 @@ export async function createAppUpdates(
       update({ autoUpdate: enabled });
       schedule();
     },
-    install: () => {
-      if (status.phase === 'ready' || status.phase === 'restart-error')
-        restart();
+    install: (action: AppUpdateAction) => {
+      if (action === 'restart') restart();
       else checkNative(true);
     },
     stop: () => {
