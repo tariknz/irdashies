@@ -2,6 +2,7 @@ import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import type { LapHistorySnapshot } from '@irdashies/types';
 import logger from '../logger';
+import { listArchiveFiles, pruneArchiveFile } from './sessionArchiveFiles';
 
 /**
  * Persisted lap history for one event (one SubSessionID), with one entry per
@@ -84,7 +85,6 @@ interface SessionCache {
   deleting: boolean;
 }
 
-/** Per-session caches keep concurrent session operations isolated. */
 const caches = new Map<string, SessionCache>();
 const removals = new Map<string, Promise<void>>();
 const pendingSaves = new Set<Promise<void>>();
@@ -352,7 +352,6 @@ function runFlush(entry: SessionCache): Promise<void> {
   return trackedTask;
 }
 
-/** Cancels any debounce timer and flushes/awaits whatever write is pending. */
 async function flushPending(entry: SessionCache): Promise<void> {
   if (entry.writeTimer) {
     clearTimeout(entry.writeTimer);
@@ -519,74 +518,10 @@ export async function clearLapHistory(
   }
 }
 
-export async function listSessionFiles(
+export function listSessionFiles(
   storageDir = getStorageDir()
 ): Promise<string[]> {
-  let entries: string[];
-  try {
-    entries = await fsp.readdir(storageDir);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
-      logger.warn(
-        '[LapHistoryStorage] Failed to list session files:',
-        getPathForLog(storageDir),
-        err
-      );
-    }
-    return [];
-  }
-
-  const candidates = entries
-    .filter((f) => f.startsWith('lap-history-') && f.endsWith('.json'))
-    .map((f) => path.join(storageDir, f));
-
-  const stats = await Promise.all(
-    candidates.map(async (fullPath) => {
-      try {
-        const { mtimeMs } = await fsp.stat(fullPath);
-        return { fullPath, mtime: mtimeMs };
-      } catch {
-        return null;
-      }
-    })
-  );
-
-  return stats
-    .filter((s): s is { fullPath: string; mtime: number } => s !== null)
-    .sort((a, b) => a.mtime - b.mtime || a.fullPath.localeCompare(b.fullPath))
-    .map(({ fullPath }) => fullPath);
-}
-
-async function deleteSessionFile(filePath: string): Promise<void> {
-  const entry = caches.get(filePath);
-  if (entry) {
-    entry.deleting = true;
-    if (entry.writeTimer) {
-      clearTimeout(entry.writeTimer);
-      entry.writeTimer = null;
-    }
-  }
-  const removal = (async () => {
-    if (entry?.writeInFlight) await entry.writeInFlight;
-    try {
-      await fsp.unlink(filePath);
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
-        logger.error(
-          '[LapHistoryStorage] Failed to delete old session file:',
-          err
-        );
-      }
-    } finally {
-      if (caches.get(filePath) === entry) caches.delete(filePath);
-    }
-  })();
-  removals.set(filePath, removal);
-  try {
-    await removal;
-  } finally {
-    if (removals.get(filePath) === removal) removals.delete(filePath);
-  }
+  return listArchiveFiles(storageDir, 'lap-history-', '[LapHistoryStorage]');
 }
 
 /**
@@ -609,7 +544,7 @@ export async function pruneOldSessions(
     Math.max(0, files.length - PREVIOUS_SESSIONS_KEPT)
   );
   for (const filePath of toDelete) {
-    await deleteSessionFile(filePath);
+    await pruneArchiveFile(filePath, caches, removals, '[LapHistoryStorage]');
   }
 }
 

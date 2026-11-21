@@ -129,8 +129,6 @@ export function createPreviewStorage() {
     clearIncidents: async () => {
       incidentsCleared = true;
     },
-    updateThresholds: async () => undefined,
-    updateRetention: async () => undefined,
     showGantryWindow: async () => false,
   };
 

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useDashboard } from '@irdashies/context';
 import {
   getWidgetDefaultConfig,
@@ -26,15 +25,7 @@ export const StintPlanSettings = () => {
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as StintPlanWidgetSettings | undefined;
-  const [settings, setSettings] = useState(() => fromSaved(savedSettings));
-
-  // useState only reads its initialiser once; follow the saved config when the
-  // dashboard loads after mount.
-  const [prevSaved, setPrevSaved] = useState(savedSettings);
-  if (JSON.stringify(savedSettings) !== JSON.stringify(prevSaved)) {
-    setPrevSaved(savedSettings);
-    if (savedSettings) setSettings(fromSaved(savedSettings));
-  }
+  const settings = fromSaved(savedSettings);
 
   if (!currentDashboard) return <>Loading...</>;
 
@@ -43,7 +34,6 @@ export const StintPlanSettings = () => {
       title="Stint Plan"
       description="Where your car stands against the race plan: stint, box lap, fuel target, who drives next and how far off the plan you are. Needs a race plan from Settings, Race Plan."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (

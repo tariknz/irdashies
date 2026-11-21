@@ -1,3 +1,4 @@
+import { mockDashboardUpdater } from '../mockDashboardUpdater';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -17,7 +18,10 @@ vi.mock('@irdashies/context', async () => {
   return {
     useDashboard: () => ({
       currentDashboard: mocks.dashboard,
-      onDashboardUpdated: mocks.onDashboardUpdated,
+      onDashboardUpdated: mockDashboardUpdater(
+        () => mocks.dashboard,
+        mocks.onDashboardUpdated
+      ),
     }),
     useActiveSimulator: () => null,
     useSimWidgetSupport: () => DEFAULT_SIM_WIDGET_SUPPORT,
@@ -25,6 +29,7 @@ vi.mock('@irdashies/context', async () => {
 });
 
 const additionalItems = [
+  ['trackState', 'Track State'],
   ['fuelLevel', 'Fuel Level'],
   ['lastLap', 'Last Lap'],
   ['bestLap', 'Best Lap'],
@@ -107,7 +112,7 @@ describe('Information Bar shared items', () => {
     expect(saved.displayOrder).toEqual(savedOrder);
   });
 
-  it('shows all six selectable settings after loading a legacy dashboard', () => {
+  it('shows the shared settings after loading a legacy dashboard', () => {
     mocks.dashboard = dashboardFor(load({ displayOrder: legacyOrder }));
     render(<InformationBarSettings />);
 

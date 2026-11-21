@@ -94,6 +94,34 @@ describe('generateMockData', () => {
     bridge.stop();
   });
 
+  it('publishes sessions to all listeners and running state immediately to each new listener', () => {
+    const bridge = generateMockData();
+    const firstSession = vi.fn();
+    const secondSession = vi.fn();
+    const firstRunning = vi.fn();
+    const secondRunning = vi.fn();
+
+    const leaveSession = bridge.onSessionData(firstSession);
+    bridge.onSessionData(secondSession);
+    bridge.onRunningState(firstRunning);
+    bridge.onRunningState(secondRunning);
+    expect(firstSession).toHaveBeenCalledTimes(2);
+    expect(secondSession).toHaveBeenCalledTimes(1);
+    expect(firstRunning).toHaveBeenCalledTimes(1);
+    expect(secondRunning).toHaveBeenCalledWith(true);
+
+    leaveSession?.();
+    vi.advanceTimersByTime(2000);
+    expect(firstSession).toHaveBeenCalledTimes(2);
+    expect(secondSession).toHaveBeenCalledTimes(2);
+    expect(firstRunning).toHaveBeenCalledTimes(3);
+
+    bridge.stop();
+    vi.advanceTimersByTime(2000);
+    expect(secondSession).toHaveBeenCalledTimes(2);
+    expect(firstRunning).toHaveBeenCalledTimes(3);
+  });
+
   it('emits a team racing session with distinct team names for the running mock app', () => {
     const bridge = generateMockData();
     const onSession = vi.fn();

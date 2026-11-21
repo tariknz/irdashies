@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   SectorDeltaWidgetSettings,
-  SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
@@ -29,22 +29,18 @@ export const SectorDeltaSettings = () => {
     (w) => w.id === SETTING_ID
   ) as SectorDeltaWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<SectorDeltaWidgetSettings>({
+  const settings: SectorDeltaWidgetSettings = {
     id: SETTING_ID,
     enabled: savedSettings?.enabled ?? false,
     config:
       (savedSettings?.config as SectorDeltaWidgetSettings['config']) ??
       defaultConfig,
-  });
+  };
 
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () =>
-      (localStorage.getItem('sectorDeltaTab') as SettingsTabType) || 'options'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('sectorDeltaTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('sectorDeltaTab', [
+    'options',
+    'visibility',
+  ]);
 
   if (!currentDashboard) return <>Loading...</>;
 
@@ -53,7 +49,6 @@ export const SectorDeltaSettings = () => {
       title="Sector Delta"
       description="Per-sector timing deltas colored by performance."
       settings={settings as SectorDeltaWidgetSettings}
-      onSettingsChange={(s) => setSettings(s as SectorDeltaWidgetSettings)}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
@@ -63,7 +58,7 @@ export const SectorDeltaSettings = () => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="options"
                 activeTab={activeTab}
@@ -78,7 +73,7 @@ export const SectorDeltaSettings = () => {
               >
                 Visibility
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div>
               {activeTab === 'options' && (

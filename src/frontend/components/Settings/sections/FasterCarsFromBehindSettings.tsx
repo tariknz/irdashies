@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   FasterCarsFromBehindWidgetSettings,
-  SettingsTabType,
   type StandingsBadgeFormat,
 } from '@irdashies/types';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -19,6 +18,7 @@ import {
   type FasterCarsDisplayItem,
 } from '../../FasterCarsFromBehind/displayOrder';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingSliderRow } from '../components/SettingSliderRow';
@@ -123,23 +123,17 @@ const DisplaySettingsList = ({
 export const FasterCarsFromBehindSettings = () => {
   const { currentDashboard } = useDashboard();
   const fasterCarsSettings = useFasterCarsSettings();
-  const [settings, setSettings] = useState<FasterCarsFromBehindWidgetSettings>({
+  const settings: FasterCarsFromBehindWidgetSettings = {
     enabled:
       currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
       false,
     config: fasterCarsSettings as FasterCarsFromBehindWidgetSettings['config'],
-  });
+  };
 
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () =>
-      (localStorage.getItem('fasterCarsFromBehindTab') as SettingsTabType) ||
-      'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('fasterCarsFromBehindTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('fasterCarsFromBehindTab', [
+    'display',
+    'visibility',
+  ]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -150,7 +144,6 @@ export const FasterCarsFromBehindSettings = () => {
       title="Faster Cars From Behind"
       description="Configure settings for the faster cars detection widget."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId="fastercarsfrombehind"
     >
       {(handleConfigChange) => (
@@ -161,7 +154,7 @@ export const FasterCarsFromBehindSettings = () => {
         >
           <div className="space-y-4">
             {/* Tabs */}
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="display"
                 activeTab={activeTab}
@@ -176,7 +169,7 @@ export const FasterCarsFromBehindSettings = () => {
               >
                 Visibility
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div>
               {/* DISPLAY TAB */}

@@ -1,3 +1,4 @@
+import { mockDashboardUpdater } from '../mockDashboardUpdater';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
@@ -26,7 +27,10 @@ const mocks = vi.hoisted(() => {
     // The shared type, so a change to the session contract fails here at
     // compile time rather than drifting silently.
     cameraGroups: undefined as CameraGroup[] | undefined,
-    onDashboardUpdated: vi.fn(),
+    onDashboardUpdated: vi.fn((next: DashboardLayout) => {
+      dashboard = next;
+      listeners.forEach((listener) => listener());
+    }),
     getDashboard: () => dashboard,
     setDashboard: (next: DashboardLayout | undefined) => {
       dashboard = next;
@@ -46,7 +50,10 @@ vi.mock('@irdashies/context', async () => {
         mocks.listeners.add(onChange);
         return () => mocks.listeners.delete(onChange);
       }, mocks.getDashboard),
-      onDashboardUpdated: mocks.onDashboardUpdated,
+      onDashboardUpdated: mockDashboardUpdater(
+        () => mocks.getDashboard(),
+        mocks.onDashboardUpdated
+      ),
     }),
     useTrackStateSelector: () => 1,
     useSessionCameraGroups: () => mocks.cameraGroups,
@@ -197,6 +204,26 @@ describe('GantrySettings', () => {
     act(() => mocks.setDashboard(dashboardWith(20)));
 
     expect(retentionValue()).toBe('20');
+  });
+
+  it('saves incident retention and threshold edits in the same dashboard config', () => {
+    mocks.setDashboard(dashboardWith('all'));
+    render(<GantrySettings />);
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Keep Sessions' }), {
+      target: { value: '5' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Incidents' }));
+    fireEvent.change(
+      screen.getByRole('spinbutton', { name: 'Per-Type Cooldown (seconds)' }),
+      { target: { value: '3' } }
+    );
+
+    expect(savedGantryConfig()).toMatchObject({
+      sessionRetention: 5,
+      cooldownSeconds: 3,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Options' }));
   });
 });
 

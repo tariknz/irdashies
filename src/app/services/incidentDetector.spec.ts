@@ -6,7 +6,11 @@ import type {
 } from '../../types/raceControl';
 import { IncidentType } from '../../types/raceControl';
 import type { Incident } from '../../types/raceControl';
-import { TrackLocation, GlobalFlags, SessionState } from '../irsdk/types/enums';
+import {
+  TrackLocation,
+  GlobalFlags,
+  SessionState,
+} from '../../types/irSdk/enums';
 
 // A short duration that a third consecutive frame clears but a second does
 // not, at the 0.04-0.05s steps these fixtures feed. Just under 0.08 so float

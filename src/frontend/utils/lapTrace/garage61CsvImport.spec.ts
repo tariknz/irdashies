@@ -8,7 +8,7 @@ import {
 import {
   sampleGarage61Csv,
   sampleGarage61FileName,
-} from './fixtures/sampleGarage61Csv';
+} from '../../domain/lapTrace/fixtures/sampleGarage61Csv';
 
 describe('parseGarage61Csv', () => {
   it('parses a well-formed export into a LapTraceRecord', () => {

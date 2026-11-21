@@ -2,13 +2,16 @@ import { act, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FuelLapData } from '@irdashies/types';
 import { defaultFuelCalculatorSettings } from '../defaults';
-import { useFuelStore } from '../FuelStore';
+import { useFuelStore } from '@irdashies/context';
 import { FuelHistory } from './FuelHistory';
 import { demoFuelData } from '../demoData';
 import { formatFuel } from '../fuelCalculations';
 
 const dashboard = vi.hoisted(() => ({ isDemoMode: false }));
-vi.mock('@irdashies/context', () => ({ useDashboard: () => dashboard }));
+vi.mock('@irdashies/context', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@irdashies/context')>()),
+  useDashboard: () => dashboard,
+}));
 
 const lap = (
   lapNumber: number,

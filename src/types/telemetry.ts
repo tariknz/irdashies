@@ -1,4 +1,4 @@
-import type { TelemetryVariable, TelemetryVarList } from '../app/irsdk/types';
+import type { TelemetryVariable, TelemetryVarList } from './irSdk';
 
 export type Telemetry = {
   [K in keyof TelemetryVarList]: Pick<TelemetryVarList[K], 'value'>;
@@ -21,6 +21,7 @@ export type Telemetry = {
   LmuCarIdxRelativeLateral?: TelemetryVar<number[]>;
   LmuCarIdxRelativeLongitudinal?: TelemetryVar<number[]>;
   LmuCarIdxRelativeHeading?: TelemetryVar<number[]>;
+  LmuCarIdxSpeed?: TelemetryVar<number[]>;
   /**
    * Compound index per wheel, for every car: four entries per slot at
    * `carIdx * 4 + wheel`, in the sim's wheel order (FL, FR, RL, RR).

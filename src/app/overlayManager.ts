@@ -872,7 +872,8 @@ export class OverlayManager {
     win: BrowserWindow,
     key: string,
     value: unknown,
-    feedHiddenSession = false
+    feedHiddenSession = false,
+    ...args: unknown[]
   ): void {
     if (win.isDestroyed()) return;
     const stream =
@@ -889,26 +890,26 @@ export class OverlayManager {
       return;
     }
     try {
-      win.webContents.send(key, value);
+      win.webContents.send(key, value, ...args);
     } catch (error) {
       logger.error(`Failed to send message ${key} to overlay window`, error);
     }
   }
 
-  public publishMessage(key: string, value: unknown): void {
+  public publishMessage(key: string, value: unknown, ...args: unknown[]): void {
     if (key === 'sessionData') this.latestSessionData = value;
     if (key === 'runningState') this.latestRunningState = Boolean(value);
 
     // Send to all display overlay windows
     for (const win of this.displayWindows.values()) {
-      this.sendToOverlayWindow(win, key, value);
+      this.sendToOverlayWindow(win, key, value, false, ...args);
     }
 
     // The Gantry consumes telemetry and session data, so it is forwarded
     // everything — before the settings-window guard below. Session data goes to
     // it even while hidden: it has to hold the whole session off screen.
     if (this.gantryWindow && !this.gantryWindow.isDestroyed()) {
-      this.sendToOverlayWindow(this.gantryWindow, key, value, true);
+      this.sendToOverlayWindow(this.gantryWindow, key, value, true, ...args);
     }
 
     // Skip high-frequency telemetry messages for the settings window
@@ -922,7 +923,7 @@ export class OverlayManager {
       !this.currentSettingsWindow.isDestroyed()
     ) {
       try {
-        this.currentSettingsWindow.webContents.send(key, value);
+        this.currentSettingsWindow.webContents.send(key, value, ...args);
       } catch (e) {
         logger.error(`Failed to send message ${key} to settings window`, e);
       }

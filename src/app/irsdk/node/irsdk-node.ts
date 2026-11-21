@@ -21,7 +21,7 @@ import {
   SplitTimeInfo,
   WeekendInfo,
   SessionData,
-} from '../types';
+} from '../../../types/irSdk';
 import type { INativeSDK, NativeTelemetryDataView } from '../native';
 
 import { getSimStatus } from './utils';

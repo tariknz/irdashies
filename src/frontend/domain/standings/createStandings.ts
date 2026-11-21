@@ -1040,21 +1040,18 @@ export const sliceRelevantDrivers = <T extends { isPlayer?: boolean }>(
       return [classIdx, standings];
     }
 
-    // when no player is found, just return the top `minPlayerClassDrivers`
     if (playerIndex === -1) {
       return [classIdx, standings.slice(0, minPlayerClassDrivers)];
     }
 
     const relevantDrivers = new Set<T>();
 
-    // Add top drivers
     for (let i = 0; i < numTopDrivers; i++) {
       if (standings[i]) {
         relevantDrivers.add(standings[i]);
       }
     }
 
-    // Add drivers around the player
     const start = Math.max(0, playerIndex - buffer);
     const end = Math.min(standings.length, playerIndex + buffer + 1);
     for (let i = start; i < end; i++) {

@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   SlowCarAheadWidgetSettings,
-  SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingDivider } from '../components/SettingDivider';
@@ -24,23 +24,18 @@ export const SlowCarAheadSettings = () => {
     (w) => w.id === SETTING_ID
   ) as SlowCarAheadWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<SlowCarAheadWidgetSettings>({
+  const settings: SlowCarAheadWidgetSettings = {
     id: SETTING_ID,
     enabled: savedSettings?.enabled ?? true,
     config:
       (savedSettings?.config as SlowCarAheadWidgetSettings['config']) ??
       defaultConfig,
-  });
+  };
 
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () =>
-      (localStorage.getItem('slowCarAheadTab') as SettingsTabType) || 'options'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('slowCarAheadTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('slowCarAheadTab', [
+    'options',
+    'visibility',
+  ]);
 
   if (!currentDashboard) return <>Loading...</>;
 
@@ -49,7 +44,6 @@ export const SlowCarAheadSettings = () => {
       title="Slow Car Ahead"
       description="Display indicator for slow cars ahead"
       settings={settings as SlowCarAheadWidgetSettings}
-      onSettingsChange={(s) => setSettings(s as SlowCarAheadWidgetSettings)}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
@@ -60,7 +54,7 @@ export const SlowCarAheadSettings = () => {
         >
           <div className="space-y-4">
             {/* Tabs */}
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="options"
                 activeTab={activeTab}
@@ -75,7 +69,7 @@ export const SlowCarAheadSettings = () => {
               >
                 Visibility
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div>
               {/* OPTIONS TAB */}

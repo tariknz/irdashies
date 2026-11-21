@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   LapTimeLogWidgetSettings,
-  SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingProps, settingPropFor } from '../components/SettingProp';
@@ -22,21 +22,18 @@ export const LapTimeLogSettings = () => {
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as LapTimeLogWidgetSettings | undefined;
-  const [settings, setSettings] = useState<LapTimeLogWidgetSettings>({
+  const settings: LapTimeLogWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config:
       (savedSettings?.config as LapTimeLogWidgetSettings['config']) ??
       defaultConfig,
-  });
+  };
 
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('lapTimeTab') as SettingsTabType) || 'options'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('lapTimeTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('lapTimeTab', [
+    'options',
+    'display',
+    'visibility',
+  ]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -47,7 +44,6 @@ export const LapTimeLogSettings = () => {
       title="Lap Timer"
       description="Configure settings for the Lap Timer widget. Select the lap times you want to see and the display options."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
@@ -58,7 +54,7 @@ export const LapTimeLogSettings = () => {
         >
           <div className="space-y-4">
             {/* Tabs */}
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="display"
                 activeTab={activeTab}
@@ -80,7 +76,7 @@ export const LapTimeLogSettings = () => {
               >
                 Visibility
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div>
               {/* DISPLAY TAB */}

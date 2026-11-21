@@ -1,14 +1,6 @@
-import type { Telemetry } from '../../src/types';
+import { telemetryFrom } from './processorInputs';
 import { LapTimesProcessor } from '../../src/app/processors/LapTimesProcessor';
-import type { ReplayProbe, TelemetryFrame } from './validator';
-
-const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
-  Object.fromEntries(
-    Object.entries(frame).map(([name, entry]) => [
-      name,
-      { value: Array.isArray(entry) ? entry : [entry] },
-    ])
-  ) as unknown as Telemetry;
+import type { ReplayProbe } from './validator';
 
 export const createLapTimesProbe = (): ReplayProbe<
   ReturnType<LapTimesProcessor['snapshot']>

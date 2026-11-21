@@ -1,4 +1,5 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
+import { expect } from 'storybook/test';
 import { Relative } from './Relative';
 import {
   TelemetryDecorator,
@@ -15,13 +16,19 @@ import {
   StoryTelemetryProvider,
   useDrivingState,
   usePitLapStoreUpdater,
+  usePushToPassStore,
+  useSessionTimingStore,
   useWeekendInfoNumCarClasses,
   type P2PDisplayState,
 } from '@irdashies/context';
 import { mockDashboardBridge } from '@irdashies/storybook';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
-import type { DashboardBridge, RelativeWidgetSettings } from '@irdashies/types';
-import { getWidgetDefaultConfig } from '@irdashies/types';
+import type {
+  DashboardBridge,
+  GeneralSettingsType,
+  RelativeWidgetSettings,
+} from '@irdashies/types';
+import { getWidgetDefaultConfig, SessionState } from '@irdashies/types';
 import { useState, useMemo } from 'react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { SessionBar } from './components/SessionBar/SessionBar';
@@ -1413,7 +1420,7 @@ const p2pRelativeDrivers: P2PRelativeDriver[] = [
     position: 3,
     isPlayer: true,
     delta: 0,
-    state: { status: 'inactive', count: 80 },
+    state: { status: 'active', count: 15 },
   },
   {
     carNum: '10',
@@ -1421,7 +1428,7 @@ const p2pRelativeDrivers: P2PRelativeDriver[] = [
     position: 4,
     isPlayer: false,
     delta: 1.4,
-    state: { status: 'cooldown', count: 60 },
+    state: { status: 'cooldown', count: 14 },
   },
   {
     carNum: '8',
@@ -1487,4 +1494,133 @@ export const PushToPass: Story = {
   parameters: {
     layout: 'padded',
   },
+};
+
+const largePushToPassDecorator = (
+  compactMode: GeneralSettingsType['compactMode']
+) =>
+  TelemetryDecoratorWithConfig(
+    undefined,
+    {
+      relative: {
+        pushToPass: { enabled: true },
+        headerBar: {
+          enabled: true,
+          displayOrder: [
+            'incidentCount',
+            'trackWetness',
+            'airTemperature',
+            'trackTemperature',
+          ],
+        },
+        footerBar: {
+          enabled: true,
+          sessionName: { enabled: true },
+          sessionTime: { enabled: true, mode: 'Remaining' },
+          sessionLaps: { enabled: true },
+          displayOrder: ['sessionName', 'sessionTime', 'sessionLaps'],
+        },
+      },
+    },
+    { compactMode }
+  );
+
+const RelativeOverlayFrame = ({ className }: { className: string }) => (
+  <div
+    className={`overlay-window overlay-theme-font-face-lato overflow-hidden text-white ${className}`}
+  >
+    <Relative />
+  </div>
+);
+
+const renderDefaultSizeRelative = () => (
+  <RelativeOverlayFrame className="overlay-theme-md h-[300px] w-[402px]" />
+);
+
+export const LargePushToPassCounts: Story = {
+  beforeEach: () => {
+    const { displayStates } = usePushToPassStore.getState();
+    const timing = useSessionTimingStore.getState();
+    usePushToPassStore.setState({
+      displayStates: Array.from({ length: 64 }, () => ({
+        status: 'inactive',
+        count: 1000,
+      })),
+    });
+    useSessionTimingStore.setState({
+      sessionType: 'Race',
+      state: SessionState.Racing,
+      currentLap: 3,
+      totalLaps: 15,
+      time: 447,
+      timeTotal: 1200,
+      greenFlagTimestamp: 0,
+      isFixedLapRace: false,
+      totalRaceLaps: 0,
+    });
+    return () => {
+      usePushToPassStore.setState({ displayStates });
+      useSessionTimingStore.setState(timing);
+    };
+  },
+  decorators: [largePushToPassDecorator('off')],
+  render: () => (
+    <RelativeOverlayFrame className="overlay-theme-3xl h-[344px] w-[660px]" />
+  ),
+  parameters: { layout: 'centered' },
+  play: async ({ canvas }) => {
+    const labels = await canvas.findAllByText('999+ s');
+    await document.fonts.ready;
+
+    for (const label of labels) {
+      const range = document.createRange();
+      range.selectNodeContents(label);
+      const lineTops = new Set(
+        Array.from(range.getClientRects(), ({ top }) => top)
+      );
+      await expect(lineTops.size).toBe(1);
+      await expect(range.getBoundingClientRect().right).toBeLessThanOrEqual(
+        label.closest('td')?.getBoundingClientRect().right ?? 0
+      );
+    }
+
+    const table = canvas.getByRole('table');
+    const frame = table.closest('.overlay-window');
+    const footer = table.nextElementSibling;
+    if (!frame || !footer)
+      throw new Error('Relative frame or footer is missing');
+    const frameBounds = frame.getBoundingClientRect();
+    const tableBounds = table.getBoundingClientRect();
+    await expect(tableBounds.left).toBeGreaterThanOrEqual(frameBounds.left);
+    await expect(tableBounds.right).toBeLessThanOrEqual(frameBounds.right);
+    await expect(footer).toHaveTextContent('L3 / 15');
+    await expect(footer.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+      frameBounds.bottom
+    );
+  },
+};
+
+export const LargePushToPassCountsCompact: Story = {
+  ...LargePushToPassCounts,
+  decorators: [largePushToPassDecorator('compact')],
+};
+
+export const LargePushToPassCountsUltra: Story = {
+  ...LargePushToPassCounts,
+  decorators: [largePushToPassDecorator('ultra')],
+};
+
+export const LargePushToPassCountsDefaultSize: Story = {
+  ...LargePushToPassCounts,
+  render: renderDefaultSizeRelative,
+};
+
+export const LargePushToPassCountsDefaultSizeCompact: Story = {
+  ...LargePushToPassCountsCompact,
+  render: renderDefaultSizeRelative,
+};
+
+export const LargePushToPassCountsDefaultSizeUltra: Story = {
+  ...LargePushToPassCountsUltra,
+  render: renderDefaultSizeRelative,
 };

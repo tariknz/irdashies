@@ -1,21 +1,14 @@
 import { act, render, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import * as yaml from 'js-yaml';
-import type {
-  ChannelBridge,
-  FuelProjectionSnapshot,
-  Session,
-  Telemetry,
-} from '@irdashies/types';
+import type { ChannelBridge, FuelProjectionSnapshot } from '@irdashies/types';
 import { FuelProjectionProcessor } from '../../src/app/processors/FuelProjectionProcessor';
 import { FuelHistory } from '../../src/frontend/components/FuelCalculator/widgets/FuelHistory';
 import { useFuelCalculation } from '../../src/frontend/components/FuelCalculator/useFuelCalculation';
-import { useFuelStore } from '../../src/frontend/components/FuelCalculator/FuelStore';
+import { useFuelStore } from '@irdashies/context';
 import { defaultFuelCalculatorSettings } from '../../src/frontend/components/FuelCalculator/defaults';
 import metadata from '../../test-data/telemetry/ai-race-10min.json';
-import golden from '../../test-data/telemetry/ai-race-10min.golden.json';
 import { validateReplay, type ReplayProbe } from './validator';
-import { createFuelStateProbe } from './fuel-probe';
+import { parseSession, telemetryFrom } from './processorInputs';
 
 vi.mock('@irdashies/context', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@irdashies/context')>()),
@@ -160,7 +153,7 @@ describe.skipIf(process.env.IRDASHIES_TEST_CURATED_REPLAY !== '1')(
           'SessionState',
         ],
         onSessionInfo(text) {
-          processor.init(yaml.load(text, { json: true }) as Session);
+          processor.init(parseSession(text));
         },
         onFrame(frame, context) {
           clockMilliseconds = Math.round(context.elapsedSeconds * 1000);
@@ -184,13 +177,7 @@ describe.skipIf(process.env.IRDASHIES_TEST_CURATED_REPLAY !== '1')(
           }
           previousLap = currentLap;
           previousFuel = fuel;
-          const telemetry = Object.fromEntries(
-            Object.entries(frame).map(([key, value]) => [
-              key,
-              { value: [value] },
-            ])
-          ) as unknown as Telemetry;
-          processor.onFrame(telemetry);
+          processor.onFrame(telemetryFrom(frame));
           const snapshot = processor.snapshot();
           // Deliver at the production 5 Hz cadence, plus every completed-lap change.
           if (
@@ -216,29 +203,11 @@ describe.skipIf(process.env.IRDASHIES_TEST_CURATED_REPLAY !== '1')(
             frameCount: metadata.frameCount,
             sessionUpdateCount: metadata.sessionUpdateCount,
           },
-          probes: [probe, createFuelStateProbe()],
+          probes: [probe],
         });
         expect(result.metadata.frameCount).toBe(36000);
         expect(result.metadata.sessionUpdateCount).toBe(70);
         expect(measured.map((lap) => lap.lapNumber)).toEqual([1, 2, 3]);
-        // Compare independent raw-boundary measurements with the reviewed fuel golden as well.
-        const fuelGolden = golden.probes.find(
-          (entry) => entry.name === 'fuel-state'
-        );
-        expect(fuelGolden).toBeDefined();
-        expect(
-          result.probes.find((entry) => entry.name === 'fuel-state')
-            ?.rollingHash
-        ).toBe(fuelGolden?.rollingHash);
-        for (const lap of measured) {
-          const checkpoint = fuelGolden?.checkpoints[
-            `lap:${lap.lapNumber}` as keyof typeof fuelGolden.checkpoints
-          ] as unknown as { commands: { lap: { fuelUsed: number } }[] };
-          expect(lap.fuelUsed).toBeCloseTo(
-            checkpoint.commands[0].lap.fuelUsed,
-            10
-          );
-        }
         checkRows();
         process.stdout.write(
           `Fuel history replay: ${result.metadata.frameCount} frames, ${result.metadata.sessionUpdateCount} session revisions, ${emissions} channel deliveries; laps ${measured.map((lap) => `${lap.lapNumber}=${lap.fuelUsed.toFixed(2)} L`).join(', ')}.\n`

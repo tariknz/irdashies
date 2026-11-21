@@ -2,6 +2,7 @@ import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import { IncidentType, type Incident } from '../../types/raceControl';
 import logger from '../logger';
+import { listArchiveFiles, pruneArchiveFile } from './sessionArchiveFiles';
 
 function getStorageDir(): string {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -46,7 +47,6 @@ interface SessionCache {
   deleting: boolean;
 }
 
-/** Per-session caches keep concurrent session operations isolated. */
 const caches = new Map<string, SessionCache>();
 const removals = new Map<string, Promise<void>>();
 const pendingAppends = new Set<Promise<void>>();
@@ -138,7 +138,6 @@ function runFlush(entry: SessionCache): Promise<void> {
   return trackedTask;
 }
 
-/** Cancels any debounce timer and flushes/awaits whatever write is pending. */
 async function flushPending(entry: SessionCache): Promise<void> {
   if (entry.writeTimer) {
     clearTimeout(entry.writeTimer);
@@ -151,7 +150,6 @@ async function flushPending(entry: SessionCache): Promise<void> {
   }
 }
 
-/** Debounces the write so a burst of incidents produces a single flush. */
 function scheduleWrite(entry: SessionCache): void {
   if (entry.deleting) return;
   if (entry.writeTimer) clearTimeout(entry.writeTimer);
@@ -161,9 +159,6 @@ function scheduleWrite(entry: SessionCache): void {
   }, WRITE_DEBOUNCE_MS);
 }
 
-/**
- * Returns the cache for `filePath`, loading it once on first touch.
- */
 async function ensureCache(filePath: string): Promise<SessionCache> {
   const removal = removals.get(filePath);
   if (removal) await removal;
@@ -274,42 +269,10 @@ export async function clearIncidents(
   }
 }
 
-export async function listSessionFiles(
+export function listSessionFiles(
   storageDir = getStorageDir()
 ): Promise<string[]> {
-  let entries: string[];
-  try {
-    entries = await fsp.readdir(storageDir);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
-      logger.warn(
-        '[IncidentStorage] Failed to list session files:',
-        getPathForLog(storageDir),
-        err
-      );
-    }
-    return [];
-  }
-
-  const candidates = entries
-    .filter((f) => f.startsWith('incidents-') && f.endsWith('.json'))
-    .map((f) => path.join(storageDir, f));
-
-  const stats = await Promise.all(
-    candidates.map(async (fullPath) => {
-      try {
-        const { mtimeMs } = await fsp.stat(fullPath);
-        return { fullPath, mtime: mtimeMs };
-      } catch {
-        return null;
-      }
-    })
-  );
-
-  return stats
-    .filter((s): s is { fullPath: string; mtime: number } => s !== null)
-    .sort((a, b) => a.mtime - b.mtime || a.fullPath.localeCompare(b.fullPath))
-    .map(({ fullPath }) => fullPath);
+  return listArchiveFiles(storageDir, 'incidents-', '[IncidentStorage]');
 }
 
 export async function pruneOldSessions(
@@ -320,37 +283,9 @@ export async function pruneOldSessions(
   const files = await listSessionFiles(storageDir);
   const toDelete = files.slice(0, Math.max(0, files.length - retention));
   await Promise.all(
-    toDelete.map(async (f) => {
-      const entry = caches.get(f);
-      if (entry) {
-        entry.deleting = true;
-        if (entry.writeTimer) {
-          clearTimeout(entry.writeTimer);
-          entry.writeTimer = null;
-        }
-      }
-      const removal = (async () => {
-        if (entry?.writeInFlight) await entry.writeInFlight;
-        try {
-          await fsp.unlink(f);
-        } catch (err) {
-          if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
-            logger.error(
-              '[IncidentStorage] Failed to delete old session file:',
-              err
-            );
-          }
-        } finally {
-          if (caches.get(f) === entry) caches.delete(f);
-        }
-      })();
-      removals.set(f, removal);
-      try {
-        await removal;
-      } finally {
-        if (removals.get(f) === removal) removals.delete(f);
-      }
-    })
+    toDelete.map((filePath) =>
+      pruneArchiveFile(filePath, caches, removals, '[IncidentStorage]')
+    )
   );
 }
 

@@ -84,7 +84,6 @@ import {
 import {
   IncidentRuntime,
   type IncidentPersistence,
-  type PerformanceSections,
 } from './app/processors/incidentRuntime';
 import {
   LapHistoryRuntime,
@@ -114,8 +113,11 @@ import { setupLapHistoryBridge } from './app/bridge/lapHistoryBridge';
 import { onDashboardUpdated } from './app/storage/dashboardEvents';
 import { setupStreamChat } from './app/streamChat/setupStreamChat';
 import { loadSimWidgetSupport } from './app/storage/simWidgetSupport';
-import type { DashboardLayout, Session } from '@irdashies/types';
-import { getActivePerfMetrics } from './app/perfMetrics';
+import type { DashboardLayout, Session, Telemetry } from '@irdashies/types';
+import {
+  getActivePerfMetrics,
+  type PerformanceSections,
+} from './app/perfMetrics';
 import {
   createPerfDashboard,
   getPerfRunConfig,
@@ -187,7 +189,6 @@ const releaseNotes = overlayManager.hasLock()
   : undefined;
 overlayManager.setupAutoStart();
 
-// Hoisted so the quit handler can tear down the WebHID host window cleanly.
 let keybindingManager: KeybindingManager | undefined;
 const channelBus = new ChannelBus({
   deliveryEnabled: !perfRun.enabled || perfRun.channelDelivery === 'on',
@@ -247,6 +248,34 @@ const replayArchiveIndex: ArchiveIndex = {
 };
 let disposeRendererDataSubscriptions: (() => void) | undefined;
 
+function followTelemetrySource(
+  onSession: (session: Session) => void,
+  onFrame: (telemetry: Telemetry) => void
+): () => void {
+  let unsubscribeSession: (() => void) | undefined;
+  let unsubscribeTelemetry: (() => void) | undefined;
+
+  const unsubscribeSource = () => {
+    unsubscribeSession?.();
+    unsubscribeTelemetry?.();
+    unsubscribeSession = undefined;
+    unsubscribeTelemetry = undefined;
+  };
+  const bindSource = () => {
+    unsubscribeSource();
+    const bridge = getCurrentBridge();
+    unsubscribeSession = bridge?.onSessionData(onSession);
+    unsubscribeTelemetry = bridge?.onTelemetry(onFrame);
+  };
+
+  bindSource();
+  const unsubscribeBridgeChanged = onBridgeChanged(bindSource);
+  return () => {
+    unsubscribeBridgeChanged();
+    unsubscribeSource();
+  };
+}
+
 /**
  * Hosts lap-history recording outside the ProcessorHost, the way the incident
  * runtime is hosted: an enabled Gantry keeps recording while its window is
@@ -283,24 +312,11 @@ function setupLapHistoryRuntime(
     (layout) => createPerfDashboard(layout, perfRun)
   );
 
-  let unsubscribeSession: (() => void) | undefined;
-  let unsubscribeTelemetry: (() => void) | undefined;
-  const wireToTelemetryBridge = () => {
-    unsubscribeSession?.();
-    unsubscribeTelemetry?.();
-    const bridge = getCurrentBridge();
-    if (!bridge) return;
-    unsubscribeSession =
-      bridge.onSessionData((session) => runtime.onSession(session)) ??
-      undefined;
-    unsubscribeTelemetry =
-      bridge.onTelemetry((telemetry) => runtime.onFrame(telemetry)) ??
-      undefined;
-  };
-  wireToTelemetryBridge();
-  const unsubscribeBridgeChanged = onBridgeChanged(wireToTelemetryBridge);
+  const unsubscribeSource = followTelemetrySource(
+    (session) => runtime.onSession(session),
+    (telemetry) => runtime.onFrame(telemetry)
+  );
 
-  // Retention: the current race plus one previous race.
   const unsubscribeSessionId = runtime.onSessionIdChanged((sessionId) => {
     // A replay's event is not the newest race, so pruning around it would
     // delete a newer archive.
@@ -313,11 +329,7 @@ function setupLapHistoryRuntime(
   // Every inbound subscription has to stop before the shutdown flush, or a late
   // frame can schedule a debounced write that the flush has already passed.
   disposeLapHistoryRuntime = () => {
-    unsubscribeSession?.();
-    unsubscribeTelemetry?.();
-    unsubscribeSession = undefined;
-    unsubscribeTelemetry = undefined;
-    unsubscribeBridgeChanged?.();
+    unsubscribeSource();
     unsubscribeDemand();
     unsubscribeSessionId?.();
     unsubscribeReplayContext();
@@ -360,29 +372,13 @@ function setupPitStopRuntime(
   applyDashboard(initialDashboard);
   const unsubscribeDashboard = onDashboardUpdated(applyDashboard);
 
-  let unsubscribeSession: (() => void) | undefined;
-  let unsubscribeTelemetry: (() => void) | undefined;
-  const wireToTelemetryBridge = () => {
-    unsubscribeSession?.();
-    unsubscribeTelemetry?.();
-    const bridge = getCurrentBridge();
-    if (!bridge) return;
-    unsubscribeSession =
-      bridge.onSessionData((session) => runtime.onSession(session)) ??
-      undefined;
-    unsubscribeTelemetry =
-      bridge.onTelemetry((telemetry) => runtime.onFrame(telemetry)) ??
-      undefined;
-  };
-  wireToTelemetryBridge();
-  const unsubscribeBridgeChanged = onBridgeChanged(wireToTelemetryBridge);
+  const unsubscribeSource = followTelemetrySource(
+    (session) => runtime.onSession(session),
+    (telemetry) => runtime.onFrame(telemetry)
+  );
 
   disposePitStopRuntime = () => {
-    unsubscribeSession?.();
-    unsubscribeTelemetry?.();
-    unsubscribeSession = undefined;
-    unsubscribeTelemetry = undefined;
-    unsubscribeBridgeChanged?.();
+    unsubscribeSource();
     unsubscribeDashboard?.();
     unsubscribeReplayContext();
     runtime.dispose();
@@ -425,30 +421,15 @@ function setupReplayContextRuntime(
     (layout) => createPerfDashboard(layout, perfRun)
   );
 
-  let unsubscribeSession: (() => void) | undefined;
-  let unsubscribeTelemetry: (() => void) | undefined;
-  const wireToTelemetryBridge = () => {
-    unsubscribeSession?.();
-    unsubscribeTelemetry?.();
-    const bridge = getCurrentBridge();
-    if (!bridge) return;
-    unsubscribeSession =
-      bridge.onSessionData((session) => runtime.onSession(session)) ??
-      undefined;
-    unsubscribeTelemetry =
-      bridge.onTelemetry((telemetry) => {
-        if (readFrames) runtime.onFrame(telemetry);
-      }) ?? undefined;
-  };
-  wireToTelemetryBridge();
-  const unsubscribeBridgeChanged = onBridgeChanged(wireToTelemetryBridge);
+  const unsubscribeSource = followTelemetrySource(
+    (session) => runtime.onSession(session),
+    (telemetry) => {
+      if (readFrames) runtime.onFrame(telemetry);
+    }
+  );
 
   disposeReplayContextRuntime = () => {
-    unsubscribeSession?.();
-    unsubscribeTelemetry?.();
-    unsubscribeSession = undefined;
-    unsubscribeTelemetry = undefined;
-    unsubscribeBridgeChanged?.();
+    unsubscribeSource();
     unsubscribeDemand();
     runtime.dispose();
   };
@@ -476,8 +457,6 @@ function setupGarage61SearchSession(initialDashboard: DashboardLayout): void {
     const bridge = getCurrentBridge();
     if (!bridge) return;
     unsubscribeSession = bridge.onSessionData((session: Session) => {
-      // Same derivation the bridge serves to Settings, shared rather than
-      // repeated, so the persisted identity can never drift from the live one.
       const info = getGarage61SearchInfoFromSession(session);
       if (info) saveGarage61SearchSession(info);
     });
@@ -556,12 +535,10 @@ void app.whenReady().then(async () => {
   setupTapeReplayBridge(getCurrentBridge);
   if (process.env.IRDASHIES_TELEMETRY_REPLAY) createTapeReplayWindow();
 
-  // Perform one-time cleanup of old reference laps
   validateReferenceLapFile();
 
   const bridge = getCurrentBridge();
 
-  // Setup IPC bridges
   setupLogBridge();
   setupStorageStatusBridge();
   setupWindowVisibilityBridge();
@@ -618,7 +595,6 @@ void app.whenReady().then(async () => {
     await mod.register?.({ overlayManager });
   }
 
-  // Start component server for browser components
   await startComponentServer(
     bridge,
     dashboardBridge,
@@ -722,7 +698,6 @@ void app.whenReady().then(async () => {
 
   keybindingManager = new KeybindingManager(overlayManager);
   keybindingManager.registerAll();
-  // Start the WebHID host window that reads game controllers for gamepad bindings.
   if (!perfRun.enabled) {
     keybindingManager.startGamepad();
   }
