@@ -33,7 +33,7 @@ export const Damage = () => {
       opacity={settings.background.opacity}
       showIntegrity={settings.showIntegrity}
       showStats={settings.showStats}
-      bodyStyle={isDemoMode ? 'gt' : car.bodyStyle}
+      bodyStyle={isDemoMode ? 'gtMid' : car.bodyStyle}
     />
   );
 };

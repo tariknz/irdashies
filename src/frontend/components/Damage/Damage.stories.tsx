@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { DamageDisplay } from './components/DamageDisplay';
-import { DEMO_DAMAGE } from './logic';
+import { DEMO_DAMAGE, UNDAMAGED } from './logic';
 
 export default {
   component: DamageDisplay,
@@ -9,7 +9,7 @@ export default {
 
 type Story = StoryObj<typeof DamageDisplay>;
 
-const box = (width = 160, height = 260): Story['decorators'] => [
+const box = (width = 170, height = 240): Story['decorators'] => [
   (Story) => (
     <div style={{ width, height }}>
       <Story />
@@ -17,23 +17,81 @@ const box = (width = 160, height = 260): Story['decorators'] => [
   ),
 ];
 
-export const GtDamaged: Story = {
+export const GtFrontUndamaged: Story = {
   args: {
-    data: DEMO_DAMAGE,
+    data: UNDAMAGED,
     opacity: 80,
     showIntegrity: true,
-    showStats: true,
-    bodyStyle: 'gt',
+    showStats: false,
+    bodyStyle: 'gtFront',
+    carLabel: 'BMW M4 GT3',
   },
   decorators: box(),
 };
 
-export const Prototype: Story = {
+export const GtMidUndamaged: Story = {
+  args: {
+    data: UNDAMAGED,
+    opacity: 80,
+    showIntegrity: true,
+    showStats: false,
+    bodyStyle: 'gtMid',
+    carLabel: 'Ferrari 296 GT3',
+  },
+  decorators: box(),
+};
+
+export const GtRearUndamaged: Story = {
+  args: {
+    data: UNDAMAGED,
+    opacity: 80,
+    showIntegrity: true,
+    showStats: false,
+    bodyStyle: 'gtRear',
+    carLabel: 'Porsche 992 GT3 R',
+  },
+  decorators: box(),
+};
+
+export const GtFrontDamaged: Story = {
   args: {
     data: DEMO_DAMAGE,
     opacity: 80,
     showIntegrity: true,
-    showStats: true,
+    showStats: false,
+    bodyStyle: 'gtFront',
+  },
+  decorators: box(),
+};
+
+export const GtMidDamaged: Story = {
+  args: {
+    data: DEMO_DAMAGE,
+    opacity: 80,
+    showIntegrity: true,
+    showStats: false,
+    bodyStyle: 'gtMid',
+  },
+  decorators: box(),
+};
+
+export const GtRearDamaged: Story = {
+  args: {
+    data: DEMO_DAMAGE,
+    opacity: 80,
+    showIntegrity: true,
+    showStats: false,
+    bodyStyle: 'gtRear',
+  },
+  decorators: box(),
+};
+
+export const PrototypeUndamaged: Story = {
+  args: {
+    data: UNDAMAGED,
+    opacity: 80,
+    showIntegrity: true,
+    showStats: false,
     bodyStyle: 'prototype',
   },
   decorators: box(),
@@ -47,93 +105,16 @@ export const OpenWheel: Story = {
     showStats: false,
     bodyStyle: 'openwheel',
   },
-  decorators: box(140, 200),
+  decorators: box(),
 };
 
 export const Hatch: Story = {
   args: {
-    data: {
-      ...DEMO_DAMAGE,
-      dentSeverity: [1, 0, 0, 0, 0, 0, 0, 0],
-    },
+    data: UNDAMAGED,
     opacity: 80,
     showIntegrity: true,
-    showStats: true,
+    showStats: false,
     bodyStyle: 'hatch',
-  },
-  decorators: box(),
-};
-
-export const WheelLost: Story = {
-  args: {
-    data: {
-      ...DEMO_DAMAGE,
-      dentSeverity: [0, 0, 0, 0, 2, 0, 0, 0],
-      wheelDetached: [false, false, false, true],
-      suspensionDamage: [0.01, 0.05, 0.02, 0.1],
-      tyreWear: [0.92, 0.88, 0.9, 0.75],
-    },
-    opacity: 80,
-    showIntegrity: true,
-    showStats: true,
-    bodyStyle: 'gt',
-  },
-  decorators: box(),
-};
-
-export const RearWingLost: Story = {
-  args: {
-    data: {
-      ...DEMO_DAMAGE,
-      dentSeverity: [0, 0, 0, 0, 0, 0, 0, 0],
-      suspensionDamage: [0, 0, 0, 0],
-      tyreWear: [0.92, 0.88, 0.9, 0.75],
-      bodyDetached: true,
-    },
-    opacity: 80,
-    showIntegrity: true,
-    showStats: true,
-    bodyStyle: 'prototype',
-  },
-  decorators: box(),
-};
-
-export const Puncture: Story = {
-  args: {
-    data: {
-      ...DEMO_DAMAGE,
-      dentSeverity: [0, 0, 0, 0, 0, 0, 0, 0],
-      suspensionDamage: [0, 0, 0, 0],
-      tyreWear: [0.92, 0.88, 0.9, 0.75],
-      tyrePressure: [172, 0, 169, 170],
-    },
-    opacity: 80,
-    showIntegrity: true,
-    showStats: true,
-    bodyStyle: 'gt',
-  },
-  decorators: box(),
-};
-
-export const IracingRepairNeeded: Story = {
-  args: {
-    data: {
-      dentSeverity: [],
-      wheelDetached: [false, false, false, false],
-      suspensionDamage: [],
-      tyreWear: [0.85, 0.9, 0.4, 0.88],
-      tyrePressure: [],
-      aeroDamage: undefined,
-      repairTime: 18.2,
-      optRepairTime: 6.5,
-      repairNeeded: true,
-      optRepairNeeded: true,
-      bodyDetached: false,
-    },
-    opacity: 80,
-    showIntegrity: true,
-    showStats: true,
-    bodyStyle: 'gt',
   },
   decorators: box(),
 };
