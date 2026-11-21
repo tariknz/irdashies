@@ -6,20 +6,22 @@ import path from 'node:path';
 const getFilePath = () =>
   path.join(app.getPath('userData'), 'driver-tags.json');
 
-const migrateFromConfig = (): DriverTagSettings | undefined => {
-  const configPath = path.join(app.getPath('userData'), 'config.json');
+const readSettingsFile = (filePath: string): unknown => {
   try {
-    const raw = fs.readFileSync(configPath, 'utf8');
-    const config = JSON.parse(raw);
-    if (!config.driverTagSettings) return undefined;
-    const settings = config.driverTagSettings as DriverTagSettings;
-    fs.writeFileSync(getFilePath(), JSON.stringify(settings));
-    delete config.driverTagSettings;
-    fs.writeFileSync(configPath, JSON.stringify(config));
-    return settings;
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch {
     return undefined;
   }
+};
+
+const readLegacyConfig = (): unknown => {
+  const config = readSettingsFile(
+    path.join(app.getPath('userData'), 'config.json')
+  );
+  if (config && typeof config === 'object' && 'driverTagSettings' in config) {
+    return config.driverTagSettings;
+  }
+  return undefined;
 };
 
 /**
@@ -31,25 +33,60 @@ const migrateWidthPx = (settings: DriverTagSettings): DriverTagSettings => {
   if (!display) return settings;
   const isBadge = !display.displayStyle || display.displayStyle === 'badge';
   if (isBadge && display.widthPx !== undefined && display.widthPx <= 8) {
-    const migrated = {
+    return {
       ...settings,
       display: { ...display, widthPx: undefined },
     };
-    saveDriverTagSettings(migrated);
-    return migrated;
   }
   return settings;
 };
 
-export const getDriverTagSettings = (): DriverTagSettings | undefined => {
-  try {
-    const data = fs.readFileSync(getFilePath(), 'utf8');
-    const settings = JSON.parse(data) as DriverTagSettings;
-    return migrateWidthPx(settings);
-  } catch {
-    return migrateFromConfig();
+export const normalizeDriverTagSettings = (
+  value: unknown
+): DriverTagSettings | undefined => {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    !('groups' in value) ||
+    !Array.isArray(value.groups)
+  ) {
+    return undefined;
   }
+  const settings = value as DriverTagSettings;
+
+  const mapping = settings.mapping;
+  if (!mapping || typeof mapping !== 'object' || Array.isArray(mapping)) {
+    return migrateWidthPx(settings);
+  }
+  const mappedDrivers = Object.entries(mapping);
+  if (mappedDrivers.length === 0) return migrateWidthPx(settings);
+
+  const entries = Array.isArray(settings.entries) ? [...settings.entries] : [];
+  const assignedIds = new Set(entries.map((entry) => entry?.id));
+  const assignedNames = new Set(
+    entries.map((entry) =>
+      typeof entry?.name === 'string' ? entry.name.toLowerCase() : undefined
+    )
+  );
+  const legacyDrivers = new Map(
+    mappedDrivers.map(([key, groupId]) => [key.toLowerCase(), { key, groupId }])
+  );
+
+  for (const [name, { key, groupId }] of legacyDrivers) {
+    if (!key || typeof groupId !== 'string' || !groupId) continue;
+    if (/^\d+$/.test(key)) {
+      if (!assignedIds.has(key)) entries.push({ id: key, groupId });
+    } else if (!assignedNames.has(name)) {
+      entries.push({ name: key, groupId });
+    }
+  }
+
+  return migrateWidthPx({ ...settings, entries, mapping: {} });
 };
+
+export const getDriverTagSettings = (): DriverTagSettings | undefined =>
+  normalizeDriverTagSettings(readSettingsFile(getFilePath())) ??
+  normalizeDriverTagSettings(readLegacyConfig());
 
 export const saveDriverTagSettings = (settings: DriverTagSettings): void => {
   fs.writeFileSync(getFilePath(), JSON.stringify(settings));

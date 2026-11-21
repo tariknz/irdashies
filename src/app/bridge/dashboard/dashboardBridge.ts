@@ -10,6 +10,7 @@ import { app, ipcMain } from 'electron';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
 import {
   getDriverTagSettings,
+  normalizeDriverTagSettings,
   saveDriverTagSettings,
 } from '../../storage/driverTagSettings';
 import {
@@ -104,6 +105,12 @@ const mergeDriverTagsIntoLayout = (
     },
   };
 };
+
+const getEditableDriverTagSettings = () =>
+  getDriverTagSettings() ??
+  normalizeDriverTagSettings(
+    getDashboard(getCurrentProfileId())?.generalSettings?.driverTagSettings
+  );
 
 // Store callbacks for dashboard updates
 const dashboardUpdateCallbacks = new Set<DashboardUpdateListener>();
@@ -242,7 +249,7 @@ export const dashboardBridge: DashboardBridge = {
     });
   },
   getDriverTagSettings: async () => {
-    return getDriverTagSettings();
+    return getEditableDriverTagSettings();
   },
   saveDriverTagSettings: async (settings: DriverTagSettings) => {
     saveDriverTagSettings(settings);
@@ -620,7 +627,7 @@ export async function publishDashboardUpdates(
   });
 
   ipcMain.handle('getDriverTagSettings', () => {
-    return getDriverTagSettings();
+    return getEditableDriverTagSettings();
   });
 
   ipcMain.handle('saveDriverTagSettings', (_, settings: DriverTagSettings) => {

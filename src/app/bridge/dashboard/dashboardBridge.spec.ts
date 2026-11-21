@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { DashboardLayout } from '@irdashies/types';
+import type { DashboardLayout, DriverTagSettings } from '@irdashies/types';
 import type { OverlayManager } from '../../overlayManager';
 import type { Analytics } from '../../analytics';
 
@@ -12,6 +12,8 @@ const mocks = vi.hoisted(() => ({
   publish: vi.fn(),
   closeOrCreate: vi.fn(),
   sendState: vi.fn(),
+  getDriverTagSettings: vi.fn<() => DriverTagSettings | undefined>(),
+  saveDriverTagSettings: vi.fn<(settings: DriverTagSettings) => void>(),
   dashboards: {} as Record<string, DashboardLayout>,
 }));
 
@@ -45,9 +47,10 @@ vi.mock('../../storage/storage', () => ({
         : undefined,
   writeData: mocks.writeData,
 }));
-vi.mock('../../storage/driverTagSettings', () => ({
-  getDriverTagSettings: () => undefined,
-  saveDriverTagSettings: vi.fn(),
+vi.mock('../../storage/driverTagSettings', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../storage/driverTagSettings')>()),
+  getDriverTagSettings: mocks.getDriverTagSettings,
+  saveDriverTagSettings: mocks.saveDriverTagSettings,
 }));
 vi.mock('../../logger', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
@@ -73,6 +76,8 @@ beforeEach(() => {
   mocks.publish.mockClear();
   mocks.closeOrCreate.mockReset();
   mocks.sendState.mockClear();
+  mocks.getDriverTagSettings.mockReset();
+  mocks.saveDriverTagSettings.mockReset();
   mocks.dashboards = { race: { widgets: [] } };
   mocks.readFile.mockResolvedValue(JSON.stringify(exportedDashboard));
 });
@@ -87,6 +92,55 @@ beforeAll(async () => {
     } as unknown as OverlayManager,
     {} as Analytics
   );
+});
+
+describe('driver tag settings', () => {
+  const savedTags: DriverTagSettings = {
+    groups: [{ id: 'team', name: 'Team', color: 0xff0000 }],
+    entries: [{ id: '123', groupId: 'team', label: 'Captain' }],
+    mapping: {},
+    display: { enabled: true, displayStyle: 'tag' },
+  };
+
+  beforeEach(() => {
+    mocks.dashboards.race = {
+      widgets: [],
+      generalSettings: { driverTagSettings: savedTags },
+    };
+  });
+
+  it('includes tags from the active dashboard when adding the first global tag', async () => {
+    const settings = (await mocks.handlers.get('getDriverTagSettings')?.()) as
+      DriverTagSettings | undefined;
+    expect(settings).toEqual(savedTags);
+    if (!settings) throw new Error('Expected saved driver tags');
+
+    const updated = {
+      ...settings,
+      entries: [...(settings.entries ?? []), { id: '456', groupId: 'team' }],
+    };
+    await mocks.handlers.get('saveDriverTagSettings')?.(null, updated);
+
+    expect(mocks.saveDriverTagSettings).toHaveBeenCalledWith(updated);
+    expect(mocks.publish).toHaveBeenCalledWith(
+      'dashboardUpdated',
+      expect.objectContaining({
+        generalSettings: expect.objectContaining({
+          driverTagSettings: updated,
+        }),
+      }),
+      'race'
+    );
+  });
+
+  it('keeps an explicitly empty global list ahead of an older dashboard copy', async () => {
+    const globalTags = { ...savedTags, entries: [] };
+    mocks.getDriverTagSettings.mockReturnValue(globalTags);
+
+    expect(await mocks.handlers.get('getDriverTagSettings')?.()).toEqual(
+      globalTags
+    );
+  });
 });
 
 describe('dashboard save callbacks', () => {
