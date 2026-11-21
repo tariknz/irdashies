@@ -10,6 +10,7 @@ vi.mock('@irdashies/context', () => ({
   useFocusCarIdx: () => 0,
   useSessionVisibility: () => true,
   useGeneralSettings: () => undefined,
+  useDemoFrame: () => null,
 }));
 
 vi.mock('./hooks/useLapTimeLog', () => ({
