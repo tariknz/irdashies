@@ -52,11 +52,16 @@ export const moveDivider = (
   const fixed = sum(widths.slice(0, index));
   const oldBoundary = fixed + widths[index];
   const restCount = widths.length - index - 1;
+  const oldRest = 100 - oldBoundary;
+  const smallestRest = Math.min(...widths.slice(index + 1));
+  const restLimit =
+    oldRest > 0 && smallestRest > 0
+      ? 100 - (min * oldRest) / smallestRest
+      : 100 - min * restCount;
   const boundary = Math.min(
-    100 - min * restCount,
+    Math.max(restLimit, oldBoundary),
     Math.max(fixed + min, oldBoundary + deltaPercent)
   );
-  const oldRest = 100 - oldBoundary;
   const newRest = 100 - boundary;
   return widths.map((width, i) => {
     if (i < index) return width;

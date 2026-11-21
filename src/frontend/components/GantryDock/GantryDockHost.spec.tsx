@@ -43,6 +43,10 @@ vi.mock('../RendererDataProviders/RendererDataProviders', () => ({
 
 vi.mock('../../WidgetIndex', async () => {
   const { useEffect } = await vi.importActual<typeof import('react')>('react');
+  const components = new Map<
+    string,
+    (props: Record<string, unknown>) => React.JSX.Element
+  >();
   return {
     getWidget: (type: string) => {
       if (type === 'broken') {
@@ -50,13 +54,17 @@ vi.mock('../../WidgetIndex', async () => {
           throw new Error('boom');
         };
       }
-      return (props: Record<string, unknown>) => {
+      const cached = components.get(type);
+      if (cached) return cached;
+      const MockWidget = (props: Record<string, unknown>) => {
         mocks.widgetProps.push(props);
         useEffect(() => {
           mocks.mounts[type] = (mocks.mounts[type] ?? 0) + 1;
         }, []);
         return <div data-testid={`widget-${type}`} />;
       };
+      components.set(type, MockWidget);
+      return MockWidget;
     },
   };
 });

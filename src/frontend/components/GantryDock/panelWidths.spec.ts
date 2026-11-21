@@ -36,6 +36,19 @@ describe('panel widths', () => {
     expect(rounded(moveDivider([20, 40, 40], 0, 70))).toEqual([70, 15, 15]);
   });
 
+  it('never shrinks an unequal remaining panel below the minimum', () => {
+    const atMin = moveDivider([20, 65, 15], 0, 10);
+    expect(rounded(atMin)).toEqual([20, 65, 15]);
+
+    const roomy = moveDivider([20, 50, 30], 0, 20);
+    expect(Math.min(...roomy.slice(1))).toBeGreaterThanOrEqual(15 - 1e-9);
+    expect(roomy.reduce((a, b) => a + b, 0)).toBeCloseTo(100);
+  });
+
+  it('still lets the remaining panels grow when one is at the minimum', () => {
+    expect(rounded(moveDivider([20, 65, 15], 0, -5))).toEqual([15, 69, 16]);
+  });
+
   it('reports each divider as a share of the whole row', () => {
     expect(dividerPosition([20, 55, 25], 0)).toBe(20);
     expect(dividerPosition([20, 55, 25], 1)).toBe(75);
