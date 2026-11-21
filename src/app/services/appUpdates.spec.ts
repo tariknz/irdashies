@@ -97,8 +97,8 @@ describe('app updates', () => {
     await writeFile(path.join(dir, 'auto-update.json'), 'false');
     updates = await createAppUpdates(vi.fn());
 
-    updates.install();
-    updates.install();
+    updates.install('download');
+    updates.install('download');
     expect(updater.checkForUpdates).toHaveBeenCalledOnce();
     expect(updater.quitAndInstall).not.toHaveBeenCalled();
     updater.emit('update-available');
@@ -110,8 +110,12 @@ describe('app updates', () => {
     });
     expect(electron.dialog.showMessageBox).not.toHaveBeenCalled();
 
-    updates.install();
-    updates.install();
+    updates.install('download');
+    expect(updater.quitAndInstall).not.toHaveBeenCalled();
+    expect(updates.snapshot().phase).toBe('ready');
+
+    updates.install('restart');
+    updates.install('restart');
     expect(updater.quitAndInstall).toHaveBeenCalledOnce();
     expect(updates.snapshot().phase).toBe('restarting');
   });
@@ -143,7 +147,7 @@ describe('app updates', () => {
     await writeFile(path.join(dir, 'auto-update.json'), 'false');
     updates = await createAppUpdates(vi.fn());
 
-    updates.install();
+    updates.install('download');
     updater.emit('update-not-available');
     updates.setAutoUpdate(true);
     expect(updater.checkForUpdates).toHaveBeenCalledTimes(2);
@@ -214,7 +218,7 @@ describe('app updates', () => {
   it('keeps side-by-side builds off the production update feed', async () => {
     electron.app.getName.mockReturnValue('irdashies-beta');
     updates = await createAppUpdates(vi.fn());
-    updates.install();
+    updates.install('download');
 
     expect(updates.snapshot().canUpdate).toBe(false);
     expect(updater.setFeedURL).not.toHaveBeenCalled();

@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ArrowClockwiseIcon, DownloadSimpleIcon } from '@phosphor-icons/react';
 import type { AppUpdateStatus } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
+import { useAppUpdateStatus } from '../AppUpdateStatusContext';
 
 const getUpdateMessage = (status: AppUpdateStatus): string => {
   if (!status.canUpdate) return 'This build does not support in-app updates.';
@@ -30,11 +31,9 @@ const getUpdateMessage = (status: AppUpdateStatus): string => {
 
 export const UpdatesSettings = () => {
   const bridge = window.appUpdatesBridge;
-  const [status, setStatus] = useState<AppUpdateStatus>();
+  const status = useAppUpdateStatus();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => bridge?.onStatus(setStatus), [bridge]);
 
   const run = async (action: () => Promise<void>, failure: string) => {
     setBusy(true);
@@ -133,7 +132,7 @@ export const UpdatesSettings = () => {
                   disabled={busy || updating}
                   onClick={() =>
                     void run(
-                      bridge.install,
+                      () => bridge.install(ready ? 'restart' : 'download'),
                       'Could not start the update. Try again.'
                     )
                   }

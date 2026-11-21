@@ -31,6 +31,7 @@ import {
 import { settingsPageKind, type SettingsPageKind } from './settingsPageKind';
 import { ToggleSwitch } from './components/ToggleSwitch';
 import { MenuSortControl } from './components/MenuSortControl';
+import { AppUpdateButton } from './components/AppUpdateButton';
 import {
   MENU_SORT_LABELS,
   readMenuSort,
@@ -552,6 +553,7 @@ export const SettingsMenu = ({
             )}
           </>
         )}
+        {!previewMode && <AppUpdateButton />}
       </div>
     </nav>
   );
