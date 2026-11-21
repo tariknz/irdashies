@@ -42,6 +42,7 @@ const mockConfig = (
     delta: {
       enabled: true,
       method: 'bestlap',
+      showOnCurrentLap: false,
     },
     history: {
       enabled: true,

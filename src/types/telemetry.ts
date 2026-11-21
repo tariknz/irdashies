@@ -122,6 +122,8 @@ export type Telemetry = {
    */
   LmuPitStopTime?: TelemetryVar<number[]>;
   LmuRepairTime?: TelemetryVar<number[]>;
+  PitRepairNeeded?: TelemetryVar<boolean[]>;
+  PitOptRepairNeeded?: TelemetryVar<boolean[]>;
   /**
    * What the next pit stop will add. Litres, or a virtual-energy percentage --
    * the companion flag says which, and nothing downstream should guess.
@@ -144,6 +146,8 @@ export type Telemetry = {
   LmuVirtualEnergy?: TelemetryVar<number[]>;
   LmuStateOfCharge?: TelemetryVar<number[]>;
   LmuRegen?: TelemetryVar<number[]>;
+  LmuTCSlip?: TelemetryVar<number[]>;
+  LmuTCCut?: TelemetryVar<number[]>;
 };
 /**
  * What SessionLapsRemain and SessionLapsTotal carry when the session has no

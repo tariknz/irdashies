@@ -8,6 +8,7 @@ import {
   useDrivingState,
   useSessionVisibility,
   useDashboard,
+  useDemoFrame,
   useGeneralSettings,
 } from '@irdashies/context';
 import { useLapTimeLog } from './hooks/useLapTimeLog';
@@ -18,6 +19,7 @@ import { LapHistoryChart } from './components/LapHistoryChart';
 import type { LapTimeLogConfig } from '@irdashies/types';
 import { formatTime, formatDelta } from '@irdashies/utils/time';
 import { LapTimeCell } from './components/LapTimeCell';
+import { LiveDeltaBar } from './components/LiveDeltaBar';
 
 const FREEZE_TIME = 5;
 
@@ -26,23 +28,20 @@ export const LapTimeLog = () => {
   const { isDriving } = useDrivingState();
   const playerIndex = useFocusCarIdx();
   const data = useLapTimeLog();
+  const demoData = useDemoFrame(isDemoMode, getDemoLapTimeLogData);
   const isSessionVisible = useSessionVisibility(
     data.settings?.sessionVisibility
   );
 
-  // session visible?
   if (!data.settings || playerIndex === undefined || !isSessionVisible) {
     return null;
   }
 
-  // Show only when on track setting
-  if (data.settings?.showOnlyWhenOnTrack && !isDriving) {
+  if (data.settings.showOnlyWhenOnTrack && !isDriving) {
     return null;
   }
 
-  // demo mode
-  if (isDemoMode) {
-    const demoData = getDemoLapTimeLogData();
+  if (isDemoMode && demoData) {
     return (
       <LapTimeLogDisplay
         settings={data.settings}
@@ -200,6 +199,14 @@ export const LapTimeLogDisplay = ({
                 )}
               </div>
             </div>
+          )}
+
+          {settings.delta.enabled && settings.delta.showOnCurrentLap && (
+            <LiveDeltaBar
+              delta={delta}
+              active={hasPredictedDelta}
+              dirty={dirty}
+            />
           )}
 
           {/* Predicted (With Delta) */}

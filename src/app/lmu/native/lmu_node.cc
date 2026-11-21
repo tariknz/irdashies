@@ -521,7 +521,7 @@ Napi::Value LmuSdkNode::Read(const Napi::CallbackInfo &info)
     SetString(out, "vehicleName", player->mVehicleName, sizeof(player->mVehicleName));
     SetVect3(out, "localAccel", player->mLocalAccel);
 
-    auto tyreTemperature = Napi::Float64Array::New(env, 4);
+    auto tyreTemperature = Napi::Float64Array::New(env, 12);
     auto tyrePressure = Napi::Float64Array::New(env, 4);
     auto tyreWear = Napi::Float64Array::New(env, 4);
     auto brakePressure = Napi::Float64Array::New(env, 4);
@@ -530,8 +530,10 @@ Napi::Value LmuSdkNode::Read(const Napi::CallbackInfo &info)
     for (size_t i = 0; i < 4; ++i)
     {
       const auto &wheel = player->mWheels[i];
-      tyreTemperature[i] =
-          (wheel.mTemperature[0] + wheel.mTemperature[1] + wheel.mTemperature[2]) / 3.0 - 273.15;
+      for (size_t zone = 0; zone < 3; ++zone)
+      {
+        tyreTemperature[i * 3 + zone] = wheel.mTemperature[zone] - 273.15;
+      }
       tyrePressure[i] = wheel.mPressure;
       tyreWear[i] = wheel.mWear;
       brakePressure[i] = wheel.mBrakePressure;

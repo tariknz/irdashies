@@ -1,0 +1,144 @@
+import { describe, expect, it } from 'vitest';
+import {
+  DEMO_DAMAGE,
+  UNDAMAGED,
+  aeroIntegrity,
+  bodyIntegrity,
+  bodyTier,
+  hasCarDamage,
+  integrityFraction,
+  iracingBodyTier,
+  isPunctured,
+  LMU_DENT_PANELS,
+  lmuDents,
+  suspTier,
+  suspensionIntegrity,
+  tyreIntegrity,
+  tyreWearTier,
+} from './logic';
+
+describe('damage logic', () => {
+  it('tiers body severity', () => {
+    expect(bodyTier(0)).toBe('ok');
+    expect(bodyTier(1)).toBe('light');
+    expect(bodyTier(2)).toBe('heavy');
+    expect(bodyTier(3)).toBe('detached');
+  });
+
+  it('tiers suspension by TinyPedal thresholds', () => {
+    expect(suspTier(false, 0)).toBe('ok');
+    expect(suspTier(false, 0.1)).toBe('light');
+    expect(suspTier(false, 0.3)).toBe('medium');
+    expect(suspTier(false, 0.5)).toBe('heavy');
+    expect(suspTier(false, 0.9)).toBe('totaled');
+    expect(suspTier(true, 0)).toBe('detached');
+  });
+
+  it('tiers tyre wear for iRacing wheels', () => {
+    expect(tyreWearTier(1)).toBe('ok');
+    expect(tyreWearTier(0.6)).toBe('light');
+    expect(tyreWearTier(0.3)).toBe('medium');
+    expect(tyreWearTier(0.1)).toBe('heavy');
+    expect(tyreWearTier(0.005)).toBe('detached');
+  });
+
+  it('maps iRacing repair flags to a coarse body tier', () => {
+    expect(iracingBodyTier(false, false)).toBe('ok');
+    expect(iracingBodyTier(false, true)).toBe('light');
+    expect(iracingBodyTier(true, true)).toBe('heavy');
+  });
+
+  it('prefers aero for centre integrity when available', () => {
+    expect(integrityFraction(0.2, [2, 2, 2, 2, 2, 2, 2, 2])).toBeCloseTo(0.8);
+    expect(integrityFraction(undefined, [2, 2, 2, 2, 2, 2, 2, 2])).toBeCloseTo(
+      0
+    );
+    expect(integrityFraction(-1, [])).toBeNull();
+  });
+
+  it('computes stats integrities', () => {
+    expect(aeroIntegrity(0.25)).toBeCloseTo(0.75);
+    expect(bodyIntegrity([1, 1, 1, 1, 1, 1, 1, 1])).toBeCloseTo(0.5);
+    expect(bodyIntegrity([])).toBeNull();
+    expect(suspensionIntegrity([0.1, 0.4, 0.2, 0.05], [])).toBeCloseTo(0.6);
+    expect(suspensionIntegrity([], [false, true, false, false])).toBe(0);
+    expect(suspensionIntegrity([], [false, false, false, false])).toBeNull();
+    expect(tyreIntegrity([0.9, 0.8, 0.7, 0.6])).toBeCloseTo(0.6);
+    expect(isPunctured(0.005)).toBe(true);
+    expect(isPunctured(0.5)).toBe(false);
+  });
+
+  it('reads a lost wheel as 0% even when suspension damage is reported', () => {
+    expect(
+      suspensionIntegrity([0.01, 0.05, 0.02, 0.1], [false, false, false, true])
+    ).toBe(0);
+    expect(
+      tyreIntegrity([0.92, 0.88, 0.9, 0.75], [false, false, false, true])
+    ).toBe(0);
+    expect(
+      tyreIntegrity([0.92, 0.88, 0.9, 0.75], [false, false, false, false])
+    ).toBeCloseTo(0.75);
+  });
+
+  it('treats a deflated tyre as punctured', () => {
+    expect(isPunctured(0.9, 0)).toBe(true);
+    expect(isPunctured(0.9, 0.8)).toBe(true);
+    expect(isPunctured(0.9, 167.7)).toBe(false);
+    expect(isPunctured(0.9, Number.NaN)).toBe(false);
+    expect(
+      hasCarDamage({ ...UNDAMAGED, tyrePressure: [170, 0, 170, 170] })
+    ).toBe(true);
+  });
+
+  it('marks the rear zone detached when LMU reports a body part off', () => {
+    const lost = { ...UNDAMAGED, bodyDetached: true };
+    expect(lmuDents(lost)).toEqual([0, 0, 0, 0, 3, 0, 0, 0]);
+    expect(bodyTier(lmuDents(lost)[LMU_DENT_PANELS[6]])).toBe('detached');
+    expect(bodyIntegrity(lmuDents(lost))).toBeCloseTo(13 / 16);
+    expect(hasCarDamage(lost)).toBe(true);
+    expect(lmuDents(UNDAMAGED)).toBe(UNDAMAGED.dentSeverity);
+    expect(lmuDents({ ...lost, dentSeverity: [] })).toEqual([]);
+  });
+
+  it('sees a puncture from pressure alone when wear is unavailable', () => {
+    expect(
+      hasCarDamage({
+        ...UNDAMAGED,
+        tyreWear: [],
+        tyrePressure: [170, 0, 170, 170],
+      })
+    ).toBe(true);
+    expect(hasCarDamage({ ...UNDAMAGED, tyreWear: [], tyrePressure: [] })).toBe(
+      false
+    );
+  });
+
+  it('places each LMU dent slot on its own panel', () => {
+    const panels = ['FL', 'F', 'FR', 'L', 'R', 'RL', 'Rear', 'RR'];
+    const slots = ['F', 'FL', 'L', 'RL', 'Rear', 'RR', 'R', 'FR'];
+    expect(LMU_DENT_PANELS.map((slot) => slots[slot])).toEqual(panels);
+  });
+
+  it('detects damage without treating normal tyre wear as damage', () => {
+    expect(hasCarDamage(UNDAMAGED)).toBe(false);
+    expect(hasCarDamage(DEMO_DAMAGE)).toBe(true);
+    expect(
+      hasCarDamage({
+        ...UNDAMAGED,
+        tyreWear: [0.7, 0.8, 0.75, 0.9],
+      })
+    ).toBe(false);
+    expect(
+      hasCarDamage({
+        ...UNDAMAGED,
+        tyreWear: [1, 1, 0.005, 1],
+      })
+    ).toBe(true);
+    expect(
+      hasCarDamage({
+        ...UNDAMAGED,
+        repairNeeded: true,
+      })
+    ).toBe(true);
+  });
+});

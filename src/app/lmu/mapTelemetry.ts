@@ -148,18 +148,6 @@ const fillWith = <T>(
 const isOne = (n: number) => n === 1;
 const isNonZero = (n: number) => n !== 0;
 
-const tractionDial = (
-  t: Frame,
-  slot: number,
-  value?: number,
-  max?: number
-): number => {
-  if ((max ?? 0) <= 0 || slot > 1) return slot;
-  if (slot === 0) t.dcTractionControl = num('dcTractionControl', value);
-  else t.dcTractionControl2 = num('dcTractionControl2', value);
-  return slot + 1;
-};
-
 /**
  * Whether a per-car slot holds a real car.
  *
@@ -973,7 +961,7 @@ export function mapLmuTelemetry(
   t.SteeringWheelAngleMax = num('SteeringWheelAngleMax', steeringMaxRad);
   if (raw.localAccel) {
     t.LatAccel = num('LatAccel', raw.localAccel[0]);
-    t.LongAccel = num('LongAccel', raw.localAccel[2]);
+    t.LongAccel = num('LongAccel', -raw.localAccel[2]);
   }
 
   const tyreTemperature = raw.tyreTemperature;
@@ -983,8 +971,8 @@ export function mapLmuTelemetry(
   const suspensionDeflection = raw.suspensionDeflection;
   if (tyreTemperature?.[0] !== undefined) {
     t.LFtempCL = num('LFtempCL', tyreTemperature[0]);
-    t.LFtempCM = num('LFtempCM', tyreTemperature[0]);
-    t.LFtempCR = num('LFtempCR', tyreTemperature[0]);
+    t.LFtempCM = num('LFtempCM', tyreTemperature[1]);
+    t.LFtempCR = num('LFtempCR', tyreTemperature[2]);
   }
   if (tyrePressure?.[0] !== undefined) {
     t.LFcoldPressure = num('LFcoldPressure', tyrePressure[0]);
@@ -1000,10 +988,10 @@ export function mapLmuTelemetry(
   if (suspensionDeflection?.[0] !== undefined) {
     t.LFshockDefl = num('LFshockDefl', suspensionDeflection[0]);
   }
-  if (tyreTemperature?.[1] !== undefined) {
-    t.RFtempCL = num('RFtempCL', tyreTemperature[1]);
-    t.RFtempCM = num('RFtempCM', tyreTemperature[1]);
-    t.RFtempCR = num('RFtempCR', tyreTemperature[1]);
+  if (tyreTemperature?.[3] !== undefined) {
+    t.RFtempCL = num('RFtempCL', tyreTemperature[3]);
+    t.RFtempCM = num('RFtempCM', tyreTemperature[4]);
+    t.RFtempCR = num('RFtempCR', tyreTemperature[5]);
   }
   if (tyrePressure?.[1] !== undefined) {
     t.RFcoldPressure = num('RFcoldPressure', tyrePressure[1]);
@@ -1019,10 +1007,10 @@ export function mapLmuTelemetry(
   if (suspensionDeflection?.[1] !== undefined) {
     t.RFshockDefl = num('RFshockDefl', suspensionDeflection[1]);
   }
-  if (tyreTemperature?.[2] !== undefined) {
-    t.LRtempCL = num('LRtempCL', tyreTemperature[2]);
-    t.LRtempCM = num('LRtempCM', tyreTemperature[2]);
-    t.LRtempCR = num('LRtempCR', tyreTemperature[2]);
+  if (tyreTemperature?.[6] !== undefined) {
+    t.LRtempCL = num('LRtempCL', tyreTemperature[6]);
+    t.LRtempCM = num('LRtempCM', tyreTemperature[7]);
+    t.LRtempCR = num('LRtempCR', tyreTemperature[8]);
   }
   if (tyrePressure?.[2] !== undefined) {
     t.LRcoldPressure = num('LRcoldPressure', tyrePressure[2]);
@@ -1038,10 +1026,10 @@ export function mapLmuTelemetry(
   if (suspensionDeflection?.[2] !== undefined) {
     t.LRshockDefl = num('LRshockDefl', suspensionDeflection[2]);
   }
-  if (tyreTemperature?.[3] !== undefined) {
-    t.RRtempCL = num('RRtempCL', tyreTemperature[3]);
-    t.RRtempCM = num('RRtempCM', tyreTemperature[3]);
-    t.RRtempCR = num('RRtempCR', tyreTemperature[3]);
+  if (tyreTemperature?.[9] !== undefined) {
+    t.RRtempCL = num('RRtempCL', tyreTemperature[9]);
+    t.RRtempCM = num('RRtempCM', tyreTemperature[10]);
+    t.RRtempCR = num('RRtempCR', tyreTemperature[11]);
   }
   if (tyrePressure?.[3] !== undefined) {
     t.RRcoldPressure = num('RRcoldPressure', tyrePressure[3]);
@@ -1143,23 +1131,11 @@ export function mapLmuTelemetry(
   if ((raw.rearAntiSwayMax ?? 0) > 0) {
     t.dcAntiRollRear = num('dcAntiRollRear', raw.rearAntiSway);
   }
-
-  // Three traction dials into the catalogue's two generic traction slots.
-  //
-  // LMU splits traction control into an overall level, a slip target and a
-  // throttle cut, and which of them a car actually offers varies -- a GT3 has
-  // the level alone, a Hypercar the slip and cut pair. iRacing's catalogue has
-  // Traction Control and Traction Control 2, named generically because the
-  // channel means whatever the car wires to it, so the dials the car has are
-  // filled in in order rather than each being pinned to a fixed slot. A car
-  // with only slip and cut would otherwise leave the TC column blank and show
-  // its first dial under TC2.
-  //
-  // The maxes are fixed per car and a car change resets the processor, so a
-  // column cannot change meaning underneath a driver mid-session.
-  let tcSlot = tractionDial(t, 0, raw.tc, raw.tcMax);
-  tcSlot = tractionDial(t, tcSlot, raw.tcSlip, raw.tcSlipMax);
-  tractionDial(t, tcSlot, raw.tcCut, raw.tcCutMax);
+  if ((raw.tcMax ?? 0) > 0) {
+    t.dcTractionControl = num('dcTractionControl', raw.tc);
+  }
+  if ((raw.tcSlipMax ?? 0) > 0) t.LmuTCSlip = num('LmuTCSlip', raw.tcSlip);
+  if ((raw.tcCutMax ?? 0) > 0) t.LmuTCCut = num('LmuTCCut', raw.tcCut);
   t.dcPitSpeedLimiterToggle = bool('dcPitSpeedLimiterToggle', raw.speedLimiter);
   t.PitstopActive = bool('PitstopActive', false);
   t.OnPitRoad = bool(

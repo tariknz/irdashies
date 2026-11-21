@@ -203,6 +203,7 @@ export interface LmuRawTelemetry {
   localVel?: LmuVec;
   localAccel?: LmuVec;
   pos?: LmuVec;
+  /** Celsius, three per wheel (LF, RF, LR, RR): left, centre, right as LMU reports them. */
   tyreTemperature?: Float64Array;
   tyrePressure?: Float64Array;
   tyreWear?: Float64Array;

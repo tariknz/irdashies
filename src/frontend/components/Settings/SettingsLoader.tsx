@@ -44,6 +44,8 @@ import { BroadcastTransitionSettings } from './sections/BroadcastTransitionSetti
 import { GantrySettings } from './sections/GantrySettings';
 import { SettingsPreviewContext } from '@irdashies/domain/widgetPreview/settingsPreviewContext';
 import { widgetSettingsType } from './widgetSettingsType';
+import { drivingMetricSettingsPages } from './sections/DrivingMetricSettings';
+import { DamageSettings } from './sections/DamageSettings';
 import { StintPlanSettings } from './sections/StintPlanSettings';
 import { StrategyTimelineSettings } from './sections/StrategyTimelineSettings';
 
@@ -90,6 +92,8 @@ export const WIDGET_SETTINGS: Record<
   broadcastweather: BroadcastSettingsPage,
   broadcastpodium: BroadcastSettingsPage,
   gantry: GantrySettings,
+  damage: DamageSettings,
+  ...drivingMetricSettingsPages,
   stintplan: StintPlanSettings,
   strategytimeline: StrategyTimelineSettings,
 };
