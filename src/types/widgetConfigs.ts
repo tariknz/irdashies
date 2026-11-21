@@ -1278,6 +1278,7 @@ export const GANTRY_DOCK_WIDGET_TYPES = [
   'map',
   'flatmap',
   'strategytimeline',
+  'laptimelog',
 ] as const;
 export type GantryDockWidgetType = (typeof GANTRY_DOCK_WIDGET_TYPES)[number];
 

@@ -45,7 +45,7 @@ export const isOffTrackSurface = (surface: number): boolean =>
 const MAX_HISTORY_ENTRIES = 60;
 const FREEZE_TIME = 5;
 
-export const useLapTimeLog = () => {
+export const useLapTimeLog = (embedded = false) => {
   // reset functions
   const resetSessionState = () => {
     setHistory([]);
@@ -123,6 +123,9 @@ export const useLapTimeLog = () => {
   );
   const setPersonalBest = usePersonalBestStore(
     (state) => state.setPersonalBest
+  );
+  const rememberPersonalBest = usePersonalBestStore(
+    (state) => state.rememberPersonalBest
   );
   const pbMetaData = useRef({ trackId, playerCarName, currentPersonalBest });
   useEffect(() => {
@@ -286,10 +289,10 @@ export const useLapTimeLog = () => {
       Boolean(currentTrackId) && currentCar !== 'unknown';
     const isBetter =
       savedPB === undefined || savedPB === null || bestLapTime < savedPB;
-    if (hasPersonalBestKey && isBetter) {
-      setPersonalBest(currentTrackId, currentCar, bestLapTime);
-    }
-  }, [bestLapTime, setPersonalBest]);
+    if (!hasPersonalBestKey || !isBetter) return;
+    if (embedded) rememberPersonalBest(currentTrackId, currentCar, bestLapTime);
+    else setPersonalBest(currentTrackId, currentCar, bestLapTime);
+  }, [bestLapTime, setPersonalBest, rememberPersonalBest, embedded]);
 
   return {
     current: displayTime,
