@@ -13,7 +13,7 @@ import { reportStorageResult, storageErrorCode } from './storageStatus';
 
 export const MAX_SAMPLES_PER_KEY = 12;
 export const MAX_KEYS = 1000;
-const MAX_FILE_BYTES = 8 * 1024 * 1024;
+const MAX_FILE_BYTES = 32 * 1024 * 1024;
 
 export interface PitStopModelPersistence {
   /** The current data. Empty until the file has loaded. */
@@ -168,11 +168,18 @@ export const parsePitStopModel = (raw: unknown): ParseResult => {
     ...Object.keys(data.transit).map((key) => orderKey('transit', key)),
     ...Object.keys(data.service).map((key) => orderKey('service', key)),
   ]);
-  const order = Array.isArray(raw.order)
+  const listed = Array.isArray(raw.order)
     ? raw.order.filter(
         (key): key is string => typeof key === 'string' && known.has(key)
       )
     : [];
+  const seen = new Set<string>();
+  const order: string[] = [];
+  for (let i = listed.length - 1; i >= 0; i--) {
+    if (seen.has(listed[i])) continue;
+    seen.add(listed[i]);
+    order.unshift(listed[i]);
+  }
   const ordered = new Set(order);
   for (const key of known) if (!ordered.has(key)) order.unshift(key);
   data.order = order;

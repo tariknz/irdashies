@@ -35,6 +35,7 @@ import {
   serviceEstimate,
   serviceKey,
   forwardPct,
+  median,
   spanSeconds,
   MAX_LANE_SAMPLE_STATIONARY_SECONDS,
   transitKey,
@@ -164,6 +165,9 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
   private sessionTypes = new Map<number, string>();
   private sessionNum: number | null = null;
   private watchingReplay = false;
+  private simReplay = false;
+  private highWaterTime: number | null = null;
+  private rewound = false;
   private calibration: PitLaneTrackData | null = null;
   private calibrationTrack = '';
 
@@ -210,6 +214,7 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
     this.seriesId = weekend?.SeriesID ?? 0;
     this.ruleSet = ruleSetKey(weekend?.AltAssetTag);
     this.build = weekend?.BuildVersion ?? '';
+    this.simReplay = weekend?.SimMode === 'replay';
     this.trackLengthMetres = parseTrackLengthMetres(weekend?.TrackLength);
     this.pitSpeedLimitKph = parseSpeedKph(weekend?.TrackPitSpeedLimit);
     this.tankLitres = driverInfo?.DriverCarFuelMaxLtr ?? 0;
@@ -251,10 +256,19 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
     const sessionNum = numberAt(frame, 'SessionNum');
     if (sessionNum !== this.sessionNum) {
       this.sessionNum = sessionNum;
-      this.detector.reset();
-      this.pendingPrediction = null;
-      this.stopPlan = null;
+      this.highWaterTime = null;
+      this.rewound = false;
+      this.dropStopState();
     }
+    if (this.highWaterTime !== null && time <= this.highWaterTime) {
+      if (time < this.highWaterTime) this.rewound = true;
+      return;
+    }
+    if (this.rewound) {
+      this.rewound = false;
+      this.dropStopState();
+    }
+    this.highWaterTime = time;
 
     const flags = numberAt(frame, 'SessionFlags') ?? 0;
     const caution = (flags & CAUTION) !== 0;
@@ -339,11 +353,12 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
     const player = this.cars.get(this.playerCarIdx);
     if (offsetPct === null || !player) return NO_AROUND;
 
-    const lapTimes = this.dependencies?.lapTimes?.()?.lapTimes ?? [];
+    const clean = this.dependencies?.lapTimes?.()?.cleanLapTimeHistory ?? [];
+    const cleanPace = (carIdx: number) => median(clean[carIdx] ?? []) ?? 0;
     const reference = this.referenceFor(this.playerCarIdx);
     const playerPace =
-      (lapTimes[this.playerCarIdx] ?? 0) > 0
-        ? lapTimes[this.playerCarIdx]
+      cleanPace(this.playerCarIdx) > 0
+        ? cleanPace(this.playerCarIdx)
         : reference
           ? reference.finishTime - reference.startTime
           : player.classEstLapSeconds;
@@ -360,7 +375,7 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       playerLapSeconds: playerPace,
       carPcts: pcts,
       carLapSeconds: (carIdx) => {
-        const own = lapTimes[carIdx] ?? 0;
+        const own = cleanPace(carIdx);
         if (own > 0) return own;
         const estimate = this.cars.get(carIdx)?.classEstLapSeconds ?? 0;
         return estimate > 0 ? estimate * scale : 0;
@@ -440,7 +455,7 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
     };
 
     if (
-      !this.watchingReplay &&
+      !this.isReplay() &&
       !stop.tainted &&
       stop.windowSeconds > 0 &&
       stop.stationarySeconds <= MAX_LANE_SAMPLE_STATIONARY_SECONDS
@@ -462,7 +477,7 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
 
     if (!isPlayer) return;
     const service = stop.service;
-    if (!this.watchingReplay && service && service.serviceSeconds > 0) {
+    if (!this.isReplay() && service && service.serviceSeconds > 0) {
       deps.persistence.addService(serviceKey(this.ruleSet, car.carId), {
         ...context,
         serviceSeconds: service.serviceSeconds,
@@ -481,6 +496,7 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
 
     const prediction = this.pendingPrediction;
     this.pendingPrediction = null;
+    if (this.isReplay()) return;
     // The car is at the window end, back to racing speed.
     const actual = this.around(pcts[this.playerCarIdx], pcts, include);
     deps.report?.({
@@ -597,7 +613,7 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
     const plan = progress ? this.stopPlan : null;
     const visible =
       !!player &&
-      !this.watchingReplay &&
+      !this.isReplay() &&
       this.sessionNum !== null &&
       this.sessionTypes.get(this.sessionNum) === 'Race' &&
       booleanAt(frame, 'IsOnTrack') &&
@@ -710,9 +726,7 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       include,
       reference,
       fallbackLap,
-      rejoinPct: this.entryExit(
-        (this.dependencies as PitStopEstimateDependencies).persistence.read()
-      ).exitPct,
+      rejoinPct: this.windowEndPct(),
       state: caution ? 'unreliable' : weak ? 'calibrating' : 'ok',
       stopNeeded,
       inStop: false,
@@ -750,11 +764,7 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
     const left = (lane: number, planned: number) =>
       Math.max(0, lane + service(planned) - lostSoFar);
 
-    const { exitPct } = this.entryExit(
-      (this.dependencies as PitStopEstimateDependencies).persistence.read()
-    );
-    const windowEnd =
-      exitPct === null ? null : wrap01(exitPct + this.windowPct().after);
+    const windowEnd = this.windowEndPct();
     const rejoinPct =
       windowEnd !== null && forwardPct(playerPct, windowEnd) < 0.5
         ? windowEnd
@@ -842,6 +852,23 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
     }
     this.version++;
     this.latest = { ...next, version: this.version };
+  }
+
+  private windowEndPct(): number | null {
+    const { exitPct } = this.entryExit(
+      (this.dependencies as PitStopEstimateDependencies).persistence.read()
+    );
+    return exitPct === null ? null : wrap01(exitPct + this.windowPct().after);
+  }
+
+  private isReplay(): boolean {
+    return this.watchingReplay || this.simReplay;
+  }
+
+  private dropStopState(): void {
+    this.detector.reset();
+    this.pendingPrediction = null;
+    this.stopPlan = null;
   }
 
   onLifecycle(event: SessionLifecycleEvent): void {

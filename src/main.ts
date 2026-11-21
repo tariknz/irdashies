@@ -518,7 +518,7 @@ void app.whenReady().then(async () => {
     getSessionLifecycle(),
     channelBus
   );
-  void loadPitStopModel();
+  await loadPitStopModel();
   await iRacingSDKSetup(overlayManager, channelBus);
   setupTapeReplayBridge(getCurrentBridge);
   if (process.env.IRDASHIES_TELEMETRY_REPLAY) createTapeReplayWindow();

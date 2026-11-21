@@ -207,7 +207,8 @@ const frame = (
 const create = (
   store = memoryStore(),
   report: (report: PitStopReport) => void = vi.fn(),
-  lapTimes: number[] = []
+  lapTimes: number[] = [],
+  cleanLaps: number[][] = lapTimes.map((time) => (time > 0 ? [time] : []))
 ) => {
   const processor = new PitStopEstimateProcessor({
     persistence: store,
@@ -216,6 +217,7 @@ const create = (
     lapTimes: () => ({
       lapTimes,
       lapTimeHistory: [],
+      cleanLapTimeHistory: cleanLaps,
       sessionNum: 0,
       version: 1,
     }),
@@ -456,11 +458,75 @@ describe('PitStopEstimateProcessor', () => {
     });
   });
 
+  it('neither learns, reports nor shows anything from a loaded replay file', () => {
+    const store = memoryStore(learnedFile());
+    const report = vi.fn();
+    const processor = create(store, report);
+    const replayFile = session();
+    replayFile.WeekendInfo = { ...replayFile.WeekendInfo, SimMode: 'replay' };
+    processor.init(replayFile);
+
+    drive(processor, pittingCar, pittingCar);
+
+    expect(store.addTransit).not.toHaveBeenCalled();
+    expect(store.addService).not.toHaveBeenCalled();
+    expect(report).not.toHaveBeenCalled();
+    expect(processor.snapshot().state).toBe('hidden');
+  });
+
+  it('does not learn or report a stop twice when a replay is rewound', () => {
+    const store = memoryStore(learnedFile());
+    const report = vi.fn();
+    const processor = create(store, report);
+    drive(processor, pittingCar, drivingCar(0.2));
+    const transitWrites = vi.mocked(store.addTransit).mock.calls.length;
+    expect(report).toHaveBeenCalledOnce();
+
+    drive(processor, pittingCar, drivingCar(0.2));
+
+    expect(store.addTransit).toHaveBeenCalledTimes(transitWrites);
+    expect(store.addService).toHaveBeenCalledOnce();
+    expect(report).toHaveBeenCalledOnce();
+  });
+
+  it('paces traffic on clean laps, not a pit lap in the lap times', () => {
+    const gapFor = (lapTimes: number[], cleanLaps?: number[][]) => {
+      const report = vi.fn();
+      const processor = create(
+        memoryStore(learnedFile()),
+        report,
+        lapTimes,
+        cleanLaps
+      );
+      drive(processor, pittingCar, drivingCar(0.2));
+      const sent = report.mock.calls[0][0] as PitStopReport;
+      return (
+        sent.predictedAheadGapSeconds ?? -(sent.predictedBehindGapSeconds ?? 0)
+      );
+    };
+    const cleanPace = gapFor([100, 80]);
+    const withPitLap = gapFor([130, 80], [[100], [80]]);
+    expect(withPitLap).toBeCloseTo(cleanPace, 2);
+  });
+
+  it('keeps the predicted gaps steady as the player enters the pit lane', () => {
+    const processor = create(memoryStore(learnedFile()), vi.fn(), [100, 80]);
+    drive(processor, pittingCar, drivingCar(0.2), 39.9);
+    const before = processor.snapshot();
+    drive(processor, pittingCar, drivingCar(0.2), 40, false, 40);
+    const atEntry = processor.snapshot();
+
+    expect(atEntry.inStop).toBe(true);
+    const gap = (snapshot: typeof before) =>
+      snapshot.aheadGapSeconds ?? -(snapshot.behindGapSeconds ?? 0);
+    expect(Math.abs(gap(atEntry) - gap(before))).toBeLessThan(0.5);
+  });
+
   it('flags the estimate as unreliable under caution', () => {
     const file = emptyFile();
     const processor = create(memoryStore(file));
     drive(processor, drivingCar(0.3), pittingCar);
-    drive(processor, drivingCar(0.7), drivingCar(0.2), 1, true);
+    drive(processor, drivingCar(0.7), drivingCar(0.2), 112, true, 111);
     expect(processor.snapshot().state).toBe('unreliable');
   });
 

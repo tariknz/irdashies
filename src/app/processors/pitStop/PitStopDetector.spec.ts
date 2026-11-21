@@ -53,8 +53,11 @@ const fuelAt = (t: number) => (t < 52 ? 10 : t < 68 ? 10 + 2 * (t - 52) : 42);
 const run = (options: {
   stall?: number;
   cautionAt?: number;
+  cautionUntil?: number;
   towedAt?: number;
   reversedAt?: number;
+  reversedFor?: number;
+  fuel?: (t: number) => number;
   until?: number;
   car?: (t: number) => CarState;
   /** Called after each frame, for looking at a stop in progress. */
@@ -74,10 +77,13 @@ const run = (options: {
       pct: [state.pct, -1],
       onPitRoad: [state.onPitRoad, false],
       surface: [state.surface, TrackLocation.NotInWorld],
-      caution: options.cautionAt !== undefined && t >= options.cautionAt,
+      caution:
+        options.cautionAt !== undefined &&
+        t >= options.cautionAt &&
+        (options.cautionUntil === undefined || t < options.cautionUntil),
       playerCarIdx: 0,
       pitstopActive: state.surface === TrackLocation.InPitStall,
-      fuelLevel: fuelAt(t),
+      fuelLevel: (options.fuel ?? fuelAt)(t),
       pitSvFlags: 0b1111 | 0x10,
       repairLeft: 0,
       playerTowing:
@@ -87,7 +93,7 @@ const run = (options: {
       playerReversing:
         options.reversedAt !== undefined &&
         t >= options.reversedAt &&
-        t < options.reversedAt + 1,
+        t < options.reversedAt + (options.reversedFor ?? 1),
       beforePct: 0.02,
       afterPct: 0.02,
     };
@@ -157,6 +163,68 @@ describe('PitStopDetector', () => {
     expect(stop.tainted).toBe(true);
     expect(stop.taintReasons).toEqual(['reversed']);
     expect(stop.firstTaintSeconds).toBeCloseTo(9, 1);
+  });
+
+  it('taints a stop that saw a caution on the approach, even if it ended before entry', () => {
+    const stop = run({ cautionAt: 38.5, cautionUntil: 39.5 }).completed[0];
+    expect(stop.caution).toBe(true);
+    expect(stop.taintReasons).toEqual(['caution']);
+  });
+
+  it('does not count a caution that ended before the measuring window', () => {
+    const stop = run({ cautionAt: 10, cautionUntil: 20 }).completed[0];
+    expect(stop.taintReasons).toEqual([]);
+  });
+
+  it('applies the player taints on the pit entry frame itself', () => {
+    const stop = run({ reversedAt: 40, reversedFor: 0.05 }).completed[0];
+    expect(stop.taintReasons).toEqual(['reversed']);
+  });
+
+  it('taints a stop when the car jumps along the lap', () => {
+    const jumping = (t: number): CarState =>
+      t >= 60 && t < 60.2
+        ? { pct: 0.6, onPitRoad: true, surface: TrackLocation.InPitStall }
+        : pittingCar(t, 20);
+    expect(run({ car: jumping }).completed[0].taintReasons).toEqual(['jumped']);
+  });
+
+  it('ignores a small backward wobble in the stall', () => {
+    const wobbling = (t: number): CarState =>
+      t >= 60 && t < 60.2
+        ? { pct: 0.949, onPitRoad: true, surface: TrackLocation.InPitStall }
+        : pittingCar(t, 20);
+    expect(run({ car: wobbling }).completed[0].taintReasons).toEqual([]);
+  });
+
+  it('gives up on an exit that never reports a position again', () => {
+    let stillTracked = true;
+    const vanishing = (t: number): CarState =>
+      t >= 91
+        ? { pct: -1, onPitRoad: false, surface: TrackLocation.NotInWorld }
+        : pittingCar(t, 20);
+    run({
+      car: vanishing,
+      until: 200,
+      onFrame: (t, detector) => {
+        if (t === 190) stillTracked = detector.playerStop(0) !== null;
+      },
+    });
+    expect(stillTracked).toBe(false);
+  });
+
+  it('counts fuel added on the frame service ends', () => {
+    const service = run({
+      fuel: (t) => (t < 52 ? 10 : 10 + 2 * (Math.min(t, 70) - 52)),
+    }).completed[0].service;
+    expect(service?.fuelSeconds).toBeCloseTo(18, 5);
+  });
+
+  it('does not invent a fuel rate from fuel that appears only as service ends', () => {
+    const service = run({ fuel: (t) => (t < 70 ? 10 : 42) }).completed[0]
+      .service;
+    expect(service?.fuelAddedLitres).toBeCloseTo(32, 0);
+    expect(service?.fuelSeconds).toBeNull();
   });
 
   it('ignores reversing before the player reaches the pit lane', () => {

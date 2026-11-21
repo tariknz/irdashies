@@ -551,6 +551,36 @@ export const drawPitExitRange = (
   ctx.restore();
 };
 
+interface XRange {
+  min: number;
+  max: number;
+}
+
+const visibleXRange = (ctx: CanvasRenderingContext2D): XRange | null => {
+  const canvas = ctx.canvas;
+  if (!canvas?.width || typeof ctx.getTransform !== 'function') return null;
+  const inverse = ctx.getTransform().inverse();
+  const xs = [
+    [0, 0],
+    [canvas.width, 0],
+    [0, canvas.height],
+    [canvas.width, canvas.height],
+  ].map(([px, py]) => inverse.a * px + inverse.c * py + inverse.e);
+  return { min: Math.min(...xs), max: Math.max(...xs) };
+};
+
+const keepInside = (
+  centre: number,
+  width: number,
+  range: XRange | null
+): number => {
+  if (!range || range.max - range.min < width) return centre;
+  return Math.min(
+    range.max - width / 2,
+    Math.max(range.min + width / 2, centre)
+  );
+};
+
 /**
  * The rejoin point as a white ring with a black edge and a "PIT" tag, drawn
  * over the cars, with the cars either side listed below it. It relies on shape
@@ -593,12 +623,14 @@ export const drawPitExitMarker = (
   const height = fontSize * 1.3;
   const width = fontSize * 2.2 + padX * 2;
   const top = y - radius - radius * 0.3 - height;
+  const visible = visibleXRange(ctx);
+  const tagX = keepInside(x, width, visible);
   ctx.fillStyle = 'black';
   ctx.beginPath();
-  ctx.roundRect(x - width / 2, top, width, height, height * 0.3);
+  ctx.roundRect(tagX - width / 2, top, width, height, height * 0.3);
   ctx.fill();
   ctx.fillStyle = 'white';
-  ctx.fillText(PIT_EXIT_LABEL, x, top + height / 2);
+  ctx.fillText(PIT_EXIT_LABEL, tagX, top + height / 2);
 
   if (trafficLines.length > 0) {
     const lineHeight = fontSize * 1.2;
@@ -609,10 +641,11 @@ export const drawPitExitMarker = (
     const boxWidth = widest + padX * 2;
     const boxHeight = lineHeight * trafficLines.length + fontSize * 0.3;
     const boxTop = y + radius + radius * 0.3;
+    const boxX = keepInside(x, boxWidth, visible);
     ctx.fillStyle = 'black';
     ctx.beginPath();
     ctx.roundRect(
-      x - boxWidth / 2,
+      boxX - boxWidth / 2,
       boxTop,
       boxWidth,
       boxHeight,
@@ -623,7 +656,7 @@ export const drawPitExitMarker = (
     trafficLines.forEach((line, index) => {
       ctx.fillText(
         line,
-        x,
+        boxX,
         boxTop + fontSize * 0.15 + lineHeight * (index + 0.5)
       );
     });

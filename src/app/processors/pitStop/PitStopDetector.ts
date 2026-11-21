@@ -127,6 +127,7 @@ export class PitStopDetector {
   private service: ServiceState = this.freshService();
   private lastServiceFrame = 0;
   private lastTime = NaN;
+  private lastCautionTime = NaN;
   private readonly events: DetectorEvents = {
     completed: [],
     playerEntered: false,
@@ -150,6 +151,7 @@ export class PitStopDetector {
     this.stops.clear();
     this.service = this.freshService();
     this.lastTime = NaN;
+    this.lastCautionTime = NaN;
   }
 
   private freshService(): ServiceState {
@@ -178,6 +180,7 @@ export class PitStopDetector {
     if (Number.isFinite(this.lastTime) && frame.time < this.lastTime) {
       this.reset();
     }
+    if (frame.caution) this.lastCautionTime = frame.time;
 
     const cars = Math.min(this.maxCars, frame.pct.length);
     for (let carIdx = 0; carIdx < cars; carIdx++) {
@@ -211,6 +214,11 @@ export class PitStopDetector {
       if (isPlayer && frame.playerReversing) {
         taint(stop, 'reversed', frame.time);
       }
+      const prevPct = this.prevPct[carIdx];
+      if (valid && prevPct >= 0) {
+        const step = ((pct - prevPct + 1.5) % 1) - 0.5;
+        if (Math.abs(step) > MAX_STEP_PCT) taint(stop, 'jumped', frame.time);
+      }
       if (surface === TrackLocation.InPitStall) stop.stationary += dt;
     }
 
@@ -225,6 +233,10 @@ export class PitStopDetector {
       if (approached) {
         const windowStartPct = wrap01(entryPct - frame.beforePct);
         const windowStartTime = this.timeAt(carIdx, windowStartPct);
+        const cautionOnApproach =
+          frame.caution ||
+          (Number.isFinite(windowStartTime) &&
+            this.lastCautionTime >= windowStartTime);
         const created: CarStop = {
           phase: 'inLane',
           entryTime: frame.time,
@@ -234,11 +246,17 @@ export class PitStopDetector {
           exitTime: NaN,
           exitPct: NaN,
           stationary: 0,
-          caution: frame.caution,
+          caution: cautionOnApproach,
           taintReasons: [],
           firstTaintSeconds: null,
         };
-        if (frame.caution) taint(created, 'caution', frame.time);
+        if (cautionOnApproach) taint(created, 'caution', frame.time);
+        if (isPlayer && frame.playerTowing) {
+          taint(created, 'towed', frame.time);
+        }
+        if (isPlayer && frame.playerReversing) {
+          taint(created, 'reversed', frame.time);
+        }
         if (!Number.isFinite(windowStartTime) || windowStartTime > frame.time) {
           taint(created, 'approachNotSeen', frame.time);
         } else if (frame.time - windowStartTime > MAX_APPROACH_SECONDS) {
@@ -259,7 +277,11 @@ export class PitStopDetector {
       current.exitPct = valid ? pct : this.prevPct[carIdx];
     }
 
-    if (current?.phase === 'exiting' && valid) {
+    if (current?.phase === 'exiting' && !valid) {
+      if (frame.time - current.exitTime > MAX_EXIT_SECONDS) {
+        this.stops.delete(carIdx);
+      }
+    } else if (current?.phase === 'exiting') {
       const windowEndPct = wrap01(current.exitPct + frame.afterPct);
       const travelled = forwardPct(current.exitPct, pct);
       if (travelled >= frame.afterPct && travelled < 0.5) {
@@ -399,6 +421,12 @@ export class PitStopDetector {
 
     if (state.active && !frame.pitstopActive) {
       state.active = false;
+      if (
+        state.beforeFirstRise !== null &&
+        frame.fuelLevel > state.lastFuel + FUEL_RISE_LITRES
+      ) {
+        state.lastRise = frame.time;
+      }
       const fuelAdded = Math.max(0, frame.fuelLevel - state.fuelStart);
       state.result = {
         serviceSeconds: frame.time - state.start,

@@ -188,6 +188,32 @@ describe('pit exit drawing', () => {
     expect(ctx.roundRect).toHaveBeenCalledTimes(2);
   });
 
+  it('keeps the tag and traffic box on the canvas near its edge', () => {
+    const { ctx } = context();
+    const onCanvas = Object.assign(ctx, {
+      canvas: { width: 400, height: 100 },
+      getTransform: () => ({
+        inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }),
+      }),
+    }) as unknown as CanvasRenderingContext2D;
+    const nearLeftEdge = (
+      progress: number,
+      output: { x: number; y: number }
+    ) => {
+      output.x = 10 + progress * 0;
+      output.y = 50;
+    };
+
+    drawPitExitMarker(onCanvas, marker, 0.5, nearLeftEdge, 10, 8, scratch(), [
+      '#12 1.4s ahead',
+    ]);
+
+    for (const [left] of vi.mocked(onCanvas.roundRect).mock.calls) {
+      expect(left).toBeGreaterThanOrEqual(0);
+    }
+    expect(onCanvas.arc).toHaveBeenCalledWith(10, 50, 10, 0, Math.PI * 2);
+  });
+
   it('draws no traffic box without traffic', () => {
     const { ctx } = context();
     drawPitExitMarker(ctx, marker, 0.5, flat, 10, 8, scratch());

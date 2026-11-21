@@ -43,6 +43,14 @@ describe('PitStopReportLog', () => {
     expect(await readLines()).toEqual([1, 2]);
   });
 
+  it('starts a new line when the existing file does not end with one', async () => {
+    await writeFile(file, JSON.stringify(report(1)));
+    const log = new PitStopReportLog(file);
+    await log.append(report(2));
+    await log.append(report(3));
+    expect(await readLines()).toEqual([1, 2, 3]);
+  });
+
   it('keeps only the newest reports past the cap', async () => {
     const log = new PitStopReportLog(file, 3);
     for (let at = 1; at <= 5; at++) void log.append(report(at));

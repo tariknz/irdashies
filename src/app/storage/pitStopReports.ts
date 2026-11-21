@@ -14,6 +14,7 @@ export const MAX_REPORTS = 500;
 export class PitStopReportLog {
   private chain: Promise<void> = Promise.resolve();
   private count: number | null = null;
+  private needsSeparator = false;
 
   constructor(
     private readonly filePath: string,
@@ -36,25 +37,47 @@ export class PitStopReportLog {
     return this.chain;
   }
 
-  private async lines(): Promise<string[]> {
+  private async content(): Promise<string> {
     try {
-      const content = await fsp.readFile(this.filePath, 'utf8');
-      return content.split('\n').filter((line) => line.trim() !== '');
+      return await fsp.readFile(this.filePath, 'utf8');
     } catch (error) {
-      if (storageErrorCode(error) === 'ENOENT') return [];
+      if (storageErrorCode(error) === 'ENOENT') return '';
       throw error;
     }
   }
 
+  private async lines(): Promise<string[]> {
+    return (await this.content())
+      .split('\n')
+      .filter((line) => line.trim() !== '');
+  }
+
   private async write(report: PitStopReport) {
-    this.count ??= (await this.lines()).length;
-    await fsp.appendFile(this.filePath, `${JSON.stringify(report)}\n`, 'utf8');
+    if (this.count === null) {
+      const content = await this.content();
+      this.count = content
+        .split('\n')
+        .filter((line) => line.trim() !== '').length;
+      this.needsSeparator = content.length > 0 && !content.endsWith('\n');
+    }
+    const separator = this.needsSeparator ? '\n' : '';
+    await fsp.appendFile(
+      this.filePath,
+      `${separator}${JSON.stringify(report)}\n`,
+      'utf8'
+    );
+    this.needsSeparator = false;
     this.count++;
     if (this.count <= this.maxReports) return;
     const kept = (await this.lines()).slice(-this.maxReports);
     const temporaryPath = `${this.filePath}.${process.pid}.tmp`;
-    await fsp.writeFile(temporaryPath, `${kept.join('\n')}\n`, 'utf8');
-    await fsp.rename(temporaryPath, this.filePath);
+    try {
+      await fsp.writeFile(temporaryPath, `${kept.join('\n')}\n`, 'utf8');
+      await fsp.rename(temporaryPath, this.filePath);
+    } catch (error) {
+      await fsp.rm(temporaryPath, { force: true }).catch(() => undefined);
+      throw error;
+    }
     this.count = kept.length;
   }
 }
