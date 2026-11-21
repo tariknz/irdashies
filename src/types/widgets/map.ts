@@ -38,8 +38,18 @@ export default defineWidgetManifest({
     styling: { isMinimalTrack: false, isMinimalCar: false },
     sectorColoring: { enabled: false },
     playerIcon: { enabled: false, fileName: '' },
+    pitExitEstimate: { enabled: false, showWhen: 'always' },
   },
   properties: {
+    'pitExitEstimate.showWhen': {
+      type: 'enum',
+      label: 'Show Pit Exit Estimate',
+      description: 'When to show where you would rejoin after a stop',
+      options: [
+        { value: 'always', label: 'Always in races' },
+        { value: 'fuelStopNeeded', label: 'Only when a fuel stop is needed' },
+      ],
+    },
     trackLineWidth: {
       type: 'number',
       label: 'Track Line Width',

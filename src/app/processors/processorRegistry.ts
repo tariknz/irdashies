@@ -12,6 +12,11 @@ import { FuelProjectionProcessor } from './FuelProjectionProcessor';
 import { LapLogProcessor } from './LapLogProcessor';
 import { LapTimesProcessor } from './LapTimesProcessor';
 import { LapTraceSampleProcessor } from './LapTraceSampleProcessor';
+import {
+  memoryOverlay,
+  PitStopEstimateProcessor,
+  type PitStopEstimateDependencies,
+} from './PitStopEstimateProcessor';
 import type {
   AnyProcessorDefinition,
   ProcessorMetrics,
@@ -53,6 +58,11 @@ interface ProcessorRegistryOptions {
     /** Epoch milliseconds; defaults to Date.now. */
     now?: () => number;
   };
+  /** Learned pit timings. Without it the pit exit estimate stays hidden. */
+  pitStopEstimate?: Pick<
+    PitStopEstimateDependencies,
+    'persistence' | 'pitLane' | 'report'
+  >;
 }
 
 interface DefaultProcessorHostOptions extends ProcessorRegistryOptions {
@@ -87,6 +97,7 @@ export const createProcessorDefinitions = ({
   radarTuning,
   radarPoleSides,
   racePlan,
+  pitStopEstimate,
 }: ProcessorRegistryOptions): readonly AnyProcessorDefinition[] => [
   defineProcessor({
     channel: 'blind-spot.snapshot',
@@ -129,6 +140,31 @@ export const createProcessorDefinitions = ({
       new RelativeGapProcessor({
         snapshot: () => snapshot('reference-laps.snapshot') ?? noReferenceLaps,
       }),
+  }),
+  defineProcessor({
+    channel: 'pit-stop-estimate.snapshot',
+    dependencies: [
+      'reference-laps.snapshot',
+      'fuel.projection',
+      'lap-times.snapshot',
+    ],
+    // Keep learning from other cars' stops while the map is minimised.
+    processWhileHidden: true,
+    metricsPrefix: 'pitStopEstimate',
+    create: ({ aggregateReplay, snapshot }) =>
+      new PitStopEstimateProcessor(
+        pitStopEstimate
+          ? {
+              ...pitStopEstimate,
+              persistence: aggregateReplay
+                ? memoryOverlay(pitStopEstimate.persistence)
+                : pitStopEstimate.persistence,
+              referenceLaps: () => snapshot('reference-laps.snapshot'),
+              fuel: () => snapshot('fuel.projection'),
+              lapTimes: () => snapshot('lap-times.snapshot'),
+            }
+          : null
+      ),
   }),
   defineProcessor({
     channel: 'sector-timing.snapshot',

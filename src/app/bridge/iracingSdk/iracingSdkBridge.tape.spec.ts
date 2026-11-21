@@ -45,6 +45,15 @@ vi.mock('../../storage/referenceLaps', () => ({
   saveReferenceLap: vi.fn(),
 }));
 vi.mock('../../storage/radarTuning', () => ({ getRadarTuning: vi.fn() }));
+vi.mock('../../storage/pitStopModel', () => ({
+  getPitStopModelStore: vi.fn(),
+}));
+vi.mock('../../storage/pitLaneData', () => ({
+  getPitLaneDataForTrack: vi.fn(),
+}));
+vi.mock('../../storage/pitStopReports', () => ({
+  appendPitStopReport: vi.fn(),
+}));
 vi.mock('../../storage/radarPoleSideOverrides', () => ({
   radarPoleSideOverrides: {},
   loadRadarPoleSideOverrides: mocks.loadRadarPoleSideOverrides,
