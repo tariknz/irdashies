@@ -76,6 +76,7 @@ vi.mock('electron', () => ({
     getPath: () => '/tmp/irdashies-test',
     disableHardwareAcceleration: vi.fn(),
     commandLine: { appendSwitch: vi.fn() },
+    quit: vi.fn(),
   },
   BrowserWindow: FakeBrowserWindow,
   Notification: vi.fn(),
@@ -93,6 +94,8 @@ vi.mock('./storage/chromiumFlags', () => ({
   parseCustomSwitches: vi.fn(() => []),
 }));
 vi.mock('./trackWindowMovement', () => ({
+  flushWindowMovementOnShutdown: vi.fn(),
+  markCorrectedBounds: vi.fn(),
   trackSettingsWindowMovement: vi.fn(),
   trackGantryWindowMovement: vi.fn(),
 }));
@@ -113,7 +116,11 @@ vi.mock('./logger', () => ({
 
 const { OverlayManager } = await import('./overlayManager');
 const { hardenWindow } = await import('./hardenWindow');
-const { trackGantryWindowMovement } = await import('./trackWindowMovement');
+const {
+  flushWindowMovementOnShutdown,
+  markCorrectedBounds,
+  trackGantryWindowMovement,
+} = await import('./trackWindowMovement');
 const { getDashboard, saveDashboard } = await import('./storage/dashboards');
 
 const dashboard = (enabled: boolean, config: Record<string, unknown> = {}) =>
@@ -661,6 +668,44 @@ describe('OverlayManager Gantry window placement', () => {
     expect(y).toBeGreaterThanOrEqual(PRIMARY.y);
     expect(x + width).toBeLessThanOrEqual(PRIMARY.x + PRIMARY.width);
     expect(y + height).toBeLessThanOrEqual(PRIMARY.y + PRIMARY.height);
+  });
+
+  it('does not save the rescued position over the one on the missing monitor', () => {
+    connect(PRIMARY);
+    new OverlayManager().createGantryWindow(
+      placed({ bounds: SAVED, maximized: true })
+    );
+    const [window] = gantryWindows();
+
+    expect(markCorrectedBounds).toHaveBeenCalledWith(
+      window,
+      expect.objectContaining({
+        x: window.options.x,
+        y: window.options.y,
+        width: window.options.width,
+        height: window.options.height,
+      })
+    );
+  });
+
+  it('marks nothing as corrected when the saved position is still on screen', () => {
+    connect(PRIMARY, SECOND);
+    new OverlayManager().createGantryWindow(placed({ bounds: SAVED }));
+
+    expect(markCorrectedBounds).not.toHaveBeenCalled();
+  });
+
+  it('saves a pending move before quitting destroys the window', () => {
+    const manager = new OverlayManager();
+    manager.createGantryWindow(placed({ bounds: SAVED }));
+    const [window] = gantryWindows();
+
+    manager.quitApp();
+
+    expect(flushWindowMovementOnShutdown).toHaveBeenCalledOnce();
+    expect(
+      vi.mocked(flushWindowMovementOnShutdown).mock.invocationCallOrder[0]
+    ).toBeLessThan(window.destroy.mock.invocationCallOrder[0]);
   });
 
   it('reopens maximised when it was left maximised', () => {

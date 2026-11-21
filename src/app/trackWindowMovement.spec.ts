@@ -224,6 +224,27 @@ describe('trackGantryWindowMovement', () => {
     }
   );
 
+  it('does not save the position the app rescued the window to', () => {
+    const save = vi.fn();
+    const { win, setBounds, setMaximized, emit } = fakeWindow(RESCUED);
+    trackGantryWindowMovement(win, save);
+    markCorrectedBounds(win, RESCUED);
+
+    setMaximized(true);
+    emit('maximize');
+    vi.advanceTimersByTime(DEBOUNCE_MS);
+    expect(save).not.toHaveBeenCalled();
+
+    setMaximized(false);
+    setBounds({ ...RESCUED, x: 700 });
+    emit('moved');
+    vi.advanceTimersByTime(DEBOUNCE_MS);
+    expect(save).toHaveBeenCalledExactlyOnceWith({
+      bounds: { ...RESCUED, x: 700 },
+      maximized: false,
+    });
+  });
+
   it.each(['close', 'shutdown'])('drains a pending move on %s', (event) => {
     const save = vi.fn();
     const { win, setBounds, emit } = fakeWindow(ON_SCREEN);

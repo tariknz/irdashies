@@ -85,12 +85,12 @@ export const trackGantryWindowMovement = (
   browserWindow: BrowserWindow,
   save: (placement: GantryWindowPlacement) => void
 ) => {
-  const changed = debounceBoundsSaves(browserWindow, () =>
-    save({
-      bounds: browserWindow.getNormalBounds(),
-      maximized: browserWindow.isMaximized(),
-    })
-  );
+  const changed = debounceBoundsSaves(browserWindow, () => {
+    const bounds = browserWindow.getNormalBounds();
+    const corrected = correctedBounds.get(browserWindow);
+    if (corrected && sameRect(bounds, corrected)) return;
+    save({ bounds, maximized: browserWindow.isMaximized() });
+  });
   browserWindow.on('moved', changed);
   browserWindow.on('resized', changed);
   browserWindow.on('maximize', changed);

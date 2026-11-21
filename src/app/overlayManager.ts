@@ -37,6 +37,7 @@ import {
 const activeDashboard = () => getDashboard(getCurrentProfileId());
 import { getChromiumFlags, parseCustomSwitches } from './storage/chromiumFlags';
 import {
+  flushWindowMovementOnShutdown,
   markCorrectedBounds,
   trackGantryWindowMovement,
   trackSettingsWindowMovement,
@@ -1072,6 +1073,7 @@ export class OverlayManager {
   public quitApp(): void {
     if (this.isQuitting) return;
 
+    flushWindowMovementOnShutdown();
     this.isQuitting = true;
     this.closeAllOverlays();
 
@@ -1407,6 +1409,9 @@ export class OverlayManager {
     this.gantryPinned = undefined;
     applyBaselineSecurity(browserWindow, 'Gantry');
     this.applyGantryWindowPrefs(dashboardLayout);
+    if (bounds && bounds !== saved.bounds) {
+      markCorrectedBounds(browserWindow, bounds);
+    }
 
     browserWindow.once('ready-to-show', () => {
       if (browserWindow.isDestroyed()) return;
