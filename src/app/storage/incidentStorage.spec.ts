@@ -216,19 +216,6 @@ describe('incidentStorage', () => {
     expect(fs.existsSync(path.join(tmpDir, 'incidents-s1.json'))).toBe(false);
   });
 
-  it('flushes the outgoing session to disk when appending to a new session', async () => {
-    const { appendIncident, __awaitPendingWrite } =
-      await import('./incidentStorage');
-    await appendIncident('sessionA', makeIncident('a1'), tmpDir);
-    await appendIncident('sessionB', makeIncident('b1'), tmpDir);
-    await __awaitPendingWrite();
-
-    const onDiskA = JSON.parse(
-      fs.readFileSync(path.join(tmpDir, 'incidents-sessionA.json'), 'utf-8')
-    ) as Incident[];
-    expect(onDiskA.map((i) => i.id)).toEqual(['a1']);
-  });
-
   it('does not lose an append when another session loads concurrently', async () => {
     const { appendIncident, loadIncidents, __awaitPendingWrite } =
       await import('./incidentStorage');

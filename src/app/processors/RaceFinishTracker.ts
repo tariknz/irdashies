@@ -3,7 +3,7 @@ import type {
   Session,
   StandingsSnapshot,
 } from '@irdashies/types';
-import { SessionState, TrackLocation } from '../irsdk/types/enums';
+import { SessionState, TrackLocation } from '../../types/irSdk/enums';
 
 // Fixed ceiling prevents session-derived arrays growing beyond an SDK grid.
 const MAX_CARS = 256;

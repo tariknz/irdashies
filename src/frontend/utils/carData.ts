@@ -4,13 +4,14 @@
  * Data sourced from lovely-car-data repository:
  * https://github.com/Lovely-Sim-Racing/lovely-car-data
  *
- * Bundled per sim (cars-bundle.json / lmu-cars-bundle.json).
+ * This project provides comprehensive car telemetry data for various racing games,
+ * including RPM thresholds, LED configurations, and shift point information.
+ *
+ * Car data sourced from lovely-car-data repository and bundled in src/frontend/assets/data/cars-bundle.json
  * Update with: npm run fetch-lovely-data
  */
 
 import carDataBundle from '../assets/data/cars-bundle.json';
-import lmuCarDataBundle from '../assets/data/lmu-cars-bundle.json';
-import type { ActiveSimulator } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
 
 export interface CarData {
@@ -29,176 +30,79 @@ interface CarDataBundleType {
   cars: Record<string, CarData>;
 }
 
-type GameId = ActiveSimulator | string;
-
-const bundles: Record<string, CarDataBundleType> = {
-  iracing: carDataBundle as CarDataBundleType,
-  lmu: lmuCarDataBundle as CarDataBundleType,
-};
-
-/** Per-game map of normalized lookup key → bundle car key */
-const normalizationsByGame: Record<string, Record<string, string> | null> = {
-  iracing: null,
-  lmu: null,
-};
+/**
+ * Map of car ID variations to normalized car ID for lookup
+ * This helps handle cases where the car ID in the game might differ slightly from the data
+ */
+let carIdNormalizations: Record<string, string> | null = null;
 
 /**
- * Strip punctuation and WEC class prefixes so LMU vehFilename / vehicleModel
- * line up with lovely-car-data names (e.g. ferrari_296_gt3 ↔ Ferrari 296 LMGT3).
+ * Initialize the car ID normalization map
+ * Maps various car ID formats to the canonical ID from the bundle
  */
-export function normalizeLmuCarKey(value: string): string {
-  let s = value.toLowerCase();
-  s = s.replace(/\blmgt3\b/g, 'gt3');
-  s = s.replace(/\blmgte\b/g, 'gte');
-  s = s.replace(/\blmgt\b/g, 'gt');
-  s = s.replace(/[^a-z0-9]/g, '');
-  // "Porsche 911 GT3 R LMGT3" → ...gt3rgt3 after class rewrite; drop the
-  // trailing duplicate class token so it matches porsche_911_gt3_r.
-  if (s.endsWith('gt3') && s.slice(0, -3).includes('gt3')) {
-    s = s.slice(0, -3);
-  } else if (s.endsWith('gte') && s.slice(0, -3).includes('gte')) {
-    s = s.slice(0, -3);
+function initializeNormalizations(): void {
+  if (carIdNormalizations !== null) return;
+
+  carIdNormalizations = {};
+  const bundle = carDataBundle as CarDataBundleType;
+
+  for (const carId of Object.keys(bundle.cars)) {
+    // Store original
+    carIdNormalizations[carId] = carId;
+
+    // Store lowercase
+    carIdNormalizations[carId.toLowerCase()] = carId;
+
+    // Store normalized (lowercase, no special chars)
+    const normalized = carId.toLowerCase().replace(/[^a-z0-9]/g, '');
+    carIdNormalizations[normalized] = carId;
   }
-  return s;
 }
 
-function normalizeIracingCarKey(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
-}
+/**
+ * Normalizes a car ID to find the matching bundled data
+ * @param carPath The car path from the game
+ * @returns The normalized car ID or null if not found
+ */
+function normalizeCarId(carPath: string): string | null {
+  initializeNormalizations();
 
-function normalizeKey(gameId: string, value: string): string {
-  return gameId === 'lmu'
-    ? normalizeLmuCarKey(value)
-    : normalizeIracingCarKey(value);
-}
+  if (!carIdNormalizations) return null;
 
-function isLikelyLmuTeamEntry(bundleKey: string, car: CarData): boolean {
-  if (/^(gt3|hyper|lmp2|lmp3|gte)-/i.test(bundleKey)) return true;
-  if (/\b(20\d{2})\b/.test(car.carId)) return true;
-  return /\b(team|racing|motorsport|competition|corse)\b/i.test(car.carId);
-}
+  // Try the variations in order of likelihood
+  const variations = [
+    carPath,
+    carPath.toLowerCase(),
+    carPath.toLowerCase().replace(/[^a-z0-9]/g, ''),
+  ];
 
-function preferLmuAlias(
-  existingKey: string,
-  existingCar: CarData,
-  candidateKey: string,
-  candidateCar: CarData
-): boolean {
-  const existingTeam = isLikelyLmuTeamEntry(existingKey, existingCar);
-  const candidateTeam = isLikelyLmuTeamEntry(candidateKey, candidateCar);
-  if (existingTeam !== candidateTeam) return !candidateTeam;
-  // Prefer the shorter display name (base chassis over "… Evo" / year variants)
-  return candidateCar.carName.length < existingCar.carName.length;
-}
-
-function initializeNormalizations(gameId: string): void {
-  if (
-    normalizationsByGame[gameId] !== null &&
-    normalizationsByGame[gameId] !== undefined
-  ) {
-    return;
-  }
-
-  const bundle = bundles[gameId];
-  if (!bundle) {
-    normalizationsByGame[gameId] = {};
-    return;
-  }
-
-  const map: Record<string, string> = {};
-  const register = (alias: string, bundleKey: string, car: CarData) => {
-    if (!alias) return;
-    const existing = map[alias];
-    if (existing === undefined) {
-      map[alias] = bundleKey;
-      return;
+  for (const variation of variations) {
+    if (variation in carIdNormalizations) {
+      return carIdNormalizations[variation];
     }
-    if (existing === bundleKey) return;
-    if (gameId !== 'lmu') return;
-    const existingCar = bundle.cars[existing];
-    if (existingCar && preferLmuAlias(existing, existingCar, bundleKey, car)) {
-      map[alias] = bundleKey;
-    }
-  };
-
-  for (const [bundleKey, car] of Object.entries(bundle.cars)) {
-    register(bundleKey, bundleKey, car);
-    register(bundleKey.toLowerCase(), bundleKey, car);
-    register(normalizeKey(gameId, bundleKey), bundleKey, car);
-    register(car.carId, bundleKey, car);
-    register(car.carId.toLowerCase(), bundleKey, car);
-    register(normalizeKey(gameId, car.carId), bundleKey, car);
-    register(normalizeKey(gameId, car.carName), bundleKey, car);
-  }
-
-  normalizationsByGame[gameId] = map;
-}
-
-function resolveCarKey(gameId: string, candidates: string[]): string | null {
-  initializeNormalizations(gameId);
-  const map = normalizationsByGame[gameId];
-  if (!map) return null;
-
-  for (const raw of candidates) {
-    if (!raw) continue;
-    const variations = [raw, raw.toLowerCase(), normalizeKey(gameId, raw)];
-    for (const variation of variations) {
-      if (variation in map) return map[variation];
-    }
-  }
-
-  // LMU: allow prefix match for Evo / year suffixes (mclaren_720s_gt3 → …gt3evo)
-  if (gameId === 'lmu') {
-    const norms = candidates
-      .filter(Boolean)
-      .map((c) => normalizeKey(gameId, c))
-      .filter((n) => n.length >= 6);
-    let best: { key: string; score: number } | null = null;
-    for (const [alias, bundleKey] of Object.entries(map)) {
-      for (const q of norms) {
-        if (alias === q) continue;
-        if (!alias.startsWith(q) && !q.startsWith(alias)) continue;
-        const score = Math.min(alias.length, q.length);
-        if (!best || score > best.score) {
-          best = { key: bundleKey, score };
-        }
-      }
-    }
-    return best?.key ?? null;
   }
 
   return null;
 }
 
-function resolveGameId(gameId?: GameId | null): string {
-  if (gameId === 'lmu') return 'lmu';
-  return 'iracing';
-}
-
 /**
- * Loads car-specific tachometer data from the bundled data for the active sim.
- * @param carPath CarPath from the session (iRacing path / LMU vehFilename)
- * @param gameId Active simulator id
- * @param aliases Extra names to try (LMU vehicleModel / CarScreenName)
+ * Loads car-specific tachometer data from the bundled data
+ * This loads instantly from the bundled data without any network requests
+ * @param carPath The car path from the game
+ * @param _gameId The current game identifier (ignored, LMU cars are looked up with loadLmuCarData)
+ * @returns The car data or null if not found
  */
 export const loadCarData = (
   carPath: string,
-  gameId?: GameId | null,
-  aliases?: readonly string[] | null
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _gameId?: string
 ): CarData | null => {
   try {
-    const game = resolveGameId(gameId);
-    const bundle = bundles[game];
-    if (!bundle) return null;
+    const bundle = carDataBundle as CarDataBundleType;
+    const normalizedId = normalizeCarId(carPath);
 
-    const candidates = [
-      carPath,
-      ...(aliases ?? []).filter((a): a is string => !!a && a !== carPath),
-    ];
-    const key = resolveCarKey(game, candidates);
-
-    if (key && key in bundle.cars) {
-      return bundle.cars[key];
+    if (normalizedId && normalizedId in bundle.cars) {
+      return bundle.cars[normalizedId];
     }
 
     return null;
@@ -208,6 +112,73 @@ export const loadCarData = (
   }
 };
 
+const LMU_SERIES = /:\s*([A-Za-z]+)\d*\s*$/;
+
+let lmuCarDataBundle: CarDataBundleType | null = null;
+let lmuCarBundleLoad: Promise<void> | null = null;
+let lmuCarKeys: Map<string, string> | null = null;
+const lmuLoadListeners = new Set<() => void>();
+
+export const isLmuCarBundleLoaded = (): boolean => lmuCarDataBundle !== null;
+
+export const subscribeLmuCarBundle = (listener: () => void): (() => void) => {
+  lmuLoadListeners.add(listener);
+  return () => {
+    lmuLoadListeners.delete(listener);
+  };
+};
+
+export const loadLmuCarBundle = (): Promise<void> => {
+  if (lmuCarDataBundle) return Promise.resolve();
+  lmuCarBundleLoad ??= import('../assets/data/lmu-cars-bundle.json')
+    .then((module) => {
+      lmuCarDataBundle = module.default as CarDataBundleType;
+      lmuLoadListeners.forEach((listener) => listener());
+    })
+    .catch((error) => {
+      lmuCarBundleLoad = null;
+      logger.warn('Failed to load LMU car data:', error);
+    });
+  return lmuCarBundleLoad;
+};
+
+const normalizeLmuName = (value: string): string =>
+  value.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+function findLmuCarKey(name: string): string | undefined {
+  if (!lmuCarDataBundle) return undefined;
+  if (!lmuCarKeys) {
+    const keys = new Map<string, string>();
+    const cars = lmuCarDataBundle.cars;
+    for (const key of Object.keys(cars)) {
+      keys.set(normalizeLmuName(key), key);
+    }
+    for (const [key, car] of Object.entries(cars)) {
+      const name = normalizeLmuName(car.carName);
+      if (!keys.has(name)) keys.set(name, key);
+    }
+    lmuCarKeys = keys;
+  }
+  return lmuCarKeys.get(normalizeLmuName(name));
+}
+
+export const loadLmuCarData = (
+  carModel: string | undefined,
+  entryName?: string
+): CarData | null => {
+  if (!carModel || !lmuCarDataBundle) return null;
+  const series = LMU_SERIES.exec(entryName ?? '')?.[1];
+  const key =
+    (series && findLmuCarKey(`${carModel} ${series}`)) ||
+    findLmuCarKey(carModel);
+  return key ? lmuCarDataBundle.cars[key] : null;
+};
+
+/**
+ * Gets the appropriate gear key for the car data
+ * @param gear Current gear number
+ * @returns Gear key string
+ */
 export const getGearKey = (gear: number): string => {
   if (gear === 0) return 'N';
   if (gear === -1) return 'R';
@@ -215,21 +186,16 @@ export const getGearKey = (gear: number): string => {
 };
 
 /**
- * Cars available for custom shift-point pickers for the given sim.
- * Defaults to iRacing when no sim is active (settings opened idle).
+ * Gets the list of all available cars from the bundled data
+ * @returns Array of car IDs and names
  */
-export const getAvailableCars = (
-  gameId?: GameId | null
-): {
+export const getAvailableCars = (): {
   carId: string;
   carName: string;
   ledNumber: number;
   ledRpm: object[];
 }[] => {
-  const game = resolveGameId(gameId);
-  const bundle = bundles[game];
-  if (!bundle) return [];
-
+  const bundle = carDataBundle as CarDataBundleType;
   return Object.values(bundle.cars).map((car) => ({
     carId: car.carId,
     carName: car.carName,

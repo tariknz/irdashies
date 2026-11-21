@@ -17,6 +17,12 @@ import type { ChannelBridge } from '@irdashies/types';
 
 declare global {
   interface Window {
+    globalKey?: {
+      onToggle: (cb: (hide: boolean) => void) => () => void;
+      onWidgetToggle: (
+        cb: (widgetId: string, hide: boolean) => void
+      ) => () => void;
+    };
     widgetPreviewBridge?: import('./types/widgetPreview').WidgetPreviewBridge;
     storageStatusBridge?: import('./types/storageStatus').StorageStatusBridge;
     channelBridge: ChannelBridge;
@@ -31,6 +37,7 @@ declare global {
     /** Present only in the hidden WebHID host renderer (src/hidHost.ts). */
     gamepadHost?: GamepadHostBridge;
     releaseNotesBridge?: import('./types/releaseNotes').ReleaseNotesBridge;
+    appUpdatesBridge?: import('./types/appUpdates').AppUpdatesBridge;
     chromiumFlagsBridge: ChromiumFlagsBridge;
     raceControlBridge: RaceControlBridge;
     /** Absent outside the Electron preload, e.g. the browser server. */

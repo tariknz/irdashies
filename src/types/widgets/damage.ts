@@ -42,13 +42,13 @@ export default defineWidgetManifest({
       type: 'boolean',
       label: 'Show Damage %',
       description:
-        'Show remaining integrity next to each damaged body or suspension area (hidden at 100%).',
+        'Draw remaining integrity percentage on the car silhouette (aero when available, otherwise bodywork).',
     },
     showStats: {
       type: 'boolean',
       label: 'Show Integrity Bars',
       description:
-        'Legacy setting; damage is shown on the silhouette. Bars are no longer displayed.',
+        'Show aero, body, suspension and tyre integrity bars and repair times under the silhouette.',
     },
     showOnlyWhenOnTrack: {
       type: 'boolean',

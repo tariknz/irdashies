@@ -70,6 +70,35 @@ describe('Lap Timer personal-best key', () => {
   });
 });
 
+describe('Lap Timer live delta', () => {
+  it('drops the delta while telemetry marks it invalid and resumes when it is valid again', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    drivers = [{ CarIdx: 0, CarPath: 'ferrari296gt3' }];
+    snapshot = {
+      ...emptySnapshot,
+      deltaToSessionBestLap: -0.5,
+      deltaToSessionBestLapOk: true,
+    };
+    const { result, rerender } = renderHook(() => useLapTimeLog());
+    expect(result.current.delta).toBe(-0.5);
+
+    snapshot = { ...snapshot, deltaToSessionBestLapOk: false, version: 1 };
+    rerender();
+    expect(result.current.delta).toBeUndefined();
+
+    vi.setSystemTime(Date.now() + 500);
+    snapshot = {
+      ...snapshot,
+      deltaToSessionBestLap: 0.3,
+      deltaToSessionBestLapOk: true,
+      version: 2,
+    };
+    rerender();
+    expect(result.current.delta).toBe(0.3);
+    vi.useRealTimers();
+  });
+});
+
 describe('Lap Timer under an LMU lap void', () => {
   /** Runs one lap: `during` mid-lap, then the crossing and scoring. */
   const driveLap = (

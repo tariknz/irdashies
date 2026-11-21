@@ -1,6 +1,6 @@
 import { memo, useMemo, useRef, type ReactNode, type RefObject } from 'react';
 import type { LapTraceColors } from '@irdashies/types';
-import { carXForWindow } from '@irdashies/domain/lapTrace/lapTraceWindow';
+import { carXForWindow } from '@irdashies/utils/lapTrace/lapTraceWindow';
 import { REFERENCE_SPAN_SLOTS } from '@irdashies/domain/lapTrace/lapTraceTiles';
 import { VIEW_HEIGHT, VIEW_WIDTH, yForNorm } from './layout';
 import {

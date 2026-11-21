@@ -1,4 +1,4 @@
-import type { TelemetryVariable, TelemetryVarList } from '../app/irsdk/types';
+import type { TelemetryVariable, TelemetryVarList } from './irSdk';
 
 export type Telemetry = {
   [K in keyof TelemetryVarList]: Pick<TelemetryVarList[K], 'value'>;
@@ -13,14 +13,11 @@ export type Telemetry = {
    * Stands in for PlayerCarMyIncidentCount, which LMU does not publish.
    */
   LmuLapInvalidated?: TelemetryVar<boolean[]>;
-  /**
-   * True when that car has a relative position within 120 m of the focus
-   * car. Empty (all false / absent) when the camera is on another car.
-   */
   LmuCarIdxRelativeAvailable?: TelemetryVar<boolean[]>;
   LmuCarIdxRelativeLateral?: TelemetryVar<number[]>;
   LmuCarIdxRelativeLongitudinal?: TelemetryVar<number[]>;
   LmuCarIdxRelativeHeading?: TelemetryVar<number[]>;
+  LmuCarIdxSpeed?: TelemetryVar<number[]>;
   /**
    * Compound index per wheel, for every car: four entries per slot at
    * `carIdx * 4 + wheel`, in the sim's wheel order (FL, FR, RL, RR).
@@ -125,6 +122,8 @@ export type Telemetry = {
    */
   LmuPitStopTime?: TelemetryVar<number[]>;
   LmuRepairTime?: TelemetryVar<number[]>;
+  PitRepairNeeded?: TelemetryVar<boolean[]>;
+  PitOptRepairNeeded?: TelemetryVar<boolean[]>;
   /**
    * What the next pit stop will add. Litres, or a virtual-energy percentage --
    * the companion flag says which, and nothing downstream should guess.
@@ -135,22 +134,10 @@ export type Telemetry = {
   LmuBrakeWear?: TelemetryVar<number[]>;
   LmuSuspensionDamage?: TelemetryVar<number[]>;
   LmuAeroDamage?: TelemetryVar<number[]>;
-  /**
-   * Body dent severity in LMU's own order: FC, FL, CL, RL, RC, RR, CR, FR.
-   * Values: 0 none, 1 light, 2 heavy, ≥3 detached. Display remapping belongs
-   * in the damage widget.
-   */
   LmuDentSeverity?: TelemetryVar<number[]>;
-  /** Per-wheel detached flags, LF, RF, LR, RR. */
   LmuWheelDetached?: TelemetryVar<boolean[]>;
-  /** Any detachable body part off (LMU: rear wing). */
   LmuBodyDetached?: TelemetryVar<boolean[]>;
-  /** Session time of the last impact, seconds. */
   LmuLastImpactET?: TelemetryVar<number[]>;
-  /**
-   * Last impact position [x, y, z] in metres, vehicle local space
-   * (x right, y up, z forward).
-   */
   LmuLastImpactPos?: TelemetryVar<number[]>;
   /**
    * From shared memory, not REST. Virtual energy remaining; the budget it
@@ -159,12 +146,8 @@ export type Telemetry = {
   LmuVirtualEnergy?: TelemetryVar<number[]>;
   LmuStateOfCharge?: TelemetryVar<number[]>;
   LmuRegen?: TelemetryVar<number[]>;
-  /**
-   * iRacing Season 3+ — true when the car needs mandatory / optional repairs.
-   * Not in every generated snapshot yet; optional so older builds still typecheck.
-   */
-  PitRepairNeeded?: TelemetryVar<boolean[]>;
-  PitOptRepairNeeded?: TelemetryVar<boolean[]>;
+  LmuTCSlip?: TelemetryVar<number[]>;
+  LmuTCCut?: TelemetryVar<number[]>;
 };
 /**
  * What SessionLapsRemain and SessionLapsTotal carry when the session has no

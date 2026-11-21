@@ -81,6 +81,35 @@ describe('ProgressInterpolator', () => {
     expect(interpolator.getValues()[1]).toBeCloseTo(0.9);
     expect(interpolator.getCount()).toBe(2);
   });
+
+  it('keeps identity matching stable when a car index repeats', () => {
+    const interpolator = new ProgressInterpolator(40);
+    interpolator.setTargets(
+      [
+        { progress: 0.2, driver: { CarIdx: 7 } },
+        { progress: 0.4, driver: { CarIdx: 7 } },
+      ],
+      0
+    );
+    interpolator.setTargets([{ progress: 0.6, driver: { CarIdx: 7 } }], 0);
+
+    expect(interpolator.getValues()[0]).toBeCloseTo(0.2);
+    expect(interpolator.getCount()).toBe(1);
+  });
+
+  it('does not carry stale identities into a smaller roster', () => {
+    const interpolator = new ProgressInterpolator(40);
+    interpolator.setTargets(
+      [
+        { progress: 0.1, driver: { CarIdx: 1 } },
+        { progress: 0.7, driver: { CarIdx: 2 } },
+      ],
+      0
+    );
+    interpolator.setTargets([{ progress: 0.9, driver: { CarIdx: 3 } }], 0);
+
+    expect(interpolator.getValues()[0]).toBeCloseTo(0.9);
+  });
 });
 
 describe('map projection', () => {

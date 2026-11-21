@@ -22,7 +22,9 @@ export const useCustomShiftPoints = (
     () =>
       carData?.carId ||
       (carPath
-        ? (loadCarData(carPath, gameId)?.carId ?? carModel ?? carPath)
+        ? (loadCarData(carPath, gameId ?? undefined)?.carId ??
+          carModel ??
+          carPath)
         : carModel),
     [carData?.carId, carPath, gameId, carModel]
   );

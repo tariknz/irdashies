@@ -8,6 +8,10 @@ const HEIGHT = 1080;
 const MARGIN = 80;
 const RESAMPLED_POINTS = 512;
 const MIN_RECORDED_POINTS = 20;
+const MAX_COVERAGE_GAP_FRACTION = 0.05;
+const LAP_TIME_TOLERANCE_SECONDS = 0.05;
+const LAP_TIME_WAIT_SECONDS = 5;
+const SCORING_SYNC_TOLERANCE_SECONDS = 0.05;
 
 interface RecordedPoint {
   x: number;
@@ -20,11 +24,14 @@ export interface LmuMapFrame {
   lapDist: number;
   playerHasVehicle: boolean;
   playerVehicleIdx: number;
+  elapsedTime?: number;
   lapStartET?: number;
   lapInvalidated?: boolean;
   pos?: ArrayLike<number>;
+  vehInPits: ArrayLike<number>;
   vehLapDistPct: ArrayLike<number>;
   vehLastLapTime: ArrayLike<number>;
+  vehLapStartET?: ArrayLike<number>;
 }
 
 const finite = (value: number | undefined): value is number =>
@@ -47,8 +54,24 @@ export const rotateLmuMapPointCounterClockwise = <
 
 function interpolatePoint(
   points: readonly RecordedPoint[],
-  distance: number
+  distance: number,
+  trackLength: number
 ): RecordedPoint {
+  const first = points[0];
+  const last = points[points.length - 1];
+  if (distance < first.distance || distance > last.distance) {
+    const span = first.distance + trackLength - last.distance;
+    const travelled =
+      distance > last.distance
+        ? distance - last.distance
+        : distance + trackLength - last.distance;
+    const amount = span > 0 ? travelled / span : 0;
+    return {
+      x: last.x + (first.x - last.x) * amount,
+      y: last.y + (first.y - last.y) * amount,
+      distance,
+    };
+  }
   let upper = 1;
   while (upper < points.length && points[upper].distance < distance) upper++;
   const high = points[Math.min(upper, points.length - 1)];
@@ -68,7 +91,11 @@ export function normalizeLmuTrackMap(
 ): LmuTrackMap {
   const points = Array.from({ length: RESAMPLED_POINTS }, (_, index) =>
     rotateLmuMapPointCounterClockwise(
-      interpolatePoint(recorded, (trackLength * index) / RESAMPLED_POINTS)
+      interpolatePoint(
+        recorded,
+        (trackLength * index) / RESAMPLED_POINTS,
+        trackLength
+      )
     )
   );
   const minX = Math.min(...points.map((point) => point.x));
@@ -242,6 +269,9 @@ export class LmuTrackMapRecorder {
   private lapStartET: number | null = null;
   private recording = false;
   private points: RecordedPoint[] = [];
+  private completedPoints: RecordedPoint[] | null = null;
+  private completedLapTime = 0;
+  private completedTrackLength = 0;
 
   /**
    * @param smoothedProgress The player's lap fraction reconstructed at the
@@ -278,20 +308,16 @@ export class LmuTrackMapRecorder {
       this.reset(frame.trackName);
       return null;
     } else if (frame.lapStartET > this.lapStartET) {
-      const completed = this.finishLap(
-        frame.lapDist,
-        frame.vehLastLapTime[frame.playerVehicleIdx]
-      );
+      this.holdCompletedLap(frame.lapDist, frame.lapStartET - this.lapStartET);
       this.lapStartET = frame.lapStartET;
       this.recording = true;
       this.points = [];
       this.sample(frame, progress);
-      return completed;
+      return this.resolveCompletedLap(frame);
     }
 
-    if (!this.recording) return null;
-    this.sample(frame, progress);
-    return null;
+    if (this.recording) this.sample(frame, progress);
+    return this.resolveCompletedLap(frame);
   }
 
   reset(trackName = ''): void {
@@ -299,9 +325,15 @@ export class LmuTrackMapRecorder {
     this.lapStartET = null;
     this.recording = false;
     this.points = [];
+    this.completedPoints = null;
   }
 
   private sample(frame: LmuMapFrame, progress: number): void {
+    if (frame.vehInPits[frame.playerVehicleIdx] === 1) {
+      this.recording = false;
+      this.points = [];
+      return;
+    }
     if (!frame.pos) return;
     const position = lmuGroundPosition(frame.pos);
     const distance = progress * frame.lapDist;
@@ -309,28 +341,71 @@ export class LmuTrackMapRecorder {
     if (
       !position ||
       distance < 0 ||
-      (previous && distance <= previous.distance)
+      (previous
+        ? distance <= previous.distance
+        : distance > frame.lapDist * MAX_COVERAGE_GAP_FRACTION)
     )
       return;
     this.points.push({ ...position, distance });
   }
 
-  private finishLap(
-    trackLength: number,
-    lastLapTime: number
-  ): LmuTrackMap | null {
+  private holdCompletedLap(trackLength: number, lapTime: number): void {
+    this.completedPoints =
+      this.points.length >= MIN_RECORDED_POINTS && this.coversLap(trackLength)
+        ? this.points
+        : null;
+    this.completedLapTime = lapTime;
+    this.completedTrackLength = trackLength;
+  }
+
+  private resolveCompletedLap(frame: LmuMapFrame): LmuTrackMap | null {
+    const points = this.completedPoints;
+    if (!points || this.lapStartET === null) return null;
+    const reportedLapTime = frame.vehLastLapTime[frame.playerVehicleIdx];
+    const scoringLapStart = frame.vehLapStartET?.[frame.playerVehicleIdx];
+    const scoringCaughtUp =
+      frame.vehLapStartET === undefined ||
+      (finite(scoringLapStart) &&
+        scoringLapStart >= this.lapStartET - SCORING_SYNC_TOLERANCE_SECONDS);
+    if (
+      scoringCaughtUp &&
+      finite(reportedLapTime) &&
+      reportedLapTime > 0 &&
+      Math.abs(reportedLapTime - this.completedLapTime) <=
+        LAP_TIME_TOLERANCE_SECONDS
+    ) {
+      this.completedPoints = null;
+      return normalizeLmuTrackMap(points, this.completedTrackLength);
+    }
+    if (
+      finite(frame.elapsedTime) &&
+      frame.elapsedTime - this.lapStartET > LAP_TIME_WAIT_SECONDS
+    ) {
+      this.completedPoints = null;
+    }
+    return null;
+  }
+
+  private coversLap(trackLength: number): boolean {
+    const maxGap = trackLength * MAX_COVERAGE_GAP_FRACTION;
     const first = this.points[0];
     const last = this.points[this.points.length - 1];
     if (
-      !finite(lastLapTime) ||
-      lastLapTime <= 0 ||
-      this.points.length < MIN_RECORDED_POINTS ||
       !first ||
-      !last
+      !last ||
+      first.distance + trackLength - last.distance > maxGap
     ) {
-      return null;
+      return false;
     }
-    return normalizeLmuTrackMap(this.points, trackLength);
+    for (let index = 1; index < this.points.length; index += 1) {
+      if (
+        this.points[index].distance - this.points[index - 1].distance >
+        maxGap
+      ) {
+        return false;
+      }
+    }
+    return true;
   }
 }
 

@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import { useFuelStore } from '../../../FuelCalculator/FuelStore';
+import { useFuelStore } from '@irdashies/context';
 import { SettingsSection } from '../../components/SettingSection';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import logger from '@irdashies/utils/logger';

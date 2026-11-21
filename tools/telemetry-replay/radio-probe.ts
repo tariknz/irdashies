@@ -1,14 +1,7 @@
-import type { RadioSnapshot, Telemetry } from '@irdashies/types';
+import { telemetryFrom } from './processorInputs';
+import type { RadioSnapshot } from '@irdashies/types';
 import { RadioProcessor } from '../../src/app/processors/RadioProcessor';
-import type { ReplayProbe, TelemetryFrame } from './validator';
-
-const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
-  Object.fromEntries(
-    Object.entries(frame).map(([name, entry]) => [
-      name,
-      { value: Array.isArray(entry) ? entry : [entry] },
-    ])
-  ) as unknown as Telemetry;
+import type { ReplayProbe } from './validator';
 
 export const createRadioProbe = (): ReplayProbe<RadioSnapshot> => {
   const processor = new RadioProcessor();

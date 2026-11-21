@@ -13,26 +13,26 @@ import {
   SampleBuffer,
   normalisePct,
   scaleDistances,
-} from '../../domain/lapTrace/lapSamples';
-import { MAX_METERS_BEHIND } from '../../domain/lapTrace/lapTraceWindow';
-import { hydrateLapTrace } from '../../domain/lapTrace/hydrateLapTrace';
+} from '@irdashies/utils/lapTrace/lapSamples';
+import { MAX_METERS_BEHIND } from '@irdashies/utils/lapTrace/lapTraceWindow';
+import { hydrateLapTrace } from '@irdashies/utils/lapTrace/hydrateLapTrace';
 import {
   type PedalEventTracker,
   createPedalEventTracker,
   pedalEventTrackerPush,
   resetPedalEventTracker,
-} from '../../domain/lapTrace/pedalEvents';
+} from '@irdashies/utils/lapTrace/pedalEvents';
 import {
   IBT_IMPORT_CAR_PATH,
   IBT_IMPORT_TRACK_ID,
-} from '../../domain/lapTrace/ibtLapImport';
+} from '@irdashies/utils/lapTrace/ibtLapImport';
 import {
   GARAGE61_IMPORT_CAR_PATH,
   GARAGE61_IMPORT_TRACK_ID,
   parseGarage61Csv,
-} from '../../domain/lapTrace/garage61CsvImport';
-import { ibtSamplesToLapTrace } from '../../domain/lapTrace/ibtLapImport';
-import { detectPositionJump } from '../../domain/lapTrace/positionJump';
+} from '@irdashies/utils/lapTrace/garage61CsvImport';
+import { ibtSamplesToLapTrace } from '@irdashies/utils/lapTrace/ibtLapImport';
+import { detectPositionJump } from '@irdashies/utils/lapTrace/positionJump';
 
 declare global {
   interface Window {

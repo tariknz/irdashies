@@ -402,7 +402,7 @@ describe('browser Inspector serialization demand', () => {
     const ordinary = connect();
     expect(ordinary.messages('initialState')).toHaveLength(1);
     source.running(true);
-    dashboardUpdated.mock.calls[0][0](dashboard, 'race');
+    dashboardUpdated.mock.calls[0][0](dashboard, 'race', 'settings:1');
     const removeRenderer = vi.spyOn(bus, 'removeRenderer');
     ordinary.emit(
       'message',
@@ -419,7 +419,10 @@ describe('browser Inspector serialization demand', () => {
       { type: 'runningState', data: true },
     ]);
     expect(ordinary.messages('dashboardUpdated')).toEqual([
-      { type: 'dashboardUpdated', data: { dashboard, profileId: 'race' } },
+      {
+        type: 'dashboardUpdated',
+        data: { dashboard, profileId: 'race', saveId: 'settings:1' },
+      },
     ]);
     expect(ordinary.messages('channel')).toEqual([
       {

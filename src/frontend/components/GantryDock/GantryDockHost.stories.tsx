@@ -2,9 +2,11 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
   ChannelSnapshotDecorator,
   TelemetryDecorator,
+  mockDashboardBridge,
   standingsStorySnapshot,
   trackStateStorySnapshot,
 } from '@irdashies/storybook';
+import { DashboardProvider } from '@irdashies/context';
 import {
   defaultDashboard,
   type DashboardWidget,
@@ -118,6 +120,55 @@ export const ScaledPanels: Story = {
       </div>
     </WidgetScale>
   ),
+};
+
+const demoBridge = {
+  ...mockDashboardBridge,
+  onDemoModeChanged: (callback: (demoMode: boolean) => void) => {
+    callback(true);
+    return () => undefined;
+  },
+};
+
+/** Three panels with adjustable dividers, the Lap Timer scrolling 20 laps. */
+export const WithLapTimer: Story = {
+  args: {
+    dock: {
+      ...fuelAndMap,
+      panels: [
+        ...fuelAndMap.panels,
+        {
+          panel: { id: 'p3', type: 'laptimelog' },
+          status: 'ready',
+          widget: widget('laptimelog'),
+        },
+      ],
+    },
+  },
+  decorators: [
+    (Story) => (
+      <DashboardProvider bridge={demoBridge}>
+        <Story />
+      </DashboardProvider>
+    ),
+  ],
+};
+
+/** A single panel fills the whole width. */
+export const LapTimerOnly: Story = {
+  args: {
+    dock: {
+      arrangement: 'row',
+      panels: [
+        {
+          panel: { id: 'p3', type: 'laptimelog' },
+          status: 'ready',
+          widget: widget('laptimelog'),
+        },
+      ],
+    },
+  },
+  decorators: WithLapTimer.decorators,
 };
 
 /** One panel at a time, for a narrow Gantry window. */

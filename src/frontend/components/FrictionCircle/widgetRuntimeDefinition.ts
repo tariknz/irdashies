@@ -2,7 +2,8 @@ import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
   id: 'frictioncircle',
-  channels: ['driver-controls.snapshot'],
+  sessionData: true,
+  channels: ['car-dynamics.snapshot', 'track-state.snapshot'],
   ratePreset: 'driverFocused',
-  channelRates: { 'driver-controls.snapshot': 60 },
+  channelRates: { 'car-dynamics.snapshot': 60 },
 } satisfies WidgetRuntimeDefinition;

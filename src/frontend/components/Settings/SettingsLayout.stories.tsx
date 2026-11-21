@@ -1,15 +1,22 @@
 import { useEffect, useState } from 'react';
 import { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, waitFor } from 'storybook/test';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { DashboardProvider, RunningStateProvider } from '@irdashies/context';
+import {
+  DashboardProvider,
+  RunningStateProvider,
+  useSessionStore,
+} from '@irdashies/context';
 import type {
   ActiveSimulator,
+  AppUpdateStatus,
   DashboardBridge,
   DriverTagSettings,
   PitLaneBridge,
   IrSdkBridge,
   ReleaseNotesBridge,
   ReleaseNotesStatus,
+  Session,
 } from '@irdashies/types';
 import { DEFAULT_KEYBINDINGS, releaseNotesFixture } from '@irdashies/types';
 import { SettingsLayout } from './SettingsLayout';
@@ -18,6 +25,7 @@ import {
   ChannelSnapshotDecorator,
   mockDashboardBridge,
 } from '@irdashies/storybook';
+import setupSessionFixture from '../../../../test-data/1770713899767/session.json';
 
 interface StoryProps {
   initialPath: string;
@@ -410,6 +418,54 @@ export const SetupComparisonRoute: Story = {
   args: { initialPath: '/settings/car-setup' },
 };
 
+export const SetupComparisonSnapshots: Story = {
+  args: SetupComparisonRoute.args,
+  beforeEach: () => {
+    const { session } = useSessionStore.getState();
+    return () => useSessionStore.setState({ session });
+  },
+  play: async ({ canvas, userEvent }) => {
+    const { CarSetup: setup } = setupSessionFixture;
+    const setSetup = (index: number, pressure: number, temperatures: string) =>
+      useSessionStore.getState().setSession({
+        ...setupSessionFixture,
+        CarSetup: {
+          ...setup,
+          UpdateCount: setup.UpdateCount + index,
+          TiresAero: {
+            ...setup.TiresAero,
+            LeftFront: {
+              ...setup.TiresAero.LeftFront,
+              ColdPressure: `${pressure} kPa`,
+              LastTempsOMI: temperatures,
+            },
+          },
+        },
+      } as unknown as Session);
+
+    const variants = [
+      [124, '41C, 41C, 41C'],
+      [131, '92C, 88C, 84C'],
+      [131, '106C, 101C, 98C'],
+    ] as const;
+    for (const [index, [pressure, temperatures]] of variants.entries()) {
+      setSetup(index, pressure, temperatures);
+      const capture = await canvas.findByRole('button', {
+        name: 'Take Snapshot',
+      });
+      await waitFor(() => expect(capture).toBeEnabled());
+      await userEvent.click(capture);
+      await expect(capture).toBeDisabled();
+    }
+    setSetup(variants.length, 138, '92C, 89C, 85C');
+    await waitFor(() =>
+      expect(
+        canvas.getByRole('button', { name: 'Take Snapshot' })
+      ).toBeEnabled()
+    );
+  },
+};
+
 export const CalibrationRoute: Story = {
   args: { initialPath: '/settings/pitlanehelper' },
 };
@@ -525,6 +581,66 @@ export const NewReleaseNotesBadge: Story = {
 export const ReleaseNotesPage: Story = {
   args: { initialPath: '/settings/release-notes' },
   beforeEach: withReleaseNotesBadge,
+};
+
+const withUpdatesStatus =
+  (initial: Partial<AppUpdateStatus> = {}) =>
+  () => {
+    const previous = window.appUpdatesBridge;
+    let notify: (status: AppUpdateStatus) => void;
+    let status: AppUpdateStatus = {
+      currentVersion: '3.0.0',
+      latestVersion: '3.1.0',
+      autoUpdate: true,
+      preferenceSaveFailed: false,
+      canUpdate: true,
+      newerVersionAvailable: true,
+      checkingLatest: false,
+      latestCheckFailed: false,
+      phase: 'idle',
+      ...initial,
+    };
+    const update = (partial: Partial<AppUpdateStatus>) => {
+      status = { ...status, ...partial };
+      notify(status);
+    };
+    window.appUpdatesBridge = {
+      onStatus: (callback) => {
+        notify = callback;
+        notify(status);
+        return () => undefined;
+      },
+      checkLatest: async () => notify(status),
+      setAutoUpdate: async (autoUpdate) => update({ autoUpdate }),
+      install: async () => {
+        if (status.phase === 'ready') {
+          update({ phase: 'restarting' });
+        } else {
+          update({
+            phase: 'ready',
+            latestVersion: '3.1.0',
+            newerVersionAvailable: true,
+          });
+        }
+      },
+    };
+    return () => {
+      window.appUpdatesBridge = previous;
+    };
+  };
+
+export const UpdatesPage: Story = {
+  args: { initialPath: '/settings/updates' },
+  beforeEach: withUpdatesStatus(),
+};
+
+export const UpdatesCurrentRelease: Story = {
+  args: { initialPath: '/settings/updates' },
+  beforeEach: withUpdatesStatus({
+    latestVersion: '3.0.0',
+    autoUpdate: false,
+    newerVersionAvailable: false,
+  }),
 };
 
 // Controlled disk-full bridge response; no disk space is consumed.

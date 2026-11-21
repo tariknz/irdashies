@@ -12,11 +12,11 @@ import {
 import {
   GARAGE61_IMPORT_CAR_PATH,
   GARAGE61_IMPORT_TRACK_ID,
-} from '../../domain/lapTrace/garage61CsvImport';
+} from '@irdashies/utils/lapTrace/garage61CsvImport';
 import {
   IBT_IMPORT_CAR_PATH,
   IBT_IMPORT_TRACK_ID,
-} from '../../domain/lapTrace/ibtLapImport';
+} from '@irdashies/utils/lapTrace/ibtLapImport';
 import {
   sampleGarage61Csv,
   sampleGarage61FileName,

@@ -1,16 +1,8 @@
-import * as yaml from 'js-yaml';
-import type { Session, StandingsSnapshot, Telemetry } from '@irdashies/types';
+import { parseSession, telemetryFrom } from './processorInputs';
+import type { StandingsSnapshot } from '@irdashies/types';
 import { StandingsProcessor } from '../../src/app/processors/StandingsProcessor';
-import type { ReplayProbe, TelemetryFrame } from './validator';
+import type { ReplayProbe } from './validator';
 import { rateLimited } from './rateLimited';
-
-const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
-  Object.fromEntries(
-    Object.entries(frame).map(([name, entry]) => [
-      name,
-      { value: Array.isArray(entry) ? entry : [entry] },
-    ])
-  ) as unknown as Telemetry;
 
 const copySnapshot = (snapshot: StandingsSnapshot): StandingsSnapshot => ({
   ...snapshot,
@@ -66,7 +58,7 @@ export const createStandingsProbe = (): ReplayProbe<StandingsSnapshot> => {
       'SessionTime',
     ],
     onSessionInfo(sessionYaml) {
-      processor.init(yaml.load(sessionYaml, { json: true }) as Session);
+      processor.init(parseSession(sessionYaml));
     },
     onFrame(frame) {
       processor.onFrame(telemetryFrom(frame));

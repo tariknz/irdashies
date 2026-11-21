@@ -23,9 +23,10 @@ describe('useStoredTab', () => {
     expect(reopened.current[0]).toBe('visibility');
   });
 
-  it('falls back to the first tab when the kept one is gone', () => {
+  it('replaces a removed tab with the first supported tab', () => {
     localStorage.setItem('pageTab', 'styling');
     const { result } = renderHook(() => useStoredTab('pageTab', TABS));
     expect(result.current[0]).toBe('look');
+    expect(localStorage.getItem('pageTab')).toBe('look');
   });
 });

@@ -1,17 +1,8 @@
-import * as yaml from 'js-yaml';
-import type { Session, Telemetry } from '@irdashies/types';
+import { parseSession, telemetryFrom } from './processorInputs';
 import { ReferenceLapProcessor } from '../../src/app/processors/ReferenceLapProcessor';
 import { RelativeGapProcessor } from '../../src/app/processors/RelativeGapProcessor';
-import type { ReplayProbe, TelemetryFrame } from './validator';
+import type { ReplayProbe } from './validator';
 import { rateLimited } from './rateLimited';
-
-const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
-  Object.fromEntries(
-    Object.entries(frame).map(([name, entry]) => [
-      name,
-      { value: Array.isArray(entry) ? entry : [entry] },
-    ])
-  ) as unknown as Telemetry;
 
 export const createRelativeGapsProbe = (): ReplayProbe<
   ReturnType<RelativeGapProcessor['snapshot']>
@@ -38,7 +29,7 @@ export const createRelativeGapsProbe = (): ReplayProbe<
       'SessionTime',
     ],
     onSessionInfo(sessionYaml) {
-      const session = yaml.load(sessionYaml, { json: true }) as Session;
+      const session = parseSession(sessionYaml);
       referenceLaps.init(session);
       processor.init(session);
     },

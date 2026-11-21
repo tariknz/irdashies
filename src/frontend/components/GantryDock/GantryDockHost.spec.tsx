@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   providerProps: vi.fn(),
   dashboard: undefined as DashboardLayout | undefined,
   simulator: null as ActiveSimulator | null,
+  mounts: {} as Record<string, number>,
 }));
 
 vi.mock('@irdashies/context', () => ({
@@ -40,19 +41,33 @@ vi.mock('../RendererDataProviders/RendererDataProviders', () => ({
   },
 }));
 
-vi.mock('../../WidgetIndex', () => ({
-  getWidget: (type: string) => {
-    if (type === 'broken') {
-      return () => {
-        throw new Error('boom');
+vi.mock('../../WidgetIndex', async () => {
+  const { useEffect } = await vi.importActual<typeof import('react')>('react');
+  const components = new Map<
+    string,
+    (props: Record<string, unknown>) => React.JSX.Element
+  >();
+  return {
+    getWidget: (type: string) => {
+      if (type === 'broken') {
+        return () => {
+          throw new Error('boom');
+        };
+      }
+      const cached = components.get(type);
+      if (cached) return cached;
+      const MockWidget = (props: Record<string, unknown>) => {
+        mocks.widgetProps.push(props);
+        useEffect(() => {
+          mocks.mounts[type] = (mocks.mounts[type] ?? 0) + 1;
+        }, []);
+        return <div data-testid={`widget-${type}`} />;
       };
-    }
-    return (props: Record<string, unknown>) => {
-      mocks.widgetProps.push(props);
-      return <div data-testid={`widget-${type}`} />;
-    };
-  },
-}));
+      components.set(type, MockWidget);
+      return MockWidget;
+    },
+  };
+});
 
 vi.mock('@irdashies/utils/logger', () => ({
   default: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
@@ -90,6 +105,7 @@ beforeEach(() => {
   mocks.widgetProps.length = 0;
   mocks.dashboard = undefined;
   mocks.simulator = null;
+  mocks.mounts = {};
   vi.clearAllMocks();
 });
 
@@ -243,5 +259,128 @@ describe('GantryDockHost', () => {
 
     expect(screen.getByText(/This panel hit a problem/)).toBeInTheDocument();
     expect(screen.getByTestId('widget-fuel')).toBeInTheDocument();
+  });
+});
+
+const withLapTimer: ResolvedDock = {
+  arrangement: 'row',
+  panels: [
+    ...fuelAndMap.panels,
+    {
+      panel: { id: 'p3', type: 'laptimelog' },
+      status: 'ready',
+      widget: { id: 'laptimelog', enabled: false, layout },
+    },
+  ],
+};
+
+describe('GantryDockHost panel dividers', () => {
+  it('puts a draggable divider between side-by-side panels', () => {
+    render(<GantryDockHost dock={fuelAndMap} />);
+
+    expect(screen.getAllByRole('separator')).toHaveLength(1);
+    expect(
+      screen.getByRole('separator', {
+        name: 'Fuel Calculator and Track Map split',
+      })
+    ).toBeInTheDocument();
+  });
+
+  it('starts three panels at equal widths, with a divider between each', () => {
+    render(<GantryDockHost dock={withLapTimer} />);
+
+    const [first, second] = screen.getAllByRole('separator');
+    expect(screen.getAllByRole('separator')).toHaveLength(2);
+    expect(first).toHaveAccessibleName('Fuel Calculator and Track Map split');
+    expect(first).toHaveAttribute('aria-valuenow', '33');
+    expect(second).toHaveAccessibleName('Track Map and Lap Timer split');
+    expect(second).toHaveAttribute('aria-valuenow', '67');
+    expect(screen.getByTestId('widget-laptimelog')).toBeInTheDocument();
+  });
+
+  it('drops the divider next to a collapsed panel', () => {
+    render(<GantryDockHost dock={fuelAndMap} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse Track Map' }));
+
+    expect(screen.queryAllByRole('separator')).toHaveLength(0);
+    expect(
+      screen.getByRole('region', { name: 'Track Map' })
+    ).toBeInTheDocument();
+  });
+
+  it('remembers where a divider was moved to', () => {
+    const { unmount } = render(<GantryDockHost dock={fuelAndMap} />);
+    const divider = screen.getByRole('separator');
+    fireEvent.keyDown(divider, { key: 'ArrowRight' });
+    fireEvent.keyDown(divider, { key: 'ArrowRight' });
+    expect(divider).toHaveAttribute('aria-valuenow', '54');
+
+    unmount();
+    render(<GantryDockHost dock={fuelAndMap} />);
+    expect(screen.getByRole('separator')).toHaveAttribute(
+      'aria-valuenow',
+      '54'
+    );
+  });
+
+  it('starts afresh when collapsing a panel changes what a divider separates', () => {
+    render(<GantryDockHost dock={withLapTimer} />);
+    const [first] = screen.getAllByRole('separator');
+    for (let i = 0; i < 5; i++) fireEvent.keyDown(first, { key: 'ArrowLeft' });
+    expect(first).toHaveAttribute('aria-valuenow', '23');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse Track Map' }));
+
+    const [remaining] = screen.getAllByRole('separator');
+    expect(screen.getAllByRole('separator')).toHaveLength(1);
+    expect(remaining).toHaveAccessibleName(
+      'Fuel Calculator and Lap Timer split'
+    );
+    expect(remaining).toHaveAttribute('aria-valuenow', '50');
+  });
+
+  it('keeps the other panels mounted when one is collapsed', () => {
+    render(<GantryDockHost dock={withLapTimer} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse Track Map' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Expand Track Map' }));
+
+    expect(mocks.mounts).toMatchObject({ fuel: 1, laptimelog: 1 });
+  });
+
+  it('keeps a collapsed Lap Timer mounted, hidden, so it keeps its laps', () => {
+    render(<GantryDockHost dock={withLapTimer} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse Lap Timer' }));
+    const lapTimer = screen.getByTestId('widget-laptimelog');
+    expect(lapTimer.closest('.hidden')).not.toBeNull();
+    expect(mocks.mounts.laptimelog).toBe(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Expand Lap Timer' }));
+    expect(
+      screen.getByTestId('widget-laptimelog').closest('.hidden')
+    ).toBeNull();
+    expect(mocks.mounts.laptimelog).toBe(1);
+  });
+
+  it('keeps the Lap Timer mounted on an inactive tab', () => {
+    render(<GantryDockHost dock={{ ...withLapTimer, arrangement: 'tabs' }} />);
+
+    expect(screen.queryByTestId('widget-map')).not.toBeInTheDocument();
+    expect(
+      screen.getByTestId('widget-laptimelog').closest('.hidden')
+    ).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Lap Timer' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Track Map' }));
+
+    expect(mocks.mounts.laptimelog).toBe(1);
+  });
+
+  it('has no dividers in tabs, which show one panel at a time', () => {
+    render(<GantryDockHost dock={{ ...withLapTimer, arrangement: 'tabs' }} />);
+
+    expect(screen.queryAllByRole('separator')).toHaveLength(0);
   });
 });

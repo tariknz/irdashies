@@ -3,7 +3,7 @@ import { resolveDamageBodyStyle } from './bodyStyle';
 
 describe('resolveDamageBodyStyle', () => {
   it('maps lovely-car-data classes', () => {
-    expect(resolveDamageBodyStyle('ferrari296gt3', 'GT3')).toBe('gtMid');
+    expect(resolveDamageBodyStyle('ferrari296gt3', 'GT3')).toBe('gt');
     expect(resolveDamageBodyStyle('dallarap217', 'GTP')).toBe('prototype');
     expect(resolveDamageBodyStyle('formularenault20', 'F2.0')).toBe(
       'openwheel'
@@ -13,31 +13,18 @@ describe('resolveDamageBodyStyle', () => {
     expect(resolveDamageBodyStyle('pro2truck', 'ORE')).toBe('truck');
   });
 
-  it('splits GT by engine layout', () => {
-    expect(resolveDamageBodyStyle('bmwm4gt3', 'GT3', 'BMW M4 GT3')).toBe(
-      'gtFront'
+  it('draws the NASCAR classes and cup cars with their own bodies', () => {
+    expect(resolveDamageBodyStyle('stockcars chevycamarozl12022', 'NXG')).toBe(
+      'stock'
     );
+    expect(resolveDamageBodyStyle('stockcars2 camaro2019', 'ORE')).toBe(
+      'stock'
+    );
+    expect(resolveDamageBodyStyle('euronascar', 'ENAS')).toBe('stock');
+    expect(resolveDamageBodyStyle('porsche992cup', 'CUP')).toBe('gt');
     expect(
-      resolveDamageBodyStyle('mercedesamgevogt3', 'GT3', 'Mercedes AMG EVO GT3')
-    ).toBe('gtFront');
-    expect(
-      resolveDamageBodyStyle('fordmustanggt3', 'GT3', 'Ford Mustang GT3')
-    ).toBe('gtFront');
-    expect(
-      resolveDamageBodyStyle('ferrari296gt3', 'GT3', 'Ferrari 296 GT3')
-    ).toBe('gtMid');
-    expect(
-      resolveDamageBodyStyle('mclaren720sgt3', 'GT3', 'McLaren 720S GT3')
-    ).toBe('gtMid');
-    expect(
-      resolveDamageBodyStyle('audir8lmsevo2gt3', 'GT3', 'Audi R8 LMS EVO2')
-    ).toBe('gtMid');
-    expect(
-      resolveDamageBodyStyle('porsche992rgt3', 'GT3', 'Porsche 992R GT3')
-    ).toBe('gtRear');
-    expect(
-      resolveDamageBodyStyle('porsche991rsr', 'GTE', 'Porsche 991RSR')
-    ).toBe('gtRear');
+      resolveDamageBodyStyle('renaultcliocup', 'CUP', 'Renault Clio Cup')
+    ).toBe('hatch');
   });
 
   it('falls back to path keywords when class is missing', () => {
@@ -52,9 +39,7 @@ describe('resolveDamageBodyStyle', () => {
     );
   });
 
-  it('defaults to gt mid-engine', () => {
-    expect(resolveDamageBodyStyle(undefined, undefined, undefined)).toBe(
-      'gtMid'
-    );
+  it('defaults to gt', () => {
+    expect(resolveDamageBodyStyle(undefined, undefined, undefined)).toBe('gt');
   });
 });

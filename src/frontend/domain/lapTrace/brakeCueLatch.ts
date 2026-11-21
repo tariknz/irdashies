@@ -39,7 +39,7 @@ import {
   MIN_EVENT_SPACING_M,
   nextEventIndex,
   signedLapDelta,
-} from './pedalEvents';
+} from '@irdashies/utils/lapTrace/pedalEvents';
 
 /** Longest lead time the ladder shows anything for. */
 export const BRAKE_CUE_ARM_SEC = 5;

@@ -1,4 +1,9 @@
-import { useMemo, useSyncExternalStore } from 'react';
+import {
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useSyncExternalStore,
+} from 'react';
 import type {
   ChannelBridge,
   ChannelName,
@@ -41,6 +46,35 @@ export const useChannelSelector = <K extends ChannelName, Selected>(
   );
   selection.updateSelector(selector, equality);
   return useSyncExternalStore(selection.subscribe, selection.getSnapshot);
+};
+
+export const useChannelListener = <K extends ChannelName, Selected>(
+  channel: K,
+  selector: ChannelSelector<K, Selected>,
+  listener: (selected: Selected) => void,
+  options: ChannelSelectorOptions<Selected> = {}
+): void => {
+  const configuredRateHz = useWidgetChannelRate(channel);
+  const effectiveRateHz = options.rateHz ?? configuredRateHz;
+  const effectiveBridge = options.bridge ?? window.channelBridge;
+  const enabled = options.enabled ?? true;
+  const select = useEffectEvent(selector);
+  const isEqual = useEffectEvent(options.equality ?? Object.is);
+  const notify = useEffectEvent(listener);
+  useEffect(() => {
+    const selection = getChannelSnapshotStore(
+      channel,
+      effectiveBridge
+    ).createSelection(
+      (snapshot: ChannelPayloads[K]) => select(snapshot),
+      (previous: Selected, next: Selected) => isEqual(previous, next),
+      effectiveRateHz,
+      enabled
+    );
+    return selection.subscribe(() =>
+      notify(selection.getSnapshot() as Selected)
+    );
+  }, [channel, effectiveBridge, effectiveRateHz, enabled]);
 };
 
 const selectSnapshot = <Snapshot>(snapshot: Snapshot): Snapshot => snapshot;

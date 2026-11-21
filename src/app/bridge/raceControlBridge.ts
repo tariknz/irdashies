@@ -138,13 +138,6 @@ export const setupRaceControlBridge = (
     );
   });
 
-  /**
-   * The detector and the retention window live in the main process, but their
-   * settings are persisted in the dashboard. Without this the renderer's
-   * `updateThresholds`/`updateRetention` calls are the only way values ever
-   * reach main — so after a restart, or a profile switch, detection silently
-   * runs on built-in defaults while Settings shows the saved numbers.
-   */
   const applyDashboard = (dashboard: DashboardLayout | undefined) => {
     const widget = dashboard?.widgets.find((w) => w.id === 'gantry');
     // The broadcast events overlay shows the same incidents, so either widget
@@ -204,25 +197,6 @@ export const setupRaceControlBridge = (
 
   wireToTelemetryBridge();
   onBridgeChanged(wireToTelemetryBridge);
-
-  ipcMain.handle(
-    'raceControl:updateThresholds',
-    (_event, thresholds: unknown) => {
-      if (!isValidThresholds(thresholds)) {
-        logger.warn('[RaceControl] Rejected invalid thresholds payload');
-        return;
-      }
-      runtime.updateThresholds(thresholds);
-    }
-  );
-
-  ipcMain.handle('raceControl:updateRetention', (_event, value: unknown) => {
-    if (!isValidRetention(value)) {
-      logger.warn('[RaceControl] Rejected invalid retention value:', value);
-      return;
-    }
-    applyRetention(value);
-  });
 
   ipcMain.handle('raceControl:getIncidents', () => {
     const sessionId = runtime.getCurrentSessionId();

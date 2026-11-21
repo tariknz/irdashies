@@ -2,6 +2,7 @@ import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
   id: 'stinthistory',
-  channels: ['fuel.projection'],
+  sessionData: true,
+  channels: ['fuel.projection', 'track-state.snapshot'],
   ratePreset: 'informational',
 } satisfies WidgetRuntimeDefinition;

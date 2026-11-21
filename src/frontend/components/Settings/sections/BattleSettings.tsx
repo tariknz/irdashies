@@ -1,12 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import {
-  BattleWidgetSettings,
-  SettingsTabType,
-  getWidgetDefaultConfig,
-} from '@irdashies/types';
+import { BattleWidgetSettings, getWidgetDefaultConfig } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SortableList } from '../../SortableList';
 import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -129,21 +126,19 @@ export const BattleSettings = () => {
     (w) => w.id === SETTING_ID
   ) as BattleWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<BattleWidgetSettings>({
+  const settings: BattleWidgetSettings = {
     id: SETTING_ID,
     enabled: savedSettings?.enabled ?? false,
     config:
       (savedSettings?.config as BattleWidgetSettings['config']) ??
       defaultConfig,
-  });
+  };
 
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('battleTab') as SettingsTabType) || 'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('battleTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('battleTab', [
+    'display',
+    'options',
+    'visibility',
+  ]);
 
   if (!currentDashboard) return <>Loading...</>;
 
@@ -152,7 +147,6 @@ export const BattleSettings = () => {
       title="Battle"
       description="Shows the cars immediately ahead and behind the player with gap information"
       settings={settings as BattleWidgetSettings}
-      onSettingsChange={(s) => setSettings(s as BattleWidgetSettings)}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
@@ -163,7 +157,7 @@ export const BattleSettings = () => {
         >
           <div className="space-y-4">
             {/* Tabs */}
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="display"
                 activeTab={activeTab}
@@ -185,7 +179,7 @@ export const BattleSettings = () => {
               >
                 Visibility
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div>
               {/* DISPLAY TAB */}

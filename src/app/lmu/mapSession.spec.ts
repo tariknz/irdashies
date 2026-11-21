@@ -13,12 +13,14 @@ import { LMU_MANUFACTURERS } from '@irdashies/types';
 import { LMU_CLASS_COLOURS } from '@irdashies/types';
 
 describe('lmuGripRubber', () => {
-  it('names TinyPedal grip steps and leaves an unreported level blank', () => {
-    expect(lmuGripRubber(0)).toBe('');
+  it("names LMU's Real Road levels and leaves an unknown level blank", () => {
+    expect(lmuGripRubber(0)).toBe('green');
     expect(lmuGripRubber(1)).toBe('low');
-    expect(lmuGripRubber(2)).toBe('moderate');
-    expect(lmuGripRubber(3)).toBe('high');
-    expect(lmuGripRubber(4)).toBe('maximum');
+    expect(lmuGripRubber(2)).toBe('medium');
+    expect(lmuGripRubber(3)).toBe('heavy');
+    expect(lmuGripRubber(4)).toBe('saturated');
+    expect(lmuGripRubber(5)).toBe('');
+    expect(lmuGripRubber(-1)).toBe('');
   });
 });
 
@@ -54,7 +56,6 @@ describe('mapLmuSession', () => {
     expect(player.CarIdx).toBe(1);
     expect(player.UserName).toBe('Driver B');
     expect(player.CarScreenName).toBe('Ferrari 296 GT3');
-    expect(player.CarCfgName).toBe('Ferrari 296 GT3');
     expect(player.CarPath).toBe('ferrari_296_gt3');
     expect(player.CarID).toBe(10006);
     expect(s.DriverInfo.Drivers[0].CarID).toBe(10003);
@@ -259,6 +260,22 @@ describe('mapLmuSession', () => {
       { SectorNum: 0, SectorStartPct: 0 },
       { SectorNum: 1, SectorStartPct: 1 / 3 },
       { SectorNum: 2, SectorStartPct: 2 / 3 },
+    ]);
+  });
+
+  it('uses learned sector boundaries when they are known', () => {
+    const s = mapLmuSession(
+      fixture(),
+      null,
+      undefined,
+      undefined,
+      undefined,
+      [0.389, 0.791]
+    );
+    expect(s.SplitTimeInfo.Sectors).toEqual([
+      { SectorNum: 0, SectorStartPct: 0 },
+      { SectorNum: 1, SectorStartPct: 0.389 },
+      { SectorNum: 2, SectorStartPct: 0.791 },
     ]);
   });
 

@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
-  useActiveSimulator,
   useDashboard,
   useChannelSelector,
   useSessionStore,
 } from '@irdashies/context';
-import { getGearKey, loadCarData } from '@irdashies/utils/carData';
+import { getGearKey } from '@irdashies/utils/carData';
+import { usePlayerCarData } from '../tachometer/usePlayerCarData';
 import type {
   DriverControlsSnapshot,
   ShiftPointSettings,
@@ -40,23 +40,14 @@ export const useShiftFlashActive = (
   const driverCarRedLine = useSessionStore(
     (state) => state.session?.DriverInfo?.DriverCarRedLine
   );
-  const gameId = useActiveSimulator();
-  const driver = useSessionStore((state) => {
+  const carPath = useSessionStore((state) => {
     const idx = state.session?.DriverInfo?.DriverCarIdx;
     if (idx === undefined) return undefined;
-    return state.session?.DriverInfo?.Drivers?.find((d) => d.CarIdx === idx);
+    return state.session?.DriverInfo?.Drivers?.find((d) => d.CarIdx === idx)
+      ?.CarPath;
   });
-  const carPath = driver?.CarPath;
-  const carCfgName = driver?.CarCfgName;
-  const carScreenName = driver?.CarScreenName;
-  const carData = useMemo(() => {
-    if (!enabled || !carPath) return null;
-    return loadCarData(
-      carPath,
-      gameId,
-      [carCfgName, carScreenName].filter((v): v is string => !!v)
-    );
-  }, [enabled, carPath, gameId, carCfgName, carScreenName]);
+  const playerCarData = usePlayerCarData();
+  const carData = enabled ? playerCarData : null;
 
   const selectActive = useCallback(
     (snapshot: DriverControlsSnapshot) => {

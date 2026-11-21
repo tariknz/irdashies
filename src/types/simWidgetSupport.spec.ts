@@ -4,6 +4,7 @@ import { widgetItems } from '../frontend/components/Settings/menuItems';
 import { SIMULATOR_IDS } from './simulators';
 import {
   DEFAULT_SIM_WIDGET_SUPPORT,
+  IRACING_DISABLED_WIDGETS,
   LMU_DISABLED_WIDGETS,
   LMU_SUPPORTED_WIDGETS,
   isWidgetDisabledForSim,
@@ -71,10 +72,15 @@ describe('per-simulator widget support', () => {
     );
   });
 
-  it('hides nothing under iRacing', () => {
-    // iRacing is the sim every widget is written against, so the list exists
-    // for the other direction only.
-    expect(config.disabledWidgets.iracing).toEqual([]);
+  it('hides the LMU-only widgets under iRacing', () => {
+    expect(config.disabledWidgets.iracing).toEqual([
+      ...IRACING_DISABLED_WIDGETS,
+    ]);
+    IRACING_DISABLED_WIDGETS.forEach((id) => {
+      expect(isWidgetDisabledForSim(config, id, 'iracing')).toBe(true);
+      expect(isWidgetDisabledForSim(config, id, 'lmu')).toBe(false);
+    });
+    expect(isWidgetDisabledForSim(config, 'standings', 'iracing')).toBe(false);
   });
 
   it('hides everything under LMU that is not on its supported list', () => {

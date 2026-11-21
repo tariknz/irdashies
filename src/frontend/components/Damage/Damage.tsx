@@ -1,5 +1,6 @@
 import {
   useDashboard,
+  useDemoFrame,
   useSessionVisibility,
   trackStateSelectors,
   useTrackStateSelector,
@@ -9,7 +10,6 @@ import { useDamage } from './hooks/useDamage';
 import { useDamageCar } from './hooks/useDamageCar';
 import { useDamageSettings } from './hooks/useDamageSettings';
 import { getDemoDamage, hasCarDamage } from './logic';
-import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 
 export const Damage = () => {
   const { isDemoMode } = useDashboard();
@@ -31,10 +31,9 @@ export const Damage = () => {
     <DamageDisplay
       data={data}
       opacity={settings.background.opacity}
-      showIntegrity={settings.showIntegrity ?? true}
+      showIntegrity={settings.showIntegrity}
       showStats={settings.showStats}
-      bodyStyle={isDemoMode ? 'gtMid' : car.bodyStyle}
-      carLabel={isDemoMode ? 'Ferrari 296 GT3' : car.label}
+      bodyStyle={isDemoMode ? 'gt' : car.bodyStyle}
     />
   );
 };

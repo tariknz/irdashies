@@ -1,7 +1,6 @@
 import { memo } from 'react';
 import { formatDelta } from '@irdashies/utils/time';
 
-/** |delta| that fills the whole track. Past this the fill stays full. */
 export const LIVE_DELTA_BAR_RANGE_S = 1;
 
 const HATCH =
@@ -39,7 +38,6 @@ export const LiveDeltaBar = memo(
             className="absolute inset-y-0 transition-[width,left] duration-100 ease-out"
             style={{
               width: `${fillPct}%`,
-              // Green grows from the left edge; red from the right.
               left: isFaster ? '0%' : `${100 - fillPct}%`,
               backgroundColor: fillColor,
               backgroundImage: HATCH,

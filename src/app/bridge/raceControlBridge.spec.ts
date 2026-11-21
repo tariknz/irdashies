@@ -161,16 +161,6 @@ describe('setupRaceControlBridge', () => {
     expect(pruneOldSessions).toHaveBeenCalledWith(5);
   });
 
-  it('prunes immediately when retention is updated', () => {
-    const { runtime } = createRuntime();
-    setupRaceControlBridge(runtime);
-    vi.mocked(pruneOldSessions).mockClear();
-
-    handlers.get('raceControl:updateRetention')?.({}, 5);
-
-    expect(pruneOldSessions).toHaveBeenCalledWith(5);
-  });
-
   it('does not prune when the runtime clears its session id', () => {
     const { runtime } = createRuntime();
     setupRaceControlBridge(runtime);
@@ -181,13 +171,14 @@ describe('setupRaceControlBridge', () => {
     expect(pruneOldSessions).not.toHaveBeenCalled();
   });
 
-  it('re-applies settings when the dashboard changes (profile switch)', () => {
+  it('applies saved thresholds and prunes immediately when the active dashboard changes', () => {
     const { runtime } = createRuntime();
     setupRaceControlBridge(
       runtime,
       dashboardWith({ ...savedThresholds, sessionRetention: 5 })
     );
     vi.mocked(runtime.updateThresholds).mockClear();
+    vi.mocked(pruneOldSessions).mockClear();
 
     dashboardListeners.forEach((listener) =>
       listener(
@@ -220,11 +211,13 @@ describe('setupRaceControlBridge', () => {
     ['negative', { ...savedThresholds, slowDurationSeconds: -1 }],
     ['below the minimum', { ...savedThresholds, impactDecelKmhPerSec: 10 }],
     ['excessive', { ...savedThresholds, impactDecelKmhPerSec: 1_000_000_000 }],
-  ])('rejects %s durations', (_label, thresholds) => {
+  ])('rejects %s thresholds in dashboard updates', (_label, thresholds) => {
     const { runtime } = createRuntime();
     setupRaceControlBridge(runtime);
 
-    handlers.get('raceControl:updateThresholds')?.({}, thresholds);
+    dashboardListeners.forEach((listener) =>
+      listener(dashboardWith(thresholds))
+    );
 
     expect(runtime.updateThresholds).not.toHaveBeenCalled();
   });
@@ -234,7 +227,9 @@ describe('setupRaceControlBridge', () => {
     setupRaceControlBridge(runtime);
 
     const thresholds = { ...savedThresholds, offTrackDurationSeconds: 0.35 };
-    handlers.get('raceControl:updateThresholds')?.({}, thresholds);
+    dashboardListeners.forEach((listener) =>
+      listener(dashboardWith(thresholds))
+    );
 
     expect(runtime.updateThresholds).toHaveBeenCalledWith(
       expect.objectContaining({ offTrackDurationSeconds: 0.35 })

@@ -1,13 +1,9 @@
 import type { LapHistorySnapshot, Session, Telemetry } from '@irdashies/types';
-import type { ChannelBus } from '../bridge/channelBridge';
+import type { ChannelBus } from '../bridge/channelBus';
 import type { SessionLifecycle } from '../sessionLifecycle';
 import { LapHistoryProcessor } from './LapHistoryProcessor';
 import logger from '../logger';
-
-export interface PerformanceSections {
-  markStart(label: string): void;
-  markEnd(label: string): void;
-}
+import type { PerformanceSections } from '../perfMetrics';
 
 /** Writes stored crossings into a snapshot. Returns false when they do not fit. */
 export type LapHistoryRestore = (target: LapHistorySnapshot) => boolean;

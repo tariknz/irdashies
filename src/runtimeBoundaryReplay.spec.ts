@@ -46,6 +46,8 @@ const SNAPSHOT_CHANNELS = [
   'blind-spot.snapshot',
   'car-speeds.snapshot',
   'car-systems.snapshot',
+  'car-condition.snapshot',
+  'car-dynamics.snapshot',
   'driver-controls.snapshot',
   'fuel.projection',
   'lap-times.snapshot',

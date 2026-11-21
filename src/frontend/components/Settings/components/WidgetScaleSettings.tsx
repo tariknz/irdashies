@@ -20,12 +20,12 @@ export const WidgetScaleSettings = ({
 
   const scale = normalizeWidgetScale(widget.scale);
   const setScale = (value: number) => {
-    onDashboardUpdated?.({
-      ...currentDashboard,
-      widgets: currentDashboard.widgets.map((w) =>
+    onDashboardUpdated?.((dashboard) => ({
+      ...dashboard,
+      widgets: dashboard.widgets.map((w) =>
         w.id === widgetId ? { ...w, scale: normalizeWidgetScale(value) } : w
       ),
-    });
+    }));
   };
 
   return (

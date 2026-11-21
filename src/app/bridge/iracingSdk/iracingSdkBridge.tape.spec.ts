@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
   ready: vi.fn(async () => true),
   stopSDK: vi.fn(),
   stopReporting: vi.fn(),
+  sdkWaitEnabled: false,
+  recordSdkWait: vi.fn(),
   offOverlayReady: vi.fn(),
   loadRadarPoleSideOverrides: vi.fn(async () => undefined),
   onFrame: vi.fn(),
@@ -62,6 +64,10 @@ vi.mock('../../perfMetrics', () => ({
     markStart = vi.fn();
     markEnd = vi.fn();
     tick = vi.fn();
+    get sdkWaitEnabled() {
+      return mocks.sdkWaitEnabled;
+    }
+    recordSdkWait = mocks.recordSdkWait;
   },
 }));
 vi.mock('../../perfRunConfig', () => ({
@@ -73,8 +79,7 @@ vi.mock('../../logger', () => ({
 
 import { publishIRacingSDKEvents } from './iracingSdkBridge';
 
-async function startBridge() {
-  const bus = new ChannelBus();
+async function startBridge(bus = new ChannelBus()) {
   const bridge = await publishIRacingSDKEvents(
     {
       onOverlayReady: () => mocks.offOverlayReady,
@@ -105,6 +110,7 @@ describe('paused tape processor demand', () => {
     vi.useFakeTimers();
     vi.stubEnv('IRDASHIES_TELEMETRY_REPLAY', '/fixture.irdt');
     vi.clearAllMocks();
+    mocks.sdkWaitEnabled = false;
     mocks.waitForData.mockReturnValue(true);
     mocks.ready.mockReset().mockResolvedValue(true);
     mocks.loadRadarPoleSideOverrides.mockReset().mockResolvedValue(undefined);
@@ -112,9 +118,42 @@ describe('paused tape processor demand', () => {
     mocks.getTapeReplayStatus.mockReturnValue({ paused: true });
   });
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllTimers();
     vi.useRealTimers();
     vi.unstubAllEnvs();
+  });
+
+  it('records only native wait time and uses the scheduled poll rate', async () => {
+    mocks.sdkWaitEnabled = true;
+    let now = 0;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    mocks.waitForData.mockImplementation(() => {
+      now += 3;
+      return true;
+    });
+    const bus = new ChannelBus();
+    const maxActiveRateHz = vi
+      .spyOn(bus, 'maxActiveRateHz')
+      .mockImplementation(() => {
+        now += 5;
+        return 60;
+      });
+    const { bridge } = await startBridge(bus);
+
+    try {
+      expect(mocks.recordSdkWait).toHaveBeenLastCalledWith(3, true, 16, 60);
+      mocks.waitForData.mockImplementation(() => {
+        now += 4;
+        return false;
+      });
+      await vi.advanceTimersByTimeAsync(10);
+
+      expect(mocks.recordSdkWait).toHaveBeenLastCalledWith(4, false, 16, 25);
+      expect(maxActiveRateHz).toHaveBeenCalledOnce();
+    } finally {
+      bridge.stop();
+    }
   });
 
   it('initializes session data before the destination frame and refreshes new demand once while paused', async () => {

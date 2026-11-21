@@ -3,22 +3,6 @@ import type { WidgetModule } from '@irdashies/domain';
 
 export default [
   {
-    id: 'tracknotes',
-    component: lazyWidget(() =>
-      import('./DrivingMetrics').then((module) => ({
-        default: module.TrackNotes,
-      }))
-    ),
-  },
-  {
-    id: 'accelerationtimer',
-    component: lazyWidget(() =>
-      import('./DrivingMetrics').then((module) => ({
-        default: module.AccelerationTimer,
-      }))
-    ),
-  },
-  {
     id: 'stinthistory',
     component: lazyWidget(() =>
       import('./DrivingMetrics').then((module) => ({

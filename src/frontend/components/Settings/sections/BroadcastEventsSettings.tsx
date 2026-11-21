@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react';
+import { Fragment } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { BroadcastModuleDescription } from './BroadcastModuleDescription';
 import { changeMarker } from '../components/ChangedMark';
@@ -7,6 +7,7 @@ import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { useStoredTab } from '../hooks/useStoredTab';
 import { useDashboard } from '@irdashies/context';
 import { getWidgetDefaultConfig } from '@irdashies/types';
@@ -50,10 +51,10 @@ export const BroadcastEventsSettings = ({ obsUrl }: { obsUrl?: string }) => {
     (w) => w.id === SETTING_ID
   ) as BroadcastEventsWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<BroadcastEventsWidgetSettings>({
+  const settings: BroadcastEventsWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config: { ...defaultConfig, ...savedSettings?.config },
-  });
+  };
   const [tab, setTab] = useStoredTab(`${SETTING_ID}Tab`, TAB_IDS);
 
   if (!currentDashboard) {
@@ -76,7 +77,6 @@ export const BroadcastEventsSettings = ({ obsUrl }: { obsUrl?: string }) => {
         </BroadcastModuleDescription>
       }
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => {
@@ -86,7 +86,7 @@ export const BroadcastEventsSettings = ({ obsUrl }: { obsUrl?: string }) => {
         );
         return (
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               {TABS.map(({ id, label }) => (
                 <TabButton
                   key={id}
@@ -97,7 +97,7 @@ export const BroadcastEventsSettings = ({ obsUrl }: { obsUrl?: string }) => {
                   {label}
                 </TabButton>
               ))}
-            </div>
+            </SettingsTabBar>
 
             {tab === 'options' && (
               <SettingsSection

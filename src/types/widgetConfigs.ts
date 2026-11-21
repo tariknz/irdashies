@@ -69,6 +69,7 @@ export interface SessionBarConfig {
   localTime: { enabled: boolean };
   sessionClockTime: { enabled: boolean };
   trackWetness: { enabled: boolean };
+  trackState?: { enabled: boolean };
   precipitation?: { enabled: boolean };
   humidity?: { enabled: boolean };
   airTemperature: { enabled: boolean; unit: TemperatureUnit };
@@ -956,11 +957,6 @@ export interface LapTimeLogConfig {
   delta: {
     enabled: boolean;
     method: 'lastlap' | 'bestlap';
-    /**
-     * LMU-style live delta bar under the current lap: green hatch from the
-     * left when faster, red from the right when slower, on a 1s full scale.
-     * Independent of the predicted-lap delta.
-     */
     showOnCurrentLap?: boolean;
   };
   history: {
@@ -1291,6 +1287,7 @@ export const GANTRY_DOCK_WIDGET_TYPES = [
   'map',
   'flatmap',
   'strategytimeline',
+  'laptimelog',
 ] as const;
 export type GantryDockWidgetType = (typeof GANTRY_DOCK_WIDGET_TYPES)[number];
 
@@ -1367,6 +1364,15 @@ export interface GantryConfig {
 export interface GantryWindowConfig {
   /** Keep the Gantry window above iRacing and other apps. */
   alwaysOnTop: boolean;
+  bounds?: GantryWindowBounds;
+  maximized?: boolean;
+}
+
+export interface GantryWindowBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 /** Chase camera far enough back to show what happened around the car. */
@@ -1529,15 +1535,6 @@ export interface TrackNote {
   scope: 'always' | 'pit' | 'session';
 }
 
-export interface TrackNotesConfig extends CompactTelemetryWidgetConfig {
-  triggerDistancePct: number;
-  notes: TrackNote[];
-}
-
-export interface AccelerationTimerConfig extends CompactTelemetryWidgetConfig {
-  ranges: { fromKph: number; toKph: number }[];
-}
-
 export interface StintHistoryConfig extends CompactTelemetryWidgetConfig {
   maxStints: number;
 }
@@ -1559,7 +1556,6 @@ export interface CruiseOdometerConfig extends CompactTelemetryWidgetConfig {
   distanceUnit: 'km' | 'mi';
 }
 
-/** Top-down LMU body/suspension damage overlay (TinyPedal-style). */
 export interface DamageConfig {
   background: { opacity: number };
   showOnlyWhenOnTrack: boolean;
@@ -1626,8 +1622,6 @@ export interface WidgetConfigMap {
   broadcastevents: BroadcastEventsConfig;
   broadcastweather: BroadcastWeatherConfig;
   broadcastpodium: BroadcastPodiumConfig;
-  tracknotes: TrackNotesConfig;
-  accelerationtimer: AccelerationTimerConfig;
   stinthistory: StintHistoryConfig;
   frictioncircle: CompactTelemetryWidgetConfig;
   tyrepanel: TyrePanelConfig;

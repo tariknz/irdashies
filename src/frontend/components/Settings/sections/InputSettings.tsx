@@ -1,3 +1,4 @@
+import { useStoredTab } from '../hooks/useStoredTab';
 import { useDashboard } from '@irdashies/context';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -5,11 +6,11 @@ import { PlusIcon } from '@phosphor-icons/react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import {
   DashboardBridge,
   InputWidgetSettings,
   LayoutNode,
-  SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { SettingDivider } from '../components/SettingDivider';
@@ -42,7 +43,7 @@ const SUPPORTED_IMAGE_TYPES = [
 
 const WIDGET_TYPE = 'input';
 const SettingProp = settingPropFor(WIDGET_TYPE);
-const TABS: SettingsTabType[] = ['layout', 'options', 'visibility'];
+const TABS = ['layout', 'options', 'visibility'] as const;
 
 const defaultConfig = getWidgetDefaultConfig('input');
 
@@ -101,12 +102,12 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === widgetId
   ) as InputWidgetSettings | undefined;
-  const [settings, setSettings] = useState<InputWidgetSettings>(() => ({
+  const settings: InputWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config: withLayoutTree(
       (savedSettings?.config as InputWidgetSettings['config']) ?? defaultConfig
     ),
-  }));
+  };
   settingsRef.current = settings;
 
   const currentTree = useMemo(
@@ -152,15 +153,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
     };
   }, [customImageFilename, useBrowserMode, dashboardBridge]);
 
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(() => {
-    const saved = localStorage.getItem('inputTab') as SettingsTabType | null;
-    return saved && TABS.includes(saved) ? saved : 'layout';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('inputTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('inputTab', TABS);
 
   const handleWidgetChange = (newId: string) => {
     navigate(`/settings/${newId}`);
@@ -206,7 +199,6 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
       title={isDefaultWidget ? 'Input Traces' : `Input Traces - ${widgetId}`}
       description="Configure the input traces display settings for throttle, brake, and clutch."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={widgetId}
     >
       {(handleConfigChange) => {
@@ -346,7 +338,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
               </div>
 
               {/* Tabs */}
-              <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+              <SettingsTabBar>
                 <TabButton
                   id="layout"
                   activeTab={activeTab}
@@ -368,7 +360,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                 >
                   Visibility
                 </TabButton>
-              </div>
+              </SettingsTabBar>
 
               <div>
                 {/* LAYOUT TAB */}

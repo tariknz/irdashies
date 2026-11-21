@@ -86,7 +86,9 @@ export function fixture(): LmuRawTelemetry {
     localVel: new Float64Array([50, 0, 11]),
     localAccel: new Float64Array([9.80665, 0, -19.6133]),
     pos: new Float64Array([0, 0, 0]),
-    tyreTemperature: new Float64Array([80, 81, 82, 83]),
+    tyreTemperature: new Float64Array([
+      78, 80, 82, 79, 81, 83, 80, 82, 84, 81, 83, 85,
+    ]),
     tyrePressure: new Float64Array([180, 181, 182, 183]),
     tyreWear: new Float64Array([0.9, 0.8, 0.7, 0.6]),
     brakePressure: new Float64Array([0.4, 0.5, 0.3, 0.35]),

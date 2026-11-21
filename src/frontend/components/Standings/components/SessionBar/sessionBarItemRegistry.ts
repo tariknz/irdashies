@@ -8,6 +8,7 @@ import { BrakeBiasItem } from './components/BrakeBiasItem/BrakeBiasItem';
 import { LocalTimeItem } from './components/LocalTimeItem/LocalTimeItem';
 import { SessionClockTimeItem } from './components/SessionClockTimeItem/SessionClockTimeItem';
 import { TrackWetnessItem } from './components/TrackWetnessItem/TrackWetnessItem';
+import { TrackStateItem } from './components/TrackStateItem/TrackStateItem';
 import { TrackLimitsItem } from './components/TrackLimitsItem/TrackLimitsItem';
 import { PrecipitationItem } from './components/PrecipitationItem/PrecipitationItem';
 import { HumidityItem } from './components/HumidityItem/HumidityItem';
@@ -39,6 +40,7 @@ export const SESSION_BAR_ITEM_COMPONENTS: Record<
   localTime: LocalTimeItem,
   sessionClockTime: SessionClockTimeItem,
   trackWetness: TrackWetnessItem,
+  trackState: TrackStateItem,
   precipitation: PrecipitationItem,
   humidity: HumidityItem,
   airTemperature: AirTemperatureItem,
@@ -68,6 +70,7 @@ const DEFAULT_ENABLED: Record<
   localTime: () => true,
   sessionClockTime: () => false,
   trackWetness: (position) => position !== 'header',
+  trackState: () => false,
   precipitation: () => false,
   humidity: () => false,
   airTemperature: (position) => position !== 'header',

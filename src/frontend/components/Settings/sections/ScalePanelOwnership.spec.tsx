@@ -1,5 +1,21 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { mockDashboardUpdater } from '../mockDashboardUpdater';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { getWidgetDefaultConfig, type DashboardLayout } from '@irdashies/types';
 import { GarageCoverSettings } from './GarageCoverSettings';
 import { TelemetryInspectorSettings } from './TelemetryInspectorSettings';
@@ -8,6 +24,8 @@ vi.mock('../components/WidgetPreview', () => ({ WidgetPreview: () => null }));
 
 const mocks = vi.hoisted(() => ({
   dashboard: undefined as DashboardLayout | undefined,
+  profileId: 'default',
+  bridge: {} as { saveGarageCoverImage?: () => Promise<string> },
   update: vi.fn(),
 }));
 
@@ -16,8 +34,12 @@ vi.mock('@irdashies/context', async () => {
   return {
     useDashboard: () => ({
       currentDashboard: mocks.dashboard,
-      onDashboardUpdated: mocks.update,
-      bridge: {},
+      currentProfile: { id: mocks.profileId },
+      onDashboardUpdated: mockDashboardUpdater(
+        () => mocks.dashboard,
+        mocks.update
+      ),
+      bridge: mocks.bridge,
     }),
     useActiveSimulator: () => null,
     useElementSize: () => ({ width: 800, height: 240 }),
@@ -27,6 +49,8 @@ vi.mock('@irdashies/context', async () => {
 
 beforeEach(() => {
   mocks.update.mockReset();
+  mocks.profileId = 'default';
+  mocks.bridge = {};
   localStorage.clear();
   mocks.dashboard = {
     widgets: [
@@ -51,6 +75,8 @@ beforeEach(() => {
     generalSettings: {},
   };
 });
+
+afterEach(() => vi.unstubAllGlobals());
 
 const scalePanel = () => {
   const scale = screen.getByRole('group', { name: 'Widget Scale' });
@@ -88,6 +114,64 @@ describe('scale ownership in custom configuration panels', () => {
       config: { imageFilename: '' },
       layout: { x: 20, y: 40, width: 400, height: 200 },
     });
+  });
+
+  it('shows the current preview when reads resolve out of order', async () => {
+    let resolveOld!: (url: string) => void;
+    const readImage = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<string>((resolve) => {
+            resolveOld = resolve;
+          })
+      )
+      .mockResolvedValueOnce('https://images.test/current.png');
+    vi.stubGlobal('dashboardBridge', {
+      getGarageCoverImageAsDataUrl: readImage,
+    });
+    const view = render(<GarageCoverSettings />);
+    assert(mocks.dashboard);
+    mocks.dashboard = {
+      widgets: [
+        {
+          ...mocks.dashboard.widgets[0],
+          config: { imageFilename: 'current.png' },
+        },
+      ],
+    };
+    view.rerender(<GarageCoverSettings />);
+    expect(
+      await screen.findByRole('img', { name: 'Garage preview' })
+    ).toHaveAttribute('src', 'https://images.test/current.png');
+
+    await act(async () => resolveOld('https://images.test/old.png'));
+    expect(screen.getByRole('img', { name: 'Garage preview' })).toHaveAttribute(
+      'src',
+      'https://images.test/current.png'
+    );
+  });
+
+  it('discards an upload that finishes after a profile change', async () => {
+    let finishUpload!: (filename: string) => void;
+    const saveImage = vi.fn(
+      () =>
+        new Promise<string>((resolve) => {
+          finishUpload = resolve;
+        })
+    );
+    mocks.bridge = { saveGarageCoverImage: saveImage };
+    const view = render(<GarageCoverSettings />);
+    fireEvent.change(screen.getByLabelText('Garage image'), {
+      target: {
+        files: [new File(['image'], 'uploaded.png', { type: 'image/png' })],
+      },
+    });
+    await waitFor(() => expect(saveImage).toHaveBeenCalledOnce());
+    mocks.profileId = 'race';
+    view.rerender(<GarageCoverSettings />);
+    await act(async () => finishUpload('uploaded.png'));
+    expect(mocks.update).not.toHaveBeenCalled();
   });
 
   it('keeps Telemetry Inspector scale and watched properties in one panel', () => {

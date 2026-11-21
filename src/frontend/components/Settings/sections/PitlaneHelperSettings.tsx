@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import type { PitlaneHelperWidgetSettings } from '@irdashies/types';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
@@ -14,7 +15,6 @@ const SETTING_ID = 'pitlanehelper';
 const SettingProp = settingPropFor(SETTING_ID);
 
 const defaultConfig = getWidgetDefaultConfig('pitlanehelper');
-type PitlaneSettingsTab = 'options' | 'visibility' | 'calibration';
 
 export const PitlaneHelperSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -22,24 +22,18 @@ export const PitlaneHelperSettings = () => {
     (w) => w.id === SETTING_ID
   ) as PitlaneHelperWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<PitlaneHelperWidgetSettings>({
+  const settings: PitlaneHelperWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config:
       (savedSettings?.config as PitlaneHelperWidgetSettings['config']) ??
       defaultConfig,
-  });
+  };
 
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<PitlaneSettingsTab>(() => {
-    const saved = localStorage.getItem('pitLaneTab');
-    return saved === 'visibility' || saved === 'calibration'
-      ? saved
-      : 'options';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('pitLaneTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('pitLaneTab', [
+    'options',
+    'visibility',
+    'calibration',
+  ]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -50,7 +44,6 @@ export const PitlaneHelperSettings = () => {
       title="Pitlane Helper"
       description="Assists with pit entry by showing speed delta, pitbox position, and warnings."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
@@ -61,7 +54,7 @@ export const PitlaneHelperSettings = () => {
         >
           <div className="space-y-4">
             {/* Tabs */}
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="options"
                 activeTab={activeTab}
@@ -83,7 +76,7 @@ export const PitlaneHelperSettings = () => {
               >
                 Calibration
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div>
               {/* OPTIONS TAB */}

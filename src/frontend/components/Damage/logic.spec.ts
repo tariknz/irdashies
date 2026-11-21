@@ -5,20 +5,16 @@ import {
   aeroIntegrity,
   bodyIntegrity,
   bodyTier,
-  cornerIntegrity,
-  formatDamagedPct,
-  getDemoDamage,
   hasCarDamage,
   integrityFraction,
   iracingBodyTier,
   isPunctured,
-  panelIntegrity,
-  panelsIntegrity,
+  LMU_DENT_PANELS,
+  lmuDents,
   suspTier,
   suspensionIntegrity,
   tyreIntegrity,
   tyreWearTier,
-  worstBodyTier,
 } from './logic';
 
 describe('damage logic', () => {
@@ -72,28 +68,55 @@ describe('damage logic', () => {
     expect(isPunctured(0.5)).toBe(false);
   });
 
-  it('maps panel and corner integrity for area labels', () => {
-    expect(panelIntegrity(0)).toBe(1);
-    expect(panelIntegrity(1)).toBe(0.5);
-    expect(panelIntegrity(2)).toBe(0);
-    expect(panelsIntegrity([0, 1, 0])).toBe(0.5);
-    expect(worstBodyTier(0, 1, 0)).toBe('light');
-    expect(worstBodyTier(0, 0, 2)).toBe('heavy');
-    expect(cornerIntegrity(false, 0.01, 1, true)).toBe(1);
-    expect(cornerIntegrity(false, 0.2, 1, true)).toBeCloseTo(0.8);
-    expect(cornerIntegrity(true, 0, 1, true)).toBe(0);
-    expect(cornerIntegrity(false, undefined, 0.005, false)).toBe(0);
-    expect(cornerIntegrity(false, undefined, 0.5, false)).toBeNull();
-    expect(formatDamagedPct(1)).toBeNull();
-    expect(formatDamagedPct(0.8)).toBe('80%');
+  it('reads a lost wheel as 0% even when suspension damage is reported', () => {
+    expect(
+      suspensionIntegrity([0.01, 0.05, 0.02, 0.1], [false, false, false, true])
+    ).toBe(0);
+    expect(
+      tyreIntegrity([0.92, 0.88, 0.9, 0.75], [false, false, false, true])
+    ).toBe(0);
+    expect(
+      tyreIntegrity([0.92, 0.88, 0.9, 0.75], [false, false, false, false])
+    ).toBeCloseTo(0.75);
   });
 
-  it('animates demo damage beyond repair timers', () => {
-    const a = getDemoDamage(0);
-    const b = getDemoDamage(7);
-    expect(a.dentSeverity).not.toEqual(b.dentSeverity);
-    expect(a.suspensionDamage).not.toEqual(b.suspensionDamage);
-    expect(a.aeroDamage).not.toBe(b.aeroDamage);
+  it('treats a deflated tyre as punctured', () => {
+    expect(isPunctured(0.9, 0)).toBe(true);
+    expect(isPunctured(0.9, 0.8)).toBe(true);
+    expect(isPunctured(0.9, 167.7)).toBe(false);
+    expect(isPunctured(0.9, Number.NaN)).toBe(false);
+    expect(
+      hasCarDamage({ ...UNDAMAGED, tyrePressure: [170, 0, 170, 170] })
+    ).toBe(true);
+  });
+
+  it('marks the rear zone detached when LMU reports a body part off', () => {
+    const lost = { ...UNDAMAGED, bodyDetached: true };
+    expect(lmuDents(lost)).toEqual([0, 0, 0, 0, 3, 0, 0, 0]);
+    expect(bodyTier(lmuDents(lost)[LMU_DENT_PANELS[6]])).toBe('detached');
+    expect(bodyIntegrity(lmuDents(lost))).toBeCloseTo(13 / 16);
+    expect(hasCarDamage(lost)).toBe(true);
+    expect(lmuDents(UNDAMAGED)).toBe(UNDAMAGED.dentSeverity);
+    expect(lmuDents({ ...lost, dentSeverity: [] })).toEqual([]);
+  });
+
+  it('sees a puncture from pressure alone when wear is unavailable', () => {
+    expect(
+      hasCarDamage({
+        ...UNDAMAGED,
+        tyreWear: [],
+        tyrePressure: [170, 0, 170, 170],
+      })
+    ).toBe(true);
+    expect(hasCarDamage({ ...UNDAMAGED, tyreWear: [], tyrePressure: [] })).toBe(
+      false
+    );
+  });
+
+  it('places each LMU dent slot on its own panel', () => {
+    const panels = ['FL', 'F', 'FR', 'L', 'R', 'RL', 'Rear', 'RR'];
+    const slots = ['F', 'FL', 'L', 'RL', 'Rear', 'RR', 'R', 'FR'];
+    expect(LMU_DENT_PANELS.map((slot) => slots[slot])).toEqual(panels);
   });
 
   it('detects damage without treating normal tyre wear as damage', () => {
