@@ -1,4 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import {
+  APP_UPDATE_PHASES,
+  type AppUpdateStatus,
+  type AppUpdatesBridge,
+} from '../../types/appUpdates';
 import type {
   Session,
   Telemetry,
@@ -65,6 +70,37 @@ const isRacePlanState = (value: unknown): value is RacePlanState =>
   typeof value.status === 'string';
 
 export function exposeBridge() {
+  defineBridge<AppUpdatesBridge>('appUpdatesBridge', {
+    onStatus: createSharedSubscription({
+      name: 'appUpdates',
+      key: 'status',
+      channel: 'appUpdates:changed',
+      label: '[Updates] Status',
+      parse: (value) => {
+        if (!value || typeof value !== 'object') return;
+        const status = value as Partial<AppUpdateStatus>;
+        if (
+          typeof status.currentVersion === 'string' &&
+          (typeof status.latestVersion === 'string' ||
+            status.latestVersion === null) &&
+          typeof status.autoUpdate === 'boolean' &&
+          typeof status.preferenceSaveFailed === 'boolean' &&
+          typeof status.canUpdate === 'boolean' &&
+          typeof status.newerVersionAvailable === 'boolean' &&
+          typeof status.checkingLatest === 'boolean' &&
+          typeof status.latestCheckFailed === 'boolean' &&
+          status.phase &&
+          APP_UPDATE_PHASES.includes(status.phase)
+        ) {
+          return status as AppUpdateStatus;
+        }
+      },
+    }),
+    checkLatest: () => ipcRenderer.invoke('appUpdates:checkLatest'),
+    setAutoUpdate: (enabled) =>
+      ipcRenderer.invoke('appUpdates:setAutoUpdate', enabled),
+    install: () => ipcRenderer.invoke('appUpdates:install'),
+  });
   defineBridge<TapeReplayBridge>('tapeReplayBridge', {
     getStatus: () => ipcRenderer.invoke('tapeReplay:status'),
     command: (command) => ipcRenderer.invoke('tapeReplay:command', command),

@@ -7,6 +7,7 @@ import {
   WrenchIcon,
   InfoIcon,
   NewspaperIcon,
+  ArrowClockwiseIcon,
   FlagCheckeredIcon,
   ListNumbersIcon,
   SubtitlesIcon,
@@ -156,6 +157,12 @@ export const bottomItems: MenuItem[] = [
     path: '/advanced',
     label: 'Advanced',
     icon: WrenchIcon,
+  },
+  {
+    to: '/settings/updates',
+    path: '/updates',
+    label: 'Updates',
+    icon: ArrowClockwiseIcon,
   },
   {
     to: '/settings/release-notes',

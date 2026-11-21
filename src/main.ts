@@ -3,6 +3,7 @@ import { setupWidgetPreviewBridge } from './app/bridge/widgetPreviewBridge';
 import { setupWindowVisibilityBridge } from './app/bridge/windowVisibilityBridge';
 import { app, autoUpdater, BrowserWindow, ipcMain } from 'electron';
 import { setupReleaseNotesBridge } from './app/bridge/releaseNotesBridge';
+import { setupAppUpdatesBridge } from './app/bridge/appUpdatesBridge';
 import log from './app/logger';
 import {
   iRacingSDKSetup,
@@ -35,7 +36,6 @@ import {
   startComponentServer,
   getComponentServerPort,
 } from './app/webserver/componentServer';
-import { updateElectronApp } from 'update-electron-app';
 // @ts-expect-error no types for squirrel
 import started from 'electron-squirrel-startup';
 import { Analytics } from './app/analytics';
@@ -147,23 +147,6 @@ const safeErrorDetails = (error: unknown) => {
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
 
-// Only the official build auto-updates.
-//
-// Side-by-side betas are built with a different app identity (name and
-// productName become irdashies-beta) so they install alongside the real app.
-// The update feed only ever publishes the official app, so a beta that checks
-// it is offered a release built for a *different* application, downloads it in
-// the background, and Squirrel applies it on the next launch — after which the
-// beta no longer starts. The version number is not the problem and bumping it
-// would not help; the identity mismatch is.
-if (app.getName() === 'irdashies') {
-  updateElectronApp();
-} else {
-  log.info(
-    `[update] Auto-update disabled for non-official build "${app.getName()}"`
-  );
-}
-
 const overlayManager = new OverlayManager();
 const analytics = new Analytics();
 const perfRun = getPerfRunConfig();
@@ -184,6 +167,7 @@ overlayManager.setupSingleInstanceLock();
 const releaseNotes = overlayManager.hasLock()
   ? setupReleaseNotesBridge()
   : undefined;
+let appUpdates: Awaited<ReturnType<typeof setupAppUpdatesBridge>> | undefined;
 overlayManager.setupAutoStart();
 
 let keybindingManager: KeybindingManager | undefined;
@@ -486,10 +470,11 @@ function setupGarage61SearchSession(initialDashboard: DashboardLayout): void {
 void app.whenReady().then(async () => {
   // Don't start services if we don't have the single instance lock
   // (this instance should be quitting)
-  if (!overlayManager.hasLock()) {
+  if (started || !overlayManager.hasLock()) {
     return;
   }
 
+  appUpdates = await setupAppUpdatesBridge();
   await initializeSettingsWindowBounds();
 
   if (perfRun.enabled) {
@@ -757,6 +742,7 @@ const SHUTDOWN_FLUSH_TIMEOUT_MS = 5_000;
 const handleBeforeQuit = createBeforeQuitHandler({
   prepareToQuit: () => overlayManager.markQuitting(),
   shutdown: async () => {
+    appUpdates?.stop();
     flushWindowMovementOnShutdown();
     keybindingManager?.stopGamepad();
     disconnectLifecycleChannel?.();
@@ -782,6 +768,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
       knownLocalUserIds.flush(),
       flushRadarPoleSideOverrides(),
       releaseNotes?.flush(),
+      appUpdates?.flush(),
       racePlan?.flush(),
       flushRacePlanHistoryOnShutdown(),
       flushPitStopHistoryOnShutdown(),

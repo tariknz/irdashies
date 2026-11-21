@@ -9,6 +9,7 @@ import {
 } from '@irdashies/context';
 import type {
   ActiveSimulator,
+  AppUpdateStatus,
   DashboardBridge,
   DriverTagSettings,
   PitLaneBridge,
@@ -580,6 +581,66 @@ export const NewReleaseNotesBadge: Story = {
 export const ReleaseNotesPage: Story = {
   args: { initialPath: '/settings/release-notes' },
   beforeEach: withReleaseNotesBadge,
+};
+
+const withUpdatesStatus =
+  (initial: Partial<AppUpdateStatus> = {}) =>
+  () => {
+    const previous = window.appUpdatesBridge;
+    let notify: (status: AppUpdateStatus) => void;
+    let status: AppUpdateStatus = {
+      currentVersion: '3.0.0',
+      latestVersion: '3.1.0',
+      autoUpdate: true,
+      preferenceSaveFailed: false,
+      canUpdate: true,
+      newerVersionAvailable: true,
+      checkingLatest: false,
+      latestCheckFailed: false,
+      phase: 'idle',
+      ...initial,
+    };
+    const update = (partial: Partial<AppUpdateStatus>) => {
+      status = { ...status, ...partial };
+      notify(status);
+    };
+    window.appUpdatesBridge = {
+      onStatus: (callback) => {
+        notify = callback;
+        notify(status);
+        return () => undefined;
+      },
+      checkLatest: async () => notify(status),
+      setAutoUpdate: async (autoUpdate) => update({ autoUpdate }),
+      install: async () => {
+        if (status.phase === 'ready') {
+          update({ phase: 'restarting' });
+        } else {
+          update({
+            phase: 'ready',
+            latestVersion: '3.1.0',
+            newerVersionAvailable: true,
+          });
+        }
+      },
+    };
+    return () => {
+      window.appUpdatesBridge = previous;
+    };
+  };
+
+export const UpdatesPage: Story = {
+  args: { initialPath: '/settings/updates' },
+  beforeEach: withUpdatesStatus(),
+};
+
+export const UpdatesCurrentRelease: Story = {
+  args: { initialPath: '/settings/updates' },
+  beforeEach: withUpdatesStatus({
+    latestVersion: '3.0.0',
+    autoUpdate: false,
+    newerVersionAvailable: false,
+  }),
 };
 
 // Controlled disk-full bridge response; no disk space is consumed.
