@@ -510,12 +510,16 @@ describe('tape-backed native SDK', () => {
       const sdk = new iRacingSdkNode();
       try {
         assert.equal(sdk.startSDK(), true);
-        assert.equal(sdk.waitForData(1000), true);
+        assert.equal(sdk.setTapeReplayPaused(true), true);
+        assert.equal(sdk.seekTapeReplay(0), true);
+        assert.equal(sdk.waitForData(0), false);
+        assert.equal(sdk.waitForData(0), true);
         const first = sdk.getTelemetryData();
         assert.equal(new DataView(first.SessionTime.value).getFloat64(0, true), 10);
         assert.equal(new DataView(first.SessionTick.value).getInt32(0, true), 100);
         assert.match(sdk.getSessionData(), /TrackName: Replay Test Track/);
 
+        assert.equal(sdk.setTapeReplayPaused(false), true);
         assert.equal(sdk.waitForData(1000), true);
         let speed = new DataView(sdk.getTelemetryData().Speed.value).getFloat32(0, true);
         assert.ok(speed === 51 || speed === 52);
@@ -527,8 +531,14 @@ describe('tape-backed native SDK', () => {
         assert.equal(speed, 52);
         assert.equal(sdk.waitForData(1000), false);
         assert.equal(sdk.isRunning(), false);
+        assert.deepEqual(sdk.getTelemetryData(), {});
         assert.equal(sdk.waitForData(1000), true);
-        assert.equal(new DataView(sdk.getTelemetryData().Speed.value).getFloat32(0, true), 50);
+        const restarted = sdk.getTelemetryData();
+        const restartedTick = new DataView(restarted.SessionTick.value).getInt32(0, true);
+        const restartedSpeed = new DataView(restarted.Speed.value).getFloat32(0, true);
+        assert.ok([100, 101, 102].includes(restartedTick));
+        assert.equal(restartedSpeed, restartedTick - 50);
+        assert.match(sdk.getSessionData(), /TrackName: Replay Test Track/);
       } finally {
         sdk.stopSDK();
       }
@@ -538,6 +548,7 @@ describe('tape-backed native SDK', () => {
           ...process.env,
           IRDASHIES_TELEMETRY_REPLAY: tapePath,
           IRDASHIES_TELEMETRY_REPLAY_LOOP: '1',
+          IRDASHIES_TELEMETRY_REPLAY_SPEED: '1',
         },
         timeout: 5000,
       });
