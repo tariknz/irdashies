@@ -31,7 +31,7 @@ function frame(
     pos: [progress * 1000, 12, -progress * 500],
     vehInPits: [0],
     vehLapDistPct: [progress],
-    vehLastLapTime: [90],
+    vehLastLapTime: [100],
     ...overrides,
   };
 }
@@ -180,6 +180,69 @@ describe('LMU track map', () => {
     );
 
     expect(map?.active.trackPathPoints).toHaveLength(512);
+  });
+
+  it('accepts the first lap when its time reaches scoring a few frames late', () => {
+    const recorder = new LmuTrackMapRecorder();
+    for (let index = 0; index <= 100; index++) {
+      recorder.update(frame(index / 100, { vehLastLapTime: [0] }));
+    }
+
+    expect(
+      recorder.update(
+        frame(0, { lapStartET: 200, pos: [0, 12, 0], vehLastLapTime: [0] })
+      )
+    ).toBeNull();
+    for (let index = 1; index <= 9; index++) {
+      expect(
+        recorder.update(
+          frame(index / 1000, { lapStartET: 200, vehLastLapTime: [0] })
+        )
+      ).toBeNull();
+    }
+    const map = recorder.update(frame(0.01, { lapStartET: 200 }));
+
+    expect(map?.active.trackPathPoints).toHaveLength(512);
+  });
+
+  it('waits for the finished lap rather than taking the previous lap time', () => {
+    const recorder = new LmuTrackMapRecorder();
+    for (let index = 0; index <= 100; index++) {
+      recorder.update(frame(index / 100, { vehLastLapTime: [87] }));
+    }
+
+    expect(
+      recorder.update(frame(0, { lapStartET: 200, vehLastLapTime: [87] }))
+    ).toBeNull();
+    expect(
+      recorder.update(frame(0.005, { lapStartET: 200 }))?.active.trackPathPoints
+    ).toHaveLength(512);
+  });
+
+  it.each([
+    ['stays unset', -1],
+    ['stays at zero', 0],
+    ['keeps the previous lap time', 87],
+  ])('drops an untimed lap whose scoring time %s', (_, lapTime) => {
+    const recorder = new LmuTrackMapRecorder();
+    for (let index = 0; index <= 100; index++) {
+      recorder.update(frame(index / 100, { vehLastLapTime: [87] }));
+    }
+    for (let index = 0; index <= 60; index++) {
+      expect(
+        recorder.update(
+          frame(index / 1000, {
+            lapStartET: 200,
+            elapsedTime: 200 + index / 10,
+            vehLastLapTime: [lapTime],
+          })
+        )
+      ).toBeNull();
+    }
+
+    expect(
+      recorder.update(frame(0.07, { lapStartET: 200, elapsedTime: 206.1 }))
+    ).toBeNull();
   });
 
   it('accepts a timed lap even when LMU marks it invalidated', () => {

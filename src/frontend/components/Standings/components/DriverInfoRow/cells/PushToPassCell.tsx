@@ -39,8 +39,7 @@ const statusStyles = {
 } as const;
 
 const lowReserveClasses = {
-  inactive:
-    'bg-slate-950 text-amber-300 inset-ring-1 inset-ring-amber-300 inset-shadow-[2px_0_var(--color-amber-300)]',
+  inactive: 'bg-slate-950 text-amber-300 inset-ring-1 inset-ring-amber-300',
   active: 'bg-amber-300 text-slate-950',
 };
 
