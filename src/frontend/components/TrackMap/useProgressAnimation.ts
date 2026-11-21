@@ -56,7 +56,7 @@ export class ProgressInterpolator {
   private values = new Float64Array(0);
   private previousValues = new Float64Array(0);
   private driverIds = new Int32Array(0);
-  private previousDriverIds = new Int32Array(0);
+  private readonly previousIndexByDriverId = new Map<number, number>();
   private count = 0;
   private startedAt = 0;
   private lastTargetsAt = -1;
@@ -75,24 +75,22 @@ export class ProgressInterpolator {
     this.lastTargetsAt = now;
     this.ensureCapacity(source.length);
     const previousCount = this.count;
+    this.previousIndexByDriverId.clear();
     for (let i = 0; i < previousCount; i++) {
       this.previousValues[i] = this.values[i];
-      this.previousDriverIds[i] = this.driverIds[i];
+      const previousDriverId = this.driverIds[i];
+      if (!this.previousIndexByDriverId.has(previousDriverId)) {
+        this.previousIndexByDriverId.set(previousDriverId, i);
+      }
     }
     this.count = source.length;
 
     for (let i = 0; i < this.count; i++) {
       const target = wrapProgress(source[i].progress);
       const driverId = source[i].driver?.CarIdx ?? i;
-      let previousIndex = -1;
-      if (this.initialized) {
-        for (let j = 0; j < previousCount; j++) {
-          if (this.previousDriverIds[j] === driverId) {
-            previousIndex = j;
-            break;
-          }
-        }
-      }
+      const previousIndex = this.initialized
+        ? (this.previousIndexByDriverId.get(driverId) ?? -1)
+        : -1;
       this.values[i] =
         previousIndex === -1 ? target : this.previousValues[previousIndex];
       this.starts[i] = this.values[i];
@@ -153,7 +151,6 @@ export class ProgressInterpolator {
     this.values = values;
     this.previousValues = new Float64Array(count);
     this.driverIds = driverIds;
-    this.previousDriverIds = new Int32Array(count);
   }
 }
 
