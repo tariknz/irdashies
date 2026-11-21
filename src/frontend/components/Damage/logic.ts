@@ -177,12 +177,11 @@ export const hasCarDamage = (data: DamageSnapshot): boolean => {
   ) {
     return true;
   }
-  if (
-    data.tyreWear.some((wear, index) =>
-      isPunctured(wear, data.tyrePressure[index])
-    )
-  ) {
-    return true;
+  const corners = Math.max(data.tyreWear.length, data.tyrePressure.length);
+  for (let index = 0; index < corners; index += 1) {
+    if (isPunctured(data.tyreWear[index], data.tyrePressure[index])) {
+      return true;
+    }
   }
   return false;
 };

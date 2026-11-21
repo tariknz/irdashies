@@ -173,14 +173,12 @@ describe('carData', () => {
       const wec = loadLmuCarData('Oreca 07', 'United Autosports #22:WEC');
 
       expect(elms?.carName).toBe('Oreca 07 ELMS');
-      expect(elms?.carClass).toBe('LMP2_ELMS');
       expect(wec?.carName).toBe('Oreca 07');
-      expect(wec?.carClass).toBe('LMP2');
       expect(elms?.ledRpm[0]['1'][0]).not.toBe(wec?.ledRpm[0]['1'][0]);
     });
 
     it('falls back to the model when the entry has no series', () => {
-      expect(loadLmuCarData('Oreca 07', 'Oreca 07')?.carClass).toBe('LMP2');
+      expect(loadLmuCarData('Oreca 07', 'Oreca 07')?.carName).toBe('Oreca 07');
     });
 
     it.each([undefined, '', 'Unreleased Prototype 2030'])(

@@ -100,6 +100,19 @@ describe('damage logic', () => {
     expect(lmuDents({ ...lost, dentSeverity: [] })).toEqual([]);
   });
 
+  it('sees a puncture from pressure alone when wear is unavailable', () => {
+    expect(
+      hasCarDamage({
+        ...UNDAMAGED,
+        tyreWear: [],
+        tyrePressure: [170, 0, 170, 170],
+      })
+    ).toBe(true);
+    expect(hasCarDamage({ ...UNDAMAGED, tyreWear: [], tyrePressure: [] })).toBe(
+      false
+    );
+  });
+
   it('places each LMU dent slot on its own panel', () => {
     const panels = ['FL', 'F', 'FR', 'L', 'R', 'RL', 'Rear', 'RR'];
     const slots = ['F', 'FL', 'L', 'RL', 'Rear', 'RR', 'R', 'FR'];

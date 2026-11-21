@@ -86,11 +86,18 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
                 min={1}
                 max={10}
                 step={1}
-                onChange={(maxStints) =>
+                onChange={(maxStints) => {
+                  if (
+                    !Number.isInteger(maxStints) ||
+                    maxStints < 1 ||
+                    maxStints > 10
+                  ) {
+                    return;
+                  }
                   handleConfigChange({ maxStints } as unknown as Partial<
                     WidgetConfigMap[K]
-                  >)
-                }
+                  >);
+                }}
               />
             </SettingsSection>
           )}
@@ -136,7 +143,11 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
                       .temperatureThresholds?.hot ?? 100) - 1
                   }
                   step={1}
-                  onChange={(cold) =>
+                  onChange={(cold) => {
+                    const other =
+                      (settings.config as WidgetConfigMap['tyrepanel'])
+                        .temperatureThresholds?.hot ?? 100;
+                    if (cold >= other || cold < 0) return;
                     handleConfigChange({
                       temperatureThresholds: {
                         cold,
@@ -144,8 +155,8 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
                           (settings.config as WidgetConfigMap['tyrepanel'])
                             .temperatureThresholds?.hot ?? 100,
                       },
-                    } as unknown as Partial<WidgetConfigMap[K]>)
-                  }
+                    } as unknown as Partial<WidgetConfigMap[K]>);
+                  }}
                 />
                 <SettingNumberRow
                   title="Hot above"
@@ -159,7 +170,11 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
                   }
                   max={200}
                   step={1}
-                  onChange={(hot) =>
+                  onChange={(hot) => {
+                    const other =
+                      (settings.config as WidgetConfigMap['tyrepanel'])
+                        .temperatureThresholds?.cold ?? 70;
+                    if (hot <= other || hot > 200) return;
                     handleConfigChange({
                       temperatureThresholds: {
                         cold:
@@ -167,8 +182,8 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
                             .temperatureThresholds?.cold ?? 70,
                         hot,
                       },
-                    } as unknown as Partial<WidgetConfigMap[K]>)
-                  }
+                    } as unknown as Partial<WidgetConfigMap[K]>);
+                  }}
                 />
               </SettingsSection>
               <SettingsSection title="Tread bands">
@@ -185,7 +200,11 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
                   }
                   max={100}
                   step={1}
-                  onChange={(worn) =>
+                  onChange={(worn) => {
+                    const other =
+                      (settings.config as WidgetConfigMap['tyrepanel'])
+                        .wearThresholds?.replace ?? 30;
+                    if (worn < other || worn > 100) return;
                     handleConfigChange({
                       wearThresholds: {
                         worn,
@@ -193,8 +212,8 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
                           (settings.config as WidgetConfigMap['tyrepanel'])
                             .wearThresholds?.replace ?? 30,
                       },
-                    } as unknown as Partial<WidgetConfigMap[K]>)
-                  }
+                    } as unknown as Partial<WidgetConfigMap[K]>);
+                  }}
                 />
                 <SettingNumberRow
                   title="Replace at or below"
@@ -208,7 +227,11 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
                       .wearThresholds?.worn ?? 60
                   }
                   step={1}
-                  onChange={(replace) =>
+                  onChange={(replace) => {
+                    const other =
+                      (settings.config as WidgetConfigMap['tyrepanel'])
+                        .wearThresholds?.worn ?? 60;
+                    if (replace > other || replace < 0) return;
                     handleConfigChange({
                       wearThresholds: {
                         worn:
@@ -216,8 +239,8 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
                             .wearThresholds?.worn ?? 60,
                         replace,
                       },
-                    } as unknown as Partial<WidgetConfigMap[K]>)
-                  }
+                    } as unknown as Partial<WidgetConfigMap[K]>);
+                  }}
                 />
               </SettingsSection>
             </>

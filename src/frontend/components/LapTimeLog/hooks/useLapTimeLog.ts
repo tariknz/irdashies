@@ -297,7 +297,7 @@ export const useLapTimeLog = () => {
     bestlap: bestLapTime,
     alltimelap: currentPersonalBest,
     reference: referenceTime,
-    delta: savedDelta,
+    delta: deltaCheck ? savedDelta : undefined,
     overall: sessionBestOverall,
     dirty: isDirty,
     history: history,

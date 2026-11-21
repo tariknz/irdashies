@@ -134,6 +134,25 @@ describe('CruiseOdometer', () => {
     expect(container.textContent).toContain('0.05 km');
     expect(commits.count - parkedCommits).toBeLessThanOrEqual(10);
   });
+
+  it('starts the trip again when the telemetry clock rewinds', () => {
+    const { container } = renderCounted(<CruiseOdometer />);
+    const at = (sessionTime: number) =>
+      source.publish(
+        'track-state.snapshot',
+        trackState({ sessionTime, speed: 20, lapDistPct: 0.1 })
+      );
+    at(100);
+    at(101);
+    expect(container.textContent).toContain('0.02 km');
+
+    at(100);
+    expect(container.textContent).not.toContain('0.02 km');
+    at(101);
+
+    expect(container.textContent).toContain('0.02 km');
+    expect(container.textContent).not.toContain('0.04 km');
+  });
 });
 
 describe('SteeringMeter', () => {

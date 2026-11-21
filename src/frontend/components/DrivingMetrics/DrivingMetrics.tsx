@@ -311,6 +311,11 @@ export function CruiseOdometer() {
       const previous = previousTime.current;
       previousTime.current = sessionTime;
       if (previous === null) return;
+      if (sessionTime < previous) {
+        distance.current = 0;
+        setOdometer(0);
+        return;
+      }
       distance.current = integrateDistance(
         distance.current,
         speed,
