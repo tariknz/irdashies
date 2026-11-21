@@ -4,6 +4,7 @@ import { TrackLocation } from '@irdashies/types';
 import type { LapLogSnapshot, LapTimeLogConfig } from '@irdashies/types';
 
 const setPersonalBest = vi.fn();
+const rememberPersonalBest = vi.fn();
 
 const snapshot: LapLogSnapshot = {
   lapCompleted: 3,
@@ -36,7 +37,11 @@ vi.mock('@irdashies/context', () => ({
       },
     }),
   usePersonalBestStore: (selector: (state: unknown) => unknown) =>
-    selector({ getPersonalBest: () => undefined, setPersonalBest }),
+    selector({
+      getPersonalBest: () => undefined,
+      setPersonalBest,
+      rememberPersonalBest,
+    }),
   useGeneralSettings: () => undefined,
 }));
 
@@ -49,6 +54,7 @@ import { useLapTimeLog } from './useLapTimeLog';
 describe('useLapTimeLog personal best', () => {
   beforeEach(() => {
     setPersonalBest.mockClear();
+    rememberPersonalBest.mockClear();
   });
 
   it('saves a new personal best from the overlay copy', () => {
@@ -59,5 +65,10 @@ describe('useLapTimeLog personal best', () => {
   it('never saves from an embedded copy, which must not write to disk', () => {
     renderHook(() => useLapTimeLog(true));
     expect(setPersonalBest).not.toHaveBeenCalled();
+  });
+
+  it('keeps an embedded copy up to date in memory instead', () => {
+    renderHook(() => useLapTimeLog(true));
+    expect(rememberPersonalBest).toHaveBeenCalledWith('1', 'testcar', 90);
   });
 });

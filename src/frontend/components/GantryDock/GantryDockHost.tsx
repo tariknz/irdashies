@@ -1,4 +1,11 @@
-import { memo, useCallback, useMemo, useState, type ReactNode } from 'react';
+import {
+  memo,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { GearIcon } from '@phosphor-icons/react';
 import {
   SectorTimingUpdater,
@@ -21,7 +28,15 @@ import {
   dockPanelSettingsTarget,
 } from './components/DockPanel';
 import { useDockCollapsed } from './hooks/useDockCollapsed';
-import { SplitPane } from '../Gantry/components/SplitPane/SplitPane';
+import { PanelDivider } from './components/PanelDivider';
+import {
+  MIN_PANEL_PERCENT,
+  dividerPosition,
+  equalWidths,
+  moveDivider,
+  readPanelWidths,
+  writePanelWidths,
+} from './panelWidths';
 
 const SECTOR_TIMING_TYPES = new Set(['map', 'flatmap']);
 
@@ -45,27 +60,10 @@ interface ArrangementProps {
   onOpenSettings: (target: string) => void;
 }
 
-const PANEL_SPLIT_STORAGE_PREFIX = 'gantryDockPanelSplitPercent:';
+const KEEP_MOUNTED_TYPES = new Set(['laptimelog']);
 
-export const groupDockPanels = (
-  panels: readonly ResolvedDockPanel[],
-  collapsed: ReadonlySet<string>
-): ResolvedDockPanel[][] => {
-  const groups: ResolvedDockPanel[][] = [];
-  let leading: ResolvedDockPanel[] = [];
-  for (const resolved of panels) {
-    if (!collapsed.has(resolved.panel.id)) {
-      groups.push([...leading, resolved]);
-      leading = [];
-    } else if (groups.length > 0) {
-      groups[groups.length - 1].push(resolved);
-    } else {
-      leading.push(resolved);
-    }
-  }
-  if (leading.length > 0) groups.push(leading);
-  return groups;
-};
+const keepsStateWhileHidden = (resolved: ResolvedDockPanel) =>
+  KEEP_MOUNTED_TYPES.has(resolved.panel.type);
 
 const RowArrangement = ({
   panels,
@@ -73,29 +71,133 @@ const RowArrangement = ({
   onOpenSettings,
 }: ArrangementProps) => {
   const { collapsed, toggleCollapsed } = useDockCollapsed();
-  const groups = groupDockPanels(panels, collapsed);
+  const expanded = panels.filter(
+    (resolved) => !collapsed.has(resolved.panel.id)
+  );
+  const expandedKey = expanded.map((resolved) => resolved.panel.id).join(',');
+  const [liveWidths, setLiveWidths] = useState<{
+    key: string;
+    widths: number[];
+  } | null>(null);
+  const widths = useMemo(
+    () =>
+      liveWidths?.key === expandedKey
+        ? liveWidths.widths
+        : readPanelWidths(expandedKey, expanded.length),
+    [liveWidths, expandedKey, expanded.length]
+  );
+  const sectionRefs = useRef(new Map<string, HTMLElement>());
+  const dragRef = useRef<{
+    startWidths: number[];
+    latest: number[];
+    px: number;
+  } | null>(null);
 
-  const renderPanel = (resolved: ResolvedDockPanel) => {
-    const isCollapsed = collapsed.has(resolved.panel.id);
-    return (
+  const applyWidths = useCallback(
+    (next: number[], persist: boolean) => {
+      setLiveWidths({ key: expandedKey, widths: next });
+      if (persist) writePanelWidths(expandedKey, next);
+    },
+    [expandedKey]
+  );
+
+  const handleDragStart = useCallback(() => {
+    const px = expanded.reduce(
+      (total, resolved) =>
+        total +
+        (sectionRefs.current.get(resolved.panel.id)?.getBoundingClientRect()
+          .width ?? 0),
+      0
+    );
+    dragRef.current = { startWidths: widths, latest: widths, px };
+  }, [expanded, widths]);
+
+  const handleDrag = useCallback(
+    (index: number, deltaPx: number) => {
+      const drag = dragRef.current;
+      if (!drag || drag.px <= 0) return;
+      drag.latest = moveDivider(
+        drag.startWidths,
+        index,
+        (deltaPx / drag.px) * 100
+      );
+      applyWidths(drag.latest, false);
+    },
+    [applyWidths]
+  );
+
+  const handleDragEnd = useCallback(() => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    dragRef.current = null;
+    writePanelWidths(expandedKey, drag.latest);
+  }, [expandedKey]);
+
+  const handleNudge = useCallback(
+    (index: number, deltaPercent: number) =>
+      applyWidths(moveDivider(widths, index, deltaPercent), true),
+    [applyWidths, widths]
+  );
+
+  const handleReset = useCallback(
+    () => applyWidths(equalWidths(expanded.length), true),
+    [applyWidths, expanded.length]
+  );
+
+  const content: ReactNode[] = [];
+  panels.forEach((resolved, position) => {
+    const id = resolved.panel.id;
+    const isCollapsed = collapsed.has(id);
+    const expandedIndex = expanded.indexOf(resolved);
+    if (expandedIndex > 0) {
+      const previous = expanded[expandedIndex - 1];
+      const dividerIndex = expandedIndex - 1;
+      content.push(
+        <PanelDivider
+          key={`divider:${previous.panel.id}:${id}`}
+          index={dividerIndex}
+          label={`${dockPanelLabel(previous)} and ${dockPanelLabel(resolved)} split`}
+          position={dividerPosition(widths, dividerIndex)}
+          min={MIN_PANEL_PERCENT}
+          max={100 - MIN_PANEL_PERCENT}
+          onDragStart={handleDragStart}
+          onDrag={handleDrag}
+          onDragEnd={handleDragEnd}
+          onNudge={handleNudge}
+          onReset={handleReset}
+        />
+      );
+    }
+    const mountContent = !isCollapsed || keepsStateWhileHidden(resolved);
+    content.push(
       <section
-        key={resolved.panel.id}
+        key={id}
+        ref={(element) => {
+          if (element) sectionRefs.current.set(id, element);
+          else sectionRefs.current.delete(id);
+        }}
         aria-label={dockPanelLabel(resolved)}
         className={[
           'flex flex-col min-w-0 min-h-0',
-          isCollapsed ? 'flex-none' : 'flex-1',
+          isCollapsed ? 'flex-none' : '',
+          isCollapsed && position > 0 ? 'border-l border-slate-700/50' : '',
         ].join(' ')}
+        style={
+          isCollapsed ? undefined : { flex: `${widths[expandedIndex]} 1 0%` }
+        }
       >
         <DockPanelHeader
-          panelId={resolved.panel.id}
+          panelId={id}
           label={dockPanelLabel(resolved)}
           settingsTarget={dockPanelSettingsTarget(resolved)}
           collapsed={isCollapsed}
           onToggleCollapsed={toggleCollapsed}
           onOpenSettings={onOpenSettings}
         />
-        {!isCollapsed && (
-          <div className="flex-1 min-h-0 overflow-auto">
+        {mountContent && (
+          <div
+            className={isCollapsed ? 'hidden' : 'flex-1 min-h-0 overflow-auto'}
+          >
             <DockPanelContent
               resolved={resolved}
               running={running}
@@ -105,49 +207,9 @@ const RowArrangement = ({
         )}
       </section>
     );
-  };
+  });
 
-  const renderGroup = (group: readonly ResolvedDockPanel[]) => (
-    <div className="flex flex-1 h-full min-w-0 min-h-0 divide-x divide-slate-700/50">
-      {group.map(renderPanel)}
-    </div>
-  );
-
-  const groupLabel = (group: readonly ResolvedDockPanel[]) => {
-    const expanded = group.find(
-      (resolved) => !collapsed.has(resolved.panel.id)
-    );
-    return dockPanelLabel(expanded ?? group[0]);
-  };
-
-  const renderFrom = (index: number): ReactNode => {
-    const group = groups[index];
-    if (index === groups.length - 1) return renderGroup(group);
-    const rest = groups.slice(index);
-    const storageKey = `${PANEL_SPLIT_STORAGE_PREFIX}${rest
-      .map((g) => g.map((resolved) => resolved.panel.id).join('+'))
-      .join(',')}`;
-    return (
-      <SplitPane
-        key={storageKey}
-        label={`${groupLabel(group)} and ${groupLabel(groups[index + 1])} split`}
-        storageKey={storageKey}
-        defaultPercent={100 / rest.length}
-        left={renderGroup(group)}
-        right={
-          <div className="flex w-full h-full min-h-0">
-            {renderFrom(index + 1)}
-          </div>
-        }
-      />
-    );
-  };
-
-  return (
-    <div className="flex flex-1 min-h-0">
-      {groups.length > 0 && renderFrom(0)}
-    </div>
-  );
+  return <div className="flex flex-1 min-h-0">{content}</div>;
 };
 
 const TabsArrangement = ({
@@ -199,12 +261,22 @@ const TabsArrangement = ({
         </button>
       </div>
       <div role="tabpanel" className="flex-1 min-h-0 overflow-auto">
-        <DockPanelContent
-          key={active.panel.id}
-          resolved={active}
-          running={running}
-          onOpenSettings={onOpenSettings}
-        />
+        {panels.map((resolved) => {
+          const isActive = resolved === active;
+          if (!isActive && !keepsStateWhileHidden(resolved)) return null;
+          return (
+            <div
+              key={resolved.panel.id}
+              className={isActive ? 'h-full' : 'hidden'}
+            >
+              <DockPanelContent
+                resolved={resolved}
+                running={running}
+                onOpenSettings={onOpenSettings}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

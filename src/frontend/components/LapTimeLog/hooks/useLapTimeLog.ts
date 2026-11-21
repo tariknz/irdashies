@@ -124,6 +124,9 @@ export const useLapTimeLog = (embedded = false) => {
   const setPersonalBest = usePersonalBestStore(
     (state) => state.setPersonalBest
   );
+  const rememberPersonalBest = usePersonalBestStore(
+    (state) => state.rememberPersonalBest
+  );
   const pbMetaData = useRef({ trackId, playerCarName, currentPersonalBest });
   useEffect(() => {
     pbMetaData.current = { trackId, playerCarName, currentPersonalBest };
@@ -276,7 +279,7 @@ export const useLapTimeLog = (embedded = false) => {
   // 5. check personal best
   useEffect(() => {
     const isValidTime = bestLapTime > 0;
-    if (embedded || !isValidTime) return;
+    if (!isValidTime) return;
     const {
       trackId: currentTrackId,
       playerCarName: currentCar,
@@ -286,10 +289,10 @@ export const useLapTimeLog = (embedded = false) => {
       Boolean(currentTrackId) && currentCar !== 'unknown';
     const isBetter =
       savedPB === undefined || savedPB === null || bestLapTime < savedPB;
-    if (hasPersonalBestKey && isBetter) {
-      setPersonalBest(currentTrackId, currentCar, bestLapTime);
-    }
-  }, [bestLapTime, setPersonalBest, embedded]);
+    if (!hasPersonalBestKey || !isBetter) return;
+    if (embedded) rememberPersonalBest(currentTrackId, currentCar, bestLapTime);
+    else setPersonalBest(currentTrackId, currentCar, bestLapTime);
+  }, [bestLapTime, setPersonalBest, rememberPersonalBest, embedded]);
 
   return {
     current: displayTime,
