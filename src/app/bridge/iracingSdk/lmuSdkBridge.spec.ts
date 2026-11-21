@@ -84,6 +84,35 @@ const lapDistanceSpies = vi.hoisted(() => ({
   reset: vi.fn(),
 }));
 
+const sectorStore = vi.hoisted(() => ({
+  stored: {} as Record<string, readonly [number, number]>,
+  load: vi.fn(async () => true),
+  get: vi.fn(
+    (trackKey: string): readonly [number, number] | null =>
+      sectorStore.stored[trackKey] ?? null
+  ),
+  record: vi.fn<(trackKey: string, boundaries: readonly number[]) => void>(),
+}));
+
+const bundledSectors = vi.hoisted(
+  () => new Map<string, readonly [number, number]>()
+);
+
+const lapState = vi.hoisted(() => ({
+  driving: false,
+  pct: 0.25,
+  frame: 0,
+}));
+
+const driveFrame = () => {
+  lapState.frame += 1;
+  lapState.pct = lapState.pct >= 0.85 ? 0.25 : lapState.pct + 0.009;
+  return {
+    currentSector: lapState.pct >= 0.8 ? 2 : lapState.pct >= 0.4 ? 1 : 0,
+    scoringUpdates: lapState.frame,
+  };
+};
+
 const rawFrame = () => {
   if (sdkState.readThrows) throw new Error('shared memory read failed');
   const sectorFrame =
@@ -91,6 +120,7 @@ const rawFrame = () => {
       ? sdkState.sectorFrames.shift()
       : sdkState.sectorFrames[0];
   return {
+    ...(lapState.driving ? driveFrame() : {}),
     running: sdkState.running,
     gameVersion: 1,
     trackName: sdkState.trackName,
@@ -148,6 +178,19 @@ vi.mock('electron', () => ({
   app: { getPath: () => '/tmp/irdashies-spec' },
 }));
 
+vi.mock('../../storage/lmuSectorBoundaries', () => ({
+  loadLmuSectorBoundaries: sectorStore.load,
+  lmuSectorBoundaryStore: {
+    get: sectorStore.get,
+    record: sectorStore.record,
+    snapshot: () => ({}),
+  },
+}));
+
+vi.mock('../../lmu/sectorBoundaryDefaults', () => ({
+  LMU_SECTOR_BOUNDARY_DEFAULTS: bundledSectors,
+}));
+
 vi.mock('../../perfRunConfig', () => ({
   getPerfRunConfig: () => ({ enabled: false }),
 }));
@@ -183,9 +226,11 @@ vi.mock('../../lmu/trackMap', () => ({
 // that throws.
 vi.mock('../../lmu/mapTelemetry', () => ({
   mapLmuTelemetry: (raw: { smoothedLapDistPct?: number }) =>
-    raw.smoothedLapDistPct === undefined
-      ? {}
-      : { LapDistPct: { value: [raw.smoothedLapDistPct] } },
+    raw.smoothedLapDistPct !== undefined
+      ? { LapDistPct: { value: [raw.smoothedLapDistPct] } }
+      : lapState.driving
+        ? { LapDistPct: { value: [lapState.pct] } }
+        : {},
   mapLmuCarLeftRight: () => 0,
 }));
 
@@ -198,6 +243,7 @@ vi.mock('../../lmu/lapDistance', () => ({
 
 vi.mock('../../lmu/mapSession', () => ({
   mapLmuSession: mapSessionSpy,
+  resolveLmuTrackId: (trackName: string) => 1_000_000 + trackName.length,
 }));
 
 // The rating client and its IO have their own specs; here only the bridge's
@@ -694,22 +740,34 @@ describe('publishLmuSDKEvents and learned sector boundaries', () => {
     sdkState.sectorFrames = [];
   });
 
-  it('keeps the nominal thirds after one lap and publishes the learned starts once a second lap agrees', async () => {
-    sdkState.sectorFrames = lap();
+  it('publishes the learned starts after the first lap and keeps them when a second lap agrees', async () => {
+    sdkState.sectorFrames = [];
     const overlayManager = await startBridge();
 
-    await vi.waitFor(() => expect(sdkState.sectorFrames).toHaveLength(1), WAIT);
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    const afterOneLap = publishedSectorStarts(overlayManager);
-    expect(afterOneLap.length).toBeGreaterThan(0);
-    expect(afterOneLap).toEqual(afterOneLap.map(() => NOMINAL));
+    await vi.waitFor(
+      () =>
+        expect(publishedSectorStarts(overlayManager).length).toBeGreaterThan(0),
+      WAIT
+    );
+    expect(latestSectorStarts(overlayManager)).toEqual(NOMINAL);
 
-    sdkState.sectorFrames.push(...lap());
-
+    sdkState.sectorFrames = lap();
     await vi.waitFor(
       () => expect(latestSectorStarts(overlayManager)).toEqual(LEARNED),
       WAIT
     );
+
+    const publishes = publishedSectorStarts(overlayManager).length;
+    sdkState.sectorFrames.push(...lap());
+    await vi.waitFor(() => expect(sdkState.sectorFrames).toHaveLength(1), WAIT);
+    await new Promise((resolve) => setTimeout(resolve, 600));
+
+    expect(latestSectorStarts(overlayManager)).toEqual(LEARNED);
+    expect(
+      publishedSectorStarts(overlayManager)
+        .slice(publishes)
+        .every((starts) => starts.every((v, i) => v === LEARNED[i]))
+    ).toBe(true);
   });
 
   it('keeps learned starts across a new session, drops them on another track and restores them on return', async () => {
@@ -1152,4 +1210,92 @@ describe('publishLmuSDKEvents with RaceOS disabled', () => {
     bridge.stop();
     expect(ratingState.cache.flush).not.toHaveBeenCalled();
   });
+});
+
+describe('publishLmuSDKEvents sector boundaries', () => {
+  const TRACK_KEY = String(1_000_000 + 'Test Track'.length);
+
+  const mappedSectors = () =>
+    mapSessionSpy.mock.calls.at(-1)?.[5] as readonly number[] | null;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sdkState.running = true;
+    sdkState.readThrows = false;
+    sdkState.drivers = [];
+    sectorStore.stored = {};
+    bundledSectors.clear();
+    lapState.driving = false;
+    lapState.pct = 0.25;
+    lapState.frame = 0;
+  });
+
+  afterEach(() => {
+    lapState.driving = false;
+    vi.unstubAllEnvs();
+  });
+
+  it('maps the session on the pair stored for the track', async () => {
+    sectorStore.stored[TRACK_KEY] = [0.35, 0.7];
+    bundledSectors.set(TRACK_KEY, [0.3, 0.6]);
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(createOverlayManager());
+
+    await vi.waitFor(() => expect(mapSessionSpy).toHaveBeenCalled());
+    expect(sectorStore.load).toHaveBeenCalled();
+    expect(sectorStore.get).toHaveBeenCalledWith(TRACK_KEY);
+    expect(mapSessionSpy.mock.calls[0][5]).toEqual([0.35, 0.7]);
+
+    bridge.stop();
+  });
+
+  it('falls back to the bundled pair for a track never measured', async () => {
+    bundledSectors.set(TRACK_KEY, [0.3, 0.6]);
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(createOverlayManager());
+
+    await vi.waitFor(() => expect(mapSessionSpy).toHaveBeenCalled());
+    expect(sectorStore.get).toHaveBeenCalledWith(TRACK_KEY);
+    expect(mapSessionSpy.mock.calls[0][5]).toEqual([0.3, 0.6]);
+
+    bridge.stop();
+  });
+
+  it('saves a confirmed measurement under the track id and maps the session on it', async () => {
+    lapState.driving = true;
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(createOverlayManager());
+
+    await vi.waitFor(() => expect(sectorStore.record).toHaveBeenCalled(), {
+      timeout: 15_000,
+    });
+    expect(sectorStore.record).toHaveBeenCalledTimes(1);
+    const [trackKey, [s2, s3]] = sectorStore.record.mock.calls[0];
+    expect(trackKey).toBe(TRACK_KEY);
+    expect(s2).toBeCloseTo(0.403, 3);
+    expect(s3).toBeCloseTo(0.808, 3);
+    await vi.waitFor(() => expect(mappedSectors()?.[1]).toBeCloseTo(0.808, 3));
+
+    bridge.stop();
+  }, 20_000);
+
+  it('keeps a tape replay off the stored pairs while it still measures', async () => {
+    vi.stubEnv('IRDASHIES_LMU_REPLAY', 'session.lmudt');
+    sectorStore.stored[TRACK_KEY] = [0.35, 0.7];
+    bundledSectors.set(TRACK_KEY, [0.3, 0.6]);
+    lapState.driving = true;
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(createOverlayManager());
+
+    await vi.waitFor(() => expect(mapSessionSpy).toHaveBeenCalled());
+    expect(mapSessionSpy.mock.calls[0][5]).toEqual([0.3, 0.6]);
+    await vi.waitFor(() => expect(mappedSectors()?.[1]).toBeCloseTo(0.808, 3), {
+      timeout: 15_000,
+    });
+    expect(sectorStore.load).not.toHaveBeenCalled();
+    expect(sectorStore.get).not.toHaveBeenCalled();
+    expect(sectorStore.record).not.toHaveBeenCalled();
+
+    bridge.stop();
+  }, 20_000);
 });

@@ -5,29 +5,67 @@ const MAX_BOUNDARY = 0.98;
 const MIN_SECTOR_GAP = 0.02;
 const MAX_FRAME_STEP = 0.01;
 const MIN_STEADY_FRAMES = 10;
-const AGREEMENT_TOLERANCE = 0.002;
+const SAME_LINE = 0.001;
+
+export type LmuSectorBoundaries = readonly [number, number];
+
+export interface LmuSectorBoundarySources {
+  known(trackKey: string): LmuSectorBoundaries | null;
+  measured(trackKey: string, boundaries: LmuSectorBoundaries): void;
+}
+
+export const isPlausibleLmuSectorBoundaries = (
+  s2: number,
+  s3: number
+): boolean =>
+  Number.isFinite(s2) &&
+  Number.isFinite(s3) &&
+  s2 > MIN_BOUNDARY &&
+  s3 < MAX_BOUNDARY &&
+  s3 - s2 >= MIN_SECTOR_GAP;
+
+export const sameLmuSectorBoundaries = (
+  a: LmuSectorBoundaries,
+  b: LmuSectorBoundaries
+): boolean =>
+  Math.abs(a[0] - b[0]) < SAME_LINE && Math.abs(a[1] - b[1]) < SAME_LINE;
+
+interface PublishedBoundaries {
+  boundaries: LmuSectorBoundaries;
+  confirmed: boolean;
+}
 
 export class LmuSectorBoundaryLearner {
-  private readonly learnedByTrack = new Map<string, readonly number[]>();
-  private readonly lastCrossing: (number | null)[] = [null, null];
-  private readonly confirmed: (number | null)[] = [null, null];
-  private trackName = '';
-  private published: readonly number[] | null = null;
+  private readonly learnedByTrack = new Map<string, PublishedBoundaries>();
+  private trackKey = '';
+  private published: PublishedBoundaries | null = null;
+  private candidate: LmuSectorBoundaries | null = null;
+  private settled = false;
+  private pendingS2: number | null = null;
+  private pendingS3: number | null = null;
   private lastSector: number | null = null;
   private lastPct: number | null = null;
   private steadyFrames = 0;
 
-  reset(trackName: string): void {
-    this.trackName = trackName;
-    this.published = this.learnedByTrack.get(trackName) ?? null;
-    this.lastCrossing.fill(null);
-    this.confirmed.fill(null);
+  constructor(private readonly sources?: LmuSectorBoundarySources) {}
+
+  reset(trackKey: string): void {
+    this.trackKey = trackKey;
+    const learned = this.learnedByTrack.get(trackKey);
+    const known = learned ? null : (this.sources?.known(trackKey) ?? null);
+    this.published =
+      learned ?? (known ? { boundaries: known, confirmed: true } : null);
+    this.candidate = null;
+    this.settled = false;
+    this.pendingS2 = null;
+    this.pendingS3 = null;
     this.lastSector = null;
     this.lastPct = null;
     this.steadyFrames = 0;
   }
 
   update(rawSector: number | undefined, lapPct: number | undefined): boolean {
+    if (this.settled) return false;
     if (
       rawSector === undefined ||
       lapPct === undefined ||
@@ -55,7 +93,6 @@ export class LmuSectorBoundaryLearner {
       previousSector === null ||
       !steady ||
       !wasSteady ||
-      (sector !== 1 && sector !== 2) ||
       sector !== previousSector + 1 ||
       lapPct <= MIN_BOUNDARY ||
       lapPct >= MAX_BOUNDARY
@@ -63,37 +100,58 @@ export class LmuSectorBoundaryLearner {
       return false;
     }
 
-    const boundary = sector - 1;
-    const previousCrossing = this.lastCrossing[boundary];
-    this.lastCrossing[boundary] = lapPct;
-    if (
-      previousCrossing === null ||
-      Math.abs(lapPct - previousCrossing) > AGREEMENT_TOLERANCE
-    ) {
+    if (sector === 1) {
+      this.pendingS2 = lapPct;
+      if (this.pendingS3 !== null && this.pendingS3 - lapPct < MIN_SECTOR_GAP)
+        this.pendingS3 = null;
+    } else if (sector === 2) {
+      this.pendingS3 = lapPct;
+      if (this.pendingS2 !== null && lapPct - this.pendingS2 < MIN_SECTOR_GAP)
+        this.pendingS2 = null;
+    } else {
       return false;
     }
-    this.confirmed[boundary] = (previousCrossing + lapPct) / 2;
-    return this.publishConfirmed();
+
+    if (this.pendingS2 === null || this.pendingS3 === null) return false;
+    const measurement: LmuSectorBoundaries = [this.pendingS2, this.pendingS3];
+    this.pendingS2 = null;
+    this.pendingS3 = null;
+    return this.take(measurement);
   }
 
-  boundaries(): readonly number[] | null {
-    return this.published;
+  boundaries(): LmuSectorBoundaries | null {
+    return this.published?.boundaries ?? null;
   }
 
-  private publishConfirmed(): boolean {
-    const s2 = this.confirmed[0];
-    const s3 = this.confirmed[1];
-    if (s2 === null || s3 === null || s3 - s2 < MIN_SECTOR_GAP) return false;
-    const published = this.published;
-    if (
-      published !== null &&
-      Math.abs(published[0] - s2) <= AGREEMENT_TOLERANCE &&
-      Math.abs(published[1] - s3) <= AGREEMENT_TOLERANCE
-    ) {
+  private take(measurement: LmuSectorBoundaries): boolean {
+    if (this.published === null) {
+      this.publish({ boundaries: measurement, confirmed: false });
+      return true;
+    }
+    const { boundaries, confirmed } = this.published;
+    if (sameLmuSectorBoundaries(measurement, boundaries)) {
+      this.settle(boundaries);
+      if (!confirmed) this.sources?.measured(this.trackKey, boundaries);
       return false;
     }
-    this.published = [s2, s3];
-    this.learnedByTrack.set(this.trackName, this.published);
-    return true;
+    const candidate = this.candidate;
+    if (candidate !== null && sameLmuSectorBoundaries(measurement, candidate)) {
+      this.settle(candidate);
+      this.sources?.measured(this.trackKey, candidate);
+      return true;
+    }
+    this.candidate = measurement;
+    return false;
+  }
+
+  private settle(boundaries: LmuSectorBoundaries): void {
+    this.publish({ boundaries, confirmed: true });
+    this.candidate = null;
+    this.settled = true;
+  }
+
+  private publish(published: PublishedBoundaries): void {
+    this.published = published;
+    this.learnedByTrack.set(this.trackKey, published);
   }
 }

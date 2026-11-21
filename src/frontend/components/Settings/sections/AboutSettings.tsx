@@ -122,6 +122,15 @@ export const AboutSettings = () => {
                   table for everyone.
                 </li>
                 <li>
+                  <strong className="text-slate-300">
+                    Le Mans Ultimate sector lines
+                  </strong>
+                  <br />
+                  Track IDs and where each sector starts on the lap, as measured
+                  while you drive in Le Mans Ultimate, are sent at startup when
+                  they change, to build the built-in table for everyone.
+                </li>
+                <li>
                   <strong className="text-slate-300">Simulators used</strong>
                   <br />
                   Which simulators you use with irDashies, such as iRacing or Le

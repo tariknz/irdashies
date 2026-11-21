@@ -4,6 +4,7 @@ import type { DashboardLayout } from '@irdashies/types';
 import os from 'node:os';
 import path from 'node:path';
 import { mkdtempSync } from 'node:fs';
+import { rm } from 'node:fs/promises';
 
 const { userDataPath, store } = vi.hoisted(() => ({
   userDataPath: { value: '' },
@@ -39,7 +40,7 @@ vi.mock('./storage/storage', () => ({
 vi.mock('./storage/radarPoleSideReportHash', () => ({
   readRadarPoleSideReportHash: async () =>
     store.data.get('radarPoleSideReportHash'),
-  writeRadarPoleSideReportHash: async (hash: string) => {
+  writeRadarPoleSideReportHash: (hash: string) => {
     store.data.set('radarPoleSideReportHash', hash);
   },
 }));
@@ -63,8 +64,14 @@ vi.mock('./storage/radarPoleSideOverrides', () => ({
   },
 }));
 
+vi.mock('./storage/lmuSectorBoundaries', () => ({
+  loadLmuSectorBoundaries: async () => true,
+  lmuSectorBoundaryStore: { snapshot: () => ({}) },
+}));
+
 import { Analytics } from './analytics';
 import { getAnalyticsOptOut } from './storage/analytics';
+import { flushLmuSectorBoundaryReportHash } from './storage/lmuSectorBoundaryReportHash';
 
 const HASH_KEY = 'radarPoleSideReportHash';
 
@@ -97,6 +104,11 @@ describe('Analytics radar pole side report', () => {
     flipped.listeners.clear();
     provider = makeProvider();
     vi.mocked(getAnalyticsOptOut).mockReturnValue(false);
+  });
+
+  afterEach(async () => {
+    await flushLmuSectorBoundaryReportHash();
+    await rm(userDataPath.value, { recursive: true, force: true });
   });
 
   it('sends nothing for an installation that never corrected a side', async () => {
@@ -185,6 +197,18 @@ describe('Analytics radar pole side report', () => {
       expect(reports()).toHaveLength(1);
       expect(reports()[0].properties?.track_count).toBe(1);
       expect(store.data.get(HASH_KEY)).toBeDefined();
+    });
+
+    it('sends a report that failed again with the same event id', async () => {
+      corrections.value = { '95': { start: false, table: true } };
+      provider.captureConfirmed.mockRejectedValueOnce(new Error('down'));
+      await start();
+      flip();
+      await vi.advanceTimersByTimeAsync(61_000);
+
+      expect(reports()).toHaveLength(2);
+      expect(reports()[1].uuid).toBe(reports()[0].uuid);
+      expect(store.data.get(HASH_KEY)).toBe(reports()[1].properties?.data_hash);
     });
 
     it('sends nothing when the flips cancelled out and nothing was ever sent', async () => {
