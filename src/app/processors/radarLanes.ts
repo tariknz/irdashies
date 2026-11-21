@@ -123,6 +123,16 @@ export class RadarLaneTracker {
     this.poleLeft = left;
   }
 
+  remember(time: number, carIdx: number, lane: number): void {
+    if (Math.abs(lane) < 0.5) return;
+    const side = Math.sign(lane);
+    this.rememberedLane.set(
+      carIdx,
+      side * Math.min(MAX_LANE, Math.max(1, Math.round(Math.abs(lane))))
+    );
+    this.rememberedAt.set(carIdx, time);
+  }
+
   reset(): void {
     this.rememberedLane.clear();
     this.rememberedAt.clear();

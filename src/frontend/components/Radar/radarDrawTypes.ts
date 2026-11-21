@@ -12,6 +12,8 @@ export interface RadarDrawCar {
   relativeSpeed: number;
   /** Lane from the spotter, for the debug labels. */
   lane: number;
+  world?: boolean;
+  heading?: number;
   offTrack: boolean;
   /** Body size in metres. */
   length: number;

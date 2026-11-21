@@ -408,3 +408,32 @@ describe('separateInLaneCars', () => {
     expect(cars.map((car) => car.dist)).toEqual([1.8, 6, -1]);
   });
 });
+
+describe('RadarLaneTracker.remember', () => {
+  const cars: LaneInput[] = [{ carIdx: 4, dist: 30 }];
+
+  it('keeps a measured side for the memory hold, then lets it go', () => {
+    const tracker = new RadarLaneTracker();
+    tracker.remember(0, 4, 1.2);
+
+    const held = tracker.update(MEMORY_HOLD_S - 0.5, cars, null);
+    expect(held.get(4)).toMatchObject({ lane: 1, source: 'memory' });
+
+    const expired = tracker.update(MEMORY_HOLD_S + 1, cars, null);
+    expect(expired.get(4)).toMatchObject({ source: 'none' });
+  });
+
+  it('keeps the left side as left and caps it at the outer lane', () => {
+    const tracker = new RadarLaneTracker();
+    tracker.remember(0, 4, -3.7);
+
+    expect(tracker.update(0.1, cars, null).get(4)?.lane).toBe(-2);
+  });
+
+  it('does not remember a car that is level with us', () => {
+    const tracker = new RadarLaneTracker();
+    tracker.remember(0, 4, 0.2);
+
+    expect(tracker.update(0.1, cars, null).get(4)?.source).toBe('none');
+  });
+});

@@ -56,6 +56,18 @@ export class RadarProjector {
     return this.geometry !== null;
   }
 
+  projectOffset(
+    ahead: number,
+    lateral: number,
+    headingRad: number,
+    output: ScreenPose
+  ): ScreenPose {
+    output.x = this.centreX - lateral * this.pixelsPerMetre;
+    output.y = this.centreY - ahead * this.pixelsPerMetre;
+    output.angle = -Math.PI / 2 - headingRad;
+    return output;
+  }
+
   /**
    * @param dist metres along the track from the focus car, positive ahead
    * @param lateral metres from the centreline, positive to the left

@@ -30,6 +30,11 @@ import {
   type PoleSituation,
 } from '@irdashies/types';
 import { wrapDelta } from './radarMath';
+import {
+  applyWorldOffset,
+  hasWorldChannels,
+  type RadarWorldChannels,
+} from './radarWorld';
 
 /**
  * Metres either side of the focus car that still reach the renderer. The
@@ -112,6 +117,12 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
   /** The cars on the focus car's side of the pit wall, reused every tick. */
   private readonly sameSide: RadarCar[] = [];
   private readonly distances: number[] = [];
+  private readonly world: RadarWorldChannels = {
+    available: [],
+    lateral: [],
+    longitudinal: [],
+    heading: [],
+  };
   private previousPcts: number[] = [];
   private speeds: number[] = [];
   private previousTime = -1;
@@ -211,6 +222,13 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     const onPitRoad = valuesOf(frame, 'CarIdxOnPitRoad');
     const surfaces = valuesOf(frame, 'CarIdxTrackSurface');
     const isOnTrack = valuesOf(frame, 'IsOnTrack')[0] === true;
+    const { world } = this;
+    world.available = valuesOf(frame, 'LmuCarIdxRelativeAvailable');
+    world.lateral = valuesOf(frame, 'LmuCarIdxRelativeLateral');
+    world.longitudinal = valuesOf(frame, 'LmuCarIdxRelativeLongitudinal');
+    world.heading = valuesOf(frame, 'LmuCarIdxRelativeHeading');
+    const worldFocus =
+      focus === scalarNumber(frame, 'PlayerCarIdx') && hasWorldChannels(world);
 
     const cars: RadarCar[] = [];
     let formation: Formation | null = null;
@@ -271,7 +289,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         if (!Number.isFinite(dist) || Math.abs(dist) > RADAR_MAX_RANGE_M) {
           continue;
         }
-        cars.push({
+        const car: RadarCar = {
           carIdx,
           dist,
           relativeSpeed: (this.speeds[carIdx] ?? playerSpeed) - playerSpeed,
@@ -279,7 +297,9 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
           laneSource: 'none',
           onPitRoad: onPitRoad[carIdx] === true,
           offTrack: surface === TrackLocation.OffTrack,
-        });
+        };
+        if (worldFocus) applyWorldOffset(car, world, carIdx);
+        cars.push(car);
       }
       cars.sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist));
       // Cars across the pit wall are beside the track, not in a lane of it.
@@ -287,7 +307,9 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       const sameSide = this.sameSide;
       sameSide.length = 0;
       for (const car of cars) {
-        if (car.onPitRoad === focusOnPit) sameSide.push(car);
+        if (car.laneSource !== 'world' && car.onPitRoad === focusOnPit) {
+          sameSide.push(car);
+        }
       }
       const spotterSpeaks = this.assignLanes(
         frame,
@@ -295,8 +317,14 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         focus,
         isOnTrack,
         sameSide,
-        formation
+        formation,
+        worldFocus
       );
+      for (const car of cars) {
+        if (car.laneSource === 'world') {
+          this.lanes.remember(time, car.carIdx, car.lane);
+        }
+      }
       // Without the spotter nobody says a car is not alongside: cars side by
       // side on a replay or a camera car must not be pulled apart.
       if (spotterSpeaks) separateInLaneCars(sameSide);
@@ -389,14 +417,15 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     focus: number,
     isOnTrack: boolean,
     cars: RadarCar[],
-    formation: Formation | null
+    formation: Formation | null,
+    worldFocus: boolean
   ): boolean {
     if (focus !== this.laneFocus) {
       this.lanes.reset();
       this.laneFocus = focus;
     }
     const spotter =
-      isOnTrack && focus === scalarNumber(frame, 'PlayerCarIdx')
+      !worldFocus && isOnTrack && focus === scalarNumber(frame, 'PlayerCarIdx')
         ? scalarNumber(frame, 'CarLeftRight', CarLeftRight.Off)
         : null;
     const lanes = this.lanes.update(time, cars, spotter, formation);

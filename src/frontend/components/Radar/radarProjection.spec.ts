@@ -1,0 +1,71 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+import { RadarProjector, type ScreenPose } from './radarProjection';
+import { projectCar, projector as shared } from './radarDrawShared';
+
+const setUp = () => {
+  const projector = new RadarProjector();
+  projector.setup(null, 4000, 0.5, 100, 100, 2);
+  return projector;
+};
+
+const blank = (): ScreenPose => ({ x: 0, y: 0, angle: 0 });
+
+describe('RadarProjector.projectOffset', () => {
+  it('puts a car ahead above the centre and one behind below it', () => {
+    const projector = setUp();
+    const ahead = projector.projectOffset(10, 0, 0, blank());
+    const behind = projector.projectOffset(-10, 0, 0, blank());
+
+    expect(ahead).toMatchObject({ x: 100, y: 80 });
+    expect(behind).toMatchObject({ x: 100, y: 120 });
+  });
+
+  it('puts a car on our left to the left of the centre', () => {
+    const left = setUp().projectOffset(0, 3, 0, blank());
+
+    expect(left.x).toBeCloseTo(94);
+    expect(left.y).toBeCloseTo(100);
+  });
+
+  it('points a car the way it is heading relative to us', () => {
+    const projector = setUp();
+
+    expect(projector.projectOffset(0, 0, 0, blank()).angle).toBeCloseTo(
+      -Math.PI / 2
+    );
+    expect(projector.projectOffset(0, 0, 0.3, blank()).angle).toBeCloseTo(
+      -Math.PI / 2 - 0.3
+    );
+  });
+
+  it('agrees with the track projection on a straight road', () => {
+    const projector = setUp();
+    const along = projector.project(12, 3, blank());
+    const offset = projector.projectOffset(12, 3, 0, blank());
+
+    expect(offset.x).toBeCloseTo(along.x);
+    expect(offset.y).toBeCloseTo(along.y);
+  });
+});
+
+describe('projectCar', () => {
+  beforeEach(() => {
+    shared.setup(null, 4000, 0.5, 100, 100, 2);
+  });
+
+  it('uses the measured offset for a world car', () => {
+    const car = { dist: 6, lateral: 2, world: true, heading: 0.1 };
+    const placed = projectCar(car, blank());
+
+    expect(placed.x).toBeCloseTo(100 - 2 * 2);
+    expect(placed.y).toBeCloseTo(100 - 6 * 2);
+    expect(placed.angle).toBeCloseTo(-Math.PI / 2 - 0.1);
+  });
+
+  it('keeps the track projection for any other car', () => {
+    const car = { dist: 6, lateral: 2 };
+    const expected = shared.project(6, 2, blank());
+
+    expect(projectCar(car, blank())).toMatchObject(expected);
+  });
+});

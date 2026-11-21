@@ -756,3 +756,181 @@ describe('RADAR_MAX_RANGE_M', () => {
     );
   });
 });
+
+describe('RadarProcessor with LMU world positions', () => {
+  interface WorldCar {
+    lateral: number;
+    longitudinal: number;
+    heading?: number;
+  }
+
+  const worldFrame = (
+    options: FrameOptions,
+    world: Record<number, WorldCar>
+  ) => {
+    const size = options.pcts.length;
+    const at = (index: number) => world[index];
+    return {
+      ...frame(options),
+      LmuCarIdxRelativeAvailable: {
+        value: Array.from({ length: size }, (_, i) => at(i) !== undefined),
+      },
+      LmuCarIdxRelativeLateral: {
+        value: Array.from({ length: size }, (_, i) => at(i)?.lateral ?? 0),
+      },
+      LmuCarIdxRelativeLongitudinal: {
+        value: Array.from({ length: size }, (_, i) => at(i)?.longitudinal ?? 0),
+      },
+      LmuCarIdxRelativeHeading: {
+        value: Array.from({ length: size }, (_, i) => at(i)?.heading ?? 0),
+      },
+    } as unknown as Telemetry;
+  };
+
+  it('puts a car alongside at its measured side when lap distance says level', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      worldFrame(
+        { time: 1, pcts: [0.5, 0.5], carLeftRight: CarLeftRight.Clear },
+        { 1: { lateral: -3, longitudinal: 1.5, heading: 0.1 } }
+      )
+    );
+
+    const [car] = processor.snapshot().cars;
+    expect(car.laneSource).toBe('world');
+    expect(car.lateralM).toBeCloseTo(-3);
+    expect(car.dist).toBeCloseTo(1.5);
+    expect(car.headingRad).toBeCloseTo(0.1);
+    expect(car.lane).toBeLessThan(-1);
+  });
+
+  it('keeps a passing car in its own lane instead of pushing it in line', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      worldFrame(
+        { time: 1, pcts: [0.5, 0.5 - m(3)] },
+        { 1: { lateral: 3, longitudinal: -3 } }
+      )
+    );
+
+    const [car] = processor.snapshot().cars;
+    expect(car.dist).toBeCloseTo(-3);
+    expect(car.lateralM).toBeCloseTo(3);
+    expect(car.laneSource).toBe('world');
+  });
+
+  it('trusts the measured side over the spotter synthesised from it', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      worldFrame(
+        { time: 1, pcts: [0.5, 0.5], carLeftRight: CarLeftRight.CarLeft },
+        { 1: { lateral: 3, longitudinal: 0 } }
+      )
+    );
+
+    expect(processor.snapshot().cars[0].lateralM).toBeCloseTo(3);
+  });
+
+  it('assigns no guessed side to a car with no measured position', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      worldFrame(
+        {
+          time: 1,
+          pcts: [0.5, 0.5 + m(2), 0.5 + m(60)],
+          carLeftRight: CarLeftRight.CarLeft,
+        },
+        { 1: { lateral: 3, longitudinal: 2 } }
+      )
+    );
+
+    const far = processor.snapshot().cars.find((car) => car.carIdx === 2);
+    expect(far?.laneSource).toBe('none');
+    expect(far?.lane).toBe(0);
+  });
+
+  it('falls back to lap distance for a car the sim sent no position for', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      worldFrame(
+        { time: 1, pcts: [0.5, 0.5 + m(30), 0.5 + m(20)] },
+        { 2: { lateral: 0, longitudinal: 20 } }
+      )
+    );
+
+    const car = processor.snapshot().cars.find((c) => c.carIdx === 1);
+    expect(car?.laneSource).toBe('none');
+    expect(car?.dist).toBeCloseTo(30);
+    expect(car?.lateralM).toBeUndefined();
+  });
+
+  it('ignores a world position that cannot be the same stretch of track', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      worldFrame(
+        { time: 1, pcts: [0.5, 0.5 + m(80)] },
+        { 1: { lateral: 4, longitudinal: 19 } }
+      )
+    );
+
+    const [car] = processor.snapshot().cars;
+    expect(car.laneSource).toBe('none');
+    expect(car.dist).toBeCloseTo(80);
+  });
+
+  it('ignores a world position on the wrong side of us', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      worldFrame(
+        { time: 1, pcts: [0.5, 0.5 + m(30)] },
+        { 1: { lateral: 1, longitudinal: -30 } }
+      )
+    );
+
+    expect(processor.snapshot().cars[0].laneSource).toBe('none');
+  });
+
+  it('uses the world only for the car the world is measured from', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      worldFrame(
+        { time: 1, pcts: [0.5, 0.5 + m(10), 0.5], camCarIdx: 1 },
+        { 2: { lateral: -3, longitudinal: 0 } }
+      )
+    );
+
+    expect(
+      processor.snapshot().cars.some((car) => car.laneSource === 'world')
+    ).toBe(false);
+  });
+
+  it('keeps the side of a car for a moment after its position stops arriving', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      worldFrame(
+        { time: 1, pcts: [0.5, 0.5 + m(2)] },
+        { 1: { lateral: 3, longitudinal: 2 } }
+      )
+    );
+    processor.onFrame(frame({ time: 1.04, pcts: [0.5, 0.5 + m(2)] }));
+
+    const [car] = processor.snapshot().cars;
+    expect(car.laneSource).toBe('memory');
+    expect(car.lane).toBeGreaterThan(0);
+  });
+
+  it('leaves frames without world channels exactly as before', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      frame({
+        time: 1,
+        pcts: [0.5, 0.5 + m(2)],
+        carLeftRight: CarLeftRight.CarRight,
+      })
+    );
+
+    const [car] = processor.snapshot().cars;
+    expect(car.laneSource).toBe('spotter');
+    expect(car.lateralM).toBeUndefined();
+  });
+});

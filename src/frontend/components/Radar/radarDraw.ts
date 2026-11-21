@@ -10,7 +10,13 @@ import { formatDistance, speedIn } from './radarStyle';
 import { warningLevel } from './radarDrawTypes';
 import type { RadarScene, RadarStyle } from './radarDrawTypes';
 
-import { MIN_TEXT_PX, drawCarBody, pose, projector } from './radarDrawShared';
+import {
+  MIN_TEXT_PX,
+  drawCarBody,
+  pose,
+  projectCar,
+  projector,
+} from './radarDrawShared';
 import {
   GHOST_AHEAD_S,
   drawDiveGhost,
@@ -271,7 +277,7 @@ export const drawRadar = (
     const car = scene.cars[index];
     const carLength = car.length * pixelsPerMetre;
     const carWidth = car.width * pixelsPerMetre;
-    projector.project(car.dist, car.lateral, pose);
+    projectCar(car, pose);
     const hazard = hazardOf(scene.hazards, car.carIdx);
     if (hazard?.kind === 'crash') pose.angle += CRASH_TILT;
     ctx.globalAlpha = car.offTrack ? 0.45 : 1;
@@ -434,7 +440,7 @@ export const drawRadar = (
           away > 0 ? 'left' : 'right'
         );
       }
-      projector.project(car.dist, car.lateral, pose);
+      projectCar(car, pose);
     }
 
     if (!style.showWarnings) continue;
@@ -484,7 +490,7 @@ export const drawRadar = (
   if (follow && !followBeyondRange) {
     const car = scene.cars.find((c) => c.carIdx === follow.carIdx);
     if (car) {
-      projector.project(car.dist, car.lateral, pose);
+      projectCar(car, pose);
       drawFollowLine(ctx, centre, pose, length, car.length * pixelsPerMetre);
       drawFollowOutline(
         ctx,

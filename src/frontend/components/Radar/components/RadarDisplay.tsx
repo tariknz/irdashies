@@ -22,6 +22,8 @@ export interface RadarFrameCar {
   dist: number;
   relativeSpeed: number;
   lane: number;
+  lateralM?: number;
+  headingRad?: number;
   offTrack: boolean;
   onPitRoad?: boolean;
 }
@@ -206,7 +208,13 @@ export const RadarDisplay = memo(
           target.carIdx = car.carIdx;
           target.dist = car.dist + car.relativeSpeed * elapsed;
           target.relativeSpeed = car.relativeSpeed;
-          target.lateral = -car.lane * laneWidth;
+          const measured = car.lateralM !== undefined;
+          target.world = measured;
+          target.heading = car.headingRad ?? 0;
+          target.lateral =
+            car.lateralM !== undefined
+              ? -car.lateralM
+              : -car.lane * laneWidth;
           target.lane = car.lane;
           target.offTrack = car.offTrack;
           target.fill = looks.fill;

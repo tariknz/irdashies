@@ -198,9 +198,20 @@ export interface RadarCar {
    * Where `lane` came from: the standing-start grid or the pace line (both
    * known from the sim), the spotter calling this car alongside, a side
    * remembered after the overlap ended, a guess that two rivals level with
-   * each other must be side by side, or nothing (drawn in our lane).
+   * each other must be side by side, or nothing (drawn in our lane). `world`
+   * is a measured position: the sim published where the car is, so `dist`,
+   * `lateralM` and `headingRad` are exact and nothing is estimated.
    */
-  laneSource: 'none' | 'grid' | 'pace' | 'spotter' | 'memory' | 'pair';
+  laneSource:
+    'none' | 'grid' | 'pace' | 'spotter' | 'memory' | 'pair' | 'world';
+  /**
+   * Metres from the focus car across its direction of travel, negative to
+   * the left like `lane`. Set only when `laneSource` is `world`; the car is
+   * then drawn at this offset and `dist` is the true fore-and-aft distance.
+   */
+  lateralM?: number;
+  /** The car's heading relative to the focus car, radians. Set with `lateralM`. */
+  headingRad?: number;
   onPitRoad: boolean;
   offTrack: boolean;
 }
