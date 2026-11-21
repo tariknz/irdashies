@@ -18,7 +18,11 @@ import {
   parseArguments,
   safeName,
 } from './args.ts';
-import { comparisonCheckSatisfied, comparisonCheckStatus } from './gates.ts';
+import {
+  comparisonCheckSatisfied,
+  comparisonCheckStatus,
+  type ComparisonContrast,
+} from './gates.ts';
 
 const DEFAULT_DURATION_SECONDS = 420;
 const DEFAULT_WARMUP_SECONDS = 60;
@@ -804,7 +808,8 @@ export function aggregateBranchRuns(
 
 export function evaluateBranchRuns(
   runs: readonly (BranchRun & { summary: PerfSummary })[],
-  ignoredGates: readonly string[]
+  ignoredGates: readonly string[],
+  contrast: ComparisonContrast = []
 ): {
   aggregate: BranchAggregate;
   checks: ComparisonCheck[];
@@ -817,14 +822,16 @@ export function evaluateBranchRuns(
     throw new Error('Each baseline capture requires a candidate capture.');
 
   const inconclusiveRunIds = runs
-    .filter((run) => !comparisonCoreComplete(reference.summary, run.summary))
+    .filter(
+      (run) => !comparisonCoreComplete(reference.summary, run.summary, contrast)
+    )
     .map((run) => run.runId);
   const checks = baselines.flatMap((baseline, index) => {
     const candidate = candidates[index];
     const comparison = compareSummaries(
       baseline.summary,
       candidate.summary,
-      [],
+      contrast,
       ignoredGates
     );
     return comparison.checks.map((check) => ({

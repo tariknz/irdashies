@@ -1626,13 +1626,15 @@ export function compareSummaries(
             `${index === 0 ? 'baseline' : 'candidate'} telemetry timing observations are unavailable`,
           ]
   );
-  const rendererNotApplicable =
-    candidate.overlayMode === 'observer' ||
-    candidate.overlayMode === 'empty' ||
-    (Array.isArray(candidate.scenarioMetadata.activeWidgetTypes) &&
-      candidate.scenarioMetadata.activeWidgetTypes.length === 0)
-      ? ['no dashboard widgets were active']
-      : [];
+  const rendererNotApplicable = [baseline, candidate].some(
+    (summary) =>
+      summary.overlayMode === 'observer' ||
+      summary.overlayMode === 'empty' ||
+      (Array.isArray(summary.scenarioMetadata.activeWidgetTypes) &&
+        summary.scenarioMetadata.activeWidgetTypes.length === 0)
+  )
+    ? ['no dashboard widgets were active on one or both sides']
+    : [];
   const rendererReasons =
     rendererNotApplicable.length === 0
       ? [baseline, candidate].flatMap((summary, index) =>

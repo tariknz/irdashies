@@ -8,7 +8,11 @@ import {
   branchAggregateMarkdown,
   type SideLabel,
 } from './branches.ts';
-import { comparisonCheckSatisfied } from './gates.ts';
+import {
+  comparisonCheckSatisfied,
+  contrastDescription,
+  parseComparisonContrast,
+} from './gates.ts';
 import { assertOutputDistinctFromInputs } from './outputPath.ts';
 
 export const REPORT_USAGE = `Usage: npm run perf:report -- <summary.json>... [options]
@@ -107,6 +111,14 @@ export const runReportCli = async (args: string[]): Promise<void> => {
   if (selected.length === 0)
     throw new Error('No comparison includes both selected commits.');
 
+  const contrasts = selected.map(({ contrast }) =>
+    [...parseComparisonContrast(contrast ?? [])].sort()
+  );
+  const [contrast] = contrasts;
+  const contrastLabel = contrastDescription(contrast);
+  if (contrasts.some((value) => contrastDescription(value) !== contrastLabel))
+    throw new Error('Selected comparisons declare different contrasts.');
+
   const runs = selected.flatMap(({ baseline, candidate }, cycle) =>
     [baseline, candidate].map((summary, index) => ({
       label: (commitOf(summary) === baselineCommit
@@ -134,7 +146,9 @@ export const runReportCli = async (args: string[]): Promise<void> => {
   }
   const savedChecks = selected.flatMap(({ checks }) => checks ?? []);
   const missingEvidence = runs.some(({ summary }) => !summary.evidence);
-  const evaluation = missingEvidence ? undefined : evaluateBranchRuns(runs, []);
+  const evaluation = missingEvidence
+    ? undefined
+    : evaluateBranchRuns(runs, [], contrast);
   const incompleteReasons = [
     ...(missingEvidence ? ['Capture evidence is missing.'] : []),
     ...new Set(
@@ -154,6 +168,8 @@ export const runReportCli = async (args: string[]): Promise<void> => {
     '',
     `- Baseline commit: \`${baselineCommit}\``,
     `- Candidate commit: \`${candidateCommit}\``,
+    '',
+    `- Declared contrast: ${contrastLabel}`,
     '',
     branchAggregateMarkdown(aggregate, options.order),
     ...incompleteReasons.map((reason) => `- ${reason}`),

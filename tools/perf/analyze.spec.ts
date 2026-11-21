@@ -746,9 +746,20 @@ describe('performance analysis', () => {
 
     expect(workloadCheck(strict)?.passed).toBe(false);
     expect(workloadCheck(contrasted)?.passed).toBe(true);
-    expect(contrasted.checks.every((check) => check.passed === true)).toBe(
-      true
-    );
+    expect(
+      contrasted.checks.find(
+        ({ name }) => name === 'Renderer frames over 50 ms'
+      )
+    ).toMatchObject({
+      passed: null,
+      target: expect.stringContaining('not-applicable:'),
+    });
+    expect(
+      contrasted.checks.every(
+        (check) =>
+          check.passed === true || check.target.startsWith('not-applicable:')
+      )
+    ).toBe(true);
     expect(comparisonMarkdown(contrasted)).toContain(
       'Declared contrast: overlay'
     );

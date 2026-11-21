@@ -204,6 +204,45 @@ describe('multi-run perf report CLI', () => {
     }
   });
 
+  it('preserves saved overlay contrasts and rejects mixed contrasts', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'perf-report-'));
+    try {
+      const first = path.join(directory, 'first.json');
+      const second = path.join(directory, 'second.json');
+      const output = path.join(directory, 'report.md');
+      const baseline = {
+        ...summary('base', 'aaa', 1100),
+        overlayMode: 'observer',
+      };
+      baseline.renderer.frameCount = 0;
+      const candidate = { ...summary('head', 'bbb', 600), overlayMode: 'full' };
+      await writeFile(
+        first,
+        JSON.stringify({ baseline, candidate, contrast: ['overlay'] })
+      );
+      await runReportCli([first, '--output', output]);
+      expect(await readFile(output, 'utf8')).toContain(
+        'Verdict: **REPRODUCIBLE DIFFERENCE'
+      );
+      await writeFile(
+        second,
+        JSON.stringify({
+          baseline: { ...baseline, runId: 'base-2' },
+          candidate: { ...candidate, runId: 'head-2' },
+        })
+      );
+      await runReportCli([second, '--output', output]);
+      expect(await readFile(output, 'utf8')).toContain(
+        'Verdict: **INCONCLUSIVE**'
+      );
+      await expect(
+        runReportCli([first, second, '--output', output])
+      ).rejects.toThrow('different contrasts');
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it('withholds the verdict for short captures, saved inconclusive gates, and mismatched workloads', async () => {
     const directory = await mkdtemp(path.join(tmpdir(), 'perf-report-'));
     try {
