@@ -564,6 +564,56 @@ describe('performance analysis', () => {
     expect(rendererCheck(measured)).toMatchObject({ passed: true, actual: 0 });
   });
 
+  it('rejects origins from a different run and tolerates open-ended timing jitter', () => {
+    const input = capture(conclusiveSamples());
+    const baseline = summarizeCapture(input, 0);
+    const wrongOrigin = summarizeCapture(
+      { ...input, origins: [{ ...input.origins[0], runId: 'other' }] },
+      0
+    );
+    expect(wrongOrigin.evidence.runOriginAvailable).toBe(false);
+    const candidate = summarizeCapture(input, 0);
+    candidate.analysisWindow.endSeconds = 300.005;
+    expect(comparisonCoreComplete(baseline, candidate)).toBe(true);
+    candidate.analysisWindow.endSeconds = 302;
+    expect(comparisonCoreComplete(baseline, candidate)).toBe(false);
+    expect(
+      comparisonCoreComplete(
+        summarizeCapture(input, 0, { endSeconds: 300 }),
+        summarizeCapture(input, 0, { endSeconds: 300.005 })
+      )
+    ).toBe(false);
+  });
+
+  it('withholds gates without measured FPS, processing latency or baseline frames', () => {
+    const input = capture(conclusiveSamples());
+    const baseline = summarizeCapture({ ...input, renderer: [] }, 0);
+    const candidate = summarizeCapture(input, 0);
+    baseline.iracing.fpsObservationCount = 0;
+    candidate.telemetry.processTelemetryObservationCount = 0;
+    const checks = compareSummaries(baseline, candidate).checks;
+    for (const name of [
+      'iRacing average FPS regression',
+      'iRacing sampled FPS p1 regression',
+      'Telemetry processing p99',
+      'Renderer frames over 50 ms',
+    ]) {
+      expect(checks.find((check) => check.name === name)?.passed).toBeNull();
+    }
+  });
+
+  it('excludes repeated Linux memory batches from sampling coverage and slope', () => {
+    const samples = conclusiveSamples().map((sample, index) => ({
+      ...sample,
+      privateMemoryReused: index !== 0,
+    }));
+    const summary = summarizeCapture(capture(samples), 0);
+    expect(summary.evidence).toMatchObject({
+      privateMemorySampleCount: 1,
+      privateMemorySamplingAdequate: false,
+    });
+  });
+
   it('matches visibility schedules and effective windows across captures', () => {
     const baseline = summarizeCapture(capture(conclusiveSamples()), 0);
     const candidate = summarizeCapture(capture(conclusiveSamples()), 0);
@@ -582,10 +632,14 @@ describe('performance analysis', () => {
       {
         ...candidate.visibilityPhases[0],
         runId: 'baseline',
-        timestamp: new Date(5000).toISOString(),
+        timestamp: candidate.visibilityPhases[0].timestamp,
       },
     ];
     expect(comparisonCoreComplete(baseline, candidate)).toBe(true);
+    baseline.visibilityPhases[0].timestamp = new Date(5000).toISOString();
+    expect(comparisonCoreComplete(baseline, candidate)).toBe(false);
+    baseline.visibilityPhases[0].timestamp =
+      candidate.visibilityPhases[0].timestamp;
 
     candidate.analysisWindow.endSeconds = 310;
     expect(comparisonCoreComplete(baseline, candidate)).toBe(false);

@@ -363,16 +363,22 @@ const runTrace = async (args: string[]): Promise<void> => {
   );
 
   const stopChild = (): void => {
-    if (child.exitCode !== null || child.signalCode !== null) return;
     try {
-      if (process.platform === 'win32' || child.pid === undefined)
+      if (process.platform !== 'win32' && child.pid !== undefined)
+        process.kill(-child.pid, 'SIGTERM');
+      else if (child.exitCode === null && child.signalCode === null)
         child.kill('SIGTERM');
-      else process.kill(-child.pid, 'SIGTERM');
     } catch {
       child.kill('SIGTERM');
     }
   };
 
+  const onInterrupt = () =>
+    startup.abort(new Error('Trace cancelled (SIGINT).'));
+  const onTerminate = () =>
+    startup.abort(new Error('Trace cancelled (SIGTERM).'));
+  process.on('SIGINT', onInterrupt);
+  process.on('SIGTERM', onTerminate);
   try {
     const startupSignal = AbortSignal.any([
       startup.signal,
@@ -397,6 +403,7 @@ const runTrace = async (args: string[]): Promise<void> => {
       options.durationSeconds,
       startup.signal
     );
+    startup.signal.throwIfAborted();
     await fs.writeFile(
       options.outputPath,
       JSON.stringify({ traceEvents: events }),
@@ -426,6 +433,8 @@ const runTrace = async (args: string[]): Promise<void> => {
   } finally {
     startup.abort();
     stopChild();
+    process.off('SIGINT', onInterrupt);
+    process.off('SIGTERM', onTerminate);
   }
 };
 

@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { link, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -21,14 +21,22 @@ const summary = (
     inputCoverageAvailable: true,
     privateMemorySamplingAdequate: true,
   },
-  iracing: { averageFps: 60, meanOnePercentLowFps: 59 },
+  iracing: {
+    fpsObservationCount: 100,
+    averageFps: 60,
+    meanOnePercentLowFps: 59,
+  },
   app: {
     peakMemoryMB: peak,
     averageRendererMemoryMB: peak / 2,
     averageCpuPercent: 8,
     privateMemorySlopeMBPerMinute: 0,
   },
-  telemetry: { processTelemetryP99MeanMs: 2, minimumTickRateHz: 60 },
+  telemetry: {
+    processTelemetryObservationCount: 100,
+    processTelemetryP99MeanMs: 2,
+    minimumTickRateHz: 60,
+  },
   eventLoop: { p99MeanMs: 35 },
   renderer: {
     trackMapAnimationFrameP99MeanMs: 2,
@@ -38,6 +46,36 @@ const summary = (
 });
 
 describe('multi-run perf report CLI', () => {
+  it('rejects unknown commit provenance and preserves hard-linked comparison inputs', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'perf-report-'));
+    try {
+      const input = path.join(directory, 'comparison.json');
+      await writeFile(
+        input,
+        JSON.stringify({
+          baseline: summary('base', 'unknown', 1100),
+          candidate: summary('head', 'bbb', 1200),
+        })
+      );
+      await expect(runReportCli([input])).rejects.toThrow(
+        'missing source commit'
+      );
+      const original = JSON.stringify({
+        baseline: summary('base', 'aaa', 1100),
+        candidate: summary('head', 'bbb', 1200),
+      });
+      await writeFile(input, original);
+      const alias = path.join(directory, 'report.md');
+      await link(input, alias);
+      await expect(runReportCli([input, '--output', alias])).rejects.toThrow(
+        'would overwrite an input file'
+      );
+      expect(await readFile(input, 'utf8')).toBe(original);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it('resolves summaries and output options', () => {
     expect(
       parseReportOptions([

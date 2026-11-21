@@ -23,6 +23,7 @@ const ORIGIN_PREFIX = '[PerfRunOrigin:JSON] ';
 const MIN_PRIVATE_OBSERVATIONS = 2;
 const MIN_PRIVATE_SPAN_RATIO = 0.8;
 const MAX_PRIVATE_SAMPLE_GAP_SECONDS = 60;
+const WORKLOAD_TIMING_TOLERANCE_SECONDS = 1;
 
 interface SectionStats {
   count: number;
@@ -68,6 +69,7 @@ interface MainPerfSample {
   totalAppCpuPercent?: number;
   totalAppMemoryMB?: number;
   totalAppPrivateMemoryMB?: number;
+  privateMemoryReused?: boolean;
   scenarioMetadata?: Record<string, unknown>;
   channelMetrics?: {
     processorExecutions: Record<string, number>;
@@ -119,6 +121,7 @@ export interface PerfSummary {
   analysisWindow: {
     startSeconds: number;
     endSeconds?: number;
+    openEnded?: boolean;
   };
   scenarioMetadata: Record<string, unknown>;
   visibilityPhases: VisibilityMarker[];
@@ -132,6 +135,7 @@ export interface PerfSummary {
     reasons: string[];
   }[];
   iracing: {
+    fpsObservationCount?: number;
     averageFps: number;
     meanOnePercentLowFps: number;
     worstFps: number;
@@ -183,6 +187,7 @@ export interface PerfSummary {
   telemetry: {
     averageTickRateHz: number;
     minimumTickRateHz: number;
+    processTelemetryObservationCount?: number;
     processTelemetryP99MeanMs: number;
     processTelemetryP99WorstMs: number;
     broadcastP99MeanMs: number;
@@ -565,7 +570,16 @@ export function summarizeCapture(
   const validOrigins = (capture.origins ?? []).filter((origin) =>
     Number.isFinite(Date.parse(origin.timestamp))
   );
-  const runOriginAvailable = validOrigins.length === 1;
+  const runId = capture.main[0].runId;
+  if (
+    capture.main.some((sample) => sample.runId !== runId) ||
+    capture.renderer.some((sample) => sample.runId !== runId) ||
+    capture.visibility?.some((marker) => marker.runId !== runId)
+  ) {
+    throw new Error('Capture log contains samples from multiple runs.');
+  }
+  const runOriginAvailable =
+    validOrigins.length === 1 && validOrigins[0].runId === runId;
   const originTimestamp = runOriginAvailable
     ? Date.parse(validOrigins[0].timestamp)
     : Date.parse(capture.main[0].timestamp);
@@ -660,7 +674,7 @@ export function summarizeCapture(
   );
   const processTelemetry = effectiveMain
     .map((sample) => sample.sections.processTelemetry)
-    .filter((value): value is SectionStats => value !== undefined);
+    .filter((value): value is SectionStats => (value?.count ?? 0) > 0);
   const broadcast = effectiveMain
     .map((sample) => sample.sections.broadcast)
     .filter((value): value is SectionStats => value !== undefined);
@@ -878,15 +892,19 @@ export function summarizeCapture(
         typeof sample.totalAppPrivateMemoryMB === 'number' &&
         Number.isFinite(sample.totalAppPrivateMemoryMB)
     );
-  const privateTimestamps = pointMain
-    .filter(
-      (sample) =>
-        typeof sample.totalAppPrivateMemoryMB === 'number' &&
-        Number.isFinite(sample.totalAppPrivateMemoryMB)
-    )
-    .map((sample) => Date.parse(sample.timestamp))
-    .filter(Number.isFinite)
-    .sort((left, right) => left - right);
+  const privateSamples = pointMain.filter(
+    (sample) =>
+      !sample.privateMemoryReused &&
+      typeof sample.totalAppPrivateMemoryMB === 'number' &&
+      Number.isFinite(sample.totalAppPrivateMemoryMB)
+  );
+  const privateTimestamps = [
+    ...new Set(
+      privateSamples
+        .map((sample) => Date.parse(sample.timestamp))
+        .filter(Number.isFinite)
+    ),
+  ].sort((left, right) => left - right);
   const privateMemorySampleCount = privateTimestamps.length;
   const firstPrivateTimestamp = privateTimestamps[0] ?? 0;
   const lastPrivateTimestamp = privateTimestamps.at(-1) ?? 0;
@@ -1022,7 +1040,7 @@ export function summarizeCapture(
       : undefined;
 
   return {
-    runId: effectiveMain[0].runId,
+    runId,
     captureOrigin: runOriginAvailable ? validOrigins[0].timestamp : undefined,
     scenario: effectiveMain[0].scenario,
     overlayMode: effectiveMain[0].overlayMode,
@@ -1032,6 +1050,7 @@ export function summarizeCapture(
       startSeconds,
       endSeconds:
         analysisWindow.endSeconds ?? (lastSampleEnd - originTimestamp) / 1000,
+      ...(analysisWindow.endSeconds === undefined ? { openEnded: true } : {}),
     },
     scenarioMetadata,
     // Keep the complete schedule in the summary. The first visibility marker
@@ -1040,6 +1059,10 @@ export function summarizeCapture(
     visibilityPhases: capture.visibility ?? [],
     phaseEvidence,
     iracing: {
+      fpsObservationCount: iracingStats.reduce(
+        (sum, stats) => sum + stats.count,
+        0
+      ),
       averageFps: weightedAverage(
         iracingStats.map((stats) => ({
           value: stats.avg,
@@ -1175,7 +1198,7 @@ export function summarizeCapture(
       ),
       privateMemorySlopeMBPerMinute: linearSlopePerMinute(
         privateMemorySamplingAdequate
-          ? pointMain.map((sample) => ({
+          ? privateSamples.map((sample) => ({
               timestamp: sample.timestamp,
               value: sample.totalAppPrivateMemoryMB as number,
             }))
@@ -1245,6 +1268,10 @@ export function summarizeCapture(
       ),
       minimumTickRateHz: minimum(
         effectiveMain.map((sample) => sample.tickRateHz)
+      ),
+      processTelemetryObservationCount: processTelemetry.reduce(
+        (sum, stats) => sum + stats.count,
+        0
       ),
       processTelemetryP99MeanMs: average(
         processTelemetry.map((stats) => stats.p99Ms)
@@ -1433,10 +1460,7 @@ function workloadMetadata(
     ...(contrast.includes('overlay')
       ? {}
       : { overlayMode: summary.overlayMode }),
-    analysisWindow: summary.analysisWindow,
-    ...(summary.analysisWindow?.endSeconds === undefined
-      ? { observedDurationMinutes: summary.durationMinutes }
-      : {}),
+
     visibilitySchedule: (summary.visibilityPhases ?? [])
       .map(({ index, visibility, durationSeconds }) => ({
         index,
@@ -1457,7 +1481,45 @@ function workloadMetadataMatch(
   const candidateMetadata = workloadMetadata(candidate, contrast);
   if (baselineMetadata === undefined || candidateMetadata === undefined)
     return undefined;
-  return baselineMetadata === candidateMetadata;
+  if (baselineMetadata !== candidateMetadata) return false;
+
+  const left = baseline.analysisWindow;
+  const right = candidate.analysisWindow;
+  if (
+    !left ||
+    !right ||
+    left.startSeconds !== right.startSeconds ||
+    Boolean(left.openEnded) !== Boolean(right.openEnded)
+  )
+    return false;
+  if (left.openEnded) {
+    if (
+      left.endSeconds === undefined ||
+      right.endSeconds === undefined ||
+      Math.abs(left.endSeconds - right.endSeconds) >
+        WORKLOAD_TIMING_TOLERANCE_SECONDS
+    )
+      return false;
+  } else if (left.endSeconds !== right.endSeconds) {
+    return false;
+  }
+
+  const transitionOffsets = (summary: PerfSummary): number[] =>
+    [...(summary.visibilityPhases ?? [])]
+      .sort((a, b) => a.index - b.index)
+      .map(
+        (phase) =>
+          (Date.parse(phase.timestamp) -
+            Date.parse(summary.captureOrigin ?? '')) /
+          1000
+      );
+  const leftOffsets = transitionOffsets(baseline);
+  const rightOffsets = transitionOffsets(candidate);
+  return leftOffsets.every(
+    (offset, index) =>
+      Math.abs(offset - rightOffsets[index]) <=
+      WORKLOAD_TIMING_TOLERANCE_SECONDS
+  );
 }
 
 function coreEvidenceReasons(summary: PerfSummary, label: string): string[] {
@@ -1549,6 +1611,17 @@ export function compareSummaries(
     isTapeReplay(candidate.scenarioMetadata)
       ? ['game FPS is historical in an isolated replay tape']
       : [];
+  const fpsEvidenceReasons = [baseline, candidate].flatMap((summary, index) =>
+    (summary.iracing.fpsObservationCount ?? 0) > 0
+      ? []
+      : [
+          `${index === 0 ? 'baseline' : 'candidate'} FPS observations are unavailable`,
+        ]
+  );
+  const telemetryEvidenceReasons =
+    (candidate.telemetry.processTelemetryObservationCount ?? 0) > 0
+      ? []
+      : ['candidate telemetry timing observations are unavailable'];
   const rendererNotApplicable =
     candidate.overlayMode === 'observer' ||
     candidate.overlayMode === 'empty' ||
@@ -1557,8 +1630,14 @@ export function compareSummaries(
       ? ['no dashboard widgets were active']
       : [];
   const rendererReasons =
-    rendererNotApplicable.length === 0 && !(candidate.renderer.frameCount > 0)
-      ? ['candidate renderer frame observations are unavailable']
+    rendererNotApplicable.length === 0
+      ? [baseline, candidate].flatMap((summary, index) =>
+          summary.renderer.frameCount > 0
+            ? []
+            : [
+                `${index === 0 ? 'baseline' : 'candidate'} renderer frame observations are unavailable`,
+              ]
+        )
       : [];
   const gate = (
     name: string,
@@ -1654,7 +1733,7 @@ export function compareSummaries(
           'iRacing average FPS regression',
           averageFpsPercent,
           averageFpsPercent >= PERF_GATES.averageFpsPercent.minimum,
-          comparableReasons,
+          [...comparableReasons, ...fpsEvidenceReasons],
           gameFpsReasons,
           `>= ${PERF_GATES.averageFpsPercent.minimum}%`
         ),
@@ -1665,7 +1744,7 @@ export function compareSummaries(
           'iRacing sampled FPS p1 regression',
           onePercentLowFpsPercent,
           onePercentLowFpsPercent >= PERF_GATES.onePercentLowFpsPercent.minimum,
-          comparableReasons,
+          [...comparableReasons, ...fpsEvidenceReasons],
           gameFpsReasons,
           `>= ${PERF_GATES.onePercentLowFpsPercent.minimum}%`
         ),
@@ -1677,7 +1756,7 @@ export function compareSummaries(
           candidate.telemetry.processTelemetryP99MeanMs,
           candidate.telemetry.processTelemetryP99MeanMs <
             PERF_GATES.processTelemetryP99Ms.maximum,
-          comparableReasons,
+          [...comparableReasons, ...telemetryEvidenceReasons],
           [],
           `< ${PERF_GATES.processTelemetryP99Ms.maximum} ms`
         ),

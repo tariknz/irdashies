@@ -46,8 +46,11 @@ describe('performance run provenance metadata', () => {
     try {
       metrics.startReporting(1000);
       await vi.waitFor(() => {
-        expect(metrics.report().totalAppPrivateMemoryMB).toBe(2);
-        expect(metrics.report().processes?.[0].privateMemoryMB).toBe(2);
+        const report = metrics.report();
+        expect(report.totalAppPrivateMemoryMB).toBe(2);
+        expect(report.processes?.[0].privateMemoryMB).toBe(2);
+        expect(report.privateMemoryReused).toBe(false);
+        expect(metrics.report().privateMemoryReused).toBe(true);
       });
     } finally {
       Object.defineProperty(process, 'platform', { value: platform });

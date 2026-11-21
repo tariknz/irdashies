@@ -72,6 +72,7 @@ export interface PerfReport {
   totalAppCpuPercent?: number;
   totalAppMemoryMB?: number;
   totalAppPrivateMemoryMB?: number;
+  privateMemoryReused?: boolean;
   scenarioMetadata?: Record<string, unknown>;
   channelMetrics?: {
     processorExecutions: Record<string, number>;
@@ -182,6 +183,7 @@ export class TelemetryPerfMetrics {
   private privateMemorySampler: NodeJS.Timeout | null = null;
   private linuxMemorySampleId = 0;
   private appliedLinuxMemorySampleId = 0;
+  private reportedLinuxMemorySampleId = 0;
   private linuxPrivateMemoryKB = new Map<number, number>();
   private lastReportTime = 0;
   private lastTickTime = 0;
@@ -332,8 +334,13 @@ export class TelemetryPerfMetrics {
       sections[label] = buf.getStats();
     }
 
-    const { processes, totalCpu, totalMemory, totalPrivateMemory } =
-      this.getProcessMetrics();
+    const {
+      processes,
+      totalCpu,
+      totalMemory,
+      totalPrivateMemory,
+      privateMemoryReused,
+    } = this.getProcessMetrics();
     const elapsedMs = now - this.lastReportTime;
     const nanosecondsToMilliseconds = (value: number): number =>
       Number.isFinite(value) ? value / 1_000_000 : 0;
@@ -378,6 +385,7 @@ export class TelemetryPerfMetrics {
       totalAppCpuPercent: totalCpu,
       totalAppMemoryMB: totalMemory,
       totalAppPrivateMemoryMB: totalPrivateMemory,
+      privateMemoryReused,
       scenarioMetadata: this.scenarioMetadata(),
       channelMetrics: this.channelMetrics(sections),
     };
@@ -489,17 +497,27 @@ export class TelemetryPerfMetrics {
     totalCpu: number;
     totalMemory: number;
     totalPrivateMemory?: number;
+    privateMemoryReused?: boolean;
   } {
     try {
       const metrics = app.getAppMetrics();
       const processes: ProcessMetrics[] = [];
       let totalCpu = 0;
       let totalMemory = 0;
-      const privateBytes = metrics.map((metric) => {
-        const cachedKB = this.linuxPrivateMemoryKB.get(metric.pid);
-        return metric.memory.privateBytes ?? cachedKB;
-      });
+      const privateBytes = metrics.map(
+        (metric) =>
+          metric.memory.privateBytes ??
+          this.linuxPrivateMemoryKB.get(metric.pid)
+      );
+      const usesLinuxSample = metrics.some(
+        (metric) => metric.memory.privateBytes === undefined
+      );
+      const freshLinuxSample =
+        this.appliedLinuxMemorySampleId > this.reportedLinuxMemorySampleId;
       const totalPrivateMemory = sumCompletePrivateMemoryMB(privateBytes);
+      const privateMemoryReused = usesLinuxSample && !freshLinuxSample;
+      if (usesLinuxSample && totalPrivateMemory !== undefined)
+        this.reportedLinuxMemorySampleId = this.appliedLinuxMemorySampleId;
 
       const pidToWindowName = new Map<number, string>();
       try {
@@ -554,6 +572,7 @@ export class TelemetryPerfMetrics {
         totalCpu,
         totalMemory,
         totalPrivateMemory,
+        privateMemoryReused,
       };
     } catch {
       return {

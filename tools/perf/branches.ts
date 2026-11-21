@@ -22,7 +22,12 @@ import { comparisonCheckSatisfied, comparisonCheckStatus } from './gates.ts';
 
 const DEFAULT_DURATION_SECONDS = 420;
 const DEFAULT_WARMUP_SECONDS = 60;
-const NATIVE_FILE_PATTERN = /^(binding\.gyp|src\/app\/irsdk\/native\/)/;
+const NATIVE_BUILD_PATHS = [
+  'binding.gyp',
+  'src/app/irsdk/native',
+  'src/app/lmu/native',
+];
+const NATIVE_FILE_PATTERN = /^(binding\.gyp$|src\/app\/(irsdk|lmu)\/native\/)/;
 const DEPENDENCY_FILE_PATTERN = /(^|\t)(package\.json|package-lock\.json)$/;
 
 export const BRANCHES_USAGE = `Usage: npm run perf:branches [options]
@@ -425,6 +430,7 @@ const runTool = async (
   shell = false,
   env: NodeJS.ProcessEnv = process.env
 ): Promise<void> => {
+  await fs.mkdir(path.dirname(logPath), { recursive: true });
   let stderr = '';
   const child = spawn(command, args, {
     cwd,
@@ -441,7 +447,6 @@ const runTool = async (
     child.once('error', reject);
     child.once('close', resolve);
   });
-  await fs.mkdir(path.dirname(logPath), { recursive: true });
   const exitCode = await waitForClose;
   await fs.writeFile(
     logPath,
@@ -682,7 +687,10 @@ export const BRANCH_METRICS: readonly MetricSpec[] = [
     label: 'processTelemetry p99',
     unit: 'ms',
     floor: 0.25,
-    value: (summary) => summary.telemetry.processTelemetryP99MeanMs,
+    value: (summary) =>
+      (summary.telemetry.processTelemetryObservationCount ?? 0) > 0
+        ? summary.telemetry.processTelemetryP99MeanMs
+        : Number.NaN,
   },
   {
     key: 'eventLoopP99Ms',
@@ -703,7 +711,10 @@ export const BRANCH_METRICS: readonly MetricSpec[] = [
     label: 'Frames over 50 ms',
     unit: '%',
     floor: 0.02,
-    value: (summary) => summary.renderer.framesOver50MsPercent,
+    value: (summary) =>
+      summary.renderer.frameCount > 0
+        ? summary.renderer.framesOver50MsPercent
+        : Number.NaN,
   },
 ];
 
@@ -756,7 +767,10 @@ export function aggregateBranchRuns(
       .filter(Number.isFinite);
     const baselineMedian = median(baseline);
     const candidateMedian = median(candidate);
-    const effect = candidateMedian - baselineMedian;
+    const effect =
+      baseline.length + candidate.length === runs.length
+        ? candidateMedian - baselineMedian
+        : Number.NaN;
     const noise = Math.max(
       baseline.length > 0 ? Math.max(...baseline) - Math.min(...baseline) : 0,
       candidate.length > 0 ? Math.max(...candidate) - Math.min(...candidate) : 0
@@ -990,7 +1004,7 @@ const readRunSummary = async (
 export const runBranchesCli = async (args: string[]): Promise<void> => {
   const options = parseBranchesOptions(args);
   const rootDirectory = gitValue(['rev-parse', '--show-toplevel'], process.cwd());
-  const dependencyFingerprint = await hashFiles([
+  const dependencyHash = await hashFiles([
     path.join(rootDirectory, 'package.json'),
     path.join(rootDirectory, 'package-lock.json'),
   ]);
@@ -1011,6 +1025,28 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
   const candidateCommit = options.candidateDir
     ? resolveCommit('HEAD', options.candidateDir)
     : resolveCommit(options.refs.candidate, rootDirectory);
+  const donorCommit = resolveCommit('HEAD', rootDirectory);
+  const donorNativeDirty = Boolean(
+    gitValue(
+      [
+        'status',
+        '--porcelain',
+        '--untracked-files=all',
+        '--',
+        ...NATIVE_BUILD_PATHS,
+      ],
+      rootDirectory
+    )
+  );
+  const dependencyFingerprint = createHash('sha256')
+    .update(dependencyHash)
+    .update(donorCommit)
+    .digest('hex');
+  const useCache =
+    options.reuse &&
+    !donorNativeDirty &&
+    !options.rebuildNative &&
+    !options.install;
   const files = changedFiles(baselineCommit, candidateCommit, rootDirectory);
   const filePath = (line: string): string => line.split('\t').at(-1) ?? '';
   const nativeChanged = files.some((line) =>
@@ -1068,18 +1104,29 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
   const runs: (BranchRun & { summary: PerfSummary })[] = [];
 
   try {
+    if (options.seedProfile) {
+      const seedSnapshot = path.join(worktreeRoot, 'seed-profile');
+      await fs.cp(options.seedProfile, seedSnapshot, {
+        recursive: true,
+        dereference: true,
+      });
+      options.seedProfile = seedSnapshot;
+    }
     const commitDirectories = new Map<string, string>();
     for (const label of ['baseline', 'candidate'] as const) {
       const ref = options.refs[label];
       const commit = label === 'baseline' ? baselineCommit : candidateCommit;
+      const rebuildNative =
+        options.rebuildNative ||
+        donorNativeDirty ||
+        changedFiles(donorCommit, commit, rootDirectory).some((line) =>
+          NATIVE_FILE_PATTERN.test(filePath(line))
+        );
       const configuredDirectory =
         label === 'baseline' ? options.baselineDir : options.candidateDir;
       const sharedDirectory = commitDirectories.get(commit);
       const cached =
-        options.reuse &&
-        !options.rebuildNative &&
-        !options.install &&
-        !sharedDirectory
+        useCache && !sharedDirectory
           ? await readCacheEntry(
               rootDirectory,
               commit,
@@ -1091,7 +1138,7 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
         configuredDirectory ??
         sharedDirectory ??
         cached?.directory ??
-        (options.reuse
+        (useCache
           ? path.join(
               cacheRootOf(rootDirectory),
               'worktrees',
@@ -1100,23 +1147,26 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
           : path.join(worktreeRoot, label));
       if (!configuredDirectory && !sharedDirectory && !cached) {
         await fs.mkdir(path.dirname(directory), { recursive: true });
-        gitValue(['worktree', 'add', '--detach', directory, commit], rootDirectory);
+        gitValue(
+          ['worktree', 'add', '--detach', directory, commit],
+          rootDirectory
+        );
         temporaryWorktrees.add(directory);
         await prepareWorktree(
           directory,
           options,
           rootDirectory,
-          nativeChanged,
+          rebuildNative,
           logDirectory,
           label
         );
-        if (options.reuse) {
+        if (useCache) {
           await writeCacheEntry(rootDirectory, {
             commit,
             target: options.target,
             directory,
             createdAt: new Date().toISOString(),
-            native: options.rebuildNative || nativeChanged,
+            native: rebuildNative,
             dependenciesInstalled: options.install,
             dependencyFingerprint,
           });
@@ -1316,6 +1366,10 @@ export const runBranchesCli = async (args: string[]): Promise<void> => {
         }
       }
     }
+    await fs.rm(path.join(worktreeRoot, 'seed-profile'), {
+      recursive: true,
+      force: true,
+    });
     await fs.rmdir(worktreeRoot).catch(() => undefined);
   }
 };

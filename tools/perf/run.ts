@@ -1,8 +1,15 @@
 import { spawn } from 'node:child_process';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { createReadStream, createWriteStream, promises as fs } from 'node:fs';
+import {
+  createReadStream,
+  createWriteStream,
+  promises as fs,
+  rmSync,
+} from 'node:fs';
 import path from 'node:path';
+import { tmpdir } from 'node:os';
+import { convertIbtToTape, ibtPath } from './ibt.ts';
 import {
   choiceArgument,
   numericArgument,
@@ -295,21 +302,41 @@ const consoleLogPath = path.join(
   `${options.runId}.console.log`
 );
 if (
-  (await fs.access(logPath).then(() => true, () => false)) ||
-  (await fs.access(consoleLogPath).then(() => true, () => false))
+  (await fs.access(logPath).then(
+    () => true,
+    () => false
+  )) ||
+  (await fs.access(consoleLogPath).then(
+    () => true,
+    () => false
+  ))
 )
   throw new Error(
     `Run ${options.runId} already has output files; choose another --run-id.`
   );
-const replayInputPath = options.replayInput
+const originalReplayInputPath = options.replayInput
   ? path.resolve(options.replayInput)
   : '';
-if (replayInputPath) {
-  await fs.access(replayInputPath);
-}
-const tapeFingerprint = replayInputPath
-  ? await fingerprintTape(replayInputPath)
+const tapeFingerprint = originalReplayInputPath
+  ? await fingerprintTape(originalReplayInputPath)
   : undefined;
+let replayInputPath = originalReplayInputPath;
+if (ibtPath(originalReplayInputPath)) {
+  const directory = await fs.mkdtemp(
+    path.join(tmpdir(), 'irdashies-perf-replay-')
+  );
+  process.once('exit', () => {
+    try {
+      rmSync(directory, { recursive: true, force: true });
+    } catch (error) {
+      process.stderr.write(
+        `Could not remove converted replay directory: ${String(error)}\n`
+      );
+    }
+  });
+  replayInputPath = path.join(directory, 'converted.irdt');
+  await convertIbtToTape(originalReplayInputPath, replayInputPath);
+}
 const useIsolatedReplayPublisher = usesIsolatedReplayPublisher(
   replayInputPath,
   process.platform
@@ -395,7 +422,7 @@ process.stdout.write(
     options.visibilityPhases
       ? `Visibility phases: ${options.visibilityPhases}`
       : '',
-    replayInputPath ? `Replay: ${replayInputPath}` : '',
+    originalReplayInputPath ? `Replay: ${originalReplayInputPath}` : '',
     options.widgets ? `Widgets: ${options.widgets}` : '',
     options.durationSeconds > 0
       ? `Duration: ${options.durationSeconds}s`
@@ -528,7 +555,7 @@ const failRun = (error: Error): void => {
 };
 
 const startReplayPublisher = (): void => {
-  if (!useIsolatedReplayPublisher || replayPublisher) return;
+  if (stopping || !useIsolatedReplayPublisher || replayPublisher) return;
   if (replayStartupTimeout) clearTimeout(replayStartupTimeout);
   const publisherPath = path.resolve('build/Release/irsdk_replay.exe');
   const publisher = spawn(

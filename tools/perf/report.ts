@@ -9,6 +9,7 @@ import {
   type SideLabel,
 } from './branches.ts';
 import { comparisonCheckSatisfied } from './gates.ts';
+import { assertOutputDistinctFromInputs } from './outputPath.ts';
 
 export const REPORT_USAGE = `Usage: npm run perf:report -- <summary.json>... [options]
   --output <file>            Write markdown to a file instead of stdout
@@ -52,9 +53,11 @@ type ComparisonSummary = PerfComparison['candidate'];
 
 const commitOf = (summary: ComparisonSummary): string => {
   const commit = summary.scenarioMetadata.sourceCommit;
-  return typeof commit === 'string' && commit.length > 0
-    ? commit
-    : summary.runId;
+  if (typeof commit !== 'string' || !/^[a-f0-9]{3,64}$/i.test(commit))
+    throw new Error(
+      `Capture ${summary.runId} is missing source commit provenance.`
+    );
+  return commit.toLowerCase();
 };
 
 export const runReportCli = async (args: string[]): Promise<void> => {
@@ -149,6 +152,10 @@ export const runReportCli = async (args: string[]): Promise<void> => {
     branchAggregateMarkdown(aggregate, options.order),
   ].join('\n');
   if (options.outputPath) {
+    await assertOutputDistinctFromInputs(
+      options.outputPath,
+      options.inputPaths
+    );
     await fs.mkdir(path.dirname(options.outputPath), { recursive: true });
     await fs.writeFile(options.outputPath, markdown, 'utf8');
     process.stdout.write(`Report: ${options.outputPath}\n`);

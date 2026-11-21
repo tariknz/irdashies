@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { numericArgument, parseArguments } from './args.ts';
+import { assertOutputDistinctFromInputs } from './outputPath.ts';
 
 export const ANALYZE_TRACE_USAGE = `Usage: npm run perf:trace-analyze -- <trace.json> [options]
   --output <path-prefix>      Write <prefix>.trace-summary.json and .md
@@ -382,6 +383,10 @@ export async function writeTraceAnalysis(
   );
   const jsonPath = `${options.outputPrefix}.json`;
   const markdownPath = `${options.outputPrefix}.md`;
+  await Promise.all([
+    assertOutputDistinctFromInputs(jsonPath, [options.inputPath]),
+    assertOutputDistinctFromInputs(markdownPath, [options.inputPath]),
+  ]);
   await fs.mkdir(path.dirname(jsonPath), { recursive: true });
   await Promise.all([
     fs.writeFile(jsonPath, JSON.stringify(analysis, null, 2), 'utf8'),

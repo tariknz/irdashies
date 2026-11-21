@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -12,9 +12,49 @@ import {
   summarizeDoctorChecks,
   type DoctorCheck,
 } from './doctor';
-import { inspectIbtRecording } from './ibt';
+import { convertIbtToTape, inspectIbtRecording } from './ibt';
 
 describe('performance CLI doctor', () => {
+  it('converts IBT session data and frames into an IRDT replay', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'perf-ibt-'));
+    try {
+      const source = path.join(directory, 'test.ibt');
+      const target = path.join(directory, 'test.irdt');
+      const yaml = 'WeekendInfo: {}\n';
+      await writeFile(
+        source,
+        buildIbt({
+          yaml,
+          vars: [{ name: 'Speed', type: IbtVarType.Float }],
+          rows: [{ Speed: 42 }, { Speed: 43 }],
+        })
+      );
+      await convertIbtToTape(source, target);
+      const tape = await readFile(target);
+      expect(tape.toString('ascii', 0, 7)).toBe('IRDTRCE');
+      expect(tape.readBigUInt64LE(40)).toBe(60n);
+      expect(tape.readBigUInt64LE(48)).toBe(4n);
+      const sessionRecord = 96 + 112 + 144;
+      expect(tape.readUInt32LE(sessionRecord)).toBe(2);
+      expect(
+        tape.toString(
+          'latin1',
+          sessionRecord + 40,
+          sessionRecord + 40 + yaml.length
+        )
+      ).toBe(yaml);
+      const firstFrame = sessionRecord + 40 + yaml.length;
+      expect(tape.readUInt32LE(firstFrame)).toBe(1);
+      expect(tape.readFloatLE(firstFrame + 40)).toBe(42);
+      const secondFrame = firstFrame + 44;
+      expect(tape.readBigUInt64LE(secondFrame + 16)).toBe(1n);
+      expect(tape.readFloatLE(secondFrame + 40)).toBe(43);
+      expect(tape.readUInt32LE(secondFrame + 44)).toBe(5);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it('defaults to the development target and resolves an optional input path', () => {
     expect(parseDoctorOptions([])).toMatchObject({
       target: 'dev',

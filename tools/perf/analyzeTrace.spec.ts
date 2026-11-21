@@ -1,8 +1,12 @@
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   analyzeTraceJson,
   parseTraceAnalysisOptions,
   traceAnalysisMarkdown,
+  writeTraceAnalysis,
 } from './analyzeTrace';
 
 const trace = {
@@ -50,6 +54,22 @@ const trace = {
 };
 
 describe('trace analysis', () => {
+  it('preserves the input when the output prefix would overwrite it', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'perf-trace-'));
+    try {
+      const outputPrefix = path.join(directory, 'trace');
+      const inputPath = `${outputPrefix}.json`;
+      const original = JSON.stringify(trace);
+      await writeFile(inputPath, original);
+      await expect(
+        writeTraceAnalysis({ inputPath, outputPrefix, minLongTaskMs: 50 })
+      ).rejects.toThrow('would overwrite an input file');
+      expect(await readFile(inputPath, 'utf8')).toBe(original);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it('summarizes V8 self time, long tasks and GC without trace startup noise', () => {
     const analysis = analyzeTraceJson(trace, 'trace.json');
 
