@@ -180,11 +180,11 @@ export const DriverTagsSettings = () => {
             : `group-${e.groupId}-${idx}`;
         return eKey === key;
       });
-      if (existing && existing.groupId !== groupId) {
+      if (existing) {
         updateDashboard({
           ...settings,
           entries: committedEntries.map((e) =>
-            e === existing ? { ...e, groupId, legacyMapping: undefined } : e
+            e === existing ? { ...e, groupId } : e
           ),
         });
       }
@@ -284,27 +284,19 @@ export const DriverTagsSettings = () => {
           setEntryError({ key, field: conflictField });
           return;
         }
-        const trimmedLabel = draft.label.trim();
-        if (
-          trimmedId !== (existing.id ?? '') ||
-          trimmedName !== (existing.name ?? '') ||
-          trimmedLabel !== (existing.label ?? '')
-        ) {
-          updateDashboard({
-            ...settings,
-            entries: committedEntries.map((e) =>
-              e === existing
-                ? {
-                    ...e,
-                    id: trimmedId || undefined,
-                    name: trimmedName || undefined,
-                    label: trimmedLabel || undefined,
-                    legacyMapping: undefined,
-                  }
-                : e
-            ),
-          });
-        }
+        updateDashboard({
+          ...settings,
+          entries: committedEntries.map((e) =>
+            e === existing
+              ? {
+                  ...e,
+                  id: draft.id.trim() || undefined,
+                  name: draft.name.trim() || undefined,
+                  label: draft.label.trim() || undefined,
+                }
+              : e
+          ),
+        });
         setEntryDrafts((prev) => prev.filter((d) => d.uiKey !== key));
       }
     },

@@ -16,56 +16,37 @@ vi.mock('@irdashies/context', async (importOriginal) => ({
 
 afterEach(() => useSessionStore.getState().resetSession());
 
-it.each<Pick<DriverTagSettings, 'entries' | 'mapping'>>([
-  {
+it('resolves explicit driver entries and ignores old mappings', () => {
+  const driverTagSettings = {
     entries: [
       { name: 'Morgan Lee', groupId: 'friend', label: 'Captain' },
       { id: '789', groupId: 'friend' },
+      { name: 'Jamie Taylor', groupId: 'team' },
     ],
-    mapping: { '123': 'team', '456': 'team', '789': 'team' },
-  },
-  {
-    entries: [
-      { name: 'Morgan Lee', groupId: 'friend', label: 'Captain' },
-      { id: '789', groupId: 'friend' },
-      { id: '123', groupId: 'team', legacyMapping: true },
-      { id: '456', groupId: 'team', legacyMapping: true },
-      { name: '789', groupId: 'team', legacyMapping: true },
-    ],
-    mapping: {},
-  },
-])(
-  'keeps legacy mappings as fallbacks before and after migration',
-  (assignments) => {
-    currentDashboard = {
-      widgets: [],
-      generalSettings: {
-        driverTagSettings: {
-          ...assignments,
-          groups: [{ id: 'team', name: 'Team', color: 0xff0000 }],
-          display: { enabled: true },
-        },
-      },
-    };
-    useSessionStore.getState().setSession({
-      DriverInfo: {
-        Drivers: [
-          { CarIdx: 0, UserID: 123, UserName: 'morgan lee' },
-          { CarIdx: 1, UserID: 456, UserName: 'Alex Smith' },
-          { CarIdx: 2, UserID: 900, UserName: '789' },
-          { CarIdx: 3, UserID: 789, UserName: 'Jamie Taylor' },
-        ],
-      },
-    } as Session);
+    groups: [{ id: 'team', name: 'Team', color: 0xff0000 }],
+    display: { enabled: true },
+    mapping: { '456': 'team' },
+  } satisfies DriverTagSettings & { mapping: Record<string, string> };
+  currentDashboard = {
+    widgets: [],
+    generalSettings: { driverTagSettings },
+  };
+  useSessionStore.getState().setSession({
+    DriverInfo: {
+      Drivers: [
+        { CarIdx: 0, UserID: 123, UserName: 'morgan lee' },
+        { CarIdx: 1, UserID: 456, UserName: 'Alex Smith' },
+        { CarIdx: 2, UserID: 789, UserName: 'Jamie Taylor' },
+      ],
+    },
+  } as Session);
 
-    const { result } = renderHook(() => useDriverTagMap(true));
+  const { result } = renderHook(() => useDriverTagMap(true));
 
-    expect(result.current.tagMap.get(0)).toMatchObject({
-      id: 'friend',
-      label: 'Captain',
-    });
-    expect(result.current.tagMap.get(1)?.id).toBe('team');
-    expect(result.current.tagMap.get(2)?.id).toBe('team');
-    expect(result.current.tagMap.get(3)?.id).toBe('friend');
-  }
-);
+  expect(result.current.tagMap.get(0)).toMatchObject({
+    id: 'friend',
+    label: 'Captain',
+  });
+  expect(result.current.tagMap.get(1)).toBeUndefined();
+  expect(result.current.tagMap.get(2)?.id).toBe('friend');
+});

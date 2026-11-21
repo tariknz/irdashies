@@ -11,18 +11,12 @@ import {
 let userData: string;
 vi.mock('electron', () => ({ app: { getPath: () => userData } }));
 
-const legacySettings: DriverTagSettings = {
+const savedTags: DriverTagSettings = {
   groups: [{ id: 'team', name: 'Team', color: 0xff0000 }],
   entries: [
     { name: 'Morgan Lee', groupId: 'friend', label: 'Captain' },
     { id: '789', groupId: 'friend' },
   ],
-  mapping: {
-    '123': 'team',
-    '789': 'team',
-    'Alex Smith': 'team',
-    'morgan lee': 'team',
-  },
   display: { enabled: true, displayStyle: 'tag' },
 };
 
@@ -38,26 +32,18 @@ describe('driver tag storage', () => {
   it.each(['driver-tags.json', 'config.json'])(
     'keeps tags from %s when adding a driver',
     async (file) => {
+      const storedTags = { ...savedTags, mapping: { '123': 'team' } };
       await fs.writeFile(
         join(userData, file),
         JSON.stringify(
           file === 'config.json'
-            ? { driverTagSettings: legacySettings }
-            : legacySettings
+            ? { driverTagSettings: storedTags }
+            : storedTags
         )
       );
 
       const settings = getDriverTagSettings();
-      expect(settings).toEqual({
-        ...legacySettings,
-        mapping: {},
-        entries: [
-          ...(legacySettings.entries ?? []),
-          { id: '123', groupId: 'team', legacyMapping: true },
-          { name: '789', groupId: 'team', legacyMapping: true },
-          { name: 'Alex Smith', groupId: 'team', legacyMapping: true },
-        ],
-      });
+      expect(settings).toEqual(savedTags);
       if (!settings) throw new Error('Expected saved driver tags');
 
       const updated = {

@@ -60,7 +60,6 @@ const readEntry = (value: unknown): DriverTagEntry | undefined => {
     name: readString(value.name),
     label: readString(value.label),
     groupId: value.groupId,
-    legacyMapping: value.legacyMapping === true ? true : undefined,
   };
 };
 
@@ -100,39 +99,18 @@ export const normalizeDriverTagSettings = (
   value: unknown
 ): DriverTagSettings | undefined => {
   if (!isRecord(value)) return undefined;
-  const { groups, entries, mapping, presetOverrides, display } = value;
-  if (!Array.isArray(groups) && !Array.isArray(entries) && !isRecord(mapping))
+  const { groups, entries, presetOverrides, display } = value;
+  if (!Array.isArray(groups) && !Array.isArray(entries)) {
     return undefined;
-
-  const validatedEntries = Array.isArray(entries)
-    ? entries.map(readEntry).filter((entry) => entry !== undefined)
-    : [];
-  const assignedIds = new Set(validatedEntries.map((entry) => entry.id));
-  const assignedNames = new Set(
-    validatedEntries.map((entry) => entry.name?.toLowerCase())
-  );
-  const legacyDrivers = new Map(
-    (isRecord(mapping) ? Object.entries(mapping) : []).map(([key, groupId]) => [
-      key.toLowerCase(),
-      { key, groupId },
-    ])
-  );
-
-  for (const [name, { key, groupId }] of legacyDrivers) {
-    if (!key || typeof groupId !== 'string' || !groupId) continue;
-    if (/^\d+$/.test(key) && !assignedIds.has(key)) {
-      validatedEntries.push({ id: key, groupId, legacyMapping: true });
-    } else if (!assignedNames.has(name)) {
-      validatedEntries.push({ name: key, groupId, legacyMapping: true });
-    }
   }
 
   return {
     groups: Array.isArray(groups)
       ? groups.map(readGroup).filter((group) => group !== undefined)
       : [],
-    entries: validatedEntries,
-    mapping: {},
+    entries: Array.isArray(entries)
+      ? entries.map(readEntry).filter((entry) => entry !== undefined)
+      : [],
     display: readDisplay(display),
     presetOverrides: isRecord(presetOverrides)
       ? Object.fromEntries(

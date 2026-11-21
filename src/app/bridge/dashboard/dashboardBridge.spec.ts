@@ -98,7 +98,6 @@ describe('driver tag settings', () => {
   const savedTags: DriverTagSettings = {
     groups: [{ id: 'team', name: 'Team', color: 0xff0000 }],
     entries: [{ id: '123', groupId: 'team', label: 'Captain' }],
-    mapping: {},
     display: { enabled: true, displayStyle: 'tag' },
   };
 
@@ -147,7 +146,6 @@ describe('driver tag settings', () => {
       driverTagSettings: {
         groups: [null, { ...savedTags.groups[0], icon: {} }, { id: 23 }],
         entries: {},
-        mapping: { '123': 'team', '345': 42 },
         display: {
           enabled: 'yes',
           displayStyle: 'tag',
@@ -164,8 +162,7 @@ describe('driver tag settings', () => {
 
     expect(await mocks.handlers.get('getDriverTagSettings')?.()).toEqual({
       groups: savedTags.groups,
-      entries: [{ id: '123', groupId: 'team', legacyMapping: true }],
-      mapping: {},
+      entries: [],
       display: { enabled: false, displayStyle: 'tag' },
       presetOverrides: { friend: { name: 'Teammate' } },
     });

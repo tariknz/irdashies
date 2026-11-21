@@ -57,16 +57,13 @@ export interface DriverTagEntry {
   label?: string;
   /** The tag group id this driver belongs to */
   groupId: string;
-  legacyMapping?: true;
 }
 
 export interface DriverTagSettings {
   /** Array of user-created tag groups */
   groups: TagGroup[];
-  /** Driver tag entries (preferred over legacy mapping) */
+  /** Driver tag entries */
   entries?: DriverTagEntry[];
-  /** @deprecated Use entries instead */
-  mapping: Record<string, string>;
   /** Display config for the tag */
   display: {
     enabled: boolean;
@@ -138,7 +135,7 @@ export interface GeneralSettingsType {
     pixelDistances?: boolean;
     snapToGrid?: boolean;
   };
-  /** Driver tag groups and mappings for overlays */
+  /** Driver tag groups and assignments for overlays */
   driverTagSettings?: DriverTagSettings;
 }
 

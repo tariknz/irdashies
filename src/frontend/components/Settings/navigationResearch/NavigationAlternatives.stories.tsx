@@ -70,7 +70,6 @@ const driverTagsFixture: DriverTagSettings = {
     { id: '10001', name: 'Alex Morgan', label: 'TEAM', groupId: 'team' },
     { id: '10002', name: 'Jamie Taylor', label: 'LEAGUE', groupId: 'league' },
   ],
-  mapping: {},
   display: { enabled: true, displayStyle: 'badge', iconWeight: 'regular' },
 };
 
