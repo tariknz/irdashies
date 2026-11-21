@@ -132,17 +132,23 @@ export const runReportCli = async (args: string[]): Promise<void> => {
       );
     captureIds.add(id);
   }
-  const hasIncompleteEvidence = selected.some(
-    ({ baseline, candidate, checks }) =>
-      !baseline.evidence ||
-      !candidate.evidence ||
-      checks?.some(
-        (check) => check.passed === null && !comparisonCheckSatisfied(check)
-      )
-  );
-  const aggregate = hasIncompleteEvidence
-    ? { runsPerSide: selected.length, metrics: [], verdict: 'INCONCLUSIVE' }
-    : evaluateBranchRuns(runs, []).aggregate;
+  const savedChecks = selected.flatMap(({ checks }) => checks ?? []);
+  const missingEvidence = runs.some(({ summary }) => !summary.evidence);
+  const evaluation = missingEvidence ? undefined : evaluateBranchRuns(runs, []);
+  const incompleteReasons = [
+    ...(missingEvidence ? ['Capture evidence is missing.'] : []),
+    ...new Set(
+      [...savedChecks, ...(evaluation?.checks ?? [])]
+        .filter(
+          (check) => check.passed === null && !comparisonCheckSatisfied(check)
+        )
+        .map((check) => check.target)
+    ),
+  ];
+  const aggregate =
+    incompleteReasons.length > 0 || !evaluation
+      ? { runsPerSide: selected.length, metrics: [], verdict: 'INCONCLUSIVE' }
+      : evaluation.aggregate;
   const markdown = [
     '# Order-controlled multi-run report',
     '',
@@ -150,6 +156,7 @@ export const runReportCli = async (args: string[]): Promise<void> => {
     `- Candidate commit: \`${candidateCommit}\``,
     '',
     branchAggregateMarkdown(aggregate, options.order),
+    ...incompleteReasons.map((reason) => `- ${reason}`),
   ].join('\n');
   if (options.outputPath) {
     await assertOutputDistinctFromInputs(

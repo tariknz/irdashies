@@ -179,6 +179,31 @@ describe('multi-run perf report CLI', () => {
     }
   });
 
+  it('reports unavailable baseline telemetry timing as inconclusive', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'perf-report-'));
+    try {
+      const input = path.join(directory, 'comparison.json');
+      const output = path.join(directory, 'report.md');
+      const baseline = summary('base', 'aaa', 1100);
+      baseline.telemetry.processTelemetryObservationCount = 0;
+      await writeFile(
+        input,
+        JSON.stringify({
+          baseline,
+          candidate: summary('head', 'bbb', 1200),
+        })
+      );
+      await runReportCli([input, '--output', output]);
+      const markdown = await readFile(output, 'utf8');
+      expect(markdown).toContain('Verdict: **INCONCLUSIVE**');
+      expect(markdown).toContain(
+        'baseline telemetry timing observations are unavailable'
+      );
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it('withholds the verdict for short captures, saved inconclusive gates, and mismatched workloads', async () => {
     const directory = await mkdtemp(path.join(tmpdir(), 'perf-report-'));
     try {

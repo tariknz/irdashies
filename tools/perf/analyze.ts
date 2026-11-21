@@ -1618,10 +1618,14 @@ export function compareSummaries(
           `${index === 0 ? 'baseline' : 'candidate'} FPS observations are unavailable`,
         ]
   );
-  const telemetryEvidenceReasons =
-    (candidate.telemetry.processTelemetryObservationCount ?? 0) > 0
-      ? []
-      : ['candidate telemetry timing observations are unavailable'];
+  const telemetryEvidenceReasons = [baseline, candidate].flatMap(
+    (summary, index) =>
+      (summary.telemetry.processTelemetryObservationCount ?? 0) > 0
+        ? []
+        : [
+            `${index === 0 ? 'baseline' : 'candidate'} telemetry timing observations are unavailable`,
+          ]
+  );
   const rendererNotApplicable =
     candidate.overlayMode === 'observer' ||
     candidate.overlayMode === 'empty' ||
