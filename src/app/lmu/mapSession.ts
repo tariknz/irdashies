@@ -14,6 +14,11 @@ import { isLmuAiEntry, lmuPlayerSlot } from './aiControl';
 import { fnv1a32 } from './hash';
 import { compareLmuOrder, lmuOrderingKey } from './classPosition';
 import type { LmuDriverRating, LmuRestSession } from '@irdashies/types';
+import { lapTimeOrAbsent } from './sentinels';
+import { lmuCarNumber, lmuCarNumberRaw, lmuTeamName } from './entryName';
+import { lmuDriverTires } from './tireCompound';
+import { lmuSessionUniqueId, type LmuSessionIdentity } from './sessionIdentity';
+import { lmuShiftPointRpm } from './shiftPoints';
 
 /**
  * LMU's pit and rolling-start speed limit, km/h.
@@ -25,11 +30,15 @@ import type { LmuDriverRating, LmuRestSession } from '@irdashies/types';
  * and read wrongly until it did.
  */
 export const LMU_PIT_SPEED_LIMIT_KPH = 60;
-import { lapTimeOrAbsent } from './sentinels';
-import { lmuCarNumber, lmuCarNumberRaw, lmuTeamName } from './entryName';
-import { lmuDriverTires } from './tireCompound';
-import { lmuSessionUniqueId, type LmuSessionIdentity } from './sessionIdentity';
-import { lmuShiftPointRpm } from './shiftPoints';
+
+export const lmuGripRubber = (grip: number): string => {
+  if (grip === 0) return 'green';
+  if (grip === 1) return 'low';
+  if (grip === 2) return 'medium';
+  if (grip === 3) return 'heavy';
+  if (grip === 4) return 'saturated';
+  return '';
+};
 
 type Raw = import('./native').LmuRawSession;
 
@@ -363,7 +372,8 @@ export function mapLmuSession(
    * SessionUniqueID on the frame, and a disagreement would read as a session
    * change on every other tick.
    */
-  sessionIdentity?: LmuSessionIdentity
+  sessionIdentity?: LmuSessionIdentity,
+  sectorBoundaries?: readonly number[] | null
 ): Session {
   const trackLengthM = raw.lapDist;
   const playerDriver = raw.drivers.find((d) => d.isPlayer);
@@ -665,7 +675,7 @@ export function mapLmuSession(
           SessionTime: '',
           SessionNumLapsToAvg: 0,
           SessionType: currentSessionType,
-          SessionTrackRubberState: '',
+          SessionTrackRubberState: lmuGripRubber(raw.trackGripLevel),
           SessionName: currentSessionType,
           SessionSubType: null,
           SessionSkipped: 0,
@@ -735,12 +745,13 @@ export function mapLmuSession(
       DriverTires: lmuDriverTires(raw.drivers, rest?.tireCompounds),
       Drivers: drivers,
     },
-    // ponytail: nominal thirds only label the direct LMU timing; replace when LMU exposes boundary distances.
+    // LMU publishes no boundary distances: the real ones are learned from the
+    // player's sector changes (sectorBoundaries.ts), nominal thirds until then.
     SplitTimeInfo: {
       Sectors: [
         { SectorNum: 0, SectorStartPct: 0 },
-        { SectorNum: 1, SectorStartPct: 1 / 3 },
-        { SectorNum: 2, SectorStartPct: 2 / 3 },
+        { SectorNum: 1, SectorStartPct: sectorBoundaries?.[0] ?? 1 / 3 },
+        { SectorNum: 2, SectorStartPct: sectorBoundaries?.[1] ?? 2 / 3 },
       ],
     },
     CarSetup: { UpdateCount: 0 },

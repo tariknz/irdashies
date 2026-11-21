@@ -65,14 +65,15 @@ export const lmuTrackLimitsMax = (
  */
 export const lmuTrackLimitsChannel = (
   steps: ArrayLike<number> | undefined,
-  stepsPerPoint: number | undefined
+  stepsPerPoint: number | undefined,
+  out: number[] = []
 ): number[] => {
-  if (!steps) return [];
-  const out = new Array<number>(steps.length);
-  for (let carIdx = 0; carIdx < steps.length; carIdx += 1) {
+  const cars = steps ? steps.length : 0;
+  for (let carIdx = 0; carIdx < cars; carIdx += 1) {
     out[carIdx] =
-      lmuTrackLimitsPoints(steps[carIdx], stepsPerPoint) ??
+      lmuTrackLimitsPoints(steps?.[carIdx], stepsPerPoint) ??
       TRACK_LIMITS_UNKNOWN;
   }
+  out.length = cars;
   return out;
 };
