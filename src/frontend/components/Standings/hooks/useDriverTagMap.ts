@@ -2,7 +2,11 @@ import { useMemo, type ReactNode } from 'react';
 import { useDashboard, useSessionStore } from '@irdashies/context';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { getPresetTag } from '../../../constants/driverTagBadges';
-import type { DriverTagSettings, TagGroup } from '@irdashies/types';
+import type {
+  DriverTagEntry,
+  DriverTagSettings,
+  TagGroup,
+} from '@irdashies/types';
 
 export interface ResolvedDriverTag {
   id: string;
@@ -36,40 +40,21 @@ const driversIdentityEqual = (
 const resolveTag = (
   userId: string | undefined,
   name: string,
-  tagSettings: DriverTagSettings,
-  lcMapping: Map<string, string>,
-  groupsById: Map<string, TagGroup>
+  entries: DriverTagEntry[],
+  fallbackEntries: Map<string, DriverTagEntry>,
+  groupsById: Map<string, TagGroup>,
+  presetOverrides: DriverTagSettings['presetOverrides']
 ): ResolvedDriverTag | undefined => {
-  const entries = tagSettings.entries ?? [];
-  const presetOverrides = tagSettings.presetOverrides ?? {};
-
-  let groupId: string | undefined;
-  let entryLabel: string | undefined;
-
-  if (userId) {
-    const match = entries.find((e) => e.id === userId);
-    if (match) {
-      groupId = match.groupId;
-      entryLabel = match.label;
-    }
-  }
-  if (!groupId && name) {
-    const nameLower = name.toLowerCase();
-    const match = entries.find(
-      (e) => e.name && e.name.toLowerCase() === nameLower
-    );
-    if (match) {
-      groupId = match.groupId;
-      entryLabel = match.label;
-    }
-  }
-  if (!groupId) {
-    groupId =
-      (userId ? lcMapping.get(userId) : undefined) ??
-      (name ? lcMapping.get(name.toLowerCase()) : undefined);
-  }
-
-  if (!groupId) return undefined;
+  const nameLower = name.toLowerCase();
+  const match =
+    (userId ? entries.find((entry) => entry.id === userId) : undefined) ??
+    (nameLower
+      ? entries.find((entry) => entry.name?.toLowerCase() === nameLower)
+      : undefined) ??
+    (userId ? fallbackEntries.get(userId) : undefined) ??
+    (nameLower ? fallbackEntries.get(nameLower) : undefined);
+  if (!match) return undefined;
+  const { groupId, label } = match;
 
   const custom = groupsById.get(groupId);
   if (custom) {
@@ -78,22 +63,22 @@ const resolveTag = (
       name: custom.name,
       icon: custom.icon,
       color: custom.color,
-      label: entryLabel,
+      label,
     };
   }
 
   const preset = getPresetTag(groupId);
-  const override = presetOverrides[groupId];
+  const override = presetOverrides?.[groupId];
   if (override) {
     return {
       id: groupId,
       name: override.name ?? preset?.name,
       icon: override.icon ?? preset?.icon,
       color: override.color ?? preset?.color,
-      label: entryLabel,
+      label,
     };
   }
-  if (preset) return { ...preset, label: entryLabel };
+  if (preset) return { ...preset, label };
   return undefined;
 };
 
@@ -125,9 +110,18 @@ export const useDriverTagMap = (
 
     if (!widgetTagEnabled) return empty;
 
-    const lcMapping = new Map<string, string>();
-    for (const [k, v] of Object.entries(tagSettings.mapping ?? {})) {
-      lcMapping.set(k.toLowerCase(), v);
+    const fallbackEntries = new Map<string, DriverTagEntry>();
+    for (const [key, groupId] of Object.entries(tagSettings.mapping ?? {})) {
+      fallbackEntries.set(key.toLowerCase(), { groupId });
+    }
+    const entries: DriverTagEntry[] = [];
+    for (const entry of tagSettings.entries ?? []) {
+      if (entry.legacyMapping) {
+        if (entry.id) fallbackEntries.set(entry.id, entry);
+        if (entry.name) fallbackEntries.set(entry.name.toLowerCase(), entry);
+      } else {
+        entries.push(entry);
+      }
     }
     const groupsById = new Map(
       (tagSettings.groups ?? []).map((g) => [g.id, g])
@@ -137,7 +131,14 @@ export const useDriverTagMap = (
     for (const driver of drivers) {
       const userId = driver.UserID != null ? String(driver.UserID) : undefined;
       const name = String(driver.UserName ?? '').trim();
-      const tag = resolveTag(userId, name, tagSettings, lcMapping, groupsById);
+      const tag = resolveTag(
+        userId,
+        name,
+        entries,
+        fallbackEntries,
+        groupsById,
+        tagSettings.presetOverrides
+      );
       if (tag) tagMap.set(driver.CarIdx, tag);
     }
 

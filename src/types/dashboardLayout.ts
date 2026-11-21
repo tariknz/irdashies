@@ -57,6 +57,7 @@ export interface DriverTagEntry {
   label?: string;
   /** The tag group id this driver belongs to */
   groupId: string;
+  legacyMapping?: true;
 }
 
 export interface DriverTagSettings {

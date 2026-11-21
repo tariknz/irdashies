@@ -141,6 +141,35 @@ describe('driver tag settings', () => {
       globalTags
     );
   });
+
+  it('repairs malformed dashboard tag settings before returning them to the editor', async () => {
+    mocks.dashboards.race.generalSettings = {
+      driverTagSettings: {
+        groups: [null, { ...savedTags.groups[0], icon: {} }, { id: 23 }],
+        entries: {},
+        mapping: { '123': 'team', '345': 42 },
+        display: {
+          enabled: 'yes',
+          displayStyle: 'tag',
+          widthPx: '6',
+          iconWeight: [],
+          alternateFrequency: -1,
+        },
+        presetOverrides: {
+          friend: { name: 'Teammate', color: 'yellow' },
+          twitch: 0,
+        },
+      } as unknown as DriverTagSettings,
+    };
+
+    expect(await mocks.handlers.get('getDriverTagSettings')?.()).toEqual({
+      groups: savedTags.groups,
+      entries: [{ id: '123', groupId: 'team', legacyMapping: true }],
+      mapping: {},
+      display: { enabled: false, displayStyle: 'tag' },
+      presetOverrides: { friend: { name: 'Teammate' } },
+    });
+  });
 });
 
 describe('dashboard save callbacks', () => {

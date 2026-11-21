@@ -45,8 +45,8 @@ describe('driver tag storage', () => {
         mapping: {},
         entries: [
           { name: 'Morgan Lee', groupId: 'friend', label: 'Captain' },
-          { id: '123', groupId: 'team' },
-          { name: 'Alex Smith', groupId: 'team' },
+          { id: '123', groupId: 'team', legacyMapping: true },
+          { name: 'Alex Smith', groupId: 'team', legacyMapping: true },
         ],
       });
       if (!settings) throw new Error('Expected saved driver tags');

@@ -1,10 +1,23 @@
-import type { DriverTagSettings } from '@irdashies/types';
+import type {
+  DriverTagEntry,
+  DriverTagSettings,
+  TagGroup,
+} from '@irdashies/types';
 import { app } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 
 const getFilePath = () =>
   path.join(app.getPath('userData'), 'driver-tags.json');
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const readString = (value: unknown) =>
+  typeof value === 'string' ? value : undefined;
+
+const readNumber = (value: unknown) =>
+  typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 
 const readSettingsFile = (filePath: string): unknown => {
   try {
@@ -18,70 +31,118 @@ const readLegacyConfig = (): unknown => {
   const config = readSettingsFile(
     path.join(app.getPath('userData'), 'config.json')
   );
-  if (config && typeof config === 'object' && 'driverTagSettings' in config) {
-    return config.driverTagSettings;
-  }
-  return undefined;
+  return isRecord(config) ? config.driverTagSettings : undefined;
 };
 
-/**
- * If a config was saved with widthPx set to the old tag-bar default (≤8px)
- * while displayStyle is 'badge', clear widthPx so the em-based default applies.
- */
-const migrateWidthPx = (settings: DriverTagSettings): DriverTagSettings => {
-  const display = settings.display;
-  if (!display) return settings;
-  const isBadge = !display.displayStyle || display.displayStyle === 'badge';
-  if (isBadge && display.widthPx !== undefined && display.widthPx <= 8) {
-    return {
-      ...settings,
-      display: { ...display, widthPx: undefined },
-    };
+const readGroupFields = (
+  value: Record<string, unknown>
+): Partial<TagGroup> => ({
+  id: readString(value.id),
+  name: readString(value.name),
+  color: readNumber(value.color),
+  icon: readString(value.icon),
+});
+
+const readGroup = (value: unknown): TagGroup | undefined => {
+  if (!isRecord(value)) return undefined;
+  const { id, name, color, icon } = readGroupFields(value);
+  return id && name !== undefined && color !== undefined
+    ? { id, name, color, icon }
+    : undefined;
+};
+
+const readEntry = (value: unknown): DriverTagEntry | undefined => {
+  if (!isRecord(value) || typeof value.groupId !== 'string' || !value.groupId) {
+    return undefined;
   }
-  return settings;
+  return {
+    id: readString(value.id),
+    name: readString(value.name),
+    label: readString(value.label),
+    groupId: value.groupId,
+    legacyMapping: value.legacyMapping === true ? true : undefined,
+  };
+};
+
+const readDisplay = (value: unknown): DriverTagSettings['display'] => {
+  if (!isRecord(value)) return { enabled: false };
+  const { displayStyle, iconWeight, nameDisplay } = value;
+  const widthPx = readNumber(value.widthPx);
+  const alternateFrequency = readNumber(value.alternateFrequency);
+  return {
+    enabled: value.enabled === true,
+    displayStyle:
+      displayStyle === 'badge' || displayStyle === 'tag'
+        ? displayStyle
+        : undefined,
+    widthPx:
+      displayStyle === 'tag' || (widthPx !== undefined && widthPx > 8)
+        ? widthPx
+        : undefined,
+    iconWeight:
+      iconWeight === 'fill' || iconWeight === 'regular'
+        ? iconWeight
+        : undefined,
+    nameDisplay:
+      nameDisplay === 'both' ||
+      nameDisplay === 'label' ||
+      nameDisplay === 'name'
+        ? nameDisplay
+        : undefined,
+    alternateFrequency:
+      alternateFrequency && alternateFrequency > 0
+        ? alternateFrequency
+        : undefined,
+  };
 };
 
 export const normalizeDriverTagSettings = (
   value: unknown
 ): DriverTagSettings | undefined => {
-  if (
-    !value ||
-    typeof value !== 'object' ||
-    !('groups' in value) ||
-    !Array.isArray(value.groups)
-  ) {
+  if (!isRecord(value)) return undefined;
+  const { groups, entries, mapping, presetOverrides, display } = value;
+  if (!Array.isArray(groups) && !Array.isArray(entries) && !isRecord(mapping))
     return undefined;
-  }
-  const settings = value as DriverTagSettings;
 
-  const mapping = settings.mapping;
-  if (!mapping || typeof mapping !== 'object' || Array.isArray(mapping)) {
-    return migrateWidthPx(settings);
-  }
-  const mappedDrivers = Object.entries(mapping);
-  if (mappedDrivers.length === 0) return migrateWidthPx(settings);
-
-  const entries = Array.isArray(settings.entries) ? [...settings.entries] : [];
-  const assignedIds = new Set(entries.map((entry) => entry?.id));
+  const validatedEntries = Array.isArray(entries)
+    ? entries.map(readEntry).filter((entry) => entry !== undefined)
+    : [];
+  const assignedIds = new Set(validatedEntries.map((entry) => entry.id));
   const assignedNames = new Set(
-    entries.map((entry) =>
-      typeof entry?.name === 'string' ? entry.name.toLowerCase() : undefined
-    )
+    validatedEntries.map((entry) => entry.name?.toLowerCase())
   );
   const legacyDrivers = new Map(
-    mappedDrivers.map(([key, groupId]) => [key.toLowerCase(), { key, groupId }])
+    (isRecord(mapping) ? Object.entries(mapping) : []).map(([key, groupId]) => [
+      key.toLowerCase(),
+      { key, groupId },
+    ])
   );
 
   for (const [name, { key, groupId }] of legacyDrivers) {
     if (!key || typeof groupId !== 'string' || !groupId) continue;
     if (/^\d+$/.test(key)) {
-      if (!assignedIds.has(key)) entries.push({ id: key, groupId });
+      if (!assignedIds.has(key))
+        validatedEntries.push({ id: key, groupId, legacyMapping: true });
     } else if (!assignedNames.has(name)) {
-      entries.push({ name: key, groupId });
+      validatedEntries.push({ name: key, groupId, legacyMapping: true });
     }
   }
 
-  return migrateWidthPx({ ...settings, entries, mapping: {} });
+  return {
+    groups: Array.isArray(groups)
+      ? groups.map(readGroup).filter((group) => group !== undefined)
+      : [],
+    entries: validatedEntries,
+    mapping: {},
+    display: readDisplay(display),
+    presetOverrides: isRecord(presetOverrides)
+      ? Object.fromEntries(
+          Object.entries(presetOverrides).flatMap(([key, override]) =>
+            isRecord(override) ? [[key, readGroupFields(override)]] : []
+          )
+        )
+      : undefined,
+  };
 };
 
 export const getDriverTagSettings = (): DriverTagSettings | undefined =>
