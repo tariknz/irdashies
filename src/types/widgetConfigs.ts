@@ -1354,6 +1354,15 @@ export interface GantryConfig {
 export interface GantryWindowConfig {
   /** Keep the Gantry window above iRacing and other apps. */
   alwaysOnTop: boolean;
+  bounds?: GantryWindowBounds;
+  maximized?: boolean;
+}
+
+export interface GantryWindowBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 /** Chase camera far enough back to show what happened around the car. */

@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BrowserWindow } from 'electron';
 import {
-  flushSettingsWindowMovementOnShutdown,
+  flushWindowMovementOnShutdown,
   markCorrectedBounds,
+  trackGantryWindowMovement,
   trackSettingsWindowMovement,
 } from './trackWindowMovement';
 import { saveSettingsWindowBounds } from './storage/settingsWindowBounds';
@@ -21,6 +22,7 @@ const DEBOUNCE_MS = 200;
 function fakeWindow(initial: Electron.Rectangle) {
   const handlers: Record<string, (() => void)[]> = {};
   let bounds = initial;
+  let maximized = false;
 
   const win = {
     on: (event: string, handler: () => void) => {
@@ -28,6 +30,8 @@ function fakeWindow(initial: Electron.Rectangle) {
       return win;
     },
     getBounds: () => bounds,
+    getNormalBounds: () => bounds,
+    isMaximized: () => maximized,
     isDestroyed: () => false,
   };
 
@@ -35,6 +39,9 @@ function fakeWindow(initial: Electron.Rectangle) {
     win: win as unknown as BrowserWindow,
     setBounds: (next: Electron.Rectangle) => {
       bounds = next;
+    },
+    setMaximized: (next: boolean) => {
+      maximized = next;
     },
     emit: (event: string) => (handlers[event] ?? []).forEach((h) => h()),
   };
@@ -51,7 +58,7 @@ describe('trackSettingsWindowMovement', () => {
   });
 
   afterEach(() => {
-    flushSettingsWindowMovementOnShutdown();
+    flushWindowMovementOnShutdown();
     vi.useRealTimers();
   });
 
@@ -101,7 +108,7 @@ describe('trackSettingsWindowMovement', () => {
     emit('resized');
     expect(saveSettingsWindowBounds).not.toHaveBeenCalled();
     if (event === 'close') emit('close');
-    else flushSettingsWindowMovementOnShutdown();
+    else flushWindowMovementOnShutdown();
     expect(saveSettingsWindowBounds).toHaveBeenCalledExactlyOnceWith(chosen);
     vi.advanceTimersByTime(DEBOUNCE_MS);
     expect(saveSettingsWindowBounds).toHaveBeenCalledOnce();
@@ -113,7 +120,7 @@ describe('trackSettingsWindowMovement', () => {
     emit('resized');
     emit('closed');
     vi.advanceTimersByTime(DEBOUNCE_MS);
-    flushSettingsWindowMovementOnShutdown();
+    flushWindowMovementOnShutdown();
     expect(saveSettingsWindowBounds).not.toHaveBeenCalled();
   });
 
@@ -171,5 +178,66 @@ describe('trackSettingsWindowMovement', () => {
 
     expect(saveSettingsWindowBounds).toHaveBeenCalledOnce();
     expect(saveSettingsWindowBounds).toHaveBeenCalledWith(RESCUED);
+  });
+});
+
+describe('trackGantryWindowMovement', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    flushWindowMovementOnShutdown();
+    vi.useRealTimers();
+  });
+
+  it('saves the position after the user moves the window', () => {
+    const save = vi.fn();
+    const { win, setBounds, emit } = fakeWindow(ON_SCREEN);
+    trackGantryWindowMovement(win, save);
+
+    setBounds({ ...ON_SCREEN, x: 2200 });
+    emit('moved');
+    vi.advanceTimersByTime(DEBOUNCE_MS);
+
+    expect(save).toHaveBeenCalledExactlyOnceWith({
+      bounds: { ...ON_SCREEN, x: 2200 },
+      maximized: false,
+    });
+  });
+
+  it.each(['maximize', 'unmaximize'])(
+    'saves the maximised state on %s',
+    (event) => {
+      const save = vi.fn();
+      const { win, setMaximized, emit } = fakeWindow(ON_SCREEN);
+      trackGantryWindowMovement(win, save);
+
+      setMaximized(event === 'maximize');
+      emit(event);
+      vi.advanceTimersByTime(DEBOUNCE_MS);
+
+      expect(save).toHaveBeenCalledExactlyOnceWith({
+        bounds: ON_SCREEN,
+        maximized: event === 'maximize',
+      });
+    }
+  );
+
+  it.each(['close', 'shutdown'])('drains a pending move on %s', (event) => {
+    const save = vi.fn();
+    const { win, setBounds, emit } = fakeWindow(ON_SCREEN);
+    trackGantryWindowMovement(win, save);
+
+    setBounds({ ...ON_SCREEN, y: 500 });
+    emit('moved');
+    expect(save).not.toHaveBeenCalled();
+    if (event === 'close') emit('close');
+    else flushWindowMovementOnShutdown();
+
+    expect(save).toHaveBeenCalledExactlyOnceWith({
+      bounds: { ...ON_SCREEN, y: 500 },
+      maximized: false,
+    });
   });
 });

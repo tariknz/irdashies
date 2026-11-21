@@ -128,7 +128,7 @@ import { setupRendererDataSubscriptions } from './app/bridge/rendererDataSubscri
 import { PerfHeapProfiler } from './app/perfHeapProfiler';
 import { createBeforeQuitHandler } from './app/shutdownCoordinator';
 import { monitorDevParent } from './app/devParentMonitor';
-import { flushSettingsWindowMovementOnShutdown } from './app/trackWindowMovement';
+import { flushWindowMovementOnShutdown } from './app/trackWindowMovement';
 
 const safeErrorDetails = (error: unknown) => {
   const code =
@@ -757,7 +757,7 @@ const SHUTDOWN_FLUSH_TIMEOUT_MS = 5_000;
 const handleBeforeQuit = createBeforeQuitHandler({
   prepareToQuit: () => overlayManager.markQuitting(),
   shutdown: async () => {
-    flushSettingsWindowMovementOnShutdown();
+    flushWindowMovementOnShutdown();
     keybindingManager?.stopGamepad();
     disconnectLifecycleChannel?.();
     sessionProfileSwitcher?.dispose();

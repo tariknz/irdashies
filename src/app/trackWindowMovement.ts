@@ -1,11 +1,12 @@
 import { BrowserWindow } from 'electron';
 import { saveSettingsWindowBounds as persistBounds } from './storage/settingsWindowBounds';
+import type { GantryWindowPlacement } from './gantryWindowPlacement';
 
 const DEBOUNCE_MS = 200;
 const pendingSaves = new Set<() => void>();
 
 /** Drain movement timers before the asynchronous storage shutdown flush. */
-export const flushSettingsWindowMovementOnShutdown = (): void => {
+export const flushWindowMovementOnShutdown = (): void => {
   for (const save of pendingSaves) save();
 };
 
@@ -41,17 +42,17 @@ export const markCorrectedBounds = (
   correctedBounds.set(browserWindow, { ...bounds });
 };
 
-/**
- * Track settings window position and size changes
- */
-export const trackSettingsWindowMovement = (browserWindow: BrowserWindow) => {
+const debounceBoundsSaves = (
+  browserWindow: BrowserWindow,
+  save: () => void
+): (() => void) => {
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
   const flush = () => {
     if (!debounceTimer) return;
     clearTimeout(debounceTimer);
     debounceTimer = undefined;
     pendingSaves.delete(flush);
-    if (!browserWindow.isDestroyed()) saveSettingsWindowBounds(browserWindow);
+    if (!browserWindow.isDestroyed()) save();
   };
   const debouncedSave = () => {
     if (debounceTimer) clearTimeout(debounceTimer);
@@ -59,8 +60,6 @@ export const trackSettingsWindowMovement = (browserWindow: BrowserWindow) => {
     debounceTimer = setTimeout(flush, DEBOUNCE_MS);
   };
 
-  browserWindow.on('moved', debouncedSave);
-  browserWindow.on('resized', debouncedSave);
   // Drain the movement debounce while the native rectangle is still readable.
   // The storage writer is flushed by the before-quit coordinator.
   browserWindow.on('close', flush);
@@ -68,6 +67,34 @@ export const trackSettingsWindowMovement = (browserWindow: BrowserWindow) => {
     clearTimeout(debounceTimer);
     pendingSaves.delete(flush);
   });
+  return debouncedSave;
+};
+
+/**
+ * Track settings window position and size changes
+ */
+export const trackSettingsWindowMovement = (browserWindow: BrowserWindow) => {
+  const changed = debounceBoundsSaves(browserWindow, () =>
+    saveSettingsWindowBounds(browserWindow)
+  );
+  browserWindow.on('moved', changed);
+  browserWindow.on('resized', changed);
+};
+
+export const trackGantryWindowMovement = (
+  browserWindow: BrowserWindow,
+  save: (placement: GantryWindowPlacement) => void
+) => {
+  const changed = debounceBoundsSaves(browserWindow, () =>
+    save({
+      bounds: browserWindow.getNormalBounds(),
+      maximized: browserWindow.isMaximized(),
+    })
+  );
+  browserWindow.on('moved', changed);
+  browserWindow.on('resized', changed);
+  browserWindow.on('maximize', changed);
+  browserWindow.on('unmaximize', changed);
 };
 
 function saveSettingsWindowBounds(browserWindow: BrowserWindow): void {
