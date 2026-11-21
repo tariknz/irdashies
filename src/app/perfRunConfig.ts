@@ -28,6 +28,41 @@ export function perfRunSimulator(
     : { simulator: iracing };
 }
 
+export const usesIsolatedReplayPublisher = (
+  replayInputPath: string,
+  platform: NodeJS.Platform
+): boolean => Boolean(replayInputPath) && platform === 'win32';
+
+export const replayPublisherArguments = (
+  inputPath: string,
+  speed: number
+): string[] => ['play', '--input', inputPath, '--speed', String(speed), '--loop'];
+
+export const replayRunEnvironment = (
+  replayInputPath: string,
+  platform: NodeJS.Platform,
+  env: NodeJS.ProcessEnv = process.env
+): Pick<
+  NodeJS.ProcessEnv,
+  | 'IRDASHIES_IRSDK_REPLAY'
+  | 'IRDASHIES_TELEMETRY_REPLAY'
+  | 'IRDASHIES_TELEMETRY_REPLAY_LOOP'
+> => {
+  const isolated = usesIsolatedReplayPublisher(replayInputPath, platform);
+  return {
+    IRDASHIES_IRSDK_REPLAY: isolated
+      ? '1'
+      : env.IRDASHIES_IRSDK_REPLAY,
+    IRDASHIES_TELEMETRY_REPLAY: replayInputPath
+      ? isolated
+        ? ''
+        : replayInputPath
+      : env.IRDASHIES_TELEMETRY_REPLAY,
+    IRDASHIES_TELEMETRY_REPLAY_LOOP:
+      replayInputPath && !isolated ? '1' : env.IRDASHIES_TELEMETRY_REPLAY_LOOP,
+  };
+};
+
 export interface PerfVisibilityPhase {
   visibility: 'visible' | 'hidden';
   durationSeconds: number;

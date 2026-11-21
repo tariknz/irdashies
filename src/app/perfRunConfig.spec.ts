@@ -6,7 +6,10 @@ import {
   getPerfRunConfig,
   parsePerfVisibilityPhases,
   perfRunSimulator,
+  replayPublisherArguments,
+  replayRunEnvironment,
   updatePerfDashboardMetadata,
+  usesIsolatedReplayPublisher,
 } from './perfRunConfig';
 
 const dashboard: DashboardLayout = {
@@ -194,6 +197,49 @@ describe('performance run configuration', () => {
       false,
     ]);
     expect(activePerfWidgetTypes(result)).toEqual(['standings']);
+  });
+});
+
+describe('perf:run replay transport', () => {
+  it('passes playback speed to the Windows publisher', () => {
+    expect(replayPublisherArguments('C:\\tapes\\race one.irdt', 2)).toEqual([
+      'play',
+      '--input',
+      'C:\\tapes\\race one.irdt',
+      '--speed',
+      '2',
+      '--loop',
+    ]);
+  });
+
+  it('uses the isolated publisher only on Windows', () => {
+    expect(usesIsolatedReplayPublisher('session.irdt', 'win32')).toBe(true);
+    expect(usesIsolatedReplayPublisher('session.irdt', 'linux')).toBe(false);
+    expect(usesIsolatedReplayPublisher('', 'win32')).toBe(false);
+  });
+
+  it('points Linux runs directly at the tape instead of the Windows publisher', () => {
+    expect(
+      replayRunEnvironment('session.irdt', 'linux', {
+        IRDASHIES_IRSDK_REPLAY: '1',
+      })
+    ).toEqual({
+      IRDASHIES_IRSDK_REPLAY: '1',
+      IRDASHIES_TELEMETRY_REPLAY: 'session.irdt',
+      IRDASHIES_TELEMETRY_REPLAY_LOOP: '1',
+    });
+    expect(replayRunEnvironment('session.irdt', 'win32')).toEqual({
+      IRDASHIES_IRSDK_REPLAY: '1',
+      IRDASHIES_TELEMETRY_REPLAY: '',
+      IRDASHIES_TELEMETRY_REPLAY_LOOP: undefined,
+    });
+    expect(replayRunEnvironment('', 'linux', { IRDASHIES_SIM: 'lmu' })).toEqual(
+      {
+        IRDASHIES_IRSDK_REPLAY: undefined,
+        IRDASHIES_TELEMETRY_REPLAY: undefined,
+        IRDASHIES_TELEMETRY_REPLAY_LOOP: undefined,
+      }
+    );
   });
 });
 

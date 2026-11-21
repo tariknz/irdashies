@@ -21,6 +21,7 @@ const metrics = () => ({ markStart: vi.fn(), markEnd: vi.fn() });
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllEnvs();
 });
 
 const target = (id: number, isVisible: () => boolean = () => true) => ({
@@ -72,6 +73,25 @@ const definition = <K extends ProcessorChannel>(
 });
 
 describe('ProcessorHost', () => {
+  it('runs benchmark processors without renderer subscribers when forced', () => {
+    vi.stubEnv('PERF_FORCE_PROCESSOR_DEMAND', '1');
+    const bus = new ChannelBus();
+    const processor = fakeProcessor('standings.snapshot', 5);
+    let now = 0;
+    const host = new ProcessorHost({
+      bus,
+      metrics: metrics(),
+      frameClock: () => now,
+      definitions: [definition('standings.snapshot', () => processor)],
+    });
+
+    now = 0.2;
+    host.onFrame({} as Telemetry);
+
+    expect(processor.onFrame).toHaveBeenCalledTimes(1);
+    expect(bus.metricsSnapshot().channelPublications['standings.snapshot']).toBeGreaterThan(0);
+  });
+
   it('enforces numeric processor cadence using an injected frame clock', () => {
     const bus = new ChannelBus();
     bus.subscribe(target(1), 'standings.snapshot');
