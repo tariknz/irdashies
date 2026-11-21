@@ -34,6 +34,16 @@ export interface ProcessMetrics {
   privateMemoryMB?: number;
 }
 
+export interface SdkWaitStats {
+  durationMs: NumericSampleStats;
+  calls: number;
+  reads: number;
+  unsuccessful: number;
+  totalMs: number;
+  timeoutMs: number;
+  targetHz: number;
+}
+
 export interface PerfReport {
   schemaVersion: 1;
   timestamp: string;
@@ -44,6 +54,7 @@ export interface PerfReport {
   tickCount: number;
   tickRateHz: number;
   tickIntervalMs: NumericSampleStats;
+  sdkWait?: SdkWaitStats;
   sections: Record<string, SectionStats>;
   eventLoopDelayMs: {
     mean: number;
@@ -159,6 +170,13 @@ export class TelemetryPerfMetrics {
   private iracingCpuForeground = new FixedSampleBuffer();
   private iracingCpuBackground = new FixedSampleBuffer();
   private iracingGpuUsage = new FixedSampleBuffer();
+  private sdkWaitDurations = new FixedSampleBuffer();
+  private sdkWaitCalls = 0;
+  private sdkWaitReads = 0;
+  private sdkWaitUnsuccessful = 0;
+  private sdkWaitTotalMs = 0;
+  private sdkWaitTimeoutMs = 0;
+  private sdkWaitTargetHz = 0;
   private eventLoopDelay = monitorEventLoopDelay({ resolution: 20 });
   private reportTimer: NodeJS.Timeout | null = null;
   private privateMemorySampler: NodeJS.Timeout | null = null;
@@ -182,6 +200,26 @@ export class TelemetryPerfMetrics {
 
   get enabled(): boolean {
     return this._enabled;
+  }
+
+  get sdkWaitEnabled(): boolean {
+    return this._enabled && process.env.PERF_SDK_WAIT === '1';
+  }
+
+  recordSdkWait(
+    durationMs: number,
+    success: boolean,
+    timeoutMs: number,
+    targetHz: number
+  ): void {
+    if (!this.sdkWaitEnabled) return;
+    this.sdkWaitDurations.add(durationMs);
+    this.sdkWaitCalls += 1;
+    if (success) this.sdkWaitReads += 1;
+    else this.sdkWaitUnsuccessful += 1;
+    this.sdkWaitTotalMs += durationMs;
+    this.sdkWaitTimeoutMs = timeoutMs;
+    this.sdkWaitTargetHz = targetHz;
   }
 
   startReporting(intervalMs: number = DEFAULT_REPORT_INTERVAL_MS): void {
@@ -310,6 +348,19 @@ export class TelemetryPerfMetrics {
       tickCount: this.tickCount,
       tickRateHz: this.tickCount / (elapsedMs / 1000),
       tickIntervalMs: this.tickIntervals.summarize(),
+      ...(this.sdkWaitEnabled
+        ? {
+            sdkWait: {
+              durationMs: this.sdkWaitDurations.summarize(),
+              calls: this.sdkWaitCalls,
+              reads: this.sdkWaitReads,
+              unsuccessful: this.sdkWaitUnsuccessful,
+              totalMs: this.sdkWaitTotalMs,
+              timeoutMs: this.sdkWaitTimeoutMs,
+              targetHz: this.sdkWaitTargetHz,
+            },
+          }
+        : {}),
       sections,
       eventLoopDelayMs: {
         mean: nanosecondsToMilliseconds(this.eventLoopDelay.mean),
@@ -339,6 +390,11 @@ export class TelemetryPerfMetrics {
     this.iracingCpuForeground.reset();
     this.iracingCpuBackground.reset();
     this.iracingGpuUsage.reset();
+    this.sdkWaitDurations.reset();
+    this.sdkWaitCalls = 0;
+    this.sdkWaitReads = 0;
+    this.sdkWaitUnsuccessful = 0;
+    this.sdkWaitTotalMs = 0;
     this.eventLoopDelay.reset();
     for (const buf of this.sections.values()) {
       buf.reset();

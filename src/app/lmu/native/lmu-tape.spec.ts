@@ -175,6 +175,28 @@ describeIfBuilt('lmu_replay tape', () => {
     expect(times[times.length - 1]).toBeGreaterThan(times[0]);
   });
 
+  it('hands back the same damage arrays while nothing is damaged further', () => {
+    const tape = tapeFor('damage');
+    writeFixture(tape, 400);
+    const sdk = openTape(tape);
+    sdk.start();
+
+    const frames: Record<string, unknown>[] = [];
+    const deadline = Date.now() + 5000;
+    while (Date.now() < deadline && frames.length < 2) {
+      const frame = sdk.read();
+      if (frame?.running && frame.playerHasVehicle) frames.push(frame);
+    }
+    sdk.stop();
+
+    expect(frames).toHaveLength(2);
+    const [first, second] = frames;
+    expect(first.dentSeverity).toBeInstanceOf(Uint8Array);
+    expect(second.dentSeverity).toBe(first.dentSeverity);
+    expect(second.wheelDetached).toBe(first.wheelDetached);
+    expect(second.lastImpactPos).toBe(first.lastImpactPos);
+  });
+
   it('serves a session snapshot with its drivers and classes', () => {
     const tape = tapeFor('session');
     writeFixture(tape, 200);

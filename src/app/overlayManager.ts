@@ -991,8 +991,32 @@ export class OverlayManager {
   }
 
   public hasTelemetryInspectorSubscribers(): boolean {
+    const subscriptions = this.rendererDataSubscriptions;
+    if (!subscriptions) return false;
+    for (const win of this.displayWindows.values()) {
+      if (
+        !win.isDestroyed() &&
+        win.isVisible() &&
+        subscriptions.has(win.webContents.id, 'telemetryInspector')
+      ) {
+        return true;
+      }
+    }
+    const gantry = this.gantryWindow;
+    if (
+      gantry &&
+      !gantry.isDestroyed() &&
+      gantry.isVisible() &&
+      subscriptions.has(gantry.webContents.id, 'telemetryInspector')
+    ) {
+      return true;
+    }
+    const settings = this.currentSettingsWindow;
     return (
-      this.rendererDataSubscriptions?.hasAny('telemetryInspector') ?? false
+      !!settings &&
+      !settings.isDestroyed() &&
+      settings.isVisible() &&
+      subscriptions.has(settings.webContents.id, 'telemetryInspector')
     );
   }
 

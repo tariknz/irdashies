@@ -132,6 +132,11 @@ export type Telemetry = {
   LmuBrakeWear?: TelemetryVar<number[]>;
   LmuSuspensionDamage?: TelemetryVar<number[]>;
   LmuAeroDamage?: TelemetryVar<number[]>;
+  LmuDentSeverity?: TelemetryVar<number[]>;
+  LmuWheelDetached?: TelemetryVar<boolean[]>;
+  LmuBodyDetached?: TelemetryVar<boolean[]>;
+  LmuLastImpactET?: TelemetryVar<number[]>;
+  LmuLastImpactPos?: TelemetryVar<number[]>;
   /**
    * From shared memory, not REST. Virtual energy remaining; the budget it
    * counts down from is LmuRest.maxVirtualEnergy on the session.

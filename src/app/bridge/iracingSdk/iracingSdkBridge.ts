@@ -376,12 +376,26 @@ export async function publishIRacingSDKEvents(
         try {
           while (!shouldStop) {
             const pollStartedAt = performance.now();
+            const measureSdkWait = perfMetrics.sdkWaitEnabled;
+            const sdkWaitStartedAt = measureSdkWait ? performance.now() : 0;
             const hasNewData = sdk.waitForData(WAIT_TIMEOUT);
+            const sdkWaitDuration = measureSdkWait
+              ? performance.now() - sdkWaitStartedAt
+              : undefined;
             if (!hasNewData) {
+              const targetHz = sdk.sessionStatusOK ? 25 : 0;
+              if (sdkWaitDuration !== undefined) {
+                perfMetrics.recordSdkWait(
+                  sdkWaitDuration,
+                  false,
+                  WAIT_TIMEOUT,
+                  targetHz
+                );
+              }
               // A paused replay remains connected but does not advance the SDK's
               // telemetry buffer. Keep the current session and channel snapshots
               // until either playback resumes or the SDK actually disconnects.
-              if (sdk.sessionStatusOK) {
+              if (targetHz > 0) {
                 // A seek remounts widgets after the disconnect. Their processors
                 // may activate after the single destination frame was consumed.
                 // Seed that new demand once, even when the tape stays paused.
@@ -395,7 +409,7 @@ export async function publishIRacingSDKEvents(
                 }
                 const remainingDelay = Math.max(
                   0,
-                  1000 / 25 - (performance.now() - pollStartedAt)
+                  1000 / targetHz - (performance.now() - pollStartedAt)
                 );
                 await delay(remainingDelay);
                 continue;
@@ -485,6 +499,14 @@ export async function publishIRacingSDKEvents(
               60,
               Math.max(25, channelBus?.maxActiveRateHz() ?? 25)
             );
+            if (sdkWaitDuration !== undefined) {
+              perfMetrics.recordSdkWait(
+                sdkWaitDuration,
+                true,
+                WAIT_TIMEOUT,
+                targetHz
+              );
+            }
             const remainingDelay = Math.max(
               0,
               1000 / targetHz - (performance.now() - pollStartedAt)
