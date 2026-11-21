@@ -1,3 +1,4 @@
+import { mockDashboardUpdater } from '../mockDashboardUpdater';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DashboardLayout } from '@irdashies/types';
@@ -14,7 +15,10 @@ const mocks = vi.hoisted(() => {
       trackType = next;
       listeners.forEach((listener) => listener());
     },
-    onDashboardUpdated: vi.fn(),
+    onDashboardUpdated: vi.fn((next: DashboardLayout) => {
+      dashboard = next;
+      listeners.forEach((listener) => listener());
+    }),
     getDashboard: () => dashboard,
     setDashboard: (next: DashboardLayout | undefined) => {
       dashboard = next;
@@ -32,7 +36,10 @@ vi.mock('@irdashies/context', async () => {
         mocks.listeners.add(onChange);
         return () => mocks.listeners.delete(onChange);
       }, mocks.getDashboard),
-      onDashboardUpdated: mocks.onDashboardUpdated,
+      onDashboardUpdated: mockDashboardUpdater(
+        () => mocks.getDashboard(),
+        mocks.onDashboardUpdated
+      ),
       bridge: {},
     }),
     useActiveSimulator: () => null,

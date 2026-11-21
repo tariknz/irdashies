@@ -274,6 +274,18 @@ function carSessionFlags(raw: Raw, out: number[]): number[] {
   return out;
 }
 
+function carSpeeds(
+  raw: Raw,
+  speeds: ArrayLike<number>,
+  out: number[]
+): number[] {
+  for (let carIdx = 0; carIdx < speeds.length; carIdx += 1) {
+    out[carIdx] = raw.vehTelemetryAvailable[carIdx] ? speeds[carIdx] : -1;
+  }
+  out.length = speeds.length;
+  return out;
+}
+
 function trackLocations(raw: Raw, out: number[]): number[] {
   for (let carIdx = 0; carIdx < raw.vehInPits.length; carIdx += 1) {
     out[carIdx] = trackLocation(raw, carIdx);
@@ -780,6 +792,13 @@ export function mapLmuTelemetry(
       blindSpot?.rightLongitudinalM ?? null
     ),
   };
+  if (raw.vehSpeed) {
+    t.LmuCarIdxSpeed = holdArray(
+      'LmuCarIdxSpeed',
+      carSpeeds(raw, raw.vehSpeed, scratch('LmuCarIdxSpeed')),
+      copyNumbers
+    );
+  }
 
   // Reference assignments, not copies: the poller replaces a cell when its
   // value changes, so there is nothing to clone and a frame allocates nothing

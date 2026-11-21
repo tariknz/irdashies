@@ -1,6 +1,6 @@
 import * as fsp from 'node:fs/promises';
 import path from 'node:path';
-import type { PitStopRecord } from '@irdashies/types';
+import type { PitStopRecord, PitStopSessionKey } from '@irdashies/types';
 import { PIT_STOP_CAPACITY } from '@irdashies/types';
 import logger from '../logger';
 
@@ -16,12 +16,7 @@ const MAX_FILE_BYTES = 10_000_000;
 // A busy field stops every few seconds; the file is rewritten whole.
 const WRITE_DEBOUNCE_MS = 2000;
 
-export interface PitStopHistoryKey {
-  subSessionId: number;
-  sessionNum: number;
-}
-
-interface StoredRecord extends PitStopHistoryKey {
+interface StoredRecord extends PitStopSessionKey {
   savedAt: number;
   stops: PitStopRecord[];
 }
@@ -113,7 +108,7 @@ const sanitizeRecord = (value: unknown): StoredRecord | null => {
   };
 };
 
-const sameKey = (a: PitStopHistoryKey, b: PitStopHistoryKey) =>
+const sameKey = (a: PitStopSessionKey, b: PitStopSessionKey) =>
   a.subSessionId === b.subSessionId && a.sessionNum === b.sessionNum;
 
 /** Valid records, newest first, without duplicates; null for a bad file. */
@@ -137,9 +132,9 @@ export interface PitStopHistoryStore {
   /** Reads the file once. Resolves with no history on any error. */
   load(): Promise<void>;
   /** The finished stops saved for a session, from memory. */
-  get(key: PitStopHistoryKey): PitStopRecord[] | null;
+  get(key: PitStopSessionKey): PitStopRecord[] | null;
   /** Replaces the session's finished stops. Writes are debounced. */
-  save(key: PitStopHistoryKey, stops: readonly PitStopRecord[]): void;
+  save(key: PitStopSessionKey, stops: readonly PitStopRecord[]): void;
   /** Writes any pending change now. */
   flush(): Promise<void>;
 }

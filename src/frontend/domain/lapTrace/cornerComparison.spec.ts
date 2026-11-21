@@ -7,7 +7,7 @@ import {
   cornerLapMetrics,
   cornerRange,
 } from './cornerComparison';
-import { SampleBuffer } from './lapSamples';
+import { SampleBuffer } from '@irdashies/utils/lapTrace/lapSamples';
 
 const TRACK_LENGTH_M = 5000;
 

@@ -6,9 +6,12 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useFuelProjectionSnapshot } from '@irdashies/context';
+import {
+  selectLapHistorySize,
+  useFuelProjectionSnapshot,
+  useFuelStore,
+} from '@irdashies/context';
 import { TIMED_SESSION_LAPS } from '@irdashies/types';
-import { useFuelStore, selectLapHistorySize } from './FuelStore';
 import type { FuelCalculation, FuelCalculatorSettings } from './types';
 import { useFuelLogger } from './useFuelLogger';
 import {

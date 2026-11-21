@@ -104,14 +104,15 @@ describe('dashboard save callbacks', () => {
         widgets: [],
         generalSettings: { colorPalette: 'legacy' as never },
       },
-      { profileId: 'race' }
+      { profileId: 'race', saveId: 'settings:1' }
     );
 
     expect(callback).toHaveBeenCalledWith(
       expect.objectContaining({
         generalSettings: expect.objectContaining({ colorPalette: 'default' }),
       }),
-      'race'
+      'race',
+      'settings:1'
     );
     unsubscribe?.();
   });
@@ -130,7 +131,8 @@ describe('dashboard renderer initialization', () => {
       expect(sender.send).toHaveBeenCalledOnce();
       expect(sender.send).toHaveBeenCalledWith(
         'dashboardUpdated',
-        expect.objectContaining({ widgets: expect.any(Array) })
+        expect.objectContaining({ widgets: expect.any(Array) }),
+        'race'
       );
       expect(mocks.sendState).toHaveBeenCalledWith(sender);
     }
@@ -150,7 +152,36 @@ describe('dashboard renderer initialization', () => {
   it('still broadcasts real dashboard changes', () => {
     const dashboard: DashboardLayout = { widgets: [] };
     emitDashboardUpdated(dashboard);
-    expect(mocks.publish).toHaveBeenCalledWith('dashboardUpdated', dashboard);
+    expect(mocks.publish).toHaveBeenCalledWith(
+      'dashboardUpdated',
+      dashboard,
+      'race',
+      undefined
+    );
+  });
+
+  it('carries the save ID through an Electron dashboard broadcast', () => {
+    const dashboard = { widgets: [], generalSettings: { fontSize: 'lg' } };
+    mocks.listeners.get('saveDashboard')?.(null, dashboard, {
+      profileId: 'race',
+      saveId: 'settings:2',
+    });
+    expect(mocks.publish).toHaveBeenCalledWith(
+      'dashboardUpdated',
+      expect.objectContaining(dashboard),
+      'race',
+      'settings:2'
+    );
+  });
+
+  it('ignores a save intended for a profile that is no longer active', () => {
+    mocks.listeners.get('saveDashboard')?.(
+      null,
+      { widgets: [] },
+      { profileId: 'previous', forceReload: true }
+    );
+    expect(mocks.writeData).not.toHaveBeenCalled();
+    expect(mocks.refresh).not.toHaveBeenCalled();
   });
 });
 

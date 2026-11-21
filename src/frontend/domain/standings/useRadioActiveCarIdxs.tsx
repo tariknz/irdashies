@@ -81,7 +81,6 @@ export const useRadioActiveCarIdxs = (persistenceMs: number): number[] => {
     scheduleNext();
   }, [transmitting, persistenceMs]);
 
-  // Clear the pending timer on unmount.
   useEffect(
     () => () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);

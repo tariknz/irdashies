@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { SettingsSection } from '../components/SettingSection';
 import { useDashboard } from '@irdashies/context';
@@ -16,10 +16,10 @@ export const HeartRateSettings = () => {
     (w) => w.id === SETTING_ID
   ) as HeartRateWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<HeartRateWidgetSettings>({
+  const settings: HeartRateWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config: savedSettings?.config ?? defaultConfig,
-  });
+  };
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -30,7 +30,6 @@ export const HeartRateSettings = () => {
       title="Heart Rate"
       description="Display your live heart rate via HypeRate — no API key needed."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (

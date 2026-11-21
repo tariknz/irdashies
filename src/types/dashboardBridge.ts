@@ -12,6 +12,7 @@ export interface SaveDashboardOptions {
   /** Skip window refresh - used for layout-only changes in container mode */
   skipWindowRefresh?: boolean;
   profileId?: string;
+  saveId?: string;
 }
 
 /**
@@ -39,12 +40,18 @@ export interface ContainerBoundsInfo {
   allDisplayBounds?: { x: number; y: number; width: number; height: number }[];
 }
 
+export type DashboardUpdateListener = (
+  dashboard: DashboardLayout,
+  profileId?: string,
+  saveId?: string
+) => void;
+
 export interface DashboardBridge {
   onEditModeToggled: (
     callback: (value: boolean) => void
   ) => (() => void) | undefined;
   dashboardUpdated: (
-    callback: (dashboard: DashboardLayout, profileId?: string) => void
+    callback: DashboardUpdateListener
   ) => (() => void) | undefined;
   reloadDashboard: () => void;
   saveDashboard: (

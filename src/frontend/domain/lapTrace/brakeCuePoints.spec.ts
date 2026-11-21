@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { LapTraceView } from '@irdashies/types';
 import { selectBrakeCuePoints } from './brakeCuePoints';
-import { SampleBuffer } from './lapSamples';
+import { SampleBuffer } from '@irdashies/utils/lapTrace/lapSamples';
 
 const TRACK_LENGTH_M = 5000;
 const SAMPLE_M = 1;

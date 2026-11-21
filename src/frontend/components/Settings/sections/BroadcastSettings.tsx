@@ -1,5 +1,5 @@
 import { validateImageDataUrl } from '@irdashies/utils/imageDataUrl';
-import { Fragment, useState } from 'react';
+import { Fragment, useLayoutEffect, useRef, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { BroadcastModuleDescription } from './BroadcastModuleDescription';
 import { changeMarker } from '../components/ChangedMark';
@@ -14,6 +14,7 @@ import { useDashboard } from '@irdashies/context';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { SettingSelectRow } from '../components/SettingSelectRow';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { useStoredTab } from '../hooks/useStoredTab';
 import type {
   BroadcastConfig,
@@ -111,20 +112,27 @@ const NAME_FORMATS: readonly NameFormat[] = [
 ];
 
 export const BroadcastSettings = ({ obsUrl }: { obsUrl?: string }) => {
-  const { currentDashboard } = useDashboard();
+  const { currentDashboard, currentProfile } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as BroadcastWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<BroadcastWidgetSettings>({
+  const settings: BroadcastWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config: {
       ...defaultConfig,
       ...savedSettings?.config,
       pages: { ...defaultConfig.pages, ...savedSettings?.config?.pages },
     },
-  });
+  };
   const [logoError, setLogoError] = useState('');
+  const logoReadVersion = useRef(0);
+  useLayoutEffect(
+    () => () => {
+      logoReadVersion.current += 1;
+    },
+    [currentProfile?.id]
+  );
   const [tab, setTab] = useStoredTab(`${SETTING_ID}Tab`, TAB_IDS);
 
   if (!currentDashboard) {
@@ -146,7 +154,6 @@ export const BroadcastSettings = ({ obsUrl }: { obsUrl?: string }) => {
         </BroadcastModuleDescription>
       }
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => {
@@ -162,7 +169,7 @@ export const BroadcastSettings = ({ obsUrl }: { obsUrl?: string }) => {
         );
         return (
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               {TABS.map(({ id, label }) => (
                 <TabButton
                   key={id}
@@ -173,7 +180,7 @@ export const BroadcastSettings = ({ obsUrl }: { obsUrl?: string }) => {
                   {label}
                 </TabButton>
               ))}
-            </div>
+            </SettingsTabBar>
 
             {tab === 'look' && (
               <SettingsSection title="Look" scaleWidgetId={SETTING_ID}>
@@ -211,6 +218,7 @@ export const BroadcastSettings = ({ obsUrl }: { obsUrl?: string }) => {
                           const file = e.target.files?.[0];
                           e.target.value = '';
                           if (!file) return;
+                          const version = ++logoReadVersion.current;
                           if (!file.type.startsWith('image/')) {
                             return setLogoError('Pick an image file.');
                           }
@@ -220,6 +228,7 @@ export const BroadcastSettings = ({ obsUrl }: { obsUrl?: string }) => {
                           setLogoError('');
                           const reader = new FileReader();
                           reader.onload = () => {
+                            if (version !== logoReadVersion.current) return;
                             const logo = validateImageDataUrl(reader.result);
                             if (!logo)
                               return setLogoError(
@@ -233,7 +242,10 @@ export const BroadcastSettings = ({ obsUrl }: { obsUrl?: string }) => {
                       {config.logo && (
                         <button
                           type="button"
-                          onClick={() => handleConfigChange({ logo: '' })}
+                          onClick={() => {
+                            logoReadVersion.current += 1;
+                            handleConfigChange({ logo: '' });
+                          }}
                           className="settings-button"
                         >
                           Remove

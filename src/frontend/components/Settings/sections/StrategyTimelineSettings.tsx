@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useDashboard } from '@irdashies/context';
 import {
   getWidgetDefaultConfig,
@@ -26,15 +25,7 @@ export const StrategyTimelineSettings = () => {
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as StrategyTimelineWidgetSettings | undefined;
-  const [settings, setSettings] = useState(() => fromSaved(savedSettings));
-
-  // useState only reads its initialiser once; follow the saved config when the
-  // dashboard loads after mount.
-  const [prevSaved, setPrevSaved] = useState(savedSettings);
-  if (JSON.stringify(savedSettings) !== JSON.stringify(prevSaved)) {
-    setPrevSaved(savedSettings);
-    if (savedSettings) setSettings(fromSaved(savedSettings));
-  }
+  const settings = fromSaved(savedSettings);
 
   if (!currentDashboard) return <>Loading...</>;
 
@@ -43,7 +34,6 @@ export const StrategyTimelineSettings = () => {
       title="Strategy Timeline"
       description="The team's view of the race plan: who drives when, projected against the race so far, with clashes against driver availability. It can also be docked in the Gantry. Needs a race plan from Settings, Race Plan."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (

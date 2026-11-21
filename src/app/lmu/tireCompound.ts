@@ -1,4 +1,4 @@
-import type { Tire } from '../irsdk/types/driver-info';
+import type { Tire } from '../../types/irSdk/driver-info';
 
 /**
  * LMU's tyre compounds, in the shape the standings already read.

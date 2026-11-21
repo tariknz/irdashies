@@ -12,7 +12,7 @@ import {
   VideoCaptureCommand,
   TelemetryVariable,
   TelemetryVarList,
-} from '../types';
+} from '../../../types/irSdk';
 import type { TapeReplayStatus } from '@irdashies/types';
 
 type TelemetryTypesDict = Record<string, number>;

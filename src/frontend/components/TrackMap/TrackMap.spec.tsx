@@ -46,6 +46,7 @@ import {
 
 describe('TrackMap', () => {
   beforeEach(() => {
+    canvasProps.length = 0;
     vi.resetAllMocks();
     vi.mocked(useDashboard).mockReturnValue({
       isDemoMode: false,
@@ -262,14 +263,12 @@ describe('TrackMap', () => {
 
     render(<TrackMap />);
 
-    // TrackCanvas should be called with displayMode prop
-    // This is tested implicitly by checking that the component renders without error
-    expect(true).toBe(true);
+    expect(canvasProps).toHaveLength(1);
+    expect(canvasProps[0].displayMode).toBe('sessionPosition');
   });
 
   describe('canvas props', () => {
     beforeEach(() => {
-      canvasProps.length = 0;
       vi.mocked(useTrackMapSettings).mockReturnValue({
         turnLabels: {
           enabled: true,

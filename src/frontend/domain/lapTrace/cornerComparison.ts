@@ -30,7 +30,7 @@ import {
   normalisePct,
   samplesCover,
   timeAtDistance,
-} from './lapSamples';
+} from '@irdashies/utils/lapTrace/lapSamples';
 import type { LapTraceSamples } from '@irdashies/types';
 
 /**

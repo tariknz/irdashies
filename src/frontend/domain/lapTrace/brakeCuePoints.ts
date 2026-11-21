@@ -41,8 +41,15 @@
  */
 
 import type { LapTraceSamples, LapTraceView } from '@irdashies/types';
-import { maxOver, minOver, valueAtDistance } from './lapSamples';
-import { nextEventIndex, signedLapDelta } from './pedalEvents';
+import {
+  maxOver,
+  minOver,
+  valueAtDistance,
+} from '@irdashies/utils/lapTrace/lapSamples';
+import {
+  nextEventIndex,
+  signedLapDelta,
+} from '@irdashies/utils/lapTrace/pedalEvents';
 
 /**
  * Speed a brake application must scrub to earn a countdown, in m/s (~7 km/h).

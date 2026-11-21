@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   DeltaSpeedWidgetSettings,
-  SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingDivider } from '../components/SettingDivider';
@@ -25,43 +25,18 @@ export const DeltaSpeedSettings = () => {
     (w) => w.id === SETTING_ID
   ) as DeltaSpeedWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<DeltaSpeedWidgetSettings>({
+  const settings: DeltaSpeedWidgetSettings = {
     id: SETTING_ID,
     enabled: savedSettings?.enabled ?? false,
     config:
       (savedSettings?.config as DeltaSpeedWidgetSettings['config']) ??
       defaultConfig,
-  });
+  };
 
-  // useState only reads its initialiser on the first render, and the Loading
-  // return below does not re-run it. Mounting before the dashboard has loaded —
-  // or switching profile — would otherwise leave this holding defaults, and
-  // BaseSettingsSection persists the whole settings object, so the next edit to
-  // any one control would write those defaults over the saved config. Re-seed
-  // whenever the saved widget changes, using the same guarded
-  // set-during-render sync as BaseSettingsSection so there is no stale paint.
-  const [prevSaved, setPrevSaved] = useState(savedSettings);
-  if (JSON.stringify(savedSettings) !== JSON.stringify(prevSaved)) {
-    setPrevSaved(savedSettings);
-    if (savedSettings) {
-      setSettings({
-        id: SETTING_ID,
-        enabled: savedSettings.enabled ?? false,
-        config:
-          (savedSettings.config as DeltaSpeedWidgetSettings['config']) ??
-          defaultConfig,
-      });
-    }
-  }
-
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () =>
-      (localStorage.getItem('deltaSpeedTab') as SettingsTabType) || 'options'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('deltaSpeedTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('deltaSpeedTab', [
+    'options',
+    'visibility',
+  ]);
 
   if (!currentDashboard) return <>Loading...</>;
 
@@ -70,7 +45,6 @@ export const DeltaSpeedSettings = () => {
       title="Delta Speed"
       description="Live speed difference against your session best clean lap at this point on track."
       settings={settings as DeltaSpeedWidgetSettings}
-      onSettingsChange={(s) => setSettings(s as DeltaSpeedWidgetSettings)}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
@@ -80,7 +54,7 @@ export const DeltaSpeedSettings = () => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="options"
                 activeTab={activeTab}
@@ -95,7 +69,7 @@ export const DeltaSpeedSettings = () => {
               >
                 Visibility
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div>
               {activeTab === 'options' && (

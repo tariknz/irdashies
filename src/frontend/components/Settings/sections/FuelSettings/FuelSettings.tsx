@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboard } from '@irdashies/context';
 import { PlusIcon } from '@phosphor-icons/react';
@@ -23,53 +23,26 @@ export const FuelSettings = ({ widgetId }: FuelSettingsProps) => {
     currentDashboard?.widgets.filter((w) => (w.type || w.id) === widgetType) ||
     [];
 
-  const [selectedId, setSelectedId] = useState(() => {
-    if (widgetId) return widgetId;
-    if (fuelWidgets.length > 0) return fuelWidgets[0].id;
-    return '';
-  });
-
-  // Track previous widgetId to detect external prop changes
-  const [prevWidgetId, setPrevWidgetId] = useState(widgetId);
-
-  // Sync state when prop changes (crucial for URL navigation updates)
-  if (widgetId !== prevWidgetId) {
-    setPrevWidgetId(widgetId);
-    if (widgetId) {
-      setSelectedId(widgetId);
-    }
-  }
-
-  const handleWidgetChange = (newId: string) => {
-    setSelectedId(newId);
-    navigate(`/settings/${newId}`);
-  };
-
   const handleAddWidget = () => {
     if (!currentDashboard || !onDashboardUpdated) return;
 
-    // Create new widget ID
     const newId = `${widgetType}-${generateId()}`;
-    // Create new widget structure
     const newWidget = {
       id: newId,
       type: widgetType,
       enabled: true,
-      layout: { x: 50, y: 50, width: 300, height: 220 }, // Default window size
-      config: defaultConfig as unknown as Record<string, unknown>, // Start with default config
+      layout: { x: 50, y: 50, width: 300, height: 220 },
+      config: defaultConfig as unknown as Record<string, unknown>,
     };
 
-    // Update Dashboard
     onDashboardUpdated({
       ...currentDashboard,
       widgets: [...currentDashboard.widgets, newWidget],
     });
 
-    // Select the new widget
-    handleWidgetChange(newId);
+    navigate(`/settings/${newId}`);
   };
 
-  // If no widgets and we're in fuel mode, show create button prominently or handle empty state
   if (fuelWidgets.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-4">
@@ -85,6 +58,8 @@ export const FuelSettings = ({ widgetId }: FuelSettingsProps) => {
     );
   }
 
+  const selectedId = widgetId ?? fuelWidgets[0].id;
+
   return (
     <div
       className={
@@ -93,14 +68,11 @@ export const FuelSettings = ({ widgetId }: FuelSettingsProps) => {
           : 'space-y-4 h-full overflow-y-auto p-1'
       }
     >
-      {/* Render settings for selected ID */}
-      {selectedId && (
-        <SingleFuelWidgetSettings
-          key={selectedId}
-          widgetId={selectedId}
-          disableInternalScroll={!sharedPreview}
-        />
-      )}
+      <SingleFuelWidgetSettings
+        key={selectedId}
+        widgetId={selectedId}
+        disableInternalScroll={!sharedPreview}
+      />
     </div>
   );
 };

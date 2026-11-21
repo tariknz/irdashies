@@ -1,3 +1,4 @@
+import { mockDashboardUpdater } from '../mockDashboardUpdater';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DashboardLayout, Session } from '@irdashies/types';
@@ -13,7 +14,10 @@ vi.mock('@irdashies/context', async () => {
   return {
     useDashboard: () => ({
       currentDashboard: dashboard,
-      onDashboardUpdated: mocks.onDashboardUpdated,
+      onDashboardUpdated: mockDashboardUpdater(
+        () => dashboard,
+        mocks.onDashboardUpdated
+      ),
     }),
     useActiveSimulator: () => 'lmu',
     useSimWidgetSupport: () => DEFAULT_SIM_WIDGET_SUPPORT,
