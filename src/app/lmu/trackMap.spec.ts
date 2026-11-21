@@ -27,6 +27,7 @@ function frame(
     playerHasVehicle: true,
     playerVehicleIdx: 0,
     lapStartET: 100,
+    vehLapStartET: [overrides.lapStartET ?? 100],
     lapInvalidated: false,
     pos: [progress * 1000, 12, -progress * 500],
     vehInPits: [0],
@@ -217,6 +218,64 @@ describe('LMU track map', () => {
     expect(
       recorder.update(frame(0.005, { lapStartET: 200 }))?.active.trackPathPoints
     ).toHaveLength(512);
+  });
+
+  it('does not take the previous lap time while scoring is still on the old lap', () => {
+    const recorder = new LmuTrackMapRecorder();
+    for (let index = 0; index <= 100; index++) {
+      recorder.update(frame(index / 100));
+    }
+
+    for (let index = 0; index <= 9; index++) {
+      expect(
+        recorder.update(
+          frame(index / 1000, {
+            lapStartET: 200,
+            vehLapStartET: [100],
+            vehLastLapTime: [100],
+          })
+        )
+      ).toBeNull();
+    }
+    const map = recorder.update(
+      frame(0.01, {
+        lapStartET: 200,
+        vehLapStartET: [200],
+        vehLastLapTime: [100],
+      })
+    );
+
+    expect(map?.active.trackPathPoints).toHaveLength(512);
+  });
+
+  it('drops an untimed lap when scoring never reaches the new lap but still shows a matching time', () => {
+    const recorder = new LmuTrackMapRecorder();
+    for (let index = 0; index <= 100; index++) {
+      recorder.update(frame(index / 100));
+    }
+    for (let index = 0; index <= 60; index++) {
+      expect(
+        recorder.update(
+          frame(index / 1000, {
+            lapStartET: 200,
+            elapsedTime: 200 + index / 10,
+            vehLapStartET: [100],
+            vehLastLapTime: [100],
+          })
+        )
+      ).toBeNull();
+    }
+
+    expect(
+      recorder.update(
+        frame(0.07, {
+          lapStartET: 200,
+          elapsedTime: 206.1,
+          vehLapStartET: [200],
+          vehLastLapTime: [100],
+        })
+      )
+    ).toBeNull();
   });
 
   it.each([

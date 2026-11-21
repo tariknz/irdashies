@@ -11,6 +11,7 @@ const MIN_RECORDED_POINTS = 20;
 const MAX_COVERAGE_GAP_FRACTION = 0.05;
 const LAP_TIME_TOLERANCE_SECONDS = 0.05;
 const LAP_TIME_WAIT_SECONDS = 5;
+const SCORING_SYNC_TOLERANCE_SECONDS = 0.05;
 
 interface RecordedPoint {
   x: number;
@@ -30,6 +31,7 @@ export interface LmuMapFrame {
   vehInPits: ArrayLike<number>;
   vehLapDistPct: ArrayLike<number>;
   vehLastLapTime: ArrayLike<number>;
+  vehLapStartET?: ArrayLike<number>;
 }
 
 const finite = (value: number | undefined): value is number =>
@@ -360,7 +362,13 @@ export class LmuTrackMapRecorder {
     const points = this.completedPoints;
     if (!points || this.lapStartET === null) return null;
     const reportedLapTime = frame.vehLastLapTime[frame.playerVehicleIdx];
+    const scoringLapStart = frame.vehLapStartET?.[frame.playerVehicleIdx];
+    const scoringCaughtUp =
+      frame.vehLapStartET === undefined ||
+      (finite(scoringLapStart) &&
+        scoringLapStart >= this.lapStartET - SCORING_SYNC_TOLERANCE_SECONDS);
     if (
+      scoringCaughtUp &&
       finite(reportedLapTime) &&
       reportedLapTime > 0 &&
       Math.abs(reportedLapTime - this.completedLapTime) <=
