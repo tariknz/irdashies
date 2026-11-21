@@ -5,6 +5,7 @@ import * as yaml from 'js-yaml';
 import { IRacingSDK } from './irsdk-node';
 import { getSdkOrMock } from './get-sdk';
 import type { INativeSDK, NativeTelemetryDataView } from '../native';
+import type { TelemetryVarList } from '../../../types/irSdk';
 import logger from '../../logger';
 
 vi.mock('../../logger', () => ({ default: { error: vi.fn() } }));
@@ -128,10 +129,13 @@ describe('irsdk-node', () => {
     const previousValues = first.Speed.value;
     bytes.setFloat32(20, 12.5, true);
     bytes.setInt8(28, 0);
+    bytes.setFloat32(33, 0.25, true);
     const next = sdk.getTelemetry();
     expect(next.Speed.value).toBe(previousValues);
     expect(next.Speed.value).toEqual([12.5]);
     expect(next.IsOnTrack.value).toEqual([false]);
+    expect(next.LapDistPct.value).toBe(first.LapDistPct.value);
+    expect(next.LapDistPct.value).toEqual([0.25]);
   });
 
   it.each(sessionFixtureDirectories)(
@@ -733,6 +737,197 @@ CarSetup:
       expect(JSON.stringify(vi.mocked(logger.error).mock.calls)).not.toMatch(
         /PrivateDriver|secret|value/
       );
+    });
+  });
+
+  describe('getTelemetry', () => {
+    const TelemetryVar = (varType: number, value: ArrayBuffer) => ({
+      name: 'Speed',
+      description: '',
+      unit: '',
+      countAsTime: false,
+      length: 1,
+      varType,
+      value,
+    });
+
+    it('reads updated values from a reused native frame object', () => {
+      const buffer = new ArrayBuffer(4);
+      const values = new Float32Array(buffer);
+      values[0] = 10;
+      const raw = {
+        Speed: TelemetryVar(4, buffer),
+      } as unknown as TelemetryVarList;
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue(raw);
+
+      expect(sdk.getTelemetry().Speed.value).toEqual([10]);
+      values[0] = 20;
+      expect(sdk.getTelemetry().Speed.value).toEqual([20]);
+    });
+
+    it('picks up a new variable layout when the native frame changes', () => {
+      const firstBuffer = new ArrayBuffer(4);
+      new Float32Array(firstBuffer)[0] = 10;
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue({
+        Speed: TelemetryVar(4, firstBuffer),
+      } as unknown as TelemetryVarList);
+      expect(sdk.getTelemetry().Speed.value).toEqual([10]);
+
+      const secondBuffer = new ArrayBuffer(4);
+      new Int32Array(secondBuffer)[0] = 3;
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue({
+        Gear: { ...TelemetryVar(3, secondBuffer), name: 'Gear' },
+      } as unknown as TelemetryVarList);
+
+      const telemetry = sdk.getTelemetry();
+      expect(telemetry.Gear.value).toEqual([3]);
+      expect(telemetry.Speed).toBeUndefined();
+    });
+
+    it('rebuilds cached keys and views when the data-view frame is replaced', () => {
+      const firstBuffer = new ArrayBuffer(4);
+      new Float32Array(firstBuffer)[0] = 12.5;
+      mockSdk.getTelemetryDataView = vi.fn().mockReturnValue({
+        Speed: {
+          ...TelemetryVar(4, firstBuffer),
+          value: new Uint8Array(firstBuffer),
+        },
+      } as NativeTelemetryDataView);
+      expect(sdk.getTelemetry().Speed.value).toEqual([12.5]);
+
+      const secondBuffer = new ArrayBuffer(4);
+      new Int32Array(secondBuffer)[0] = 4;
+      mockSdk.getTelemetryDataView = vi.fn().mockReturnValue({
+        Gear: {
+          ...TelemetryVar(3, secondBuffer),
+          name: 'Gear',
+          value: new Uint8Array(secondBuffer),
+        },
+      } as NativeTelemetryDataView);
+
+      const telemetry = sdk.getTelemetry();
+      expect(telemetry.Gear.value).toEqual([4]);
+      expect(telemetry.Speed).toBeUndefined();
+    });
+
+    it('truncates and grows reused arrays on count changes', () => {
+      const floats = (values: number[]) => {
+        const buffer = new ArrayBuffer(values.length * 4);
+        new Float32Array(buffer).set(values);
+        return buffer;
+      };
+      const frame = (values: number[]) =>
+        ({
+          Speed: TelemetryVar(4, floats(values)),
+        }) as unknown as TelemetryVarList;
+
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue(frame([0.5, 0.25]));
+      expect(sdk.getTelemetry().Speed.value).toEqual([0.5, 0.25]);
+
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue(frame([0.75]));
+      const shrunk = sdk.getTelemetry().Speed.value;
+      expect(shrunk).toHaveLength(1);
+      expect(shrunk).toEqual([0.75]);
+
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue(frame([1, 2, 4]));
+      expect(sdk.getTelemetry().Speed.value).toEqual([1, 2, 4]);
+    });
+
+    it('rebuilds cached arrays when a variable changes type', () => {
+      const numbers = new ArrayBuffer(4);
+      new Float32Array(numbers)[0] = 7;
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue({
+        Speed: TelemetryVar(4, numbers),
+      } as unknown as TelemetryVarList);
+      expect(sdk.getTelemetry().Speed.value).toEqual([7]);
+
+      const booleans = new ArrayBuffer(1);
+      new Int8Array(booleans)[0] = 1;
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue({
+        Speed: TelemetryVar(1, booleans),
+      } as unknown as TelemetryVarList);
+      expect(sdk.getTelemetry().Speed.value).toEqual([true]);
+
+      const numbersAgain = new ArrayBuffer(4);
+      new Float32Array(numbersAgain)[0] = 9;
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue({
+        Speed: TelemetryVar(4, numbersAgain),
+      } as unknown as TelemetryVarList);
+      expect(sdk.getTelemetry().Speed.value).toEqual([9]);
+    });
+
+    it('drops removed keys and reads added keys on a layout change', () => {
+      const buffer = new ArrayBuffer(4);
+      new Float32Array(buffer)[0] = 3;
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue({
+        Speed: TelemetryVar(4, buffer),
+      } as unknown as TelemetryVarList);
+      expect(sdk.getTelemetry().Speed.value).toEqual([3]);
+
+      const gearBuffer = new ArrayBuffer(4);
+      new Int32Array(gearBuffer)[0] = 3;
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue({
+        Gear: TelemetryVar(3, gearBuffer),
+      } as unknown as TelemetryVarList);
+      const next = sdk.getTelemetry();
+      expect(next.Speed).toBeUndefined();
+      expect(next.Gear.value).toEqual([3]);
+    });
+
+    it('handles a same-size layout change with a different element count', () => {
+      const frame = (varType: number, values: number[]) => {
+        const buffer = new ArrayBuffer(4);
+        if (varType === 4) new Float32Array(buffer).set(values);
+        else new Int32Array(buffer).set(values);
+        return {
+          Speed: TelemetryVar(varType, buffer),
+        } as unknown as TelemetryVarList;
+      };
+
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue(frame(4, [1]));
+      expect(sdk.getTelemetry().Speed.value).toEqual([1]);
+
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue(frame(3, [2]));
+      expect(sdk.getTelemetry().Speed.value).toEqual([2]);
+    });
+
+    it('clears cached telemetry on stop and reconnect', () => {
+      const buffer = new ArrayBuffer(4);
+      new Float32Array(buffer)[0] = 5;
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue({
+        Speed: TelemetryVar(4, buffer),
+      } as unknown as TelemetryVarList);
+      expect(sdk.getTelemetry().Speed.value).toEqual([5]);
+
+      sdk.stopSDK();
+      const nextBuffer = new ArrayBuffer(4);
+      new Int32Array(nextBuffer)[0] = 6;
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue({
+        Gear: TelemetryVar(3, nextBuffer),
+      } as unknown as TelemetryVarList);
+
+      const telemetry = sdk.getTelemetry();
+      expect(telemetry.Speed).toBeUndefined();
+      expect(telemetry.Gear.value).toEqual([6]);
+    });
+
+    it('keeps the documented mutable-frame behaviour for retained arrays', () => {
+      const buffer = new ArrayBuffer(4);
+      const values = new Float32Array(buffer);
+      values[0] = 1;
+      const raw = {
+        Speed: TelemetryVar(4, buffer),
+      } as unknown as TelemetryVarList;
+      vi.mocked(mockSdk.getTelemetryData).mockReturnValue(raw);
+
+      const first = sdk.getTelemetry();
+      const retained = first.Speed.value;
+      values[0] = 2;
+      const second = sdk.getTelemetry();
+
+      expect(second).not.toBe(first);
+      expect(second.Speed.value).toBe(retained);
+      expect(retained).toEqual([2]);
     });
   });
 });

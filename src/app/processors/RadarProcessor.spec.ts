@@ -101,6 +101,17 @@ describe('RadarProcessor', () => {
     expect(cars.every((car) => car.lane === 0)).toBe(true);
   });
 
+  it('does not mutate a published snapshot when the next frame arrives', () => {
+    const processor = createProcessor();
+    processor.onFrame(frame({ time: 1, pcts: [0.5, 0.5 + m(30)] }));
+    const published = processor.snapshot().cars.map((car) => ({ ...car }));
+
+    processor.onFrame(frame({ time: 2, pcts: [0.5, 0.5 + m(5)] }));
+
+    expect(processor.snapshot().cars[0].dist).toBeCloseTo(5);
+    expect(published[0].dist).toBeCloseTo(30);
+  });
+
   it('measures across the start/finish line by the short way', () => {
     const processor = createProcessor();
     processor.onFrame(frame({ time: 1, pcts: [0.999, m(6), 1 - m(10)] }));
