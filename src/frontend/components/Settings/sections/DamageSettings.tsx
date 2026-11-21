@@ -41,7 +41,7 @@ export const DamageSettings = () => {
   return (
     <BaseSettingsSection
       title="Damage"
-      description="Top-down damage silhouette matched to your car class (GT, prototype, open-wheel, hatch, stock, truck). LMU: panel dents. iRacing: repair flags and tyre wear."
+      description="Top-down chassis schematic with wheels and suspension markers. Damaged areas turn yellow/red and show remaining % when enabled. Engine warnings appear as side icons."
       settings={settings}
       widgetId={SETTING_ID}
     >
