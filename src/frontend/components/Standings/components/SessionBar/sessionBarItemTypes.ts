@@ -9,6 +9,7 @@ export const SESSION_BAR_ITEM_KEYS = [
   'localTime',
   'sessionClockTime',
   'trackWetness',
+  'trackState',
   'precipitation',
   'humidity',
   'airTemperature',

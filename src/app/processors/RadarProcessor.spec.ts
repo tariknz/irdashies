@@ -38,8 +38,6 @@ interface FrameOptions {
   carLeftRight?: number;
   brake?: number;
   sessionFlags?: number;
-  relativeAvailable?: boolean[];
-  relativeLongitudinal?: number[];
 }
 
 const frame = ({
@@ -53,14 +51,8 @@ const frame = ({
   carLeftRight = CarLeftRight.Clear,
   brake = 0,
   sessionFlags = 0,
-  relativeAvailable,
-  relativeLongitudinal,
 }: FrameOptions) =>
   ({
-    ...(relativeAvailable && {
-      LmuCarIdxRelativeAvailable: { value: relativeAvailable },
-      LmuCarIdxRelativeLongitudinal: { value: relativeLongitudinal ?? [] },
-    }),
     SessionTime: { value: [time] },
     CarIdxLapDistPct: { value: pcts },
     CamCarIdx: { value: [camCarIdx] },
@@ -92,89 +84,6 @@ describe('parseTrackLength', () => {
   it('returns 0 for missing or malformed input', () => {
     expect(parseTrackLength(undefined)).toBe(0);
     expect(parseTrackLength('fast km')).toBe(0);
-  });
-});
-
-describe('RadarProcessor with LMU relative positions', () => {
-  it('places and keeps a rival across a bend by its offset from the player', () => {
-    const processor = createProcessor();
-    processor.onFrame(
-      frame({
-        time: 1,
-        pcts: [0.5, 0.5 + m(175), 0.5 + m(20)],
-        relativeAvailable: [false, true, true],
-        relativeLongitudinal: [0, 45, 18],
-      })
-    );
-
-    const cars = processor.snapshot().cars;
-    expect(cars.map((car) => car.carIdx)).toEqual([2, 1]);
-    expect(cars[0].dist).toBeCloseTo(18);
-    expect(cars[1].dist).toBeCloseTo(45);
-  });
-
-  it('falls back to lap distance for a car without an offset', () => {
-    const processor = createProcessor();
-    processor.onFrame(
-      frame({
-        time: 1,
-        pcts: [0.5, 0.5 + m(30), 0.5 + m(175)],
-        relativeAvailable: [false, false, false],
-        relativeLongitudinal: [0, 99, 99],
-      })
-    );
-
-    const cars = processor.snapshot().cars;
-    expect(cars.map((car) => car.carIdx)).toEqual([1]);
-    expect(cars[0].dist).toBeCloseTo(30);
-  });
-
-  it('falls back to lap distance when the offsets are withheld for a camera car', () => {
-    const processor = createProcessor();
-    processor.onFrame(
-      frame({
-        time: 1,
-        camCarIdx: 2,
-        pcts: [0.5 + m(175), 0.5 + m(30), 0.5],
-        relativeAvailable: [],
-        relativeLongitudinal: [],
-      })
-    );
-
-    const cars = processor.snapshot().cars;
-    expect(cars.map((car) => car.carIdx)).toEqual([1]);
-    expect(cars[0].dist).toBeCloseTo(30);
-  });
-
-  it('ignores offsets measured from the player while the camera is on another car', () => {
-    const processor = createProcessor();
-    processor.onFrame(
-      frame({
-        time: 1,
-        camCarIdx: 2,
-        pcts: [0.5 + m(175), 0.5 + m(30), 0.5],
-        relativeAvailable: [false, true, false],
-        relativeLongitudinal: [0, 5, 0],
-      })
-    );
-
-    const cars = processor.snapshot().cars;
-    expect(cars.map((car) => car.carIdx)).toEqual([1]);
-    expect(cars[0].dist).toBeCloseTo(30);
-  });
-
-  it('gives a frame without LMU offsets, as iRacing sends, the lap-distance result', () => {
-    const pcts = [0.5, 0.5 + m(30), 0.5 - m(8), 0.5 + m(175)];
-    const processor = createProcessor();
-    const iracingFrame = frame({ time: 1, pcts });
-    expect(iracingFrame.LmuCarIdxRelativeAvailable).toBeUndefined();
-    processor.onFrame(iracingFrame);
-
-    const cars = processor.snapshot().cars;
-    expect(cars.map((car) => [car.carIdx, Math.round(car.dist)])).toEqual([
-      [2, -8],
-      [1, 30],
-    ]);
   });
 });
 

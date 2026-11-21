@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Session, Telemetry } from '@irdashies/types';
 import { IncidentProcessor } from './IncidentProcessor';
 import { IncidentType } from '../../types/raceControl';
-import { TrackLocation, SessionState } from '../irsdk/types/enums';
+import { TrackLocation, SessionState } from '../../types/irSdk/enums';
 
 const raceSession = (overrides: Record<string, unknown> = {}): Session =>
   ({

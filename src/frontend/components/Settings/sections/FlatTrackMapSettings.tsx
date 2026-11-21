@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import {
   FlatTrackMapWidgetSettings,
-  SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -22,24 +22,20 @@ export const FlatTrackMapSettings = () => {
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as FlatTrackMapWidgetSettings | undefined;
-  const [settings, setSettings] = useState<FlatTrackMapWidgetSettings>({
+  const settings: FlatTrackMapWidgetSettings = {
     enabled:
       currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
       false,
     config:
       (savedSettings?.config as FlatTrackMapWidgetSettings['config']) ??
       defaultConfig,
-  });
+  };
 
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () =>
-      (localStorage.getItem('flatTrackMapTab') as SettingsTabType) || 'track'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('flatTrackMapTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('flatTrackMapTab', [
+    'track',
+    'drivers',
+    'visibility',
+  ]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -50,7 +46,6 @@ export const FlatTrackMapSettings = () => {
       title="Flat Track Map"
       description="Configure flat track map visualization settings."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId="flatmap"
     >
       {(handleConfigChange) => (
@@ -61,7 +56,7 @@ export const FlatTrackMapSettings = () => {
         >
           <div className="space-y-4">
             {/* Tabs */}
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="track"
                 activeTab={activeTab}
@@ -83,7 +78,7 @@ export const FlatTrackMapSettings = () => {
               >
                 Visibility
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div>
               {/* TRACK TAB */}

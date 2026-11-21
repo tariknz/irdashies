@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   CornerNameWidgetSettings,
-  SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
@@ -10,6 +9,7 @@ import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SettingProps, settingPropFor } from '../components/SettingProp';
 
 const SETTING_ID = 'cornername';
@@ -24,21 +24,18 @@ export const CornerNameSettings = () => {
     (w) => w.id === SETTING_ID
   ) as CornerNameWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<CornerNameWidgetSettings>({
+  const settings: CornerNameWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config:
       (savedSettings?.config as CornerNameWidgetSettings['config']) ??
       defaultConfig,
-  });
+  };
 
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () =>
-      (localStorage.getItem('cornerNameTab') as SettingsTabType) || 'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('cornerNameTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('cornerNameTab', [
+    'display',
+    'styling',
+    'visibility',
+  ]);
 
   if (!currentDashboard) return <>Loading...</>;
 
@@ -47,7 +44,6 @@ export const CornerNameSettings = () => {
       title="Corner Names"
       description="Displays the current track section name, corner number, and progress through the section. Track data sourced from lovely-track-data."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
@@ -57,7 +53,7 @@ export const CornerNameSettings = () => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="display"
                 activeTab={activeTab}
@@ -79,7 +75,7 @@ export const CornerNameSettings = () => {
               >
                 Visibility
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div>
               {activeTab === 'display' && (

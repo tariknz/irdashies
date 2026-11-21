@@ -14,12 +14,13 @@ const METERS_PER_SECOND_TO_KILOMETERS_PER_HOUR = 3.6;
 
 const numericValues = (
   frame: Telemetry,
-  key: keyof Telemetry
+  key: keyof Telemetry,
+  invalid = 0
 ): readonly number[] => {
   const values = frame[key]?.value;
   if (!Array.isArray(values)) return [];
   return values.map((value) =>
-    typeof value === 'number' && Number.isFinite(value) ? value : 0
+    typeof value === 'number' && Number.isFinite(value) ? value : invalid
   );
 };
 
@@ -29,6 +30,16 @@ const numericValue = (
 ): number | null => {
   const value = frame[key]?.value?.[0];
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
+};
+
+const measuredSpeed = (
+  speeds: readonly number[],
+  carIdx: number
+): number | null => {
+  const speed = speeds[carIdx];
+  return speed !== undefined && speed >= 0
+    ? speed * METERS_PER_SECOND_TO_KILOMETERS_PER_HOUR
+    : null;
 };
 
 const trackLengthFrom = (session: Session): number => {
@@ -85,28 +96,26 @@ export class CarSpeedsProcessor implements TelemetryProcessor<CarSpeedsSnapshot>
     }
 
     const sameFieldSize = this.lastLapDistPct?.length === lapDistPct.length;
+    const measuredSpeeds = numericValues(frame, 'LmuCarIdxSpeed', -1);
     if (!sameFieldSize) {
       this.speedHistory = lapDistPct.map(
         (_, carIdx) => this.speedHistory[carIdx] ?? []
       );
+      lapDistPct.forEach((_, carIdx) => {
+        const speed = measuredSpeed(measuredSpeeds, carIdx);
+        if (speed !== null) this.recordSpeed(carIdx, speed);
+      });
     } else if (
       this.lastSessionTime !== null &&
       sessionTime > this.lastSessionTime
     ) {
       const deltaTime = sessionTime - this.lastSessionTime;
       lapDistPct.forEach((pct, carIdx) => {
-        const previous = this.lastLapDistPct?.[carIdx] ?? pct;
-        let distancePercent = pct - previous;
-        if (distancePercent < 0 && previous > 0.9 && pct < 0.1) {
-          distancePercent += 1;
-        }
-        const speed =
-          ((this.trackLength * distancePercent) / deltaTime) *
-          METERS_PER_SECOND_TO_KILOMETERS_PER_HOUR;
-        const history = this.speedHistory[carIdx] ?? [];
-        history.push(speed);
-        if (history.length > SPEED_AVG_WINDOW) history.shift();
-        this.speedHistory[carIdx] = history;
+        this.recordSpeed(
+          carIdx,
+          measuredSpeed(measuredSpeeds, carIdx) ??
+            this.positionSpeed(pct, carIdx, deltaTime)
+        );
       });
     }
 
@@ -142,6 +151,29 @@ export class CarSpeedsProcessor implements TelemetryProcessor<CarSpeedsSnapshot>
 
   snapshot(): CarSpeedsSnapshot {
     return this.latest;
+  }
+
+  private recordSpeed(carIdx: number, speed: number): void {
+    const history = this.speedHistory[carIdx] ?? [];
+    history.push(speed);
+    if (history.length > SPEED_AVG_WINDOW) history.shift();
+    this.speedHistory[carIdx] = history;
+  }
+
+  private positionSpeed(
+    pct: number,
+    carIdx: number,
+    deltaTime: number
+  ): number {
+    const previous = this.lastLapDistPct?.[carIdx] ?? pct;
+    let distancePercent = pct - previous;
+    if (distancePercent < 0 && previous > 0.9 && pct < 0.1) {
+      distancePercent += 1;
+    }
+    return (
+      ((this.trackLength * distancePercent) / deltaTime) *
+      METERS_PER_SECOND_TO_KILOMETERS_PER_HOUR
+    );
   }
 
   private publish(carSpeeds: readonly number[], sessionNum: number | null) {

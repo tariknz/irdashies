@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { TelemetryDecorator } from '@irdashies/storybook';
 import type { FuelLapData } from '@irdashies/types';
 import { defaultFuelCalculatorSettings } from '../defaults';
-import { useFuelStore } from '../FuelStore';
+import { useFuelStore } from '@irdashies/context';
 import { FuelHistory } from './FuelHistory';
 
 const usages = [3.91, 3.88, 3.92, 3.85, 3.9];

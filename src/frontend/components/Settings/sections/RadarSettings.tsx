@@ -253,22 +253,10 @@ export const RadarSettings = () => {
     (widget) => widget.id === SETTING_ID
   )?.layout;
   const widgetSize = layout && Math.min(layout.width, layout.height);
-  const [settings, setSettings] = useState<RadarWidgetSettings>({
+  const settings: RadarWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config: withRadarDefaults(savedSettings?.config),
-  });
-  // Re-seed when the saved widget changes (late load, profile switch), as
-  // DeltaSpeedSettings does; otherwise the next edit would save defaults.
-  const [prevSaved, setPrevSaved] = useState(savedSettings);
-  if (JSON.stringify(savedSettings) !== JSON.stringify(prevSaved)) {
-    setPrevSaved(savedSettings);
-    if (savedSettings) {
-      setSettings({
-        enabled: savedSettings.enabled ?? false,
-        config: withRadarDefaults(savedSettings.config),
-      });
-    }
-  }
+  };
   const trackType = useSessionStore(
     (state) => state.session?.WeekendInfo?.TrackType
   );
@@ -320,7 +308,6 @@ export const RadarSettings = () => {
       title="Radar"
       description="A close-range radar centred on your car. The road turns with you, so the cars around you sit where they are on track."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => {

@@ -4,7 +4,7 @@ import type {
   StandingsSnapshot,
   Telemetry,
 } from '@irdashies/types';
-import { SessionState, TrackLocation } from '../irsdk/types/enums';
+import { SessionState, TrackLocation } from '../../types/irSdk/enums';
 import type { TelemetryProcessor } from './TelemetryProcessor';
 import { RaceFinishTracker } from './RaceFinishTracker';
 

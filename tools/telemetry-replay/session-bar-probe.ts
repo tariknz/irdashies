@@ -1,16 +1,9 @@
-import * as yaml from 'js-yaml';
-import type { Session, SessionBarSnapshot, Telemetry } from '@irdashies/types';
+import { parseSession, telemetryFrom } from './processorInputs';
+import type { SessionBarSnapshot } from '@irdashies/types';
 import { SessionBarProcessor } from '../../src/app/processors/SessionBarProcessor';
-import type { ReplayProbe, TelemetryFrame } from './validator';
+import type { ReplayProbe } from './validator';
 import { rateLimited } from './rateLimited';
 
-const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
-  Object.fromEntries(
-    Object.entries(frame).map(([name, entry]) => [
-      name,
-      { value: Array.isArray(entry) ? entry : [entry] },
-    ])
-  ) as unknown as Telemetry;
 export const createSessionBarProbe = (): ReplayProbe<SessionBarSnapshot> => {
   const processor = rateLimited(new SessionBarProcessor());
   return {
@@ -42,11 +35,11 @@ export const createSessionBarProbe = (): ReplayProbe<SessionBarSnapshot> => {
       'YawNorth',
     ],
     onSessionInfo(text) {
-      processor.init(yaml.load(text, { json: true }) as Session);
+      processor.init(parseSession(text));
     },
     onFrame(frame) {
-      const snapshot =
-        (processor.onFrame(telemetryFrom(frame)), processor.snapshot());
+      processor.onFrame(telemetryFrom(frame));
+      const snapshot = processor.snapshot();
       return {
         ...snapshot,
         competitorCarIds: [...snapshot.competitorCarIds],

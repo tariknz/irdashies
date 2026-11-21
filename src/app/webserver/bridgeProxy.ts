@@ -144,12 +144,10 @@ export function createBridgeProxy(
   );
 
   if (dashboardBridge) {
-    dashboardBridge.dashboardUpdated(
-      (dashboard: DashboardLayout, profileId?: string) => {
-        currentDashboard = dashboard;
-        broadcast('dashboardUpdated', { dashboard, profileId });
-      }
-    );
+    dashboardBridge.dashboardUpdated((dashboard, profileId, saveId) => {
+      currentDashboard = dashboard;
+      broadcast('dashboardUpdated', { dashboard, profileId, saveId });
+    });
 
     if (dashboardBridge.onDemoModeChanged) {
       dashboardBridge.onDemoModeChanged((demoMode: boolean) => {

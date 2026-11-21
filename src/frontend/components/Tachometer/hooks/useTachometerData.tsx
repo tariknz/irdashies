@@ -1,5 +1,5 @@
 import { useDriverControlsSnapshot, useSessionStore } from '@irdashies/context';
-import { useCarTachometerData } from './useCarTachometerData';
+import { useCarTachometerData } from '@irdashies/domain/tachometer/useCarTachometerData';
 
 /**
  * Hook for tachometer-specific telemetry data.

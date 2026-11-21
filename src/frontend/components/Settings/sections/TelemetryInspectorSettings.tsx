@@ -95,11 +95,11 @@ export const TelemetryInspectorSettings = ({
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as TelemetryInspectorWidgetSettings | undefined;
-  const [settings, setSettings] = useState<TelemetryInspectorWidgetSettings>({
+  const settings: TelemetryInspectorWidgetSettings = {
     enabled: savedSettings?.enabled ?? false,
     config:
       (savedSettings?.config as TelemetryInspectorConfig) ?? defaultConfig,
-  });
+  };
 
   const [newProperty, setNewProperty] = useState<PropertyConfig>({
     source: 'telemetry',
@@ -118,7 +118,6 @@ export const TelemetryInspectorSettings = ({
       title="Telemetry Inspector"
       description="Debug widget to display raw telemetry and session values. Add properties to watch."
       settings={settings}
-      onSettingsChange={(s) => setSettings(s)}
       widgetId={SETTING_ID}
       previewWidgetId={SETTING_ID}
     >

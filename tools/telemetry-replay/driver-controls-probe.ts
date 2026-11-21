@@ -1,20 +1,8 @@
-import * as yaml from 'js-yaml';
-import type {
-  DriverControlsSnapshot,
-  Session,
-  Telemetry,
-} from '@irdashies/types';
+import { parseSession, telemetryFrom } from './processorInputs';
+import type { DriverControlsSnapshot } from '@irdashies/types';
 import { DriverControlsProcessor } from '../../src/app/processors/DriverControlsProcessor';
-import type { ReplayProbe, TelemetryFrame } from './validator';
+import type { ReplayProbe } from './validator';
 import { rateLimited } from './rateLimited';
-
-const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
-  Object.fromEntries(
-    Object.entries(frame).map(([name, entry]) => [
-      name,
-      { value: Array.isArray(entry) ? entry : [entry] },
-    ])
-  ) as unknown as Telemetry;
 
 export const createDriverControlsProbe =
   (): ReplayProbe<DriverControlsSnapshot> => {
@@ -42,7 +30,7 @@ export const createDriverControlsProbe =
         'EngineWarnings',
       ],
       onSessionInfo(text) {
-        processor.init(yaml.load(text, { json: true }) as Session);
+        processor.init(parseSession(text));
       },
       onFrame(frame) {
         processor.onFrame(telemetryFrom(frame));

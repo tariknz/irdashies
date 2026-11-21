@@ -1,5 +1,5 @@
 import { useDriverControlsSnapshot } from '@irdashies/context';
-import { useCarTachometerData } from './useCarTachometerData';
+import { useCarTachometerData } from '@irdashies/domain/tachometer/useCarTachometerData';
 import type { ShiftPointSettings } from '@irdashies/types';
 
 /**

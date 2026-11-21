@@ -34,14 +34,36 @@ export async function generateMockDataFromPath(
   });
 }
 
+function createMockFeed<T>(intervalMs: number, sample: () => T) {
+  const subscribers = new Set<(value: T) => void>();
+  let timer: ReturnType<typeof setInterval> | undefined;
+  const publish = () => {
+    const value = sample();
+    subscribers.forEach((callback) => callback(value));
+  };
+  const stop = () => {
+    clearInterval(timer);
+    timer = undefined;
+    subscribers.clear();
+  };
+  return {
+    publish,
+    stop,
+    subscribe(callback: (value: T) => void) {
+      subscribers.add(callback);
+      timer ??= setInterval(publish, intervalMs);
+      return () => {
+        subscribers.delete(callback);
+        if (!subscribers.size) stop();
+      };
+    },
+  };
+}
+
 export function generateMockData(sessionData?: {
   telemetry: Telemetry | Telemetry[];
   sessionInfo: Session | Session[];
 }): IrSdkSourceBridge {
-  let telemetryInterval: NodeJS.Timeout | null = null;
-  let sessionInfoInterval: NodeJS.Timeout | null = null;
-  let runningStateInterval: NodeJS.Timeout | null = null;
-
   const telemetry = sessionData?.telemetry;
   const sessionInfo = sessionData?.sessionInfo;
 
@@ -60,7 +82,7 @@ export function generateMockData(sessionData?: {
   };
 
   // Animate all cars around the track — seed initial positions from mock telemetry
-  const PLAYER_CAR_IDX = 4; // DriverInfo.DriverCarIdx from mock session
+  const playerCarIdx = mockSessionInfo.DriverInfo.DriverCarIdx;
   const carLapDistPcts = [
     ...(prevTelemetry.CarIdxLapDistPct.value as number[]),
   ];
@@ -70,28 +92,20 @@ export function generateMockData(sessionData?: {
     return 1 + (((idx * 7) % 7) - 3) / 100; // -3% to +3% variation
   });
 
-  // Sector boundaries from the mock session (mirrors session.json SplitTimeInfo).
-  // Used to pick a per-sector speed multiplier for the player so sector times
-  // vary by up to ±1% each lap, producing realistic delta variance in the widget.
-  const MOCK_SECTOR_STARTS = [
-    0, 0.184456, 0.337214, 0.504637, 0.734279, 0.829332,
-  ];
+  const sectorStarts = mockSessionInfo.SplitTimeInfo.Sectors.map(
+    (sector) => sector.SectorStartPct
+  );
 
-  /** Return the sector index (0-based) for a given lapDistPct. */
   function getPlayerSectorIdx(lapDistPct: number): number {
-    let idx = 0;
-    for (let i = MOCK_SECTOR_STARTS.length - 1; i >= 0; i--) {
-      if (lapDistPct >= MOCK_SECTOR_STARTS[i]) {
-        idx = i;
-        break;
-      }
-    }
-    return idx;
+    return Math.max(
+      0,
+      sectorStarts.findLastIndex((start) => lapDistPct >= start)
+    );
   }
 
   /** Generate a fresh set of per-sector multipliers, each ±1% of baseline. */
   function newSectorMultipliers(): number[] {
-    return MOCK_SECTOR_STARTS.map(() => 0.99 + Math.random() * 0.02);
+    return sectorStarts.map(() => 0.99 + Math.random() * 0.02);
   }
 
   let playerSectorMultipliers = newSectorMultipliers();
@@ -119,371 +133,295 @@ export function generateMockData(sessionData?: {
   const rpmStep = 15; // RPM change per update
   const holdAtRedlineTicks = 15; // Hold for 1.5 seconds (15 ticks * 100ms)
 
-  // Use Sets to support multiple subscribers
-  const telemetryCallbacks = new Set<(value: Telemetry) => void>();
-  const sessionCallbacks = new Set<(value: Session) => void>();
-  const runningStateCallbacks = new Set<(value: boolean) => void>();
+  const telemetryFeed = createMockFeed(1000 / 60, () => {
+    let t = Array.isArray(telemetry)
+      ? telemetry[telemetryIdx % telemetry.length]
+      : telemetry;
+    if (!t) {
+      const throttleValue = prevTelemetry.Throttle.value[0];
+      const brakeValue = prevTelemetry.Brake.value[0];
+      const jitteredBrakeValue = jitterValue(brakeValue);
+      const jitteredThrottleValue = jitterValue(throttleValue);
 
-  return {
-    onTelemetry: (callback: (value: Telemetry) => void) => {
-      telemetryCallbacks.add(callback);
-
-      // Start interval only once
-      if (!telemetryInterval) {
-        telemetryInterval = setInterval(() => {
-          let t = Array.isArray(telemetry)
-            ? telemetry[telemetryIdx % telemetry.length]
-            : telemetry;
-          if (!t) {
-            const throttleValue = prevTelemetry.Throttle.value[0];
-            const brakeValue = prevTelemetry.Brake.value[0];
-            const jitteredBrakeValue = jitterValue(brakeValue);
-            const jitteredThrottleValue = jitterValue(throttleValue);
-
-            // Simulate RPM and gear changes for demo mode
-            // Check if we're at or above shift RPM
-            if (demoRpm >= shiftRpm) {
-              // Hold at redline for a moment
-              if (holdAtRedlineCounter < holdAtRedlineTicks) {
-                holdAtRedlineCounter++;
-                demoRpm = shiftRpm; // Keep at exactly shift RPM
-              } else {
-                // Shift up after holding
-                demoGear = Math.min(6, demoGear + 1);
-                demoRpm = minRpm + 1000; // Drop RPM after shift
-                holdAtRedlineCounter = 0; // Reset counter
-                // After reaching 6th gear, loop back to 1st
-                if (demoGear > 6) {
-                  demoGear = 1;
-                }
-              }
-            } else {
-              // Normal RPM increase
-              demoRpm += rpmStep;
-            }
-
-            // --- Fuel Calculator Mock Logic Start ---
-            // Constants for simulation
-            const FUEL_TANK_MAX = 60.0;
-            const FUEL_PER_LAP = 2.2;
-            const LAP_DISTANCE_INC = 0.0007; // Increment per tick for ~24s lap at 60Hz (fast mock lap)
-            const SESSION_TIME_INC = 1 / 60; // Seconds per tick
-
-            // Update Lap Distance — apply this sector's speed multiplier so
-            // sector times vary by ±1% of baseline, changing each lap.
-            const newSectorIdx = getPlayerSectorIdx(mockState.lapDistPct);
-            if (newSectorIdx !== playerCurrentSectorIdx) {
-              playerCurrentSectorIdx = newSectorIdx;
-            }
-            mockState.lapDistPct +=
-              LAP_DISTANCE_INC *
-              playerSectorMultipliers[playerCurrentSectorIdx];
-
-            // Handle Lap Completion
-            if (mockState.lapDistPct >= 1.0) {
-              mockState.lapDistPct = 0.0;
-              mockState.currentLap += 1;
-              mockState.sessionLapsRemain = Math.max(
-                0,
-                mockState.sessionLapsRemain - 1
-              );
-              // Pick new per-sector multipliers for the next lap
-              playerSectorMultipliers = newSectorMultipliers();
-              playerCurrentSectorIdx = 0;
-            }
-
-            // Update Fuel (consume based on distance)
-            // Fuel consumed = (Fuel Per Lap) * (Distance Fraction traveled this tick)
-            // Since we increment dist by LAP_DISTANCE_INC, we consume that fraction of a lap's fuel
-            const fuelConsumedThisTick = FUEL_PER_LAP * LAP_DISTANCE_INC;
-            mockState.fuelLevel = Math.max(
-              0,
-              mockState.fuelLevel - fuelConsumedThisTick
-            );
-
-            // Update Session Time
-            mockState.sessionTime += SESSION_TIME_INC;
-
-            // --- Fuel Calculator Mock Logic End ---
-
-            // Animate all on-track cars forward; sync player car with mockState
-            for (let i = 0; i < carLapDistPcts.length; i++) {
-              if (carLapDistPcts[i] < 0) continue; // not on track
-              if (i === PLAYER_CAR_IDX) {
-                carLapDistPcts[i] = mockState.lapDistPct;
-              } else {
-                carLapDistPcts[i] =
-                  (carLapDistPcts[i] +
-                    LAP_DISTANCE_INC * carSpeedMultipliers[i]) %
-                  1;
-              }
-            }
-
-            const state = mockState;
-
-            // Enable ABS when brake force is above 80% in demo mode
-            const absActive = jitteredBrakeValue > 0.8;
-            const prevAbs =
-              prevTelemetry.BrakeABSactive ?? ({ value: [false] } as const);
-
-            // P2P demo: advance frame counter and update state
-            p2pDemo.frame++;
-            // carIdx 2 (active): count decreases 1/s, resets to 100 when exhausted
-            if (p2pDemo.frame % 60 === 0) {
-              p2pDemo.activeCount =
-                p2pDemo.activeCount > 0 ? p2pDemo.activeCount - 1 : 100;
-            }
-            // carIdx 4 (cooldown cycle): active for 5s, then transitions to inactive
-            const cycleFrame = p2pDemo.frame % P2P_CYCLE_FRAMES;
-            const cooldownCarActive = cycleFrame < P2P_ACTIVE_FRAMES;
-
-            const demoP2PStatus = [
-              ...prevTelemetry.CarIdxP2P_Status.value,
-            ] as boolean[];
-            const demoP2PCount = [
-              ...prevTelemetry.CarIdxP2P_Count.value,
-            ] as number[];
-            demoP2PStatus[1] = false; // inactive
-            demoP2PCount[1] = 150;
-            demoP2PStatus[2] = true; // active
-            demoP2PCount[2] = p2pDemo.activeCount;
-            demoP2PStatus[3] = false; // exhausted
-            demoP2PCount[3] = 0;
-            demoP2PStatus[4] = cooldownCarActive; // cycling for cooldown demo
-            demoP2PCount[4] = 80;
-
-            t = {
-              ...prevTelemetry,
-              // All demo hosts simulate an active race. Recorded input above
-              // retains its original state, including checkered/replay frames.
-              SessionState: {
-                ...prevTelemetry.SessionState,
-                value: [SessionState.Racing],
-              },
-              SessionFlags: {
-                ...prevTelemetry.SessionFlags,
-                value: [GlobalFlags.Green],
-              },
-              Brake: {
-                ...prevTelemetry.Brake,
-                value: [jitteredBrakeValue],
-              },
-              Throttle: {
-                ...prevTelemetry.Throttle,
-                value: [jitteredThrottleValue],
-              },
-              // The demo drives with no assists, so the raw pedals are the
-              // processed ones. Left as recorded they stayed at 0, and every
-              // widget set to Use Raw Inputs (and the lap trace, which reads
-              // raw pedals first) showed the pedals untouched.
-              BrakeRaw: {
-                ...prevTelemetry.BrakeRaw,
-                value: [jitteredBrakeValue],
-              },
-              ThrottleRaw: {
-                ...prevTelemetry.ThrottleRaw,
-                value: [jitteredThrottleValue],
-              },
-              ClutchRaw: {
-                ...prevTelemetry.ClutchRaw,
-                value: [prevTelemetry.Clutch.value[0]],
-              },
-              Gear: {
-                ...prevTelemetry.Gear,
-                value: [demoGear],
-              },
-              Speed: {
-                ...prevTelemetry.Speed,
-                value: [44 + demoGear * 10],
-              },
-              RPM: {
-                ...prevTelemetry.RPM,
-                value: [demoRpm],
-              },
-              // Inject Fuel Calculator Mock Values
-              FuelLevel: {
-                ...prevTelemetry.FuelLevel,
-                value: [state.fuelLevel],
-              },
-              FuelLevelPct: {
-                ...prevTelemetry.FuelLevelPct,
-                value: [state.fuelLevel / FUEL_TANK_MAX],
-              },
-              Lap: {
-                ...prevTelemetry.Lap,
-                value: [state.currentLap],
-              },
-              LapDistPct: {
-                ...prevTelemetry.LapDistPct,
-                value: [state.lapDistPct],
-              },
-              CarIdxLapDistPct: {
-                ...prevTelemetry.CarIdxLapDistPct,
-                value: [...carLapDistPcts],
-              },
-              SessionTime: {
-                ...prevTelemetry.SessionTime,
-                value: [state.sessionTime],
-              },
-              // Advance with SessionTime at iRacing's 60 ticks per second: the
-              // processor host rate-limits on SessionTick, so a frozen tick
-              // would run every processor on every frame.
-              SessionTick: {
-                ...prevTelemetry.SessionTick,
-                value: [Math.round(state.sessionTime * 60)],
-              },
-              SessionLapsRemain: {
-                ...prevTelemetry.SessionLapsRemain,
-                value: [state.sessionLapsRemain],
-              },
-              SessionLapsRemainEx: {
-                ...prevTelemetry.SessionLapsRemainEx,
-                value: [state.sessionLapsRemain],
-              },
-              SessionTimeRemain: {
-                ...prevTelemetry.SessionTimeRemain,
-                value: [state.sessionLapsRemain * 90], // Roughly 1.5 min laps
-              },
-              IsOnTrack: {
-                ...prevTelemetry.IsOnTrack,
-                value: [true],
-              },
-              OnPitRoad: {
-                ...prevTelemetry.OnPitRoad,
-                value: [false],
-              },
-              BrakeABSactive: {
-                ...prevAbs,
-                value: [absActive],
-              },
-              CarIdxP2P_Status: {
-                ...prevTelemetry.CarIdxP2P_Status,
-                value: demoP2PStatus,
-              },
-              CarIdxP2P_Count: {
-                ...prevTelemetry.CarIdxP2P_Count,
-                value: demoP2PCount,
-              },
-            } as unknown as Telemetry;
-            prevTelemetry = t;
+      if (demoRpm >= shiftRpm) {
+        // Hold at redline for a moment
+        if (holdAtRedlineCounter < holdAtRedlineTicks) {
+          holdAtRedlineCounter++;
+          demoRpm = shiftRpm; // Keep at exactly shift RPM
+        } else {
+          demoGear = Math.min(6, demoGear + 1);
+          demoRpm = minRpm + 1000; // Drop RPM after shift
+          holdAtRedlineCounter = 0; // Reset counter
+          // After reaching 6th gear, loop back to 1st
+          if (demoGear > 6) {
+            demoGear = 1;
           }
-
-          telemetryIdx = telemetryIdx + 1;
-          const data = t;
-
-          // Call all registered callbacks
-          telemetryCallbacks.forEach((cb) => cb(data));
-        }, 1000 / 60); // Update at 60Hz for smooth telemetry simulation
+        }
+      } else {
+        // Normal RPM increase
+        demoRpm += rpmStep;
       }
 
-      // Return unsubscribe function
-      return () => {
-        telemetryCallbacks.delete(callback);
-        // Stop interval if no more callbacks
-        if (telemetryCallbacks.size === 0 && telemetryInterval) {
-          clearInterval(telemetryInterval);
-          telemetryInterval = null;
-        }
-      };
-    },
-    onSessionData: (callback: (value: Session) => void) => {
-      sessionCallbacks.add(callback);
+      // --- Fuel Calculator Mock Logic Start ---
+      // Constants for simulation
+      const FUEL_TANK_MAX = 60.0;
+      const FUEL_PER_LAP = 2.2;
+      const LAP_DISTANCE_INC = 0.0007; // Increment per tick for ~24s lap at 60Hz (fast mock lap)
+      const SESSION_TIME_INC = 1 / 60; // Seconds per tick
 
-      const updateSessionData = () => {
-        let s = Array.isArray(sessionInfo)
-          ? sessionInfo[sessionIdx % sessionInfo.length]
-          : sessionInfo;
+      // Update Lap Distance — apply this sector's speed multiplier so
+      // sector times vary by ±1% of baseline, changing each lap.
+      const newSectorIdx = getPlayerSectorIdx(mockState.lapDistPct);
+      if (newSectorIdx !== playerCurrentSectorIdx) {
+        playerCurrentSectorIdx = newSectorIdx;
+      }
+      mockState.lapDistPct +=
+        LAP_DISTANCE_INC * playerSectorMultipliers[playerCurrentSectorIdx];
 
-        if (!s) {
-          const base = mockSessionInfo as unknown as Session;
-          // Demo mode: override CarID for P2P demo drivers
-          s = {
-            ...base,
-            WeekendInfo: {
-              ...base.WeekendInfo,
-              TeamRacing: 1,
-              MinDrivers: 1,
-              MaxDrivers: 4,
-            },
-            DriverInfo: {
-              ...base.DriverInfo,
-              Drivers: base.DriverInfo.Drivers.map((driver) => {
-                if (driver.CarIsPaceCar) return driver;
-
-                const teamIndex = (driver.CarIdx - 1) % MOCK_TEAM_NAMES.length;
-                return {
-                  ...driver,
-                  TeamID: teamIndex + 1,
-                  TeamName: MOCK_TEAM_NAMES[teamIndex],
-                  CarID: P2P_DEMO_CAR_IDXS.includes(driver.CarIdx)
-                    ? P2P_IR18_CAR_ID
-                    : driver.CarID,
-                };
-              }),
-            },
-          };
-        }
-        sessionIdx = sessionIdx + 1;
-
-        // Call all registered callbacks
-        if (s) sessionCallbacks.forEach((cb) => cb(s));
-      };
-
-      // Send initial data immediately
-      updateSessionData();
-
-      // Start interval only once
-      if (!sessionInfoInterval) {
-        sessionInfoInterval = setInterval(updateSessionData, 2000);
+      // Handle Lap Completion
+      if (mockState.lapDistPct >= 1.0) {
+        mockState.lapDistPct = 0.0;
+        mockState.currentLap += 1;
+        mockState.sessionLapsRemain = Math.max(
+          0,
+          mockState.sessionLapsRemain - 1
+        );
+        // Pick new per-sector multipliers for the next lap
+        playerSectorMultipliers = newSectorMultipliers();
+        playerCurrentSectorIdx = 0;
       }
 
-      // Return unsubscribe function
-      return () => {
-        sessionCallbacks.delete(callback);
-        // Stop interval if no more callbacks
-        if (sessionCallbacks.size === 0 && sessionInfoInterval) {
-          clearInterval(sessionInfoInterval);
-          sessionInfoInterval = null;
-        }
-      };
-    },
-    onRunningState: (callback: (value: boolean) => void) => {
-      runningStateCallbacks.add(callback);
+      // Update Fuel (consume based on distance)
+      // Fuel consumed = (Fuel Per Lap) * (Distance Fraction traveled this tick)
+      // Since we increment dist by LAP_DISTANCE_INC, we consume that fraction of a lap's fuel
+      const fuelConsumedThisTick = FUEL_PER_LAP * LAP_DISTANCE_INC;
+      mockState.fuelLevel = Math.max(
+        0,
+        mockState.fuelLevel - fuelConsumedThisTick
+      );
 
-      // Send initial state immediately
+      // Update Session Time
+      mockState.sessionTime += SESSION_TIME_INC;
+
+      // --- Fuel Calculator Mock Logic End ---
+
+      // Animate all on-track cars forward; sync player car with mockState
+      for (let i = 0; i < carLapDistPcts.length; i++) {
+        if (carLapDistPcts[i] < 0) continue; // not on track
+        if (i === playerCarIdx) {
+          carLapDistPcts[i] = mockState.lapDistPct;
+        } else {
+          carLapDistPcts[i] =
+            (carLapDistPcts[i] + LAP_DISTANCE_INC * carSpeedMultipliers[i]) % 1;
+        }
+      }
+
+      const state = mockState;
+
+      // Enable ABS when brake force is above 80% in demo mode
+      const absActive = jitteredBrakeValue > 0.8;
+      const prevAbs =
+        prevTelemetry.BrakeABSactive ?? ({ value: [false] } as const);
+
+      // P2P demo: advance frame counter and update state
+      p2pDemo.frame++;
+      // carIdx 2 (active): count decreases 1/s, resets to 100 when exhausted
+      if (p2pDemo.frame % 60 === 0) {
+        p2pDemo.activeCount =
+          p2pDemo.activeCount > 0 ? p2pDemo.activeCount - 1 : 100;
+      }
+      // carIdx 4 (cooldown cycle): active for 5s, then transitions to inactive
+      const cycleFrame = p2pDemo.frame % P2P_CYCLE_FRAMES;
+      const cooldownCarActive = cycleFrame < P2P_ACTIVE_FRAMES;
+
+      const demoP2PStatus = [
+        ...prevTelemetry.CarIdxP2P_Status.value,
+      ] as boolean[];
+      const demoP2PCount = [...prevTelemetry.CarIdxP2P_Count.value] as number[];
+      demoP2PStatus[1] = false; // inactive
+      demoP2PCount[1] = 150;
+      demoP2PStatus[2] = true; // active
+      demoP2PCount[2] = p2pDemo.activeCount;
+      demoP2PStatus[3] = false; // exhausted
+      demoP2PCount[3] = 0;
+      demoP2PStatus[4] = cooldownCarActive; // cycling for cooldown demo
+      demoP2PCount[4] = 80;
+
+      t = {
+        ...prevTelemetry,
+        // All demo hosts simulate an active race. Recorded input above
+        // retains its original state, including checkered/replay frames.
+        SessionState: {
+          ...prevTelemetry.SessionState,
+          value: [SessionState.Racing],
+        },
+        SessionFlags: {
+          ...prevTelemetry.SessionFlags,
+          value: [GlobalFlags.Green],
+        },
+        Brake: {
+          ...prevTelemetry.Brake,
+          value: [jitteredBrakeValue],
+        },
+        Throttle: {
+          ...prevTelemetry.Throttle,
+          value: [jitteredThrottleValue],
+        },
+        // The demo drives with no assists, so the raw pedals are the
+        // processed ones. Left as recorded they stayed at 0, and every
+        // widget set to Use Raw Inputs (and the lap trace, which reads
+        // raw pedals first) showed the pedals untouched.
+        BrakeRaw: {
+          ...prevTelemetry.BrakeRaw,
+          value: [jitteredBrakeValue],
+        },
+        ThrottleRaw: {
+          ...prevTelemetry.ThrottleRaw,
+          value: [jitteredThrottleValue],
+        },
+        ClutchRaw: {
+          ...prevTelemetry.ClutchRaw,
+          value: [prevTelemetry.Clutch.value[0]],
+        },
+        Gear: {
+          ...prevTelemetry.Gear,
+          value: [demoGear],
+        },
+        Speed: {
+          ...prevTelemetry.Speed,
+          value: [44 + demoGear * 10],
+        },
+        RPM: {
+          ...prevTelemetry.RPM,
+          value: [demoRpm],
+        },
+        // Inject Fuel Calculator Mock Values
+        FuelLevel: {
+          ...prevTelemetry.FuelLevel,
+          value: [state.fuelLevel],
+        },
+        FuelLevelPct: {
+          ...prevTelemetry.FuelLevelPct,
+          value: [state.fuelLevel / FUEL_TANK_MAX],
+        },
+        Lap: {
+          ...prevTelemetry.Lap,
+          value: [state.currentLap],
+        },
+        LapDistPct: {
+          ...prevTelemetry.LapDistPct,
+          value: [state.lapDistPct],
+        },
+        CarIdxLapDistPct: {
+          ...prevTelemetry.CarIdxLapDistPct,
+          value: [...carLapDistPcts],
+        },
+        SessionTime: {
+          ...prevTelemetry.SessionTime,
+          value: [state.sessionTime],
+        },
+        // Advance with SessionTime at iRacing's 60 ticks per second: the
+        // processor host rate-limits on SessionTick, so a frozen tick
+        // would run every processor on every frame.
+        SessionTick: {
+          ...prevTelemetry.SessionTick,
+          value: [Math.round(state.sessionTime * 60)],
+        },
+        SessionLapsRemain: {
+          ...prevTelemetry.SessionLapsRemain,
+          value: [state.sessionLapsRemain],
+        },
+        SessionLapsRemainEx: {
+          ...prevTelemetry.SessionLapsRemainEx,
+          value: [state.sessionLapsRemain],
+        },
+        SessionTimeRemain: {
+          ...prevTelemetry.SessionTimeRemain,
+          value: [state.sessionLapsRemain * 90], // Roughly 1.5 min laps
+        },
+        IsOnTrack: {
+          ...prevTelemetry.IsOnTrack,
+          value: [true],
+        },
+        OnPitRoad: {
+          ...prevTelemetry.OnPitRoad,
+          value: [false],
+        },
+        BrakeABSactive: {
+          ...prevAbs,
+          value: [absActive],
+        },
+        CarIdxP2P_Status: {
+          ...prevTelemetry.CarIdxP2P_Status,
+          value: demoP2PStatus,
+        },
+        CarIdxP2P_Count: {
+          ...prevTelemetry.CarIdxP2P_Count,
+          value: demoP2PCount,
+        },
+      } as unknown as Telemetry;
+      prevTelemetry = t;
+    }
+
+    telemetryIdx = telemetryIdx + 1;
+    return t;
+  });
+
+  const sessionFeed = createMockFeed(2000, () => {
+    let s = Array.isArray(sessionInfo)
+      ? sessionInfo[sessionIdx % sessionInfo.length]
+      : sessionInfo;
+
+    if (!s) {
+      const base = mockSessionInfo as unknown as Session;
+      // Demo mode: override CarID for P2P demo drivers
+      s = {
+        ...base,
+        WeekendInfo: {
+          ...base.WeekendInfo,
+          TeamRacing: 1,
+          MinDrivers: 1,
+          MaxDrivers: 4,
+        },
+        DriverInfo: {
+          ...base.DriverInfo,
+          Drivers: base.DriverInfo.Drivers.map((driver) => {
+            if (driver.CarIsPaceCar) return driver;
+
+            const teamIndex = (driver.CarIdx - 1) % MOCK_TEAM_NAMES.length;
+            return {
+              ...driver,
+              TeamID: teamIndex + 1,
+              TeamName: MOCK_TEAM_NAMES[teamIndex],
+              CarID: P2P_DEMO_CAR_IDXS.includes(driver.CarIdx)
+                ? P2P_IR18_CAR_ID
+                : driver.CarID,
+            };
+          }),
+        },
+      };
+    }
+    sessionIdx = sessionIdx + 1;
+    return s;
+  });
+
+  const runningFeed = createMockFeed(1000, () => true);
+  return {
+    onTelemetry: telemetryFeed.subscribe,
+    onSessionData(callback) {
+      const unsubscribe = sessionFeed.subscribe(callback);
+      sessionFeed.publish();
+      return unsubscribe;
+    },
+    onRunningState(callback) {
+      const unsubscribe = runningFeed.subscribe(callback);
       callback(true);
-
-      // Start interval only once
-      if (!runningStateInterval) {
-        runningStateInterval = setInterval(() => {
-          runningStateCallbacks.forEach((cb) => cb(true));
-        }, 1000);
-      }
-
-      // Return unsubscribe function
-      return () => {
-        runningStateCallbacks.delete(callback);
-        // Stop interval if no more callbacks
-        if (runningStateCallbacks.size === 0 && runningStateInterval) {
-          clearInterval(runningStateInterval);
-          runningStateInterval = null;
-        }
-      };
+      return unsubscribe;
     },
-    stop: () => {
-      if (telemetryInterval) clearInterval(telemetryInterval);
-      if (sessionInfoInterval) clearInterval(sessionInfoInterval);
-      if (runningStateInterval) clearInterval(runningStateInterval);
-      // Null the handles like the per-subscriber unsubscribe paths do —
-      // the "start the interval only once" guards check truthiness, so a
-      // cleared-but-set handle would permanently block re-subscription
-      // after stop().
-      telemetryInterval = null;
-      sessionInfoInterval = null;
-      runningStateInterval = null;
-      telemetryCallbacks.clear();
-      sessionCallbacks.clear();
-      runningStateCallbacks.clear();
+    stop() {
+      telemetryFeed.stop();
+      sessionFeed.stop();
+      runningFeed.stop();
     },
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     changeCameraNumber: () => {},

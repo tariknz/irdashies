@@ -31,14 +31,6 @@ import { lmuShiftPointRpm } from './shiftPoints';
  */
 export const LMU_PIT_SPEED_LIMIT_KPH = 60;
 
-/**
- * LMU's mTrackGripLevel as the words the rubber readout already prints. The
- * weather widget only has a string, so the steps take the names of LMU's Real
- * Road levels, read the way TinyPedal reads them: 0 green, 1 low, 2 medium,
- * 3 heavy, 4 saturated. The recorded Laguna Seca race
- * (test-data/telemetry/lmu-session.lmudt) starts on the "Preset: Saturated"
- * Real Road setting and reports 4 throughout.
- */
 export const lmuGripRubber = (grip: number): string => {
   if (grip === 0) return 'green';
   if (grip === 1) return 'low';
@@ -381,10 +373,6 @@ export function mapLmuSession(
    * change on every other tick.
    */
   sessionIdentity?: LmuSessionIdentity,
-  /**
-   * Where S2 and S3 start, as lap fractions, learned from the player's own
-   * sector changes. Omitted or null, the sectors are nominal thirds.
-   */
   sectorBoundaries?: readonly number[] | null
 ): Session {
   const trackLengthM = raw.lapDist;
@@ -451,9 +439,7 @@ export function mapLmuSession(
     CarScreenName: d.vehicleName,
     CarScreenNameShort: d.vehicleName.split(' ')[0] ?? '',
     CarCfg: 0,
-    // vehicleModel is the chassis name when vehicleName is a team livery;
-    // tachometer / shift-light car LED lookup uses it as an alias.
-    CarCfgName: d.vehicleModel ?? null,
+    CarCfgName: null,
     CarCfgCustomPaintExt: null,
     // The canonical class, so the standings group by "LMP2" rather than the
     // championship-qualified "LMP2_ELMS" the sim reports. An unrecognised

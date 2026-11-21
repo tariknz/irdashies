@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useAvailableSimulators, useDashboard } from '@irdashies/context';
 import { SIMULATOR_IDS, SIMULATOR_LABELS } from '@irdashies/types';
@@ -45,6 +44,16 @@ const FONT_WEIGHT_RESTRICTIONS: Record<string, string[]> = {
   lato: ['medium', 'semibold'],
 };
 
+const resolveFontWeight = (
+  font: GeneralSettingsType['fontType'],
+  weight: GeneralSettingsType['fontWeight']
+) =>
+  weight &&
+  Object.hasOwn(FONT_WEIGHT_PRESETS, weight) &&
+  !FONT_WEIGHT_RESTRICTIONS[font ?? 'lato']?.includes(weight)
+    ? weight
+    : 'normal';
+
 export const HIGHLIGHT_COLOR_PRESETS = new Map([
   [15680580, 'Red'],
   [16347926, 'Orange'],
@@ -81,48 +90,54 @@ interface GeneralSettingsProps {
 export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
   const { bridge, currentDashboard, onDashboardUpdated } = useDashboard();
   const availableSimulators = useAvailableSimulators();
-  const [settings, setSettings] = useState<GeneralSettingsType>({
-    fontType: currentDashboard?.generalSettings?.fontType ?? 'lato',
-    fontSize: currentDashboard?.generalSettings?.fontSize ?? 'sm',
-    fontWeight: currentDashboard?.generalSettings?.fontWeight ?? 'normal',
-    colorPalette: currentDashboard?.generalSettings?.colorPalette ?? 'default',
-    highlightColor: currentDashboard?.generalSettings?.highlightColor ?? 960745,
-    skipTaskbar: currentDashboard?.generalSettings?.skipTaskbar ?? true,
+  const savedSettings = currentDashboard?.generalSettings;
+  const settings: GeneralSettingsType = {
+    fontType: savedSettings?.fontType ?? 'lato',
+    fontSize: savedSettings?.fontSize ?? 'sm',
+    fontWeight: savedSettings?.fontWeight ?? 'normal',
+    colorPalette: savedSettings?.colorPalette ?? 'default',
+    highlightColor: savedSettings?.highlightColor ?? 960745,
+    skipTaskbar: savedSettings?.skipTaskbar ?? true,
     disableHardwareAcceleration:
-      currentDashboard?.generalSettings?.disableHardwareAcceleration ?? false,
-    enableAutoStart:
-      currentDashboard?.generalSettings?.enableAutoStart ?? false,
-    startMinimized: currentDashboard?.generalSettings?.startMinimized ?? false,
-    closeToTray: currentDashboard?.generalSettings?.closeToTray ?? true,
-    simulator: currentDashboard?.generalSettings?.simulator ?? 'auto',
-    compactMode: currentDashboard?.generalSettings?.compactMode ?? 'off',
-    overlayAlwaysOnTop:
-      currentDashboard?.generalSettings?.overlayAlwaysOnTop ?? true,
+      savedSettings?.disableHardwareAcceleration ?? false,
+    enableAutoStart: savedSettings?.enableAutoStart ?? false,
+    startMinimized: savedSettings?.startMinimized ?? false,
+    closeToTray: savedSettings?.closeToTray ?? true,
+    simulator: savedSettings?.simulator ?? 'auto',
+    compactMode: savedSettings?.compactMode ?? 'off',
+    overlayAlwaysOnTop: savedSettings?.overlayAlwaysOnTop ?? true,
     overlayWindowMode:
-      currentDashboard?.generalSettings?.overlayWindowMode === 'widget'
-        ? 'widget'
-        : 'display',
-    enableNetworkAccess:
-      currentDashboard?.generalSettings?.enableNetworkAccess ?? false,
-    enableWebServer: currentDashboard?.generalSettings?.enableWebServer ?? true,
+      savedSettings?.overlayWindowMode === 'widget' ? 'widget' : 'display',
+    enableNetworkAccess: savedSettings?.enableNetworkAccess ?? false,
+    enableWebServer: savedSettings?.enableWebServer ?? true,
     editMode: {
-      pixelDistances:
-        currentDashboard?.generalSettings?.editMode?.pixelDistances ?? false,
-      snapToGrid:
-        currentDashboard?.generalSettings?.editMode?.snapToGrid ?? false,
+      pixelDistances: savedSettings?.editMode?.pixelDistances ?? false,
+      snapToGrid: savedSettings?.editMode?.snapToGrid ?? false,
     },
-  });
+  };
 
   if (!currentDashboard || !onDashboardUpdated) {
     return <>Loading...</>;
   }
 
-  const updateDashboard = (newSettings: GeneralSettingsType) => {
-    const updatedDashboard = {
-      ...currentDashboard,
-      generalSettings: { ...currentDashboard.generalSettings, ...newSettings },
-    };
-    onDashboardUpdated(updatedDashboard);
+  const updateDashboard = (
+    changes:
+      | Partial<GeneralSettingsType>
+      | ((current: GeneralSettingsType) => Partial<GeneralSettingsType>)
+  ) => {
+    let saved = false;
+    onDashboardUpdated((dashboard) => {
+      const current = dashboard.generalSettings ?? {};
+      saved = true;
+      return {
+        ...dashboard,
+        generalSettings: {
+          ...current,
+          ...(typeof changes === 'function' ? changes(current) : changes),
+        },
+      };
+    });
+    return saved;
   };
 
   const FONT_SIZE_VALUES: (keyof typeof FONT_SIZE_PRESETS)[] = [
@@ -160,9 +175,10 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
   const handleFontChange = (
     newFont: 'lato' | 'notosans' | 'figtree' | 'inter' | 'roboto'
   ) => {
-    const newSettings = { ...settings, fontType: newFont };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
+    updateDashboard((current) => ({
+      fontType: newFont,
+      fontWeight: resolveFontWeight(newFont, current.fontWeight),
+    }));
   };
 
   const handleFontSizeChange = (
@@ -184,17 +200,13 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
       | '8xl'
       | '9xl'
   ) => {
-    const newSettings = { ...settings, fontSize: newSize };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
+    updateDashboard({ fontSize: newSize });
   };
 
   const handleFontWeightChange = (
     newWeight: 'light' | 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold'
   ) => {
-    const newSettings = { ...settings, fontWeight: newWeight };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
+    updateDashboard({ fontWeight: newWeight });
   };
 
   const restrictedWeights =
@@ -206,14 +218,10 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
     )
   );
 
-  const resolvedFontWeight =
-    settings.fontWeight && filteredWeights[settings.fontWeight]
-      ? settings.fontWeight
-      : 'normal';
-
-  if (settings.fontWeight != resolvedFontWeight) {
-    handleFontWeightChange(resolvedFontWeight);
-  }
+  const resolvedFontWeight = resolveFontWeight(
+    settings.fontType,
+    settings.fontWeight
+  );
 
   const handleSliderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const sliderValue = parseInt(event.target.value);
@@ -224,116 +232,74 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
   const handleColorThemeChange = (
     newTheme: GeneralSettingsType['colorPalette']
   ) => {
-    const newSettings = { ...settings, colorPalette: newTheme };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
+    updateDashboard({ colorPalette: newTheme });
   };
 
   const handleHighlightColorChange = (newColor: number) => {
-    const newSettings = { ...settings, highlightColor: newColor };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
+    updateDashboard({ highlightColor: newColor });
   };
 
   const handleSkipTaskbarChange = (enabled: boolean) => {
-    const newSettings = { ...settings, skipTaskbar: enabled };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
+    updateDashboard({ skipTaskbar: enabled });
   };
 
   const handleDisableHardwareAccelerationChange = (enabled: boolean) => {
-    const newSettings = { ...settings, disableHardwareAcceleration: enabled };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
+    updateDashboard({ disableHardwareAcceleration: enabled });
   };
 
   const handleAutoStartChange = (enabled: boolean) => {
-    const newSettings = { ...settings, enableAutoStart: enabled };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
-    bridge.setAutoStart(enabled);
+    if (updateDashboard({ enableAutoStart: enabled }))
+      bridge.setAutoStart(enabled);
   };
 
   const handleStartMinimizedChange = (enabled: boolean) => {
-    const newSettings = { ...settings, startMinimized: enabled };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
+    updateDashboard({ startMinimized: enabled });
   };
 
   const handleCloseToTrayChange = (enabled: boolean) => {
-    const newSettings = { ...settings, closeToTray: enabled };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
+    updateDashboard({ closeToTray: enabled });
   };
 
   const handleSimulatorChange = (
     selectedSimulator: NonNullable<GeneralSettingsType['simulator']>
   ) => {
-    const newSettings = { ...settings, simulator: selectedSimulator };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
-    // Rebuild the bridge in place rather than asking for a restart, so the
-    // change is not a setting that appears to do nothing until relaunch.
-    bridge.notifySimulatorPreferenceChanged?.();
+    if (updateDashboard({ simulator: selectedSimulator })) {
+      bridge.notifySimulatorPreferenceChanged?.();
+    }
   };
 
   const handleCompactModeChange = (
     selectedCompactMode: NonNullable<GeneralSettingsType['compactMode']>
   ) => {
-    const newSettings = { ...settings, compactMode: selectedCompactMode };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
+    updateDashboard({ compactMode: selectedCompactMode });
   };
 
   const handleOverlayAlwaysOnTopChange = (enabled: boolean) => {
-    const newSettings = { ...settings, overlayAlwaysOnTop: enabled };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
+    updateDashboard({ overlayAlwaysOnTop: enabled });
   };
 
   const handleIndividualWindowsChange = (enabled: boolean) => {
-    const newSettings: GeneralSettingsType = {
-      ...settings,
-      overlayWindowMode: enabled ? 'widget' : 'display',
-    };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
+    updateDashboard({ overlayWindowMode: enabled ? 'widget' : 'display' });
   };
 
   const handleNetworkAccessChange = (enabled: boolean) => {
-    const newSettings = { ...settings, enableNetworkAccess: enabled };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
+    updateDashboard({ enableNetworkAccess: enabled });
   };
 
   const handleWebServerChange = (enabled: boolean) => {
-    const newSettings = { ...settings, enableWebServer: enabled };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
+    updateDashboard({ enableWebServer: enabled });
   };
 
   const handleShowEditModePixelDistancesChange = (enabled: boolean) => {
-    const newSettings = {
-      ...settings,
-      editMode: {
-        ...settings.editMode,
-        pixelDistances: enabled,
-      },
-    };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
+    updateDashboard((current) => ({
+      editMode: { ...current.editMode, pixelDistances: enabled },
+    }));
   };
 
   const handleSnapEditModeWidgetsToGridChange = (enabled: boolean) => {
-    const newSettings = {
-      ...settings,
-      editMode: {
-        ...settings.editMode,
-        snapToGrid: enabled,
-      },
-    };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
+    updateDashboard((current) => ({
+      editMode: { ...current.editMode, snapToGrid: enabled },
+    }));
   };
 
   return (

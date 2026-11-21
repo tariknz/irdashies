@@ -4,7 +4,7 @@ import type {
   SessionLifecycleEvent,
   Telemetry,
 } from '@irdashies/types';
-import { TrackLocation } from '../irsdk/types/enums';
+import { TrackLocation } from '../../types/irSdk/enums';
 import type { TelemetryProcessor } from './TelemetryProcessor';
 
 const LAP_TIME_AVG_WINDOW = 10;

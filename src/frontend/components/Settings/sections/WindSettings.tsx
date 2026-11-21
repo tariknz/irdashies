@@ -1,11 +1,9 @@
-import { useEffect, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   deepMergeConfig,
   getWidgetDefaultConfig,
   getWidgetManifest,
   isConfigValid,
-  type DashboardWidget,
   type WindWidgetSettings,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
@@ -26,58 +24,18 @@ const withDefaults = (config: unknown) =>
     config
   ) as unknown as WindWidgetSettings['config'];
 
-const isWindWidgetSettings = (
-  widget: DashboardWidget | undefined
-): widget is DashboardWidget & WindWidgetSettings =>
-  widget?.id === SETTING_ID &&
-  isConfigValid(
-    getWidgetManifest(SETTING_ID)?.properties ?? {},
-    withDefaults(widget.config)
-  );
+const properties = getWidgetManifest(SETTING_ID)?.properties ?? {};
 
 export const WindSettings = () => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   );
-  const [settings, setSettings] = useState<WindWidgetSettings>(() => ({
-    enabled: isWindWidgetSettings(savedSettings)
-      ? savedSettings.enabled
-      : false,
-    config: isWindWidgetSettings(savedSettings)
-      ? withDefaults(savedSettings.config)
-      : defaultConfig,
-  }));
-
-  useEffect(() => {
-    if (!currentDashboard) return;
-
-    const nextSettings: WindWidgetSettings = {
-      enabled: isWindWidgetSettings(savedSettings)
-        ? savedSettings.enabled
-        : false,
-      config: isWindWidgetSettings(savedSettings)
-        ? withDefaults(savedSettings.config)
-        : defaultConfig,
-    };
-
-    let isActive = true;
-
-    queueMicrotask(() => {
-      if (!isActive) return;
-
-      setSettings((settings) =>
-        settings.enabled === nextSettings.enabled &&
-        settings.config === nextSettings.config
-          ? settings
-          : nextSettings
-      );
-    });
-
-    return () => {
-      isActive = false;
-    };
-  }, [currentDashboard, savedSettings]);
+  const savedConfig = savedSettings && withDefaults(savedSettings.config);
+  const settings: WindWidgetSettings =
+    savedSettings && savedConfig && isConfigValid(properties, savedConfig)
+      ? { enabled: savedSettings.enabled, config: savedConfig }
+      : { enabled: false, config: defaultConfig };
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -88,7 +46,6 @@ export const WindSettings = () => {
       title="Wind"
       description="Show wind direction and speed."
       settings={settings}
-      onSettingsChange={(s) => setSettings(s)}
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (

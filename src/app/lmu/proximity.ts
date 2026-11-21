@@ -14,22 +14,18 @@ const MAX_LATERAL_DISTANCE = VEHICLE_WIDTH * 1.9;
 const MAX_LONGITUDINAL_DISTANCE = VEHICLE_LENGTH * 1.2;
 
 /**
- * Default gate, in metres, when the caller does not pass one.
+ * Cars further away than this in plain world distance are not computed.
  *
- * Blind-spot classification only needs a few metres, so a caller that omits
- * the radius skips the rotation for everyone else. The mapper passes
- * `LMU_RADAR_RADIUS_M` instead, because the radar draws that far.
+ * Everything downstream is about cars alongside: the classification below
+ * needs |longitudinal| under 5.52 m and |lateral| under 4.18 m, and the blind
+ * spot bar shows a few metres either way. 20 m is far beyond both, so the gate
+ * cannot change an answer -- it only avoids rotating and taking an atan2 for
+ * a car most of a straight away.
+ *
+ * It is tested on the squared distance so no square root is taken either.
  */
 const RELEVANT_RADIUS_M = 20;
-
-/**
- * How far the radar looks, in metres.
- *
- * The 20 m default above is the blind-spot window. The radar draws rivals
- * out to the same bound as RadarProcessor, so the mapper asks for this
- * instead. Blind-spot classification still applies its own tighter window.
- */
-export const LMU_RADAR_RADIUS_M = 120;
+const RELEVANT_RADIUS_SQ = RELEVANT_RADIUS_M * RELEVANT_RADIUS_M;
 
 /**
  * Reusable output buffers.
@@ -69,9 +65,7 @@ export function lmuRelativePositionsAvailable(raw: LmuRawTelemetry): boolean {
 export function deriveLmuRelativePositions(
   raw: LmuRawTelemetry,
   /** Reused when given; a fresh buffer is allocated when it is not. */
-  out: LmuRelativePositions = createLmuRelativePositionsBuffer(),
-  /** Cars further than this are left unavailable. Defaults to the blind-spot window. */
-  maxRadiusM = RELEVANT_RADIUS_M
+  out: LmuRelativePositions = createLmuRelativePositionsBuffer()
 ): LmuRelativePositions | null {
   const playerIdx = raw.playerHasVehicle ? raw.playerVehicleIdx : -1;
   if (
@@ -102,7 +96,6 @@ export function deriveLmuRelativePositions(
   longitudinal.length = length;
   heading.length = length;
   available.fill(false);
-  const radiusSq = maxRadiusM * maxRadiusM;
 
   for (let carIdx = 0; carIdx < length; carIdx += 1) {
     if (carIdx === playerIdx || raw.vehTelemetryAvailable[carIdx] !== 1) {
@@ -113,7 +106,7 @@ export function deriveLmuRelativePositions(
     const deltaZ = -(raw.vehPosZ[carIdx] - playerZ);
     // Cheap gate before the trig. Two multiplies and an add against a squared
     // radius, rather than a rotation and an atan2 per car per frame.
-    if (deltaX * deltaX + deltaZ * deltaZ > radiusSq) continue;
+    if (deltaX * deltaX + deltaZ * deltaZ > RELEVANT_RADIUS_SQ) continue;
 
     const carLateral = cos * deltaX - sin * deltaZ;
     // Negated: positive is ahead.

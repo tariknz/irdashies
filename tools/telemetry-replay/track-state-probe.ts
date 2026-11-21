@@ -1,15 +1,8 @@
-import type { Telemetry, TrackStateSnapshot } from '@irdashies/types';
+import { telemetryFrom } from './processorInputs';
+import type { TrackStateSnapshot } from '@irdashies/types';
 import { TrackStateProcessor } from '../../src/app/processors/TrackStateProcessor';
-import type { ReplayProbe, TelemetryFrame } from './validator';
+import type { ReplayProbe } from './validator';
 import { rateLimited } from './rateLimited';
-
-const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
-  Object.fromEntries(
-    Object.entries(frame).map(([name, entry]) => [
-      name,
-      { value: Array.isArray(entry) ? entry : [entry] },
-    ])
-  ) as unknown as Telemetry;
 
 const copySnapshot = (snapshot: TrackStateSnapshot): TrackStateSnapshot => ({
   ...snapshot,

@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   InformationBarWidgetSettings,
-  SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
+import { SettingsTabBar } from '../components/SettingsTabBar';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingActionButton } from '../components/SettingActionButton';
 import {
@@ -29,20 +29,18 @@ export const InformationBarSettings = () => {
     (w) => w.id === SETTING_ID
   ) as InformationBarWidgetSettings | undefined;
 
-  const [settings, setSettings] = useState<InformationBarWidgetSettings>({
+  const settings: InformationBarWidgetSettings = {
     enabled: savedSettings?.enabled ?? true,
     config:
       (savedSettings?.config as InformationBarWidgetSettings['config']) ??
       defaultConfig,
-  });
+  };
 
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('infobarTab') as SettingsTabType) || 'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('infobarTab', activeTab);
-  }, [activeTab]);
+  const [activeTab, setActiveTab] = useStoredTab('infobarTab', [
+    'display',
+    'styling',
+    'visibility',
+  ]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -53,7 +51,6 @@ export const InformationBarSettings = () => {
       title="Information Bar"
       description="A standalone bar displaying session and timing information."
       settings={settings}
-      onSettingsChange={setSettings}
       widgetId="infobar"
     >
       {(handleConfigChange) => (
@@ -63,7 +60,7 @@ export const InformationBarSettings = () => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-1 border-b border-slate-700 pb-1">
+            <SettingsTabBar>
               <TabButton
                 id="display"
                 activeTab={activeTab}
@@ -85,7 +82,7 @@ export const InformationBarSettings = () => {
               >
                 Visibility
               </TabButton>
-            </div>
+            </SettingsTabBar>
 
             <div className="pt-4 space-y-4">
               {activeTab === 'display' && (

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { IrSdkSourceBridge, Session } from '@irdashies/types';
 import logger from '../../logger';
 import type { OverlayManager } from '../../overlayManager';
 import type { SessionLifecycle } from '../../sessionLifecycle';
@@ -24,6 +25,9 @@ const sdkState = vi.hoisted(() => ({
     control?: number;
     isPlayer?: boolean;
   }[],
+  trackName: 'Test Track',
+  sectorFrames: [] as { sector: number; pct: number }[],
+  scoringUpdates: 0,
 }));
 
 /**
@@ -74,6 +78,7 @@ const restState = vi.hoisted(() => ({
 
 /** Shared so the specs can observe how the bridge drives them. */
 const recorderUpdate = vi.hoisted(() => vi.fn(() => null));
+const recorderReset = vi.hoisted(() => vi.fn());
 const lapDistanceSpies = vi.hoisted(() => ({
   create: vi.fn(() => ({ marker: 'lap-distance-state' })),
   reset: vi.fn(),
@@ -110,11 +115,15 @@ const driveFrame = () => {
 
 const rawFrame = () => {
   if (sdkState.readThrows) throw new Error('shared memory read failed');
+  const sectorFrame =
+    sdkState.sectorFrames.length > 1
+      ? sdkState.sectorFrames.shift()
+      : sdkState.sectorFrames[0];
   return {
     ...(lapState.driving ? driveFrame() : {}),
     running: sdkState.running,
     gameVersion: 1,
-    trackName: 'Test Track',
+    trackName: sdkState.trackName,
     session: 1,
     gamePhase: 5,
     numVehicles: 2,
@@ -133,6 +142,13 @@ const rawFrame = () => {
     vehLastSector1: [0, 0],
     vehLastSector2: [0, 0],
     vehLastLapTime: [0, 0],
+    ...(sectorFrame
+      ? {
+          currentSector: sectorFrame.sector,
+          smoothedLapDistPct: sectorFrame.pct,
+          scoringUpdates: (sdkState.scoringUpdates += 1),
+        }
+      : {}),
   };
 };
 
@@ -198,7 +214,7 @@ vi.mock('../../lmu/trackMap', () => ({
   loadLmuTrackMap: () => null,
   tinyPedalTrackMapDirectories: () => [],
   LmuTrackMapRecorder: class {
-    reset = vi.fn();
+    reset = recorderReset;
     update = recorderUpdate;
   },
   LmuTrackMapStorage: class {
@@ -209,8 +225,12 @@ vi.mock('../../lmu/trackMap', () => ({
 // Mapping is covered by its own specs; here it only has to not be the thing
 // that throws.
 vi.mock('../../lmu/mapTelemetry', () => ({
-  mapLmuTelemetry: () =>
-    lapState.driving ? { LapDistPct: { value: [lapState.pct] } } : {},
+  mapLmuTelemetry: (raw: { smoothedLapDistPct?: number }) =>
+    raw.smoothedLapDistPct !== undefined
+      ? { LapDistPct: { value: [raw.smoothedLapDistPct] } }
+      : lapState.driving
+        ? { LapDistPct: { value: [lapState.pct] } }
+        : {},
   mapLmuCarLeftRight: () => 0,
 }));
 
@@ -547,6 +567,7 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
     vi.clearAllMocks();
     sdkState.running = true;
     sdkState.readThrows = false;
+    sdkState.sessionEndEvents = 0;
     restState.data.revision = 0;
     restState.data.session = {};
   });
@@ -602,6 +623,23 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
     bridge.stop();
   });
 
+  it('restarts the track-map recording when a new session starts on the same track', async () => {
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(sessionPublishCount(overlayManager)).toBe(1));
+    const resetsBefore = recorderReset.mock.calls.length;
+
+    sdkState.sessionEndEvents = 1;
+
+    await vi.waitFor(() =>
+      expect(recorderReset.mock.calls.length).toBeGreaterThan(resetsBefore)
+    );
+    expect(recorderReset).toHaveBeenLastCalledWith(rawFrame().trackName);
+    bridge.stop();
+  });
+
   it('starts the poller when LMU comes up and stops it on teardown', async () => {
     const overlayManager = createOverlayManager();
     const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
@@ -632,6 +670,138 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
       expect(restState.poller.setActive).toHaveBeenCalledWith(false)
     );
     bridge.stop();
+  });
+});
+
+describe('publishLmuSDKEvents and learned sector boundaries', () => {
+  const S2_START = 0.42;
+  const S3_START = 0.77;
+  const NOMINAL = [0, 1 / 3, 2 / 3];
+  const LEARNED = [0, S2_START, S3_START];
+  const WAIT = { timeout: 5000 };
+
+  const approach = (sector: number, at: number) =>
+    Array.from({ length: 15 }, (_, index) => ({
+      sector: index < 14 ? sector - 1 : sector,
+      pct: at - (14 - index) * 0.001,
+    }));
+
+  const lap = () => [...approach(1, S2_START), ...approach(2, S3_START)];
+
+  const publishedSectorStarts = (overlayManager: OverlayManager) =>
+    vi
+      .mocked(overlayManager.publishMessage)
+      .mock.calls.filter(([channel]) => channel === 'sessionData')
+      .map(([, session]) =>
+        (session as Session).SplitTimeInfo.Sectors.map(
+          (sector) => sector.SectorStartPct
+        )
+      );
+
+  const latestSectorStarts = (overlayManager: OverlayManager) =>
+    publishedSectorStarts(overlayManager).at(-1);
+
+  let bridge: IrSdkSourceBridge | undefined;
+
+  const startBridge = async () => {
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    bridge = await publishLmuSDKEvents(overlayManager);
+    return overlayManager;
+  };
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    sdkState.running = true;
+    sdkState.readThrows = false;
+    sdkState.sessionEndEvents = 0;
+    sdkState.drivers = [];
+    sdkState.trackName = 'Test Track';
+    sdkState.sectorFrames = [];
+    restState.data.revision = 0;
+    restState.data.session = {};
+    const { mapLmuSession } = await vi.importActual<
+      typeof import('../../lmu/mapSession')
+    >('../../lmu/mapSession');
+    mapSessionSpy.mockImplementation(
+      (...args) =>
+        mapLmuSession(
+          ...(args as Parameters<typeof mapLmuSession>)
+        ) as unknown as ReturnType<typeof mapSessionSpy>
+    );
+  });
+
+  afterEach(() => {
+    bridge?.stop();
+    bridge = undefined;
+    mapSessionSpy.mockReset();
+    sdkState.sessionEndEvents = 0;
+    sdkState.trackName = 'Test Track';
+    sdkState.sectorFrames = [];
+  });
+
+  it('publishes the learned starts after the first lap and keeps them when a second lap agrees', async () => {
+    sdkState.sectorFrames = [];
+    const overlayManager = await startBridge();
+
+    await vi.waitFor(
+      () =>
+        expect(publishedSectorStarts(overlayManager).length).toBeGreaterThan(0),
+      WAIT
+    );
+    expect(latestSectorStarts(overlayManager)).toEqual(NOMINAL);
+
+    sdkState.sectorFrames = lap();
+    await vi.waitFor(
+      () => expect(latestSectorStarts(overlayManager)).toEqual(LEARNED),
+      WAIT
+    );
+
+    const publishes = publishedSectorStarts(overlayManager).length;
+    sdkState.sectorFrames.push(...lap());
+    await vi.waitFor(() => expect(sdkState.sectorFrames).toHaveLength(1), WAIT);
+    await new Promise((resolve) => setTimeout(resolve, 600));
+
+    expect(latestSectorStarts(overlayManager)).toEqual(LEARNED);
+    expect(
+      publishedSectorStarts(overlayManager)
+        .slice(publishes)
+        .every((starts) => starts.every((v, i) => v === LEARNED[i]))
+    ).toBe(true);
+  });
+
+  it('keeps learned starts across a new session, drops them on another track and restores them on return', async () => {
+    sdkState.sectorFrames = [...lap(), ...lap()];
+    const overlayManager = await startBridge();
+
+    await vi.waitFor(
+      () => expect(latestSectorStarts(overlayManager)).toEqual(LEARNED),
+      WAIT
+    );
+
+    const publishesBeforeNewSession =
+      publishedSectorStarts(overlayManager).length;
+    sdkState.sessionEndEvents = 1;
+    await vi.waitFor(
+      () =>
+        expect(publishedSectorStarts(overlayManager).length).toBeGreaterThan(
+          publishesBeforeNewSession
+        ),
+      WAIT
+    );
+    expect(latestSectorStarts(overlayManager)).toEqual(LEARNED);
+
+    sdkState.trackName = 'Other Track';
+    await vi.waitFor(
+      () => expect(latestSectorStarts(overlayManager)).toEqual(NOMINAL),
+      WAIT
+    );
+
+    sdkState.trackName = 'Test Track';
+    await vi.waitFor(
+      () => expect(latestSectorStarts(overlayManager)).toEqual(LEARNED),
+      WAIT
+    );
   });
 });
 
