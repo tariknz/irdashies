@@ -102,6 +102,17 @@ export const LMU_DISABLED_WIDGETS: readonly string[] = [
   'wind',
 ];
 
+/** LMU-only data, so nothing to show under iRacing. */
+export const IRACING_DISABLED_WIDGETS: readonly string[] = [
+  'brakepressure',
+  'cruiseodometer',
+  'frictioncircle',
+  'steeringmeter',
+  'stinthistory',
+  'suspensionposition',
+  'tyrepanel',
+];
+
 /**
  * Seeds the JSON on first run, and the fallback if it cannot be read.
  *
@@ -114,7 +125,7 @@ export const LMU_DISABLED_WIDGETS: readonly string[] = [
 export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
   message: 'This widget is not compatible with the running sim',
   disabledWidgets: {
-    iracing: [],
+    iracing: [...IRACING_DISABLED_WIDGETS],
     lmu: [...LMU_DISABLED_WIDGETS],
   },
 };
@@ -130,7 +141,7 @@ export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
  * it did, which costs a user their hand edits once per change and is why the
  * number is bumped only for a real one.
  */
-export const SIM_WIDGET_SUPPORT_VERSION = 12;
+export const SIM_WIDGET_SUPPORT_VERSION = 13;
 
 /**
  * Whether a widget is unavailable under the running sim.
