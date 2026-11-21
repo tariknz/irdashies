@@ -140,6 +140,24 @@ describe('PitStopModelStore', () => {
     });
   });
 
+  it('loads and keeps learning from a file larger than the old 8 MiB limit', async () => {
+    await writeFile(
+      file,
+      JSON.stringify({
+        version: 1,
+        transit: { '10:20': [transit()] },
+        service: {},
+        order: ['transit|10:20'],
+        padding: 'x'.repeat(10 * 1024 * 1024),
+      })
+    );
+    await store.load();
+    expect(store.read().transit['10:20']).toHaveLength(1);
+    store.addTransit('10:20', transit(2));
+    await store.flush();
+    expect((await readBack()).transit['10:20']).toHaveLength(2);
+  });
+
   it('pauses learning rather than overwrite a broken file', async () => {
     await writeFile(file, '{ not json');
     await store.load();
@@ -162,6 +180,17 @@ describe('parsePitStopModel', () => {
     expect(result.droppedSamples).toBe(2);
     expect(result.data.transit['10:20']).toHaveLength(1);
     expect(result.data.order).toEqual(['transit|10:20']);
+  });
+
+  it('ignores repeated order entries, so they cannot push out real keys', () => {
+    const result = parsePitStopModel({
+      version: 1,
+      transit: { a: [transit()], b: [transit()] },
+      service: {},
+      order: ['transit|a', ...Array.from({ length: 1001 }, () => 'transit|b')],
+    });
+    expect(Object.keys(result.data.transit).sort()).toEqual(['a', 'b']);
+    expect(result.data.order).toEqual(['transit|a', 'transit|b']);
   });
 
   it('accepts an overhead override and samples with the time stopped', () => {
