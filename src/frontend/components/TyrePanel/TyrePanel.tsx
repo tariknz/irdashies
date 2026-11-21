@@ -11,7 +11,9 @@ import {
   getTemperatureCondition,
   getWearCondition,
   isAvailable,
+  tyreZoneTemperatures,
   type TemperatureCondition,
+  type TyreZoneReading,
   type WearCondition,
 } from './tyreConditions';
 
@@ -33,7 +35,7 @@ const wearStyles: Record<WearCondition, string> = {
 
 interface TyrePanelViewProps {
   config: TyrePanelConfig;
-  temperature?: readonly (number | null)[];
+  temperatures?: readonly (readonly TyreZoneReading[])[];
   pressure?: readonly (number | null)[];
   wear?: readonly (number | null)[];
   isLive: boolean;
@@ -42,9 +44,14 @@ interface TyrePanelViewProps {
 const displayValue = (value: number | null | undefined, digits: number) =>
   isAvailable(value) ? value.toFixed(digits) : '—';
 
+const toDisplayTemperature = (
+  celsius: TyreZoneReading,
+  unit: TyrePanelConfig['temperatureUnit']
+) => (isAvailable(celsius) && unit === 'F' ? (celsius * 9) / 5 + 32 : celsius);
+
 export function TyrePanelView({
   config,
-  temperature,
+  temperatures,
   pressure,
   wear,
   isLive,
@@ -63,27 +70,19 @@ export function TyrePanelView({
     >
       <div className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider">
         <span className="text-slate-400">Tyres</span>
+        <span className="text-slate-500">In · Mid · Out</span>
         <span className={isLive ? 'text-emerald-400/80' : 'text-amber-300/80'}>
           {isLive ? 'Live' : 'Pit snapshot'}
         </span>
       </div>
       <div className="grid h-[calc(100%-18px)] grid-cols-2 gap-x-3 gap-y-1.5">
         {corners.map((corner, index) => {
-          const temperatureC = temperature?.[index];
-          const displayedTemperature =
-            isAvailable(temperatureC) && config.temperatureUnit === 'F'
-              ? (temperatureC * 9) / 5 + 32
-              : temperatureC;
+          const zones = temperatures?.[index] ?? [];
           const pressureKpa = pressure?.[index];
           const displayedPressure =
             isAvailable(pressureKpa) && config.pressureUnit === 'psi'
               ? pressureKpa * 0.1450377
               : pressureKpa;
-          const temperatureCondition = getTemperatureCondition(
-            temperatureC,
-            coldThreshold,
-            hotThreshold
-          );
           const wearCondition = getWearCondition(
             wear?.[index],
             wornThreshold,
@@ -99,9 +98,30 @@ export function TyrePanelView({
                 {corner}
               </span>
               <div className="flex flex-col items-end font-mono text-sm font-semibold leading-4">
-                <span className={temperatureStyles[temperatureCondition]}>
-                  {displayValue(displayedTemperature, 0)}
-                </span>
+                <div className="flex gap-2">
+                  {[0, 1, 2].map((zone) => (
+                    <span
+                      key={zone}
+                      className={
+                        temperatureStyles[
+                          getTemperatureCondition(
+                            zones[zone],
+                            coldThreshold,
+                            hotThreshold
+                          )
+                        ]
+                      }
+                    >
+                      {displayValue(
+                        toDisplayTemperature(
+                          zones[zone],
+                          config.temperatureUnit
+                        ),
+                        0
+                      )}
+                    </span>
+                  ))}
+                </div>
                 <span
                   className={
                     isAvailable(pressureKpa)
@@ -150,7 +170,14 @@ export function TyrePanel() {
   return (
     <TyrePanelView
       config={config}
-      temperature={car?.tyreTemperature}
+      temperatures={[0, 1, 2, 3].map((index) =>
+        tyreZoneTemperatures(
+          index,
+          car?.tyreTemperatureLeft,
+          car?.tyreTemperatureMiddle,
+          car?.tyreTemperatureRight
+        )
+      )}
       pressure={car?.tyrePressure}
       wear={car?.tyreWear}
       isLive={isLmu}

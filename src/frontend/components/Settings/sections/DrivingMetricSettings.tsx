@@ -6,8 +6,11 @@ import {
   type BaseWidgetSettings,
   type WidgetConfigMap,
 } from '@irdashies/types';
+import { useStoredTab } from '../hooks/useStoredTab';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { SessionVisibility } from '../components/SessionVisibility';
+import { SettingsTabBar } from '../components/SettingsTabBar';
+import { TabButton } from '../components/TabButton';
 import { SettingNumberRow } from '../components/SettingNumberRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingToggleRow } from '../components/SettingToggleRow';
@@ -35,6 +38,13 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
     (widget) => widget.id === widgetId
   );
   const defaults = getWidgetDefaultConfig(id);
+  const [activeTab, setActiveTab] = useStoredTab('tyrePanelTab', [
+    'options',
+    'visibility',
+  ]);
+  const tabbed = id === 'tyrepanel';
+  const showOptions = !tabbed || activeTab === 'options';
+  const showVisibility = !tabbed || activeTab === 'visibility';
   const settings: BaseWidgetSettings<WidgetConfigMap[K]> = {
     enabled: saved?.enabled ?? false,
     config: (saved?.config as unknown as WidgetConfigMap[K]) ?? defaults,
@@ -48,6 +58,24 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
+          {tabbed && (
+            <SettingsTabBar>
+              <TabButton
+                id="options"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Options
+              </TabButton>
+              <TabButton
+                id="visibility"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Visibility
+              </TabButton>
+            </SettingsTabBar>
+          )}
           {id === 'stinthistory' && (
             <SettingsSection title="History">
               <SettingNumberRow
@@ -66,7 +94,7 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
               />
             </SettingsSection>
           )}
-          {id === 'tyrepanel' && (
+          {id === 'tyrepanel' && showOptions && (
             <>
               <SettingsSection title="Units">
                 <SettingToggleRow
@@ -210,40 +238,44 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
               />
             </SettingsSection>
           )}
-          <SettingsSection title="Display" scaleWidgetId={widgetId}>
-            <SettingSliderRow
-              title="Background opacity"
-              value={settings.config.background.opacity}
-              units="%"
-              min={0}
-              max={100}
-              step={5}
-              onChange={(opacity) =>
-                handleConfigChange({
-                  background: { opacity },
-                } as unknown as Partial<WidgetConfigMap[K]>)
-              }
-            />
-          </SettingsSection>
-          <SettingsSection title="Visibility">
-            <SessionVisibility
-              sessionVisibility={settings.config.sessionVisibility}
-              handleConfigChange={
-                handleConfigChange as unknown as (
-                  config: Record<string, unknown>
-                ) => void
-              }
-            />
-            <SettingToggleRow
-              title="Show only when on track"
-              enabled={settings.config.showOnlyWhenOnTrack}
-              onToggle={(showOnlyWhenOnTrack) =>
-                handleConfigChange({
-                  showOnlyWhenOnTrack,
-                } as unknown as Partial<WidgetConfigMap[K]>)
-              }
-            />
-          </SettingsSection>
+          {showOptions && (
+            <SettingsSection title="Display" scaleWidgetId={widgetId}>
+              <SettingSliderRow
+                title="Background opacity"
+                value={settings.config.background.opacity}
+                units="%"
+                min={0}
+                max={100}
+                step={5}
+                onChange={(opacity) =>
+                  handleConfigChange({
+                    background: { opacity },
+                  } as unknown as Partial<WidgetConfigMap[K]>)
+                }
+              />
+            </SettingsSection>
+          )}
+          {showVisibility && (
+            <SettingsSection title="Visibility">
+              <SessionVisibility
+                sessionVisibility={settings.config.sessionVisibility}
+                handleConfigChange={
+                  handleConfigChange as unknown as (
+                    config: Record<string, unknown>
+                  ) => void
+                }
+              />
+              <SettingToggleRow
+                title="Show only when on track"
+                enabled={settings.config.showOnlyWhenOnTrack}
+                onToggle={(showOnlyWhenOnTrack) =>
+                  handleConfigChange({
+                    showOnlyWhenOnTrack,
+                  } as unknown as Partial<WidgetConfigMap[K]>)
+                }
+              />
+            </SettingsSection>
+          )}
         </div>
       )}
     </BaseSettingsSection>

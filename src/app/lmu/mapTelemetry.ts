@@ -971,8 +971,8 @@ export function mapLmuTelemetry(
   const suspensionDeflection = raw.suspensionDeflection;
   if (tyreTemperature?.[0] !== undefined) {
     t.LFtempCL = num('LFtempCL', tyreTemperature[0]);
-    t.LFtempCM = num('LFtempCM', tyreTemperature[0]);
-    t.LFtempCR = num('LFtempCR', tyreTemperature[0]);
+    t.LFtempCM = num('LFtempCM', tyreTemperature[1]);
+    t.LFtempCR = num('LFtempCR', tyreTemperature[2]);
   }
   if (tyrePressure?.[0] !== undefined) {
     t.LFcoldPressure = num('LFcoldPressure', tyrePressure[0]);
@@ -988,10 +988,10 @@ export function mapLmuTelemetry(
   if (suspensionDeflection?.[0] !== undefined) {
     t.LFshockDefl = num('LFshockDefl', suspensionDeflection[0]);
   }
-  if (tyreTemperature?.[1] !== undefined) {
-    t.RFtempCL = num('RFtempCL', tyreTemperature[1]);
-    t.RFtempCM = num('RFtempCM', tyreTemperature[1]);
-    t.RFtempCR = num('RFtempCR', tyreTemperature[1]);
+  if (tyreTemperature?.[3] !== undefined) {
+    t.RFtempCL = num('RFtempCL', tyreTemperature[3]);
+    t.RFtempCM = num('RFtempCM', tyreTemperature[4]);
+    t.RFtempCR = num('RFtempCR', tyreTemperature[5]);
   }
   if (tyrePressure?.[1] !== undefined) {
     t.RFcoldPressure = num('RFcoldPressure', tyrePressure[1]);
@@ -1007,10 +1007,10 @@ export function mapLmuTelemetry(
   if (suspensionDeflection?.[1] !== undefined) {
     t.RFshockDefl = num('RFshockDefl', suspensionDeflection[1]);
   }
-  if (tyreTemperature?.[2] !== undefined) {
-    t.LRtempCL = num('LRtempCL', tyreTemperature[2]);
-    t.LRtempCM = num('LRtempCM', tyreTemperature[2]);
-    t.LRtempCR = num('LRtempCR', tyreTemperature[2]);
+  if (tyreTemperature?.[6] !== undefined) {
+    t.LRtempCL = num('LRtempCL', tyreTemperature[6]);
+    t.LRtempCM = num('LRtempCM', tyreTemperature[7]);
+    t.LRtempCR = num('LRtempCR', tyreTemperature[8]);
   }
   if (tyrePressure?.[2] !== undefined) {
     t.LRcoldPressure = num('LRcoldPressure', tyrePressure[2]);
@@ -1026,10 +1026,10 @@ export function mapLmuTelemetry(
   if (suspensionDeflection?.[2] !== undefined) {
     t.LRshockDefl = num('LRshockDefl', suspensionDeflection[2]);
   }
-  if (tyreTemperature?.[3] !== undefined) {
-    t.RRtempCL = num('RRtempCL', tyreTemperature[3]);
-    t.RRtempCM = num('RRtempCM', tyreTemperature[3]);
-    t.RRtempCR = num('RRtempCR', tyreTemperature[3]);
+  if (tyreTemperature?.[9] !== undefined) {
+    t.RRtempCL = num('RRtempCL', tyreTemperature[9]);
+    t.RRtempCM = num('RRtempCM', tyreTemperature[10]);
+    t.RRtempCR = num('RRtempCR', tyreTemperature[11]);
   }
   if (tyrePressure?.[3] !== undefined) {
     t.RRcoldPressure = num('RRcoldPressure', tyrePressure[3]);

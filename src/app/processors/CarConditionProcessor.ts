@@ -28,7 +28,12 @@ type ScalarField =
 
 type FlagField = 'repairNeeded' | 'optRepairNeeded' | 'bodyDetached';
 
-type CornerField = 'tyreTemperature' | 'tyrePressure' | 'tyreWear';
+type CornerField =
+  | 'tyreTemperatureLeft'
+  | 'tyreTemperatureMiddle'
+  | 'tyreTemperatureRight'
+  | 'tyrePressure'
+  | 'tyreWear';
 
 type ListField = 'dentSeverity' | 'wheelDetached' | 'suspensionDamage';
 
@@ -47,7 +52,9 @@ const FLAGS: readonly (readonly [FlagField, string])[] = [
 ];
 
 const CORNER_FIELDS: readonly (readonly [CornerField, CornerKeys])[] = [
-  ['tyreTemperature', cornerKeys('tempCL', 'tempCM', 'tempCR')],
+  ['tyreTemperatureLeft', cornerKeys('tempCL')],
+  ['tyreTemperatureMiddle', cornerKeys('tempCM')],
+  ['tyreTemperatureRight', cornerKeys('tempCR')],
   ['tyrePressure', cornerKeys('coldPressure')],
   ['tyreWear', cornerKeys('wearL', 'wearM', 'wearR')],
 ];
@@ -64,7 +71,9 @@ export class CarConditionProcessor implements TelemetryProcessor<CarConditionSna
 
   private readonly latest: CarConditionSnapshot = { version: 0 };
   private readonly corners: Record<CornerField, (number | null)[]> = {
-    tyreTemperature: emptyCorners(),
+    tyreTemperatureLeft: emptyCorners(),
+    tyreTemperatureMiddle: emptyCorners(),
+    tyreTemperatureRight: emptyCorners(),
     tyrePressure: emptyCorners(),
     tyreWear: emptyCorners(),
   };

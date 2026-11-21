@@ -77,7 +77,11 @@ describe('mapLmuTelemetry', () => {
     expect(t.dcPitSpeedLimiterToggle.value[0]).toBe(false);
     expect(t.LatAccel.value[0]).toBeCloseTo(9.80665);
     expect(t.LongAccel.value[0]).toBeCloseTo(19.6133);
-    expect(t.LFtempCL.value[0]).toBe(80);
+    expect(t.LFtempCL.value[0]).toBe(78);
+    expect(t.LFtempCM.value[0]).toBe(80);
+    expect(t.LFtempCR.value[0]).toBe(82);
+    expect(t.RRtempCL.value[0]).toBe(81);
+    expect(t.RRtempCR.value[0]).toBe(85);
     expect(t.RRcoldPressure.value[0]).toBe(183);
     expect(t.LRwearM.value[0]).toBe(0.7);
     expect(t.RFbrakeLinePress.value[0]).toBe(0.5);

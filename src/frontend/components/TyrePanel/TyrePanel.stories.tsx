@@ -31,7 +31,12 @@ const meta: Meta<typeof TyrePanelView> = {
   args: {
     config,
     isLive: true,
-    temperature: [64, 84, 103, 91],
+    temperatures: [
+      [72, 64, 58],
+      [88, 84, 79],
+      [108, 103, 97],
+      [94, 91, 86],
+    ],
     pressure: [178.2, 180.1, 176.8, 179.4],
     wear: [0.82, 0.58, 0.3, 0.22],
   },
@@ -48,7 +53,10 @@ export const IracingPitSnapshot: Story = {
 
 export const MissingData: Story = {
   args: {
-    temperature: [Number.NaN, 84],
+    temperatures: [
+      [Number.NaN, Number.NaN, Number.NaN],
+      [88, 84, undefined],
+    ],
     pressure: undefined,
     wear: [0.82, Number.NaN],
   },

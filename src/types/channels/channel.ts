@@ -310,7 +310,9 @@ export interface CarDynamicsSnapshot {
 
 export interface CarConditionSnapshot {
   steeringWheelAngleMax?: number;
-  tyreTemperature?: readonly (number | null)[];
+  tyreTemperatureLeft?: readonly (number | null)[];
+  tyreTemperatureMiddle?: readonly (number | null)[];
+  tyreTemperatureRight?: readonly (number | null)[];
   tyrePressure?: readonly (number | null)[];
   tyreWear?: readonly (number | null)[];
   dentSeverity?: readonly number[];

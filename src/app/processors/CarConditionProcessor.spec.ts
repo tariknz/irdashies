@@ -13,7 +13,7 @@ const frame = (
   ) as unknown as Telemetry;
 
 describe('CarConditionProcessor', () => {
-  it('averages the readings across each tyre and leaves a missing corner null', () => {
+  it('carries each tyre zone on its own and leaves a missing corner null', () => {
     const processor = new CarConditionProcessor();
     processor.onFrame(
       frame({
@@ -30,7 +30,9 @@ describe('CarConditionProcessor', () => {
     );
 
     const snapshot = processor.snapshot();
-    expect(snapshot.tyreTemperature).toEqual([90, 85, null, null]);
+    expect(snapshot.tyreTemperatureLeft).toEqual([80, null, null, null]);
+    expect(snapshot.tyreTemperatureMiddle).toEqual([90, 85, null, null]);
+    expect(snapshot.tyreTemperatureRight).toEqual([100, null, null, null]);
     expect(snapshot.tyreWear?.[0]).toBeCloseTo(0.8);
     expect(snapshot.tyrePressure).toEqual([170, null, null, null]);
     expect(snapshot).toMatchObject({
@@ -44,7 +46,7 @@ describe('CarConditionProcessor', () => {
     processor.onFrame(frame({ SteeringWheelAngleMax: 7 }));
 
     const snapshot = processor.snapshot();
-    expect(snapshot.tyreTemperature).toBeUndefined();
+    expect(snapshot.tyreTemperatureMiddle).toBeUndefined();
     expect(snapshot.dentSeverity).toBeUndefined();
     expect(snapshot.repairNeeded).toBeUndefined();
   });
@@ -71,14 +73,14 @@ describe('CarConditionProcessor', () => {
   it('updates the published arrays in place rather than building new ones', () => {
     const processor = new CarConditionProcessor();
     processor.onFrame(frame({ LFtempCM: 80, LmuDentSeverity: [0, 0, 0] }));
-    const temperature = processor.snapshot().tyreTemperature;
+    const temperature = processor.snapshot().tyreTemperatureMiddle;
     const dents = processor.snapshot().dentSeverity;
 
     processor.onFrame(frame({ LFtempCM: 95, LmuDentSeverity: [0, 2, 0] }));
 
-    expect(processor.snapshot().tyreTemperature).toBe(temperature);
+    expect(processor.snapshot().tyreTemperatureMiddle).toBe(temperature);
     expect(processor.snapshot().dentSeverity).toBe(dents);
-    expect(processor.snapshot().tyreTemperature?.[0]).toBe(95);
+    expect(processor.snapshot().tyreTemperatureMiddle?.[0]).toBe(95);
     expect(processor.snapshot().dentSeverity).toEqual([0, 2, 0]);
   });
 
