@@ -97,6 +97,7 @@ vi.mock('./storage/chromiumFlags', () => ({
 }));
 vi.mock('./trackWindowMovement', () => ({
   markCorrectedBounds: vi.fn(),
+  trackGantryWindowMovement: vi.fn(),
   trackSettingsWindowMovement: vi.fn(),
 }));
 vi.mock('./perfRendererArguments', () => ({
