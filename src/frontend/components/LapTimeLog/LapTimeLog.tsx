@@ -178,14 +178,19 @@ export const LapTimeLogDisplay = ({
     settings.alignment === 'bottom' ? 'items-end' : 'items-start';
   const reverse = settings.reverse ? 'flex-col-reverse' : 'flex-col';
 
+  const embeddedAlignment =
+    settings.alignment === 'bottom' ? 'mt-auto shrink-0' : 'shrink-0';
+
   return (
     <div
       className={
-        embedded ? 'h-full overflow-y-auto' : `h-full flex ${alignment}`
+        embedded
+          ? 'h-full overflow-y-auto flex flex-col'
+          : `h-full flex ${alignment}`
       }
     >
       <div
-        className={`w-full text-sm bg-slate-800/[var(--bg-opacity)] rounded-md text-white ${!isCompact ? 'p-2' : 'p-0.5'}`}
+        className={`w-full text-sm bg-slate-800/[var(--bg-opacity)] rounded-md text-white ${!isCompact ? 'p-2' : 'p-0.5'} ${embedded ? embeddedAlignment : ''}`}
         style={
           {
             '--bg-opacity': `${settings.background.opacity}%`,

@@ -89,6 +89,24 @@ describe('LapTimeLog in the Gantry dock', () => {
     );
   });
 
+  it('keeps the overlay alignment inside the docked scroll area', () => {
+    useLapTimeLog.mockReturnValue({
+      settings: { ...settings({}), alignment: 'bottom' },
+      history,
+    });
+    const bottom = render(<LapTimeLog embedded />);
+    const scroller = bottom.container.firstElementChild;
+    expect(scroller).toHaveClass('overflow-y-auto', 'flex', 'flex-col');
+    expect(scroller?.firstElementChild).toHaveClass('mt-auto', 'shrink-0');
+    bottom.unmount();
+
+    useLapTimeLog.mockReturnValue({ settings: settings({}), history });
+    const top = render(<LapTimeLog embedded />);
+    expect(top.container.firstElementChild?.firstElementChild).not.toHaveClass(
+      'mt-auto'
+    );
+  });
+
   it('leaves the overlay showing its own number of laps', () => {
     useLapTimeLog.mockReturnValue({
       settings: settings({ count: 5 }),
