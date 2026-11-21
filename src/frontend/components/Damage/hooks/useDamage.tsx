@@ -1,5 +1,8 @@
 import { useMemo } from 'react';
-import { useCarConditionSnapshot } from '@irdashies/context';
+import {
+  useCarConditionSnapshot,
+  useDriverControlsSnapshot,
+} from '@irdashies/context';
 import type { DamageSnapshot } from '../logic';
 
 const positive = (value: number | undefined) =>
@@ -7,6 +10,7 @@ const positive = (value: number | undefined) =>
 
 export const useDamage = (): DamageSnapshot => {
   const car = useCarConditionSnapshot();
+  const controls = useDriverControlsSnapshot();
   return useMemo(
     () => ({
       dentSeverity: car?.dentSeverity ? [...car.dentSeverity] : [],
@@ -26,7 +30,8 @@ export const useDamage = (): DamageSnapshot => {
       repairNeeded: car?.repairNeeded === true,
       optRepairNeeded: car?.optRepairNeeded === true,
       bodyDetached: car?.bodyDetached === true,
+      engineWarnings: controls?.engineWarnings ?? 0,
     }),
-    [car]
+    [car, controls?.engineWarnings]
   );
 };
