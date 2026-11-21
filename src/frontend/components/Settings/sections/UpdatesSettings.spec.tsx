@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { AppUpdateStatus } from '@irdashies/types';
+import { AppUpdateStatusProvider } from '../AppUpdateStatusContext';
 import { UpdatesSettings } from './UpdatesSettings';
 
 const previousBridge = window.appUpdatesBridge;
@@ -37,7 +38,11 @@ it('lets the native updater check for a download independently of the latest rel
     install,
   };
 
-  render(<UpdatesSettings />);
+  render(
+    <AppUpdateStatusProvider>
+      <UpdatesSettings />
+    </AppUpdateStatusProvider>
+  );
   expect(
     screen.getByRole('checkbox', { name: 'Automatic updates' })
   ).not.toBeChecked();
@@ -48,7 +53,7 @@ it('lets the native updater check for a download independently of the latest rel
     screen.getByRole('button', { name: 'Check and download' })
   );
 
-  expect(install).toHaveBeenCalledOnce();
+  expect(install).toHaveBeenCalledExactlyOnceWith('download');
   expect(screen.getByRole('status')).toHaveTextContent(
     'No update is available for this installation.'
   );

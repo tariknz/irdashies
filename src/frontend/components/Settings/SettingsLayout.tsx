@@ -19,6 +19,7 @@ import {
 import { simulatorDisplayName, widgetDisabledMessage } from '@irdashies/types';
 import { SettingsLoader, WIDGET_SETTINGS } from './SettingsLoader';
 import { SettingsMenu } from './SettingsMenu';
+import { AppUpdateStatusProvider } from './AppUpdateStatusContext';
 import { HeaderProfilePicker } from './components/HeaderProfilePicker';
 import { settingsPageKind, type SettingsPageKind } from './settingsPageKind';
 import { widgetSettingsType } from './widgetSettingsType';
@@ -54,7 +55,13 @@ const MAIN_LABELS: Record<SettingsPageKind, string> = {
   overlay: 'Overlay settings page',
 };
 
-export const SettingsLayout = () => {
+export const SettingsLayout = () => (
+  <AppUpdateStatusProvider>
+    <SettingsLayoutContent />
+  </AppUpdateStatusProvider>
+);
+
+const SettingsLayoutContent = () => {
   const previewPanelWidth = useState(420);
   const { bridge, isDemoMode, toggleDemoMode, currentDashboard } =
     useDashboard();

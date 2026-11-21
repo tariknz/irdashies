@@ -584,10 +584,11 @@ export const ReleaseNotesPage: Story = {
 };
 
 const withUpdatesStatus =
-  (initial: Partial<AppUpdateStatus> = {}) =>
+  (initial: Partial<AppUpdateStatus> = {}, downloadDelay = 0) =>
   () => {
     const previous = window.appUpdatesBridge;
     let notify: (status: AppUpdateStatus) => void;
+    let timer: number | undefined;
     let status: AppUpdateStatus = {
       currentVersion: '3.0.0',
       latestVersion: '3.1.0',
@@ -612,19 +613,25 @@ const withUpdatesStatus =
       },
       checkLatest: async () => notify(status),
       setAutoUpdate: async (autoUpdate) => update({ autoUpdate }),
-      install: async () => {
-        if (status.phase === 'ready') {
-          update({ phase: 'restarting' });
-        } else {
+      install: async (action) => {
+        if (action === 'restart') {
+          if (status.phase === 'ready') update({ phase: 'restarting' });
+          return;
+        }
+        if (status.phase !== 'idle') return;
+        update({ phase: 'downloading' });
+        const finish = () =>
           update({
             phase: 'ready',
             latestVersion: '3.1.0',
             newerVersionAvailable: true,
           });
-        }
+        if (downloadDelay) timer = window.setTimeout(finish, downloadDelay);
+        else finish();
       },
     };
     return () => {
+      window.clearTimeout(timer);
       window.appUpdatesBridge = previous;
     };
   };
@@ -641,6 +648,11 @@ export const UpdatesCurrentRelease: Story = {
     autoUpdate: false,
     newerVersionAvailable: false,
   }),
+};
+
+export const SidebarUpdate: Story = {
+  args: { initialPath: '/settings/relative' },
+  beforeEach: withUpdatesStatus({ autoUpdate: false }, 2_000),
 };
 
 // Controlled disk-full bridge response; no disk space is consumed.

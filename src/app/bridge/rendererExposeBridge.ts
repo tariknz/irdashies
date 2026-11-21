@@ -99,7 +99,7 @@ export function exposeBridge() {
     checkLatest: () => ipcRenderer.invoke('appUpdates:checkLatest'),
     setAutoUpdate: (enabled) =>
       ipcRenderer.invoke('appUpdates:setAutoUpdate', enabled),
-    install: () => ipcRenderer.invoke('appUpdates:install'),
+    install: (action) => ipcRenderer.invoke('appUpdates:install', action),
   });
   defineBridge<TapeReplayBridge>('tapeReplayBridge', {
     getStatus: () => ipcRenderer.invoke('tapeReplay:status'),
