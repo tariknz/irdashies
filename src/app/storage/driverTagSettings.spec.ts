@@ -13,8 +13,16 @@ vi.mock('electron', () => ({ app: { getPath: () => userData } }));
 
 const legacySettings: DriverTagSettings = {
   groups: [{ id: 'team', name: 'Team', color: 0xff0000 }],
-  entries: [{ name: 'Morgan Lee', groupId: 'friend', label: 'Captain' }],
-  mapping: { '123': 'team', 'Alex Smith': 'team', 'morgan lee': 'team' },
+  entries: [
+    { name: 'Morgan Lee', groupId: 'friend', label: 'Captain' },
+    { id: '789', groupId: 'friend' },
+  ],
+  mapping: {
+    '123': 'team',
+    '789': 'team',
+    'Alex Smith': 'team',
+    'morgan lee': 'team',
+  },
   display: { enabled: true, displayStyle: 'tag' },
 };
 
@@ -44,8 +52,9 @@ describe('driver tag storage', () => {
         ...legacySettings,
         mapping: {},
         entries: [
-          { name: 'Morgan Lee', groupId: 'friend', label: 'Captain' },
+          ...(legacySettings.entries ?? []),
           { id: '123', groupId: 'team', legacyMapping: true },
+          { name: '789', groupId: 'team', legacyMapping: true },
           { name: 'Alex Smith', groupId: 'team', legacyMapping: true },
         ],
       });

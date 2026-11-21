@@ -18,15 +18,19 @@ afterEach(() => useSessionStore.getState().resetSession());
 
 it.each<Pick<DriverTagSettings, 'entries' | 'mapping'>>([
   {
-    entries: [{ name: 'Morgan Lee', groupId: 'friend', label: 'Captain' }],
+    entries: [
+      { name: 'Morgan Lee', groupId: 'friend', label: 'Captain' },
+      { id: '789', groupId: 'friend' },
+    ],
     mapping: { '123': 'team', '456': 'team', '789': 'team' },
   },
   {
     entries: [
       { name: 'Morgan Lee', groupId: 'friend', label: 'Captain' },
+      { id: '789', groupId: 'friend' },
       { id: '123', groupId: 'team', legacyMapping: true },
       { id: '456', groupId: 'team', legacyMapping: true },
-      { id: '789', groupId: 'team', legacyMapping: true },
+      { name: '789', groupId: 'team', legacyMapping: true },
     ],
     mapping: {},
   },
@@ -49,6 +53,7 @@ it.each<Pick<DriverTagSettings, 'entries' | 'mapping'>>([
           { CarIdx: 0, UserID: 123, UserName: 'morgan lee' },
           { CarIdx: 1, UserID: 456, UserName: 'Alex Smith' },
           { CarIdx: 2, UserID: 900, UserName: '789' },
+          { CarIdx: 3, UserID: 789, UserName: 'Jamie Taylor' },
         ],
       },
     } as Session);
@@ -61,5 +66,6 @@ it.each<Pick<DriverTagSettings, 'entries' | 'mapping'>>([
     });
     expect(result.current.tagMap.get(1)?.id).toBe('team');
     expect(result.current.tagMap.get(2)?.id).toBe('team');
+    expect(result.current.tagMap.get(3)?.id).toBe('friend');
   }
 );

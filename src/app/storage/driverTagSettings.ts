@@ -120,9 +120,8 @@ export const normalizeDriverTagSettings = (
 
   for (const [name, { key, groupId }] of legacyDrivers) {
     if (!key || typeof groupId !== 'string' || !groupId) continue;
-    if (/^\d+$/.test(key)) {
-      if (!assignedIds.has(key))
-        validatedEntries.push({ id: key, groupId, legacyMapping: true });
+    if (/^\d+$/.test(key) && !assignedIds.has(key)) {
+      validatedEntries.push({ id: key, groupId, legacyMapping: true });
     } else if (!assignedNames.has(name)) {
       validatedEntries.push({ name: key, groupId, legacyMapping: true });
     }
