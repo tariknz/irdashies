@@ -81,7 +81,6 @@ try {
         Invoke-SquirrelInstallerRebuild -PackagePath $packagePath `
             -ReleaseDirectory $releaseDirectory `
             -SquirrelPath (Join-Path $installerRoot 'vendor/Squirrel.exe') `
-            -LoadingGif (Join-Path $installerRoot 'resources/install-spinner.gif') `
             -SetupIcon (Resolve-Path -LiteralPath 'docs/assets/icons/logo.ico').Path
 
         # Read Setup.exe's DATA/131 resource with the bundled 7-Zip, then check
@@ -102,7 +101,12 @@ try {
         if ((Get-Content -LiteralPath (Join-Path $payloadDirectory 'RELEASES') -Raw).Trim() -ne $after.Trim()) {
             throw 'Setup.exe embeds a different RELEASES manifest.'
         }
-        Write-Output 'PASS: Squirrel preserves the launcher and embeds the matching package and manifest.'
+        $expectedSplashHash = (Get-FileHash -LiteralPath 'docs/assets/install-splash.gif' -Algorithm SHA256).Hash
+        $embeddedSplashHash = (Get-FileHash -LiteralPath (Join-Path $payloadDirectory 'background.gif') -Algorithm SHA256).Hash
+        if ($embeddedSplashHash -ne $expectedSplashHash) {
+            throw 'Setup.exe embeds a different installer splash.'
+        }
+        Write-Output 'PASS: Squirrel embeds the matching package, manifest and installer splash.'
     } else {
         Write-Output 'SKIP: native Squirrel rebuild requires Windows (runs in CI).'
     }
