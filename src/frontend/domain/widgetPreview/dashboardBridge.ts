@@ -63,6 +63,8 @@ export function createPreviewDashboardBridge(
       readAsset('playerIcon', filename),
     getAnalyticsOptOut: async () => true,
     setAnalyticsOptOut: done,
+    getRaceosOptIn: async () => false,
+    setRaceosOptIn: done,
     listProfiles: async () => [profile],
     createProfile: async () => profile,
     cloneProfile: async () => profile,

@@ -6,21 +6,25 @@ import logger from '@irdashies/utils/logger';
 export const AboutSettings = () => {
   const { version, bridge } = useDashboard();
   const [analyticsEnabled, setAnalyticsEnabled] = useState<boolean>(true);
+  const [raceosOptIn, setRaceosOptIn] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const loadOptOut = async () => {
+    const loadPrivacySettings = async () => {
       try {
         const optOut = await bridge.getAnalyticsOptOut();
         setAnalyticsEnabled(optOut === false);
+        if (bridge.getRaceosOptIn) {
+          setRaceosOptIn(await bridge.getRaceosOptIn());
+        }
       } catch (error) {
-        logger.error('Failed to load analytics opt-out setting:', error);
+        logger.error('Failed to load privacy settings:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadOptOut();
+    loadPrivacySettings();
   }, [bridge]);
 
   const handleAnalyticsChange = async (checked: boolean) => {
@@ -29,6 +33,16 @@ export const AboutSettings = () => {
       setAnalyticsEnabled(checked);
     } catch (error) {
       logger.error('Failed to update analytics opt-out setting:', error);
+    }
+  };
+
+  const handleRaceosChange = async (checked: boolean) => {
+    if (!bridge.setRaceosOptIn) return;
+    try {
+      await bridge.setRaceosOptIn(checked);
+      setRaceosOptIn(checked);
+    } catch (error) {
+      logger.error('Failed to update RaceOS opt-in setting:', error);
     }
   };
 
@@ -266,6 +280,37 @@ export const AboutSettings = () => {
               </p>
             </label>
           </div>
+
+          {bridge.getRaceosOptIn && bridge.setRaceosOptIn ? (
+            <div className="flex items-start gap-3 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+              <input
+                type="checkbox"
+                id="raceos-opt-in"
+                checked={raceosOptIn}
+                onChange={(e) => handleRaceosChange(e.target.checked)}
+                disabled={isLoading}
+                className="mt-1 w-4 h-4 text-accent-600 bg-slate-700 border-settings-boundary rounded focus:ring-accent-500 focus:ring-2 disabled:opacity-50"
+              />
+              <label
+                htmlFor="raceos-opt-in"
+                className="flex-1 text-sm text-slate-300 cursor-pointer"
+              >
+                <span className="font-medium">
+                  Enable LMU driver ratings (RaceOS)
+                </span>
+                <p className="mt-1 text-slate-400">
+                  Looks up Le Mans Ultimate driver ranks by sending your Steam
+                  auth ticket and the grid&apos;s driver names to raceos.gg, a
+                  third-party service. Off by default. Uncheck to stop all
+                  RaceOS requests.
+                </p>
+                <p className="mt-2 text-slate-400 font-bold">
+                  Note: Please restart the application for this setting to take
+                  effect.
+                </p>
+              </label>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

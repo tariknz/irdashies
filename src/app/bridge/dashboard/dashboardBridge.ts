@@ -42,6 +42,10 @@ import {
   setAnalyticsOptOut as setAnalyticsOptOutStorage,
 } from '../../storage/analytics';
 import {
+  getRaceosOptIn as getRaceosOptInStorage,
+  setRaceosOptIn as setRaceosOptInStorage,
+} from '../../storage/raceos';
+import {
   getCycleProfiles as getCycleProfilesStorage,
   setCycleProfiles as setCycleProfilesStorage,
   getShowProfileBanner as getShowProfileBannerStorage,
@@ -194,6 +198,12 @@ export const dashboardBridge: DashboardBridge = {
   },
   setAnalyticsOptOut: async (optOut: boolean) => {
     setAnalyticsOptOutStorage(optOut);
+  },
+  getRaceosOptIn: async () => {
+    return getRaceosOptInStorage();
+  },
+  setRaceosOptIn: async (optIn: boolean) => {
+    setRaceosOptInStorage(optIn);
   },
   // Profile management
   listProfiles: async () => {
@@ -470,6 +480,17 @@ export async function publishDashboardUpdates(
         opt_out: optOut,
       },
     });
+  });
+
+  ipcMain.handle('getRaceosOptIn', () => {
+    return getRaceosOptInStorage();
+  });
+
+  ipcMain.handle('setRaceosOptIn', (_, optIn: boolean) => {
+    if (typeof optIn !== 'boolean') {
+      throw new Error('RaceOS opt-in must be a boolean');
+    }
+    setRaceosOptInStorage(optIn);
   });
 
   ipcMain.handle('getCycleProfiles', () => getCycleProfilesStorage());

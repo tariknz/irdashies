@@ -63,7 +63,7 @@ import { raceosUsername } from '../../lmu/raceos/parse';
 import { createLmuTapeRatingClient } from '../../lmu/raceos/tapeRatings';
 import { createRaceosTransport } from '../../lmu/raceos/httpsJson';
 import { createTicketFetcher } from '../../lmu/raceos/ticket';
-import { RACEOS_ENABLED } from '../../lmu/raceos/enabled';
+import { isRaceosEnabled } from '../../lmu/raceos/enabled';
 import {
   createDriverRatingCache,
   type DriverRatingCache,
@@ -373,12 +373,12 @@ export async function publishLmuSDKEvents(
   // pseudonymised names its snapshots carry, so a replay shows the badges it
   // was recorded with and carries no real identity.
   //
-  // All of it is behind RACEOS_ENABLED: when off, neither branch is
+  // All of it is behind the RaceOS opt-in: when off, neither branch is
   // taken and the client below answers nothing, live or replayed.
   let ratingCache: DriverRatingCache | undefined;
   let ratingClient: RaceosClient;
-  if (!RACEOS_ENABLED) {
-    logger.info('[lmuSdkBridge] Driver ratings: off (RaceOS is disabled)');
+  if (!isRaceosEnabled()) {
+    logger.info('[lmuSdkBridge] Driver ratings: off (RaceOS not opted in)');
     ratingClient = {
       get: () => undefined,
       request: () => undefined,

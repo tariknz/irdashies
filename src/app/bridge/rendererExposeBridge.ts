@@ -311,6 +311,12 @@ export function exposeBridge() {
     setAnalyticsOptOut: (optOut: boolean) => {
       return ipcRenderer.invoke('setAnalyticsOptOut', optOut);
     },
+    getRaceosOptIn: () => {
+      return ipcRenderer.invoke('getRaceosOptIn');
+    },
+    setRaceosOptIn: (optIn: boolean) => {
+      return ipcRenderer.invoke('setRaceosOptIn', optIn);
+    },
     getCycleProfiles: () => {
       return ipcRenderer.invoke('getCycleProfiles');
     },

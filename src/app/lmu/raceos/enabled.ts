@@ -1,13 +1,14 @@
+import { getRaceosOptIn } from '../../storage/raceos';
+
 /**
- * Whether irDashies uses RaceOS at all.
+ * Whether irDashies may use RaceOS for this process.
  *
- * Off: LMU ranks and badges are not shown. While this is false the bridge
- * builds none of the rating feature -- no ticket is asked of the sim, no
- * request goes to raceos.gg, no rating cache is read or written, and a replay
- * ignores any ratings baked into its tape. The code is kept so turning it back
- * on is this one line.
+ * Requires an explicit user opt-in (About → LMU driver ratings). While this
+ * is false the bridge builds none of the rating feature — no ticket is asked
+ * of the sim, no request goes to raceos.gg, no rating cache is read or
+ * written, and a replay ignores any ratings baked into its tape.
  *
  * Its own module so the bridge spec can switch it on and keep the rest of the
  * feature covered.
  */
-export const RACEOS_ENABLED = false;
+export const isRaceosEnabled = (): boolean => getRaceosOptIn();

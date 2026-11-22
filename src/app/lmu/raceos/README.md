@@ -3,18 +3,17 @@
 Fetches LMU driver ranks and badges, and merges them into the standings beside
 the nationality and flag that `lmu/mapSession.ts` sets from the sim's own data.
 
-> **Switched off.** `RACEOS_ENABLED` in `enabled.ts` is `false`, so none of
-> this runs: no ticket is asked of the sim, nothing is sent to `raceos.gg`, the
-> rating cache is neither read nor written, and replays ignore baked ratings.
-> The Standings and Relative settings no longer offer the LMU Badge column or
-> the LMU rank format, and the LMU Badge column is always hidden. The code
-> below is kept as it was; setting the flag back to `true` restores the
-> bridge's behaviour, and the two settings would have to be put back by hand.
+> **Opt-in.** RaceOS stays off until the user enables **LMU driver ratings
+> (RaceOS)** under Settings → About. While that is unchecked, no ticket is
+> asked of the sim, nothing is sent to `raceos.gg`, the rating cache is neither
+> read nor written, and replays ignore baked ratings. A restart is required
+> after changing the setting.
 
 ## What is here
 
 | File             | Role                                                               |
 | ---------------- | ------------------------------------------------------------------ |
+| `enabled.ts`     | Reads the persisted opt-in (`isRaceosEnabled`).                    |
 | `client.ts`      | The auth exchange, the batched lookup, the cache and the backoff.  |
 | `parse.ts`       | Reads the rating service's player records.                         |
 | `httpsJson.ts`   | A `node:https` JSON transport, mirroring `lmu/rest/httpJson.ts`.   |
@@ -22,7 +21,8 @@ the nationality and flag that `lmu/mapSession.ts` sets from the sim's own data.
 | `tapeRatings.ts` | The replay path: ratings read from a tape, with no network at all. |
 
 `../../storage/driverRatings.ts` is the persistent cache, positive and
-negative, that the client reads and writes.
+negative, that the client reads and writes. `../../storage/raceos.ts` stores
+the opt-in flag.
 
 ## The credential chain
 
@@ -95,57 +95,7 @@ most of the concern with them goes away.
 Two consequences fall out of the chain and are not bugs:
 
 - Ratings exist only while LMU is running and signed in through Steam. There
-  is nothing to configure and nothing for the user to set up, and equally no
-  way to make this work offline or outside a session.
+  is nothing to configure beyond the About opt-in, and equally no way to make
+  this work offline or outside a session.
 - Nothing here is on a render path. Every lookup is best-effort: a failure
-  leaves drivers unrated and the standings render exactly as they do without
-  ratings, and a service that is down gets backed off rather than hammered.
-
-## How it is wired
-
-`bridge/iracingSdk/lmuSdkBridge.ts` owns the join. On each session poll it
-hands `client.request()` the grid's driver names (AI entries left out, the
-player always kept), and passes `client.get` to `mapLmuSession` as the
-synchronous lookup by driver name that fills `Driver.LmuRating`.
-Answers arrive long after the snapshot that asked for them, so the client's
-`onResolved` drops the bridge's session signature to force a republish.
-
-The renderer needs no knowledge of any of this — it draws whatever ranks it
-is given.
-
-## Replays
-
-A tape cannot resolve ratings the live way. The ticket is a live credential and
-a tape is a fixture meant to be shared, so the recorder never captures that
-path; a replay has nothing to authenticate with, and `createRaceosClient` is
-not even built — `tapeRatings.ts` takes its place.
-
-What makes badges work in a replay is that `anonymise` bakes them in. It writes
-the ratings it finds in `lmu-driver-ratings.json` into the tape as one REST
-record on a reserved path, keyed by driver name — and those keys go through the
-same name substitution as every other recorded body, so on an anonymised tape
-they come out as the pseudonyms the snapshots carry. No second mapping to keep
-in step, and the replay shows the badges it was recorded with under the renamed
-drivers.
-
-`anonymise` also replaces every real `mSteamID` with a synthetic one. Nothing
-reads that field any more, but a Steam id is a permanent, publicly resolvable
-handle, and leaving it beside a pseudonymised name would defeat the pseudonym.
-
-```
-lmu_replay anonymise --input raw.lmudt --output anon.lmudt --names names.txt     [--ratings <cache.json>] [--no-ratings]
-```
-
-`--ratings` defaults to `%APPDATA%/irdashies/lmu-driver-ratings.json`. A missing
-file, a grid the cache has nothing for, or `--no-ratings` all mean the same
-thing: the replay shows flags but no badges. A remembered miss is left out
-rather than baked, so a driver the service had nothing for stays that way.
-
-The cache file is keyed by driver name and stores `version: 2`. A version 1
-file was keyed by Steam id, so it holds nothing that could match a lookup
-again and is discarded rather than migrated.
-
-Two lists have to agree for any of this to work, and both are checked by
-`rest/recorderParity.spec.ts` rather than by review: the recorder's REST paths
-against `LMU_REST_TASKS`, and `kReplayRatingsPath` against
-`REPLAY_RATINGS_PATH`.
+  leaves the badge blank and the standings otherwise unchanged.

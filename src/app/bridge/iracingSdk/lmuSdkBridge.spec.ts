@@ -52,7 +52,7 @@ const ratingState = vi.hoisted(() => ({
   },
   /** Set when the bridge chose the tape-backed client over the live one. */
   tapeClientBuilt: false,
-  /** RACEOS_ENABLED as the bridge sees it; on, so the wiring stays covered. */
+  /** isRaceosEnabled as the bridge sees it; on, so the wiring stays covered. */
   enabled: true,
   /** Set when the bridge built the live client. */
   liveClientBuilt: false,
@@ -203,9 +203,7 @@ vi.mock('../../lmu/mapSession', () => ({
 // The rating client and its IO have their own specs; here only the bridge's
 // use of them matters.
 vi.mock('../../lmu/raceos/enabled', () => ({
-  get RACEOS_ENABLED() {
-    return ratingState.enabled;
-  },
+  isRaceosEnabled: () => ratingState.enabled,
 }));
 
 vi.mock('../../lmu/raceos/client', () => ({
@@ -1104,7 +1102,7 @@ describe('publishLmuSDKEvents rating source on a tape replay', () => {
 });
 
 /**
- * RaceOS switched off, which is how the app ships.
+ * RaceOS opted out, which is how the app ships until the user opts in.
  *
  * Nothing of the feature may be built: no transport or ticket fetcher means no
  * request can reach raceos.gg and no ticket is asked of the sim, and no cache
