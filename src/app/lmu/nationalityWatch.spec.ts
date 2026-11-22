@@ -66,6 +66,12 @@ describe('createLmuNationalityWatch', () => {
     expect(watch.complete({ A: 'FR', B: 'DE', Gone: 'IT' })).toBe(true);
   });
 
+  it('treats a case-only spelling difference as a match', () => {
+    const watch = createLmuNationalityWatch();
+    watch.observe(grid(['Jean Dupont']));
+    expect(watch.complete({ 'JEAN DUPONT': 'FR' })).toBe(true);
+  });
+
   it('does not wait on AI entries or nameless slots', () => {
     const watch = createLmuNationalityWatch();
     watch.observe({

@@ -10,6 +10,8 @@ interface PitStatusCellProps {
   lastLap?: number;
   currentSessionType?: string;
   dnf?: boolean;
+  /** LMU pit request still on track. */
+  pitRequested?: boolean;
   pitStopDuration?: number | null;
   showPitTime?: boolean;
   pitLapDisplayMode?: string;
@@ -33,6 +35,7 @@ export const PitStatusCell = memo(
     lastLap,
     currentSessionType,
     dnf,
+    pitRequested,
     pitStopDuration,
     showPitTime = false,
     pitLapDisplayMode,
@@ -72,6 +75,7 @@ export const PitStatusCell = memo(
           dnf={dnf}
           tow={tow}
           pit={pit}
+          pitRequested={pitRequested}
           out={out}
           lap={lap}
           lastPit={lastPit}

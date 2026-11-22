@@ -126,6 +126,7 @@ export const useDriverStandings = (
     standingsSnapshot?.carIdxPenaltySeconds ?? EMPTY_NUMBERS;
   const carIdxFinishStatus =
     standingsSnapshot?.carIdxFinishStatus ?? EMPTY_NUMBERS;
+  const carIdxPitState = standingsSnapshot?.carIdxPitState ?? EMPTY_NUMBERS;
   const penaltySeconds = standingsSnapshot?.penaltySeconds;
   const isOfficial = useSessionIsOfficial();
   const eventType = useWeekendInfoEventType();
@@ -170,6 +171,7 @@ export const useDriverStandings = (
             carIdxPenaltyKindValue: carIdxPenaltyKind,
             carIdxPenaltySecondsValue: carIdxPenaltySeconds,
             carIdxFinishStatusValue: carIdxFinishStatus,
+            carIdxPitStateValue: carIdxPitState,
             penaltySeconds,
             carIdxSessionFlags: carIdxSessionFlags,
           },
@@ -322,6 +324,7 @@ export const useDriverStandings = (
       carIdxPenaltyKind,
       carIdxPenaltySeconds,
       carIdxFinishStatus,
+      carIdxPitState,
       penaltySeconds,
       ownCarIdx,
       positions,

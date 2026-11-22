@@ -337,6 +337,7 @@ export const Relative = () => {
           config={settings}
           highlightColor={highlightColor}
           dnf={result.dnf}
+          pitRequested={result.pitRequested}
           repair={result.repair}
           penalty={result.penalty}
           slowdown={result.slowdown}

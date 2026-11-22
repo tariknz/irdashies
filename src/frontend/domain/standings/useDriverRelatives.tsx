@@ -63,6 +63,16 @@ export const useDriverRelatives = ({
         return false;
       }
 
+      // LMU DNF / DQ stay in scoring but are out of the race; leave them off
+      // Relative so the buffer fills with cars still racing.
+      if (
+        driver.dnf ||
+        driver.finishState === 'DNF' ||
+        driver.finishState === 'DQ'
+      ) {
+        return false;
+      }
+
       // Must be on track
       return driver.onTrack;
     },

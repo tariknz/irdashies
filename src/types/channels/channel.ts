@@ -571,6 +571,11 @@ export interface StandingsSnapshot {
    */
   carIdxFinishStatus: number[];
   /**
+   * Each car's pit state, as an LMU_PIT_STATE. Empty under iRacing.
+   * State 1 is a pit request still on track (TinyPedal's pitRequested).
+   */
+  carIdxPitState: number[];
+  /**
    * Seconds a time penalty will add, per car. 0 for a clean car and for the
    * two kinds served on track. Empty wherever `carIdxPenaltyKind` is.
    *
