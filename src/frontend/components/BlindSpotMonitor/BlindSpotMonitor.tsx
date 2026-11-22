@@ -4,6 +4,7 @@ import { BlindSpotMonitorIndicator } from './components/BlindSpotMonitorIndicato
 import { BlindSpotMonitorSimpleIndicator } from './components/BlindSpotMonitorSimpleIndicator';
 import { useDashboard, useSessionVisibility } from '@irdashies/context';
 import { CarLeftRight } from '@irdashies/types';
+import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 
 export interface BlindSpotMonitorDisplayProps {
   show: boolean;
@@ -119,13 +120,48 @@ export const BlindSpotMonitorDisplay = ({
   );
 };
 
-const DEMO_STATE_SIMPLE = {
-  show: true,
-  leftState: CarLeftRight.CarLeft,
-  rightState: CarLeftRight.Cars2Right,
-  leftPercent: 0,
-  rightPercent: 0,
-  disableTransition: true,
+/**
+ * Percent is −1..1 (behind → ahead), matching useBlindSpotMonitor / stories.
+ * Sweep cars past on alternating sides, with a brief 2-wide flash.
+ */
+export const getDemoBlindSpotState = (elapsedSec = 0) => {
+  const cycle = 8;
+  const t = elapsedSec % cycle;
+  // −1 → +1 over the first 6s, then clear for 2s
+  const sweep = t < 6 ? -1 + (t / 6) * 2 : 0;
+  const phase = Math.floor(elapsedSec / cycle) % 4;
+
+  let leftState = CarLeftRight.Off;
+  let rightState = CarLeftRight.Off;
+  let leftPercent = 0;
+  let rightPercent = 0;
+
+  if (t < 6) {
+    if (phase === 0) {
+      leftState = CarLeftRight.CarLeft;
+      leftPercent = sweep;
+    } else if (phase === 1) {
+      rightState = CarLeftRight.CarRight;
+      rightPercent = sweep;
+    } else if (phase === 2) {
+      leftState = CarLeftRight.CarLeft;
+      rightState = CarLeftRight.CarRight;
+      leftPercent = sweep;
+      rightPercent = -sweep;
+    } else {
+      leftState = CarLeftRight.Cars2Left;
+      leftPercent = sweep;
+    }
+  }
+
+  return {
+    show: true,
+    leftState,
+    rightState,
+    leftPercent,
+    rightPercent,
+    disableTransition: t < 0.05 || (t >= 6 && t < 6.05),
+  };
 };
 
 export const BlindSpotMonitor = () => {
@@ -134,7 +170,8 @@ export const BlindSpotMonitor = () => {
   const { isDemoMode } = useDashboard();
 
   const sessionVisible = useSessionVisibility(settings?.sessionVisibility);
-  const activeState = isDemoMode ? DEMO_STATE_SIMPLE : state;
+  const demoState = useDemoFrame(isDemoMode, getDemoBlindSpotState);
+  const activeState = isDemoMode && demoState ? demoState : state;
 
   if (!isDemoMode && !sessionVisible) return <></>;
   if (!isDemoMode && settings?.showOnlyWhenOnTrack && !state.isOnTrack)

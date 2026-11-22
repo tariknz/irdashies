@@ -23,6 +23,36 @@ const numericValue = (
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 };
 
+const lmuSectorTimes = (
+  frame: Telemetry,
+  key: 'LmuCurrentSectorTimes' | 'LmuLastSectorTimes' | 'LmuBestSectorTimes'
+): (number | null)[] | null => {
+  const values = frame[key]?.value;
+  return values
+    ? Array.from(values, (value) =>
+        typeof value === 'number' && Number.isFinite(value) && value > 0
+          ? value
+          : null
+      )
+    : null;
+};
+
+const sectorTimesDiffer = (
+  values: readonly (number | null)[],
+  known: readonly (number | null)[]
+): boolean => known.some((time, index) => (values[index] ?? null) !== time);
+
+const previousBests = (
+  nextBest: readonly (number | null)[],
+  prior: SectorTimingResultSnapshot
+): (number | null)[] =>
+  nextBest.map((best, index) => {
+    const priorBest = prior.sessionBestSectorTimes[index] ?? null;
+    return best !== priorBest
+      ? priorBest
+      : (prior.previousSessionBestSectorTimes[index] ?? null);
+  });
+
 export const getSectorIdx = (
   lapDistPct: number,
   sectors: readonly Sector[]
@@ -97,6 +127,13 @@ export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSna
 
   onFrame(frame: Telemetry): void {
     if (!this.enabled || this.latest.sectors.length === 0) return;
+    const directCurrent = lmuSectorTimes(frame, 'LmuCurrentSectorTimes');
+    const directPrevious = lmuSectorTimes(frame, 'LmuLastSectorTimes');
+    const directBest = lmuSectorTimes(frame, 'LmuBestSectorTimes');
+    if (directCurrent && directPrevious && directBest) {
+      this.onLmuFrame(frame, directCurrent, directPrevious, directBest);
+      return;
+    }
     const lapDistPct = numericValue(frame, 'LapDistPct');
     const sessionTime = numericValue(frame, 'SessionTime');
     const sessionNum = numericValue(frame, 'SessionNum');
@@ -236,6 +273,115 @@ export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSna
 
   snapshot(): SectorTimingSnapshot {
     return this.latest;
+  }
+
+  private onLmuFrame(
+    frame: Telemetry,
+    current: (number | null)[],
+    previous: (number | null)[],
+    best: (number | null)[]
+  ): void {
+    const count = this.latest.sectors.length;
+    const currentSectorIdx = Math.min(
+      count - 1,
+      Math.max(0, numericValue(frame, 'LmuSectorIdx') ?? 0)
+    );
+    const sessionNum = numericValue(frame, 'SessionNum');
+    if (
+      sessionNum !== null &&
+      this.latest.sessionNum !== null &&
+      sessionNum !== this.latest.sessionNum
+    ) {
+      this.resetState(this.latest.sectors, sessionNum);
+    }
+    const prior = this.latest.inclusive;
+    const lapDistPct = numericValue(frame, 'LapDistPct');
+    const invalidated = frame.LmuLapInvalidated?.value?.[0] === true;
+    const farFromLine =
+      lapDistPct === null || lapDistPct >= INVALIDATION_START_PCT;
+    const rolledOver =
+      this.latest.sectorEntryValid &&
+      sectorTimesDiffer(previous, prior.previousLapSectorTimes);
+    // LMU clears the flag on a lap reset, which rewinds the sector index.
+    const lapRestarted =
+      !rolledOver &&
+      !invalidated &&
+      (currentSectorIdx < this.latest.currentSectorIdx || farFromLine);
+    const keepsFlags = !rolledOver && !lapRestarted;
+    const markFrom = invalidated && farFromLine ? currentSectorIdx : count;
+    const uncleanAt = (index: number) =>
+      (keepsFlags && prior.currentLapSectorUnclean[index]) || index >= markFrom;
+
+    let flagsChanged = false;
+    for (let i = 0; i < count; i += 1) {
+      if (uncleanAt(i) !== prior.currentLapSectorUnclean[i])
+        flagsChanged = true;
+    }
+    const unchanged =
+      this.latest.sectorEntryValid &&
+      !flagsChanged &&
+      !rolledOver &&
+      currentSectorIdx === this.latest.currentSectorIdx &&
+      sessionNum === this.latest.sessionNum &&
+      !sectorTimesDiffer(current, prior.currentLapSectorTimes) &&
+      !sectorTimesDiffer(previous, prior.previousLapSectorTimes) &&
+      !sectorTimesDiffer(best, prior.sessionBestSectorTimes);
+    if (unchanged) return;
+
+    const fit = (values: (number | null)[]) =>
+      Array.from({ length: count }, (_, index) => values[index] ?? null);
+    const nextCurrent = fit(current);
+    const nextPrevious = fit(previous);
+    const nextBest = fit(best);
+    const currentUnclean = Array.from({ length: count }, (_, i) =>
+      uncleanAt(i)
+    );
+    const previousUnclean = rolledOver
+      ? [...prior.currentLapSectorUnclean]
+      : [...prior.previousLapSectorUnclean];
+
+    const inclusive: SectorTimingResultSnapshot = {
+      currentLapSectorTimes: nextCurrent,
+      previousLapSectorTimes: nextPrevious,
+      currentLapSectorUnclean: currentUnclean,
+      previousLapSectorUnclean: previousUnclean,
+      sessionBestSectorTimes: nextBest,
+      previousSessionBestSectorTimes: previousBests(nextBest, prior),
+    };
+
+    const cleanCurrent = nextCurrent.map((time, i) =>
+      currentUnclean[i] ? null : time
+    );
+    const cleanPrevious = nextPrevious.map((time, i) =>
+      previousUnclean[i] ? null : time
+    );
+    const priorClean = this.latest.clean;
+    const cleanBest = Array.from({ length: count }, (_, i) => {
+      const times = [
+        priorClean.sessionBestSectorTimes[i],
+        cleanCurrent[i],
+        cleanPrevious[i],
+      ].filter((time): time is number => time !== null && time !== undefined);
+      return times.length > 0 ? Math.min(...times) : null;
+    });
+    const clean: SectorTimingResultSnapshot = {
+      currentLapSectorTimes: cleanCurrent,
+      previousLapSectorTimes: cleanPrevious,
+      currentLapSectorUnclean: [...currentUnclean],
+      previousLapSectorUnclean: [...previousUnclean],
+      sessionBestSectorTimes: cleanBest,
+      previousSessionBestSectorTimes: previousBests(cleanBest, priorClean),
+    };
+
+    this.latest = {
+      ...this.latest,
+      currentSectorIdx,
+      sectorEntryValid: true,
+      inclusive,
+      clean,
+      sessionNum,
+      version: this.latest.version + 1,
+    };
   }
 
   private completeSector(

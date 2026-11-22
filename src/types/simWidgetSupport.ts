@@ -28,18 +28,18 @@ export interface SimWidgetSupportConfig {
 }
 
 /**
- * The widgets verified to work under Le Mans Ultimate.
+ * The widgets that work under Le Mans Ultimate.
  *
- * LMU's data comes from a shared-memory block and a local REST API that carry
- * a fraction of what iRacing publishes, so support is per widget and has to be
- * established one at a time. This is the list that has been, and it is the
- * reason for the one below rather than a second opinion about it: a spec
- * asserts the two are exact complements over WIDGET_MAP, so a widget added to
- * the app cannot quietly appear under LMU without someone deciding which list
- * it belongs in.
+ * LMU's shared memory and REST API are mapped onto the same channels iRacing
+ * publishes, with the gaps TinyPedal fills the same way: relative positions
+ * from world coordinates, grip from mTrackGripLevel.
+ * A spec asserts this list and the one below are exact complements over
+ * WIDGET_MAP, so a widget added to the app cannot quietly appear under LMU
+ * without someone deciding which list it belongs in.
  */
 export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'battle',
+  'blindspotmonitor',
   'brakepressure',
   'broadcast',
   'broadcastevents',
@@ -53,6 +53,7 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'deltaspeed',
   'fastercarsfrombehind',
   'flag',
+  'flatmap',
   'frictioncircle',
   'fuel',
   'gantry',
@@ -62,6 +63,7 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'input',
   'laptimelog',
   'laptrace',
+  'map',
   'pitlanehelper',
   'radar',
   'rejoin',
@@ -92,9 +94,6 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
 
 /** Everything else, hidden while LMU is the running sim. */
 export const LMU_DISABLED_WIDGETS: readonly string[] = [
-  'blindspotmonitor',
-  'flatmap',
-  'map',
   // Race plans name drivers by iRacing customer id.
   'stintplan',
   'strategytimeline',
@@ -141,7 +140,7 @@ export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
  * it did, which costs a user their hand edits once per change and is why the
  * number is bumped only for a real one.
  */
-export const SIM_WIDGET_SUPPORT_VERSION = 15;
+export const SIM_WIDGET_SUPPORT_VERSION = 17;
 
 /**
  * Whether a widget is unavailable under the running sim.
@@ -166,6 +165,15 @@ export const widgetDisabledMessage = (
   simulator: ActiveSimulator | null | undefined
 ): string | null =>
   isWidgetDisabledForSim(config, widgetId, simulator) ? config.message : null;
+
+export type WidgetGameFilter = 'all' | ActiveSimulator;
+
+export const isWidgetVisibleInGameFilter = (
+  config: SimWidgetSupportConfig,
+  widgetId: string | undefined,
+  filter: WidgetGameFilter
+): boolean =>
+  filter === 'all' || !isWidgetDisabledForSim(config, widgetId, filter);
 
 /** The label under a greyed-out toggle, e.g. "Not iRacing compatible". */
 export const widgetIncompatibleLabel = (

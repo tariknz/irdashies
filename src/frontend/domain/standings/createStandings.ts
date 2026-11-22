@@ -3,6 +3,7 @@ import type { LmuDriverRating } from '@irdashies/types';
 import {
   lmuFinishStateFromCode,
   lmuPenaltyBadge,
+  lmuPitRequested,
   type LmuFinishState,
   type LmuPenaltyKind,
 } from '@irdashies/types';
@@ -11,6 +12,10 @@ import {
   RaceResult,
   CalculationResult,
 } from '@irdashies/utils/iratingGain';
+import {
+  calculateDriverRankGain,
+  driverRankVisualScore,
+} from '@irdashies/utils/driverRankGain';
 import { GlobalFlags } from '@irdashies/types';
 import { useReferenceLapStore } from '@irdashies/context';
 import {
@@ -107,6 +112,11 @@ export interface Standings {
   carTrackSurface?: number;
   currentSessionType?: string;
   dnf: boolean;
+  /**
+   * LMU pit request still on track (`mPitState === 1`). Undefined/false under
+   * iRacing and when the car is already in the pits.
+   */
+  pitRequested?: boolean;
   repair: boolean;
   penalty: boolean;
   slowdown: boolean;
@@ -244,6 +254,8 @@ export const createDriverStandings = (
     carIdxPenaltySecondsValue?: number[];
     /** Each car's finish status, as LMU_FINISH_STATUS. Empty under iRacing. */
     carIdxFinishStatusValue?: number[];
+    /** Each car's pit state, as LMU_PIT_STATE. Empty under iRacing. */
+    carIdxPitStateValue?: number[];
     /** Seconds the player's next stop spends serving penalties. */
     penaltySeconds?: number;
     isOnTrack?: boolean;
@@ -425,6 +437,9 @@ export const createDriverStandings = (
           (telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) &
           GlobalFlags.Disqualify
         ),
+        pitRequested: lmuPitRequested(
+          telemetry?.carIdxPitStateValue?.[result.CarIdx]
+        ),
         repair: !!(
           (telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) &
           GlobalFlags.Repair
@@ -534,6 +549,9 @@ export const createDriverStandings = (
           telemetry?.carIdxTrackSurfaceValue?.[driver.CarIdx] ?? undefined,
         currentSessionType: currentSession.sessionType,
         dnf: false,
+        pitRequested: lmuPitRequested(
+          telemetry?.carIdxPitStateValue?.[driver.CarIdx]
+        ),
         repair: false,
         penalty: false,
         slowdown: false,
@@ -684,6 +702,70 @@ export const augmentStandingsWithIRating = (
       iratingChange: iratingChangeMap.get(driverStanding.carIdx),
     }));
     return [classId, augmentedClassStandings];
+  });
+};
+
+/**
+ * True when this grid carries LMU Driver Rank data worth estimating against.
+ * Used to pick the doX-style gain path over iRacing's iRating change.
+ */
+export const standingsHaveLmuDriverRanks = (
+  groupedStandings: [string, Standings[]][]
+): boolean =>
+  groupedStandings.some(([, classStandings]) =>
+    classStandings.some((s) => !!s.driver?.lmuRating?.driverRank)
+  );
+
+/**
+ * Approximate LMU Driver Rank gain for the current class positions, matching
+ * doX SimHub's EstimatedDriverRankGain. Written into `iratingChange` so the
+ * existing Standings/Relative column can show it.
+ */
+export const augmentStandingsWithDriverRankGain = (
+  groupedStandings: [string, Standings[]][],
+  qualifyingResults?: SessionResults[]
+): [string, Standings[]][] => {
+  const qualiByCarIdx = new Map<number, number>();
+  qualifyingResults?.forEach((result) => {
+    qualiByCarIdx.set(result.CarIdx, result.ClassPosition + 1);
+  });
+
+  return groupedStandings.map(([classId, classStandings]) => {
+    const inputs = classStandings.flatMap((standing) => {
+      if (!standing.classPosition) return [];
+      const rating = standing.driver?.lmuRating;
+      const visual = driverRankVisualScore(
+        rating?.driverRank,
+        rating?.driverTier,
+        rating?.driverProgress
+      );
+      if (visual === undefined) return [];
+      return [
+        {
+          driver: standing.carIdx,
+          racePosition: standing.classPosition,
+          qualiPosition: qualiByCarIdx.get(standing.carIdx) ?? 0,
+          visualScore: visual,
+        },
+      ];
+    });
+
+    if (inputs.length < 2) {
+      return [classId, classStandings];
+    }
+
+    const gainByCarIdx = new Map<number, number>();
+    for (const result of calculateDriverRankGain(inputs)) {
+      gainByCarIdx.set(result.driver, result.estimatedGain);
+    }
+
+    return [
+      classId,
+      classStandings.map((standing) => ({
+        ...standing,
+        iratingChange: gainByCarIdx.get(standing.carIdx),
+      })),
+    ];
   });
 };
 

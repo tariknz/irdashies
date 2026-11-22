@@ -82,6 +82,11 @@ export interface LmuDriverRating {
   driverRank?: LmuRank;
   /** Tier within `driverRank`; 0 or absent when the rank carries no tier. */
   driverTier?: number;
+  /**
+   * Progress within the current driver-rank tier, 0..100.
+   * Used for the progress readout and the approximate race gain estimate.
+   */
+  driverProgress?: number;
   /** Safety rating rank, on the same scale as `driverRank`. */
   safetyRank?: LmuRank;
   safetyTier?: number;

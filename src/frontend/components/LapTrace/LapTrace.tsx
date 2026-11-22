@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import type { LapTraceConfig } from '@irdashies/types';
 import {
   DEFAULT_AUDIO_OUTPUT_DEVICE_ID,
@@ -7,6 +7,7 @@ import {
 } from '@irdashies/types';
 import {
   trackStateSelectors,
+  useDashboard,
   useDrivingState,
   useLapTraceInvalidReason,
   useLapTraceRecordingPercent,
@@ -16,6 +17,8 @@ import {
 } from '@irdashies/context';
 import { formatTime } from '@irdashies/utils/time';
 import { resolveSpeedUnit, speedFromMs } from '@irdashies/utils/units';
+import { hydrateLapTrace } from '@irdashies/utils/lapTrace/hydrateLapTrace';
+import { makeSyntheticLapTrace } from './fixtures/syntheticLap';
 import {
   BRAKE_CUE_MIN_PEAK_DEFAULT,
   selectBrakeCuePoints,
@@ -81,6 +84,7 @@ const RecordingProgress = () => {
 export const LapTrace = (props: LapTraceProps) => {
   const settings = useLapTraceSettings();
   const config = { ...settings, ...props };
+  const { isDemoMode } = useDashboard();
 
   // Which elements show, and where, comes from the layout tree. Configs saved
   // before the layout editor got theirs from the dashboard-load migration.
@@ -101,6 +105,34 @@ export const LapTrace = (props: LapTraceProps) => {
   const isSessionVisible = useSessionVisibility(config.sessionVisibility);
 
   const referenceLap = useLapTraceStore((s) => s.referenceLap);
+
+  // Demo has no stored best. The recorder's initialize() clears referenceLap,
+  // so re-seed whenever demo is on and the reference is missing.
+  useEffect(() => {
+    if (!isDemoMode) return;
+    const seed = () => {
+      const state = useLapTraceStore.getState();
+      if (state.referenceLap) return;
+      const trackLengthM = state.trackLengthM > 0 ? state.trackLengthM : 5220;
+      const record = makeSyntheticLapTrace({
+        trackLengthM,
+        trackId: state.trackId ?? 465,
+        carPath: state.carPath || 'bmwm4gt4',
+      });
+      useLapTraceStore.setState({
+        trackId: record.trackId,
+        trackConfigName: record.trackConfigName,
+        carPath: record.carPath,
+        trackLengthM: record.trackLengthM,
+        referenceLap: hydrateLapTrace(record),
+        referenceError: null,
+      });
+    };
+    seed();
+    const timer = setInterval(seed, 400);
+    return () => clearInterval(timer);
+  }, [isDemoMode]);
+
   const referenceError = useLapTraceStore((s) => s.referenceError);
   const trackLengthM = useLapTraceStore((s) => s.trackLengthM);
   const invalidReason = useLapTraceInvalidReason();

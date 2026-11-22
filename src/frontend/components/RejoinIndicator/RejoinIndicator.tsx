@@ -15,6 +15,7 @@ import { useDriverRelatives, type Standings } from '@irdashies/domain';
 import { useRejoinSettings } from './hooks/useRejoinSettings';
 import { getDemoRejoinData } from './demoData';
 import { speedFromMs } from '@irdashies/utils/units';
+import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 
 export const RejoinIndicator = () => {
   const { isDemoMode } = useDashboard();
@@ -33,15 +34,11 @@ export const RejoinIndicator = () => {
   const sessionState = trackState?.sessionState ?? 0;
   const { isDriving } = useDrivingState();
   const drivers = useDriverRelatives({ buffer: 3 });
+  const demoData = useDemoFrame(isDemoMode, getDemoRejoinData);
 
-  // Generate demo data when in demo mode
-  if (isDemoMode) {
-    const demoData = getDemoRejoinData(settings);
+  if (isDemoMode && demoData) {
     return (
-      <RejoinIndicatorDisplay
-        gap={demoData.gap}
-        status={demoData.status as 'Clear' | 'Caution' | 'Do Not Rejoin'}
-      />
+      <RejoinIndicatorDisplay gap={demoData.gap} status={demoData.status} />
     );
   }
 

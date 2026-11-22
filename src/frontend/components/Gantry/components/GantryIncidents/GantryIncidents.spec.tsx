@@ -42,6 +42,7 @@ const sessionStore = vi.hoisted(() => {
 });
 
 vi.mock('@irdashies/context', () => ({
+  useDashboard: () => ({ isDemoMode: false }),
   useRaceControlStore: (selector: (state: unknown) => unknown) =>
     selector({
       activeTypeFilters: new Set(Object.values(IncidentType)),

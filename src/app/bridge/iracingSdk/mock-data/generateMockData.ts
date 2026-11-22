@@ -34,6 +34,126 @@ export async function generateMockDataFromPath(
   });
 }
 
+type TelemetryBag = { value?: unknown[] } & Record<string, unknown>;
+
+const CORNERS = ['LF', 'RF', 'LR', 'RR'] as const;
+
+/** Keep existing var metadata when present; invent a minimal cell otherwise. */
+const numCell = (
+  prev: Telemetry | Record<string, unknown>,
+  key: string,
+  value: number
+): TelemetryBag => {
+  const existing = (prev as Record<string, TelemetryBag | undefined>)[key];
+  return existing
+    ? { ...existing, value: [value] }
+    : ({ value: [value] } as TelemetryBag);
+};
+
+/**
+ * Animated tyre/brake/suspension/clock/dc* cells for demo mode.
+ * Values are synthetic — enough for the widgets to move, not a real car.
+ */
+function demoCornerTelemetry(
+  prev: Telemetry,
+  sessionTime: number,
+  opts: { brake: number }
+): Record<string, TelemetryBag> {
+  const t = sessionTime;
+  const out: Record<string, TelemetryBag> = {};
+
+  CORNERS.forEach((corner, i) => {
+    // Large swings so 5 Hz car-condition snapshots and rounded °C still move.
+    const phase = t * 1.2 + i * 0.9;
+    const tempMid = 75 + Math.sin(phase) * 28 + i * 3;
+    out[`${corner}tempCL`] = numCell(prev, `${corner}tempCL`, tempMid - 5);
+    out[`${corner}tempCM`] = numCell(prev, `${corner}tempCM`, tempMid);
+    out[`${corner}tempCR`] = numCell(prev, `${corner}tempCR`, tempMid + 4);
+    const wear = Math.max(
+      0.2,
+      0.95 - (t % 60) * 0.008 - i * 0.03 + Math.sin(phase) * 0.04
+    );
+    out[`${corner}wearL`] = numCell(prev, `${corner}wearL`, wear);
+    out[`${corner}wearM`] = numCell(prev, `${corner}wearM`, wear);
+    out[`${corner}wearR`] = numCell(prev, `${corner}wearR`, wear);
+    out[`${corner}coldPressure`] = numCell(
+      prev,
+      `${corner}coldPressure`,
+      155 + Math.sin(phase * 0.8) * 18 + i * 2
+    );
+    const brakePress =
+      opts.brake > 0.05
+        ? opts.brake * (2.8 + i * 0.15) + Math.sin(t * 8 + i) * 0.05
+        : Math.max(0, Math.sin(t * 0.5 + i) * 0.1);
+    out[`${corner}brakeLinePress`] = numCell(
+      prev,
+      `${corner}brakeLinePress`,
+      brakePress
+    );
+    out[`${corner}shockDefl`] = numCell(
+      prev,
+      `${corner}shockDefl`,
+      0.04 + Math.sin(t * 3.2 + i * 1.1) * 0.025 + opts.brake * 0.02
+    );
+  });
+
+  // Start mid-afternoon and advance in real time with the demo clock.
+  out.SessionTimeOfDay = numCell(
+    prev,
+    'SessionTimeOfDay',
+    54_000 + (sessionTime % 86_400)
+  );
+
+  const step = Math.floor(sessionTime / 4);
+  out.dcBrakeBias = numCell(prev, 'dcBrakeBias', 48 + (step % 7));
+  out.dcABS = numCell(prev, 'dcABS', 1 + (step % 5));
+  out.dcTractionControl = numCell(prev, 'dcTractionControl', 2 + (step % 6));
+  out.dcTractionControl2 = numCell(prev, 'dcTractionControl2', step % 5);
+  out.dcThrottleShape = numCell(prev, 'dcThrottleShape', 1 + (step % 4));
+  out.dcFuelMixture = numCell(prev, 'dcFuelMixture', 1 + (step % 3));
+  out.dcAntiRollFront = numCell(prev, 'dcAntiRollFront', 2 + (step % 5));
+  out.dcAntiRollRear = numCell(prev, 'dcAntiRollRear', 1 + (step % 5));
+  out.dcBrakeBiasFine = numCell(
+    prev,
+    'dcBrakeBiasFine',
+    Math.sin(sessionTime * 0.4) * 0.8
+  );
+
+  // Weather — step whole °C so rounded displays move every few seconds.
+  const weatherPhase = Math.floor(sessionTime / 5) % 4;
+  out.AirTemp = numCell(prev, 'AirTemp', 16 + weatherPhase * 4);
+  out.TrackTemp = numCell(prev, 'TrackTemp', 20 + weatherPhase * 5);
+  out.TrackTempCrew = numCell(prev, 'TrackTempCrew', 20 + weatherPhase * 5);
+  out.WindVel = numCell(prev, 'WindVel', 2 + weatherPhase * 4);
+  out.Precipitation = numCell(
+    prev,
+    'Precipitation',
+    weatherPhase >= 2 ? 0.2 + (weatherPhase - 2) * 0.25 : 0.02
+  );
+  out.TrackWetness = numCell(
+    prev,
+    'TrackWetness',
+    weatherPhase === 0 ? 1 : weatherPhase === 1 ? 2 : weatherPhase === 2 ? 4 : 6
+  );
+  out.RelativeHumidity = numCell(
+    prev,
+    'RelativeHumidity',
+    0.35 + weatherPhase * 0.12
+  );
+  out.OilTemp = numCell(
+    prev,
+    'OilTemp',
+    90 + Math.sin(sessionTime * 0.3) * 12 + weatherPhase * 2
+  );
+  out.WaterTemp = numCell(
+    prev,
+    'WaterTemp',
+    82 + Math.sin(sessionTime * 0.25) * 8 + weatherPhase
+  );
+
+  return out;
+}
+
 function createMockFeed<T>(intervalMs: number, sample: () => T) {
   const subscribers = new Set<(value: T) => void>();
   let timer: ReturnType<typeof setInterval> | undefined;
@@ -79,6 +199,9 @@ export function generateMockData(sessionData?: {
     sessionTime: 600.0, // Start 10 mins in
     sessionLaps: 15,
     sessionLapsRemain: 12,
+    lapCompleted: 2,
+    lastLapTime: 90.5,
+    lapStartSessionTime: 600.0,
   };
 
   // Animate all cars around the track — seed initial positions from mock telemetry
@@ -86,6 +209,51 @@ export function generateMockData(sessionData?: {
   const carLapDistPcts = [
     ...(prevTelemetry.CarIdxLapDistPct.value as number[]),
   ];
+  const carLapCompleted = [
+    ...((prevTelemetry.CarIdxLapCompleted?.value as number[]) ??
+      carLapDistPcts.map(() => -1)),
+  ];
+  const carEstTimes = [
+    ...((prevTelemetry.CarIdxEstTime?.value as number[]) ??
+      carLapDistPcts.map(() => 0)),
+  ];
+  const carF2Times = [
+    ...((prevTelemetry.CarIdxF2Time?.value as number[]) ??
+      carLapDistPcts.map(() => 0)),
+  ];
+  const carPositions = [
+    ...((prevTelemetry.CarIdxPosition?.value as number[]) ??
+      carLapDistPcts.map(() => 0)),
+  ];
+  const carClassPositions = [
+    ...((prevTelemetry.CarIdxClassPosition?.value as number[]) ??
+      carLapDistPcts.map(() => 0)),
+  ];
+  const carTrackSurfaces = [
+    ...((prevTelemetry.CarIdxTrackSurface?.value as number[]) ??
+      carLapDistPcts.map(() => -1)),
+  ];
+  const carOnPitRoad = [
+    ...((prevTelemetry.CarIdxOnPitRoad?.value as boolean[]) ??
+      carLapDistPcts.map(() => false)),
+  ];
+  // Put a pack of cars on track near the player so Relative/Battle have neighbours.
+  const paceCarIdx = mockSessionInfo.DriverInfo.PaceCarIdx ?? -1;
+  const DEMO_PACK = [
+    playerCarIdx,
+    ...[1, 2, 3, 5, 6, 7, 8, 9].filter(
+      (idx) => idx !== playerCarIdx && idx !== paceCarIdx
+    ),
+  ].slice(0, 8);
+  for (let packIndex = 0; packIndex < DEMO_PACK.length; packIndex++) {
+    const idx = DEMO_PACK[packIndex];
+    if (idx < 0 || idx >= carLapDistPcts.length) continue;
+    carLapDistPcts[idx] = (0.05 + packIndex * 0.07) % 1;
+    carLapCompleted[idx] = Math.max(3, carLapCompleted[idx] ?? 3);
+    carTrackSurfaces[idx] = 3; // OnTrack
+    carOnPitRoad[idx] = false;
+  }
+  carLapCompleted[playerCarIdx] = Math.max(3, mockState.lapCompleted);
   // Per-car speed multipliers: 1-3% variation so gaps are realistic
   const carSpeedMultipliers = carLapDistPcts.map((pct, idx) => {
     if (pct < 0) return 0; // not on track
@@ -180,6 +348,12 @@ export function generateMockData(sessionData?: {
 
       // Handle Lap Completion
       if (mockState.lapDistPct >= 1.0) {
+        mockState.lastLapTime = Math.max(
+          60,
+          mockState.sessionTime - mockState.lapStartSessionTime
+        );
+        mockState.lapCompleted += 1;
+        mockState.lapStartSessionTime = mockState.sessionTime;
         mockState.lapDistPct = 0.0;
         mockState.currentLap += 1;
         mockState.sessionLapsRemain = Math.max(
@@ -205,16 +379,44 @@ export function generateMockData(sessionData?: {
 
       // --- Fuel Calculator Mock Logic End ---
 
-      // Animate all on-track cars forward; sync player car with mockState
+      // Animate on-track cars; bump LapCompleted on wrap so live positions move.
+      const EST_LAP_SEC = 90;
       for (let i = 0; i < carLapDistPcts.length; i++) {
         if (carLapDistPcts[i] < 0) continue; // not on track
         if (i === playerCarIdx) {
           carLapDistPcts[i] = mockState.lapDistPct;
+          carLapCompleted[i] = mockState.lapCompleted;
         } else {
-          carLapDistPcts[i] =
-            (carLapDistPcts[i] + LAP_DISTANCE_INC * carSpeedMultipliers[i]) % 1;
+          const next =
+            carLapDistPcts[i] + LAP_DISTANCE_INC * carSpeedMultipliers[i];
+          if (next >= 1) {
+            carLapCompleted[i] = Math.max(0, carLapCompleted[i]) + 1;
+            carLapDistPcts[i] = next % 1;
+          } else {
+            carLapDistPcts[i] = next;
+          }
         }
+        carEstTimes[i] =
+          (Math.max(0, carLapCompleted[i]) + carLapDistPcts[i]) * EST_LAP_SEC;
       }
+
+      // Overall / class order from race progress — drives Standings without
+      // needing useLivePosition, and F2 gaps for the tower.
+      const racing = carLapDistPcts
+        .map((pct, idx) => ({
+          idx,
+          progress:
+            pct < 0 ? Number.NEGATIVE_INFINITY : carLapCompleted[idx] + pct,
+        }))
+        .filter((entry) => entry.progress > Number.NEGATIVE_INFINITY)
+        .sort((a, b) => b.progress - a.progress);
+      const leaderProgress = racing[0]?.progress ?? 0;
+      racing.forEach((entry, place) => {
+        carPositions[entry.idx] = place + 1;
+        carClassPositions[entry.idx] = place + 1;
+        carF2Times[entry.idx] =
+          place === 0 ? 0 : (leaderProgress - entry.progress) * EST_LAP_SEC;
+      });
 
       const state = mockState;
 
@@ -257,7 +459,18 @@ export function generateMockData(sessionData?: {
         },
         SessionFlags: {
           ...prevTelemetry.SessionFlags,
-          value: [GlobalFlags.Green],
+          value: [
+            (
+              [
+                GlobalFlags.Green,
+                GlobalFlags.Green,
+                GlobalFlags.Yellow,
+                GlobalFlags.Green,
+                GlobalFlags.Blue,
+                GlobalFlags.White,
+              ] as const
+            )[Math.floor(state.sessionTime / 8) % 6],
+          ],
         },
         Brake: {
           ...prevTelemetry.Brake,
@@ -308,6 +521,14 @@ export function generateMockData(sessionData?: {
           ...prevTelemetry.Lap,
           value: [state.currentLap],
         },
+        LapCompleted: {
+          ...prevTelemetry.LapCompleted,
+          value: [state.lapCompleted],
+        },
+        LapLastLapTime: {
+          ...prevTelemetry.LapLastLapTime,
+          value: [state.lastLapTime],
+        },
         LapDistPct: {
           ...prevTelemetry.LapDistPct,
           value: [state.lapDistPct],
@@ -315,6 +536,40 @@ export function generateMockData(sessionData?: {
         CarIdxLapDistPct: {
           ...prevTelemetry.CarIdxLapDistPct,
           value: [...carLapDistPcts],
+        },
+        CarIdxLapCompleted: {
+          ...prevTelemetry.CarIdxLapCompleted,
+          value: [...carLapCompleted],
+        },
+        CarIdxLap: {
+          ...prevTelemetry.CarIdxLap,
+          value: carLapCompleted.map((laps, idx) =>
+            carLapDistPcts[idx] < 0 ? -1 : Math.max(0, laps)
+          ),
+        },
+        CarIdxEstTime: {
+          ...prevTelemetry.CarIdxEstTime,
+          value: [...carEstTimes],
+        },
+        CarIdxF2Time: {
+          ...prevTelemetry.CarIdxF2Time,
+          value: [...carF2Times],
+        },
+        CarIdxPosition: {
+          ...prevTelemetry.CarIdxPosition,
+          value: [...carPositions],
+        },
+        CarIdxClassPosition: {
+          ...prevTelemetry.CarIdxClassPosition,
+          value: [...carClassPositions],
+        },
+        CarIdxTrackSurface: {
+          ...prevTelemetry.CarIdxTrackSurface,
+          value: [...carTrackSurfaces],
+        },
+        CarIdxOnPitRoad: {
+          ...prevTelemetry.CarIdxOnPitRoad,
+          value: [...carOnPitRoad],
         },
         SessionTime: {
           ...prevTelemetry.SessionTime,
@@ -359,6 +614,44 @@ export function generateMockData(sessionData?: {
           ...prevTelemetry.CarIdxP2P_Count,
           value: demoP2PCount,
         },
+        // Drive friction circle / steering meter — frozen JSON values
+        // left those widgets looking dead in demo mode.
+        LatAccel: {
+          ...prevTelemetry.LatAccel,
+          value: [
+            Math.sin(state.sessionTime * 1.4) * 9.5 +
+              Math.sin(state.sessionTime * 0.35) * 3,
+          ],
+        },
+        LongAccel: {
+          ...prevTelemetry.LongAccel,
+          value: [
+            (jitteredThrottleValue - jitteredBrakeValue) * 8 -
+              Math.sin(state.sessionTime * 0.9) * 2,
+          ],
+        },
+        SteeringWheelAngle: {
+          ...prevTelemetry.SteeringWheelAngle,
+          value: [
+            Math.sin(state.sessionTime * 0.85) * 1.1 +
+              Math.sin(state.sessionTime * 2.3) * 0.25,
+          ],
+        },
+        CarLeftRight: {
+          ...prevTelemetry.CarLeftRight,
+          value: [
+            // Cycle clear / left / right / both every ~3s
+            ([1, 2, 3, 4, 1, 5, 6] as const)[
+              Math.floor(state.sessionTime / 3) % 7
+            ],
+          ],
+        },
+        // Tyre / brake / suspension / clock / car systems — frozen JSON
+        // left TyrePanel, BrakePressure, Suspension, TrackClock and
+        // CarSystems looking dead in demo mode.
+        ...demoCornerTelemetry(prevTelemetry, state.sessionTime, {
+          brake: jitteredBrakeValue,
+        }),
       } as unknown as Telemetry;
       prevTelemetry = t;
     }

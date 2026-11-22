@@ -247,9 +247,8 @@ export const Standings = () => {
   const hasDriverRatings = simulatorHasDriverRatings(simulator);
   const hiddenColumns = useMemo<ReadonlySet<string>>(
     () =>
-      // Per column: both sims fill `badge` -- an iRacing licence or an LMU
-      // rank pair -- while iratingChange is iRacing's alone and lmuBadge is
-      // LMU's. One flag per simulator could not say that, and hid LMU's ranks.
+      // Per column: both sims fill `badge` and `iratingChange` (iRating or
+      // approximate LMU DR gain); `lmuBadge` is LMU-only.
       hiddenRatingColumns(simulator),
     [simulator]
   );
@@ -427,6 +426,9 @@ export const Standings = () => {
                           position={result.classPosition}
                           lap={result.lastLap}
                           iratingChangeValue={result.iratingChange}
+                          ratingChangeSuffix={
+                            simulator === 'lmu' ? '%' : undefined
+                          }
                           positionChange={result.positionChange}
                           lastTime={
                             settings?.lastTime?.enabled
@@ -499,6 +501,7 @@ export const Standings = () => {
                           config={settings}
                           highlightColor={highlightColor}
                           dnf={result.dnf}
+                          pitRequested={result.pitRequested}
                           repair={result.repair}
                           penalty={result.penalty}
                           slowdown={result.slowdown}

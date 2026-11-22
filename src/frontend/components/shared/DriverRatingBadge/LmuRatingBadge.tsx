@@ -162,9 +162,15 @@ export const LmuRatingBadge = ({
   // is the caller's job, since only it knows the entry is an AI.
   if (!driverRank && !safetyRank) return null;
 
+  const progress =
+    typeof rating?.driverProgress === 'number' &&
+    Number.isFinite(rating.driverProgress)
+      ? Math.max(0, Math.min(100, Math.round(rating.driverProgress)))
+      : undefined;
+
   const driverTitle = `Driver rating: ${driverRank}${
     rating?.driverTier ? ` ${rating.driverTier}` : ''
-  }`;
+  }${progress !== undefined ? ` (${progress}%)` : ''}`;
   const safetyTitle = `Safety rating: ${safetyRank}${
     rating?.safetyTier ? ` ${rating.safetyTier}` : ''
   }`;
@@ -192,6 +198,14 @@ export const LmuRatingBadge = ({
             chrome={chrome.driver}
           />
         ))}
+      {progress !== undefined && (
+        <span
+          title={driverTitle}
+          className="text-white/80 text-xs leading-tight tabular-nums min-w-[2.2em] text-right"
+        >
+          {progress}%
+        </span>
+      )}
       {safetyRank &&
         (useArt ? (
           <Plate

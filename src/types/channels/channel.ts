@@ -195,6 +195,13 @@ export interface RadarCar {
    */
   lane: number;
   /**
+   * Metres left of the focus car, from a true relative position.
+   *
+   * Set when the sim publishes one (LMU). The display uses it instead of
+   * turning `lane` into a guess. Positive is left, matching the projector.
+   */
+  lateralM?: number;
+  /**
    * Where `lane` came from: the standing-start grid or the pace line (both
    * known from the sim), the spotter calling this car alongside, a side
    * remembered after the overlap ended, a guess that two rivals level with
@@ -364,6 +371,14 @@ export interface DriverControlsSnapshot {
   engineWarnings?: number;
   shiftRpm?: number;
   blinkRpm?: number;
+  steeringWheelAngleMax?: number;
+  lateralAccel?: number;
+  longitudinalAccel?: number;
+  tyreTemperature?: readonly (number | null)[];
+  tyrePressure?: readonly (number | null)[];
+  tyreWear?: readonly (number | null)[];
+  brakeLinePressure?: readonly (number | null)[];
+  suspensionDeflection?: readonly (number | null)[];
   version: number;
 }
 
@@ -562,6 +577,11 @@ export interface StandingsSnapshot {
    * `lmuFinishStateFromCode` turns an entry into something to draw.
    */
   carIdxFinishStatus: number[];
+  /**
+   * Each car's pit state, as an LMU_PIT_STATE. Empty under iRacing.
+   * State 1 is a pit request still on track (TinyPedal's pitRequested).
+   */
+  carIdxPitState: number[];
   /**
    * Seconds a time penalty will add, per car. 0 for a clean car and for the
    * two kinds served on track. Empty wherever `carIdxPenaltyKind` is.

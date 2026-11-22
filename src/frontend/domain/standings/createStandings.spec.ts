@@ -6,6 +6,7 @@ import {
   augmentStandingsWithPositionChange,
   augmentStandingsWithGap,
   augmentStandingsWithInterval,
+  augmentStandingsWithDriverRankGain,
 } from './createStandings';
 import type { Standings } from './createStandings';
 import { useReferenceLapStore } from '@irdashies/context';
@@ -1580,5 +1581,38 @@ describe('createDriverStandings and the LMU finish status', () => {
   it('is absent on a sim that reports none', () => {
     const rows = build({}, true);
     expect(rows.every((r) => r.finishState === undefined)).toBe(true);
+  });
+});
+
+describe('augmentStandingsWithDriverRankGain', () => {
+  it('writes approximate DR gains into iratingChange per class', () => {
+    const make = (
+      carIdx: number,
+      classPosition: number,
+      rank: 'Silver' | 'Gold',
+      tier: number,
+      progress: number
+    ): Standings =>
+      ({
+        carIdx,
+        classPosition,
+        position: classPosition,
+        driver: {
+          lmuRating: {
+            driverRank: rank,
+            driverTier: tier,
+            driverProgress: progress,
+          },
+        },
+        carClass: { id: 1, name: 'GT3', relativeSpeed: 1 },
+      }) as Standings;
+
+    const grouped: [string, Standings[]][] = [
+      ['1', [make(0, 1, 'Silver', 1, 0), make(1, 2, 'Silver', 1, 0)]],
+    ];
+
+    const [[, rows]] = augmentStandingsWithDriverRankGain(grouped);
+    expect(rows[0].iratingChange).toBeCloseTo(7.5, 5);
+    expect(rows[1].iratingChange).toBeCloseTo(-7.5, 5);
   });
 });

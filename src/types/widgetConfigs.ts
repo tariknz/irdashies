@@ -366,8 +366,17 @@ export interface FlatTrackMapConfig {
 }
 
 export interface SteerConfig {
-  style: 'formula' | 'lmp' | 'nascar' | 'ushape' | 'default' | 'ring';
+  style:
+    'formula' | 'lmp' | 'nascar' | 'ushape' | 'default' | 'ring' | 'custom';
   color: 'dark' | 'light';
+  /** Filename of an uploaded image when style is `custom`. */
+  customImage?: string;
+  /**
+   * Multiplier for on-screen wheel rotation vs telemetry (100 = 1:1).
+   * Lower this if the overlay turns more than your physical wheel
+   * (common when wheelbase degrees differ from iRacing wheel rotation).
+   */
+  rotationScale?: number;
 }
 
 export interface InputConfig {
@@ -1516,6 +1525,14 @@ export interface CompactTelemetryWidgetConfig {
   background: { opacity: number };
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
+}
+
+export interface TrackNote {
+  id: string;
+  trackId: string;
+  lapDistPct: number;
+  text: string;
+  scope: 'always' | 'pit' | 'session';
 }
 
 export interface StintHistoryConfig extends CompactTelemetryWidgetConfig {

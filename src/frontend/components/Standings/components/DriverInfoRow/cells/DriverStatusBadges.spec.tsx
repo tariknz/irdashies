@@ -27,6 +27,19 @@ describe('DriverStatusBadges', () => {
     expect(container.textContent).toContain('PIT');
   });
 
+  it('renders REQ when a pit is requested and the car is still out', () => {
+    const { container } = render(<DriverStatusBadges pitRequested />);
+
+    expect(container.textContent).toContain('REQ');
+  });
+
+  it('hides REQ once the car is already in the pits', () => {
+    const { container } = render(<DriverStatusBadges pit pitRequested />);
+
+    expect(container.textContent).toContain('PIT');
+    expect(container.textContent).not.toContain('REQ');
+  });
+
   it('renders OUT when out is true', () => {
     const { container } = render(<DriverStatusBadges out />);
 

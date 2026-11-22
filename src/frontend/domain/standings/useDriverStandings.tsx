@@ -17,6 +17,8 @@ import {
   groupStandingsBySpeed,
   sliceRelevantDrivers,
   augmentStandingsWithIRating,
+  augmentStandingsWithDriverRankGain,
+  standingsHaveLmuDriverRanks,
   augmentStandingsWithGap,
   augmentStandingsWithInterval,
   augmentStandingsWithPlayerGap,
@@ -124,6 +126,7 @@ export const useDriverStandings = (
     standingsSnapshot?.carIdxPenaltySeconds ?? EMPTY_NUMBERS;
   const carIdxFinishStatus =
     standingsSnapshot?.carIdxFinishStatus ?? EMPTY_NUMBERS;
+  const carIdxPitState = standingsSnapshot?.carIdxPitState ?? EMPTY_NUMBERS;
   const penaltySeconds = standingsSnapshot?.penaltySeconds;
   const isOfficial = useSessionIsOfficial();
   const eventType = useWeekendInfoEventType();
@@ -168,6 +171,7 @@ export const useDriverStandings = (
             carIdxPenaltyKindValue: carIdxPenaltyKind,
             carIdxPenaltySecondsValue: carIdxPenaltySeconds,
             carIdxFinishStatusValue: carIdxFinishStatus,
+            carIdxPitStateValue: carIdxPitState,
             penaltySeconds,
             carIdxSessionFlags: carIdxSessionFlags,
           },
@@ -216,16 +220,25 @@ export const useDriverStandings = (
               )
             : groupedByClass;
 
-        // Official race weekends retain the existing behavior. Practice estimates
-        // are opt-in because they are hypothetical and do not affect iRating.
-        const iratingAugmentedGroupedByClass = shouldCalculateIRatingChange(
-          eventType,
-          isOfficial,
-          sessionType,
-          settings?.iratingChange?.estimateInPractice ?? false
+        // LMU: doX-style approximate DR gain in race sessions whenever ranks
+        // are present. iRacing: official race weekends, with opt-in practice.
+        const iratingAugmentedGroupedByClass = standingsHaveLmuDriverRanks(
+          positionChangeAugmentedGroupedByClass
         )
-          ? augmentStandingsWithIRating(positionChangeAugmentedGroupedByClass)
-          : positionChangeAugmentedGroupedByClass;
+          ? sessionType === 'Race'
+            ? augmentStandingsWithDriverRankGain(
+                positionChangeAugmentedGroupedByClass,
+                qualifyingResults
+              )
+            : positionChangeAugmentedGroupedByClass
+          : shouldCalculateIRatingChange(
+                eventType,
+                isOfficial,
+                sessionType,
+                settings?.iratingChange?.estimateInPractice ?? false
+              )
+            ? augmentStandingsWithIRating(positionChangeAugmentedGroupedByClass)
+            : positionChangeAugmentedGroupedByClass;
 
         // Calculate gap to class leader when enabled OR when interval is enabled (interval needs gap data)
         const gapAugmentedGroupedByClass =
@@ -311,6 +324,7 @@ export const useDriverStandings = (
       carIdxPenaltyKind,
       carIdxPenaltySeconds,
       carIdxFinishStatus,
+      carIdxPitState,
       penaltySeconds,
       ownCarIdx,
       positions,

@@ -234,6 +234,20 @@ describe('deriveLmuRelativePositions performance guards', () => {
     expect(buffer.available[1]).toBe(false);
   });
 
+  it('computes a car inside a caller-supplied radius', () => {
+    const buffer = createLmuRelativePositionsBuffer();
+    deriveLmuRelativePositions(
+      fixture([
+        [0, 0],
+        [0, 50],
+      ]),
+      buffer,
+      120
+    );
+
+    expect(buffer.available[1]).toBe(true);
+  });
+
   it('still computes a car just inside the radius', () => {
     const buffer = createLmuRelativePositionsBuffer();
     deriveLmuRelativePositions(

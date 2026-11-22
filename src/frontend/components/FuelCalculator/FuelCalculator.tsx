@@ -3,7 +3,8 @@ import type { FuelCalculation, FuelCalculatorSettings } from './types';
 import { useFuelCalculation } from './useFuelCalculation';
 import { useFuelCalculatorSettings } from './useFuelCalculatorSettings';
 import { FuelCalculatorDisplay } from './FuelCalculatorDisplay';
-import { demoFuelData } from './demoData';
+import { getDemoFuelData } from './demoData';
+import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 
 type FuelCalculatorProps = Partial<FuelCalculatorSettings> & {
   /** Storybook overrides; demo hosts always use this widget's shared data. */
@@ -28,11 +29,21 @@ const LiveFuelCalculator = ({
   );
 };
 
+const DemoFuelCalculator = (settings: FuelCalculatorSettings) => {
+  const fuelData = useDemoFrame(true, getDemoFuelData);
+  return (
+    <FuelCalculatorDisplay
+      {...settings}
+      fuelData={fuelData ?? getDemoFuelData(0)}
+    />
+  );
+};
+
 export const FuelCalculator = (props: FuelCalculatorProps) => {
   const { isDemoMode } = useDashboard();
   const settings = useFuelCalculatorSettings(props);
   return isDemoMode ? (
-    <FuelCalculatorDisplay {...settings} fuelData={demoFuelData} />
+    <DemoFuelCalculator {...settings} />
   ) : (
     <LiveFuelCalculator {...settings} />
   );

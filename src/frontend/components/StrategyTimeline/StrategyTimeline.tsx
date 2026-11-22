@@ -8,13 +8,13 @@ import {
 import {
   DEMO_DRIVER_IDS,
   buildStrategyTimelineView,
-  demoRacePlanSnapshot,
   demoRacePlanState,
-  demoRepairStop,
+  getDemoStrategyTimelineSnapshot,
   mismatchText,
   progressNotice,
 } from '@irdashies/domain';
 import type { StrategyTimelineConfig } from '@irdashies/types';
+import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 import { StintRow } from './components/StintRow';
 import { TimelineStrip } from './components/TimelineStrip';
 import {
@@ -29,11 +29,6 @@ export type StrategyTimelineProps = Partial<StrategyTimelineConfig> & {
   embedded?: boolean;
 };
 
-const DEMO_SNAPSHOT = demoRacePlanSnapshot({
-  driftSec: 134,
-  rebuiltFrom: 4,
-  stops: [demoRepairStop],
-});
 const DEMO_USER_ID = DEMO_DRIVER_IDS[1];
 
 export const StrategyTimeline = ({
@@ -47,7 +42,11 @@ export const StrategyTimeline = ({
   const liveSnapshot = useRacePlanProgressSnapshot();
   const livePlan = useRacePlanState();
   const liveUserId = useDriverUserId();
-  const snapshot = isDemoMode ? DEMO_SNAPSHOT : liveSnapshot;
+  const demoSnapshot = useDemoFrame(
+    isDemoMode,
+    getDemoStrategyTimelineSnapshot
+  );
+  const snapshot = isDemoMode ? demoSnapshot : liveSnapshot;
   const planState = isDemoMode ? demoRacePlanState : livePlan;
   const userId = isDemoMode ? DEMO_USER_ID : liveUserId;
 
@@ -63,7 +62,7 @@ export const StrategyTimeline = ({
   );
 
   const opacity = background?.opacity ?? 80;
-  const notice = progressNotice(snapshot);
+  const notice = progressNotice(snapshot ?? undefined);
   if (notice || !snapshot || !view) {
     return (
       <TimelineFrame opacity={opacity}>

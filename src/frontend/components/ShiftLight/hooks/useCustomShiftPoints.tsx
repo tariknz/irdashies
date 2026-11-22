@@ -1,14 +1,13 @@
 import { useMemo } from 'react';
+import { useActiveSimulator } from '@irdashies/context';
 import { loadCarData, type CarData } from '@irdashies/utils/carData';
 import type { ShiftPointSettings } from '@irdashies/types';
 
 /**
  * Shared lookup and trigger logic for the standalone shift cue.
  *
- * `carModel` is the key as-is where the sim sets one (LMU). It must not go
- * through the iRacing car data: "Ferrari 499P" normalises to iRacing's
- * `ferrari499p`, which would look up a different car's shift points from the
- * ones saved for this one.
+ * `carModel` is the key as-is where the sim sets one (LMU) and the bundled
+ * car data has no match. Prefer carData / loadCarData for the active sim.
  */
 export const useCustomShiftPoints = (
   settings: ShiftPointSettings | undefined,
@@ -18,12 +17,16 @@ export const useCustomShiftPoints = (
   carData?: CarData | null,
   carModel?: string
 ) => {
+  const gameId = useActiveSimulator();
   const carId = useMemo(
     () =>
-      carModel ||
       carData?.carId ||
-      (carPath ? (loadCarData(carPath)?.carId ?? carPath) : undefined),
-    [carModel, carData?.carId, carPath]
+      (carPath
+        ? (loadCarData(carPath, gameId ?? undefined)?.carId ??
+          carModel ??
+          carPath)
+        : carModel),
+    [carData?.carId, carPath, gameId, carModel]
   );
   const carConfig = carId ? settings?.carConfigs[carId] : undefined;
   const currentShiftPoint = carConfig?.enabled

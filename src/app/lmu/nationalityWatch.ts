@@ -83,8 +83,12 @@ export const createLmuNationalityWatch = (): LmuNationalityWatch => {
 
     /** Whether every driver on the last online grid has a flag. */
     complete(codes) {
-      return (
-        names.length > 0 && names.every((name) => codes?.[name] !== undefined)
+      if (names.length === 0 || !codes) return false;
+      const byLower = new Map(
+        Object.entries(codes).map(([name, code]) => [name.toLowerCase(), code])
+      );
+      return names.every(
+        (name) => codes[name] !== undefined || byLower.has(name.toLowerCase())
       );
     },
 

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import type { FuelCalculatorSettings, FuelCalculation } from '../types';
 import {
   MAX_LAP_HISTORY,
@@ -6,7 +6,8 @@ import {
   useFuelStore,
 } from '@irdashies/context';
 import { formatFuel } from '../fuelCalculations';
-import { demoFuelHistory } from '../demoData';
+import { demoFuelHistory, getDemoFuelGraph } from '../demoData';
+import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 import {
   ConsumptionGraphWidget,
   ConsumptionGraphData,
@@ -121,6 +122,33 @@ export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({
     } as ConsumptionGraphData;
   }, [lapHistory, fuelHistoryType]);
 
+  // Stable `at` identities — changing deps would reset useDemoFrame's clock.
+  const tableOpts = useRef({
+    count: tableLapCount,
+    sessionNum: currentSessionNum,
+  });
+  tableOpts.current = { count: tableLapCount, sessionNum: currentSessionNum };
+  const graphOpts = useRef({ line: fuelHistoryType === 'line' });
+  graphOpts.current = { line: fuelHistoryType === 'line' };
+  const demoTableAt = useRef((elapsedSec: number) =>
+    demoFuelHistory(
+      tableOpts.current.count,
+      tableOpts.current.sessionNum,
+      elapsedSec
+    )
+  ).current;
+  const demoGraphAt = useRef((elapsedSec: number) =>
+    getDemoFuelGraph(elapsedSec, graphOpts.current.line ? 30 : 15)
+  ).current;
+  const demoTable = useDemoFrame(
+    isDemoMode && fuelHistoryType === 'table',
+    demoTableAt
+  );
+  const demoGraph = useDemoFrame(
+    isDemoMode && fuelHistoryType !== 'table',
+    demoGraphAt
+  );
+
   if (settings && settings.showFuelHistory === false) return null;
 
   const paddingClass =
@@ -130,9 +158,7 @@ export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({
     const labelFontSize = widgetStyle.labelFontSize || widgetStyle.fontSize;
     const valueFontSize = widgetStyle.valueFontSize || widgetStyle.fontSize;
     // Demo values stay explicitly labelled and never enter the lap store.
-    const rows = isDemoMode
-      ? demoFuelHistory(tableLapCount, currentSessionNum)
-      : tableLaps;
+    const rows = isDemoMode ? (demoTable ?? []) : tableLaps;
 
     return (
       <div
@@ -197,7 +223,7 @@ export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({
       className={`${paddingClass} ${compactMode !== 'off' ? 'mt-1 mb-0.5' : 'mt-2 mb-1'} w-full flex-1 min-h-[60px] flex flex-col`}
     >
       <ConsumptionGraphWidget
-        graphData={isDemoMode ? null : graphData}
+        graphData={isDemoMode ? demoGraph : graphData}
         consumptionGraphType={fuelHistoryType}
         fuelUnits={fuelUnits}
         showConsumptionGraph={true}

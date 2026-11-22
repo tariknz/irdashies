@@ -51,6 +51,8 @@ interface DriverRowInfoProps {
   license?: string;
   rating?: number;
   iratingChangeValue?: number;
+  /** '%' for LMU approximate DR gain. */
+  ratingChangeSuffix?: string;
   positionChange?: number;
   lastTime?: number;
   fastestTime?: number;
@@ -106,6 +108,8 @@ interface DriverRowInfoProps {
   pitExitAfterSF?: boolean;
   highlightColor?: number;
   dnf: boolean;
+  /** LMU pit request still on track. */
+  pitRequested?: boolean;
   repair: boolean;
   penalty: boolean;
   slowdown: boolean;
@@ -232,6 +236,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     license,
     rating,
     iratingChangeValue,
+    ratingChangeSuffix,
     positionChange,
     lastTime,
     fastestTime,
@@ -269,6 +274,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     currentSessionType,
     highlightColor = 960745,
     dnf,
+    pitRequested,
     repair,
     penalty,
     slowdown,
@@ -504,6 +510,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             lastLap={lastLap}
             currentSessionType={currentSessionType}
             dnf={pitStatusDnf}
+            pitRequested={pitRequested}
             pitStopDuration={pitStopDuration}
             showPitTime={config?.pitStatus?.showPitTime ?? false}
             pitLapDisplayMode={config?.pitStatus?.pitLapDisplayMode}
@@ -570,6 +577,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             key="iratingChange"
             iratingChangeValue={iratingChangeValue}
             compactMode={compactMode}
+            suffix={ratingChangeSuffix}
           />
         ),
       },
@@ -840,6 +848,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     lastLap,
     currentSessionType,
     pitStatusDnf,
+    pitRequested,
     repair,
     penalty,
     slowdown,
@@ -848,6 +857,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     license,
     rating,
     iratingChangeValue,
+    ratingChangeSuffix,
     positionChange,
     delta,
     deltaDecimalPlaces,
