@@ -52,6 +52,10 @@ const config: ForgeConfig = {
   makers: [
     new MakerSquirrel({
       iconUrl: path.resolve(import.meta.dirname, 'docs/assets/icons/logo.ico'),
+      loadingGif: path.resolve(
+        import.meta.dirname,
+        'docs/assets/install-splash.gif'
+      ),
       setupIcon: path.resolve(
         import.meta.dirname,
         'docs/assets/icons/logo.ico'
