@@ -169,7 +169,6 @@ vi.mock('../../processors/processorRegistry', () => ({
 // Keeps the track-map work off the filesystem.
 vi.mock('../../lmu/trackMap', () => ({
   loadLmuTrackMap: () => null,
-  tinyPedalTrackMapDirectories: () => [],
   LmuTrackMapRecorder: class {
     reset = recorderReset;
     update = recorderUpdate;

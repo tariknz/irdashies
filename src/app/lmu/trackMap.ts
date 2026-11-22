@@ -1,5 +1,4 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import type { LmuTrackMap } from '@irdashies/types';
 import bundledTrackMaps from './lmu-track-maps.json';
 
@@ -222,48 +221,6 @@ export function parseTinyPedalTrackMap(svg: string): LmuTrackMap | null {
   return normalizeLmuTrackMap(recorded, distance);
 }
 
-export function findTinyPedalTrackMap(
-  trackName: string,
-  directories: readonly string[]
-): { map: LmuTrackMap; filePath: string } | null {
-  const normalizedTrackName = normalizeTrackName(trackName);
-  for (const directory of directories) {
-    let fileNames: string[];
-    try {
-      fileNames = fs.readdirSync(directory);
-    } catch {
-      continue;
-    }
-    const fileName = fileNames.find(
-      (name) =>
-        path.extname(name).toLowerCase() === '.svg' &&
-        normalizeTrackName(path.basename(name, path.extname(name))) ===
-          normalizedTrackName
-    );
-    if (!fileName) continue;
-
-    const filePath = path.join(directory, fileName);
-    try {
-      const map = parseTinyPedalTrackMap(fs.readFileSync(filePath, 'utf8'));
-      if (map) return { map, filePath };
-    } catch {
-      continue;
-    }
-  }
-  return null;
-}
-
-export function tinyPedalTrackMapDirectories(): string[] {
-  const configured = process.env.TINYPEDAL_TRACKMAP_DIR;
-  if (process.platform !== 'win32') {
-    return configured ? [configured] : [];
-  }
-  const drives = Array.from({ length: 24 }, (_, index) =>
-    path.join(`${String.fromCharCode(67 + index)}:\\`, 'TinyPedal', 'trackmap')
-  );
-  return configured ? [configured, ...drives] : drives;
-}
-
 export class LmuTrackMapRecorder {
   private trackName = '';
   private lapStartET: number | null = null;
@@ -456,21 +413,14 @@ export class LmuTrackMapStorage {
 
 export function loadLmuTrackMap(
   trackName: string,
-  storage: LmuTrackMapStorage,
-  tinyPedalDirectories: readonly string[]
+  storage: LmuTrackMapStorage
 ): {
   map: LmuTrackMap;
-  source: 'storage' | 'bundled' | 'tinyPedal';
-  filePath?: string;
+  source: 'bundled' | 'storage';
 } | null {
-  const stored = storage.load(trackName);
-  if (stored) return { map: stored, source: 'storage' };
-
   const bundled = findBundledLmuTrackMap(trackName);
   if (bundled) return { map: bundled, source: 'bundled' };
 
-  const imported = findTinyPedalTrackMap(trackName, tinyPedalDirectories);
-  return imported
-    ? { map: imported.map, source: 'tinyPedal', filePath: imported.filePath }
-    : null;
+  const stored = storage.load(trackName);
+  return stored ? { map: stored, source: 'storage' } : null;
 }

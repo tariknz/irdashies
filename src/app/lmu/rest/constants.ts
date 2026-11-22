@@ -7,8 +7,7 @@
  *
  * The port is not a user choice -- it is fixed by the sim -- so this is a
  * constant with an environment escape hatch for debugging, following
- * `SIM_STATUS_URI` in src/app/irsdk/node/constants.ts and the
- * TINYPEDAL_TRACKMAP_DIR override in src/app/lmu/trackMap.ts. Nothing needs a
+ * `SIM_STATUS_URI` in src/app/irsdk/node/constants.ts. Nothing needs a
  * settings toggle: when nothing answers the port, the poller latches itself off
  * after one failed connect.
  *

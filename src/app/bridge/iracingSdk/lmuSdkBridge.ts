@@ -55,7 +55,6 @@ import {
   loadLmuTrackMap,
   LmuTrackMapRecorder,
   LmuTrackMapStorage,
-  tinyPedalTrackMapDirectories,
 } from '../../lmu/trackMap';
 import { LmuSectorBoundaryLearner } from '../../lmu/sectorBoundaries';
 import { createRaceosClient, type RaceosClient } from '../../lmu/raceos/client';
@@ -535,25 +534,8 @@ export async function publishLmuSDKEvents(
 
       if (raw.trackName !== activeTrackName) {
         activeTrackName = raw.trackName;
-        const loadedMap = loadLmuTrackMap(
-          activeTrackName,
-          mapStorage,
-          tinyPedalTrackMapDirectories()
-        );
+        const loadedMap = loadLmuTrackMap(activeTrackName, mapStorage);
         trackMap = loadedMap?.map ?? null;
-        if (loadedMap?.source === 'tinyPedal') {
-          try {
-            mapStorage.save(activeTrackName, loadedMap.map);
-            logger.info(
-              `[lmuSdkBridge] Imported track map for ${activeTrackName} from ${loadedMap.filePath}`
-            );
-          } catch (error) {
-            logger.error(
-              '[lmuSdkBridge] Failed to save imported track map',
-              error
-            );
-          }
-        }
         mapRecorder.reset(activeTrackName);
         sectorBoundaries.reset(activeTrackName);
         // Session settings and the forecast are fetched once per activation,
@@ -565,7 +547,7 @@ export async function publishLmuSDKEvents(
         resetLmuOpponentLapDistanceState(opponentLapDistanceState);
         lastSessionSignature = null;
         logger.info(
-          `[lmuSdkBridge] Track ${activeTrackName}; map ${trackMap ? 'loaded' : 'not found; recording starts at the next finish-line crossing'}`
+          `[lmuSdkBridge] Track ${activeTrackName}; map ${loadedMap ? `loaded (${loadedMap.source})` : 'not found; recording starts at the next finish-line crossing'}`
         );
       }
 

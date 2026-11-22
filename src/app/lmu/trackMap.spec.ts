@@ -4,7 +4,6 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   findBundledLmuTrackMap,
-  findTinyPedalTrackMap,
   loadLmuTrackMap,
   LmuTrackMapRecorder,
   LmuTrackMapStorage,
@@ -417,23 +416,6 @@ describe('LMU track map', () => {
     expect(map?.active.trackPathPoints).toHaveLength(512);
   });
 
-  it('matches TinyPedal SVG names without accents or punctuation', () => {
-    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'tinypedal-'));
-    temporaryDirectories.push(directory);
-    const points = Array.from(
-      { length: 20 },
-      (_, index) => `${index},${index % 2}`
-    ).join(' ');
-    fs.writeFileSync(
-      path.join(directory, 'Autódromo José Carlos Pace.svg'),
-      `<svg><polyline id="map" points="${points}"/></svg>`
-    );
-
-    expect(
-      findTinyPedalTrackMap('Autodromo Jose Carlos Pace', [directory])?.filePath
-    ).toBe(path.join(directory, 'Autódromo José Carlos Pace.svg'));
-  });
-
   it.each([
     'Algarve International Circuit',
     'Autodromo Enzo e Dino Ferrari',
@@ -509,11 +491,11 @@ describe('LMU track map', () => {
     ).toBe(true);
   });
 
-  it('loads storage before bundled maps and bundled maps before TinyPedal', () => {
+  it('loads a bundled map before a saved one, and a saved one only when nothing is bundled', () => {
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'irdashies-lmu-'));
     temporaryDirectories.push(directory);
     const storage = new LmuTrackMapStorage(path.join(directory, 'maps.json'));
-    const stored = normalizeLmuTrackMap(
+    const saved = normalizeLmuTrackMap(
       [
         { x: 0, y: 0, distance: 0 },
         { x: 100, y: 0, distance: 500 },
@@ -521,26 +503,17 @@ describe('LMU track map', () => {
       ],
       1000
     );
-    storage.save('Silverstone Circuit', stored);
-    const points = Array.from(
-      { length: 20 },
-      (_, index) => `${index},${index % 2}`
-    ).join(' ');
-    fs.writeFileSync(
-      path.join(directory, 'Silverstone Circuit.svg'),
-      `<svg><polyline id="map" points="${points}"/></svg>`
-    );
-    fs.writeFileSync(
-      path.join(directory, 'Monza.svg'),
-      `<svg><polyline id="map" points="${points}"/></svg>`
-    );
+    storage.save('Monza', saved);
+    storage.save('Unbundled Test Circuit', saved);
 
-    expect(
-      loadLmuTrackMap('Silverstone Circuit', storage, [directory])
-    ).toMatchObject({ map: stored, source: 'storage' });
-    expect(loadLmuTrackMap('Monza', storage, [directory])?.source).toBe(
-      'bundled'
-    );
+    const bundled = loadLmuTrackMap('Monza', storage);
+    expect(bundled?.source).toBe('bundled');
+    expect(bundled?.map).not.toEqual(saved);
+    expect(loadLmuTrackMap('Unbundled Test Circuit', storage)).toMatchObject({
+      map: saved,
+      source: 'storage',
+    });
+    expect(loadLmuTrackMap('Another Unknown Circuit', storage)).toBeNull();
   });
 
   it('persists maps by exact LMU track name', () => {
