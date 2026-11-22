@@ -209,3 +209,31 @@ export const demoRacePlanSnapshot = ({
     version: 1,
   };
 };
+
+/** Advances stint / drift / laps for StintPlan demo animation. */
+export const getDemoRacePlanSnapshot = (
+  elapsedSec = 0
+): RacePlanProgressSnapshot => {
+  const lapsInStint = 8 + (Math.floor(elapsedSec / 3) % DEMO_STINT_LAPS);
+  const stintAdvance = Math.floor(elapsedSec / (3 * DEMO_STINT_LAPS));
+  return demoRacePlanSnapshot({
+    currentStint: 3 + (stintAdvance % 4),
+    lapsInStint,
+    driftSec: Math.round(40 + Math.sin(elapsedSec / 8) * 90 + elapsedSec * 0.4),
+  });
+};
+
+/** Same race plan with a repair stop for StrategyTimeline. */
+export const getDemoStrategyTimelineSnapshot = (
+  elapsedSec = 0
+): RacePlanProgressSnapshot => {
+  const base = getDemoRacePlanSnapshot(elapsedSec);
+  const currentNumber = (base.currentStintIndex ?? 0) + 1;
+  return demoRacePlanSnapshot({
+    currentStint: currentNumber,
+    lapsInStint: base.lapsInStint,
+    driftSec: base.driftSec ?? 0,
+    rebuiltFrom: currentNumber,
+    stops: [demoRepairStop],
+  });
+};

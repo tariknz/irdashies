@@ -23,7 +23,9 @@ import type {
   WidgetConfigMap,
 } from '@irdashies/types';
 import { formatTime } from '@irdashies/utils/time';
+import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 import { groupStints, integrateDistance, mapGForce } from './logic';
+import { getDemoStintLaps } from './stintHistoryDemo';
 
 const emptyVisibility = {
   race: true,
@@ -70,14 +72,16 @@ function MetricFrame({
 }
 
 export function StintHistory() {
+  const { isDemoMode } = useDashboard();
   const config = useSettings('stinthistory') as StintHistoryConfig | undefined;
   const fuel = useFuelProjectionSnapshot();
+  const demoLaps = useDemoFrame(isDemoMode, getDemoStintLaps);
   const stints = useMemo(
     () =>
-      groupStints(fuel?.completedLaps ?? []).slice(
-        -Math.max(1, config?.maxStints ?? 3)
-      ),
-    [config?.maxStints, fuel?.completedLaps]
+      groupStints(
+        isDemoMode ? (demoLaps ?? []) : (fuel?.completedLaps ?? [])
+      ).slice(-Math.max(1, config?.maxStints ?? 3)),
+    [config?.maxStints, demoLaps, fuel?.completedLaps, isDemoMode]
   );
   return (
     <MetricFrame config={config} title="Stint history">

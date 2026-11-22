@@ -9,40 +9,63 @@ const average = (values: number[]) =>
 /** Newest first, matching the history table. No sample enters the live store. */
 export const demoFuelHistory = (
   count: number,
-  sessionNum: number
-): FuelLapData[] =>
-  Array.from({ length: count }, (_, index) => ({
-    lapNumber: count - index,
-    sessionNum,
-    timestamp: (count - index) * 90000,
-    fuelUsed:
-      DEMO_FUEL_USAGE[
-        DEMO_FUEL_USAGE.length - 1 - (index % DEMO_FUEL_USAGE.length)
-      ],
-    lapTime: 90,
-    isGreenFlag: true,
-    isValidForCalc: true,
-    isOutLap: false,
-    isHistorical: true,
-  }));
+  sessionNum: number,
+  elapsedSec = 0
+): FuelLapData[] => {
+  const completed = Math.floor(elapsedSec / 8);
+  return Array.from({ length: count }, (_, index) => {
+    const lapNumber = Math.max(1, completed + count - index);
+    const usageIndex =
+      (DEMO_FUEL_USAGE.length -
+        1 -
+        (index % DEMO_FUEL_USAGE.length) +
+        completed) %
+      DEMO_FUEL_USAGE.length;
+    const wobble = Math.sin(elapsedSec * 0.4 + index) * 0.04;
+    return {
+      lapNumber,
+      sessionNum,
+      timestamp: lapNumber * 90000 + Math.floor(elapsedSec * 1000),
+      fuelUsed: Number((DEMO_FUEL_USAGE[usageIndex] + wobble).toFixed(2)),
+      lapTime: 90,
+      isGreenFlag: true,
+      isValidForCalc: true,
+      isOutLap: false,
+      isHistorical: true,
+    };
+  });
+};
 
-const laps = demoFuelHistory(30, -1).reverse();
-const fuelValues = laps.map((lap) => lap.fuelUsed);
+const staticLaps = demoFuelHistory(30, -1, 0).reverse();
+const staticFuelValues = staticLaps.map((lap) => lap.fuelUsed);
 export const demoFuelGraph = {
-  laps,
-  fuelValues,
-  avgFuel: average(fuelValues),
-  minFuel: Math.min(...fuelValues),
-  maxFuel: Math.max(...fuelValues),
+  laps: staticLaps,
+  fuelValues: staticFuelValues,
+  avgFuel: average(staticFuelValues),
+  minFuel: Math.min(...staticFuelValues),
+  maxFuel: Math.max(...staticFuelValues),
+};
+
+export const getDemoFuelGraph = (elapsedSec = 0, lapCount = 15) => {
+  const newestFirst = demoFuelHistory(lapCount, -1, elapsedSec);
+  const laps = [...newestFirst].reverse();
+  const fuelValues = laps.map((lap) => lap.fuelUsed);
+  return {
+    laps,
+    fuelValues,
+    avgFuel: average(fuelValues),
+    minFuel: Math.min(...fuelValues),
+    maxFuel: Math.max(...fuelValues),
+  };
 };
 
 const DEMO_FUEL_BASE: FuelCalculation = {
   fuelLevel: 32.6,
-  lastLapUsage: fuelValues[fuelValues.length - 1],
+  lastLapUsage: staticFuelValues[staticFuelValues.length - 1],
   currentLapUsage: 1.3,
   projectedLapUsage: 2.35,
-  avgLaps: average(fuelValues.slice(-5)),
-  avg10Laps: average(fuelValues.slice(-10)),
+  avgLaps: average(staticFuelValues.slice(-5)),
+  avg10Laps: average(staticFuelValues.slice(-10)),
   avgAllGreenLaps: demoFuelGraph.avgFuel,
   minLapUsage: demoFuelGraph.minFuel,
   maxLapUsage: demoFuelGraph.maxFuel,

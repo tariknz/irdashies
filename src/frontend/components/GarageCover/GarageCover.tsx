@@ -4,7 +4,11 @@ import { useGarageCoverImage } from './hooks/useGarageCoverImage';
 import logoSvg from '../../assets/icons/logo.svg';
 import type { TrackStateSnapshot } from '@irdashies/types';
 import { shallow } from 'zustand/shallow';
-import { useTrackStateSelector } from '@irdashies/context';
+import { useDashboard, useTrackStateSelector } from '@irdashies/context';
+import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
+
+/** Visible for 5s, hidden for 3s so the cover can be placed in demo mode. */
+const getDemoGarageVisible = (elapsedSec = 0): boolean => elapsedSec % 8 < 5;
 
 const EMPTY_GARAGE_STATE: readonly [boolean, boolean, boolean] = [
   false,
@@ -16,6 +20,8 @@ const selectGarageState = (snapshot: TrackStateSnapshot) =>
   [snapshot.isInGarage, snapshot.isGarageVisible, snapshot.isOnTrack] as const;
 
 export const GarageCover = () => {
+  const { isDemoMode } = useDashboard();
+  const demoVisible = useDemoFrame(isDemoMode, getDemoGarageVisible);
   const [isInGarageDirect, isGarageVisible, isOnTrack] =
     useTrackStateSelector(selectGarageState, { equality: shallow }) ??
     EMPTY_GARAGE_STATE;
@@ -32,6 +38,7 @@ export const GarageCover = () => {
   );
 
   useEffect(() => {
+    if (isDemoMode) return;
     let timer: NodeJS.Timeout;
 
     if (isOnTrack) {
@@ -48,12 +55,12 @@ export const GarageCover = () => {
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [finalShow, isOnTrack]);
+  }, [finalShow, isOnTrack, isDemoMode]);
 
   const settings = useGarageCoverSettings();
   const imageUrl = useGarageCoverImage(settings.imageFilename);
 
-  if (!actuallyShow) {
+  if (isDemoMode ? !demoVisible : !actuallyShow) {
     return <></>;
   }
 

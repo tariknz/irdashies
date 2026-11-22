@@ -6,13 +6,15 @@ import {
   SunIcon,
   WindIcon,
 } from '@phosphor-icons/react';
-import { useSessionBarSelector } from '@irdashies/context';
+import { useDashboard, useSessionBarSelector } from '@irdashies/context';
 import type { SessionBarSnapshot } from '@irdashies/types';
+import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 import {
   describeWeatherChange,
   RAIN_STOP,
   type WeatherSample,
 } from './weatherChange';
+import { getDemoWeatherSample } from './demoWeather';
 import { BroadcastEnter } from '../shared/Broadcast/BroadcastEnter';
 import { useTrackRubberedState } from '@irdashies/domain/weather/useTrackRubberedState';
 
@@ -178,14 +180,26 @@ export const WeatherCard = ({
   intervalMinutes: number;
   showSeconds: number;
 }) => {
-  const { sample, metric } = useWeatherSample();
+  const { isDemoMode } = useDashboard();
+  const live = useWeatherSample();
+  const demoSample = useDemoFrame(isDemoMode, getDemoWeatherSample);
+  const sample = isDemoMode ? demoSample : live.sample;
+  const metric = live.metric;
   const rubber = useTrackRubberedState();
-  const popup = useWeatherPopup(sample, intervalMinutes, showSeconds);
-  if (!popup || !sample) return null;
+  const popup = useWeatherPopup(
+    sample ?? undefined,
+    isDemoMode ? 0.1 : intervalMinutes,
+    isDemoMode ? Math.max(showSeconds, 8) : showSeconds
+  );
+  const demoPopup = isDemoMode
+    ? { headline: 'Conditions', id: Math.floor((sample?.wetness ?? 0) + 1) }
+    : null;
+  const shown = isDemoMode ? demoPopup : popup;
+  if (!shown || !sample) return null;
 
   return (
     <WeatherView
-      popup={popup}
+      popup={shown}
       sample={sample}
       metric={metric}
       rubber={rubber}

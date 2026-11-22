@@ -1,17 +1,26 @@
 import { memo, useMemo } from 'react';
 import {
+  useDashboard,
   useReplayContextSnapshot,
   useTrackStateSelector,
 } from '@irdashies/context';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import type { PitStopRow } from '@irdashies/domain';
 import type { TrackStateSnapshot } from '@irdashies/types';
+import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 import { GantryPanel } from '../GantryPanel/GantryPanel';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { LiveSeconds, PitTimersPaused } from './LiveSeconds';
 import { PitStopLog, type PitStopReplay } from './PitStopLog';
 import { PitTeamTable } from './PitTeamTable';
+import { demoPitStopData } from './pitStopsDemo';
 import { usePitStopData, type PitStopData } from './usePitStopData';
+
+/** Refresh receivedAt so in-progress timers keep counting in demo. */
+const getDemoPitStopFrame = (elapsedSec = 0): PitStopData => ({
+  ...demoPitStopData({ inProgress: elapsedSec % 16 < 10 }),
+  receivedAt: performance.now(),
+});
 
 export type PitStopsMode = 'stops' | 'teams';
 /** A class id, or every class. */
@@ -296,7 +305,10 @@ PitStopsView.displayName = 'PitStopsView';
 
 /** The Gantry's Pit Stops tab. View choices are owned by the Gantry. */
 export const GantryPitStops = memo((props: ViewState) => {
-  const data = usePitStopData();
+  const { isDemoMode } = useDashboard();
+  const liveData = usePitStopData();
+  const demoData = useDemoFrame(isDemoMode, getDemoPitStopFrame);
+  const data = isDemoMode && demoData ? demoData : liveData;
   const isReplayPlaying = Boolean(useTrackStateSelector(selectIsReplayPlaying));
   // Matches when the main process stops recording stops.
   const timersPaused = useReplayContextSnapshot().mode === 'replayFile';

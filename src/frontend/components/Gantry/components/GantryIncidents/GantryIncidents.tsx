@@ -6,6 +6,7 @@ import {
   type IncidentSessionFilter,
 } from '@irdashies/types';
 import {
+  useDashboard,
   useRaceControlStore,
   useFilteredIncidents,
   useTrackStateSelector,
@@ -17,11 +18,13 @@ import {
   type IncidentSessionInfo,
 } from '@irdashies/domain';
 import type { TrackStateSnapshot } from '@irdashies/types';
+import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 import { IncidentRow } from './IncidentRow';
 import { SessionSeparatorRow } from './SessionSeparatorRow';
 import { GantryPanel } from '../GantryPanel/GantryPanel';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { useGantrySessionData } from '../../hooks/useGantrySessionData';
+import { getDemoIncidents } from './incidentsDemo';
 
 const SETTINGS_HINT =
   'Thresholds live in Settings > Gantry > Incident Detection.';
@@ -86,17 +89,22 @@ const CHIP_ORDER: IncidentType[] = [
 ];
 
 export const GantryIncidents = memo(() => {
+  const { isDemoMode } = useDashboard();
   const activeTypeFilters = useRaceControlStore((s) => s.activeTypeFilters);
   const toggleTypeFilter = useRaceControlStore((s) => s.toggleTypeFilter);
   const driverFilter = useRaceControlStore((s) => s.driverFilter);
   const setDriverFilter = useRaceControlStore((s) => s.setDriverFilter);
   const sessionFilter = useRaceControlStore((s) => s.sessionFilter);
   const setSessionFilter = useRaceControlStore((s) => s.setSessionFilter);
-  const allIncidents = useRaceControlStore((s) => s.incidents);
+  const liveAllIncidents = useRaceControlStore((s) => s.incidents);
   const isReplayPlaying = Boolean(useTrackStateSelector(selectIsReplayPlaying));
   const currentSessionNum = useTrackStateSelector(selectSessionNum) ?? null;
   const sessions = useGantrySessionData().sessions ?? NO_SESSIONS;
-  const incidents = useFilteredIncidents(currentSessionNum);
+  const liveIncidents = useFilteredIncidents(currentSessionNum);
+  const demoIncidents = useDemoFrame(isDemoMode, getDemoIncidents);
+  const allIncidents =
+    isDemoMode && demoIncidents ? demoIncidents : liveAllIncidents;
+  const incidents = isDemoMode && demoIncidents ? demoIncidents : liveIncidents;
 
   const selectedSessionNum = resolveSessionFilter(
     sessionFilter,
@@ -128,7 +136,6 @@ export const GantryIncidents = memo(() => {
       buildDriverFilterOptions(allIncidents, selectedSessionNum, driverFilter),
     [allIncidents, selectedSessionNum, driverFilter]
   );
-
   const sessionId = useId();
   const driverId = useId();
 
