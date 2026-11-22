@@ -546,6 +546,17 @@ describe('mapLmuSession driver nationality', () => {
     expect(driver?.LmuRating?.countryCode).toBe('FR');
   });
 
+  it('matches nationality when the teams payload differs only by case', () => {
+    const raw = fixture();
+    const name = nameOf(raw);
+    const s = mapLmuSession(raw, null, {
+      nationalities: { [name.toUpperCase()]: 'DE' },
+    });
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === name);
+    expect(driver?.LmuRating?.countryCode).toBe('DE');
+  });
+
   it('leaves drivers the teams payload does not name alone', () => {
     const raw = fixture();
     const s = mapLmuSession(raw, null, {

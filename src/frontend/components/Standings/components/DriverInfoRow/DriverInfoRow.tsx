@@ -106,6 +106,8 @@ interface DriverRowInfoProps {
   pitExitAfterSF?: boolean;
   highlightColor?: number;
   dnf: boolean;
+  /** LMU pit request still on track. */
+  pitRequested?: boolean;
   repair: boolean;
   penalty: boolean;
   slowdown: boolean;
@@ -269,6 +271,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     currentSessionType,
     highlightColor = 960745,
     dnf,
+    pitRequested,
     repair,
     penalty,
     slowdown,
@@ -504,6 +507,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             lastLap={lastLap}
             currentSessionType={currentSessionType}
             dnf={pitStatusDnf}
+            pitRequested={pitRequested}
             pitStopDuration={pitStopDuration}
             showPitTime={config?.pitStatus?.showPitTime ?? false}
             pitLapDisplayMode={config?.pitStatus?.pitLapDisplayMode}
@@ -840,6 +844,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     lastLap,
     currentSessionType,
     pitStatusDnf,
+    pitRequested,
     repair,
     penalty,
     slowdown,

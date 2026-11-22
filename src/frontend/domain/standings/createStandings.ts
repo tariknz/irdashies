@@ -3,6 +3,7 @@ import type { LmuDriverRating } from '@irdashies/types';
 import {
   lmuFinishStateFromCode,
   lmuPenaltyBadge,
+  lmuPitRequested,
   type LmuFinishState,
   type LmuPenaltyKind,
 } from '@irdashies/types';
@@ -107,6 +108,11 @@ export interface Standings {
   carTrackSurface?: number;
   currentSessionType?: string;
   dnf: boolean;
+  /**
+   * LMU pit request still on track (`mPitState === 1`). Undefined/false under
+   * iRacing and when the car is already in the pits.
+   */
+  pitRequested?: boolean;
   repair: boolean;
   penalty: boolean;
   slowdown: boolean;
@@ -244,6 +250,8 @@ export const createDriverStandings = (
     carIdxPenaltySecondsValue?: number[];
     /** Each car's finish status, as LMU_FINISH_STATUS. Empty under iRacing. */
     carIdxFinishStatusValue?: number[];
+    /** Each car's pit state, as LMU_PIT_STATE. Empty under iRacing. */
+    carIdxPitStateValue?: number[];
     /** Seconds the player's next stop spends serving penalties. */
     penaltySeconds?: number;
     isOnTrack?: boolean;
@@ -425,6 +433,9 @@ export const createDriverStandings = (
           (telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) &
           GlobalFlags.Disqualify
         ),
+        pitRequested: lmuPitRequested(
+          telemetry?.carIdxPitStateValue?.[result.CarIdx]
+        ),
         repair: !!(
           (telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) &
           GlobalFlags.Repair
@@ -534,6 +545,9 @@ export const createDriverStandings = (
           telemetry?.carIdxTrackSurfaceValue?.[driver.CarIdx] ?? undefined,
         currentSessionType: currentSession.sessionType,
         dnf: false,
+        pitRequested: lmuPitRequested(
+          telemetry?.carIdxPitStateValue?.[driver.CarIdx]
+        ),
         repair: false,
         penalty: false,
         slowdown: false,
