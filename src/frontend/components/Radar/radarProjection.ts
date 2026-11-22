@@ -31,6 +31,13 @@ export class RadarProjector {
   private readonly forward: TrackPathPoint = { x: 0, y: -1 };
   private readonly point: TrackPathPoint = { x: 0, y: 0 };
   private readonly tangent: TrackPathPoint = { x: 0, y: -1 };
+  private hasMapFrame = false;
+  private frameOriginX = 0;
+  private frameOriginY = 0;
+  private frame00 = 0;
+  private frame01 = 0;
+  private frame10 = 0;
+  private frame11 = 0;
 
   setup(
     geometry: TrackGeometry | null,
@@ -39,7 +46,8 @@ export class RadarProjector {
     centreX: number,
     centreY: number,
     pixelsPerMetre: number,
-    focusYawRad: number | null = null
+    focusYawRad: number | null = null,
+    mapFrame: readonly number[] | null = null
   ): void {
     this.geometry = trackLength > 0 ? geometry : null;
     this.trackLength = trackLength;
@@ -47,6 +55,19 @@ export class RadarProjector {
     this.centreX = centreX;
     this.centreY = centreY;
     this.pixelsPerMetre = pixelsPerMetre;
+    this.hasMapFrame =
+      this.geometry !== null &&
+      mapFrame !== null &&
+      mapFrame.length === 6 &&
+      mapFrame.every(Number.isFinite);
+    if (this.hasMapFrame && mapFrame) {
+      this.frameOriginX = mapFrame[0];
+      this.frameOriginY = mapFrame[1];
+      this.frame00 = mapFrame[2];
+      this.frame01 = mapFrame[3];
+      this.frame10 = mapFrame[4];
+      this.frame11 = mapFrame[5];
+    }
     if (this.geometry) {
       pointAtProgress(this.geometry, playerPct, this.origin);
       if (focusYawRad !== null && Number.isFinite(focusYawRad)) {
@@ -91,6 +112,9 @@ export class RadarProjector {
     const units = geometry.unitsPerMeter;
     pointAtProgress(geometry, pct, this.point);
     tangentAtProgress(geometry, pct, this.tangent);
+    if (this.hasMapFrame) {
+      return this.projectThroughMapFrame(lateral, output);
+    }
     // Left of travel in y-down drawing coordinates.
     const worldX = this.point.x + this.tangent.y * lateral * units;
     const worldY = this.point.y - this.tangent.x * lateral * units;
@@ -107,6 +131,29 @@ export class RadarProjector {
       this.tangent.x * forward.x + this.tangent.y * forward.y;
     const headingLeft = this.tangent.x * forward.y - this.tangent.y * forward.x;
     output.angle = Math.atan2(-headingAhead, -headingLeft);
+    return output;
+  }
+
+  private projectThroughMapFrame(
+    lateral: number,
+    output: ScreenPose
+  ): ScreenPose {
+    const relX = this.point.x - this.frameOriginX;
+    const relY = this.point.y - this.frameOriginY;
+    let right = this.frame00 * relX + this.frame01 * relY;
+    let ahead = this.frame10 * relX + this.frame11 * relY;
+    const travelRight =
+      this.frame00 * this.tangent.x + this.frame01 * this.tangent.y;
+    const travelAhead =
+      this.frame10 * this.tangent.x + this.frame11 * this.tangent.y;
+    const travelLength = Math.hypot(travelRight, travelAhead);
+    const unitRight = travelLength > 0 ? travelRight / travelLength : 0;
+    const unitAhead = travelLength > 0 ? travelAhead / travelLength : 1;
+    right -= unitAhead * lateral;
+    ahead += unitRight * lateral;
+    output.x = this.centreX + right * this.pixelsPerMetre;
+    output.y = this.centreY - ahead * this.pixelsPerMetre;
+    output.angle = Math.atan2(-unitAhead, unitRight);
     return output;
   }
 }

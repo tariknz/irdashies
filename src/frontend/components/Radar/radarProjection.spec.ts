@@ -135,3 +135,68 @@ describe('RadarProjector in the focus car frame', () => {
     expect(projector.project(20, 0, blank())).toMatchObject({ x: 100, y: 60 });
   });
 });
+
+describe('RadarProjector with a fitted map frame', () => {
+  const geometry = buildTrackGeometry(
+    {
+      trackPathPoints: [
+        { x: 0, y: 0 },
+        { x: 1250, y: 0 },
+        { x: 1250, y: 1250 },
+        { x: 0, y: 1250 },
+        { x: 0, y: 0 },
+      ],
+      totalLength: 5000,
+      startFinishLength: 0,
+      direction: 'anticlockwise',
+    },
+    5000
+  );
+  const ppm = 2;
+  const lineAtPlayer = { x: 500, y: 0 };
+
+  const setUpWithFrame = (originY: number) => {
+    const projector = new RadarProjector();
+    projector.setup(geometry, 5000, 0.1, 100, 100, ppm, 0.4, [
+      lineAtPlayer.x,
+      originY,
+      0,
+      1,
+      1,
+      0,
+    ]);
+    return projector;
+  };
+
+  it('draws the road from the fitted frame, not from our heading', () => {
+    const road = setUpWithFrame(0).project(20, 0, blank());
+
+    expect(road.x).toBeCloseTo(100, 0);
+    expect(road.y).toBeCloseTo(100 - 20 * ppm, 0);
+    expect(road.angle).toBeCloseTo(-Math.PI / 2, 2);
+  });
+
+  it('moves the road away from us when we are off the line', () => {
+    const road = setUpWithFrame(-6).project(0, 0, blank());
+
+    expect(road.x).toBeCloseTo(100 + 6 * ppm, 0);
+    expect(road.y).toBeCloseTo(100, 0);
+  });
+
+  it('offsets a lateral position across the road in our frame', () => {
+    const left = setUpWithFrame(0).project(0, 3, blank());
+
+    expect(left.x).toBeCloseTo(100 - 3 * ppm, 0);
+  });
+
+  it('ignores a malformed frame', () => {
+    const projector = new RadarProjector();
+    projector.setup(geometry, 5000, 0.1, 100, 100, ppm, null, [1, 2, 3]);
+    const fallback = new RadarProjector();
+    fallback.setup(geometry, 5000, 0.1, 100, 100, ppm, null);
+
+    expect(projector.project(20, 0, blank())).toMatchObject(
+      fallback.project(20, 0, blank())
+    );
+  });
+});

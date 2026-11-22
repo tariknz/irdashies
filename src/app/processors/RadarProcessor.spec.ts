@@ -907,6 +907,41 @@ describe('RadarProcessor with LMU world positions', () => {
     expect(processor.snapshot().focusYawRad).toBeCloseTo(0.25);
   });
 
+  it('passes the fitted map frame through while placing cars by world position', () => {
+    const processor = createProcessor();
+    processor.onFrame({
+      ...worldFrame(
+        { time: 1, pcts: [0.5, 0.5 + m(10)] },
+        { 1: { lateral: 0, longitudinal: 10 } }
+      ),
+      LmuRadarMapFrame: { value: [10, 20, 1, 0, 0, -1] },
+    } as unknown as Telemetry);
+
+    expect(processor.snapshot().mapFrame).toEqual([10, 20, 1, 0, 0, -1]);
+  });
+
+  it('passes no map frame when it is malformed or not ours', () => {
+    const malformed = createProcessor();
+    malformed.onFrame({
+      ...worldFrame(
+        { time: 1, pcts: [0.5, 0.5 + m(10)] },
+        { 1: { lateral: 0, longitudinal: 10 } }
+      ),
+      LmuRadarMapFrame: { value: [10, 20, Number.NaN, 0, 0, -1] },
+    } as unknown as Telemetry);
+    expect(malformed.snapshot().mapFrame).toBeNull();
+
+    const spectating = createProcessor();
+    spectating.onFrame({
+      ...worldFrame(
+        { time: 1, pcts: [0.5, 0.5 + m(10)], camCarIdx: 1 },
+        { 1: { lateral: 0, longitudinal: 10 } }
+      ),
+      LmuRadarMapFrame: { value: [10, 20, 1, 0, 0, -1] },
+    } as unknown as Telemetry);
+    expect(spectating.snapshot().mapFrame).toBeNull();
+  });
+
   it('publishes no heading without world positions or while spectating', () => {
     const iracing = createProcessor();
     iracing.onFrame(frame({ time: 1, pcts: [0.5, 0.5 + m(10)] }));

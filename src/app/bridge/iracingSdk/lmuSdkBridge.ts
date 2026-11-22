@@ -34,6 +34,11 @@ import {
 import { mapLmuTelemetry } from '../../lmu/mapTelemetry';
 import { lmuRelativePositionsAvailable } from '../../lmu/proximity';
 import {
+  LmuMapRegistration,
+  radarMapFrame,
+  type MapRegistrationStatus,
+} from '../../lmu/mapRegistration';
+import {
   createLmuLapDistanceState,
   resetLmuLapDistanceState,
 } from '../../lmu/lapDistance';
@@ -202,6 +207,8 @@ const gridUsernames = (raw: {
  * maps both into iRacing-shaped telemetry and session data, and publishes
  * them to the overlays. Resolves to the bridge the app drives, as for iRacing.
  */
+const NO_MAP_FRAME: { value: number[] } = { value: [] };
+
 export async function publishLmuSDKEvents(
   overlayManager: OverlayManager,
   lifecycle?: SessionLifecycle,
@@ -213,6 +220,8 @@ export async function publishLmuSDKEvents(
   const { NativeLmu } = await import('../../lmu/native');
   const sdk = new NativeLmu();
   const mapRecorder = new LmuTrackMapRecorder();
+  const mapRegistration = new LmuMapRegistration();
+  let lastMapRegistrationStatus: MapRegistrationStatus = 'collecting';
   const sectorBoundaries = new LmuSectorBoundaryLearner();
   const mapStorage = new LmuTrackMapStorage(
     path.join(app.getPath('userData'), 'lmu-track-maps.json')
@@ -825,6 +834,49 @@ export async function publishLmuSDKEvents(
           `[lmuSdkBridge] Learned sector boundaries for ${activeTrackName}: S2 ${s2?.toFixed(4)}, S3 ${s3?.toFixed(4)}`
         );
       }
+      perfMetrics.markStart('lmuMapRegistration');
+      const mapFit = mapRegistration.update({
+        map: trackMap,
+        time: pollStartedAt / 1000,
+        trackLengthM: raw.lapDist,
+        posX: raw.vehPosX,
+        posZ: raw.vehPosZ,
+        available: raw.vehTelemetryAvailable,
+        pcts: telemetry.CarIdxLapDistPct?.value ?? [],
+        inPits: raw.vehInPits,
+        speeds: raw.vehSpeed,
+      });
+      if (mapRegistration.status !== lastMapRegistrationStatus) {
+        lastMapRegistrationStatus = mapRegistration.status;
+        const attempt = mapRegistration.fit ?? mapRegistration.lastAttempt;
+        const detail = attempt
+          ? `rms ${attempt.rmsM.toFixed(2)} m, ${attempt.metresPerUnit.toFixed(3)} m per map unit${attempt.mirrored ? ', mirrored' : ''}, ${attempt.samples} samples`
+          : 'no fit';
+        if (mapRegistration.status === 'accepted') {
+          logger.info(
+            `[lmuSdkBridge] Track map registered for ${activeTrackName}: ${detail}`
+          );
+        } else if (mapRegistration.status === 'rejected') {
+          logger.warn(
+            `[lmuSdkBridge] Track map does not match world positions for ${activeTrackName}: ${detail}`
+          );
+        }
+      }
+      const radarPlayerIdx = raw.playerHasVehicle ? raw.playerVehicleIdx : -1;
+      const radarPlayerYaw = telemetry.LmuPlayerYaw?.value[0];
+      const mapFrame =
+        mapFit && radarPlayerIdx >= 0 && typeof radarPlayerYaw === 'number'
+          ? radarMapFrame(
+              mapFit,
+              raw.vehPosX[radarPlayerIdx],
+              raw.vehPosZ[radarPlayerIdx],
+              radarPlayerYaw
+            )
+          : null;
+      telemetry.LmuRadarMapFrame = mapFrame
+        ? { value: mapFrame }
+        : NO_MAP_FRAME;
+      perfMetrics.markEnd('lmuMapRegistration');
       processorHost?.onFrame(telemetry);
 
       if (

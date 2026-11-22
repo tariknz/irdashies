@@ -267,6 +267,7 @@ export interface RadarSnapshot {
    */
   roadLane: number;
   focusYawRad?: number | null;
+  mapFrame?: readonly number[] | null;
   /** Only cars within the processor's range, nearest first. */
   cars: readonly RadarCar[];
   /**

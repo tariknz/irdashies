@@ -89,6 +89,29 @@ const numberAt = (
   return typeof value === 'number' ? value : fallback;
 };
 
+const MAP_FRAME_LENGTH = 6;
+
+const readMapFrame = (values: readonly unknown[]): number[] | null => {
+  if (values.length !== MAP_FRAME_LENGTH) return null;
+  const frame: number[] = [];
+  for (const value of values) {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+    frame.push(value);
+  }
+  return frame;
+};
+
+const sameMapFrame = (
+  a: readonly number[] | null | undefined,
+  b: readonly number[] | null | undefined
+): boolean => {
+  if (!a || !b) return !a && !b;
+  for (let index = 0; index < MAP_FRAME_LENGTH; index += 1) {
+    if (a[index] !== b[index]) return false;
+  }
+  return true;
+};
+
 const scalarNumber = (frame: Telemetry, key: string, fallback = -1): number =>
   numberAt(valuesOf(frame, key), 0, fallback);
 
@@ -234,6 +257,9 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     const focusYaw = worldFocus
       ? scalarNumber(frame, 'LmuPlayerYaw', Number.NaN)
       : Number.NaN;
+    const mapFrame = worldFocus
+      ? readMapFrame(valuesOf(frame, 'LmuRadarMapFrame'))
+      : null;
 
     const cars: RadarCar[] = [];
     let formation: Formation | null = null;
@@ -376,6 +402,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
           ((formation.columns - 1) / 2 - formation.ownColumn)
         : 0,
       focusYawRad: Number.isFinite(focusYaw) ? focusYaw : null,
+      mapFrame,
       poleSideNotice: this.poleNoticeShown(time)
         ? this.poleLeft
           ? 'left'
@@ -539,6 +566,7 @@ const emptySnapshot = (version: number): RadarSnapshot => ({
   poleSideNotice: null,
   roadLane: 0,
   focusYawRad: null,
+  mapFrame: null,
   cars: [],
   hazards: [],
   version,
@@ -566,6 +594,7 @@ const sameSnapshot = (
   previous.poleSideNotice === next.poleSideNotice &&
   previous.roadLane === next.roadLane &&
   previous.focusYawRad === next.focusYawRad &&
+  sameMapFrame(previous.mapFrame, next.mapFrame) &&
   previous.trackLength === next.trackLength &&
   previous.focusOnPitRoad === next.focusOnPitRoad &&
   previous.focusInPitBox === next.focusInPitBox &&
