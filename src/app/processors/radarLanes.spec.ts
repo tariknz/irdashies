@@ -407,4 +407,10 @@ describe('separateInLaneCars', () => {
     separateInLaneCars(cars);
     expect(cars.map((car) => car.dist)).toEqual([1.8, 6, -1]);
   });
+
+  it('leaves a car with a measured lateral offset where it is', () => {
+    const cars = [{ dist: 0, lane: 0, laneSource: 'none', lateralM: 5 }];
+    separateInLaneCars(cars);
+    expect(cars[0].dist).toBe(0);
+  });
 });

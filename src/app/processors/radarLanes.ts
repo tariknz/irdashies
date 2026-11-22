@@ -345,10 +345,16 @@ export class RadarLaneTracker {
  * tail. Pass only cars on the focus car's side of the pit wall.
  */
 export const separateInLaneCars = (
-  cars: { dist: number; lane: number; laneSource: string }[]
+  cars: {
+    dist: number;
+    lane: number;
+    laneSource: string;
+    lateralM?: number;
+  }[]
 ): void => {
   for (const car of cars) {
     if (
+      car.lateralM === undefined &&
       car.laneSource === 'none' &&
       Math.abs(car.lane) < 0.5 &&
       Math.abs(car.dist) < IN_LANE_GAP_M
