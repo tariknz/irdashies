@@ -37,7 +37,6 @@ const resolveTag = (
   userId: string | undefined,
   name: string,
   tagSettings: DriverTagSettings,
-  lcMapping: Map<string, string>,
   groupsById: Map<string, TagGroup>
 ): ResolvedDriverTag | undefined => {
   const entries = tagSettings.entries ?? [];
@@ -63,12 +62,6 @@ const resolveTag = (
       entryLabel = match.label;
     }
   }
-  if (!groupId) {
-    groupId =
-      (userId ? lcMapping.get(userId) : undefined) ??
-      (name ? lcMapping.get(name.toLowerCase()) : undefined);
-  }
-
   if (!groupId) return undefined;
 
   const custom = groupsById.get(groupId);
@@ -125,10 +118,6 @@ export const useDriverTagMap = (
 
     if (!widgetTagEnabled) return empty;
 
-    const lcMapping = new Map<string, string>();
-    for (const [k, v] of Object.entries(tagSettings.mapping ?? {})) {
-      lcMapping.set(k.toLowerCase(), v);
-    }
     const groupsById = new Map(
       (tagSettings.groups ?? []).map((g) => [g.id, g])
     );
@@ -137,7 +126,7 @@ export const useDriverTagMap = (
     for (const driver of drivers) {
       const userId = driver.UserID != null ? String(driver.UserID) : undefined;
       const name = String(driver.UserName ?? '').trim();
-      const tag = resolveTag(userId, name, tagSettings, lcMapping, groupsById);
+      const tag = resolveTag(userId, name, tagSettings, groupsById);
       if (tag) tagMap.set(driver.CarIdx, tag);
     }
 
