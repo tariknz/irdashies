@@ -509,6 +509,17 @@ export const PitExitEstimate: Story = {
   },
 };
 
+export const PitExitEstimateShortMap: Story = {
+  args: PitExitEstimate.args,
+  decorators: [
+    (Story) => (
+      <div style={{ width: '100%', height: '60px' }}>
+        <Story />
+      </div>
+    ),
+  ],
+};
+
 export const PitExitEstimateCalibrating: Story = {
   args: {
     ...pitExitArgs,

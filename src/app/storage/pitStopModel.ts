@@ -188,9 +188,9 @@ export const parsePitStopModel = (raw: unknown): ParseResult => {
   return { data, writable, droppedSamples };
 };
 
-const prune = (data: PitStopModelFile) => {
-  if (data.order.length <= MAX_KEYS) return;
-  data.order = data.order.slice(-MAX_KEYS);
+const prune = (data: PitStopModelFile, maxKeys = MAX_KEYS) => {
+  if (data.order.length <= maxKeys) return;
+  data.order = data.order.slice(data.order.length - maxKeys);
   const kept = new Set(data.order);
   const keep = <T>(kind: string, entries: Record<string, T>) =>
     Object.fromEntries(
@@ -208,10 +208,13 @@ export class PitStopModelStore implements PitStopModelPersistence {
   private loading: Promise<void> | null = null;
   private readonly writer: ReturnType<typeof createDebouncedAtomicWriter>;
 
-  constructor(private readonly filePath: string) {
+  constructor(
+    private readonly filePath: string,
+    private readonly maxFileBytes = MAX_FILE_BYTES
+  ) {
     this.writer = createDebouncedAtomicWriter({
       filePath,
-      serialize: () => JSON.stringify(this.data, null, 2),
+      serialize: () => this.serialize(),
       onSuccess: () => reportStorageResult('pitStopModel'),
       onError: (error) => {
         logger.error(
@@ -223,6 +226,25 @@ export class PitStopModelStore implements PitStopModelPersistence {
     });
   }
 
+  private serialize(): string {
+    let payload = JSON.stringify(this.data, null, 2);
+    while (Buffer.byteLength(payload, 'utf8') > this.maxFileBytes) {
+      const keys = this.data.order.length;
+      if (keys === 0) {
+        throw Object.assign(
+          new Error('pitStopModel.json overrides exceed the size limit'),
+          { code: 'EFBIG' }
+        );
+      }
+      prune(this.data, keys - Math.ceil(keys / 10));
+      logger.warn(
+        `pitStopModel.json is near its size limit; kept the ${this.data.order.length} most recent keys`
+      );
+      payload = JSON.stringify(this.data, null, 2);
+    }
+    return payload;
+  }
+
   load(): Promise<void> {
     this.loading ??= this.readFile();
     return this.loading;
@@ -231,7 +253,7 @@ export class PitStopModelStore implements PitStopModelPersistence {
   private async readFile(): Promise<void> {
     try {
       const stat = await fsp.stat(this.filePath);
-      if (stat.size > MAX_FILE_BYTES) {
+      if (stat.size > this.maxFileBytes) {
         logger.warn('pitStopModel.json is too large; learning is paused');
         return;
       }

@@ -10,7 +10,6 @@ import {
   fuelStopNeeded,
   median,
   modelLaneLoss,
-  nearestAround,
   pctAtTime,
   projectTraffic,
   rejoinOffset,
@@ -411,24 +410,6 @@ describe('rejoinOffset', () => {
   });
 });
 
-describe('nearestAround', () => {
-  it('finds the closest car each side, across start/finish', () => {
-    const pcts = [0.95, 0.5, 0.1, -1, 0.02];
-    expect(nearestAround(0.0, pcts, () => true)).toEqual({
-      ahead: 4,
-      behind: 0,
-    });
-  });
-
-  it('skips excluded cars', () => {
-    const pcts = [0.95, 0.5, 0.1, -1, 0.02];
-    expect(nearestAround(0.0, pcts, (idx) => idx !== 4)).toEqual({
-      ahead: 2,
-      behind: 0,
-    });
-  });
-});
-
 describe('fuelStopNeeded', () => {
   const lap = (
     fuelUsed: number,
@@ -521,6 +502,34 @@ describe('projectTraffic', () => {
     expect(near.behindGap).toBeCloseTo(2.78, 1);
     expect(far.ahead).toBe(0);
     expect(far.aheadGap).toBeCloseTo(1.67, 1);
+  });
+
+  it('drives the player to pit exit at its own pace but keeps stop time fixed', () => {
+    const rejoin = (playerLapSeconds: number) =>
+      projectTraffic({
+        ...base,
+        exitPct: 0.6,
+        playerLapSeconds,
+        carPcts: [0.29],
+        carLapSeconds: () => 100,
+      });
+    const onReference = rejoin(100);
+    expect(onReference.behind).toBe(0);
+    expect(onReference.behindGap).toBeCloseTo(1);
+    const slowerPlayer = rejoin(120);
+    expect(slowerPlayer.ahead).toBe(0);
+    expect(slowerPlayer.aheadGap).toBeCloseTo(1);
+  });
+
+  it('moves a car at the player pace against the reference rejoin point', () => {
+    const result = projectTraffic({
+      ...base,
+      playerLapSeconds: 120,
+      carPcts: [0.29],
+      carLapSeconds: () => 120,
+    });
+    expect(result.behind).toBe(0);
+    expect(result.behindGap).toBeCloseTo(1 + 20 / 6);
   });
 
   it('uses the player pace for a car with no lap time', () => {

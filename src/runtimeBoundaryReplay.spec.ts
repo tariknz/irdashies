@@ -3,6 +3,7 @@ import type {
   ChannelBridge,
   ChannelName,
   ChannelPayloads,
+  PitStopModelFile,
   Session,
   Telemetry,
 } from '@irdashies/types';
@@ -440,7 +441,13 @@ const frame = ({
   ) as unknown as Telemetry;
 };
 
-const createHarness = (kind: SourceKind, rendererId = 1) => {
+type HarnessOptions = Parameters<typeof createDefaultProcessorHost>[0];
+
+const createHarness = (
+  kind: SourceKind,
+  rendererId = 1,
+  pitStopEstimate?: HarnessOptions['pitStopEstimate']
+) => {
   const clock = new DeterministicClock();
   const bus = new ChannelBus({
     now: () => clock.now,
@@ -453,6 +460,7 @@ const createHarness = (kind: SourceKind, rendererId = 1) => {
     metrics: { markStart: () => undefined, markEnd: () => undefined },
     aggregateReplay: kind === 'live-tape',
     referenceLapPersistence: { load: () => null, save: () => undefined },
+    pitStopEstimate,
     // No processor is expected to fail in these scenarios; surface any
     // failure as a test failure instead of the host's silent default.
     logError: (message, error) => {
@@ -619,6 +627,64 @@ describe('runtime boundary replay', () => {
     expect(summarize(mock)).toEqual(FIXED_GOLDEN);
   });
 
+  it('delivers a learned pit exit estimate from tape and mock sources', () => {
+    const learnedModel: PitStopModelFile = {
+      version: 1,
+      transit: {
+        '9:101': [
+          {
+            at: 1,
+            build: '',
+            seriesId: 7,
+            trackId: 9,
+            carId: 101,
+            carClassId: 10,
+            ruleSet: 'default',
+            source: 'player',
+            pitSpeedLimitKph: 60,
+            entryPct: 0.9,
+            exitPct: 0.05,
+            windowSeconds: 45,
+            stationarySeconds: 0,
+            referenceSeconds: 20,
+            windowStartPct: 0.88,
+            windowEndPct: 0.07,
+          },
+        ],
+      },
+      service: {},
+      overrides: {},
+      order: [],
+    };
+    const run = (kind: SourceKind, rendererId: number) => {
+      const harness = createHarness(kind, rendererId, {
+        persistence: {
+          read: () => learnedModel,
+          addTransit: vi.fn(),
+          addService: vi.fn(),
+        },
+      });
+      const stores = attachStores(harness.bridge, [
+        'pit-stop-estimate.snapshot',
+      ]);
+      expect(stores.snapshot('pit-stop-estimate.snapshot')?.state).toBe(
+        'hidden'
+      );
+      playBaseline(harness.source);
+      const estimate = structuredClone(
+        stores.snapshot('pit-stop-estimate.snapshot')
+      );
+      stores.dispose();
+      harness.host.dispose();
+      harness.bus.dispose();
+      return estimate;
+    };
+
+    const mock = run('mock', 1);
+    expect(mock).toMatchObject(PIT_STOP_ESTIMATE_GOLDEN);
+    expect(run('live-tape', 2)).toEqual(mock);
+  });
+
   it('clears stale data across visibility, churn, lifecycle, and host restart', () => {
     const harness = createHarness('mock');
     const stores = attachStores(harness.bridge);
@@ -730,6 +796,15 @@ describe('runtime boundary replay', () => {
     harness.bus.dispose();
   });
 });
+
+const PIT_STOP_ESTIMATE_GOLDEN = {
+  state: 'ok',
+  offsetPct: 0.4167,
+  lapsLost: 0,
+  lossSeconds: 25,
+  inStop: false,
+  sessionNum: 1,
+};
 
 const FIXED_GOLDEN = {
   'car-speeds.snapshot': {

@@ -253,6 +253,38 @@ describe('PitStopDetector', () => {
     expect(stop.firstTaintSeconds).toBe(0);
   });
 
+  it('forgets the approach it saw before the car jumped along the lap', () => {
+    const jumpsBeforeEntry = (t: number): CarState => {
+      if (t < 160)
+        return {
+          pct: (t * TRACK_SPEED) % 1,
+          onPitRoad: false,
+          surface: TrackLocation.OnTrack,
+        };
+      if (t < 161)
+        return {
+          pct: 0.89 + (t - 160) * TRACK_SPEED,
+          onPitRoad: false,
+          surface: TrackLocation.OnTrack,
+        };
+      return pittingCar(t - 121, 20);
+    };
+    const stop = run({ car: jumpsBeforeEntry, until: 240 }).completed[0];
+    expect(stop.tainted).toBe(true);
+    expect(stop.taintReasons).toEqual(['approachNotSeen']);
+  });
+
+  it('keeps the approach when the car crosses the line just before entry', () => {
+    const acrossTheLine = (t: number): CarState => {
+      const state = pittingCar(t, 20);
+      return { ...state, pct: (state.pct + 0.11) % 1 };
+    };
+    const stop = run({ car: acrossTheLine }).completed[0];
+    expect(stop.taintReasons).toEqual([]);
+    expect(stop.windowStartPct).toBeCloseTo(0.99, 2);
+    expect(stop.windowSeconds).toBeCloseTo(54, 0);
+  });
+
   it('reports the player stop in progress until the window end', () => {
     const seen: Record<number, ReturnType<PitStopDetector['playerStop']>> = {};
     run({

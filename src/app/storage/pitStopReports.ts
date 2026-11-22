@@ -22,18 +22,22 @@ export class PitStopReportLog {
   ) {}
 
   append(report: PitStopReport): Promise<void> {
+    return this.enqueue(() => this.write(report));
+  }
+
+  flush(): Promise<void> {
+    return this.enqueue(() => this.compact());
+  }
+
+  private enqueue(task: () => Promise<void>): Promise<void> {
     this.chain = this.chain
-      .then(() => this.write(report))
+      .then(task)
       .catch((error) =>
         logger.error(
           'Failed to write pitStopReports.jsonl:',
           storageErrorCode(error)
         )
       );
-    return this.chain;
-  }
-
-  flush(): Promise<void> {
     return this.chain;
   }
 
@@ -68,7 +72,11 @@ export class PitStopReportLog {
     );
     this.needsSeparator = false;
     this.count++;
-    if (this.count <= this.maxReports) return;
+    await this.compact();
+  }
+
+  private async compact() {
+    if (this.count === null || this.count <= this.maxReports) return;
     const kept = (await this.lines()).slice(-this.maxReports);
     const temporaryPath = `${this.filePath}.${process.pid}.tmp`;
     try {

@@ -61,7 +61,7 @@ interface ProcessorRegistryOptions {
   /** Learned pit timings. Without it the pit exit estimate stays hidden. */
   pitStopEstimate?: Pick<
     PitStopEstimateDependencies,
-    'persistence' | 'pitLane' | 'report'
+    'persistence' | 'pitLane' | 'report' | 'now'
   >;
 }
 
@@ -87,6 +87,8 @@ const noLapTimes: LapTimesSnapshot = {
   sessionNum: null,
   version: 0,
 };
+
+const tapeClock = () => 0;
 
 const defineProcessor = <K extends AnyProcessorDefinition['channel']>(
   definition: ProcessorDefinition<K>
@@ -159,6 +161,8 @@ export const createProcessorDefinitions = ({
               persistence: aggregateReplay
                 ? memoryOverlay(pitStopEstimate.persistence)
                 : pitStopEstimate.persistence,
+              report: aggregateReplay ? undefined : pitStopEstimate.report,
+              now: aggregateReplay ? tapeClock : pitStopEstimate.now,
               referenceLaps: () => snapshot('reference-laps.snapshot'),
               fuel: () => snapshot('fuel.projection'),
               lapTimes: () => snapshot('lap-times.snapshot'),

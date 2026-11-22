@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -156,6 +156,54 @@ describe('PitStopModelStore', () => {
     store.addTransit('10:20', transit(2));
     await store.flush();
     expect((await readBack()).transit['10:20']).toHaveLength(2);
+  });
+
+  it('drops the oldest keys so a save near the size limit still loads, keeping overrides', async () => {
+    const limit = 64 * 1024;
+    const overrides = { 'imsa:20': { fourTyreSeconds: 12 } };
+    await writeFile(
+      file,
+      JSON.stringify({ version: 1, transit: {}, service: {}, overrides })
+    );
+    const sized = new PitStopModelStore(file, limit);
+    await sized.load();
+    for (let key = 0; key < 40; key++) {
+      for (let i = 0; i < MAX_SAMPLES_PER_KEY; i++) {
+        sized.addTransit(`${key}:1`, transit(i));
+      }
+    }
+    await sized.flush();
+    expect((await stat(file)).size).toBeLessThanOrEqual(limit);
+
+    const reloaded = new PitStopModelStore(file, limit);
+    await reloaded.load();
+    const data = reloaded.read();
+    expect(data.overrides).toEqual(overrides);
+    expect(data.transit['39:1']).toHaveLength(MAX_SAMPLES_PER_KEY);
+    expect(data.transit['0:1']).toBeUndefined();
+    reloaded.addTransit('40:1', transit());
+    await reloaded.flush();
+    expect((await readBack()).transit['40:1']).toHaveLength(1);
+  });
+
+  it('keeps the existing file when the overrides alone exceed the size limit', async () => {
+    const original = JSON.stringify({
+      version: 1,
+      transit: {},
+      service: {},
+      overrides: Object.fromEntries(
+        Array.from({ length: 50 }, (_, i) => [
+          `s${i}:1`,
+          { fourTyreSeconds: i },
+        ])
+      ),
+    });
+    await writeFile(file, original);
+    const sized = new PitStopModelStore(file, original.length + 100);
+    await sized.load();
+    sized.addTransit('10:20', transit());
+    await sized.flush();
+    expect(await readFile(file, 'utf8')).toBe(original);
   });
 
   it('pauses learning rather than overwrite a broken file', async () => {

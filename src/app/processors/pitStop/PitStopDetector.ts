@@ -374,6 +374,9 @@ export class PitStopDetector {
         b = (b + 1) % BUCKETS;
       }
     } else if (step > MAX_STEP_PCT) {
+      if (step < 1 - MAX_STEP_PCT) {
+        this.passed.fill(NaN, base, base + BUCKETS);
+      }
       this.passed[base + bucket] = time;
     }
   }

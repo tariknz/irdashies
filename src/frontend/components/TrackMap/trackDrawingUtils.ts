@@ -551,34 +551,48 @@ export const drawPitExitRange = (
   ctx.restore();
 };
 
-interface XRange {
+interface AxisRange {
   min: number;
   max: number;
 }
 
-const visibleXRange = (ctx: CanvasRenderingContext2D): XRange | null => {
+interface VisibleArea {
+  x: AxisRange;
+  y: AxisRange;
+}
+
+const spanOf = (values: number[]): AxisRange => ({
+  min: Math.min(...values),
+  max: Math.max(...values),
+});
+
+const visibleArea = (ctx: CanvasRenderingContext2D): VisibleArea | null => {
   const canvas = ctx.canvas;
   if (!canvas?.width || typeof ctx.getTransform !== 'function') return null;
   const inverse = ctx.getTransform().inverse();
-  const xs = [
+  const corners = [
     [0, 0],
     [canvas.width, 0],
     [0, canvas.height],
     [canvas.width, canvas.height],
-  ].map(([px, py]) => inverse.a * px + inverse.c * py + inverse.e);
-  return { min: Math.min(...xs), max: Math.max(...xs) };
+  ];
+  return {
+    x: spanOf(
+      corners.map(([px, py]) => inverse.a * px + inverse.c * py + inverse.e)
+    ),
+    y: spanOf(
+      corners.map(([px, py]) => inverse.b * px + inverse.d * py + inverse.f)
+    ),
+  };
 };
 
 const keepInside = (
   centre: number,
-  width: number,
-  range: XRange | null
+  size: number,
+  range: AxisRange | undefined
 ): number => {
-  if (!range || range.max - range.min < width) return centre;
-  return Math.min(
-    range.max - width / 2,
-    Math.max(range.min + width / 2, centre)
-  );
+  if (!range || range.max - range.min < size) return centre;
+  return Math.min(range.max - size / 2, Math.max(range.min + size / 2, centre));
 };
 
 /**
@@ -622,15 +636,20 @@ export const drawPitExitMarker = (
   const padX = fontSize * 0.35;
   const height = fontSize * 1.3;
   const width = fontSize * 2.2 + padX * 2;
-  const top = y - radius - radius * 0.3 - height;
-  const visible = visibleXRange(ctx);
-  const tagX = keepInside(x, width, visible);
+  const visible = visibleArea(ctx);
+  const tagX = keepInside(x, width, visible?.x);
+  const tagMiddle = keepInside(
+    y - radius - radius * 0.3 - height / 2,
+    height,
+    visible?.y
+  );
+  const top = tagMiddle - height / 2;
   ctx.fillStyle = 'black';
   ctx.beginPath();
   ctx.roundRect(tagX - width / 2, top, width, height, height * 0.3);
   ctx.fill();
   ctx.fillStyle = 'white';
-  ctx.fillText(PIT_EXIT_LABEL, tagX, top + height / 2);
+  ctx.fillText(PIT_EXIT_LABEL, tagX, tagMiddle);
 
   if (trafficLines.length > 0) {
     const lineHeight = fontSize * 1.2;
@@ -640,8 +659,14 @@ export const drawPitExitMarker = (
     }
     const boxWidth = widest + padX * 2;
     const boxHeight = lineHeight * trafficLines.length + fontSize * 0.3;
-    const boxTop = y + radius + radius * 0.3;
-    const boxX = keepInside(x, boxWidth, visible);
+    const boxTop =
+      keepInside(
+        y + radius + radius * 0.3 + boxHeight / 2,
+        boxHeight,
+        visible?.y
+      ) -
+      boxHeight / 2;
+    const boxX = keepInside(x, boxWidth, visible?.x);
     ctx.fillStyle = 'black';
     ctx.beginPath();
     ctx.roundRect(

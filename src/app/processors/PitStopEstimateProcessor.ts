@@ -25,7 +25,6 @@ import {
   circularMedian,
   fuelStopNeeded,
   lapSeconds,
-  nearestAround,
   parseSpeedKph,
   projectTraffic,
   parseTrackLengthMetres,
@@ -62,6 +61,7 @@ export interface PitStopEstimateDependencies {
   /** Saved pit lane calibration, used until a stop has been seen here. */
   pitLane?: (trackId: string) => Promise<PitLaneTrackData | null>;
   report?: (report: PitStopReport) => void;
+  now?: () => number;
 }
 
 interface Around {
@@ -91,6 +91,8 @@ interface StopPlan {
   lane: Estimate;
   service: Estimate;
   weak: boolean;
+  reference: ReferenceLap | null;
+  fallbackLap: number | null;
 }
 
 type Include = (carIdx: number) => boolean;
@@ -107,6 +109,15 @@ const wrap01 = (value: number) => ((value % 1) + 1) % 1;
 
 const round = (value: number | null, places: number) =>
   value === null ? null : Number(value.toFixed(places));
+
+const sampleTime = (
+  samples: readonly { at: number }[] | undefined,
+  now: number
+) =>
+  (samples ?? []).reduce(
+    (latest, sample) => Math.max(latest, sample.at + 1),
+    now
+  );
 
 const hiddenSnapshot = (version: number): PitStopEstimateSnapshot => ({
   state: 'hidden',
@@ -125,6 +136,8 @@ const hiddenSnapshot = (version: number): PitStopEstimateSnapshot => ({
   version,
 });
 
+export const OVERLAY_SAMPLES_PER_KEY = 12;
+
 /** In-memory copy for tape replays, so they never change saved data. */
 export const memoryOverlay = (
   base: PitStopModelPersistence
@@ -133,10 +146,19 @@ export const memoryOverlay = (
   return {
     read: () => data,
     addTransit: (key, sample) => {
-      data.transit[key] = [...(data.transit[key] ?? []), sample];
+      const samples = [...(data.transit[key] ?? []), sample];
+      const sameSource = samples.filter(
+        (entry) => entry.source === sample.source
+      );
+      if (sameSource.length > OVERLAY_SAMPLES_PER_KEY) {
+        samples.splice(samples.indexOf(sameSource[0]), 1);
+      }
+      data.transit[key] = samples;
     },
     addService: (key, sample) => {
-      data.service[key] = [...(data.service[key] ?? []), sample];
+      data.service[key] = [...(data.service[key] ?? []), sample].slice(
+        -OVERLAY_SAMPLES_PER_KEY
+      );
     },
   };
 };
@@ -170,6 +192,8 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
   private rewound = false;
   private calibration: PitLaneTrackData | null = null;
   private calibrationTrack = '';
+  private calibrationScope = '';
+  private calibrationRequest = 0;
 
   private resolvedService: ResolvedServiceRule | null = null;
   private resolvedLane: Estimate | null = null;
@@ -226,23 +250,34 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       ])
     );
     this.resolvedFor = null;
-    this.loadCalibration();
+    this.loadCalibration(String(weekend?.SubSessionID ?? ''));
   }
 
-  private loadCalibration() {
+  private loadCalibration(scope: string) {
+    const pitLane = this.dependencies?.pitLane;
     const trackId = String(this.trackId);
-    if (!this.dependencies?.pitLane || trackId === this.calibrationTrack)
+    if (
+      !pitLane ||
+      (trackId === this.calibrationTrack && scope === this.calibrationScope)
+    )
       return;
+    if (trackId !== this.calibrationTrack) this.calibration = null;
     this.calibrationTrack = trackId;
-    this.calibration = null;
-    this.dependencies
-      .pitLane(trackId)
+    this.calibrationScope = scope;
+    const request = ++this.calibrationRequest;
+    pitLane(trackId)
       .then((data) => {
-        if (this.calibrationTrack !== trackId) return;
-        this.calibration = data;
+        if (request !== this.calibrationRequest) return;
+        this.calibration = data ?? this.calibration;
         this.resolvedFor = null;
       })
       .catch(() => undefined);
+  }
+
+  private forgetCalibrationLookup() {
+    this.calibrationTrack = '';
+    this.calibrationScope = '';
+    this.calibrationRequest++;
   }
 
   onFrame(frame: Telemetry): void {
@@ -322,22 +357,6 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
     );
   }
 
-  /** The nearest cars each side of `pct` and the reference-lap time to them. */
-  private around(
-    pct: number | null,
-    pcts: readonly number[],
-    include: (carIdx: number) => boolean
-  ): Around {
-    if (pct === null || !(pct >= 0)) return NO_AROUND;
-    const { ahead, behind } = nearestAround(pct, pcts, include);
-    return {
-      ahead,
-      behind,
-      aheadGap: ahead === null ? null : this.gapSeconds(pct, pcts[ahead]),
-      behindGap: behind === null ? null : this.gapSeconds(pcts[behind], pct),
-    };
-  }
-
   /**
    * Cars around the rejoin point when the player gets there, each moved at its
    * own pace: its recent laps, or its class estimate scaled to the player's
@@ -392,17 +411,6 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
     };
   }
 
-  private gapSeconds(from: number, to: number): number | null {
-    const reference = this.referenceFor(this.playerCarIdx);
-    const seconds = reference
-      ? spanSeconds(reference, from, to)
-      : (this.cars.get(this.playerCarIdx)?.classEstLapSeconds ?? 0) > 0
-        ? forwardPct(from, to) *
-          (this.cars.get(this.playerCarIdx) as CarInfo).classEstLapSeconds
-        : null;
-    return seconds === null ? null : Number(seconds.toFixed(2));
-  }
-
   private windowPct() {
     if (!(this.trackLengthMetres > 0)) {
       return { before: FALLBACK_WINDOW_PCT, after: FALLBACK_WINDOW_PCT };
@@ -444,8 +452,9 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
     const referenceSeconds = reference
       ? spanSeconds(reference, stop.windowStartPct, stop.windowEndPct)
       : null;
+    const now = (deps.now ?? Date.now)();
+    const file = deps.persistence.read();
     const context = {
-      at: Date.now(),
       build: this.build,
       seriesId: this.seriesId,
       trackId: this.trackId,
@@ -460,8 +469,10 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       stop.windowSeconds > 0 &&
       stop.stationarySeconds <= MAX_LANE_SAMPLE_STATIONARY_SECONDS
     ) {
-      deps.persistence.addTransit(transitKey(this.trackId, car.carId), {
+      const key = transitKey(this.trackId, car.carId);
+      deps.persistence.addTransit(key, {
         ...context,
+        at: sampleTime(file.transit[key], now),
         source: isPlayer ? 'player' : 'opponent',
         pitSpeedLimitKph: this.pitSpeedLimitKph,
         entryPct: stop.entryPct,
@@ -477,9 +488,16 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
 
     if (!isPlayer) return;
     const service = stop.service;
-    if (!this.isReplay() && service && service.serviceSeconds > 0) {
-      deps.persistence.addService(serviceKey(this.ruleSet, car.carId), {
+    if (
+      !this.isReplay() &&
+      !stop.taintReasons.includes('reversed') &&
+      service &&
+      service.serviceSeconds > 0
+    ) {
+      const key = serviceKey(this.ruleSet, car.carId);
+      deps.persistence.addService(key, {
         ...context,
+        at: sampleTime(file.service[key], now),
         serviceSeconds: service.serviceSeconds,
         stationarySeconds: stop.stationarySeconds,
         fuelAddedLitres: service.fuelAddedLitres,
@@ -498,9 +516,9 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
     this.pendingPrediction = null;
     if (this.isReplay()) return;
     // The car is at the window end, back to racing speed.
-    const actual = this.around(pcts[this.playerCarIdx], pcts, include);
+    const actual = this.projectedTraffic(pcts, include, 0, 0, null);
     deps.report?.({
-      at: Date.now(),
+      at: now,
       seriesId: this.seriesId,
       sessionType:
         (this.sessionNum !== null
@@ -648,8 +666,6 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
         time,
         pcts,
         include,
-        reference,
-        fallbackLap,
         caution,
         stopNeeded
       );
@@ -719,7 +735,13 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       lane.source === 'model' ||
       (request.fuelLitres > 0 && service.fuelRateSource === 'generic') ||
       (request.tyres > 0 && service.tyreSource === 'generic');
-    this.lastPlan = { lane, service: serviceTime, weak };
+    this.lastPlan = {
+      lane,
+      service: serviceTime,
+      weak,
+      reference,
+      fallbackLap,
+    };
     this.publishRejoin({
       losses: { mid: loss, near, far },
       pcts,
@@ -744,11 +766,10 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
     time: number,
     pcts: readonly number[],
     include: Include,
-    reference: ReferenceLap | null,
-    fallbackLap: number | null,
     caution: boolean,
     stopNeeded: boolean | null
   ) {
+    const { reference, fallbackLap } = plan;
     const playerPct = pcts[this.playerCarIdx];
     const anchored = Number.isFinite(progress.windowStartTime);
     const startTime = anchored ? progress.windowStartTime : progress.entryTime;
@@ -873,6 +894,7 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
 
   onLifecycle(event: SessionLifecycleEvent): void {
     if (event.type === 'enter') this.watchingReplay = event.replay;
+    if (event.type === 'disconnect') this.forgetCalibrationLookup();
     if (event.type === 'enter' || event.type === 'disconnect') {
       this.detector.reset();
       this.sessionNum = null;

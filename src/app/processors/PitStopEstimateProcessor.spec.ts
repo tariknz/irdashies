@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type {
+  PitLaneTrackData,
   PitStopModelFile,
   PitStopReport,
   ReferenceLap,
@@ -11,6 +12,7 @@ import { GlobalFlags, TrackLocation } from '@irdashies/types';
 import type { PitStopModelPersistence } from '../storage/pitStopModel';
 import {
   memoryOverlay,
+  OVERLAY_SAMPLES_PER_KEY,
   PitStopEstimateProcessor,
 } from './PitStopEstimateProcessor';
 
@@ -304,13 +306,11 @@ describe('PitStopEstimateProcessor', () => {
       taintReasons: [],
       firstTaintSeconds: null,
       actualAheadCarIdx: 1,
-      actualBehindCarIdx: 1,
+      actualBehindCarIdx: null,
     });
     expect(sent.at).toBeGreaterThan(0);
-    // One other car on an even 100 s lap: ahead and behind gaps fill the lap.
-    expect(
-      (sent.actualAheadGapSeconds ?? 0) + (sent.actualBehindGapSeconds ?? 0)
-    ).toBeCloseTo(100, 0);
+    expect(sent.actualAheadGapSeconds).toBeCloseTo(5, 0);
+    expect(sent.actualBehindGapSeconds).toBeNull();
     expect(sent.predictedAheadGapSeconds).not.toBeNull();
   });
 
@@ -344,7 +344,7 @@ describe('PitStopEstimateProcessor', () => {
     expect(sent.actualLossSeconds).toBeNull();
   });
 
-  it('does not learn the lane from a stop where the player reversed', () => {
+  it('learns neither lane nor service from a stop where the player reversed', () => {
     const store = memoryStore(learnedFile());
     const report = vi.fn();
     const processor = create(store, report);
@@ -355,11 +355,72 @@ describe('PitStopEstimateProcessor', () => {
       processor.onFrame(frame(t, pittingCar(t), opponent(t), { gear }));
     }
     const sent = report.mock.calls[0][0] as PitStopReport;
+    expect(report).toHaveBeenCalledOnce();
     expect(sent.taintReasons).toEqual(['reversed']);
+    expect(sent.actualServiceSeconds).toBeGreaterThan(0);
     expect(store.addTransit).not.toHaveBeenCalledWith(
       '10:20',
       expect.objectContaining({ source: 'player' })
     );
+    expect(store.addService).not.toHaveBeenCalled();
+  });
+
+  it('stamps samples and reports from the supplied clock', () => {
+    const file = learnedFile();
+    file.transit['10:20'][0].at = 10_000;
+    const store = memoryStore(file);
+    const report = vi.fn();
+    const processor = new PitStopEstimateProcessor({
+      persistence: store,
+      referenceLaps: () => references,
+      fuel: () => undefined,
+      report,
+      now: () => 5_000,
+    });
+    processor.onLifecycle({ type: 'enter', replay: false });
+    processor.init(session());
+    drive(processor, pittingCar, drivingCar(0.2));
+
+    expect(vi.mocked(store.addTransit).mock.calls[0][1].at).toBe(10_001);
+    expect(vi.mocked(store.addService).mock.calls[0][1].at).toBe(5_000);
+    expect((report.mock.calls[0][0] as PitStopReport).at).toBe(5_000);
+  });
+
+  it('counts down the stop against the reference it was planned with', () => {
+    const fasterLap = (): ReferenceLap => {
+      const lap = referenceLap();
+      return {
+        ...lap,
+        times: lap.times.map((time) => time * 0.8),
+        finishTime: 80,
+      };
+    };
+    const lossAt60 = (swapReference: boolean) => {
+      let current = references;
+      const processor = new PitStopEstimateProcessor({
+        persistence: memoryStore(learnedFile()),
+        referenceLaps: () => current,
+        fuel: () => undefined,
+      });
+      processor.onLifecycle({ type: 'enter', replay: false });
+      processor.init(session());
+      drive(processor, pittingCar, drivingCar(0.2), 45);
+      if (swapReference) {
+        current = {
+          ...references,
+          persistedLaps: [[30, fasterLap()]],
+          version: 2,
+        };
+      }
+      drive(processor, pittingCar, drivingCar(0.2), 60, false, 45.1);
+      return processor.snapshot();
+    };
+
+    const planned = lossAt60(false);
+    const swapped = lossAt60(true);
+    expect(swapped.inStop).toBe(true);
+    expect(swapped.lossSeconds).toBe(planned.lossSeconds);
+    expect(swapped.offsetPct).toBe(planned.offsetPct);
   });
 
   it('measures the actual gaps at the window end, back at racing speed', () => {
@@ -458,6 +519,98 @@ describe('PitStopEstimateProcessor', () => {
     });
   });
 
+  describe('pit lane calibration lookup', () => {
+    const lane: PitLaneTrackData = { pitEntryPct: 0.9, pitExitPct: 0.05 };
+    const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+    const withLookup = (
+      pitLane: (trackId: string) => Promise<PitLaneTrackData | null>
+    ) => {
+      const processor = new PitStopEstimateProcessor({
+        persistence: memoryStore(),
+        referenceLaps: () => references,
+        fuel: () => undefined,
+        pitLane,
+      });
+      processor.onLifecycle({ type: 'enter', replay: false });
+      return processor;
+    };
+    const inSubsession = (subSessionId: number) => {
+      const value = session();
+      value.WeekendInfo = {
+        ...value.WeekendInfo,
+        SubSessionID: subSessionId,
+      };
+      return value;
+    };
+    const lossAt = (processor: PitStopEstimateProcessor, t: number) => {
+      drive(processor, drivingCar(0.7), drivingCar(0.2), t, false, t);
+      return processor.snapshot().lossSeconds;
+    };
+
+    it('reads again in a new connection after a failed read', async () => {
+      const pitLane = vi
+        .fn<(trackId: string) => Promise<PitLaneTrackData | null>>()
+        .mockResolvedValueOnce(null)
+        .mockResolvedValue(lane);
+      const processor = withLookup(pitLane);
+      processor.init(session());
+      await settle();
+      processor.init(session());
+      expect(pitLane).toHaveBeenCalledOnce();
+      expect(lossAt(processor, 1)).toBeNull();
+
+      processor.onLifecycle({ type: 'disconnect' });
+      processor.onLifecycle({ type: 'enter', replay: false });
+      processor.init(session());
+      await settle();
+
+      expect(pitLane).toHaveBeenCalledTimes(2);
+      expect(lossAt(processor, 2)).not.toBeNull();
+    });
+
+    it('reads again for a new subsession at the same track', async () => {
+      const pitLane = vi
+        .fn<(trackId: string) => Promise<PitLaneTrackData | null>>()
+        .mockResolvedValueOnce(null)
+        .mockResolvedValue(lane);
+      const processor = withLookup(pitLane);
+      processor.init(inSubsession(1));
+      await settle();
+      processor.init(inSubsession(1));
+      processor.init(inSubsession(2));
+      await settle();
+
+      expect(pitLane).toHaveBeenCalledTimes(2);
+      expect(lossAt(processor, 1)).not.toBeNull();
+    });
+
+    it('ignores a read that finishes after its connection ended', async () => {
+      let finishStale: (data: PitLaneTrackData | null) => void = () =>
+        undefined;
+      const pitLane = vi
+        .fn<(trackId: string) => Promise<PitLaneTrackData | null>>()
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            finishStale = resolve;
+          })
+        )
+        .mockResolvedValue(lane);
+      const processor = withLookup(pitLane);
+      processor.init(session());
+      processor.onLifecycle({ type: 'disconnect' });
+      processor.onLifecycle({ type: 'enter', replay: false });
+      processor.init(session());
+      await settle();
+      const current = lossAt(processor, 1);
+
+      finishStale({ pitEntryPct: 0.9, pitExitPct: 0 });
+      await settle();
+
+      expect(current).not.toBeNull();
+      expect(lossAt(processor, 2)).toBe(current);
+    });
+  });
+
   it('neither learns, reports nor shows anything from a loaded replay file', () => {
     const store = memoryStore(learnedFile());
     const report = vi.fn();
@@ -500,9 +653,10 @@ describe('PitStopEstimateProcessor', () => {
       );
       drive(processor, pittingCar, drivingCar(0.2));
       const sent = report.mock.calls[0][0] as PitStopReport;
-      return (
-        sent.predictedAheadGapSeconds ?? -(sent.predictedBehindGapSeconds ?? 0)
-      );
+      expect(sent.predictedAheadCarIdx).toBeNull();
+      expect(sent.predictedBehindCarIdx).toBe(OPPONENT);
+      expect(sent.predictedBehindGapSeconds).not.toBeNull();
+      return sent.predictedBehindGapSeconds ?? NaN;
     };
     const cleanPace = gapFor([100, 80]);
     const withPitLap = gapFor([130, 80], [[100], [80]]);
@@ -517,9 +671,26 @@ describe('PitStopEstimateProcessor', () => {
     const atEntry = processor.snapshot();
 
     expect(atEntry.inStop).toBe(true);
-    const gap = (snapshot: typeof before) =>
-      snapshot.aheadGapSeconds ?? -(snapshot.behindGapSeconds ?? 0);
+    for (const snapshot of [before, atEntry]) {
+      expect(snapshot.aheadCarIdx).toBeNull();
+      expect(snapshot.behindCarIdx).toBe(OPPONENT);
+      expect(snapshot.behindGapSeconds).not.toBeNull();
+    }
+    const gap = (snapshot: typeof before) => snapshot.behindGapSeconds ?? NaN;
     expect(Math.abs(gap(atEntry) - gap(before))).toBeLessThan(0.5);
+  });
+
+  it('puts the actual traffic on one side only, as the forecast does', () => {
+    const report = vi.fn();
+    const processor = create(memoryStore(learnedFile()), report);
+    drive(processor, pittingCar, drivingCar(0.2));
+    const sent = report.mock.calls[0][0] as PitStopReport;
+    expect(sent).toMatchObject({
+      actualAheadCarIdx: OPPONENT,
+      actualBehindCarIdx: null,
+      actualBehindGapSeconds: null,
+    });
+    expect(sent.actualAheadGapSeconds).toBeCloseTo(5, 0);
   });
 
   it('flags the estimate as unreliable under caution', () => {
@@ -557,5 +728,26 @@ describe('memoryOverlay', () => {
     expect(overlay.read().transit['10:20']).toHaveLength(1);
     expect(base.read().transit['10:20']).toBeUndefined();
     expect(base.addTransit).not.toHaveBeenCalled();
+  });
+
+  it('keeps the saved model caps per key and per source', () => {
+    const overlay = memoryOverlay(memoryStore(learnedFile()));
+    const [saved] = learnedFile().transit['10:20'];
+    const extra = OVERLAY_SAMPLES_PER_KEY + 3;
+    for (let at = 2; at < 2 + extra; at++) {
+      overlay.addTransit('10:20', { ...saved, at, source: 'opponent' });
+      overlay.addService('default:20', { at } as never);
+    }
+
+    const transit = overlay.read().transit['10:20'];
+    const opponents = transit.filter((entry) => entry.source === 'opponent');
+    expect(transit.filter((entry) => entry.source === 'player')).toHaveLength(
+      1
+    );
+    expect(opponents).toHaveLength(OVERLAY_SAMPLES_PER_KEY);
+    expect(opponents[0].at).toBe(2 + extra - OVERLAY_SAMPLES_PER_KEY);
+    const service = overlay.read().service['default:20'];
+    expect(service).toHaveLength(OVERLAY_SAMPLES_PER_KEY);
+    expect(service[service.length - 1].at).toBe(1 + extra);
   });
 });

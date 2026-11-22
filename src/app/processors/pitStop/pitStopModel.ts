@@ -551,33 +551,6 @@ export const rejoinOffset = (
   return { offsetPct: forwardPct(then, playerPct), lapsLost };
 };
 
-/** Nearest cars ahead of and behind `pct`, by lap position only. */
-export const nearestAround = (
-  pct: number,
-  carPcts: readonly number[],
-  include: (carIdx: number) => boolean
-): { ahead: number | null; behind: number | null } => {
-  let ahead: number | null = null;
-  let behind: number | null = null;
-  let aheadGap = Infinity;
-  let behindGap = Infinity;
-  for (let carIdx = 0; carIdx < carPcts.length; carIdx++) {
-    const carPct = carPcts[carIdx];
-    if (!(carPct >= 0) || !include(carIdx)) continue;
-    const forward = forwardPct(pct, carPct);
-    const backward = forwardPct(carPct, pct);
-    if (forward > 0 && forward < aheadGap) {
-      aheadGap = forward;
-      ahead = carIdx;
-    }
-    if (backward > 0 && backward < behindGap) {
-      behindGap = backward;
-      behind = carIdx;
-    }
-  }
-  return { ahead, behind };
-};
-
 export interface TrafficInput {
   playerPct: number;
   /** The rejoin point behind the player, as published in the snapshot. */
@@ -586,7 +559,7 @@ export interface TrafficInput {
   /** Where the player rejoins; null adds no driving time before the stop. */
   exitPct: number | null;
   reference: ReferenceLap | null;
-  /** The player's lap time, the unit every gap is measured in. */
+  /** The player's lap time, the pace it drives to the pit exit at. */
   playerLapSeconds: number;
   carPcts: readonly number[];
   /** Each car's own lap time; 0 or less when unknown. */
@@ -633,9 +606,8 @@ export const projectTraffic = (input: TrafficInput): Traffic => {
       ? (spanSeconds(reference, from, to) ?? forwardPct(from, to) * lap)
       : forwardPct(from, to) * lap;
   const ghost = wrap01(playerPct - offsetPct);
-  const untilRejoin =
-    (exitPct !== null ? between(playerPct, exitPct) : 0) +
-    Math.max(0, lossSeconds);
+  const driveSeconds = exitPct !== null ? between(playerPct, exitPct) : 0;
+  const stopSeconds = Math.max(0, lossSeconds);
 
   const result = { ...none };
   for (let carIdx = 0; carIdx < carPcts.length; carIdx++) {
@@ -644,7 +616,9 @@ export const projectTraffic = (input: TrafficInput): Traffic => {
     const own = carLapSeconds(carIdx);
     const pace = own > 0 ? own : playerLapSeconds;
     let gap = between(ghost, carPct);
-    gap += untilRejoin * (playerLapSeconds / pace - 1);
+    gap +=
+      driveSeconds * (playerLapSeconds / pace - 1) +
+      stopSeconds * (lap / pace - 1);
     gap = ((((gap + lap / 2) % lap) + lap) % lap) - lap / 2;
     if (gap > 0 && (result.aheadGap === null || gap < result.aheadGap)) {
       result.ahead = carIdx;

@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import fsp, { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -19,6 +19,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   await rm(directory, { recursive: true, force: true });
 });
 
@@ -56,5 +57,18 @@ describe('PitStopReportLog', () => {
     for (let at = 1; at <= 5; at++) void log.append(report(at));
     await log.flush();
     expect(await readLines()).toEqual([3, 4, 5]);
+  });
+
+  it('retries a failed trim on flush without adding the report again', async () => {
+    const log = new PitStopReportLog(file, 2);
+    await log.append(report(1));
+    await log.append(report(2));
+    vi.spyOn(fsp, 'rename').mockRejectedValueOnce(
+      Object.assign(new Error('locked'), { code: 'EPERM' })
+    );
+    await log.append(report(3));
+    expect(await readLines()).toEqual([1, 2, 3]);
+    await log.flush();
+    expect(await readLines()).toEqual([2, 3]);
   });
 });
