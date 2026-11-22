@@ -101,10 +101,6 @@ interface DriverStatusBadgesProps {
   out?: boolean;
   lap?: number;
   pit?: boolean;
-  /**
-   * LMU pit request while still on track (`mPitState === 1`). Shown as a green
-   * REQ badge; suppressed once the car is already in the pits.
-   */
   pitRequested?: boolean;
   lastPit?: boolean;
   lastPitLap?: number;
@@ -146,7 +142,6 @@ export const DriverStatusBadges = memo(
       finishState === 'DNF' || finishState === 'DQ'
         ? finishState
         : penaltyKind && lmuPenaltyBadgeText(penaltyKind, penaltySeconds);
-    // Request only while still out of the pits; once in, the PIT badge wins.
     const showPitRequest = !!pitRequested && !pit;
     const hasStatus =
       finishState ||

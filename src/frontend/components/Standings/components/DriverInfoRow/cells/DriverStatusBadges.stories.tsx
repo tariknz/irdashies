@@ -34,7 +34,6 @@ export const DidNotFinish: Story = {
   args: { finishState: 'DNF' },
 };
 
-/** LMU mPitState=1 while still on track: green REQ like TinyPedal. */
 export const PitRequested: Story = {
   args: { pitRequested: true },
 };

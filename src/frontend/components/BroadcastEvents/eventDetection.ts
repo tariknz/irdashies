@@ -104,6 +104,8 @@ export const carEvents = (
 
   for (const s of standings) {
     const was = tracker.cars.get(s.carIdx);
+    const disqualified =
+      s.finishState === 'DQ' || (s.dnf && s.finishState !== 'DNF');
     let pitSince = s.onPitRoad ? was?.pitSince : undefined;
     if (was) {
       if (s.onPitRoad && !was.onPitRoad) pitSince = now;
@@ -112,12 +114,12 @@ export const carEvents = (
         event(s, 'pitStop', `Pit lane ${seconds.toFixed(1)}s`);
       }
       if (s.repair && !was.repair) event(s, 'meatball');
-      if (s.dnf && !was.dnf) event(s, 'disqualified');
+      if (disqualified && !was.dnf) event(s, 'disqualified');
     }
     next.cars.set(s.carIdx, {
       onPitRoad: s.onPitRoad,
       repair: s.repair,
-      dnf: s.dnf,
+      dnf: disqualified,
       pitSince,
     });
 

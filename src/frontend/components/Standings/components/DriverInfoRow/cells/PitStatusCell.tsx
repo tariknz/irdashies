@@ -10,7 +10,6 @@ interface PitStatusCellProps {
   lastLap?: number;
   currentSessionType?: string;
   dnf?: boolean;
-  /** LMU pit request still on track. */
   pitRequested?: boolean;
   pitStopDuration?: number | null;
   showPitTime?: boolean;

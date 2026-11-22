@@ -108,10 +108,6 @@ export interface Standings {
   carTrackSurface?: number;
   currentSessionType?: string;
   dnf: boolean;
-  /**
-   * LMU pit request still on track (`mPitState === 1`). Undefined/false under
-   * iRacing and when the car is already in the pits.
-   */
   pitRequested?: boolean;
   repair: boolean;
   penalty: boolean;
@@ -250,7 +246,6 @@ export const createDriverStandings = (
     carIdxPenaltySecondsValue?: number[];
     /** Each car's finish status, as LMU_FINISH_STATUS. Empty under iRacing. */
     carIdxFinishStatusValue?: number[];
-    /** Each car's pit state, as LMU_PIT_STATE. Empty under iRacing. */
     carIdxPitStateValue?: number[];
     /** Seconds the player's next stop spends serving penalties. */
     penaltySeconds?: number;

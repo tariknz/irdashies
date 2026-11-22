@@ -172,4 +172,22 @@ describe('carEvents', () => {
     ]);
     expect(kinds).toEqual([[], ['meatball'], ['disqualified'], []]);
   });
+
+  it('does not report a widened DNF as a disqualification', () => {
+    const { kinds } = run([
+      [{}],
+      [{ dnf: true, finishState: 'DNF' }],
+      [{ dnf: true, finishState: 'DNF' }],
+    ]);
+    expect(kinds).toEqual([[], [], []]);
+  });
+
+  it('reports a DQ finish state as a disqualification', () => {
+    const { kinds } = run([
+      [{}],
+      [{ dnf: true, finishState: 'DQ' }],
+      [{ dnf: true, finishState: 'DQ' }],
+    ]);
+    expect(kinds).toEqual([[], ['disqualified'], []]);
+  });
 });

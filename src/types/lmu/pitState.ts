@@ -1,8 +1,3 @@
-/**
- * LMU / rF2 `mPitState` codes, as TinyPedal reads them for pit request.
- *
- * 0 none, 1 requested, 2 entering, 3 stopped, 4 exiting.
- */
 export const LMU_PIT_STATE = {
   none: 0,
   requested: 1,

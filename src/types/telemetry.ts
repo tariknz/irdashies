@@ -66,11 +66,6 @@ export type Telemetry = {
    * LMU_FINISH_STATUS. From scoring, so it is there for every car.
    */
   LmuCarIdxFinishStatus?: TelemetryVar<number[]>;
-  /**
-   * Each car's `mPitState`: 0 none, 1 requested, 2 entering, 3 stopped,
-   * 4 exiting, as LMU_PIT_STATE. From scoring; TinyPedal's pit-request flag
-   * is state === 1.
-   */
   LmuCarIdxPitState?: TelemetryVar<number[]>;
   /**
    * Seconds a time penalty will add to each car's race time. 0 for a clean

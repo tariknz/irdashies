@@ -719,7 +719,6 @@ export function mapLmuTelemetry(
       raw.vehFinishStatus,
       copyNumbers
     ),
-    // Pit request / enter / stop / exit. TinyPedal treats state 1 as requested.
     LmuCarIdxPitState: holdArray(
       'LmuCarIdxPitState',
       raw.vehPitState,

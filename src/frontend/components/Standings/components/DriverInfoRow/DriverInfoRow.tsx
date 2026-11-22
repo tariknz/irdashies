@@ -106,7 +106,6 @@ interface DriverRowInfoProps {
   pitExitAfterSF?: boolean;
   highlightColor?: number;
   dnf: boolean;
-  /** LMU pit request still on track. */
   pitRequested?: boolean;
   repair: boolean;
   penalty: boolean;

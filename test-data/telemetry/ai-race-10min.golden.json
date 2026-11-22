@@ -4982,7 +4982,7 @@
       "name": "standings-state",
       "schemaVersion": 1,
       "frameCount": 36000,
-      "rollingHash": "7df8e710ee6af5d9610f53f0f54b5491186d2921c91aeb7652c07c889a919ef6",
+      "rollingHash": "65721dc16a6f83ad9127c032e7307df341b2ebf2da521f71fc57d4fa60b676eb",
       "checkpoints": {
         "firstFrame": {
           "focusCarIdx": 0,
@@ -5882,6 +5882,7 @@
           "carIdxPenaltyKind": [],
           "carIdxPenaltySeconds": [],
           "carIdxFinishStatus": [],
+          "carIdxPitState": [],
           "trackLimitsPointsMax": 0,
           "carIdxP2PStatus": [
             false,
@@ -7083,6 +7084,7 @@
           "carIdxPenaltyKind": [],
           "carIdxPenaltySeconds": [],
           "carIdxFinishStatus": [],
+          "carIdxPitState": [],
           "trackLimitsPointsMax": 0,
           "carIdxP2PStatus": [
             false,
@@ -8362,6 +8364,7 @@
           "carIdxPenaltyKind": [],
           "carIdxPenaltySeconds": [],
           "carIdxFinishStatus": [],
+          "carIdxPitState": [],
           "trackLimitsPointsMax": 0,
           "carIdxP2PStatus": [
             false,

@@ -197,7 +197,6 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       'LmuCarIdxFinishStatus',
       this.latest.carIdxFinishStatus
     );
-    // LMU only: pit request / enter / stop / exit (mPitState).
     copyNumberArray(frame, 'LmuCarIdxPitState', this.latest.carIdxPitState);
     this.latest.penaltySeconds =
       numberValue(frame, 'LmuPenaltySeconds') ?? undefined;
