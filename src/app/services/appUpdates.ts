@@ -1,4 +1,4 @@
-import { app, autoUpdater, dialog } from 'electron';
+import { app, autoUpdater } from 'electron';
 import path from 'node:path';
 import type { AppUpdateAction, AppUpdateStatus } from '../../types/appUpdates';
 import logger from '../logger';
@@ -49,6 +49,7 @@ export async function createAppUpdates(
     newerVersionAvailable: false,
     checkingLatest: false,
     latestCheckFailed: false,
+    restartNotice: false,
     phase: 'idle',
   };
   let timer: ReturnType<typeof setInterval> | undefined;
@@ -139,26 +140,11 @@ export async function createAppUpdates(
       downloadedVersion = normalizeVersion(releaseName);
       update({
         phase: 'ready',
+        restartNotice: !wasManual && status.autoUpdate,
         latestVersion: downloadedVersion
           ? newerVersion(downloadedVersion, status.latestVersion)
           : status.latestVersion,
       });
-      if (stopped || wasManual || !status.autoUpdate) return;
-      void dialog
-        .showMessageBox({
-          type: 'info',
-          title: 'Application Update',
-          message: 'An irDashies update is ready',
-          detail: 'Restart irDashies to apply the update.',
-          buttons: ['Restart', 'Later'],
-          cancelId: 1,
-        })
-        .then(({ response }) => {
-          if (response === 0 && status.autoUpdate) restart();
-        })
-        .catch((error: unknown) =>
-          logger.warn('[Updates] Could not prompt for a restart', error)
-        );
     });
     try {
       autoUpdater.setFeedURL({
@@ -197,7 +183,10 @@ export async function createAppUpdates(
     setAutoUpdate: (enabled: boolean) => {
       if (stopped || !status.canUpdate || enabled === status.autoUpdate) return;
       preference.save(enabled);
-      update({ autoUpdate: enabled });
+      update({
+        autoUpdate: enabled,
+        restartNotice: enabled && status.restartNotice,
+      });
       schedule();
     },
     install: (action: AppUpdateAction) => {

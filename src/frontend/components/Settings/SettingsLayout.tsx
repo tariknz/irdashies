@@ -20,6 +20,7 @@ import { simulatorDisplayName, widgetDisabledMessage } from '@irdashies/types';
 import { SettingsLoader, WIDGET_SETTINGS } from './SettingsLoader';
 import { SettingsMenu } from './SettingsMenu';
 import { AppUpdateStatusProvider } from './AppUpdateStatusContext';
+import { AppUpdateNotice } from './components/AppUpdateNotice';
 import { HeaderProfilePicker } from './components/HeaderProfilePicker';
 import { settingsPageKind, type SettingsPageKind } from './settingsPageKind';
 import { widgetSettingsType } from './widgetSettingsType';
@@ -298,6 +299,7 @@ const SettingsLayoutContent = () => {
             </button>
           </div>
         </header>
+        <AppUpdateNotice />
         <StorageStatusNotice />
         <div className="flex min-h-0 flex-1">
           {/* Left Column - Widget Menu */}

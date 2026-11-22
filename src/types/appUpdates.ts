@@ -18,6 +18,7 @@ export interface AppUpdateStatus {
   newerVersionAvailable: boolean;
   checkingLatest: boolean;
   latestCheckFailed: boolean;
+  restartNotice: boolean;
   phase: (typeof APP_UPDATE_PHASES)[number];
 }
 

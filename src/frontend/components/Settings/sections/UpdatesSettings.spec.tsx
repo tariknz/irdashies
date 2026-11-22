@@ -21,6 +21,7 @@ it('lets the native updater check for a download independently of the latest rel
     newerVersionAvailable: false,
     checkingLatest: true,
     latestCheckFailed: false,
+    restartNotice: false,
     phase: 'idle',
   };
   let publish: ((status: AppUpdateStatus) => void) | undefined;
