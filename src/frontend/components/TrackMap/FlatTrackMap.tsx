@@ -3,7 +3,7 @@ import { useFlatTrackMapSettings } from './hooks/useFlatTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
 import { useTrackId } from './hooks/useTrackId';
 import { FlatTrackMapCanvas } from './FlatTrackMapCanvas';
-import { useTrackDrawing } from '@irdashies/domain/track';
+import { useSessionTrackDrawing } from '@irdashies/domain/track';
 import {
   useSessionVisibility,
   useTrackStateSnapshot,
@@ -26,7 +26,7 @@ export const FlatTrackMap = ({ embedded = false }: { embedded?: boolean }) => {
   });
 
   const sessionVisible = useSessionVisibility(settings?.sessionVisibility);
-  const trackDrawing = useTrackDrawing(
+  const trackDrawing = useSessionTrackDrawing(
     sessionVisible && (!settings?.showOnlyWhenOnTrack || isOnTrack)
       ? trackId
       : undefined

@@ -12,7 +12,7 @@ import {
 import {
   buildTrackGeometry,
   getTrackPathData,
-  useTrackDrawing,
+  useSessionTrackDrawing,
 } from '@irdashies/domain/track';
 import type { RadarSnapshot } from '@irdashies/types';
 import { colorNumToHex } from '@irdashies/utils/colors';
@@ -90,7 +90,9 @@ export const Radar = () => {
   const displayUnits = useSessionBarSelector(sessionBarSelectors.displayUnits);
   const metric = isDemoMode || displayUnits !== 0;
 
-  const trackDrawing = useTrackDrawing(sessionVisible ? trackId : undefined);
+  const trackDrawing = useSessionTrackDrawing(
+    sessionVisible ? trackId : undefined
+  );
   const geometry = useMemo(() => {
     const path = getTrackPathData(trackId, trackDrawing);
     return path && trackLength > 0

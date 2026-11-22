@@ -33,7 +33,9 @@ const turnLabels = {
   labelFontSize: 100,
 } as const;
 
-vi.mock('@irdashies/domain/track', () => ({ useTrackDrawing: () => drawing }));
+vi.mock('@irdashies/domain/track', () => ({
+  useSessionTrackDrawing: () => drawing,
+}));
 vi.mock('@irdashies/context', () => ({
   useTrackStateSnapshot: () => ({ carIdxOnPitRoad: pitState }),
   useCarIdxOffTrack: () => offTrack,
