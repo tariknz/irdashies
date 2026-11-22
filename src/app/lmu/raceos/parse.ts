@@ -61,13 +61,18 @@ const asTier = (value: unknown): number | undefined =>
  * Live RaceOS answers in percent (70). Some payloads and older caches use a
  * 0..1 fraction; values in (0, 1] are scaled up, matching doX dashboards.
  */
-const asProgress = (value: unknown): number | undefined => {
+const asPercent = (value: unknown): number | undefined => {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
     return undefined;
   }
-  let progress = value;
-  if (progress > 0 && progress <= 1) progress *= 100;
-  return Math.max(0, Math.min(100, progress));
+  return Math.min(100, value);
+};
+
+const asProgress = (value: unknown): number | undefined => {
+  const percent = asPercent(value);
+  return percent !== undefined && percent > 0 && percent <= 1
+    ? percent * 100
+    : percent;
 };
 
 /** Pulls `{ rank, tier, progress }` out of a driverRank/safetyRank block. */
@@ -171,7 +176,7 @@ export function parseStoredRating(value: unknown): LmuDriverRating | undefined {
         : undefined,
     driverProgress:
       driverRank && driverRank !== 'Pro'
-        ? asProgress(stored.driverProgress)
+        ? asPercent(stored.driverProgress)
         : undefined,
     safetyRank,
     safetyTier:

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   parseRaceosPlayer,
   parseRaceosPlayers,
+  parseStoredRating,
   raceosUsername,
   usernameOf,
 } from './parse';
@@ -125,6 +126,22 @@ describe('parseRaceosPlayer', () => {
     for (const value of [null, undefined, 42, 'text', [], {}]) {
       expect(() => parseRaceosPlayer(value)).not.toThrow();
     }
+  });
+});
+
+describe('parseStoredRating', () => {
+  it.each([0.5, 1, 70])('keeps stored progress %s as percent', (progress) => {
+    expect(
+      parseStoredRating({ driverRank: 'Gold', driverProgress: progress })
+        ?.driverProgress
+    ).toBe(progress);
+  });
+
+  it('clamps stored progress above 100', () => {
+    expect(
+      parseStoredRating({ driverRank: 'Gold', driverProgress: 250 })
+        ?.driverProgress
+    ).toBe(100);
   });
 });
 

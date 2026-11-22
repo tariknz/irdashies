@@ -43,23 +43,11 @@ const RANK_INDEX: Record<string, number> = {
   Platinum: 3,
 };
 
-/**
- * Progress as 0..100. RaceOS sometimes sends a 0..1 fraction; doX dashes
- * treat any value in (0, 1] as that fraction.
- */
 export const normaliseDriverRankProgress = (
   progress: number | undefined
 ): number => {
-  if (
-    typeof progress !== 'number' ||
-    !Number.isFinite(progress) ||
-    progress < 0
-  ) {
-    return 0;
-  }
-  let value = progress;
-  if (value > 0 && value <= 1) value *= 100;
-  return Math.max(0, Math.min(100, value));
+  if (typeof progress !== 'number' || !Number.isFinite(progress)) return 0;
+  return Math.max(0, Math.min(100, progress));
 };
 
 /**

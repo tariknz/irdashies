@@ -6,10 +6,12 @@ import {
 } from './driverRankGain';
 
 describe('normaliseDriverRankProgress', () => {
-  it('keeps percent values and scales fractions', () => {
+  it('keeps percent values and clamps to 0..100', () => {
     expect(normaliseDriverRankProgress(70)).toBe(70);
-    expect(normaliseDriverRankProgress(0.42)).toBe(42);
+    expect(normaliseDriverRankProgress(0.42)).toBe(0.42);
+    expect(normaliseDriverRankProgress(1)).toBe(1);
     expect(normaliseDriverRankProgress(0)).toBe(0);
+    expect(normaliseDriverRankProgress(-5)).toBe(0);
     expect(normaliseDriverRankProgress(150)).toBe(100);
   });
 });
