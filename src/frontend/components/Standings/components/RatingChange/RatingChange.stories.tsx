@@ -15,6 +15,16 @@ export const Positive: Story = {
   },
 };
 
+/** LMU approximate DR gain uses the same column with a percent suffix. */
+export const LmuDriverRankGain: Story = {
+  args: {
+    value: 12,
+    suffix: '%',
+    showZero: true,
+    justify: 'start',
+  },
+};
+
 export const Negative: Story = {
   args: {
     value: -15,

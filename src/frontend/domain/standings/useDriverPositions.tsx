@@ -16,6 +16,8 @@ import {
 import {
   Standings,
   augmentStandingsWithIRating,
+  augmentStandingsWithDriverRankGain,
+  standingsHaveLmuDriverRanks,
   augmentStandingsWithPositionChange,
   groupStandingsByClass,
   type LastTimeState,
@@ -416,10 +418,17 @@ export const useDriverStandings = () => {
             qualifyingResults
           );
 
-        // Position change applies to any race; iRating change only to official ones.
-        const iratingAugmentedGroupedByClass = isOfficial
-          ? augmentStandingsWithIRating(positionChangeAugmentedGroupedByClass)
-          : positionChangeAugmentedGroupedByClass;
+        // LMU DR gain whenever ranks are present; iRating only on official races.
+        const iratingAugmentedGroupedByClass = standingsHaveLmuDriverRanks(
+          positionChangeAugmentedGroupedByClass
+        )
+          ? augmentStandingsWithDriverRankGain(
+              positionChangeAugmentedGroupedByClass,
+              qualifyingResults
+            )
+          : isOfficial
+            ? augmentStandingsWithIRating(positionChangeAugmentedGroupedByClass)
+            : positionChangeAugmentedGroupedByClass;
 
         return iratingAugmentedGroupedByClass
           .flatMap(([, classStandings]) => classStandings)

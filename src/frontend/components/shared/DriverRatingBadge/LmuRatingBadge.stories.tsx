@@ -14,12 +14,18 @@ type Story = StoryObj<typeof LmuRatingBadge>;
 const rating = (over: Partial<LmuDriverRating> = {}): LmuDriverRating => ({
   driverRank: 'Gold',
   driverTier: 3,
+  driverProgress: 70,
   safetyRank: 'Silver',
   safetyTier: 1,
   ...over,
 });
 
 export const Default: Story = { args: { rating: rating() } };
+
+/** Rank plates without progress, matching the previous RaceOS-off readout. */
+export const WithoutProgress: Story = {
+  args: { rating: rating({ driverProgress: undefined }) },
+};
 
 export const Minimal: Story = {
   args: { rating: rating(), isMinimal: true },

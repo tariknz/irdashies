@@ -55,14 +55,35 @@ const asTier = (value: unknown): number | undefined =>
     ? value
     : undefined;
 
-/** Pulls `{ rank, tier }` out of a driverRank/safetyRank block. */
-const readRank = (value: unknown): { rank?: LmuRank; tier?: number } => {
+/**
+ * Progress within a tier as 0..100.
+ *
+ * Live RaceOS answers in percent (70). Some payloads and older caches use a
+ * 0..1 fraction; values in (0, 1] are scaled up, matching doX dashboards.
+ */
+const asProgress = (value: unknown): number | undefined => {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    return undefined;
+  }
+  let progress = value;
+  if (progress > 0 && progress <= 1) progress *= 100;
+  return Math.max(0, Math.min(100, progress));
+};
+
+/** Pulls `{ rank, tier, progress }` out of a driverRank/safetyRank block. */
+const readRank = (
+  value: unknown
+): { rank?: LmuRank; tier?: number; progress?: number } => {
   const block = asRecord(value);
   if (!block) return {};
   const rank = asRank(block.rank);
   // A tier without a rank is meaningless, so it is dropped with the rank.
   if (!rank) return {};
-  return { rank, tier: rank === 'Pro' ? undefined : asTier(block.tier) };
+  return {
+    rank,
+    tier: rank === 'Pro' ? undefined : asTier(block.tier),
+    progress: rank === 'Pro' ? undefined : asProgress(block.progress),
+  };
 };
 
 /**
@@ -115,6 +136,7 @@ export function parseRaceosPlayer(
   const rating: LmuDriverRating = {
     driverRank: driver.rank,
     driverTier: driver.tier,
+    driverProgress: driver.progress,
     safetyRank: safety.rank,
     safetyTier: safety.tier,
     badge: asString(profile?.badge),
@@ -146,6 +168,10 @@ export function parseStoredRating(value: unknown): LmuDriverRating | undefined {
     driverTier:
       driverRank && driverRank !== 'Pro'
         ? asTier(stored.driverTier)
+        : undefined,
+    driverProgress:
+      driverRank && driverRank !== 'Pro'
+        ? asProgress(stored.driverProgress)
         : undefined,
     safetyRank,
     safetyTier:
