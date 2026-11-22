@@ -74,9 +74,11 @@ const POLE_NOTICE_S = 3;
  */
 const SMOOTHING_STEP_S = 1 / RADAR_TICK_HZ;
 
+const NO_VALUES: readonly unknown[] = Object.freeze([]);
+
 const valuesOf = (frame: Telemetry, key: string): readonly unknown[] =>
   (frame as unknown as Record<string, { value?: unknown[] } | undefined>)[key]
-    ?.value ?? [];
+    ?.value ?? NO_VALUES;
 
 const numberAt = (
   values: readonly unknown[],
@@ -327,7 +329,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       }
       // Without the spotter nobody says a car is not alongside: cars side by
       // side on a replay or a camera car must not be pulled apart.
-      if (spotterSpeaks) separateInLaneCars(sameSide);
+      if (spotterSpeaks || worldFocus) separateInLaneCars(sameSide);
     }
 
     // The pedals are the player's, so they say nothing about a camera car.

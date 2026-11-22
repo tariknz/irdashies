@@ -173,15 +173,18 @@ const BUNDLED_LMU_ALIASES: Record<string, string> = {
   lagunaseca: 'WeatherTech Raceway Laguna Seca',
 };
 
-export function findBundledLmuTrackMap(trackName: string): LmuTrackMap | null {
-  const normalized = normalizeTrackName(trackName);
-  if (!normalized) return null;
-  const maps = bundledTrackMaps as unknown as Record<string, LmuTrackMap>;
-  const exactTitle = Object.keys(maps).find(
+const bundledMaps = bundledTrackMaps as unknown as Record<string, LmuTrackMap>;
+
+function findExactBundledLmuTrackMap(normalized: string): LmuTrackMap | null {
+  const exactTitle = Object.keys(bundledMaps).find(
     (title) => normalizeTrackName(title) === normalized
   );
   const alias = BUNDLED_LMU_ALIASES[normalized];
-  const partialTitle = Object.keys(maps)
+  return bundledMaps[exactTitle ?? alias] ?? null;
+}
+
+function findPartialBundledLmuTrackMap(normalized: string): LmuTrackMap | null {
+  const partialTitle = Object.keys(bundledMaps)
     .filter((title) => {
       const candidate = normalizeTrackName(title);
       return candidate.includes(normalized) || normalized.includes(candidate);
@@ -189,7 +192,16 @@ export function findBundledLmuTrackMap(trackName: string): LmuTrackMap | null {
     .sort(
       (a, b) => normalizeTrackName(b).length - normalizeTrackName(a).length
     )[0];
-  return maps[exactTitle ?? alias ?? partialTitle] ?? null;
+  return partialTitle ? (bundledMaps[partialTitle] ?? null) : null;
+}
+
+export function findBundledLmuTrackMap(trackName: string): LmuTrackMap | null {
+  const normalized = normalizeTrackName(trackName);
+  if (!normalized) return null;
+  return (
+    findExactBundledLmuTrackMap(normalized) ??
+    findPartialBundledLmuTrackMap(normalized)
+  );
 }
 
 export function parseTinyPedalTrackMap(svg: string): LmuTrackMap | null {
@@ -418,9 +430,13 @@ export function loadLmuTrackMap(
   map: LmuTrackMap;
   source: 'bundled' | 'storage';
 } | null {
-  const bundled = findBundledLmuTrackMap(trackName);
-  if (bundled) return { map: bundled, source: 'bundled' };
+  const normalized = normalizeTrackName(trackName);
+  const exact = normalized ? findExactBundledLmuTrackMap(normalized) : null;
+  if (exact) return { map: exact, source: 'bundled' };
 
   const stored = storage.load(trackName);
-  return stored ? { map: stored, source: 'storage' } : null;
+  if (stored) return { map: stored, source: 'storage' };
+
+  const partial = normalized ? findPartialBundledLmuTrackMap(normalized) : null;
+  return partial ? { map: partial, source: 'bundled' } : null;
 }

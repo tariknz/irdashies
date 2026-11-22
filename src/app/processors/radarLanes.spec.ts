@@ -436,4 +436,12 @@ describe('RadarLaneTracker.remember', () => {
 
     expect(tracker.update(0.1, cars, null).get(4)?.source).toBe('none');
   });
+
+  it('forgets a side once the car is measured back in line with us', () => {
+    const tracker = new RadarLaneTracker();
+    tracker.remember(0, 4, -1.2);
+    tracker.remember(0.5, 4, 0.1);
+
+    expect(tracker.update(1, cars, null).get(4)?.source).toBe('none');
+  });
 });

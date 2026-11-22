@@ -124,7 +124,11 @@ export class RadarLaneTracker {
   }
 
   remember(time: number, carIdx: number, lane: number): void {
-    if (Math.abs(lane) < 0.5) return;
+    if (Math.abs(lane) < 0.5) {
+      this.rememberedLane.delete(carIdx);
+      this.rememberedAt.delete(carIdx);
+      return;
+    }
     const side = Math.sign(lane);
     this.rememberedLane.set(
       carIdx,

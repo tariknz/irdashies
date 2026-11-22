@@ -317,6 +317,20 @@ describe('LMU opponent time alignment', () => {
     expect(buffer.longitudinal[1]).toBeCloseTo(once);
   });
 
+  it('does not count a move twice when the per-car clock stands still', () => {
+    const buffer = createLmuRelativePositionsBuffer();
+    const [first, second, third] = timed([
+      { player: 10.0, opponent: 10.0, opponentZ: 50 },
+      { player: 10.02, opponent: 10.01, opponentZ: 50.7 },
+      { player: 10.02, opponent: 10.01, opponentZ: 51.4 },
+    ]);
+    deriveLmuRelativePositions(first, buffer);
+    deriveLmuRelativePositions(second, buffer);
+    deriveLmuRelativePositions(third, buffer);
+
+    expect(buffer.longitudinal[1]).toBeCloseTo(-(51.4 + 0.7));
+  });
+
   it('uses the raw position until two samples exist', () => {
     const buffer = createLmuRelativePositionsBuffer();
     const [only] = timed([{ player: 10.02, opponent: 10.01, opponentZ: 50 }]);

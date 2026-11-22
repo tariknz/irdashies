@@ -76,8 +76,8 @@ export function alignOpponentPosition(
   ) {
     return;
   }
-  const stepX = x - history.previousX[carIdx];
-  const stepZ = z - history.previousZ[carIdx];
+  const stepX = history.latestX[carIdx] - history.previousX[carIdx];
+  const stepZ = history.latestZ[carIdx] - history.previousZ[carIdx];
   if (Math.hypot(stepX, stepZ) / span > MAX_PLAUSIBLE_SPEED_MS) return;
   const factor = age / span;
   out.x = x + stepX * factor;

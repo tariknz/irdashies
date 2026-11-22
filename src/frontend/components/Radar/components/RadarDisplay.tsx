@@ -208,13 +208,10 @@ export const RadarDisplay = memo(
           target.carIdx = car.carIdx;
           target.dist = car.dist + car.relativeSpeed * elapsed;
           target.relativeSpeed = car.relativeSpeed;
-          const measured = car.lateralM !== undefined;
-          target.world = measured;
+          target.world = car.lateralM !== undefined;
           target.heading = car.headingRad ?? 0;
           target.lateral =
-            car.lateralM !== undefined
-              ? -car.lateralM
-              : -car.lane * laneWidth;
+            car.lateralM !== undefined ? -car.lateralM : -car.lane * laneWidth;
           target.lane = car.lane;
           target.offTrack = car.offTrack;
           target.fill = looks.fill;

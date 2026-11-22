@@ -12,6 +12,7 @@ import {
   RADAR_MAX_RANGE_M,
   RadarProcessor,
 } from './RadarProcessor';
+import { IN_LANE_GAP_M } from './radarLanes';
 
 const TRACK_LENGTH = 4000;
 
@@ -876,6 +877,20 @@ describe('RadarProcessor with LMU world positions', () => {
     const [car] = processor.snapshot().cars;
     expect(car.laneSource).toBe('none');
     expect(car.dist).toBeCloseTo(80);
+  });
+
+  it('keeps a car whose measured position was rejected off our own car', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      worldFrame(
+        { time: 1, pcts: [0.5, 0.5 + m(2)] },
+        { 1: { lateral: 15, longitudinal: 0 } }
+      )
+    );
+
+    const [car] = processor.snapshot().cars;
+    expect(car.laneSource).toBe('none');
+    expect(car.dist).toBeCloseTo(IN_LANE_GAP_M);
   });
 
   it('ignores a world position on the wrong side of us', () => {

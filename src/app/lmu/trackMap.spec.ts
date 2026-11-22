@@ -516,6 +516,30 @@ describe('LMU track map', () => {
     expect(loadLmuTrackMap('Another Unknown Circuit', storage)).toBeNull();
   });
 
+  it('prefers a saved map over a bundled one that only shares part of the name', () => {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'irdashies-lmu-'));
+    temporaryDirectories.push(directory);
+    const storage = new LmuTrackMapStorage(path.join(directory, 'maps.json'));
+    const variant = 'Autodromo Nazionale Monza Junior';
+
+    expect(loadLmuTrackMap(variant, storage)?.source).toBe('bundled');
+
+    const saved = normalizeLmuTrackMap(
+      [
+        { x: 0, y: 0, distance: 0 },
+        { x: 100, y: 0, distance: 500 },
+        { x: 0, y: 0, distance: 1000 },
+      ],
+      1000
+    );
+    storage.save(variant, saved);
+
+    expect(loadLmuTrackMap(variant, storage)).toMatchObject({
+      map: saved,
+      source: 'storage',
+    });
+  });
+
   it('persists maps by exact LMU track name', () => {
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'irdashies-lmu-'));
     temporaryDirectories.push(directory);
