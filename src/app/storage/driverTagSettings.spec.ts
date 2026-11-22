@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DriverTagSettings } from '@irdashies/types';
 import {
   getDriverTagSettings,
+  normalizeDriverTagSettings,
   saveDriverTagSettings,
 } from './driverTagSettings';
 
@@ -19,6 +20,27 @@ const savedTags: DriverTagSettings = {
   ],
   display: { enabled: true, displayStyle: 'tag' },
 };
+
+it.each([
+  [1, undefined],
+  [2, 2],
+  [60, 60],
+  [61, undefined],
+  [Number.MAX_VALUE, undefined],
+])(
+  'normalizes a saved alternation frequency of %s to %s',
+  (frequency, expected) => {
+    const settings = normalizeDriverTagSettings({
+      ...savedTags,
+      display: { ...savedTags.display, alternateFrequency: frequency },
+    });
+
+    expect(settings).toEqual({
+      ...savedTags,
+      display: { ...savedTags.display, alternateFrequency: expected },
+    });
+  }
+);
 
 describe('driver tag storage', () => {
   beforeEach(async () => {

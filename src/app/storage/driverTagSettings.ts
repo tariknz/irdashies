@@ -74,7 +74,9 @@ const readDisplay = (value: unknown): DriverTagSettings['display'] => {
         ? nameDisplay
         : undefined,
     alternateFrequency:
-      alternateFrequency && alternateFrequency > 0
+      alternateFrequency !== undefined &&
+      alternateFrequency >= 2 &&
+      alternateFrequency <= 60
         ? alternateFrequency
         : undefined,
   };
