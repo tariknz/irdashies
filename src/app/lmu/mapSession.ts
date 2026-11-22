@@ -387,7 +387,19 @@ export function mapLmuSession(
 
   // Keyed by the name the sim reports, which is the only handle
   // /rest/multiplayer/teams gives us. Absent outside multiplayer.
-  const nationalities = rest?.nationalities;
+  // Case-insensitive: the teams payload and scoring do not always agree on
+  // capitalisation, and a miss leaves that driver without a flag.
+  const nationalityByLower = (() => {
+    const codes = rest?.nationalities;
+    if (!codes) return undefined;
+    const map = new Map<string, string>();
+    for (const [name, code] of Object.entries(codes)) {
+      map.set(name.toLowerCase(), code);
+    }
+    return map;
+  })();
+  const nationalityFor = (name: string): string | undefined =>
+    nationalityByLower?.get(name.toLowerCase());
   // Keyed by CarIdx, from /rest/watch/standings. Absent until that endpoint
   // has answered, which is what the entry-name parse below covers.
   const teamNames = rest?.teamNames;
@@ -510,7 +522,7 @@ export function mapLmuSession(
     // `control === 1` only: an entry whose control the sim did not report
     // stays eligible rather than silently losing its rank.
     LmuRating: mergeRating(
-      nationalities?.[d.name],
+      nationalityFor(d.name),
       d.name && !isAiEntry(d) ? ratingFor?.(d.name) : undefined
     ),
   }));

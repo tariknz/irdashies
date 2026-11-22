@@ -197,6 +197,8 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       'LmuCarIdxFinishStatus',
       this.latest.carIdxFinishStatus
     );
+    // LMU only: pit request / enter / stop / exit (mPitState).
+    copyNumberArray(frame, 'LmuCarIdxPitState', this.latest.carIdxPitState);
     this.latest.penaltySeconds =
       numberValue(frame, 'LmuPenaltySeconds') ?? undefined;
     copyBooleanArray(frame, 'CarIdxP2P_Status', this.latest.carIdxP2PStatus);
@@ -299,6 +301,7 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     this.latest.carIdxPenaltyKind.length = 0;
     this.latest.carIdxPenaltySeconds.length = 0;
     this.latest.carIdxFinishStatus.length = 0;
+    this.latest.carIdxPitState.length = 0;
     this.latest.penaltySeconds = undefined;
     this.latest.trackLimitsPointsMax = 0;
     this.latest.carIdxP2PStatus.length = 0;
@@ -335,6 +338,7 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       carIdxPenaltyKind: [],
       carIdxPenaltySeconds: [],
       carIdxFinishStatus: [],
+      carIdxPitState: [],
       penaltySeconds: undefined,
       trackLimitsPointsMax: 0,
       carIdxP2PStatus: [],
