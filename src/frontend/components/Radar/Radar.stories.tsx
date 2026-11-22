@@ -178,3 +178,76 @@ export const PacingFollowBeyondRange: Story = {
 export const PacingFollowPaceCar: Story = {
   args: { followDist: 25, followPaceCar: true },
 };
+
+const staticAppearance = new Map([
+  [1, appearanceFor('#f59e0b', '01')],
+  [2, appearanceFor('#3b82f6', '02')],
+  [3, appearanceFor('#ec4899', '03')],
+]);
+
+const StaticFrame = ({ cars }: { cars: RadarFrame['cars'] }) => (
+  <RadarDisplay
+    frame={{
+      playerPct: 0.3,
+      playerSpeed: 0,
+      trackLength: 4000,
+      cars,
+      focusBrake: 0,
+      follow: null,
+    }}
+    appearance={staticAppearance}
+    geometry={null}
+    style={{ ...STYLE, showTrackMap: false }}
+    dive={{ ...DIVE, enabled: false }}
+  />
+);
+
+/**
+ * LMU before this fix: only longitudinal distance reached the display, so
+ * rivals collapsed onto the centerline instead of sitting beside the player.
+ */
+export const LmuLonOnly: Story = {
+  render: () => (
+    <StaticFrame
+      cars={[
+        { carIdx: 1, dist: -8, relativeSpeed: 0, lane: 0, offTrack: false },
+        { carIdx: 2, dist: 6, relativeSpeed: 0, lane: 0, offTrack: false },
+        { carIdx: 3, dist: 14, relativeSpeed: 0, lane: 0, offTrack: false },
+      ]}
+    />
+  ),
+};
+
+/** LMU after: TinyPedal-style lateral metres place rivals left/right. */
+export const LmuWithLateral: Story = {
+  render: () => (
+    <StaticFrame
+      cars={[
+        {
+          carIdx: 1,
+          dist: -8,
+          relativeSpeed: 0,
+          lane: 0,
+          lateralM: -3.5,
+          offTrack: false,
+        },
+        {
+          carIdx: 2,
+          dist: 6,
+          relativeSpeed: 0,
+          lane: 0,
+          lateralM: 3.2,
+          offTrack: false,
+        },
+        {
+          carIdx: 3,
+          dist: 14,
+          relativeSpeed: 0,
+          lane: 0,
+          lateralM: -2.8,
+          offTrack: false,
+        },
+      ]}
+    />
+  ),
+};
