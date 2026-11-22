@@ -373,7 +373,7 @@ export async function publishLmuSDKEvents(
   // pseudonymised names its snapshots carry, so a replay shows the badges it
   // was recorded with and carries no real identity.
   //
-  // All of it is behind RACEOS_ENABLED, which is off: then neither branch is
+  // All of it is behind RACEOS_ENABLED: when off, neither branch is
   // taken and the client below answers nothing, live or replayed.
   let ratingCache: DriverRatingCache | undefined;
   let ratingClient: RaceosClient;

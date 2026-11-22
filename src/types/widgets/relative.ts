@@ -59,7 +59,7 @@ export default defineWidgetManifest({
       lmuFormat: 'plates',
     },
     iratingChange: {
-      enabled: false,
+      enabled: true,
     },
     positionChange: {
       enabled: false,

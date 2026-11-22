@@ -50,9 +50,8 @@ export const Relative = () => {
   const hasDriverRatings = simulatorHasDriverRatings(simulator);
   const hiddenColumns = useMemo<ReadonlySet<string>>(
     () =>
-      // Per column: both sims fill `badge` -- an iRacing licence or an LMU
-      // rank pair -- while iratingChange is iRacing's alone and lmuBadge is
-      // LMU's. One flag per simulator could not say that, and hid LMU's ranks.
+      // Per column: both sims fill `badge` and `iratingChange` (iRating or
+      // approximate LMU DR gain); `lmuBadge` is LMU-only.
       hiddenRatingColumns(simulator),
     [simulator]
   );
@@ -317,6 +316,7 @@ export const Relative = () => {
           license={result.driver?.license}
           rating={result.driver?.rating}
           iratingChangeValue={result.iratingChange}
+          ratingChangeSuffix={simulator === 'lmu' ? '%' : undefined}
           positionChange={result.positionChange}
           delta={(settings?.delta?.enabled ?? true) ? result.delta : undefined}
           lapTimeDeltas={
@@ -354,6 +354,7 @@ export const Relative = () => {
     playerIndex,
     totalRows,
     settings,
+    simulator,
     hiddenColumns,
     hasDriverRatings,
     isMultiClass,

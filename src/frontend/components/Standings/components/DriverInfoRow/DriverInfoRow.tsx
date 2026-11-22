@@ -51,6 +51,8 @@ interface DriverRowInfoProps {
   license?: string;
   rating?: number;
   iratingChangeValue?: number;
+  /** '%' for LMU approximate DR gain. */
+  ratingChangeSuffix?: string;
   positionChange?: number;
   lastTime?: number;
   fastestTime?: number;
@@ -232,6 +234,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     license,
     rating,
     iratingChangeValue,
+    ratingChangeSuffix,
     positionChange,
     lastTime,
     fastestTime,
@@ -570,6 +573,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             key="iratingChange"
             iratingChangeValue={iratingChangeValue}
             compactMode={compactMode}
+            suffix={ratingChangeSuffix}
           />
         ),
       },
@@ -848,6 +852,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     license,
     rating,
     iratingChangeValue,
+    ratingChangeSuffix,
     positionChange,
     delta,
     deltaDecimalPlaces,

@@ -79,10 +79,11 @@ describe('usernameOf', () => {
 });
 
 describe('parseRaceosPlayer', () => {
-  it('reads ranks, badge and country', () => {
+  it('reads ranks, progress, badge and country', () => {
     expect(parseRaceosPlayer(player())).toEqual({
       driverRank: 'Gold',
       driverTier: 3,
+      driverProgress: 42,
       safetyRank: 'Silver',
       safetyTier: 1,
       badge: 'lemans-2024',

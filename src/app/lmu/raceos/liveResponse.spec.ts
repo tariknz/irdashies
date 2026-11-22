@@ -102,13 +102,16 @@ describe('parseRaceosPlayers against a live response', () => {
     expect(parsed().get('Leonel Gomez')?.countryCode).toBe('AR');
   });
 
-  it('ignores the fields it has no use for', () => {
-    // elo, progress, jokers, enforcement and the rest are read past rather
-    // than choked on, so the service can keep adding to the record.
+  it('keeps driver progress and ignores unused service fields', () => {
+    // elo, jokers, enforcement and the rest are read past rather than choked
+    // on, so the service can keep adding to the record. Progress is kept for
+    // the badge readout and the approximate DR gain estimate.
     const herve = parsed().get('Herve Attard');
+    expect(herve?.driverProgress).toBe(70);
     expect(Object.keys(herve ?? {}).sort()).toEqual([
       'badge',
       'countryCode',
+      'driverProgress',
       'driverRank',
       'driverTier',
       'safetyRank',

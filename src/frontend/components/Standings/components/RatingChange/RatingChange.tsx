@@ -4,12 +4,15 @@ interface RatingChangeProps {
   value?: number;
   justify?: 'start' | 'center';
   showZero?: boolean;
+  /** Appended after the number; LMU DR gain uses '%'. */
+  suffix?: string;
 }
 
 export const RatingChange = ({
   value,
   justify = 'center',
   showZero = false,
+  suffix = '',
 }: RatingChangeProps) => {
   if (value === undefined || isNaN(value)) {
     return (
@@ -25,15 +28,15 @@ export const RatingChange = ({
   let icon: React.ReactNode;
 
   if (roundedChange > 0) {
-    text = `${roundedChange}`;
+    text = `${roundedChange}${suffix}`;
     color = 'text-green-400';
     icon = <CaretUpIcon size={10} />;
   } else if (roundedChange < 0) {
-    text = `${Math.abs(roundedChange)}`;
+    text = `${Math.abs(roundedChange)}${suffix}`;
     color = 'text-red-400';
     icon = <CaretDownIcon size={10} />;
   } else if (showZero) {
-    text = '0';
+    text = `0${suffix}`;
     icon = <MinusIcon size={10} />;
   } else {
     justify = 'center';
