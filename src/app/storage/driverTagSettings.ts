@@ -19,21 +19,6 @@ const readString = (value: unknown) =>
 const readNumber = (value: unknown) =>
   typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 
-const readSettingsFile = (filePath: string): unknown => {
-  try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch {
-    return undefined;
-  }
-};
-
-const readLegacyConfig = (): unknown => {
-  const config = readSettingsFile(
-    path.join(app.getPath('userData'), 'config.json')
-  );
-  return isRecord(config) ? config.driverTagSettings : undefined;
-};
-
 const readGroupFields = (
   value: Record<string, unknown>
 ): Partial<TagGroup> => ({
@@ -122,9 +107,15 @@ export const normalizeDriverTagSettings = (
   };
 };
 
-export const getDriverTagSettings = (): DriverTagSettings | undefined =>
-  normalizeDriverTagSettings(readSettingsFile(getFilePath())) ??
-  normalizeDriverTagSettings(readLegacyConfig());
+export const getDriverTagSettings = (): DriverTagSettings | undefined => {
+  try {
+    return normalizeDriverTagSettings(
+      JSON.parse(fs.readFileSync(getFilePath(), 'utf8'))
+    );
+  } catch {
+    return undefined;
+  }
+};
 
 export const saveDriverTagSettings = (settings: DriverTagSettings): void => {
   fs.writeFileSync(getFilePath(), JSON.stringify(settings));

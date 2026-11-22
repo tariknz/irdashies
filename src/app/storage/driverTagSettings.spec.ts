@@ -29,29 +29,31 @@ describe('driver tag storage', () => {
     await fs.rm(userData, { recursive: true, force: true });
   });
 
-  it.each(['driver-tags.json', 'config.json'])(
-    'keeps tags from %s when adding a driver',
-    async (file) => {
-      const storedTags = { ...savedTags, mapping: { '123': 'team' } };
-      await fs.writeFile(
-        join(userData, file),
-        JSON.stringify(
-          file === 'config.json'
-            ? { driverTagSettings: storedTags }
-            : storedTags
-        )
-      );
+  it('keeps tags from driver-tags.json when adding a driver', async () => {
+    const storedTags = { ...savedTags, mapping: { '123': 'team' } };
+    await fs.writeFile(
+      join(userData, 'driver-tags.json'),
+      JSON.stringify(storedTags)
+    );
 
-      const settings = getDriverTagSettings();
-      expect(settings).toEqual(savedTags);
-      if (!settings) throw new Error('Expected saved driver tags');
+    const settings = getDriverTagSettings();
+    expect(settings).toEqual(savedTags);
+    if (!settings) throw new Error('Expected saved driver tags');
 
-      const updated = {
-        ...settings,
-        entries: [...(settings.entries ?? []), { id: '456', groupId: 'team' }],
-      };
-      saveDriverTagSettings(updated);
-      expect(getDriverTagSettings()).toEqual(updated);
-    }
-  );
+    const updated = {
+      ...settings,
+      entries: [...(settings.entries ?? []), { id: '456', groupId: 'team' }],
+    };
+    saveDriverTagSettings(updated);
+    expect(getDriverTagSettings()).toEqual(updated);
+  });
+
+  it('ignores top-level driver tags in config.json', async () => {
+    await fs.writeFile(
+      join(userData, 'config.json'),
+      JSON.stringify({ driverTagSettings: savedTags })
+    );
+
+    expect(getDriverTagSettings()).toBeUndefined();
+  });
 });
