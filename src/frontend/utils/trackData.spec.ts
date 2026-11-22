@@ -163,7 +163,7 @@ describe('loadLmuTrackData', () => {
     // which is the state Long Beach is in on the iRacing side. Worth knowing
     // if it ever becomes true here.
     const tracks = getAvailableLmuTracks();
-    expect(tracks.length).toBe(21);
+    expect(tracks.length).toBe(22);
     for (const { trackId } of tracks) {
       // The id is the key -- the dataset's `name` is its own prettier label.
       const raw = loadLmuTrackData(trackId);
@@ -185,6 +185,16 @@ describe('the LMU circuits that used to be blank', () => {
       loadTrackData(trackName);
     return raw ? mapLovelyToTrackData(raw).sections : [];
   };
+
+  it('names the default Paul Ricard layout, which the dataset lacks', () => {
+    const sections = sectionsFor('Paul Ricard - ELMS');
+    const byName = (name: string) => sections.find((s) => s.name === name);
+
+    expect(byName('S de la Verrerie')?.start_pct).toBe(0.093);
+    expect(byName('Mistral')).toBeDefined();
+    expect(byName('Ligne Droite du Mistral')?.type).toBe('straight');
+    expect(byName('Virage du Pont')?.end_pct).toBe(0.959);
+  });
 
   it('names Fuji, which had nothing before', () => {
     const sections = sectionsFor('Fuji Speedway');

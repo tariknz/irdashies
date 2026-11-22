@@ -10,6 +10,7 @@ import fs from 'fs';
 import path from 'path';
 import https from 'https';
 import { getFreshBundleAgeMs } from './lovely-bundle-cache';
+import { mergeLocalTracks, readLocalTracks } from './lovely-local-tracks';
 
 interface TrackManifestEntry {
   trackName: string;
@@ -63,6 +64,11 @@ interface TrackDataBundle {
 const GITHUB_RAW_BASE =
   'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-track-data/main/data';
 const DATA_DIR = path.join(process.cwd(), 'src', 'frontend', 'assets', 'data');
+const LOCAL_TRACKS_DIR = path.join(
+  process.cwd(),
+  'tools',
+  'lovely-track-local'
+);
 
 /**
  * The games to bundle, and where each one lands.
@@ -279,6 +285,13 @@ async function main(): Promise<void> {
       const manifest = await fetchManifest(game);
       const tracks = await fetchAllTrackData(manifest);
       const bundle = createBundle(tracks);
+      const added = mergeLocalTracks(
+        bundle.tracks,
+        readLocalTracks<LovelyTrack>(path.join(LOCAL_TRACKS_DIR, game))
+      );
+      if (added.length) {
+        console.log(`Added local ${game} tracks: ${added.join(', ')}`);
+      }
       saveBundle(bundle, outputFile);
     }
 
