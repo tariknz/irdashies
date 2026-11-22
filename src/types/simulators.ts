@@ -66,25 +66,24 @@ export const RATING_COLUMN_IDS = [
  * alone and `lmuBadge` is LMU's. A single boolean could not say that, and
  * hid LMU's ranks for as long as LMU had none to show.
  *
- * `lmuBadge` is listed under no simulator while RaceOS, its only source, is
- * switched off (src/app/lmu/raceos/enabled.ts). The LMU half of `badge` is
- * empty for the same reason, but the column stays: it still marks AI entries.
+ * LMU fills `badge` (rank pair + progress), `iratingChange` (approximate DR
+ * gain, same column id as iRacing's iRating delta), and `lmuBadge` (RaceOS
+ * achievement marker).
  */
 export const SIMULATOR_RATING_COLUMNS: Record<
   ActiveSimulator,
   readonly string[]
 > = {
   iracing: ['badge', 'iratingChange'],
-  lmu: ['badge'],
+  lmu: ['badge', 'iratingChange', 'lmuBadge'],
 };
 
 /**
  * Rating columns no simulator can fill, hidden even before one is detected.
  *
- * A saved column order still lists `lmuBadge`, and with nothing to draw it
- * would otherwise leave an empty column whenever no sim is running.
+ * Empty while every rating column has at least one sim that can fill it.
  */
-const UNAVAILABLE_RATING_COLUMNS: readonly string[] = ['lmuBadge'];
+const UNAVAILABLE_RATING_COLUMNS: readonly string[] = [];
 
 /**
  * The rating columns to hide for the running simulator.
