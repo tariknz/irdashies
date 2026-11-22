@@ -58,21 +58,13 @@ const asTier = (value: unknown): number | undefined =>
 /**
  * Progress within a tier as 0..100.
  *
- * Live RaceOS answers in percent (70). Some payloads and older caches use a
- * 0..1 fraction; values in (0, 1] are scaled up, matching doX dashboards.
+ * Live RaceOS answers in percent points (70), so 1 means 1%.
  */
 const asPercent = (value: unknown): number | undefined => {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
     return undefined;
   }
   return Math.min(100, value);
-};
-
-const asProgress = (value: unknown): number | undefined => {
-  const percent = asPercent(value);
-  return percent !== undefined && percent > 0 && percent <= 1
-    ? percent * 100
-    : percent;
 };
 
 /** Pulls `{ rank, tier, progress }` out of a driverRank/safetyRank block. */
@@ -87,7 +79,7 @@ const readRank = (
   return {
     rank,
     tier: rank === 'Pro' ? undefined : asTier(block.tier),
-    progress: rank === 'Pro' ? undefined : asProgress(block.progress),
+    progress: rank === 'Pro' ? undefined : asPercent(block.progress),
   };
 };
 

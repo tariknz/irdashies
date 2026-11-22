@@ -11,8 +11,8 @@ const player = (over: Record<string, unknown> = {}) => ({
   id: 'p1',
   name: 'Jean Dupont',
   username: 'Jean Dupont',
-  driverRank: { rank: 'Gold', tier: 3, progress: 0.42 },
-  safetyRank: { rank: 'Silver', tier: 1, progress: 0.1 },
+  driverRank: { rank: 'Gold', tier: 3, progress: 42 },
+  safetyRank: { rank: 'Silver', tier: 1, progress: 10 },
   platforms: [{ id: '76561198000000001', platform: 'steam' }],
   profile: { nationality: 'FRA', badge: 'lemans-2024' },
   ...over,
@@ -90,6 +90,13 @@ describe('parseRaceosPlayer', () => {
       badge: 'lemans-2024',
       countryCode: 'FR',
     });
+  });
+
+  it('keeps live progress of 1 as 1 percent', () => {
+    const parsed = parseRaceosPlayer(
+      player({ driverRank: { rank: 'Gold', tier: 3, progress: 1 } })
+    );
+    expect(parsed?.driverProgress).toBe(1);
   });
 
   it('gives Pro no tier', () => {
