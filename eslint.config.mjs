@@ -34,6 +34,7 @@ export default defineConfig([
       '**/.vite/**',
       '**/out/**',
       '**/coverage/**',
+      'perf-results/**',
       'storybook-static/**',
       '**/dist/**',
       '**/.remember/**',
