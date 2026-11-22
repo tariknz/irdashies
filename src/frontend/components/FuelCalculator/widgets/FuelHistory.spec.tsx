@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FuelLapData } from '@irdashies/types';
 import { defaultFuelCalculatorSettings } from '../defaults';
@@ -237,7 +237,7 @@ describe('FuelHistory table', () => {
     expect(view.container).toBeEmptyDOMElement();
   });
 
-  it('labels demo values as a preview and never records them', () => {
+  it('labels demo values as a preview and never records them', async () => {
     dashboard.isDemoMode = true;
     const view = render(<FuelHistory fuelUnits="L" settings={settings} />);
     expect(screen.getByText('Preview')).toBeInTheDocument();
@@ -249,7 +249,7 @@ describe('FuelHistory table', () => {
         settings={{ ...settings, fuelHistoryLapCount: 8 }}
       />
     );
-    expect(rows()).toHaveLength(8);
+    await waitFor(() => expect(rows()).toHaveLength(8));
     expect(useFuelStore.getState().lapHistory.size).toBe(0);
     view.rerender(
       <FuelHistory

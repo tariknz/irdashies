@@ -18,6 +18,11 @@ vi.mock('@irdashies/utils/logger', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
+vi.mock('@irdashies/context', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@irdashies/context')>()),
+  useDashboard: () => ({ isDemoMode: false }),
+}));
+
 // The widget reads its config from the dashboard context; these tests drive it
 // through props instead, which take precedence over the stored settings.
 vi.mock('./hooks/useLapTraceSettings', async () => {
