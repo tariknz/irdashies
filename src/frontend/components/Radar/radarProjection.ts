@@ -38,7 +38,8 @@ export class RadarProjector {
     playerPct: number,
     centreX: number,
     centreY: number,
-    pixelsPerMetre: number
+    pixelsPerMetre: number,
+    focusYawRad: number | null = null
   ): void {
     this.geometry = trackLength > 0 ? geometry : null;
     this.trackLength = trackLength;
@@ -48,7 +49,12 @@ export class RadarProjector {
     this.pixelsPerMetre = pixelsPerMetre;
     if (this.geometry) {
       pointAtProgress(this.geometry, playerPct, this.origin);
-      tangentAtProgress(this.geometry, playerPct, this.forward);
+      if (focusYawRad !== null && Number.isFinite(focusYawRad)) {
+        this.forward.x = Math.cos(focusYawRad);
+        this.forward.y = -Math.sin(focusYawRad);
+      } else {
+        tangentAtProgress(this.geometry, playerPct, this.forward);
+      }
     }
   }
 

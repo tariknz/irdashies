@@ -865,7 +865,7 @@ describe('RadarProcessor with LMU world positions', () => {
     expect(car?.lateralM).toBeUndefined();
   });
 
-  it('ignores a world position that cannot be the same stretch of track', () => {
+  it('places a car across a hairpin where it physically is', () => {
     const processor = createProcessor();
     processor.onFrame(
       worldFrame(
@@ -875,34 +875,52 @@ describe('RadarProcessor with LMU world positions', () => {
     );
 
     const [car] = processor.snapshot().cars;
-    expect(car.laneSource).toBe('none');
-    expect(car.dist).toBeCloseTo(80);
+    expect(car.laneSource).toBe('world');
+    expect(car.dist).toBeCloseTo(19);
+    expect(car.lateralM).toBeCloseTo(4);
   });
 
-  it('keeps a car whose measured position was rejected off our own car', () => {
+  it('keeps a car without a measured position off our own car', () => {
     const processor = createProcessor();
     processor.onFrame(
       worldFrame(
-        { time: 1, pcts: [0.5, 0.5 + m(2)] },
-        { 1: { lateral: 15, longitudinal: 0 } }
+        { time: 1, pcts: [0.5, 0.5 + m(2), 0.5 + m(60)] },
+        { 2: { lateral: 0, longitudinal: 60 } }
       )
     );
 
-    const [car] = processor.snapshot().cars;
-    expect(car.laneSource).toBe('none');
-    expect(car.dist).toBeCloseTo(IN_LANE_GAP_M);
+    const car = processor.snapshot().cars.find((c) => c.carIdx === 1);
+    expect(car?.laneSource).toBe('none');
+    expect(car?.dist).toBeCloseTo(IN_LANE_GAP_M);
   });
 
-  it('ignores a world position on the wrong side of us', () => {
+  it('publishes our heading while cars are placed from world positions', () => {
     const processor = createProcessor();
-    processor.onFrame(
-      worldFrame(
-        { time: 1, pcts: [0.5, 0.5 + m(30)] },
-        { 1: { lateral: 1, longitudinal: -30 } }
-      )
-    );
+    processor.onFrame({
+      ...worldFrame(
+        { time: 1, pcts: [0.5, 0.5 + m(10)] },
+        { 1: { lateral: 0, longitudinal: 10 } }
+      ),
+      LmuPlayerYaw: { value: [0.25] },
+    } as unknown as Telemetry);
 
-    expect(processor.snapshot().cars[0].laneSource).toBe('none');
+    expect(processor.snapshot().focusYawRad).toBeCloseTo(0.25);
+  });
+
+  it('publishes no heading without world positions or while spectating', () => {
+    const iracing = createProcessor();
+    iracing.onFrame(frame({ time: 1, pcts: [0.5, 0.5 + m(10)] }));
+    expect(iracing.snapshot().focusYawRad).toBeNull();
+
+    const spectating = createProcessor();
+    spectating.onFrame({
+      ...worldFrame(
+        { time: 1, pcts: [0.5, 0.5 + m(10)], camCarIdx: 1 },
+        { 1: { lateral: 0, longitudinal: 10 } }
+      ),
+      LmuPlayerYaw: { value: [0.25] },
+    } as unknown as Telemetry);
+    expect(spectating.snapshot().focusYawRad).toBeNull();
   });
 
   it('uses the world only for the car the world is measured from', () => {

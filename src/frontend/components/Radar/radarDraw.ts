@@ -222,7 +222,8 @@ export const drawRadar = (
     scene.playerPct,
     centre,
     centre,
-    pixelsPerMetre
+    pixelsPerMetre,
+    scene.focusYawRad ?? null
   );
 
   ctx.clearRect(0, 0, size, size);

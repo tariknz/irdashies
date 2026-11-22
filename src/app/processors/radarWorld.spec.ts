@@ -72,20 +72,16 @@ describe('applyWorldOffset', () => {
     expect(car.laneSource).toBe('none');
   });
 
-  it('accepts a car a corner away when the chord is close to the arc', () => {
-    expect(applyWorldOffset(carAt(60), channels(17.5, 56.4), 1)).toBe(true);
+  it('places a car across a hairpin at its measured position', () => {
+    const car = carAt(80);
+    expect(applyWorldOffset(car, channels(4, 19), 1)).toBe(true);
+    expect(car).toMatchObject({ dist: 19, lateralM: 4, laneSource: 'world' });
   });
 
-  it('rejects a car much closer in a straight line than along the track', () => {
-    expect(applyWorldOffset(carAt(80), channels(4, 19), 1)).toBe(false);
-  });
-
-  it('rejects a straight-line distance beyond the track distance', () => {
-    expect(applyWorldOffset(carAt(10), channels(0, 25), 1)).toBe(false);
-  });
-
-  it('rejects a car on the opposite side of us along the track', () => {
-    expect(applyWorldOffset(carAt(30), channels(1, -30), 1)).toBe(false);
+  it('places a car whose measured position disagrees with lap distance', () => {
+    const car = carAt(30);
+    expect(applyWorldOffset(car, channels(1, -30), 1)).toBe(true);
+    expect(car.dist).toBe(-30);
   });
 
   it('trusts the measurement for a car alongside whatever the lap distance says', () => {

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { buildTrackGeometry } from '@irdashies/domain/track';
 import { RadarProjector, type ScreenPose } from './radarProjection';
 import { projectCar, projector as shared } from './radarDrawShared';
 
@@ -67,5 +68,70 @@ describe('projectCar', () => {
     const expected = shared.project(6, 2, blank());
 
     expect(projectCar(car, blank())).toMatchObject(expected);
+  });
+});
+
+describe('RadarProjector in the focus car frame', () => {
+  const geometry = buildTrackGeometry(
+    {
+      trackPathPoints: [
+        { x: 0, y: 0 },
+        { x: 1250, y: 0 },
+        { x: 1250, y: 1250 },
+        { x: 0, y: 1250 },
+        { x: 0, y: 0 },
+      ],
+      totalLength: 5000,
+      startFinishLength: 0,
+      direction: 'anticlockwise',
+    },
+    5000
+  );
+  const playerPct = 0.1;
+  const ppm = 2;
+
+  const setUpOnStraight = (focusYawRad: number | null) => {
+    const projector = new RadarProjector();
+    projector.setup(geometry, 5000, playerPct, 100, 100, ppm, focusYawRad);
+    return projector;
+  };
+
+  it('draws the road as before when our heading follows the track', () => {
+    const alongTrack = setUpOnStraight(null).project(20, 0, blank());
+    const headingAlong = setUpOnStraight(0).project(20, 0, blank());
+
+    expect(headingAlong.x).toBeCloseTo(alongTrack.x, 1);
+    expect(headingAlong.y).toBeCloseTo(alongTrack.y, 1);
+  });
+
+  it('turns the road the other way when our car points off the track', () => {
+    const turnedLeft = 0.2;
+    const road = setUpOnStraight(turnedLeft).project(20, 0, blank());
+
+    expect(road.x).toBeCloseTo(100 + 20 * Math.sin(turnedLeft) * ppm, 0);
+    expect(road.y).toBeCloseTo(100 - 20 * Math.cos(turnedLeft) * ppm, 0);
+  });
+
+  it('puts the road where a world car on it is drawn', () => {
+    const turnedLeft = 0.2;
+    const projector = setUpOnStraight(turnedLeft);
+    const road = projector.project(20, 0, blank());
+    const worldCar = projector.projectOffset(
+      20 * Math.cos(turnedLeft),
+      -20 * Math.sin(turnedLeft),
+      -turnedLeft,
+      blank()
+    );
+
+    expect(worldCar.x).toBeCloseTo(road.x, 0);
+    expect(worldCar.y).toBeCloseTo(road.y, 0);
+    expect(worldCar.angle).toBeCloseTo(road.angle, 2);
+  });
+
+  it('keeps the straight road when there is no track drawing', () => {
+    const projector = new RadarProjector();
+    projector.setup(null, 5000, playerPct, 100, 100, ppm, 0.2);
+
+    expect(projector.project(20, 0, blank())).toMatchObject({ x: 100, y: 60 });
   });
 });

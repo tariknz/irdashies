@@ -12,6 +12,7 @@ export interface LmuRelativePositions {
   lateral: number[];
   longitudinal: number[];
   heading: number[];
+  playerYaw: number;
   history: PositionHistory;
 }
 
@@ -46,6 +47,7 @@ export const createLmuRelativePositionsBuffer = (): LmuRelativePositions => ({
   lateral: [],
   longitudinal: [],
   heading: [],
+  playerYaw: Number.NaN,
   history: createPositionHistory(),
 });
 
@@ -93,6 +95,7 @@ export function deriveLmuRelativePositions(
   const playerZ = raw.vehPosZ[playerIdx];
   const playerYaw = Math.atan2(raw.vehOriX[playerIdx], raw.vehOriZ[playerIdx]);
   if (![playerX, playerZ, playerYaw].every(Number.isFinite)) return null;
+  out.playerYaw = playerYaw;
 
   const playerTime = raw.vehElapsedTime?.[playerIdx] ?? raw.elapsedTime;
   const aligned = alignedScratch;
