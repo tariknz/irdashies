@@ -22,7 +22,6 @@ export interface RadarFrameCar {
   dist: number;
   relativeSpeed: number;
   lane: number;
-  /** Metres left of the focus car when the sim publishes a true offset. */
   lateralM?: number;
   offTrack: boolean;
   onPitRoad?: boolean;
@@ -210,6 +209,7 @@ export const RadarDisplay = memo(
           target.relativeSpeed = car.relativeSpeed;
           target.lateral =
             car.lateralM !== undefined ? car.lateralM : -car.lane * laneWidth;
+          target.local = car.lateralM !== undefined;
           target.lane = car.lane;
           target.offTrack = car.offTrack;
           target.fill = looks.fill;

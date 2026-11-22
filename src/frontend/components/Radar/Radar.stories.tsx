@@ -202,10 +202,6 @@ const StaticFrame = ({ cars }: { cars: RadarFrame['cars'] }) => (
   />
 );
 
-/**
- * LMU before this fix: only longitudinal distance reached the display, so
- * rivals collapsed onto the centerline instead of sitting beside the player.
- */
 export const LmuLonOnly: Story = {
   render: () => (
     <StaticFrame
@@ -218,7 +214,6 @@ export const LmuLonOnly: Story = {
   ),
 };
 
-/** LMU after: TinyPedal-style lateral metres place rivals left/right. */
 export const LmuWithLateral: Story = {
   render: () => (
     <StaticFrame

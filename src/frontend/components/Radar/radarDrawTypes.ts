@@ -8,6 +8,7 @@ export interface RadarDrawCar {
   dist: number;
   /** Metres from our line, positive to the left. */
   lateral: number;
+  local?: boolean;
   /** Rate of change of `dist` in m/s. */
   relativeSpeed: number;
   /** Lane from the spotter, for the debug labels. */

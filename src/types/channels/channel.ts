@@ -194,12 +194,6 @@ export interface RadarCar {
    * estimate (see `laneSource`) and moves smoothly between whole lanes.
    */
   lane: number;
-  /**
-   * Metres left of the focus car, from a true relative position.
-   *
-   * Set when the sim publishes one (LMU). The display uses it instead of
-   * turning `lane` into a guess. Positive is left, matching the projector.
-   */
   lateralM?: number;
   /**
    * Where `lane` came from: the standing-start grid or the pace line (both

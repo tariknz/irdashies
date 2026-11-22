@@ -56,6 +56,11 @@ describe('nearestDistance', () => {
     expect(nearestDistance([car(1, 12), car(2, -7)])).toBe(7);
     expect(nearestDistance([])).toBe(Infinity);
   });
+
+  it('uses radial distance for cars with a lateral offset', () => {
+    expect(nearestDistance([{ dist: 0, lateralM: 6 }, car(2, 9)])).toBe(6);
+    expect(nearestDistance([{ dist: 3, lateralM: 4 }])).toBe(5);
+  });
 });
 
 describe('nextAutoHideVisible', () => {

@@ -271,7 +271,7 @@ export const drawRadar = (
     const car = scene.cars[index];
     const carLength = car.length * pixelsPerMetre;
     const carWidth = car.width * pixelsPerMetre;
-    projector.project(car.dist, car.lateral, pose);
+    projector.project(car.dist, car.lateral, pose, car.local);
     const hazard = hazardOf(scene.hazards, car.carIdx);
     if (hazard?.kind === 'crash') pose.angle += CRASH_TILT;
     ctx.globalAlpha = car.offTrack ? 0.45 : 1;
@@ -370,7 +370,8 @@ export const drawRadar = (
         projector.project(
           ghostDist,
           -dive.side * (scene.laneWidth ?? style.carWidth + 0.7),
-          pose
+          pose,
+          car.local
         );
         ctx.globalAlpha = pulse;
         if (style.diveGhost && dive.side !== 0) {
@@ -434,7 +435,7 @@ export const drawRadar = (
           away > 0 ? 'left' : 'right'
         );
       }
-      projector.project(car.dist, car.lateral, pose);
+      projector.project(car.dist, car.lateral, pose, car.local);
     }
 
     if (!style.showWarnings) continue;
@@ -484,7 +485,7 @@ export const drawRadar = (
   if (follow && !followBeyondRange) {
     const car = scene.cars.find((c) => c.carIdx === follow.carIdx);
     if (car) {
-      projector.project(car.dist, car.lateral, pose);
+      projector.project(car.dist, car.lateral, pose, car.local);
       drawFollowLine(ctx, centre, pose, length, car.length * pixelsPerMetre);
       drawFollowOutline(
         ctx,

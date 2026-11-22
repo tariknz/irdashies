@@ -69,6 +69,8 @@ const POLE_NOTICE_S = 3;
  */
 const SMOOTHING_STEP_S = 1 / RADAR_TICK_HZ;
 
+const NO_VALUES: readonly unknown[] = [];
+
 const valuesOf = (frame: Telemetry, key: string): readonly unknown[] =>
   (frame as unknown as Record<string, { value?: unknown[] } | undefined>)[key]
     ?.value ?? [];
@@ -99,12 +101,9 @@ export const parseTrackLength = (raw: string | undefined): number => {
  * Publishes the rivals around the focus car in metres.
  *
  * iRacing gives every car's lap progress but no world position, so distance is
- * measured along the track. LMU also publishes offsets from the player's car
- * (TinyPedal's rotated horizontal/longitudinal axes); while the focus is the
- * player those place and range-check the cars they cover. Track order,
- * formation, follow and hazards still use lap progress. Per-car speed comes
- * from progress deltas because the SDK reports speed for the player only, and
- * the renderer needs it to extrapolate between 25 Hz snapshots.
+ * measured along the track. Per-car speed comes from progress deltas because
+ * the SDK reports speed for the player only, and the renderer needs it to
+ * extrapolate between 25 Hz snapshots.
  */
 export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
   readonly channel = 'radar.snapshot';
@@ -267,12 +266,10 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         };
       }
 
-      // Offsets are player-relative (TinyPedal local frame). A camera car
-      // must keep lap-distance placement.
       const offsetsFollowFocus = focus === scalarNumber(frame, 'PlayerCarIdx');
       const relativeAvailable = offsetsFollowFocus
         ? valuesOf(frame, 'LmuCarIdxRelativeAvailable')
-        : [];
+        : NO_VALUES;
       const relativeLateral = valuesOf(frame, 'LmuCarIdxRelativeLateral');
       const relativeLongitudinal = valuesOf(
         frame,
@@ -285,18 +282,12 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         let dist = dists[carIdx];
         let lateralM: number | undefined;
         if (hasWorld && relativeAvailable[carIdx] === true) {
-          // TinyPedal places rivals from the rotated world position, not a
-          // lane guess. Negative lateral there is left; the projector wants
-          // positive left.
           const lon = numberAt(relativeLongitudinal, carIdx, NaN);
           const lat = numberAt(relativeLateral, carIdx, NaN);
           if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
           dist = lon;
           lateralM = -lat;
         }
-        // available=false: scoring-only car (no world pose) or outside the
-        // world radius. Keep lap-distance `dist` so scoring-only rivals still
-        // appear; the range check below still applies.
         const span =
           lateralM === undefined ? Math.abs(dist) : Math.hypot(dist, lateralM);
         const surface = numberAt(surfaces, carIdx);

@@ -60,9 +60,14 @@ export class RadarProjector {
    * @param dist metres along the track from the focus car, positive ahead
    * @param lateral metres from the centreline, positive to the left
    */
-  project(dist: number, lateral: number, output: ScreenPose): ScreenPose {
+  project(
+    dist: number,
+    lateral: number,
+    output: ScreenPose,
+    local = false
+  ): ScreenPose {
     const geometry = this.geometry;
-    if (!geometry) {
+    if (!geometry || local) {
       output.x = this.centreX - lateral * this.pixelsPerMetre;
       output.y = this.centreY - dist * this.pixelsPerMetre;
       output.angle = -Math.PI / 2;

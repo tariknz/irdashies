@@ -6,6 +6,12 @@ export interface RadarFilterOptions {
   hideInPit: boolean;
 }
 
+const radialDistance = ({
+  dist,
+  lateralM,
+}: Pick<RadarCar, 'dist' | 'lateralM'>): number =>
+  lateralM === undefined ? Math.abs(dist) : Math.hypot(dist, lateralM);
+
 /**
  * Cars worth drawing: inside the disc (plus a body length so a car slides
  * off the edge instead of vanishing at its centre), and on the same side of
@@ -15,23 +21,18 @@ export const selectRadarCars = (
   snapshot: Pick<RadarSnapshot, 'cars' | 'focusOnPitRoad'>,
   { range, carLength, hideInPit }: RadarFilterOptions
 ): RadarCar[] =>
-  snapshot.cars.filter((car) => {
-    const span =
-      car.lateralM === undefined
-        ? Math.abs(car.dist)
-        : Math.hypot(car.dist, car.lateralM);
-    return (
-      span <= range + carLength &&
+  snapshot.cars.filter(
+    (car) =>
+      radialDistance(car) <= range + carLength &&
       (!hideInPit || car.onPitRoad === snapshot.focusOnPitRoad)
-    );
-  });
+  );
 
 /** Distance to the nearest car in metres, or Infinity when there is none. */
 export const nearestDistance = (
-  cars: readonly Pick<RadarCar, 'dist'>[]
+  cars: readonly Pick<RadarCar, 'dist' | 'lateralM'>[]
 ): number =>
   cars.reduce(
-    (nearest, car) => Math.min(nearest, Math.abs(car.dist)),
+    (nearest, car) => Math.min(nearest, radialDistance(car)),
     Infinity
   );
 
