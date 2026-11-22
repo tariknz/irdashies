@@ -597,6 +597,7 @@ const withUpdatesStatus =
       newerVersionAvailable: true,
       checkingLatest: false,
       latestCheckFailed: false,
+      restartNotice: false,
       phase: 'idle',
       ...initial,
     };
@@ -652,6 +653,11 @@ export const UpdatesCurrentRelease: Story = {
 export const SidebarUpdate: Story = {
   args: { initialPath: '/settings/relative' },
   beforeEach: withUpdatesStatus({ autoUpdate: false }, 2_000),
+};
+
+export const UpdateReadyNotice: Story = {
+  args: { initialPath: '/settings/general' },
+  beforeEach: withUpdatesStatus({ phase: 'ready', restartNotice: true }),
 };
 
 // Controlled disk-full bridge response; no disk space is consumed.

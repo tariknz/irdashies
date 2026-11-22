@@ -97,7 +97,8 @@ export const UpdatesSettings = () => {
               id="automatic-updates-description"
               className="ml-7 mt-1 text-sm text-slate-400"
             >
-              Download updates in the background and prompt when they’re ready.
+              Download updates in the background and show a notice in Settings
+              when they’re ready.
             </p>
             {status.preferenceSaveFailed && (
               <p role="alert" className="ml-7 mt-1 text-sm text-amber-200">

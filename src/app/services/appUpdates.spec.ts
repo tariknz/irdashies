@@ -43,7 +43,6 @@ describe('app updates', () => {
     Object.defineProperty(process, 'platform', { value: 'win32' });
     electron.app.getName.mockReturnValue('irdashies');
     electron.app.getPath.mockReturnValue(dir);
-    electron.dialog.showMessageBox.mockResolvedValue({ response: 1 });
   });
 
   afterEach(async () => {
@@ -107,8 +106,8 @@ describe('app updates', () => {
     expect(updates.snapshot()).toMatchObject({
       phase: 'ready',
       latestVersion: '3.1.2',
+      restartNotice: false,
     });
-    expect(electron.dialog.showMessageBox).not.toHaveBeenCalled();
 
     updates.install('download');
     expect(updater.quitAndInstall).not.toHaveBeenCalled();
@@ -126,8 +125,10 @@ describe('app updates', () => {
     updates.setAutoUpdate(false);
     updater.emit('update-downloaded', {}, '', '3.1.2');
 
-    expect(electron.dialog.showMessageBox).not.toHaveBeenCalled();
-    expect(updates.snapshot().phase).toBe('ready');
+    expect(updates.snapshot()).toMatchObject({
+      phase: 'ready',
+      restartNotice: false,
+    });
   });
 
   it('starts checking again when automatic updates are enabled', async () => {
@@ -139,13 +140,12 @@ describe('app updates', () => {
     updater.emit('update-not-available');
     vi.advanceTimersByTime(10 * 60 * 1000);
     expect(updater.checkForUpdates).toHaveBeenCalledTimes(2);
-    updater.emit('update-downloaded', {}, '', '3.1.2');
-    expect(electron.dialog.showMessageBox).toHaveBeenCalledOnce();
   });
 
-  it('prompts for an automatic download after a manual check finds no update', async () => {
+  it('publishes a notice without opening a dialog or restarting for an automatic download', async () => {
     await writeFile(path.join(dir, 'auto-update.json'), 'false');
-    updates = await createAppUpdates(vi.fn());
+    const publish = vi.fn();
+    updates = await createAppUpdates(publish);
 
     updates.install('download');
     updater.emit('update-not-available');
@@ -154,7 +154,17 @@ describe('app updates', () => {
     updater.emit('update-available');
     updater.emit('update-downloaded', {}, '', '3.1.2');
 
-    expect(electron.dialog.showMessageBox).toHaveBeenCalledOnce();
+    expect(publish).toHaveBeenLastCalledWith(
+      expect.objectContaining({ phase: 'ready', restartNotice: true })
+    );
+    expect(electron.dialog.showMessageBox).not.toHaveBeenCalled();
+    expect(updater.quitAndInstall).not.toHaveBeenCalled();
+
+    updates.setAutoUpdate(false);
+    expect(updates.snapshot()).toMatchObject({
+      phase: 'ready',
+      restartNotice: false,
+    });
   });
 
   it('uses the default and logs safe diagnostics for a corrupt preference', async () => {

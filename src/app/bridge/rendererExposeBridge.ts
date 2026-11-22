@@ -89,6 +89,7 @@ export function exposeBridge() {
           typeof status.newerVersionAvailable === 'boolean' &&
           typeof status.checkingLatest === 'boolean' &&
           typeof status.latestCheckFailed === 'boolean' &&
+          typeof status.restartNotice === 'boolean' &&
           status.phase &&
           APP_UPDATE_PHASES.includes(status.phase)
         ) {
