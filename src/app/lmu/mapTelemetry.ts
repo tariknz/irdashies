@@ -9,6 +9,7 @@ import {
 import {
   createLmuRelativePositionsBuffer,
   deriveLmuRelativePositions,
+  LMU_RADAR_RADIUS_M,
   summariseLmuBlindSpot,
 } from './proximity';
 import { lapTimeOrAbsent } from './sentinels';
@@ -445,7 +446,8 @@ export function mapLmuTelemetry(
   const steeringMaxRad = ((raw.visualSteeringWheelRange ?? 0) * Math.PI) / 360;
   const relativePositions = deriveLmuRelativePositions(
     raw,
-    relativePositionsBuffer
+    relativePositionsBuffer,
+    LMU_RADAR_RADIUS_M
   );
   const blindSpot = summariseLmuBlindSpot(relativePositions);
 

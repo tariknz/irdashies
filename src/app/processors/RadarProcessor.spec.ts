@@ -329,6 +329,52 @@ describe('RadarProcessor', () => {
     expect(processor.snapshot().cars).toEqual([]);
   });
 
+  it('places an LMU rival from its TinyPedal relative position', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      frame({
+        time: 1,
+        pcts: [0.5, 0.9],
+        surfaces: [TrackLocation.OnTrack, TrackLocation.OnTrack],
+      })
+    );
+    processor.onFrame({
+      ...frame({
+        time: 1.1,
+        pcts: [0.5, 0.9],
+      }),
+      LmuCarIdxRelativeAvailable: { value: [false, true] },
+      LmuCarIdxRelativeLateral: { value: [0, -4] },
+      LmuCarIdxRelativeLongitudinal: { value: [0, 12] },
+    } as unknown as Telemetry);
+
+    expect(processor.snapshot().cars).toEqual([
+      expect.objectContaining({ carIdx: 1, dist: 12, lateralM: 4 }),
+    ]);
+  });
+
+  it('keeps lap-distance placement while watching another car', () => {
+    const processor = createProcessor();
+    processor.onFrame({
+      ...frame({
+        time: 1,
+        pcts: [0.1, 0.5, 0.5 + m(8)],
+        camCarIdx: 1,
+      }),
+      LmuCarIdxRelativeAvailable: { value: [true, false, true] },
+      LmuCarIdxRelativeLateral: { value: [-3, 0, 5] },
+      LmuCarIdxRelativeLongitudinal: { value: [20, 0, 2] },
+    } as unknown as Telemetry);
+
+    expect(processor.snapshot().cars).toEqual([
+      expect.objectContaining({
+        carIdx: 2,
+        dist: expect.closeTo(8),
+        lateralM: undefined,
+      }),
+    ]);
+  });
+
   it('puts a car the spotter calls alongside in its lane', () => {
     const processor = createProcessor();
     for (let tick = 0; tick <= 60; tick += 1) {

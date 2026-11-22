@@ -15,11 +15,16 @@ export const selectRadarCars = (
   snapshot: Pick<RadarSnapshot, 'cars' | 'focusOnPitRoad'>,
   { range, carLength, hideInPit }: RadarFilterOptions
 ): RadarCar[] =>
-  snapshot.cars.filter(
-    (car) =>
-      Math.abs(car.dist) <= range + carLength &&
+  snapshot.cars.filter((car) => {
+    const span =
+      car.lateralM === undefined
+        ? Math.abs(car.dist)
+        : Math.hypot(car.dist, car.lateralM);
+    return (
+      span <= range + carLength &&
       (!hideInPit || car.onPitRoad === snapshot.focusOnPitRoad)
-  );
+    );
+  });
 
 /** Distance to the nearest car in metres, or Infinity when there is none. */
 export const nearestDistance = (
