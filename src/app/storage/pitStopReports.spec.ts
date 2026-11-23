@@ -59,6 +59,23 @@ describe('PitStopReportLog', () => {
     expect(await readLines()).toEqual([3, 4, 5]);
   });
 
+  it('starts the next report on its own line after a write fails part way', async () => {
+    const log = new PitStopReportLog(file);
+    await log.append(report(1));
+    vi.spyOn(fsp, 'appendFile').mockImplementationOnce(async () => {
+      await writeFile(file, `${JSON.stringify(report(1))}\n{"at":2,"tr`);
+      throw Object.assign(new Error('disk full'), { code: 'ENOSPC' });
+    });
+    await log.append(report(2));
+    await log.append(report(3));
+    const lines = (await readFile(file, 'utf8')).split('\n').filter(Boolean);
+    expect(lines).toEqual([
+      JSON.stringify(report(1)),
+      '{"at":2,"tr',
+      JSON.stringify(report(3)),
+    ]);
+  });
+
   it('retries a failed trim on flush without adding the report again', async () => {
     const log = new PitStopReportLog(file, 2);
     await log.append(report(1));

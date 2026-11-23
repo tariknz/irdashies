@@ -65,11 +65,16 @@ export class PitStopReportLog {
       this.needsSeparator = content.length > 0 && !content.endsWith('\n');
     }
     const separator = this.needsSeparator ? '\n' : '';
-    await fsp.appendFile(
-      this.filePath,
-      `${separator}${JSON.stringify(report)}\n`,
-      'utf8'
-    );
+    try {
+      await fsp.appendFile(
+        this.filePath,
+        `${separator}${JSON.stringify(report)}\n`,
+        'utf8'
+      );
+    } catch (error) {
+      this.count = null;
+      throw error;
+    }
     this.needsSeparator = false;
     this.count++;
     await this.compact();

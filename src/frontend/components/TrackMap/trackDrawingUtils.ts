@@ -538,9 +538,21 @@ export const drawPitExitRange = (
   let previous = -1;
   for (let step = 0; step <= PIT_EXIT_BAND_STEPS; step++) {
     const progress = wrapLap(from + (span * step) / PIT_EXIT_BAND_STEPS);
-    project(progress, scratch);
-    if (step === 0 || progress < previous) ctx.moveTo(scratch.x, scratch.y);
-    else ctx.lineTo(scratch.x, scratch.y);
+    if (step === 0) {
+      project(progress, scratch);
+      ctx.moveTo(scratch.x, scratch.y);
+    } else {
+      if (progress < previous) {
+        project(1, scratch);
+        ctx.lineTo(scratch.x, scratch.y);
+        project(0, scratch);
+        ctx.moveTo(scratch.x, scratch.y);
+      }
+      if (progress > 0) {
+        project(progress, scratch);
+        ctx.lineTo(scratch.x, scratch.y);
+      }
+    }
     previous = progress;
   }
   ctx.strokeStyle = trackIsDark

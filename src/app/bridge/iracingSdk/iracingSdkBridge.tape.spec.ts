@@ -407,7 +407,10 @@ describe('pit stop estimate during tape playback', () => {
     } as unknown as Telemetry;
   };
 
-  const runStop = async (aggregateReplay: boolean) => {
+  const laneOnlyFrame = (t: number): Telemetry =>
+    ({ ...frameAt(t), PitSvFlags: { value: [0] } }) as Telemetry;
+
+  const createEstimate = async (aggregateReplay: boolean) => {
     const { bridge } = await startBridge();
     bridge.stop();
     const options = mocks.createHost.mock.calls[0][0];
@@ -439,7 +442,11 @@ describe('pit stop estimate during tape playback', () => {
     processor.onLifecycle({ type: 'enter', replay: false });
     processor.init(raceSession);
     await vi.advanceTimersByTimeAsync(0);
+    return processor;
+  };
 
+  const runStop = async (aggregateReplay: boolean) => {
+    const processor = await createEstimate(aggregateReplay);
     const states = new Set<PitStopEstimateSnapshot['state']>();
     let offsetSeen = false;
     for (let i = 0; i <= 1100; i++) {
@@ -448,7 +455,8 @@ describe('pit stop estimate during tape playback', () => {
       states.add(snapshot.state);
       offsetSeen ||= snapshot.offsetPct !== null;
     }
-    return { states, offsetSeen };
+    processor.onFrame(laneOnlyFrame(110.1));
+    return { states, offsetSeen, laneLoss: processor.snapshot().lossSeconds };
   };
 
   beforeEach(() => {
@@ -467,11 +475,17 @@ describe('pit stop estimate during tape playback', () => {
   });
 
   it('publishes an estimate and learns in memory without saving reports', async () => {
-    const { states, offsetSeen } = await runStop(true);
+    const { states, offsetSeen, laneLoss } = await runStop(true);
+    const calibrationOnly = await createEstimate(true);
+    calibrationOnly.onFrame(laneOnlyFrame(110.1));
+    const calibrationLoss = calibrationOnly.snapshot().lossSeconds;
 
     expect(mocks.pitLane).toHaveBeenCalledWith('10');
     expect(states.has('calibrating')).toBe(true);
     expect(offsetSeen).toBe(true);
+    expect(calibrationLoss).not.toBeNull();
+    expect(laneLoss).not.toBeNull();
+    expect(laneLoss).not.toBe(calibrationLoss);
     expect(mocks.appendPitStopReport).not.toHaveBeenCalled();
     expect(mocks.addTransit).not.toHaveBeenCalled();
     expect(mocks.addService).not.toHaveBeenCalled();

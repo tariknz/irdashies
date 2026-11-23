@@ -35,6 +35,8 @@ const SPREAD_SECONDS: Record<PitEstimateSource, number> = {
 export const LANE_MODEL_ALLOWANCE_SECONDS = 6;
 const GENERIC_FULL_TANK_SECONDS = 40;
 const GENERIC_FOUR_TYRE_SECONDS = 20;
+const MIN_FUELLING_LITRES = 1;
+const WHOLE_LAP_TOLERANCE_SECONDS = 1e-6;
 const DEFAULT_OVERHEAD_SPREAD_SECONDS = 1;
 const LEARNED_OVERHEAD_SPREAD_SECONDS = 0.5;
 /** Longer stops are usually repairs, with the car driven slowly; not learned. */
@@ -229,12 +231,19 @@ const lossesFrom = (
   reference: ReferenceLap | null
 ) =>
   recent(
-    samples.filter(
-      (sample) => sample.stationarySeconds <= MAX_LANE_SAMPLE_STATIONARY_SECONDS
-    )
-  )
-    .map((sample) => transitLoss(sample, reference))
-    .filter((loss): loss is number => loss !== null);
+    samples
+      .filter(
+        (sample) =>
+          sample.stationarySeconds <= MAX_LANE_SAMPLE_STATIONARY_SECONDS
+      )
+      .map((sample) => ({
+        at: sample.at,
+        loss: transitLoss(sample, reference),
+      }))
+      .filter(
+        (entry): entry is { at: number; loss: number } => entry.loss !== null
+      )
+  ).map((entry) => entry.loss);
 
 export const resolveLaneLoss = (input: LaneLossInput): Estimate | null => {
   const { file, trackId, carId, carClassId, reference } = input;
@@ -311,7 +320,7 @@ const learnedFuelRate = (samples: readonly PitServiceSample[]) =>
         (sample) =>
           sample.fuelSeconds !== null &&
           sample.fuelSeconds > 0 &&
-          sample.fuelAddedLitres > 1
+          sample.fuelAddedLitres > MIN_FUELLING_LITRES
       )
     ).map((sample) => sample.fuelAddedLitres / (sample.fuelSeconds as number))
   );
@@ -351,7 +360,14 @@ const learnedTyreSeconds = (
   overheadSeconds: number
 ) =>
   median(
-    recent(samples.filter((sample) => sample.tyresChanged === ALL_TYRES))
+    recent(
+      samples.filter(
+        (sample) =>
+          sample.tyresChanged === ALL_TYRES &&
+          (sample.fuelSeconds !== null ||
+            sample.fuelAddedLitres <= MIN_FUELLING_LITRES)
+      )
+    )
       .map((sample) => {
         const working =
           sample.stationarySeconds !== undefined
@@ -416,6 +432,7 @@ export const resolveServiceRule = (
     rule.overheadSeconds = override.overheadSeconds;
     overheadSource = 'override';
   }
+  if (override?.sequencing !== undefined) rule.sequencing = override.sequencing;
 
   const ownTyres = learnedTyreSeconds(
     own,
@@ -442,7 +459,6 @@ export const resolveServiceRule = (
     rule.fourTyreSeconds = override.fourTyreSeconds;
     tyreSource = 'override';
   }
-  if (override?.sequencing !== undefined) rule.sequencing = override.sequencing;
 
   return {
     rule,
@@ -539,8 +555,14 @@ export const rejoinOffset = (
   const total = reference ? lapSeconds(reference) : (fallbackLapSeconds ?? 0);
   if (!(total > 0) || !Number.isFinite(lossSeconds)) return null;
   const loss = Math.max(0, lossSeconds);
-  const lapsLost = Math.floor(loss / total);
-  const remainder = loss - lapsLost * total;
+  let lapsLost = Math.floor(loss / total);
+  let remainder = loss - lapsLost * total;
+  if (total - remainder <= WHOLE_LAP_TOLERANCE_SECONDS) {
+    lapsLost += 1;
+    remainder = 0;
+  }
+  if (remainder <= WHOLE_LAP_TOLERANCE_SECONDS)
+    return { offsetPct: 0, lapsLost };
 
   if (!reference) return { offsetPct: remainder / total, lapsLost };
 

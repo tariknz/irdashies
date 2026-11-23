@@ -122,6 +122,35 @@ const learnedFile = (): PitStopModelFile => {
   return file;
 };
 
+const classmatesFile = (at: number): PitStopModelFile => {
+  const file = emptyFile();
+  const [sample] = learnedFile().transit['10:20'];
+  [10, 10, 10, 20, 20].forEach((loss, index) => {
+    const carId = 22 + index;
+    file.transit[`10:${carId}`] = [
+      {
+        ...sample,
+        at: at + index,
+        carId,
+        source: 'opponent',
+        windowSeconds: 20 + loss,
+        stationarySeconds: 0,
+        referenceSeconds: 20,
+      },
+    ];
+  });
+  return file;
+};
+
+const inSubsession = (subSessionId: number) => {
+  const value = session();
+  value.WeekendInfo = {
+    ...value.WeekendInfo,
+    SubSessionID: subSessionId,
+  };
+  return value;
+};
+
 const memoryStore = (file = emptyFile()) => {
   const store: PitStopModelPersistence = {
     read: () => file,
@@ -386,6 +415,95 @@ describe('PitStopEstimateProcessor', () => {
     expect((report.mock.calls[0][0] as PitStopReport).at).toBe(5_000);
   });
 
+  describe('sample times across cars', () => {
+    const clocks: [
+      string,
+      (file: PitStopModelFile) => PitStopModelPersistence,
+      number,
+    ][] = [
+      ['seeded tape playback', (file) => memoryOverlay(memoryStore(file)), 0],
+      ['a clock set back', memoryStore, 5_000],
+    ];
+    const withClock = (store: PitStopModelPersistence, now: number) => {
+      const processor = new PitStopEstimateProcessor({
+        persistence: store,
+        referenceLaps: () => references,
+        fuel: () => undefined,
+        now: () => now,
+      });
+      processor.onLifecycle({ type: 'enter', replay: false });
+      processor.init(session());
+      return processor;
+    };
+
+    it.each(clocks)(
+      'counts a new car in the class lane loss under %s',
+      (_, storeFor, now) => {
+        const lossAfter = (opponent: (t: number) => CarState) => {
+          const store = storeFor(classmatesFile(10_000));
+          const processor = withClock(store, now);
+          drive(processor, drivingCar(0.3), opponent);
+          return { store, loss: processor.snapshot().lossSeconds ?? NaN };
+        };
+        const stopped = lossAfter(pittingCar);
+        const unchanged = lossAfter(drivingCar(0.2));
+
+        expect(stopped.store.read().transit['10:21'][0].at).toBe(10_005);
+        expect(stopped.loss - unchanged.loss).toBeCloseTo(5, 1);
+      }
+    );
+
+    it.each(clocks)(
+      'stamps the player service after other cars under %s',
+      (_, storeFor, now) => {
+        const file = learnedFile();
+        file.service['default:22'] = [{ at: 10_000 } as never];
+        const store = storeFor(file);
+        drive(withClock(store, now), pittingCar, drivingCar(0.2));
+
+        expect(store.read().service['default:20'][0].at).toBe(10_001);
+      }
+    );
+  });
+
+  it('accepts frames from the start of a new subsession', () => {
+    const store = memoryStore();
+    const processor = create(store);
+    processor.init(inSubsession(1));
+    drive(processor, drivingCar(0.3), drivingCar(0.2), 200);
+    processor.init(inSubsession(2));
+    drive(processor, drivingCar(0.3), pittingCar);
+
+    expect(store.addTransit).toHaveBeenCalledOnce();
+  });
+
+  it('keeps a stop in progress when the same subsession is published again', () => {
+    const store = memoryStore(learnedFile());
+    const processor = create(store);
+    processor.init(inSubsession(1));
+    drive(processor, pittingCar, drivingCar(0.2), 60);
+    processor.init(inSubsession(1));
+    drive(processor, pittingCar, drivingCar(0.2), 110, false, 60.1);
+
+    expect(store.addService).toHaveBeenCalledOnce();
+  });
+
+  it('hides the estimate when the session time goes back, not on a pause', () => {
+    const processor = create(memoryStore(learnedFile()));
+    const player = drivingCar(0.7);
+    const opponent = drivingCar(0.2);
+    drive(processor, player, opponent, 110, false, 100);
+    const shown = processor.snapshot();
+    expect(shown.state).toBe('ok');
+
+    processor.onFrame(frame(110, player(110), opponent(110)));
+    expect(processor.snapshot()).toBe(shown);
+
+    processor.onFrame(frame(60, player(60), opponent(60)));
+    expect(processor.snapshot().state).toBe('hidden');
+    expect(processor.snapshot().offsetPct).toBeNull();
+  });
+
   it('counts down the stop against the reference it was planned with', () => {
     const fasterLap = (): ReferenceLap => {
       const lap = referenceLap();
@@ -421,6 +539,13 @@ describe('PitStopEstimateProcessor', () => {
     expect(swapped.inStop).toBe(true);
     expect(swapped.lossSeconds).toBe(planned.lossSeconds);
     expect(swapped.offsetPct).toBe(planned.offsetPct);
+    expect(planned.aheadCarIdx ?? planned.behindCarIdx).toBe(OPPONENT);
+    expect(swapped).toMatchObject({
+      aheadCarIdx: planned.aheadCarIdx,
+      aheadGapSeconds: planned.aheadGapSeconds,
+      behindCarIdx: planned.behindCarIdx,
+      behindGapSeconds: planned.behindGapSeconds,
+    });
   });
 
   it('measures the actual gaps at the window end, back at racing speed', () => {
@@ -533,14 +658,6 @@ describe('PitStopEstimateProcessor', () => {
       });
       processor.onLifecycle({ type: 'enter', replay: false });
       return processor;
-    };
-    const inSubsession = (subSessionId: number) => {
-      const value = session();
-      value.WeekendInfo = {
-        ...value.WeekendInfo,
-        SubSessionID: subSessionId,
-      };
-      return value;
     };
     const lossAt = (processor: PitStopEstimateProcessor, t: number) => {
       drive(processor, drivingCar(0.7), drivingCar(0.2), t, false, t);

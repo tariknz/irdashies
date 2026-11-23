@@ -288,4 +288,32 @@ describe('pit exit drawing', () => {
     drawPitExitRange(ctx, marker, 0.15, flat, 6, false, scratch());
     expect(moves).toHaveLength(2);
   });
+
+  it('shades the range right up to the line before restarting after it', () => {
+    const { ctx, moves } = context();
+    drawPitExitRange(
+      ctx,
+      { ...marker, nearPct: 0.125, farPct: 0.375 },
+      0.125,
+      flat,
+      6,
+      false,
+      scratch()
+    );
+    const lines = vi.mocked(ctx.lineTo).mock.calls.map(([x]) => x);
+    expect(moves).toEqual([0.75, 0]);
+    expect(lines.at(-1)).toBe(1);
+    expect(Math.max(...lines)).toBe(1);
+  });
+
+  it('closes both sides of the line when the range crosses it mid-sample', () => {
+    const { ctx, moves } = context();
+    drawPitExitRange(ctx, marker, 0.16, flat, 6, false, scratch());
+    const lines = vi.mocked(ctx.lineTo).mock.calls.map(([x]) => x);
+    const restart = lines.indexOf(1);
+    expect(restart).toBeGreaterThan(0);
+    expect(moves).toEqual([expect.closeTo(0.86, 6), 0]);
+    expect(lines[restart + 1]).toBeGreaterThan(0);
+    expect(lines.at(-1)).toBeCloseTo(0.06, 6);
+  });
 });

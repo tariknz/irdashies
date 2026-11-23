@@ -229,7 +229,9 @@ export class PitStopDetector {
         prevSurface === TrackLocation.OnTrack ||
         prevSurface === TrackLocation.ApproachingPits ||
         prevSurface === TrackLocation.OffTrack;
-      const entryPct = this.prevPct[carIdx] >= 0 ? this.prevPct[carIdx] : pct;
+      const entryPct = Number.isFinite(this.prevTime[carIdx])
+        ? this.prevPct[carIdx]
+        : pct;
       if (approached) {
         const windowStartPct = wrap01(entryPct - frame.beforePct);
         const windowStartTime = this.timeAt(carIdx, windowStartPct);
@@ -295,7 +297,11 @@ export class PitStopDetector {
         const crossing = Number.isFinite(prevTime)
           ? prevTime + ratio * (frame.time - prevTime)
           : frame.time;
-        this.finish(carIdx, current, windowEndPct, crossing, isPlayer);
+        if (crossing - current.exitTime > MAX_EXIT_SECONDS) {
+          this.stops.delete(carIdx);
+        } else {
+          this.finish(carIdx, current, windowEndPct, crossing, isPlayer);
+        }
       } else if (frame.time - current.exitTime > MAX_EXIT_SECONDS) {
         this.stops.delete(carIdx);
       }
@@ -306,6 +312,10 @@ export class PitStopDetector {
     if (valid) {
       this.prevPct[carIdx] = pct;
       this.prevTime[carIdx] = frame.time;
+    } else if (Number.isFinite(this.prevTime[carIdx])) {
+      const base = carIdx * BUCKETS;
+      this.passed.fill(NaN, base, base + BUCKETS);
+      this.prevTime[carIdx] = NaN;
     }
   }
 
@@ -362,7 +372,9 @@ export class PitStopDetector {
     const prevTime = this.prevTime[carIdx];
     const step = prevPct >= 0 ? forwardPct(prevPct, pct) : 1;
 
-    if (step > 0 && step <= MAX_STEP_PCT && Number.isFinite(prevTime)) {
+    if (!Number.isFinite(prevTime)) {
+      this.passed[base + bucket] = time;
+    } else if (step > 0 && step <= MAX_STEP_PCT) {
       const prevBucket = Math.min(BUCKETS - 1, Math.floor(prevPct * BUCKETS));
       let b = (prevBucket + 1) % BUCKETS;
       for (let guard = 0; guard <= BUCKETS; guard++) {

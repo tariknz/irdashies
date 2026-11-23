@@ -274,6 +274,36 @@ describe('PitStopDetector', () => {
     expect(stop.taintReasons).toEqual(['approachNotSeen']);
   });
 
+  it('does not fill in an approach across a gap with no position', () => {
+    const vanishesBeforeEntry = (t: number): CarState => {
+      if (t < 35) return pittingCar(t, 20);
+      if (t < 55)
+        return { pct: -1, onPitRoad: false, surface: TrackLocation.NotInWorld };
+      return pittingCar(t - 16, 20);
+    };
+    const stop = run({ car: vanishesBeforeEntry, until: 130 }).completed[0];
+    expect(stop.taintReasons).toEqual(['approachNotSeen']);
+  });
+
+  it('gives up on an exit that reaches the window end after the deadline', () => {
+    const crawlsOut =
+      (secondsToWindowEnd: number) =>
+      (t: number): CarState =>
+        t < 90
+          ? pittingCar(t, 20)
+          : {
+              pct: 0.05 + ((t - 90) * 0.02) / secondsToWindowEnd,
+              onPitRoad: false,
+              surface: TrackLocation.OnTrack,
+            };
+    expect(run({ car: crawlsOut(90.05), until: 200 }).completed).toHaveLength(
+      0
+    );
+    expect(run({ car: crawlsOut(89.95), until: 200 }).completed).toHaveLength(
+      1
+    );
+  });
+
   it('keeps the approach when the car crosses the line just before entry', () => {
     const acrossTheLine = (t: number): CarState => {
       const state = pittingCar(t, 20);

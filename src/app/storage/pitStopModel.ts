@@ -227,20 +227,21 @@ export class PitStopModelStore implements PitStopModelPersistence {
   }
 
   private serialize(): string {
-    let payload = JSON.stringify(this.data, null, 2);
+    const data = { ...this.data };
+    let payload = JSON.stringify(data, null, 2);
     while (Buffer.byteLength(payload, 'utf8') > this.maxFileBytes) {
-      const keys = this.data.order.length;
+      const keys = data.order.length;
       if (keys === 0) {
         throw Object.assign(
           new Error('pitStopModel.json overrides exceed the size limit'),
           { code: 'EFBIG' }
         );
       }
-      prune(this.data, keys - Math.ceil(keys / 10));
+      prune(data, keys - Math.ceil(keys / 10));
       logger.warn(
-        `pitStopModel.json is near its size limit; kept the ${this.data.order.length} most recent keys`
+        `pitStopModel.json is near its size limit; kept the ${data.order.length} most recent keys`
       );
-      payload = JSON.stringify(this.data, null, 2);
+      payload = JSON.stringify(data, null, 2);
     }
     return payload;
   }

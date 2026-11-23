@@ -209,6 +209,21 @@ describe('resolveLaneLoss', () => {
     expect(resolveLaneLoss({ ...base, file })?.seconds).toBeCloseTo(17);
   });
 
+  it('keeps an older measured sample when newer ones cannot be measured yet', () => {
+    const file = emptyFile();
+    file.transit['10:20'] = [
+      transit({ at: 1, windowSeconds: 60 }),
+      ...[2, 3, 4, 5, 6].map((at) =>
+        transit({ at, windowSeconds: 70, referenceSeconds: null })
+      ),
+    ];
+    expect(resolveLaneLoss({ ...base, file, reference: null })).toMatchObject({
+      seconds: 20,
+      source: 'learnedCar',
+    });
+    expect(resolveLaneLoss({ ...base, file })?.seconds).toBeCloseTo(27);
+  });
+
   it('models the loss when nothing has been learned', () => {
     const result = resolveLaneLoss({ ...base, file: emptyFile() });
     // 750 m at 60 km/h = 45 s, minus 13.5 s on track, plus 6 s allowance.
@@ -347,6 +362,34 @@ describe('resolveServiceRule and serviceSeconds', () => {
     expect(resolved.rule.fourTyreSeconds).toBe(20);
   });
 
+  it('does not learn tyre time from a stop with fuel added but no fuel time', () => {
+    const file = emptyFile();
+    file.service['default:20'] = [
+      service({
+        at: 1,
+        fuelAddedLitres: 0,
+        fuelSeconds: null,
+        serviceSeconds: 18,
+      }),
+      service({ at: 2, fuelSeconds: null, serviceSeconds: 48 }),
+    ];
+    const resolved = resolveServiceRule({ ...base, file });
+    expect(resolved.tyreSource).toBe('learnedCar');
+    expect(resolved.rule.fourTyreSeconds).toBeCloseTo(18);
+  });
+
+  it('learns tyre time under the overridden sequencing', () => {
+    const file = emptyFile();
+    file.service['default:20'] = [
+      service({ fuelSeconds: 24, serviceSeconds: 25 }),
+    ];
+    file.overrides['default:20'] = { sequencing: 'simultaneous' };
+    const resolved = resolveServiceRule({ ...base, file });
+    expect(resolved.rule.sequencing).toBe('simultaneous');
+    expect(resolved.tyreSource).toBe('table');
+    expect(resolved.rule.fourTyreSeconds).toBe(20);
+  });
+
   it('applies hand-edited overrides last', () => {
     const file = emptyFile();
     file.service['default:20'] = [service()];
@@ -401,6 +444,16 @@ describe('rejoinOffset', () => {
     expect(result?.offsetPct).toBeCloseTo(20 / 90);
   });
 
+  it('puts the rejoin point on the player after an exact whole-lap loss', () => {
+    const lap = referenceLap(100);
+    for (const playerPct of [0.1, 0.3, 0.37, 0.55, 0.77, 0.93]) {
+      expect(rejoinOffset(playerPct, 100, lap, null)).toEqual({
+        offsetPct: 0,
+        lapsLost: 1,
+      });
+    }
+  });
+
   it('assumes even pace without a reference lap', () => {
     expect(rejoinOffset(0.5, 45, null, 90)).toEqual({
       offsetPct: 0.5,
@@ -431,14 +484,14 @@ describe('fuelStopNeeded', () => {
     expect(fuelStopNeeded(31, 10, true, laps)).toBe(false);
   });
 
-  it('ignores out laps, caution laps and invalid laps', () => {
-    const laps = [
-      lap(9, { isOutLap: true }),
-      lap(9, { isGreenFlag: false }),
-      lap(3),
-      lap(3),
-    ];
-    expect(fuelStopNeeded(31, 10, true, laps)).toBe(false);
+  it.each([
+    ['an out lap', { isOutLap: true }],
+    ['an in lap', { isInLap: true }],
+    ['a caution lap', { isGreenFlag: false }],
+    ['an invalid lap', { isValidForCalc: false }],
+  ])('does not count %s as a usable lap', (_, extra) => {
+    expect(fuelStopNeeded(31, 10, true, [lap(3), lap(3)])).toBe(false);
+    expect(fuelStopNeeded(31, 10, true, [lap(9, extra), lap(3)])).toBeNull();
   });
 
   it('is unknown without a race estimate or enough laps', () => {

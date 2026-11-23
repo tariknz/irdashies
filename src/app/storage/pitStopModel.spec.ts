@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import fsp, { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -56,6 +56,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   await store.flush();
   await rm(directory, { recursive: true, force: true });
 });
@@ -184,6 +185,30 @@ describe('PitStopModelStore', () => {
     reloaded.addTransit('40:1', transit());
     await reloaded.flush();
     expect((await readBack()).transit['40:1']).toHaveLength(1);
+  });
+
+  it('keeps every learned key in memory when a size-limited save fails', async () => {
+    const limit = 64 * 1024;
+    const sized = new PitStopModelStore(file, limit);
+    await sized.load();
+    for (let key = 0; key < 40; key++) {
+      for (let i = 0; i < MAX_SAMPLES_PER_KEY; i++) {
+        sized.addTransit(`${key}:1`, transit(i));
+      }
+    }
+    vi.spyOn(fsp, 'rename').mockRejectedValueOnce(
+      Object.assign(new Error('locked'), { code: 'EPERM' })
+    );
+    await sized.flush();
+    expect(Object.keys(sized.read().transit)).toHaveLength(40);
+    expect(sized.read().transit['0:1']).toHaveLength(MAX_SAMPLES_PER_KEY);
+
+    await sized.flush();
+    expect((await stat(file)).size).toBeLessThanOrEqual(limit);
+    expect((await readBack()).transit['39:1']).toHaveLength(
+      MAX_SAMPLES_PER_KEY
+    );
+    expect(Object.keys(sized.read().transit)).toHaveLength(40);
   });
 
   it('keeps the existing file when the overrides alone exceed the size limit', async () => {

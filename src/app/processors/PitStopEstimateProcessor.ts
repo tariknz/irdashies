@@ -111,11 +111,12 @@ const round = (value: number | null, places: number) =>
   value === null ? null : Number(value.toFixed(places));
 
 const sampleTime = (
-  samples: readonly { at: number }[] | undefined,
+  byKey: Readonly<Record<string, readonly { at: number }[]>>,
   now: number
 ) =>
-  (samples ?? []).reduce(
-    (latest, sample) => Math.max(latest, sample.at + 1),
+  Object.values(byKey).reduce(
+    (latest, samples) =>
+      samples.reduce((last, sample) => Math.max(last, sample.at + 1), latest),
     now
   );
 
@@ -194,6 +195,7 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
   private calibrationTrack = '';
   private calibrationScope = '';
   private calibrationRequest = 0;
+  private subSessionId = '';
 
   private resolvedService: ResolvedServiceRule | null = null;
   private resolvedLane: Estimate | null = null;
@@ -250,7 +252,14 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       ])
     );
     this.resolvedFor = null;
-    this.loadCalibration(String(weekend?.SubSessionID ?? ''));
+    const subSessionId = String(weekend?.SubSessionID ?? '');
+    if (subSessionId !== this.subSessionId) {
+      this.subSessionId = subSessionId;
+      this.highWaterTime = null;
+      this.rewound = false;
+      this.dropStopState();
+    }
+    this.loadCalibration(subSessionId);
   }
 
   private loadCalibration(scope: string) {
@@ -296,7 +305,13 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       this.dropStopState();
     }
     if (this.highWaterTime !== null && time <= this.highWaterTime) {
-      if (time < this.highWaterTime) this.rewound = true;
+      if (time < this.highWaterTime && !this.rewound) {
+        this.rewound = true;
+        this.lastBreakdown = null;
+        this.lastPlan = null;
+        this.lastTraffic = NO_AROUND;
+        this.publish(hiddenSnapshot(0));
+      }
       return;
     }
     if (this.rewound) {
@@ -367,20 +382,21 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
     include: Include,
     offsetPct: number | null,
     lossSeconds: number,
-    rejoinPct: number | null
+    rejoinPct: number | null,
+    reference: ReferenceLap | null,
+    fallbackLap: number | null
   ): Around {
     const player = this.cars.get(this.playerCarIdx);
     if (offsetPct === null || !player) return NO_AROUND;
 
     const clean = this.dependencies?.lapTimes?.()?.cleanLapTimeHistory ?? [];
     const cleanPace = (carIdx: number) => median(clean[carIdx] ?? []) ?? 0;
-    const reference = this.referenceFor(this.playerCarIdx);
     const playerPace =
       cleanPace(this.playerCarIdx) > 0
         ? cleanPace(this.playerCarIdx)
         : reference
           ? reference.finishTime - reference.startTime
-          : player.classEstLapSeconds;
+          : (fallbackLap ?? 0);
     const scale =
       player.classEstLapSeconds > 0
         ? playerPace / player.classEstLapSeconds
@@ -472,7 +488,7 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       const key = transitKey(this.trackId, car.carId);
       deps.persistence.addTransit(key, {
         ...context,
-        at: sampleTime(file.transit[key], now),
+        at: sampleTime(file.transit, now),
         source: isPlayer ? 'player' : 'opponent',
         pitSpeedLimitKph: this.pitSpeedLimitKph,
         entryPct: stop.entryPct,
@@ -497,7 +513,7 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       const key = serviceKey(this.ruleSet, car.carId);
       deps.persistence.addService(key, {
         ...context,
-        at: sampleTime(file.service[key], now),
+        at: sampleTime(file.service, now),
         serviceSeconds: service.serviceSeconds,
         stationarySeconds: stop.stationarySeconds,
         fuelAddedLitres: service.fuelAddedLitres,
@@ -516,7 +532,15 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
     this.pendingPrediction = null;
     if (this.isReplay()) return;
     // The car is at the window end, back to racing speed.
-    const actual = this.projectedTraffic(pcts, include, 0, 0, null);
+    const actual = this.projectedTraffic(
+      pcts,
+      include,
+      0,
+      0,
+      null,
+      this.referenceFor(this.playerCarIdx),
+      car.classEstLapSeconds > 0 ? car.classEstLapSeconds : null
+    );
     deps.report?.({
       at: now,
       seriesId: this.seriesId,
@@ -831,7 +855,9 @@ export class PitStopEstimateProcessor implements TelemetryProcessor<
       input.include,
       mid?.offsetPct ?? null,
       losses.mid,
-      input.rejoinPct
+      input.rejoinPct,
+      reference,
+      fallbackLap
     );
     this.lastTraffic = traffic;
     this.publish({
