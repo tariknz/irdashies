@@ -9,6 +9,7 @@ import type { TelemetryProcessor } from './TelemetryProcessor';
 
 const UPDATE_INTERVAL_SECONDS = 0.2;
 const TIME_EPSILON = 1e-6;
+const UNLIMITED_TIME_REMAIN = 604800;
 
 const numberValue = (frame: Telemetry, key: keyof Telemetry): number | null => {
   const value = frame[key]?.value?.[0];
@@ -37,7 +38,6 @@ export class SessionTimingProcessor implements TelemetryProcessor<SessionTimingS
   private previousLeaderLap: number | null = null;
   private greenFlagTimestamp: number | null = null;
   private checkeredLap: number | null = null;
-  private lateJoin = false;
   private enabled = true;
   private latest = this.emptySnapshot();
 
@@ -77,15 +77,12 @@ export class SessionTimingProcessor implements TelemetryProcessor<SessionTimingS
     const timeTotal = numberValue(frame, 'SessionTimeTotal') ?? 0;
     const rawTimeRemaining = numberValue(frame, 'SessionTimeRemain') ?? 0;
     const rawElapsed = timeTotal - rawTimeRemaining;
-    const isLmu =
-      typeof frame.LmuNotInSession?.value?.[0] === 'boolean';
+    const isLmu = typeof frame.LmuNotInSession?.value?.[0] === 'boolean';
     const clockElapsed =
       !isLmu &&
-      sessionType === 'Race' &&
       timeTotal > 0 &&
-      timeTotal < 604800 &&
+      timeTotal < UNLIMITED_TIME_REMAIN &&
       rawTimeRemaining > 0 &&
-      rawTimeRemaining < 604800 &&
       rawElapsed >= 0 &&
       rawElapsed <= sessionTime
         ? rawElapsed
@@ -123,15 +120,17 @@ export class SessionTimingProcessor implements TelemetryProcessor<SessionTimingS
     const timeRemaining =
       sessionType === 'Race' &&
       state === SessionState.GetInCar &&
-      rawTimeRemaining >= 604800 &&
-      timeTotal >= 604800
+      rawTimeRemaining >= UNLIMITED_TIME_REMAIN &&
+      timeTotal >= UNLIMITED_TIME_REMAIN
         ? -1
         : rawTimeRemaining;
     const totalLaps =
       typeof sessionInfo?.SessionLaps === 'number'
         ? sessionInfo.SessionLaps
         : 0;
-    const fixedLapRace = !(timeRemaining > 0 && timeRemaining !== 604800);
+    const fixedLapRace = !(
+      timeRemaining > 0 && timeRemaining !== UNLIMITED_TIME_REMAIN
+    );
     const displayLap =
       state >= SessionState.Checkered
         ? (this.checkeredLap ?? currentLap)
@@ -182,6 +181,11 @@ export class SessionTimingProcessor implements TelemetryProcessor<SessionTimingS
     return this.latest;
   }
 
+  pause(): void {
+    this.previousSessionState = null;
+    this.previousLeaderLap = null;
+  }
+
   private focusCarIdx(frame: Telemetry): number | null {
     const cameraCarIdx = numberValue(frame, 'CamCarIdx');
     return cameraCarIdx !== null && cameraCarIdx >= 0
@@ -198,38 +202,27 @@ export class SessionTimingProcessor implements TelemetryProcessor<SessionTimingS
     clockElapsed: number | null
   ): void {
     if (
-      sessionType === 'Race' &&
-      this.greenFlagTimestamp === null &&
-      state === SessionState.Racing
+      sessionType !== 'Race' ||
+      this.greenFlagTimestamp !== null ||
+      state !== SessionState.Racing
     ) {
-      if (
-        this.previousSessionState !== null &&
-        this.previousSessionState < SessionState.Racing
-      ) {
-        this.greenFlagTimestamp = sessionTime;
-        this.lateJoin = false;
-      } else if (this.previousSessionState === null) {
-        this.lateJoin = true;
-      }
+      return;
     }
     if (
-      this.lateJoin &&
-      sessionType === 'Race' &&
-      state === SessionState.Racing
+      this.previousSessionState !== null &&
+      this.previousSessionState < SessionState.Racing
     ) {
-      if (clockElapsed !== null && clockElapsed >= 0) {
-        this.greenFlagTimestamp = sessionTime - clockElapsed;
-        this.lateJoin = false;
-      } else if (
-        this.previousLeaderLap !== null &&
-        leaderLap > this.previousLeaderLap &&
-        leaderLap > 0
-      ) {
-        const averageLapTime = this.averageLapTime(leaderCarIdx);
-        if (averageLapTime > 0) {
-          this.greenFlagTimestamp = sessionTime - leaderLap * averageLapTime;
-          this.lateJoin = false;
-        }
+      this.greenFlagTimestamp = sessionTime;
+    } else if (clockElapsed !== null) {
+      this.greenFlagTimestamp = sessionTime - clockElapsed;
+    } else if (
+      this.previousLeaderLap !== null &&
+      leaderLap > this.previousLeaderLap &&
+      leaderLap > 0
+    ) {
+      const averageLapTime = this.averageLapTime(leaderCarIdx);
+      if (averageLapTime > 0) {
+        this.greenFlagTimestamp = sessionTime - leaderLap * averageLapTime;
       }
     }
   }
@@ -313,7 +306,6 @@ export class SessionTimingProcessor implements TelemetryProcessor<SessionTimingS
     this.previousLeaderLap = null;
     this.greenFlagTimestamp = null;
     this.checkeredLap = null;
-    this.lateJoin = false;
     this.latest = { ...this.emptySnapshot(), sessionNum, version };
   }
 

@@ -175,25 +175,29 @@ describe('OverlayManager running state', () => {
 
   it('replays only profile switches that are still in progress', () => {
     const manager = new OverlayManager();
-    expect(manager.getLatestProfileTransition()).toBeUndefined();
+    const send = vi.fn();
+    const sender = { send, isDestroyed: () => false };
+    const sendState = () =>
+      manager.sendOverlayState(sender as unknown as Electron.WebContents);
 
-    manager.publishMessage('profileTransition', {
-      hidden: true,
-      name: 'Broadcast',
-    });
+    sendState();
+    expect(send).toHaveBeenCalledTimes(1);
 
-    expect(manager.getLatestProfileTransition()).toEqual({
-      hidden: true,
-      name: 'Broadcast',
-    });
+    const pending = { hidden: true, name: 'Broadcast' };
+    manager.publishProfileTransition(pending);
+    send.mockClear();
+    sendState();
+    expect(send).toHaveBeenNthCalledWith(1, 'profileTransition', pending);
 
-    manager.publishMessage('profileTransition', {
+    manager.publishProfileTransition({
       hidden: false,
       name: 'Broadcast',
       showBanner: true,
     });
-
-    expect(manager.getLatestProfileTransition()).toBeUndefined();
+    send.mockClear();
+    sendState();
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send).toHaveBeenCalledWith('editModeToggled', expect.any(Boolean));
   });
 
   it('answers that nothing is running once the simulator has gone', () => {

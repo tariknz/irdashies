@@ -131,6 +131,21 @@ describe('SessionTimingProcessor', () => {
     expect(processor.snapshot().greenFlagTimestamp).toBe(10);
   });
 
+  it('recovers a missed green flag and keeps it across later pauses', () => {
+    const processor = new SessionTimingProcessor();
+    processor.init(session);
+    processor.onFrame(
+      frame({ SessionTime: 10, SessionState: SessionState.Warmup })
+    );
+    processor.pause();
+    processor.onFrame(frame({ SessionTime: 312, SessionTimeRemain: 300 }));
+    expect(processor.snapshot().greenFlagTimestamp).toBe(12);
+
+    processor.pause();
+    processor.onFrame(frame({ SessionTime: 412, SessionTimeRemain: 190 }));
+    expect(processor.snapshot().greenFlagTimestamp).toBe(12);
+  });
+
   it('uses the leader-lap fallback instead of the clock on LMU frames', () => {
     const processor = new SessionTimingProcessor(() => [0, 0]);
     processor.init(session);

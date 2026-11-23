@@ -101,13 +101,12 @@ export const createProcessorDefinitions = ({
     channel: 'lap-times.snapshot',
     // Gantry's last-lap columns need the history built while it was minimised.
     processWhileHidden: true,
-    retainWhenInactive: true,
+    processWhileUnsubscribed: true,
     metricsPrefix: 'lapTimes',
     create: () => new LapTimesProcessor(),
   }),
   defineProcessor({
     channel: 'car-speeds.snapshot',
-    retainWhenInactive: true,
     metricsPrefix: 'carSpeeds',
     create: () => new CarSpeedsProcessor(),
   }),
@@ -133,7 +132,6 @@ export const createProcessorDefinitions = ({
   }),
   defineProcessor({
     channel: 'sector-timing.snapshot',
-    retainWhenInactive: true,
     metricsPrefix: 'sectorTiming',
     create: () => new SectorTimingProcessor(),
   }),
@@ -142,7 +140,7 @@ export const createProcessorDefinitions = ({
     metricsPrefix: 'standings',
     // Retain finish crossings when subscribed overlays are temporarily hidden.
     processWhileHidden: true,
-    retainWhenInactive: true,
+    processWhileUnsubscribed: true,
     create: () => new StandingsProcessor(),
   }),
   defineProcessor({
@@ -167,7 +165,6 @@ export const createProcessorDefinitions = ({
   }),
   defineProcessor({
     channel: 'session-bar.snapshot',
-    retainWhenInactive: true,
     metricsPrefix: 'sessionBar',
     create: () => new SessionBarProcessor(),
   }),
@@ -193,7 +190,6 @@ export const createProcessorDefinitions = ({
   }),
   defineProcessor({
     channel: 'lap-log.snapshot',
-    retainWhenInactive: true,
     metricsPrefix: 'lapLog',
     create: () => new LapLogProcessor(),
   }),
@@ -201,7 +197,7 @@ export const createProcessorDefinitions = ({
     channel: 'race-plan.progress',
     // Stint history is built over the whole race, so a minimised Gantry keeps it.
     processWhileHidden: true,
-    retainWhenInactive: true,
+    processWhileUnsubscribed: true,
     metricsPrefix: 'racePlanProgress',
     create: ({ aggregateReplay, sourceReplay }) =>
       new RacePlanProgressProcessor({

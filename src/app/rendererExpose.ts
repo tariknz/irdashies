@@ -4,6 +4,8 @@ import type {
   LogLevel,
   PitLaneBridge,
   PitLaneTrackData,
+  ProfileSwitchBridge,
+  ProfileTransition,
 } from '@irdashies/types';
 import { defineBridge } from './bridge/defineBridge';
 
@@ -49,40 +51,19 @@ export function exposeInMainWorld() {
     },
   });
 
-  contextBridge.exposeInMainWorld('profileSwitch', {
-    onTransition: (
-      cb: (data: {
-        hidden: boolean;
-        name: string;
-        showBanner?: boolean;
-      }) => void
-    ) => {
-      let active = true;
-      let seen = false;
+  let pendingTransition: ProfileTransition | undefined;
+  ipcRenderer.on('profileTransition', (_event, data: ProfileTransition) => {
+    pendingTransition = data.hidden ? data : undefined;
+  });
+  defineBridge<ProfileSwitchBridge>('profileSwitch', {
+    onTransition: (cb) => {
       const listener = (
         _: Electron.IpcRendererEvent,
-        data: { hidden: boolean; name: string; showBanner?: boolean }
-      ) => {
-        seen = true;
-        cb(data);
-      };
+        data: ProfileTransition
+      ) => cb(data);
       ipcRenderer.on('profileTransition', listener);
-      ipcRenderer
-        .invoke('profileTransition:getCurrent')
-        .then(
-          (
-            data:
-              | { hidden: boolean; name: string; showBanner?: boolean }
-              | undefined
-          ) => {
-            if (data && active && !seen) cb(data);
-          }
-        )
-        .catch(() => undefined);
-      return () => {
-        active = false;
-        ipcRenderer.removeListener('profileTransition', listener);
-      };
+      if (pendingTransition) cb(pendingTransition);
+      return () => ipcRenderer.removeListener('profileTransition', listener);
     },
   });
 

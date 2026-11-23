@@ -9,6 +9,7 @@ export const standingsSelectors = {
   carIdxLap: (snapshot: StandingsSnapshot) => snapshot.carIdxLap,
   carIdxLapDistPct: (snapshot: StandingsSnapshot) => snapshot.carIdxLapDistPct,
   sessionNum: (snapshot: StandingsSnapshot) => snapshot.sessionNum,
+  firstObservedLap: (snapshot: StandingsSnapshot) => snapshot.firstObservedLap,
 } as const;
 
 export const useStandingsSelector = <Selected>(

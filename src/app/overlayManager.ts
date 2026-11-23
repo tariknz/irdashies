@@ -10,6 +10,7 @@ import type {
   DashboardWidget,
   ContainerBoundsInfo,
   GantryConfig,
+  ProfileTransition,
 } from '@irdashies/types';
 import {
   fitLayoutToDisplay,
@@ -168,11 +169,7 @@ export class OverlayManager {
   private onWindowReadyCallbacks = new Set<(windowId: string) => void>();
   private rendererDataSubscriptions?: RendererDataSubscriptions;
   private latestSessionData: unknown;
-  private latestProfileTransition?: {
-    hidden: boolean;
-    name: string;
-    showBanner?: boolean;
-  };
+  private latestProfileTransition?: ProfileTransition;
   private displayChangeTimer?: ReturnType<typeof setTimeout>;
   private watchingDisplays = false;
   /**
@@ -621,6 +618,9 @@ export class OverlayManager {
   /** Seed state after a renderer mounts, including windows rebuilt in edit mode. */
   public sendOverlayState(sender: Electron.WebContents): void {
     if (sender.isDestroyed()) return;
+    if (this.latestProfileTransition) {
+      sender.send('profileTransition', this.latestProfileTransition);
+    }
     sender.send('editModeToggled', !this.isLocked);
     for (const [id, win] of this.displayWindows) {
       if (win.isDestroyed() || win.webContents.id !== sender.id) continue;
@@ -904,14 +904,6 @@ export class OverlayManager {
   public publishMessage(key: string, value: unknown, ...args: unknown[]): void {
     if (key === 'sessionData') this.latestSessionData = value;
     if (key === 'runningState') this.latestRunningState = Boolean(value);
-    if (key === 'profileTransition') {
-      const transition = value as {
-        hidden: boolean;
-        name: string;
-        showBanner?: boolean;
-      };
-      this.latestProfileTransition = transition.hidden ? transition : undefined;
-    }
 
     // Send to all display overlay windows
     for (const win of this.displayWindows.values()) {
@@ -971,8 +963,9 @@ export class OverlayManager {
     return this.latestRunningState;
   }
 
-  public getLatestProfileTransition() {
-    return this.latestProfileTransition;
+  public publishProfileTransition(transition: ProfileTransition): void {
+    this.latestProfileTransition = transition.hidden ? transition : undefined;
+    this.publishMessage('profileTransition', transition);
   }
 
   /**

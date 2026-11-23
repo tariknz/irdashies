@@ -12,7 +12,6 @@ const selectPitLapTelemetry = (snapshot: StandingsSnapshot) =>
     Math.floor(snapshot.sessionTime),
     snapshot.carIdxTrackSurface,
     snapshot.sessionState,
-    snapshot.firstObservedLap,
     snapshot.lastPitLap,
   ] as const;
 
@@ -26,8 +25,7 @@ const pitLapTelemetryEqual = (
   previous[3] === next[3] &&
   shallow(previous[4], next[4]) &&
   previous[5] === next[5] &&
-  shallow(previous[6], next[6]) &&
-  shallow(previous[7], next[7]);
+  shallow(previous[6], next[6]);
 
 export const usePitLapStoreUpdater = (enabled: boolean) => {
   const telemetry = useStandingsSelector(selectPitLapTelemetry, {

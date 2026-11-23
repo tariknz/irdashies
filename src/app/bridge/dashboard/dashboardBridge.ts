@@ -317,11 +317,11 @@ export async function publishDashboardUpdates(
     const showBanner = getShowProfileBannerStorage();
     const HIDE_MS = 120; // let the renderer hide before we resize
     const SETTLE_MS = 80; // let the new layout settle before revealing
-    overlayManager.publishMessage('profileTransition', { hidden: true, name });
+    overlayManager.publishProfileTransition({ hidden: true, name });
     hideTimer = setTimeout(() => {
       applyDashboard(merged, profileId, saveId);
       settleTimer = setTimeout(() => {
-        overlayManager.publishMessage('profileTransition', {
+        overlayManager.publishProfileTransition({
           hidden: false,
           name,
           showBanner,
@@ -510,10 +510,6 @@ export async function publishDashboardUpdates(
     // destroy/recreate, so the switch is near-instant.
     setCurrentProfile(profileId);
   });
-
-  ipcMain.handle('profileTransition:getCurrent', () =>
-    overlayManager.getLatestProfileTransition()
-  );
 
   ipcMain.handle('getCurrentProfile', () => {
     const currentProfileId = getCurrentProfileId();

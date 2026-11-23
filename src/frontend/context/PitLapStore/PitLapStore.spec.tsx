@@ -17,7 +17,6 @@ describe('PitLapStore', () => {
       pitExitTime: [],
       prevOnPitRoad: [],
       entryLap: [],
-      firstObservedLap: [],
     });
   });
 
@@ -58,41 +57,6 @@ describe('PitLapStore', () => {
     expect(state.sessionTime).toBe(sessionTime);
   });
 
-  it('should record the lap each car was first observed on', () => {
-    usePitLapStore
-      .getState()
-      .updatePitLaps(
-        [false, false, false],
-        [0, 14, -1],
-        123,
-        100,
-        [3, 3, -1],
-        SessionState.Racing
-      );
-
-    const state = usePitLapStore.getState();
-    expect(state.firstObservedLap[0]).toBe(0);
-    expect(state.firstObservedLap[1]).toBe(14);
-    // Car not in the world (lap -1) is not recorded yet
-    expect(state.firstObservedLap[2]).toBeUndefined();
-  });
-
-  it('seeds first observed laps from the channel after a window reload', () => {
-    usePitLapStore
-      .getState()
-      .updatePitLaps(
-        [false, false],
-        [42, 42],
-        123,
-        900,
-        [3, 3],
-        SessionState.Racing,
-        [1, undefined]
-      );
-
-    expect(usePitLapStore.getState().firstObservedLap).toEqual([1, 42]);
-  });
-
   it('seeds last pit laps from the channel but keeps live pit entries', () => {
     usePitLapStore
       .getState()
@@ -103,7 +67,6 @@ describe('PitLapStore', () => {
         900,
         [3, 3],
         SessionState.Racing,
-        [1, 2],
         [4, 5]
       );
 
@@ -130,36 +93,10 @@ describe('PitLapStore', () => {
         901,
         [3, 3],
         SessionState.Racing,
-        undefined,
-        [12, 11]
+        [11, 11]
       );
 
-    expect(usePitLapStore.getState().pitLaps).toEqual([12, 12]);
-  });
-
-  it('should not overwrite the first observed lap on later updates', () => {
-    usePitLapStore
-      .getState()
-      .updatePitLaps([false], [3], 123, 100, [3], SessionState.Racing);
-    usePitLapStore
-      .getState()
-      .updatePitLaps([false], [8], 123, 110, [3], SessionState.Racing);
-
-    expect(usePitLapStore.getState().firstObservedLap[0]).toBe(3);
-  });
-
-  it('should reset first observed lap when session changes', () => {
-    usePitLapStore.setState({
-      sessionUniqId: 100,
-      sessionTime: 50,
-      firstObservedLap: [1, 2, 3],
-    });
-
-    usePitLapStore
-      .getState()
-      .updatePitLaps([false], [0], 200, 0, [0], SessionState.Racing);
-
-    expect(usePitLapStore.getState().firstObservedLap).toEqual([]);
+    expect(usePitLapStore.getState().pitLaps).toEqual([11, 12]);
   });
 
   it('should reset store when session changes', () => {

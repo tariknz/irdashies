@@ -65,7 +65,10 @@ describe('processor registry', () => {
     });
     const retained = new Set(
       definitions
-        .filter(({ retainWhenInactive }) => retainWhenInactive)
+        .filter(
+          ({ retainWhenInactive, processWhileUnsubscribed }) =>
+            retainWhenInactive || processWhileUnsubscribed
+        )
         .map(({ channel }) => channel)
     );
 
@@ -75,10 +78,6 @@ describe('processor registry', () => {
       'session-timing.snapshot',
       'race-plan.progress',
       'fuel.projection',
-      'car-speeds.snapshot',
-      'sector-timing.snapshot',
-      'session-bar.snapshot',
-      'lap-log.snapshot',
     ]) {
       expect(retained).toContain(channel);
     }

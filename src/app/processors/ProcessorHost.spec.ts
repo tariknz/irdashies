@@ -7,6 +7,7 @@ import type {
 } from '@irdashies/types';
 import { CHANNEL_DELIVERY, ChannelBus } from '../bridge/channelBridge';
 import { createSessionLifecycle } from '../sessionLifecycle';
+import { StandingsProcessor } from './StandingsProcessor';
 import type { TelemetryProcessor } from './TelemetryProcessor';
 import {
   iracingFrameClock,
@@ -354,11 +355,15 @@ describe('ProcessorHost', () => {
       metrics: metrics(),
       definitions: [
         definition('reference-laps.snapshot', create, undefined, true),
+        definition('standings.snapshot', () =>
+          fakeProcessor('standings.snapshot', 'event')
+        ),
       ],
     });
     host.onFrame({} as Telemetry);
 
     bus.unsubscribe(firstRenderer.id, 'reference-laps.snapshot');
+    bus.subscribe(target(14), 'standings.snapshot');
     host.onFrame({} as Telemetry);
     const secondRenderer = target(13);
     bus.subscribe(secondRenderer, 'reference-laps.snapshot');
@@ -366,6 +371,46 @@ describe('ProcessorHost', () => {
     expect(pause).toHaveBeenCalledOnce();
     expect(create).toHaveBeenCalledOnce();
     expect(secondRenderer.send).toHaveBeenCalledOnce();
+  });
+
+  it('records a pit stop completed entirely while no overlay subscribes', () => {
+    const bus = new ChannelBus();
+    const lifecycle = createSessionLifecycle();
+    const first = target(1);
+    bus.subscribe(first, 'standings.snapshot');
+    const host = new ProcessorHost({
+      bus,
+      lifecycle,
+      metrics: metrics(),
+      definitions: [
+        {
+          ...definition('standings.snapshot', () => new StandingsProcessor()),
+          processWhileUnsubscribed: true,
+        },
+      ],
+    });
+    const feed = (time: number, lap: number, onPitRoad: boolean) =>
+      host.onFrame({
+        SessionTime: { value: [time] },
+        CarIdxLap: { value: [lap] },
+        CarIdxOnPitRoad: { value: [onPitRoad] },
+        CarIdxTrackSurface: { value: [onPitRoad ? 1 : 3] },
+      } as unknown as Telemetry);
+    feed(10, 1, false);
+    bus.unsubscribe(first.id, 'standings.snapshot');
+    feed(1200, 12, true);
+    feed(1300, 13, false);
+    const second = target(2);
+    bus.subscribe(second, 'standings.snapshot');
+    expect(second.send.mock.calls[0]?.[2]).toMatchObject({
+      carIdxLap: [13],
+      lastPitLap: [12],
+      firstObservedLap: [1],
+    });
+
+    bus.unsubscribe(second.id, 'standings.snapshot');
+    lifecycle._onDisconnect();
+    expect(host.snapshot('standings.snapshot')).toBeUndefined();
   });
 
   it('disposes a processor it drops for lack of subscribers', () => {

@@ -62,7 +62,6 @@ export const useDriverPositions = () => {
   const prevCarTrackSurface =
     snapshot?.previousCarTrackSurface ?? EMPTY_OPTIONAL_NUMBERS;
   const lastPitLap = snapshot?.lastPitLap ?? EMPTY_OPTIONAL_NUMBERS;
-  const lastLap = carIdxLapNum;
   const carIdxLapDstPct = snapshot?.carIdxLapDistPct ?? EMPTY_NUMBERS;
 
   const positions = useMemo(() => {
@@ -73,7 +72,7 @@ export const useDriverPositions = () => {
         classPosition: carIdxClassPosition[carIdx],
         delta: carIdxF2Time[carIdx], // only to leader currently, need to handle non-race sessions
         bestLap: carIdxBestLap[carIdx],
-        lastLap: lastLap[carIdx] ?? -1,
+        lastLap: carIdxLapNum[carIdx] ?? -1,
         lastLapTime: carIdxLastLapTime[carIdx] ?? -1,
         lapNum: carIdxLapNum[carIdx],
         lapDstPct: carIdxLapDstPct[carIdx] ?? 0,
@@ -87,7 +86,6 @@ export const useDriverPositions = () => {
     carIdxClassPosition,
     carIdxBestLap,
     carIdxLastLapTime,
-    lastLap,
     carIdxF2Time,
     carIdxLapNum,
     carIdxLapDstPct,

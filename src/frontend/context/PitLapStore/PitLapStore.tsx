@@ -15,7 +15,6 @@ interface PitLapState {
   pitExitTime: (number | null)[]; // [carIdx]
   prevOnPitRoad: boolean[]; // [carIdx]
   entryLap: number[]; // [carIdx]
-  firstObservedLap: number[]; // [carIdx] — CarIdxLap when this car was first seen
   updatePitLaps: (
     carIdxOnPitRoad: boolean[],
     carIdxLap: number[],
@@ -23,7 +22,6 @@ interface PitLapState {
     currentSessionTime: number,
     carIdxTrackSurface: number[],
     sessionState: number,
-    observedLapsFromSnapshot?: readonly (number | undefined)[],
     lastPitLapsFromSnapshot?: readonly (number | undefined)[]
   ) => void;
   reset: () => void;
@@ -41,7 +39,6 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
   pitExitTime: [],
   prevOnPitRoad: [],
   entryLap: [],
-  firstObservedLap: [],
   updatePitLaps: (
     carIdxOnPitRoad,
     carIdxLap,
@@ -49,7 +46,6 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
     currentSessionTime,
     carIdxTrackSurface,
     sessionState,
-    observedLapsFromSnapshot,
     lastPitLapsFromSnapshot
   ) => {
     const {
@@ -62,7 +58,6 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
       pitExitTime,
       prevOnPitRoad,
       entryLap,
-      firstObservedLap,
     } = get();
 
     // reset store when session was changed
@@ -80,7 +75,6 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
         pitExitTime: [],
         prevOnPitRoad: [],
         entryLap: [],
-        firstObservedLap: [],
         sessionTime: currentSessionTime,
         sessionState: sessionState,
       });
@@ -93,8 +87,7 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
     let updatedPitExitTime: (number | null)[] | null = null;
     let updatedPrevOnPitRoad: boolean[] | null = null;
     let updatedEntryLap: number[] | null = null;
-    let updatedFirstObservedLap: number[] | null = null;
-    let pitLapsChanged = false;
+    let updatedPitLaps: number[] | null = null;
 
     carIdxOnPitRoad.forEach((onPitRoad, idx) => {
       const wasOnPitRoad = prevOnPitRoad[idx] ?? false;
@@ -112,30 +105,15 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
       // swap is invisible to the entry/exit edge detection below.
       if (trackSurface <= TrackLocation.NotInWorld) return;
 
-      // Record the lap on which we first observed each car. Used to tell whether
-      // we've watched a car since its session start — if so, its first-stint lap
-      // equals the total session lap even without an observed pit stop.
-      const observedLapFromSnapshot = observedLapsFromSnapshot?.[idx];
-      if (
-        firstObservedLap[idx] === undefined &&
-        (observedLapFromSnapshot !== undefined || currentLap >= 0)
-      ) {
-        if (!updatedFirstObservedLap)
-          updatedFirstObservedLap = [...firstObservedLap];
-        updatedFirstObservedLap[idx] =
-          observedLapFromSnapshot ?? currentLap;
-      }
-
       const lastPitLapFromSnapshot = lastPitLapsFromSnapshot?.[idx];
-      if (onPitRoad && pitLaps[idx] !== currentLap) {
-        pitLaps[idx] = currentLap;
-        pitLapsChanged = true;
-      } else if (
-        lastPitLapFromSnapshot !== undefined &&
-        (pitLaps[idx] === undefined || lastPitLapFromSnapshot > pitLaps[idx])
+      const lastPitLap = onPitRoad ? currentLap : lastPitLapFromSnapshot;
+      if (
+        lastPitLap !== undefined &&
+        lastPitLap !== pitLaps[idx] &&
+        (onPitRoad || pitLaps[idx] === undefined || lastPitLap > pitLaps[idx])
       ) {
-        pitLaps[idx] = lastPitLapFromSnapshot;
-        pitLapsChanged = true;
+        updatedPitLaps ??= [...pitLaps];
+        updatedPitLaps[idx] = lastPitLap;
       }
 
       if (!wasOnPitRoad && onPitRoad) {
@@ -207,12 +185,11 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
     const sessionUniqIdChanged = sessionUniqId !== currentSessionUniqId;
 
     const anythingChanged =
-      pitLapsChanged ||
+      updatedPitLaps !== null ||
       updatedPitEntryTime !== null ||
       updatedPitExitTime !== null ||
       updatedPrevOnPitRoad !== null ||
       updatedEntryLap !== null ||
-      updatedFirstObservedLap !== null ||
       updatedPrevCarTrackSurface !== null ||
       updatedActualCarTrackSurface !== null ||
       carLapsChanged ||
@@ -223,9 +200,7 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
     if (!anythingChanged) return;
 
     set({
-      // pitLaps is mutated in place above when a car is on pit road; create a new
-      // reference so subscribers using arrayCompare can detect the change.
-      pitLaps: pitLapsChanged ? [...pitLaps] : pitLaps,
+      pitLaps: updatedPitLaps ?? pitLaps,
       carLaps: carIdxLap,
       prevCarTrackSurface: updatedPrevCarTrackSurface ?? prevCarTrackSurface,
       actualCarTrackSurface:
@@ -234,7 +209,6 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
       pitExitTime: updatedPitExitTime ?? pitExitTime,
       prevOnPitRoad: updatedPrevOnPitRoad ?? prevOnPitRoad,
       entryLap: updatedEntryLap ?? entryLap,
-      firstObservedLap: updatedFirstObservedLap ?? firstObservedLap,
       sessionTime: currentSessionTime,
       sessionState: sessionState,
       sessionUniqId: currentSessionUniqId,
@@ -253,7 +227,6 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
       pitExitTime: [],
       prevOnPitRoad: [],
       entryLap: [],
-      firstObservedLap: [],
     });
   },
 }));
@@ -303,18 +276,6 @@ export const usePrevCarTrackSurface = (): number[] =>
   useStoreWithEqualityFn(
     usePitLapStore,
     (state) => state.prevCarTrackSurface,
-    arrayCompare
-  );
-
-/**
- * @returns An array of the CarIdxLap value at which each car was first observed
- * by the overlay, indexed by carIdx. Used to determine whether the overlay has
- * watched a car since its session start (and therefore knows its true stint lap).
- */
-export const useFirstObservedLap = (): number[] =>
-  useStoreWithEqualityFn(
-    usePitLapStore,
-    (state) => state.firstObservedLap,
     arrayCompare
   );
 

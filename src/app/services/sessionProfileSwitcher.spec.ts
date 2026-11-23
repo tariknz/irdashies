@@ -273,10 +273,12 @@ describe('sessionProfileSwitcher', () => {
     });
 
     it('leaves a manual profile choice alone while the dwell is pending', () => {
-      const { emitSessionType, emitDriving, switchProfile, setProfile } = setup({
-        race: 'race',
-        spotting: 'spotter',
-      });
+      const { emitSessionType, emitDriving, switchProfile, setProfile } = setup(
+        {
+          race: 'race',
+          spotting: 'spotter',
+        }
+      );
       emitSessionType('Race');
       emitDriving(false);
       switchProfile.mockClear();
@@ -287,11 +289,13 @@ describe('sessionProfileSwitcher', () => {
       expect(switchProfile).not.toHaveBeenCalled();
     });
 
-    it('does not revert a manual choice made after spotting applied', () => {
-      const { emitSessionType, emitDriving, switchProfile, setProfile } = setup({
-        race: 'race',
-        spotting: 'spotter',
-      });
+    it('returns to the race profile on driving after a manual spotting override', () => {
+      const { emitSessionType, emitDriving, switchProfile, setProfile } = setup(
+        {
+          race: 'race',
+          spotting: 'spotter',
+        }
+      );
       emitSessionType('Race');
       emitDriving(false);
       vi.advanceTimersByTime(SPOTTING_DWELL_MS);
@@ -300,7 +304,7 @@ describe('sessionProfileSwitcher', () => {
       setProfile('broadcast');
       emitDriving(true);
 
-      expect(switchProfile).not.toHaveBeenCalled();
+      expect(switchProfile).toHaveBeenCalledWith('race');
     });
 
     it('hands back to the session profile as soon as the player drives', () => {

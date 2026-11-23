@@ -157,15 +157,12 @@ export const createSessionProfileSwitcher = (
     spotting = false;
   });
 
-  const unsubscribeProfileChange =
-    deps.onProfileChange?.(() => {
-      const profileId = deps.getCurrentProfileId();
-      if (profileId === lastProfileId) return;
-      lastProfileId = profileId;
-      if (applying) return;
-      clearDwell();
-      spotting = false;
-    }) ?? (() => undefined);
+  const unsubscribeProfileChange = deps.onProfileChange?.(() => {
+    const profileId = deps.getCurrentProfileId();
+    if (profileId === lastProfileId) return;
+    lastProfileId = profileId;
+    if (!applying) clearDwell();
+  });
 
   // Seeded after subscribing, because the lifecycle reports transitions and
   // never replays them. The SDK starts publishing at iRacingSDKSetup and
@@ -190,7 +187,7 @@ export const createSessionProfileSwitcher = (
       unsubscribeType();
       unsubscribeDriving();
       unsubscribeDisconnect();
-      unsubscribeProfileChange();
+      unsubscribeProfileChange?.();
     },
   };
 };

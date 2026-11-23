@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => ({
   publish: vi.fn(),
   closeOrCreate: vi.fn(),
   sendState: vi.fn(),
-  getProfileTransition: vi.fn(),
   dashboards: {} as Record<string, DashboardLayout>,
 }));
 
@@ -83,9 +82,9 @@ beforeAll(async () => {
     {
       closeOrCreateWindows: mocks.closeOrCreate,
       publishMessage: mocks.publish,
+      publishProfileTransition: vi.fn(),
       sendOverlayState: mocks.sendState,
       forceRefreshOverlays: mocks.refresh,
-      getLatestProfileTransition: mocks.getProfileTransition,
     } as unknown as OverlayManager,
     {} as Analytics
   );
@@ -117,17 +116,6 @@ describe('dashboard save callbacks', () => {
       'settings:1'
     );
     unsubscribe?.();
-  });
-});
-
-describe('profile transition replay', () => {
-  it('answers with the last visibility broadcast', () => {
-    const transition = { hidden: true, name: 'Broadcast' };
-    mocks.getProfileTransition.mockReturnValue(transition);
-
-    expect(mocks.handlers.get('profileTransition:getCurrent')?.()).toBe(
-      transition
-    );
   });
 });
 
