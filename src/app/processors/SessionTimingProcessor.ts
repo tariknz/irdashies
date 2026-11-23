@@ -74,6 +74,16 @@ export class SessionTimingProcessor implements TelemetryProcessor<SessionTimingS
       (entry) => entry.SessionNum === sessionNum
     );
     const sessionType = sessionInfo?.SessionType;
+    const timeTotal = numberValue(frame, 'SessionTimeTotal') ?? 0;
+    const rawTimeRemaining = numberValue(frame, 'SessionTimeRemain') ?? 0;
+    const clockElapsed =
+      sessionType === 'Race' &&
+      timeTotal > 0 &&
+      timeTotal < 604800 &&
+      rawTimeRemaining > 0 &&
+      rawTimeRemaining < 604800
+        ? Math.min(timeTotal - rawTimeRemaining, sessionTime)
+        : null;
     const laps = numberArray(frame, 'CarIdxLap');
     const positions = numberArray(frame, 'CarIdxPosition');
     const lapDistPcts = numberArray(frame, 'CarIdxLapDistPct');
@@ -93,7 +103,8 @@ export class SessionTimingProcessor implements TelemetryProcessor<SessionTimingS
       state,
       sessionTime,
       leaderCarIdx,
-      leaderLap
+      leaderLap,
+      clockElapsed
     );
     if (state >= SessionState.Checkered) {
       if (this.checkeredLap === null && currentLap > 0) {
@@ -103,8 +114,6 @@ export class SessionTimingProcessor implements TelemetryProcessor<SessionTimingS
       this.checkeredLap = null;
     }
 
-    const timeTotal = numberValue(frame, 'SessionTimeTotal') ?? 0;
-    const rawTimeRemaining = numberValue(frame, 'SessionTimeRemain') ?? 0;
     const timeRemaining =
       sessionType === 'Race' &&
       state === SessionState.GetInCar &&
@@ -179,7 +188,8 @@ export class SessionTimingProcessor implements TelemetryProcessor<SessionTimingS
     state: number,
     sessionTime: number,
     leaderCarIdx: number,
-    leaderLap: number
+    leaderLap: number,
+    clockElapsed: number | null
   ): void {
     if (
       sessionType === 'Race' &&
@@ -199,15 +209,21 @@ export class SessionTimingProcessor implements TelemetryProcessor<SessionTimingS
     if (
       this.lateJoin &&
       sessionType === 'Race' &&
-      state === SessionState.Racing &&
-      this.previousLeaderLap !== null &&
-      leaderLap > this.previousLeaderLap &&
-      leaderLap > 0
+      state === SessionState.Racing
     ) {
-      const averageLapTime = this.averageLapTime(leaderCarIdx);
-      if (averageLapTime > 0) {
-        this.greenFlagTimestamp = sessionTime - leaderLap * averageLapTime;
+      if (clockElapsed !== null && clockElapsed >= 0) {
+        this.greenFlagTimestamp = sessionTime - clockElapsed;
         this.lateJoin = false;
+      } else if (
+        this.previousLeaderLap !== null &&
+        leaderLap > this.previousLeaderLap &&
+        leaderLap > 0
+      ) {
+        const averageLapTime = this.averageLapTime(leaderCarIdx);
+        if (averageLapTime > 0) {
+          this.greenFlagTimestamp = sessionTime - leaderLap * averageLapTime;
+          this.lateJoin = false;
+        }
       }
     }
   }

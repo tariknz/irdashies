@@ -729,6 +729,7 @@ void app.whenReady().then(async () => {
     lifecycle: getSessionLifecycle(),
     getMap: getSessionProfileMap,
     getCurrentProfileId,
+    onProfileChange: (listener) => onDashboardUpdated(listener),
     profileExists: (profileId) => getProfile(profileId) !== null,
     switchProfile: (profileId) => setCurrentProfile(profileId),
   });

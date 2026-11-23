@@ -17,6 +17,7 @@ export interface SessionProfileSwitcherDeps {
   /** Read fresh on every decision, so edits in settings take effect at once. */
   getMap: () => SessionProfileMap;
   getCurrentProfileId: () => string;
+  onProfileChange?: (listener: () => void) => () => void;
   profileExists: (profileId: string) => boolean;
   switchProfile: (profileId: string) => void;
   dwellMs?: number;
@@ -54,6 +55,8 @@ export const createSessionProfileSwitcher = (
   let sessionKey: ProfileTriggerKey | undefined;
   let spotting = false;
   let dwellTimer: ReturnType<typeof setTimeout> | undefined;
+  let applying = false;
+  let lastProfileId = deps.getCurrentProfileId();
 
   const clearDwell = () => {
     if (dwellTimer === undefined) return;
@@ -85,10 +88,13 @@ export const createSessionProfileSwitcher = (
     logger.info(
       `[sessionProfile] ${reason}: switching to profile ${profileId} for ${trigger}`
     );
+    applying = true;
     try {
       deps.switchProfile(profileId);
     } catch (err) {
       logger.error('[sessionProfile] Failed to switch profile:', err);
+    } finally {
+      applying = false;
     }
   };
 
@@ -151,6 +157,16 @@ export const createSessionProfileSwitcher = (
     spotting = false;
   });
 
+  const unsubscribeProfileChange =
+    deps.onProfileChange?.(() => {
+      const profileId = deps.getCurrentProfileId();
+      if (profileId === lastProfileId) return;
+      lastProfileId = profileId;
+      if (applying) return;
+      clearDwell();
+      spotting = false;
+    }) ?? (() => undefined);
+
   // Seeded after subscribing, because the lifecycle reports transitions and
   // never replays them. The SDK starts publishing at iRacingSDKSetup and
   // startup awaits other work before constructing this, so launching irDashies
@@ -174,6 +190,7 @@ export const createSessionProfileSwitcher = (
       unsubscribeType();
       unsubscribeDriving();
       unsubscribeDisconnect();
+      unsubscribeProfileChange();
     },
   };
 };

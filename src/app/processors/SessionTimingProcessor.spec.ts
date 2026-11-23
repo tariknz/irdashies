@@ -82,6 +82,49 @@ describe('SessionTimingProcessor', () => {
     expect(processor.snapshot().totalRaceLaps).toBe(3);
   });
 
+  it('recovers the green flag time from the race clock when joining mid-race', () => {
+    const processor = new SessionTimingProcessor(() => [0, 0]);
+    processor.init(session);
+    processor.onFrame(
+      frame({
+        SessionTime: 20890,
+        SessionTimeTotal: 21600,
+        SessionTimeRemain: 720,
+        CarIdxLap: [180, 180],
+        CarIdxPosition: [1, 2],
+      })
+    );
+
+    expect(processor.snapshot()).toMatchObject({
+      greenFlagTimestamp: 10,
+      isFixedLapRace: false,
+      timeRemaining: 720,
+    });
+  });
+
+  it('does not derive a green flag from an unlimited clock or a future elapsed time', () => {
+    const processor = new SessionTimingProcessor(() => [0, 0]);
+    processor.init(session);
+    processor.onFrame(
+      frame({
+        SessionTime: 100,
+        SessionTimeTotal: 604800,
+        SessionTimeRemain: 720,
+      })
+    );
+    expect(processor.snapshot().greenFlagTimestamp).toBe(0);
+
+    processor.onLifecycle({ type: 'sessionNumChange' });
+    processor.onFrame(
+      frame({
+        SessionTime: 100,
+        SessionTimeTotal: 21600,
+        SessionTimeRemain: 720,
+      })
+    );
+    expect(processor.snapshot().greenFlagTimestamp).toBe(0);
+  });
+
   it('resets on session changes and ignores replay scrubbing', () => {
     const processor = new SessionTimingProcessor();
     processor.init(session);

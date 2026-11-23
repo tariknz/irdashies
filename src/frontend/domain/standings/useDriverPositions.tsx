@@ -6,7 +6,6 @@ import {
   useSessionDrivers,
   useSessionIsOfficial,
   useCurrentSessionType,
-  useCarLap,
   useFocusCarIdx,
   useDriverCarIdx,
   useSessionPositions,
@@ -63,7 +62,7 @@ export const useDriverPositions = () => {
   const prevCarTrackSurface =
     snapshot?.previousCarTrackSurface ?? EMPTY_OPTIONAL_NUMBERS;
   const lastPitLap = snapshot?.lastPitLap ?? EMPTY_OPTIONAL_NUMBERS;
-  const lastLap = useCarLap();
+  const lastLap = carIdxLapNum;
   const carIdxLapDstPct = snapshot?.carIdxLapDistPct ?? EMPTY_NUMBERS;
 
   const positions = useMemo(() => {

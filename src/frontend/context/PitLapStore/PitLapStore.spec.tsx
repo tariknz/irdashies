@@ -77,6 +77,22 @@ describe('PitLapStore', () => {
     expect(state.firstObservedLap[2]).toBeUndefined();
   });
 
+  it('seeds first observed laps from the channel after a window reload', () => {
+    usePitLapStore
+      .getState()
+      .updatePitLaps(
+        [false, false],
+        [42, 42],
+        123,
+        900,
+        [3, 3],
+        SessionState.Racing,
+        [1, undefined]
+      );
+
+    expect(usePitLapStore.getState().firstObservedLap).toEqual([1, 42]);
+  });
+
   it('should not overwrite the first observed lap on later updates', () => {
     usePitLapStore
       .getState()

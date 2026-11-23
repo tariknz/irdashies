@@ -511,6 +511,10 @@ export async function publishDashboardUpdates(
     setCurrentProfile(profileId);
   });
 
+  ipcMain.handle('profileTransition:getCurrent', () =>
+    overlayManager.getLatestProfileTransition()
+  );
+
   ipcMain.handle('getCurrentProfile', () => {
     const currentProfileId = getCurrentProfileId();
     return getProfile(currentProfileId);

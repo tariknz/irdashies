@@ -84,19 +84,32 @@ const setup = (
   const harness = makeLifecycle(initialState);
   const switchProfile = vi.fn();
   let current = currentProfileId;
+  let onProfileChange: (() => void) | undefined;
   switchProfile.mockImplementation((profileId: string) => {
     current = profileId;
+    onProfileChange?.();
   });
 
   const switcher = createSessionProfileSwitcher({
     lifecycle: harness.lifecycle,
     getMap: () => map,
     getCurrentProfileId: () => current,
+    onProfileChange: (listener) => {
+      onProfileChange = listener;
+      return () => {
+        onProfileChange = undefined;
+      };
+    },
     profileExists: (profileId) => existingProfiles.includes(profileId),
     switchProfile,
   });
 
-  return { ...harness, switcher, switchProfile };
+  const setProfile = (profileId: string) => {
+    current = profileId;
+    onProfileChange?.();
+  };
+
+  return { ...harness, switcher, switchProfile, setProfile };
 };
 
 describe('sessionProfileSwitcher', () => {
@@ -255,6 +268,37 @@ describe('sessionProfileSwitcher', () => {
       vi.advanceTimersByTime(SPOTTING_DWELL_MS - 1);
       emitDriving(true);
       vi.advanceTimersByTime(SPOTTING_DWELL_MS);
+
+      expect(switchProfile).not.toHaveBeenCalled();
+    });
+
+    it('leaves a manual profile choice alone while the dwell is pending', () => {
+      const { emitSessionType, emitDriving, switchProfile, setProfile } = setup({
+        race: 'race',
+        spotting: 'spotter',
+      });
+      emitSessionType('Race');
+      emitDriving(false);
+      switchProfile.mockClear();
+
+      setProfile('broadcast');
+      vi.advanceTimersByTime(SPOTTING_DWELL_MS);
+
+      expect(switchProfile).not.toHaveBeenCalled();
+    });
+
+    it('does not revert a manual choice made after spotting applied', () => {
+      const { emitSessionType, emitDriving, switchProfile, setProfile } = setup({
+        race: 'race',
+        spotting: 'spotter',
+      });
+      emitSessionType('Race');
+      emitDriving(false);
+      vi.advanceTimersByTime(SPOTTING_DWELL_MS);
+      switchProfile.mockClear();
+
+      setProfile('broadcast');
+      emitDriving(true);
 
       expect(switchProfile).not.toHaveBeenCalled();
     });

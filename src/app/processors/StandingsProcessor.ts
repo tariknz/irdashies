@@ -222,11 +222,16 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       carIdxTrackSurface.length
     );
     this.latest.lastPitLap.length = maxLength;
+    this.latest.firstObservedLap.length = maxLength;
     this.latest.previousCarTrackSurface.length = maxLength;
     this.actualTrackSurface.length = maxLength;
     for (let carIdx = 0; carIdx < maxLength; carIdx += 1) {
+      const lap = carIdxLap[carIdx];
+      if (this.latest.firstObservedLap[carIdx] === undefined && lap >= 0) {
+        this.latest.firstObservedLap[carIdx] = lap;
+      }
       if (carIdxOnPitRoad[carIdx]) {
-        this.latest.lastPitLap[carIdx] = carIdxLap[carIdx];
+        this.latest.lastPitLap[carIdx] = lap;
       }
       const surface = carIdxTrackSurface[carIdx] ?? -1;
       if (
@@ -307,6 +312,7 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     this.latest.sessionTime = 0;
     this.latest.sessionState = 0;
     this.latest.lastPitLap.length = 0;
+    this.latest.firstObservedLap.length = 0;
     this.latest.previousCarTrackSurface.length = 0;
     this.latest.liveClassPosition.length = 0;
     this.latest.version = version;
@@ -343,6 +349,7 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       sessionTime: 0,
       sessionState: 0,
       lastPitLap: [],
+      firstObservedLap: [],
       previousCarTrackSurface: [],
       liveClassPosition: [],
       version: 0,

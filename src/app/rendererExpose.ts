@@ -57,12 +57,32 @@ export function exposeInMainWorld() {
         showBanner?: boolean;
       }) => void
     ) => {
+      let active = true;
+      let seen = false;
       const listener = (
         _: Electron.IpcRendererEvent,
         data: { hidden: boolean; name: string; showBanner?: boolean }
-      ) => cb(data);
+      ) => {
+        seen = true;
+        cb(data);
+      };
       ipcRenderer.on('profileTransition', listener);
-      return () => ipcRenderer.removeListener('profileTransition', listener);
+      ipcRenderer
+        .invoke('profileTransition:getCurrent')
+        .then(
+          (
+            data:
+              | { hidden: boolean; name: string; showBanner?: boolean }
+              | undefined
+          ) => {
+            if (data && active && !seen) cb(data);
+          }
+        )
+        .catch(() => undefined);
+      return () => {
+        active = false;
+        ipcRenderer.removeListener('profileTransition', listener);
+      };
     },
   });
 

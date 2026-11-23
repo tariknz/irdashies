@@ -173,6 +173,33 @@ describe('OverlayManager running state', () => {
     expect(manager.getRunningState()).toBe(true);
   });
 
+  it('replays the last profile transition to a window created mid-switch', () => {
+    const manager = new OverlayManager();
+    expect(manager.getLatestProfileTransition()).toBeUndefined();
+
+    manager.publishMessage('profileTransition', {
+      hidden: true,
+      name: 'Broadcast',
+    });
+
+    expect(manager.getLatestProfileTransition()).toEqual({
+      hidden: true,
+      name: 'Broadcast',
+    });
+
+    manager.publishMessage('profileTransition', {
+      hidden: false,
+      name: 'Broadcast',
+      showBanner: true,
+    });
+
+    expect(manager.getLatestProfileTransition()).toEqual({
+      hidden: false,
+      name: 'Broadcast',
+      showBanner: true,
+    });
+  });
+
   it('answers that nothing is running once the simulator has gone', () => {
     const manager = new OverlayManager();
     manager.publishMessage('runningState', true);

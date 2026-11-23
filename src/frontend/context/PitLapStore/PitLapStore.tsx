@@ -22,7 +22,8 @@ interface PitLapState {
     currentSessionUniqId: number,
     currentSessionTime: number,
     carIdxTrackSurface: number[],
-    sessionState: number
+    sessionState: number,
+    observedLapsFromSnapshot?: readonly (number | undefined)[]
   ) => void;
   reset: () => void;
 }
@@ -46,7 +47,8 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
     currentSessionUniqId,
     currentSessionTime,
     carIdxTrackSurface,
-    sessionState
+    sessionState,
+    observedLapsFromSnapshot
   ) => {
     const {
       sessionUniqId,
@@ -111,10 +113,15 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
       // Record the lap on which we first observed each car. Used to tell whether
       // we've watched a car since its session start — if so, its first-stint lap
       // equals the total session lap even without an observed pit stop.
-      if (firstObservedLap[idx] === undefined && currentLap >= 0) {
+      const observedLapFromSnapshot = observedLapsFromSnapshot?.[idx];
+      if (
+        firstObservedLap[idx] === undefined &&
+        (observedLapFromSnapshot !== undefined || currentLap >= 0)
+      ) {
         if (!updatedFirstObservedLap)
           updatedFirstObservedLap = [...firstObservedLap];
-        updatedFirstObservedLap[idx] = currentLap;
+        updatedFirstObservedLap[idx] =
+          observedLapFromSnapshot ?? currentLap;
       }
 
       if (onPitRoad && pitLaps[idx] !== currentLap) {

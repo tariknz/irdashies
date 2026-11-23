@@ -168,6 +168,11 @@ export class OverlayManager {
   private onWindowReadyCallbacks = new Set<(windowId: string) => void>();
   private rendererDataSubscriptions?: RendererDataSubscriptions;
   private latestSessionData: unknown;
+  private latestProfileTransition?: {
+    hidden: boolean;
+    name: string;
+    showBanner?: boolean;
+  };
   private displayChangeTimer?: ReturnType<typeof setTimeout>;
   private watchingDisplays = false;
   /**
@@ -899,6 +904,13 @@ export class OverlayManager {
   public publishMessage(key: string, value: unknown, ...args: unknown[]): void {
     if (key === 'sessionData') this.latestSessionData = value;
     if (key === 'runningState') this.latestRunningState = Boolean(value);
+    if (key === 'profileTransition') {
+      this.latestProfileTransition = value as {
+        hidden: boolean;
+        name: string;
+        showBanner?: boolean;
+      };
+    }
 
     // Send to all display overlay windows
     for (const win of this.displayWindows.values()) {
@@ -956,6 +968,10 @@ export class OverlayManager {
    */
   public getRunningState(): boolean {
     return this.latestRunningState;
+  }
+
+  public getLatestProfileTransition() {
+    return this.latestProfileTransition;
   }
 
   /**
