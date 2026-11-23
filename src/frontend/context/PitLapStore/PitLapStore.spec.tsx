@@ -110,6 +110,33 @@ describe('PitLapStore', () => {
     expect(usePitLapStore.getState().pitLaps).toEqual([4, 11]);
   });
 
+  it('adopts only newer snapshot pit laps off pit road', () => {
+    usePitLapStore
+      .getState()
+      .updatePitLaps(
+        [true, true],
+        [10, 12],
+        123,
+        900,
+        [3, 3],
+        SessionState.Racing
+      );
+    usePitLapStore
+      .getState()
+      .updatePitLaps(
+        [false, false],
+        [11, 13],
+        123,
+        901,
+        [3, 3],
+        SessionState.Racing,
+        undefined,
+        [12, 11]
+      );
+
+    expect(usePitLapStore.getState().pitLaps).toEqual([12, 12]);
+  });
+
   it('should not overwrite the first observed lap on later updates', () => {
     usePitLapStore
       .getState()

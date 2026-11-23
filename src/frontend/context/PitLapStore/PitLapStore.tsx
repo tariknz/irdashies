@@ -131,8 +131,8 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
         pitLaps[idx] = currentLap;
         pitLapsChanged = true;
       } else if (
-        pitLaps[idx] === undefined &&
-        lastPitLapFromSnapshot !== undefined
+        lastPitLapFromSnapshot !== undefined &&
+        (pitLaps[idx] === undefined || lastPitLapFromSnapshot > pitLaps[idx])
       ) {
         pitLaps[idx] = lastPitLapFromSnapshot;
         pitLapsChanged = true;
