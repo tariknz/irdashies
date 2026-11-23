@@ -23,7 +23,8 @@ interface PitLapState {
     currentSessionTime: number,
     carIdxTrackSurface: number[],
     sessionState: number,
-    observedLapsFromSnapshot?: readonly (number | undefined)[]
+    observedLapsFromSnapshot?: readonly (number | undefined)[],
+    lastPitLapsFromSnapshot?: readonly (number | undefined)[]
   ) => void;
   reset: () => void;
 }
@@ -48,7 +49,8 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
     currentSessionTime,
     carIdxTrackSurface,
     sessionState,
-    observedLapsFromSnapshot
+    observedLapsFromSnapshot,
+    lastPitLapsFromSnapshot
   ) => {
     const {
       sessionUniqId,
@@ -124,8 +126,15 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
           observedLapFromSnapshot ?? currentLap;
       }
 
+      const lastPitLapFromSnapshot = lastPitLapsFromSnapshot?.[idx];
       if (onPitRoad && pitLaps[idx] !== currentLap) {
         pitLaps[idx] = currentLap;
+        pitLapsChanged = true;
+      } else if (
+        pitLaps[idx] === undefined &&
+        lastPitLapFromSnapshot !== undefined
+      ) {
+        pitLaps[idx] = lastPitLapFromSnapshot;
         pitLapsChanged = true;
       }
 

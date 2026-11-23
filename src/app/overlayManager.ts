@@ -905,11 +905,12 @@ export class OverlayManager {
     if (key === 'sessionData') this.latestSessionData = value;
     if (key === 'runningState') this.latestRunningState = Boolean(value);
     if (key === 'profileTransition') {
-      this.latestProfileTransition = value as {
+      const transition = value as {
         hidden: boolean;
         name: string;
         showBanner?: boolean;
       };
+      this.latestProfileTransition = transition.hidden ? transition : undefined;
     }
 
     // Send to all display overlay windows

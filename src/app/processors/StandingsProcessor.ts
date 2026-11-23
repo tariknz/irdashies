@@ -227,13 +227,17 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     this.actualTrackSurface.length = maxLength;
     for (let carIdx = 0; carIdx < maxLength; carIdx += 1) {
       const lap = carIdxLap[carIdx];
-      if (this.latest.firstObservedLap[carIdx] === undefined && lap >= 0) {
+      const surface = carIdxTrackSurface[carIdx] ?? -1;
+      if (
+        surface > TrackLocation.NotInWorld &&
+        this.latest.firstObservedLap[carIdx] === undefined &&
+        lap >= 0
+      ) {
         this.latest.firstObservedLap[carIdx] = lap;
       }
       if (carIdxOnPitRoad[carIdx]) {
         this.latest.lastPitLap[carIdx] = lap;
       }
-      const surface = carIdxTrackSurface[carIdx] ?? -1;
       if (
         surface >= 0 &&
         sessionState < SessionState.Checkered &&

@@ -102,7 +102,7 @@ describe('SessionTimingProcessor', () => {
     });
   });
 
-  it('does not derive a green flag from an unlimited clock or a future elapsed time', () => {
+  it('ignores an invalid race clock until a valid one arrives', () => {
     const processor = new SessionTimingProcessor(() => [0, 0]);
     processor.init(session);
     processor.onFrame(
@@ -112,17 +112,45 @@ describe('SessionTimingProcessor', () => {
         SessionTimeRemain: 720,
       })
     );
-    expect(processor.snapshot().greenFlagTimestamp).toBe(0);
-
-    processor.onLifecycle({ type: 'sessionNumChange' });
     processor.onFrame(
       frame({
-        SessionTime: 100,
+        SessionTime: 110,
         SessionTimeTotal: 21600,
         SessionTimeRemain: 720,
       })
     );
     expect(processor.snapshot().greenFlagTimestamp).toBe(0);
+
+    processor.onFrame(
+      frame({
+        SessionTime: 210,
+        SessionTimeTotal: 21600,
+        SessionTimeRemain: 21400,
+      })
+    );
+    expect(processor.snapshot().greenFlagTimestamp).toBe(10);
+  });
+
+  it('keeps the lap-increase fallback while the race clock is invalid', () => {
+    const processor = new SessionTimingProcessor(() => [0, 0]);
+    processor.init(session);
+    processor.onFrame(
+      frame({
+        SessionTime: 100,
+        SessionTimeTotal: 604800,
+        SessionTimeRemain: 720,
+      })
+    );
+    processor.onFrame(
+      frame({
+        SessionTime: 400,
+        SessionTimeTotal: 604800,
+        SessionTimeRemain: 720,
+        CarIdxLap: [3, 3],
+      })
+    );
+
+    expect(processor.snapshot().greenFlagTimestamp).toBe(220);
   });
 
   it('resets on session changes and ignores replay scrubbing', () => {

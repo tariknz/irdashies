@@ -76,13 +76,16 @@ export class SessionTimingProcessor implements TelemetryProcessor<SessionTimingS
     const sessionType = sessionInfo?.SessionType;
     const timeTotal = numberValue(frame, 'SessionTimeTotal') ?? 0;
     const rawTimeRemaining = numberValue(frame, 'SessionTimeRemain') ?? 0;
+    const rawElapsed = timeTotal - rawTimeRemaining;
     const clockElapsed =
       sessionType === 'Race' &&
       timeTotal > 0 &&
       timeTotal < 604800 &&
       rawTimeRemaining > 0 &&
-      rawTimeRemaining < 604800
-        ? Math.min(timeTotal - rawTimeRemaining, sessionTime)
+      rawTimeRemaining < 604800 &&
+      rawElapsed >= 0 &&
+      rawElapsed <= sessionTime
+        ? rawElapsed
         : null;
     const laps = numberArray(frame, 'CarIdxLap');
     const positions = numberArray(frame, 'CarIdxPosition');

@@ -93,6 +93,23 @@ describe('PitLapStore', () => {
     expect(usePitLapStore.getState().firstObservedLap).toEqual([1, 42]);
   });
 
+  it('seeds last pit laps from the channel but keeps live pit entries', () => {
+    usePitLapStore
+      .getState()
+      .updatePitLaps(
+        [false, true],
+        [10, 11],
+        123,
+        900,
+        [3, 3],
+        SessionState.Racing,
+        [1, 2],
+        [4, 5]
+      );
+
+    expect(usePitLapStore.getState().pitLaps).toEqual([4, 11]);
+  });
+
   it('should not overwrite the first observed lap on later updates', () => {
     usePitLapStore
       .getState()

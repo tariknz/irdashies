@@ -106,6 +106,19 @@ describe('StandingsProcessor', () => {
     expect(processor.snapshot().firstObservedLap).toEqual([12, 12]);
   });
 
+  it('leaves the first observed lap unset while a car is not in the world', () => {
+    const processor = new StandingsProcessor();
+    processor.init(session);
+    processor.onFrame(
+      frame(10, {
+        CarIdxLap: { value: [0, 5] },
+        CarIdxTrackSurface: { value: [-1, 3] },
+      })
+    );
+
+    expect(processor.snapshot().firstObservedLap).toEqual([undefined, 5]);
+  });
+
   it('projects live positions within each class for race sessions', () => {
     const processor = new StandingsProcessor();
     processor.init({
