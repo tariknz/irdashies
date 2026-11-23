@@ -14,6 +14,7 @@ import {
   LmuWorldTrackSource,
   LmuWorldTrackStorage,
   parseLmuWorldTrack,
+  WORLD_TRACK_MAX_ATTEMPTS,
   worldTrackFitsLap,
   worldTrackFrom,
   type GroundPoint,
@@ -323,10 +324,11 @@ describe('LmuWorldTrackSource', () => {
   const drive = (
     source: LmuWorldTrackSource,
     restTrack: LmuWorldTrack | undefined,
-    lapDistM = ALGARVE_LAP_DISTANCE_M
+    lapDistM = ALGARVE_LAP_DISTANCE_M,
+    seconds = 30
   ) => {
     let changed = false;
-    for (let time = 0; time < 30; time += 0.05) {
+    for (let time = 0; time < seconds; time += 0.05) {
       changed =
         source.update({ ...fieldAt(track, lapDistM, time), restTrack }) ||
         changed;
@@ -374,17 +376,81 @@ describe('LmuWorldTrackSource', () => {
     );
   });
 
-  it('falls back when the cars are not on the live track', () => {
+  it('tries again after a rejection, then falls back', () => {
+    const source = new LmuWorldTrackSource(storage, log, () => 'skipped 3');
+    source.setTrack('Algarve International Circuit');
+
+    expect(drive(source, mirrored(track), ALGARVE_LAP_DISTANCE_M, 20)).toBe(
+      false
+    );
+    expect(log.info).toHaveBeenCalledWith(
+      expect.stringContaining(`(attempt 1 of ${WORLD_TRACK_MAX_ATTEMPTS})`)
+    );
+    expect(log.info).toHaveBeenCalledWith(
+      expect.stringContaining('skipped 3; trying again in 30 s')
+    );
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(source.wantsLiveTrack).toBe(false);
+
+    expect(drive(source, mirrored(track), ALGARVE_LAP_DISTANCE_M, 200)).toBe(
+      false
+    );
+    expect(source.map).toBeNull();
+    expect(source.wantsLiveTrack).toBe(false);
+    expect(log.warn).toHaveBeenCalledTimes(1);
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `(attempt ${WORLD_TRACK_MAX_ATTEMPTS} of ${WORLD_TRACK_MAX_ATTEMPTS})`
+      )
+    );
+    expect(storage.load('Algarve International Circuit')).toBeNull();
+  });
+
+  it('accepts the live track on a retry once the samples are clean', () => {
     const source = new LmuWorldTrackSource(storage, log);
     source.setTrack('Algarve International Circuit');
 
-    expect(drive(source, mirrored(track))).toBe(false);
+    for (let time = 0; time < 20; time += 0.05) {
+      const frame = fieldAt(track, ALGARVE_LAP_DISTANCE_M, time);
+      const posX = Array.from(frame.posX, (x, carIdx) =>
+        carIdx % 4 ? x + 300 : x
+      );
+      source.update({ ...frame, posX, restTrack: track });
+    }
     expect(source.map).toBeNull();
-    expect(source.wantsLiveTrack).toBe(false);
-    expect(log.warn).toHaveBeenCalledWith(
-      expect.stringContaining('does not match world positions')
+    expect(log.info).toHaveBeenCalledWith(
+      expect.stringContaining('trying again in 30 s')
     );
-    expect(storage.load('Algarve International Circuit')).toBeNull();
+
+    expect(drive(source, track, ALGARVE_LAP_DISTANCE_M, 60)).toBe(true);
+    expect(source.source).toBe('live');
+  });
+
+  it('skips cars the sample gate marks invalid', () => {
+    const source = new LmuWorldTrackSource(storage, log);
+    source.setTrack('Algarve International Circuit');
+    for (let time = 0; time < 30; time += 0.05) {
+      const frame = fieldAt(track, ALGARVE_LAP_DISTANCE_M, time);
+      const valid = frame.pcts.map((_, carIdx) => (carIdx % 2 ? 0 : 1));
+      const posX = Array.from(frame.posX, (x, carIdx) =>
+        carIdx % 2 ? x + 300 : x
+      );
+      source.update({ ...frame, posX, valid, restTrack: track });
+    }
+
+    expect(source.source).toBe('live');
+  });
+
+  it('looks at the live track again after a session restart', () => {
+    const source = new LmuWorldTrackSource(storage, log);
+    source.setTrack('Algarve International Circuit');
+    drive(source, mirrored(track), ALGARVE_LAP_DISTANCE_M, 20);
+    expect(source.wantsLiveTrack).toBe(false);
+
+    source.restart();
+    expect(source.wantsLiveTrack).toBe(true);
+    expect(drive(source, track)).toBe(true);
+    expect(source.source).toBe('live');
   });
 
   it('refuses a live track whose length is not the lap', () => {

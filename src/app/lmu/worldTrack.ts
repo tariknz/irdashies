@@ -27,6 +27,8 @@ const MAX_SPREAD_M = 10;
 const MIN_SAMPLE_SPEED_MS = 5;
 const SAME_TRACK_TOLERANCE_M = 1;
 const MAX_STORED_TRACKS = 64;
+export const WORLD_TRACK_RETRY_S = 30;
+export const WORLD_TRACK_MAX_ATTEMPTS = 5;
 
 export interface GroundPoint {
   readonly x: number;
@@ -225,6 +227,7 @@ export interface WorldTrackAlignmentInput {
   pcts: readonly unknown[];
   inPits?: ArrayLike<number>;
   speeds?: ArrayLike<number>;
+  valid?: ArrayLike<number>;
 }
 
 export interface WorldTrackAlignmentResult {
@@ -309,6 +312,7 @@ export class LmuWorldTrackAlignment {
     let added = 0;
     for (let carIdx = 0; carIdx < cars; carIdx += 1) {
       if (input.available[carIdx] !== 1) continue;
+      if (input.valid !== undefined && input.valid[carIdx] !== 1) continue;
       if (input.inPits?.[carIdx] === 1) continue;
       if (
         input.speeds !== undefined &&
@@ -317,7 +321,7 @@ export class LmuWorldTrackAlignment {
         continue;
       }
       const pct = input.pcts[carIdx];
-      if (typeof pct !== 'number' || !(pct >= 0) || !(pct < 1)) continue;
+      if (typeof pct !== 'number' || !(pct > 0) || !(pct < 1)) continue;
       const x = input.posX[carIdx];
       const y = -input.posZ[carIdx];
       if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
@@ -501,11 +505,14 @@ export class LmuWorldTrackSource {
   private lastRestTrack: LmuWorldTrack | undefined;
   private candidate: LmuWorldTrack | null = null;
   private settled = false;
+  private rejections = 0;
+  private retryAt = Number.POSITIVE_INFINITY;
   private readonly alignment = new LmuWorldTrackAlignment();
 
   constructor(
     private readonly storage: LmuWorldTrackStorage,
-    private readonly log: WorldTrackLogger
+    private readonly log: WorldTrackLogger,
+    private readonly describeSkipped: () => string = () => ''
   ) {}
 
   get map(): LmuTrackMap | null {
@@ -530,6 +537,8 @@ export class LmuWorldTrackSource {
     this.lastRestTrack = undefined;
     this.candidate = null;
     this.settled = false;
+    this.rejections = 0;
+    this.retryAt = Number.POSITIVE_INFINITY;
     this.alignment.reset(null);
     this.cached = trackName ? this.storage.load(trackName) : null;
     if (this.cached) {
@@ -539,6 +548,17 @@ export class LmuWorldTrackSource {
         source: 'cache',
       };
     }
+  }
+
+  restart(): void {
+    if (this.active?.source === 'live') return;
+    if (this.rejections === 0 && this.candidate === null) return;
+    this.lastRestTrack = undefined;
+    this.candidate = null;
+    this.settled = false;
+    this.rejections = 0;
+    this.retryAt = Number.POSITIVE_INFINITY;
+    this.alignment.reset(null);
   }
 
   update(frame: WorldTrackFrame): boolean {
@@ -555,6 +575,11 @@ export class LmuWorldTrackSource {
     }
     if (!this.candidate) return false;
 
+    if (this.retryAt !== Number.POSITIVE_INFINITY) {
+      if (frame.time < this.retryAt) return false;
+      this.retryAt = Number.POSITIVE_INFINITY;
+      this.alignment.reset(this.candidate);
+    }
     this.alignment.update(frame);
     if (this.alignment.status === 'accepted' && this.alignment.result) {
       const { offsetM, lapDistM, medianDistanceM, samples } =
@@ -580,11 +605,20 @@ export class LmuWorldTrackSource {
     }
     if (this.alignment.status === 'rejected') {
       const attempt = this.alignment.lastAttempt;
-      this.candidate = null;
-      this.settled = true;
-      this.log.warn(
-        `[lmuWorldTrack] World track for ${this.trackName} does not match world positions: ${attempt ? `field ${attempt.medianDistanceM.toFixed(1)} m from the line, offset spread ${attempt.spreadM.toFixed(1)} m, ${attempt.samples} samples` : 'no samples'}; ${this.active ? 'keeping the cached world track' : 'using the fallback map'}`
-      );
+      this.rejections += 1;
+      const skipped = this.describeSkipped();
+      const detail = `${attempt ? `field ${attempt.medianDistanceM.toFixed(1)} m from the line, offset spread ${attempt.spreadM.toFixed(1)} m, ${attempt.samples} samples` : 'no samples'}${skipped ? `; ${skipped}` : ''}`;
+      const message = `[lmuWorldTrack] World track for ${this.trackName} does not match world positions (attempt ${this.rejections} of ${WORLD_TRACK_MAX_ATTEMPTS}): ${detail}`;
+      if (this.rejections < WORLD_TRACK_MAX_ATTEMPTS) {
+        this.retryAt = frame.time + WORLD_TRACK_RETRY_S;
+        this.log.info(`${message}; trying again in ${WORLD_TRACK_RETRY_S} s`);
+      } else {
+        this.candidate = null;
+        this.settled = true;
+        this.log.warn(
+          `${message}; ${this.active ? `keeping the cached world track` : 'using the fallback map'}`
+        );
+      }
     }
     return false;
   }

@@ -3,6 +3,8 @@ import type { LmuTrackMap } from '@irdashies/types';
 import type { LmuRawTelemetry } from './native';
 import {
   LmuMapRegistration,
+  MAP_REGISTRATION_MAX_ATTEMPTS,
+  MAP_REGISTRATION_RETRY_S,
   mapPointAt,
   radarMapFrame,
   type MapRegistrationInput,
@@ -167,12 +169,98 @@ describe('LmuMapRegistration', () => {
 
   it('samples at 10 Hz however often it is called', () => {
     const registration = new LmuMapRegistration();
-    registration.update(fieldAt(track, map, 0));
-    registration.update(fieldAt(track, map, 0.05));
+    registration.update(fieldAt(track, map, 0.01));
+    registration.update(fieldAt(track, map, 0.06));
     expect(registration.samples).toBe(CAR_COUNT);
 
-    registration.update(fieldAt(track, map, 0.1));
+    registration.update(fieldAt(track, map, 0.11));
     expect(registration.samples).toBe(CAR_COUNT * 2);
+  });
+
+  it('leaves out cars at the start of the lap and cars the gate refuses', () => {
+    const registration = new LmuMapRegistration();
+    const frame = fieldAt(track, map, 0.01);
+    const pcts = frame.pcts.map((pct, carIdx) => (carIdx < 4 ? 0 : pct));
+    const valid = frame.pcts.map((_, carIdx) => (carIdx === 5 ? 0 : 1));
+    registration.update({ ...frame, pcts, valid });
+
+    expect(registration.samples).toBe(CAR_COUNT - 5);
+  });
+
+  it('registers through a race start with cars behind the line', () => {
+    const registration = new LmuMapRegistration();
+    for (let time = 0.01; time < 120; time += 0.05) {
+      const frame = fieldAt(track, map, time);
+      if (time < 20) {
+        const pcts = frame.pcts.map((pct, carIdx) => (carIdx % 2 ? 0 : pct));
+        registration.update({ ...frame, pcts });
+      } else {
+        registration.update(frame);
+      }
+      if (registration.status !== 'collecting') break;
+    }
+
+    expect(registration.status).toBe('accepted');
+    expect(registration.fit?.rmsM).toBeLessThan(4);
+  });
+
+  it('keeps the fit when a fifth of the samples are far off', () => {
+    const registration = new LmuMapRegistration();
+    for (let time = 0.01; time < 120; time += 0.05) {
+      const frame = fieldAt(track, map, time);
+      const posX = Array.from(frame.posX, (x, carIdx) =>
+        carIdx % 5 === 0 ? x + 300 : x
+      );
+      registration.update({ ...frame, posX });
+      if (registration.status !== 'collecting') break;
+    }
+
+    expect(registration.status).toBe('accepted');
+    expect(registration.fit?.rmsM).toBeLessThan(4);
+    expect(registration.fit?.inlierShare).toBeGreaterThan(0.75);
+  });
+
+  it('tries again after a rejection, a limited number of times', () => {
+    const registration = new LmuMapRegistration();
+    const wrongMap = mapOf(ellipseTrack(400, 400));
+    let time = 0.01;
+    const runFor = (seconds: number) => {
+      const end = time + seconds;
+      for (; time < end; time += 0.05) {
+        registration.update(fieldAt(track, wrongMap, time));
+      }
+    };
+
+    runFor(20);
+    expect(registration.status).toBe('rejected');
+    expect(registration.attempt).toBe(1);
+    expect(registration.finallyRejected).toBe(false);
+
+    runFor(MAP_REGISTRATION_RETRY_S);
+    expect(registration.status).toBe('collecting');
+    expect(registration.attempt).toBe(2);
+
+    runFor(MAP_REGISTRATION_MAX_ATTEMPTS * (MAP_REGISTRATION_RETRY_S + 60));
+    expect(registration.attempt).toBe(MAP_REGISTRATION_MAX_ATTEMPTS);
+    expect(registration.finallyRejected).toBe(true);
+  });
+
+  it('starts over on a session restart unless already registered', () => {
+    const registration = new LmuMapRegistration();
+    const wrongMap = mapOf(ellipseTrack(400, 400));
+    for (let time = 0.01; time < 20; time += 0.05) {
+      registration.update(fieldAt(track, wrongMap, time));
+    }
+    const wrong = registration.status;
+    registration.restart();
+    expect(wrong).toBe('rejected');
+    expect(registration.status).toBe('collecting');
+    expect(registration.attempt).toBe(1);
+
+    const good = new LmuMapRegistration();
+    runUntilSettled(good, track, map);
+    good.restart();
+    expect(good.status).toBe('accepted');
   });
 
   it('leaves out cars in the pits and cars barely moving', () => {

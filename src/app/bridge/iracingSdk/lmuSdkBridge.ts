@@ -35,6 +35,8 @@ import { mapLmuTelemetry } from '../../lmu/mapTelemetry';
 import { lmuRelativePositionsAvailable } from '../../lmu/proximity';
 import {
   LmuMapRegistration,
+  MAP_REGISTRATION_MAX_ATTEMPTS,
+  MAP_REGISTRATION_RETRY_S,
   radarMapFrame,
   type MapRegistrationStatus,
 } from '../../lmu/mapRegistration';
@@ -67,6 +69,7 @@ import {
   LmuWorldTrackStorage,
   worldTrackFitsLap,
 } from '../../lmu/worldTrack';
+import { LmuSampleGate } from '../../lmu/sampleGate';
 import { createRaceosClient, type RaceosClient } from '../../lmu/raceos/client';
 import { raceosUsername } from '../../lmu/raceos/parse';
 import { createLmuTapeRatingClient } from '../../lmu/raceos/tapeRatings';
@@ -232,6 +235,7 @@ export async function publishLmuSDKEvents(
   const mapStorage = new LmuTrackMapStorage(
     path.join(app.getPath('userData'), 'lmu-track-maps.json')
   );
+  const sampleGate = new LmuSampleGate();
   const worldTracks = new LmuWorldTrackSource(
     new LmuWorldTrackStorage(
       path.join(app.getPath('userData'), 'lmu-world-tracks.json')
@@ -239,11 +243,14 @@ export async function publishLmuSDKEvents(
     {
       info: (message) => logger.info(message),
       warn: (message) => logger.warn(message),
-    }
+    },
+    () => sampleGate.describe()
   );
   let latestLapDistM = 0;
   let lastTrackMapBurstAt = Number.NEGATIVE_INFINITY;
   let trackMapBurstRereads = false;
+  let lastScoringET = Number.NaN;
+  let lastSessionNumber: number | undefined;
 
   // Properties LMU serves over its local REST API. The poller runs on its own
   // timers; this loop only ever reads the object it fills, synchronously. See
@@ -562,6 +569,9 @@ export async function publishLmuSDKEvents(
       if (raw.trackName !== activeTrackName) {
         activeTrackName = raw.trackName;
         worldTracks.setTrack(activeTrackName);
+        sampleGate.reset();
+        lastScoringET = Number.NaN;
+        lastSessionNumber = undefined;
         restData.worldTrack = undefined;
         lastTrackMapBurstAt = Number.NEGATIVE_INFINITY;
         trackMapBurstRereads = true;
@@ -860,6 +870,27 @@ export async function publishLmuSDKEvents(
       }
       latestLapDistM = raw.lapDist;
       perfMetrics.markStart('lmuWorldTrack');
+      const sessionRestarted =
+        (lastSessionNumber !== undefined &&
+          raw.session !== lastSessionNumber) ||
+        raw.currentET < lastScoringET - 1;
+      lastSessionNumber = raw.session;
+      lastScoringET = raw.currentET;
+      if (sessionRestarted) {
+        mapRegistration.restart();
+        worldTracks.restart();
+        sampleGate.reset();
+      }
+      sampleGate.update({
+        time: pollStartedAt / 1000,
+        lapDistM: raw.lapDist,
+        live:
+          telemetry.LmuDataStale?.value[0] !== true &&
+          telemetry.LmuNotInSession?.value[0] !== true,
+        pcts: telemetry.CarIdxLapDistPct?.value ?? [],
+        scoringPcts: raw.vehLapDistPct,
+        speeds: raw.vehSpeed,
+      });
       if (
         worldTracks.update({
           restTrack: restData.worldTrack,
@@ -871,6 +902,7 @@ export async function publishLmuSDKEvents(
           pcts: telemetry.CarIdxLapDistPct?.value ?? [],
           inPits: raw.vehInPits,
           speeds: raw.vehSpeed,
+          valid: sampleGate.valid,
         })
       ) {
         trackMap = worldTracks.map;
@@ -904,21 +936,26 @@ export async function publishLmuSDKEvents(
           pcts: telemetry.CarIdxLapDistPct?.value ?? [],
           inPits: raw.vehInPits,
           speeds: raw.vehSpeed,
+          valid: sampleGate.valid,
         });
       if (!worldFit && mapRegistration.status !== lastMapRegistrationStatus) {
         lastMapRegistrationStatus = mapRegistration.status;
         const attempt = mapRegistration.fit ?? mapRegistration.lastAttempt;
+        const skipped = sampleGate.describe();
         const detail = attempt
-          ? `rms ${attempt.rmsM.toFixed(2)} m, ${attempt.metresPerUnit.toFixed(3)} m per map unit${attempt.mirrored ? ', mirrored' : ''}, ${attempt.samples} samples`
+          ? `rms ${attempt.rmsM.toFixed(2)} m, ${attempt.metresPerUnit.toFixed(3)} m per map unit${attempt.mirrored ? ', mirrored' : ''}, ${Math.round((attempt.inlierShare ?? 1) * 100)}% of samples kept, ${attempt.samples} samples`
           : 'no fit';
         if (mapRegistration.status === 'accepted') {
           logger.info(
             `[lmuSdkBridge] Track map registered for ${activeTrackName}: ${detail}`
           );
         } else if (mapRegistration.status === 'rejected') {
-          logger.warn(
-            `[lmuSdkBridge] Track map does not match world positions for ${activeTrackName}: ${detail}`
-          );
+          const message = `[lmuSdkBridge] Track map does not match world positions for ${activeTrackName} (attempt ${mapRegistration.attempt} of ${MAP_REGISTRATION_MAX_ATTEMPTS}): ${detail}${skipped ? `; ${skipped}` : ''}`;
+          if (mapRegistration.finallyRejected) logger.warn(message);
+          else
+            logger.info(
+              `${message}; trying again in ${MAP_REGISTRATION_RETRY_S} s`
+            );
         }
       }
       const radarPlayerIdx = raw.playerHasVehicle ? raw.playerVehicleIdx : -1;
