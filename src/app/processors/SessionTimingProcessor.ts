@@ -77,7 +77,10 @@ export class SessionTimingProcessor implements TelemetryProcessor<SessionTimingS
     const timeTotal = numberValue(frame, 'SessionTimeTotal') ?? 0;
     const rawTimeRemaining = numberValue(frame, 'SessionTimeRemain') ?? 0;
     const rawElapsed = timeTotal - rawTimeRemaining;
+    const isLmu =
+      typeof frame.LmuNotInSession?.value?.[0] === 'boolean';
     const clockElapsed =
+      !isLmu &&
       sessionType === 'Race' &&
       timeTotal > 0 &&
       timeTotal < 604800 &&

@@ -131,6 +131,31 @@ describe('SessionTimingProcessor', () => {
     expect(processor.snapshot().greenFlagTimestamp).toBe(10);
   });
 
+  it('uses the leader-lap fallback instead of the clock on LMU frames', () => {
+    const processor = new SessionTimingProcessor(() => [0, 0]);
+    processor.init(session);
+    processor.onFrame(
+      frame({
+        SessionTime: 1251,
+        SessionTimeTotal: 3600,
+        SessionTimeRemain: 2349.5,
+        LmuNotInSession: [false],
+      })
+    );
+    expect(processor.snapshot().greenFlagTimestamp).toBe(0);
+
+    processor.onFrame(
+      frame({
+        SessionTime: 1400,
+        SessionTimeTotal: 3600,
+        SessionTimeRemain: 2200.5,
+        CarIdxLap: [3, 3],
+        LmuNotInSession: [false],
+      })
+    );
+    expect(processor.snapshot().greenFlagTimestamp).toBe(1220);
+  });
+
   it('keeps the lap-increase fallback while the race clock is invalid', () => {
     const processor = new SessionTimingProcessor(() => [0, 0]);
     processor.init(session);
