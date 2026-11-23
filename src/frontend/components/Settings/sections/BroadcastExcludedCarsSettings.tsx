@@ -64,7 +64,7 @@ export const BroadcastExcludedCarsSettings = () => {
       <p className="text-sm text-slate-400">
         Hidden from the Tower, Ticker, Events and Podium, with every other
         car&apos;s position renumbered. The Gantry lists them separately as
-        Safety car.
+        Excluded Cars.
       </p>
 
       {missing.length > 0 && (

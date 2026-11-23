@@ -7,7 +7,7 @@ import { GantryStandings } from './GantryStandings';
 import { GantrySessionDataProvider } from '../../hooks/useGantrySessionData';
 import type { NameFormat } from '@irdashies/types';
 
-const standingsMock = vi.hoisted(() => ({ safetyCars: [] as unknown[] }));
+const standingsMock = vi.hoisted(() => ({ excludedCars: [] as unknown[] }));
 
 vi.mock('@irdashies/domain', () => ({
   useHighlightColor: () => 0xffffff,
@@ -23,7 +23,7 @@ vi.mock('@irdashies/domain/standings/useDriverStandings', () => {
     useDriverStandings,
     useDriverStandingsWithExcluded: vi.fn((...args: unknown[]) => ({
       groups: useDriverStandings(...args),
-      excluded: standingsMock.safetyCars,
+      excluded: standingsMock.excludedCars,
     })),
   };
 });
@@ -111,11 +111,11 @@ describe('GantryStandings', () => {
     );
   });
 
-  it('lists excluded cars unnumbered in a Safety car group at the bottom', () => {
+  it('lists excluded cars unnumbered in an Excluded Cars group at the bottom', () => {
     vi.mocked(useDriverStandings).mockReturnValue(
       standings([driverRow('Max Emilian Verstappen')])
     );
-    standingsMock.safetyCars = [
+    standingsMock.excludedCars = [
       {
         ...driverRow('Bernd Maylander'),
         carIdx: 40,
@@ -130,15 +130,15 @@ describe('GantryStandings', () => {
         <GantryStandings followedCarIdx={null} />
       );
 
-      expect(getByText('Safety car')).toBeTruthy();
+      expect(getByText('Excluded Cars')).toBeTruthy();
       const rows = getAllByRole('button');
-      const safetyRow = rows.at(-1);
-      expect(safetyRow?.textContent).toContain('Maylander');
-      expect(safetyRow?.firstElementChild?.textContent).toBe('');
-      expect(safetyRow?.textContent).not.toContain('gap');
-      expect(safetyRow?.textContent).not.toContain('int');
+      const excludedRow = rows.at(-1);
+      expect(excludedRow?.textContent).toContain('Maylander');
+      expect(excludedRow?.firstElementChild?.textContent).toBe('');
+      expect(excludedRow?.textContent).not.toContain('gap');
+      expect(excludedRow?.textContent).not.toContain('int');
     } finally {
-      standingsMock.safetyCars = [];
+      standingsMock.excludedCars = [];
     }
   });
 

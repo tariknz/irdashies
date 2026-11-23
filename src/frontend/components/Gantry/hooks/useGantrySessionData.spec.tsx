@@ -10,7 +10,7 @@ import {
 const sim = vi.hoisted(() => ({
   hasDrivers: true,
   standings: [] as unknown[],
-  safetyCars: [] as unknown[],
+  excludedCars: [] as unknown[],
   live: undefined as unknown,
   replay: { mode: 'live', provenance: 'none', subSessionId: '' },
   cursorSessionNum: null as number | null,
@@ -44,7 +44,7 @@ vi.mock('@irdashies/domain/broadcast/useBroadcastExcludedCarIdxs', () => ({
 vi.mock('@irdashies/domain/standings/useDriverStandings', () => ({
   useDriverStandingsWithExcluded: () => ({
     groups: sim.standings,
-    excluded: sim.safetyCars,
+    excluded: sim.excludedCars,
   }),
 }));
 

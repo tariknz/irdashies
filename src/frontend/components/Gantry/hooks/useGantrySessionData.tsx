@@ -24,7 +24,7 @@ type StandingsByClass = ReturnType<typeof useDriverStandings>;
 
 export interface GantrySessionData {
   standingsByClass: StandingsByClass;
-  safetyCars: Standings[];
+  excludedCars: Standings[];
   qualifyingResults: SessionResults[] | undefined;
   /** Every session in the event, for the incident feed's names and filter. */
   sessions: readonly IncidentSessionInfo[] | undefined;
@@ -37,7 +37,7 @@ export interface GantrySessionData {
 
 const EMPTY_SESSION_DATA: GantrySessionData = {
   standingsByClass: [],
-  safetyCars: [],
+  excludedCars: [],
   qualifyingResults: undefined,
   sessions: undefined,
   history: undefined,
@@ -85,7 +85,7 @@ export const GantrySessionDataProvider = ({
     excludedCarIdxs,
   });
   const standingsByClass = useHeld(standings.groups, isEmptyStandings);
-  const safetyCars = useHeld(standings.excluded, isEmptyStandings);
+  const excludedCars = useHeld(standings.excluded, isEmptyStandings);
   const drivers = useSessionDrivers();
   const allQualifyingResults = useQualifyingResults();
   const competitorQualifyingResults = useMemo(
@@ -147,7 +147,7 @@ export const GantrySessionDataProvider = ({
   const value = useMemo(
     () => ({
       standingsByClass,
-      safetyCars,
+      excludedCars,
       qualifyingResults,
       sessions,
       history,
@@ -157,7 +157,7 @@ export const GantrySessionDataProvider = ({
     }),
     [
       standingsByClass,
-      safetyCars,
+      excludedCars,
       qualifyingResults,
       sessions,
       history,

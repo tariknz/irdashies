@@ -6,7 +6,7 @@ import { usePitStopData } from './usePitStopData';
 const mocks = vi.hoisted(() => ({
   snapshot: null as PitStopsSnapshot | null,
   standingsByClass: [] as unknown[],
-  safetyCars: [] as unknown[],
+  excludedCars: [] as unknown[],
 }));
 
 vi.mock('@irdashies/context', () => ({
@@ -16,7 +16,7 @@ vi.mock('@irdashies/context', () => ({
 vi.mock('../../hooks/useGantrySessionData', () => ({
   useGantrySessionData: () => ({
     standingsByClass: mocks.standingsByClass,
-    safetyCars: mocks.safetyCars,
+    excludedCars: mocks.excludedCars,
   }),
 }));
 vi.mock('../../hooks/useGantrySettings', () => ({
@@ -41,7 +41,7 @@ beforeEach(() => {
   vi.spyOn(performance, 'now').mockImplementation(() => (clock += 1000));
   mocks.snapshot = snapshot(1);
   mocks.standingsByClass = [];
-  mocks.safetyCars = [];
+  mocks.excludedCars = [];
 });
 
 afterEach(() => vi.restoreAllMocks());
@@ -76,7 +76,7 @@ describe('usePitStopData', () => {
         classPositionOut: 3,
       }) as unknown as PitStopsSnapshot['stops'][number];
     mocks.snapshot = { ...snapshot(3), stops: [stop(1, 4), stop(2, 9)] };
-    mocks.safetyCars = [{ carIdx: 9 }];
+    mocks.excludedCars = [{ carIdx: 9 }];
 
     const { result } = renderHook(() => usePitStopData());
 

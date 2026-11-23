@@ -9,7 +9,7 @@ import type { NameFormat } from '@irdashies/types';
 import { GantryStandings } from './GantryStandings';
 import {
   DEMO_GROUPS,
-  DEMO_SAFETY_CAR,
+  DEMO_EXCLUDED_CAR,
 } from '@irdashies/domain/broadcast/demoField';
 import {
   GantrySessionDataContext,
@@ -75,13 +75,13 @@ export const Narrow: Story = {
   ],
 };
 
-export const WithSafetyCar: Story = {
+export const WithExcludedCars: Story = {
   decorators: [
     (Story) => (
       <GantrySessionDataContext.Provider
         value={{
           standingsByClass: DEMO_GROUPS,
-          safetyCars: [DEMO_SAFETY_CAR],
+          excludedCars: [DEMO_EXCLUDED_CAR],
           qualifyingResults: undefined,
           sessions: undefined,
           history: undefined,

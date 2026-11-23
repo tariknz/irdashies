@@ -70,6 +70,6 @@ export const DEMO_GROUPS: [string, Standings[]][] = [
   ],
 ];
 
-export const DEMO_SAFETY_CAR: Standings = excludedStandings([
+export const DEMO_EXCLUDED_CAR: Standings = excludedStandings([
   car(8, 5, 'Safety Car', 132, GTD, { gap: undefined, interval: undefined }),
 ])[0];

@@ -37,7 +37,7 @@ const isEmptyRoster = (drivers: readonly unknown[] | undefined) =>
 /** Stops, the cars that made them and the team summary, for the Pit Stops tab. */
 export const usePitStopData = (): PitStopData => {
   const snapshot = usePitStopsSnapshot();
-  const { standingsByClass, safetyCars } = useGantrySessionData();
+  const { standingsByClass, excludedCars } = useGantrySessionData();
   const roster = useHeld(useSessionDrivers(), isEmptyRoster);
   const settings = useGantrySettings();
   const profiles = useMemo(
@@ -99,13 +99,13 @@ export const usePitStopData = (): PitStopData => {
   }
 
   return useMemo(() => {
-    const safetyCarIdxs = new Set(safetyCars.map((car) => car.carIdx));
+    const excludedCarIdxs = new Set(excludedCars.map((car) => car.carIdx));
     const rows = snapshot
       ? buildPitStopRows(
-          safetyCarIdxs.size > 0
+          excludedCarIdxs.size > 0
             ? {
                 stops: snapshot.stops.filter(
-                  (stop) => !safetyCarIdxs.has(stop.carIdx)
+                  (stop) => !excludedCarIdxs.has(stop.carIdx)
                 ),
               }
             : snapshot,
@@ -128,5 +128,13 @@ export const usePitStopData = (): PitStopData => {
       receivedAt,
       sessionNum: snapshot?.sessionNum ?? null,
     };
-  }, [snapshot, safetyCars, cars, classes, playerCarIdx, profiles, receivedAt]);
+  }, [
+    snapshot,
+    excludedCars,
+    cars,
+    classes,
+    playerCarIdx,
+    profiles,
+    receivedAt,
+  ]);
 };
