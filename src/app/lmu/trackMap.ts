@@ -84,10 +84,25 @@ function interpolatePoint(
   };
 }
 
+export interface LmuMapTransform {
+  scale: number;
+  minX: number;
+  minY: number;
+  offsetX: number;
+  offsetY: number;
+}
+
 export function normalizeLmuTrackMap(
   recorded: readonly RecordedPoint[],
   trackLength: number
 ): LmuTrackMap {
+  return normalizeLmuTrackMapWithTransform(recorded, trackLength).map;
+}
+
+export function normalizeLmuTrackMapWithTransform(
+  recorded: readonly RecordedPoint[],
+  trackLength: number
+): { map: LmuTrackMap; transform: LmuMapTransform } {
   const points = Array.from({ length: RESAMPLED_POINTS }, (_, index) =>
     rotateLmuMapPointCounterClockwise(
       interpolatePoint(
@@ -117,18 +132,21 @@ export function normalizeLmuTrackMap(
   const first = normalized[0];
 
   return {
-    orientation: 'lmu-ccw-v1',
-    active: {
-      inside: `${inside} Z`,
-      outside: `${inside} Z`,
-      trackPathPoints: normalized,
-      totalLength: normalized.length - 1,
+    map: {
+      orientation: 'lmu-ccw-v1',
+      active: {
+        inside: `${inside} Z`,
+        outside: `${inside} Z`,
+        trackPathPoints: normalized,
+        totalLength: normalized.length - 1,
+      },
+      startFinish: {
+        line: `M${first.x},${first.y - 30} L${first.x},${first.y + 30}`,
+        point: { ...first, length: 0 },
+        direction: 'anticlockwise',
+      },
     },
-    startFinish: {
-      line: `M${first.x},${first.y - 30} L${first.x},${first.y + 30}`,
-      point: { ...first, length: 0 },
-      direction: 'anticlockwise',
-    },
+    transform: { scale, minX, minY, offsetX, offsetY },
   };
 }
 
