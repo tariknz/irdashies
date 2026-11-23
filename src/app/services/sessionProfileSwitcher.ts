@@ -53,7 +53,7 @@ export const createSessionProfileSwitcher = (
   const dwellMs = deps.dwellMs ?? SPOTTING_DWELL_MS;
 
   let sessionKey: ProfileTriggerKey | undefined;
-  let spotting = false;
+  let spotting: 'inactive' | 'active' | 'overridden' = 'inactive';
   let dwellTimer: ReturnType<typeof setTimeout> | undefined;
   let applying = false;
   let lastProfileId = deps.getCurrentProfileId();
@@ -67,7 +67,9 @@ export const createSessionProfileSwitcher = (
   const apply = (reason: string) => {
     const map = deps.getMap();
     const trigger =
-      spotting && map[SPOTTING_TRIGGER_KEY] ? SPOTTING_TRIGGER_KEY : sessionKey;
+      spotting === 'active' && map[SPOTTING_TRIGGER_KEY]
+        ? SPOTTING_TRIGGER_KEY
+        : sessionKey;
     if (!trigger) return;
 
     const profileId = map[trigger];
@@ -121,21 +123,21 @@ export const createSessionProfileSwitcher = (
   ): boolean => {
     clearDwell();
     if (isDriving) {
-      if (!spotting) return false;
-      spotting = false;
-      return true;
+      const shouldRestore = spotting !== 'inactive';
+      spotting = 'inactive';
+      return shouldRestore;
     }
     if (immediate) {
       // Seeding, not a transition. The dwell rides out the brief hops out of
       // the car during a session; someone already out when this attached has
       // been out for longer than the app has been running, and making them
       // wait would only delay the layout they configured for exactly this.
-      spotting = true;
+      spotting = 'active';
       return true;
     }
     dwellTimer = setTimeout(() => {
       dwellTimer = undefined;
-      spotting = true;
+      spotting = 'active';
       apply('out of the car');
     }, dwellMs);
     return false;
@@ -154,14 +156,17 @@ export const createSessionProfileSwitcher = (
   const unsubscribeDisconnect = deps.lifecycle.onDisconnect(() => {
     clearDwell();
     sessionKey = undefined;
-    spotting = false;
+    spotting = 'inactive';
   });
 
   const unsubscribeProfileChange = deps.onProfileChange?.(() => {
     const profileId = deps.getCurrentProfileId();
     if (profileId === lastProfileId) return;
     lastProfileId = profileId;
-    if (!applying) clearDwell();
+    if (!applying && dwellTimer !== undefined) {
+      clearDwell();
+      spotting = 'overridden';
+    }
   });
 
   // Seeded after subscribing, because the lifecycle reports transitions and

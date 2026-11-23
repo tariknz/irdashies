@@ -272,7 +272,7 @@ describe('sessionProfileSwitcher', () => {
       expect(switchProfile).not.toHaveBeenCalled();
     });
 
-    it('leaves a manual profile choice alone while the dwell is pending', () => {
+    it('keeps the manual profile until driving resumes when it cancels the dwell', () => {
       const { emitSessionType, emitDriving, switchProfile, setProfile } = setup(
         {
           race: 'race',
@@ -287,6 +287,8 @@ describe('sessionProfileSwitcher', () => {
       vi.advanceTimersByTime(SPOTTING_DWELL_MS);
 
       expect(switchProfile).not.toHaveBeenCalled();
+      emitDriving(true);
+      expect(switchProfile).toHaveBeenCalledWith('race');
     });
 
     it('returns to the race profile on driving after a manual spotting override', () => {

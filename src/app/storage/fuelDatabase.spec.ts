@@ -188,6 +188,30 @@ describe('FuelDatabase', () => {
     timestamp: 1,
   };
 
+  it('keeps the newest fuel laps when a retained snapshot sends them again', async () => {
+    const laps = Array.from({ length: 12 }, (_, index) => ({
+      ...lap,
+      lapNumber: index + 1,
+      sessionNum: 0,
+      timestamp: 1_700_000_000_000 + index * 90_000,
+    }));
+    for (const completed of laps) db.saveLap(123, 'car', completed);
+    await db.flush();
+    db = new FuelDatabase();
+
+    const newestFirst = [...laps].reverse();
+    for (const completed of newestFirst) db.saveLap(123, 'car', completed);
+    expect(db.getLaps(123, 'car')).toEqual(
+      newestFirst.slice(0, 10).map((completed) => ({
+        ...completed,
+        isHistorical: true,
+      }))
+    );
+
+    db.saveLap(123, 'car', { ...laps[0], timestamp: laps[11].timestamp + 1 });
+    expect(db.getLaps(123, 'car')[0].lapNumber).toBe(1);
+  });
+
   it('keeps a new lap when the cap is filled with settings-only contexts', async () => {
     for (let i = 0; i < 500; i++) db.saveQualifyMax(i, 'car', i);
     db.saveLap(500, 'car', lap);

@@ -38,7 +38,7 @@ import {
 const activeDashboard = () => getDashboard(getCurrentProfileId());
 import { getChromiumFlags, parseCustomSwitches } from './storage/chromiumFlags';
 import {
-  flushWindowMovementOnShutdown,
+  flushWindowMovementSaves,
   markCorrectedBounds,
   trackGantryWindowMovement,
   trackSettingsWindowMovement,
@@ -1083,7 +1083,7 @@ export class OverlayManager {
   public quitApp(): void {
     if (this.isQuitting) return;
 
-    flushWindowMovementOnShutdown();
+    flushWindowMovementSaves();
     this.isQuitting = true;
     this.closeAllOverlays();
 

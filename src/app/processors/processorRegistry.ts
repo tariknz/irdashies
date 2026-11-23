@@ -42,6 +42,7 @@ import type { PoleSideSettings } from '@irdashies/types';
 
 interface ProcessorRegistryOptions {
   referenceLapPersistence: ReferenceLapPersistence;
+  fuelClock?: () => number;
   /** The radar's dev tuning from the current dashboard; defaults without. */
   radarTuning?: () => RadarProcessorTuning;
   /** The player's own pole side per track; the table's without. */
@@ -84,6 +85,7 @@ const defineProcessor = <K extends AnyProcessorDefinition['channel']>(
 
 export const createProcessorDefinitions = ({
   referenceLapPersistence,
+  fuelClock,
   radarTuning,
   radarPoleSides,
   racePlan,
@@ -97,7 +99,8 @@ export const createProcessorDefinitions = ({
     channel: 'fuel.projection',
     retainWhenInactive: true,
     metricsPrefix: 'fuelProjection',
-    create: ({ sourceReplay }) => new FuelProjectionProcessor({ sourceReplay }),
+    create: ({ sourceReplay }) =>
+      new FuelProjectionProcessor({ sourceReplay, clock: fuelClock }),
   }),
   defineProcessor({
     channel: 'lap-times.snapshot',
