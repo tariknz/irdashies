@@ -102,6 +102,12 @@ const sampleBindings = (): KeybindingsMap => ({
     description: '',
     isDefault: true,
   },
+  'gantry-back-to-program': {
+    accelerator: '',
+    label: '',
+    description: '',
+    isDefault: true,
+  },
 });
 
 const invokeUpdate = (

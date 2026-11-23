@@ -118,7 +118,8 @@ export const resolveCameraGroupNum = (
 export const setupRaceControlBridge = (
   runtime: IncidentRuntimeHandle,
   initialDashboard?: DashboardLayout,
-  archive: ArchiveAccess = ALWAYS_READABLE
+  archive: ArchiveAccess = ALWAYS_READABLE,
+  onBeforeReplayJump?: () => void
 ) => {
   let retention: 'all' | 5 | 10 | 20 = 'all';
   let cameraGroupName: string = DEFAULT_INCIDENT_CAMERA_GROUP;
@@ -254,6 +255,7 @@ export const setupRaceControlBridge = (
     }
     const bridge = getCurrentBridge();
     if (!bridge) return;
+    onBeforeReplayJump?.();
     const targetTimeMs = Math.max(
       0,
       Math.round((target.sessionTime - seconds) * 1000)

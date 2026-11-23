@@ -42,6 +42,7 @@ export type GantryChannels = Pick<
   | 'lap-times.snapshot'
   | 'lap-history.snapshot'
   | 'radio.snapshot'
+  | 'replay.timecode'
 >;
 
 export const gantryChannelSnapshots = (
@@ -63,6 +64,24 @@ export const gantryChannelSnapshots = (
   },
   'lap-history.snapshot': sprintLapHistory,
   'radio.snapshot': { transmittingCarIdxs: [], version: 0 },
+  'replay.timecode': {
+    active: false,
+    sessionNum: 0,
+    sessionTime: 0,
+    frame: 0,
+    frameEnd: 0,
+    playSpeed: 1,
+    slowMotion: false,
+    atLiveEdge: false,
+    program: {
+      state: 'onProgram',
+      sessionNum: 0,
+      sessionTime: 0,
+      offsetSeconds: 0,
+      wasLive: false,
+    },
+    version: 0,
+  },
   ...overrides,
 });
 

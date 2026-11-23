@@ -64,6 +64,16 @@ export class KeybindingManager {
     this.actionHandlers.set('radar-flip-pole-side', () => {
       void this.flipRadarPoleSide();
     });
+
+    this.actionHandlers.set('gantry-back-to-program', () => {
+      this.gantryBackToProgramHandler?.();
+    });
+  }
+
+  private gantryBackToProgramHandler: (() => void) | undefined;
+
+  setGantryBackToProgramHandler(handler: () => void): void {
+    this.gantryBackToProgramHandler = handler;
   }
 
   // ponytail: dynamic import keeps storage/dashboards out of the constructor's

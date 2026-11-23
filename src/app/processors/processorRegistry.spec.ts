@@ -16,6 +16,7 @@ const RUNTIME_OWNED_CHANNELS = [
   'lap-history.snapshot',
   'pit-stops.snapshot',
   'replay.context',
+  'replay.timecode',
   'streamchat.messages',
   'streamchat.emotes',
 ];

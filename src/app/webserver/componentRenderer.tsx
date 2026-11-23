@@ -1314,6 +1314,10 @@ export class WebSocketBridge
     // Not supported in browser component mode
   }
 
+  changeReplaySpeed(_speed: number, _slowMotion: boolean): void {
+    // Not supported in browser component mode
+  }
+
   triggerReplaySessionSearch(
     _sessionNum: number,
     _sessionTimeMs: number

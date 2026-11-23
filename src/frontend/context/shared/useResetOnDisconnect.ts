@@ -6,6 +6,7 @@ import { usePitLapStore } from '../PitLapStore/PitLapStore';
 import { useFuelStore } from '../FuelStore/FuelStore';
 import { useLapTraceStore } from '../LapTraceStore/LapTraceStore';
 import { useReplayContextStore } from '../ReplayContextStore/ReplayContextStore';
+import { useReplayTimecodeStore } from '../ReplayTimecodeStore/ReplayTimecodeStore';
 import logger from '@irdashies/utils/logger';
 
 export const useResetOnDisconnect = (running: boolean) => {
@@ -23,6 +24,7 @@ export const useResetOnDisconnect = (running: boolean) => {
       useFuelStore.getState().clearAllData();
       useLapTraceStore.getState().reset();
       useReplayContextStore.getState().reset();
+      useReplayTimecodeStore.getState().reset();
       // Keep Race Control incidents available for post-session review. Its
       // bridge clears them when the next non-empty session ID arrives.
     }

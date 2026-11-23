@@ -12,6 +12,7 @@ import { SplitPane } from './components/SplitPane/SplitPane';
 import { GantryPanel } from './components/GantryPanel/GantryPanel';
 import { useGantryAlwaysOnTop } from './hooks/useGantryAlwaysOnTop';
 import { GantryReplayNotice } from './components/GantryReplayBanner/GantryReplayBanner';
+import { GantryProgramBarContainer } from './components/GantryProgramBar/GantryProgramBar';
 import { GantrySessionEndedNotice } from './components/GantrySessionEndedNotice/GantrySessionEndedNotice';
 import { useHeld } from './hooks/useGantrySessionHold';
 import { GantrySessionDataProvider } from './hooks/useGantrySessionData';
@@ -19,6 +20,7 @@ import {
   useActiveSimulator,
   useRaceControlBridge,
   useReplayContextUpdater,
+  useReplayTimecodeUpdater,
   useRunningState,
   useSessionDrivers,
 } from '@irdashies/context';
@@ -66,6 +68,7 @@ const GantryInner = memo(({ dock, standings }: GantryProps) => {
   const [pitTeamFilter, setPitTeamFilter] = useState<number | null>(null);
 
   useReplayContextUpdater();
+  useReplayTimecodeUpdater();
   useRaceControlBridge(); // subscribe to incidents on mount
 
   const activeSimulator = useActiveSimulator();
@@ -103,6 +106,7 @@ const GantryInner = memo(({ dock, standings }: GantryProps) => {
         alwaysOnTop={alwaysOnTop}
         onAlwaysOnTopChange={setAlwaysOnTop}
       />
+      <GantryProgramBarContainer />
       <GantryReplayNotice />
       <GantrySessionEndedNotice />
       {/* Above the tab switch, so both tabs' data keeps being collected and
