@@ -6,6 +6,7 @@ import {
 } from '../gameState';
 import { readTeamNationalities, type UnknownNationality } from '../nationality';
 import type { LmuRestData } from './state';
+import { parseLmuWorldTrack, type LmuWorldTrack } from '../worldTrack';
 
 /**
  * What to fetch from LMU's REST API, and how to read it.
@@ -426,6 +427,8 @@ const gameState: LmuRestOutput = {
 
 /** The teams task, which the bridge starts bursts of by this id. */
 export const LMU_TEAMS_TASK_ID = 'multiplayer-teams';
+
+export const LMU_TRACKMAP_TASK_ID = 'watch-trackmap';
 
 /**
  * The session's tyre compounds, in the order the sim indexes them.
@@ -854,6 +857,23 @@ export const LMU_REST_TASKS: readonly LmuRestTask[] = [
       numberCell('penaltySeconds', ['penalties'], (data, value) => {
         data.cells.penaltySeconds = value;
       }),
+    ],
+  },
+  {
+    id: LMU_TRACKMAP_TASK_ID,
+    path: '/rest/watch/trackmap',
+    mode: 'burst',
+    baseIntervalMs: 2000,
+    burstMs: 60_000,
+    outputs: [
+      {
+        id: 'worldTrack',
+        target: 'telemetry',
+        parse: parseLmuWorldTrack,
+        apply: (data, value) => {
+          data.worldTrack = value as LmuWorldTrack;
+        },
+      },
     ],
   },
 ];

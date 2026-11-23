@@ -1136,6 +1136,31 @@ describe('createLmuRestPoller with a burst task', () => {
 
     expect(calls.length).toBe(afterActivation);
   });
+
+  it('reads the same body again only when the burst asks to', async () => {
+    const { poller, data } = setup(() => ok('{"codes":{"A":"FR"}}'));
+    poller.setActive(true);
+    await advance(0);
+
+    poller.burst('burst', { delayMs: 0, isComplete: () => true });
+    await advance(0);
+    const afterFirst = data.revision;
+    data.session.nationalities = undefined;
+
+    poller.burst('burst', { delayMs: 0, isComplete: () => true });
+    await advance(0);
+    expect(data.revision).toBe(afterFirst);
+    expect(data.session.nationalities).toBeUndefined();
+
+    poller.burst('burst', {
+      delayMs: 0,
+      isComplete: () => true,
+      rereadBody: true,
+    });
+    await advance(0);
+    expect(data.revision).toBe(afterFirst + 1);
+    expect(data.session.nationalities).toEqual({ A: 'FR' });
+  });
 });
 
 describe('createLmuRestPoller and a report that compares', () => {
