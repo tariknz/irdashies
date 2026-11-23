@@ -20,6 +20,7 @@ const cutAway = (overrides: Partial<ReplayTimecodeSnapshot> = {}) =>
         state: 'cutAway',
         sessionNum: 0,
         sessionTime: 100,
+        cutawaySessionTime: 90,
         offsetSeconds: 100,
         wasLive: false,
       },
@@ -28,32 +29,44 @@ const cutAway = (overrides: Partial<ReplayTimecodeSnapshot> = {}) =>
   );
 
 describe('GantryProgramBar', () => {
-  it('shows the program timecode when not live', () => {
+  it('shows Current, the frozen Cutaway, and the advancing Live position', () => {
     render(
       <GantryProgramBar
         onBackToProgram={vi.fn()}
         onStayHere={vi.fn()}
         onResumeAtCut={vi.fn()}
-        programSessionTime={3661}
-        offsetSeconds={30}
-        wasLive={false}
+        sessionTime={3691}
+        cutawaySessionTime={3661}
+        liveSessionTime={3680}
+        isCutAway={true}
       />
     );
-    expect(screen.getByRole('status').textContent).toContain('01:01:01');
+    expect(screen.getByRole('status').textContent).toContain(
+      'Current: 01:01:31'
+    );
+    expect(screen.getByRole('status').textContent).toContain(
+      'Cutaway: 01:01:01'
+    );
+    expect(screen.getByRole('status').textContent).toContain('Live: 01:01:20');
   });
 
-  it('shows "Program is live" when wasLive', () => {
+  it('clears the Cutaway clock when on program', () => {
     render(
       <GantryProgramBar
         onBackToProgram={vi.fn()}
         onStayHere={vi.fn()}
         onResumeAtCut={vi.fn()}
-        programSessionTime={100}
-        offsetSeconds={0}
-        wasLive={true}
+        sessionTime={100}
+        cutawaySessionTime={null}
+        liveSessionTime={100}
+        isCutAway={false}
       />
     );
-    expect(screen.getByRole('status').textContent).toContain('Program is live');
+    expect(screen.getByRole('status').textContent).toContain('Cutaway: ');
+    expect(screen.getByRole('status').textContent).not.toContain(
+      'Cutaway: 00:'
+    );
+    expect(screen.getByRole('status').textContent).toContain('Live: 00:01:40');
   });
 
   it('calls onBackToProgram when clicked', () => {
@@ -63,13 +76,48 @@ describe('GantryProgramBar', () => {
         onBackToProgram={cb}
         onStayHere={vi.fn()}
         onResumeAtCut={vi.fn()}
-        programSessionTime={100}
-        offsetSeconds={30}
-        wasLive={false}
+        sessionTime={130}
+        cutawaySessionTime={100}
+        liveSessionTime={200}
+        isCutAway={true}
       />
     );
-    fireEvent.click(screen.getByText('Back to program'));
+    fireEvent.click(screen.getByText('Return to live'));
     expect(cb).toHaveBeenCalledOnce();
+  });
+
+  it('returns to the static cutaway with the matching button', () => {
+    const onResumeAtCut = vi.fn();
+    render(
+      <GantryProgramBar
+        onBackToProgram={vi.fn()}
+        onStayHere={vi.fn()}
+        onResumeAtCut={onResumeAtCut}
+        sessionTime={130}
+        cutawaySessionTime={100}
+        liveSessionTime={200}
+        isCutAway={true}
+      />
+    );
+    fireEvent.click(screen.getByText('Return to cutaway'));
+    expect(onResumeAtCut).toHaveBeenCalledOnce();
+  });
+
+  it('makes the current replay position live', () => {
+    const onStayHere = vi.fn();
+    render(
+      <GantryProgramBar
+        onBackToProgram={vi.fn()}
+        onStayHere={onStayHere}
+        onResumeAtCut={vi.fn()}
+        sessionTime={130}
+        cutawaySessionTime={100}
+        liveSessionTime={200}
+        isCutAway={true}
+      />
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Make current live' }));
+    expect(onStayHere).toHaveBeenCalledOnce();
   });
 });
 
@@ -84,16 +132,21 @@ describe('GantryProgramBarContainer', () => {
     expect(screen.queryByRole('status')).toBeNull();
   });
 
-  it('renders nothing when onProgram', () => {
+  it('shows the current replay timecode when onProgram', () => {
     act(() =>
       useReplayTimecodeStore.getState().setSnapshot({
         ...INITIAL_REPLAY_TIMECODE,
         active: true,
-        program: { ...INITIAL_REPLAY_TIMECODE.program, state: 'onProgram' },
+        sessionTime: 123,
+        program: { ...INITIAL_REPLAY_TIMECODE.program, sessionTime: 123 },
       })
     );
     render(<GantryProgramBarContainer />);
-    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.getByRole('status').textContent).toContain(
+      'Current: 00:02:03'
+    );
+    expect(screen.queryByText('Return to cutaway')).toBeNull();
+    expect(screen.queryByText('Make current live')).toBeNull();
   });
 
   it('renders bar when cutAway', async () => {

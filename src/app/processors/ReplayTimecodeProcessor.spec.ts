@@ -27,6 +27,103 @@ const frame = (overrides: Record<string, unknown> = {}): Telemetry => {
 };
 
 describe('ReplayTimecodeProcessor', () => {
+  it('detects a manual jump back and keeps the previous program position', () => {
+    let nowMs = 0;
+    const p = new ReplayTimecodeProcessor(() => nowMs);
+    p.onFrame(frame({ ReplayFrameNum: 6000, ReplaySessionTime: 100 }));
+    nowMs = 1000;
+    p.onFrame(frame({ ReplayFrameNum: 6060, ReplaySessionTime: 101 }));
+    nowMs = 2000;
+    p.onFrame(frame({ ReplayFrameNum: 3000, ReplaySessionTime: 50 }));
+
+    expect(p.snapshot().program.state).toBe('cutAway');
+    expect(p.snapshot().sessionTime).toBe(50);
+    expect(p.snapshot().program.sessionTime).toBe(102);
+    expect(p.snapshot().program.cutawaySessionTime).toBe(101);
+    expect(p.getCue()?.frame).toBe(6060);
+    nowMs = 5000;
+    p.onFrame(frame({ ReplayFrameNum: 3180, ReplaySessionTime: 53 }));
+    expect(p.snapshot().program.sessionTime).toBe(105);
+    expect(p.snapshot().program.cutawaySessionTime).toBe(101);
+  });
+
+  it('detects a manual jump forward', () => {
+    let nowMs = 0;
+    const p = new ReplayTimecodeProcessor(() => nowMs);
+    p.onFrame(frame({ ReplayFrameNum: 3000, ReplaySessionTime: 50 }));
+    nowMs = 1000;
+    p.onFrame(frame({ ReplayFrameNum: 6000, ReplaySessionTime: 100 }));
+
+    expect(p.snapshot().program.state).toBe('cutAway');
+    expect(p.getCue()?.sessionTime).toBe(50);
+  });
+
+  it('detects a jump into a different replay session', () => {
+    let nowMs = 0;
+    const p = new ReplayTimecodeProcessor(() => nowMs);
+    p.onFrame(frame({ ReplayFrameNum: 6000, ReplaySessionTime: 100 }));
+    nowMs = 1000;
+    p.onFrame(
+      frame({
+        ReplayFrameNum: 3000,
+        ReplaySessionTime: 50,
+        ReplaySessionNum: 1,
+      })
+    );
+
+    expect(p.snapshot().program.state).toBe('cutAway');
+    expect(p.snapshot().program.sessionNum).toBe(0);
+  });
+
+  it('does not mistake normal playback or a delayed frame for a jump', () => {
+    let nowMs = 0;
+    const p = new ReplayTimecodeProcessor(() => nowMs);
+    p.onFrame(frame({ ReplayFrameNum: 6000, ReplaySessionTime: 100 }));
+    nowMs = 10_000;
+    p.onFrame(frame({ ReplayFrameNum: 6600, ReplaySessionTime: 110 }));
+
+    expect(p.getCue()).toBeNull();
+    expect(p.snapshot().program.state).toBe('onProgram');
+  });
+
+  it('ignores the seek initiated by a replay action', () => {
+    let nowMs = 0;
+    const p = new ReplayTimecodeProcessor(() => nowMs);
+    p.onFrame(frame({ ReplayFrameNum: 6000, ReplaySessionTime: 100 }));
+    p.cut();
+    p.expectProgrammaticSeek();
+    p.returned();
+    nowMs = 1000;
+    p.onFrame(frame({ ReplayFrameNum: 3000, ReplaySessionTime: 50 }));
+
+    expect(p.getCue()).toBeNull();
+    expect(p.snapshot().program.state).toBe('onProgram');
+  });
+
+  it('returning to cutaway resets Live to the frozen departure and clears Cutaway', () => {
+    let nowMs = 0;
+    const p = new ReplayTimecodeProcessor(() => nowMs);
+    p.onFrame(frame({ ReplayFrameNum: 6000, ReplaySessionTime: 100 }));
+    p.cut();
+    nowMs = 10_000;
+    p.onFrame(frame({ ReplayFrameNum: 3000, ReplaySessionTime: 50 }));
+    expect(p.snapshot().program.sessionTime).toBe(110);
+    expect(p.snapshot().program.cutawaySessionTime).toBe(100);
+
+    p.expectProgrammaticSeek();
+    p.returned({
+      sessionNum: 0,
+      sessionTime: 100,
+      playSpeed: 1,
+      slowMotion: false,
+    });
+    expect(p.snapshot().program.sessionTime).toBe(100);
+    expect(p.snapshot().program.cutawaySessionTime).toBeNull();
+    nowMs = 11_000;
+    p.onFrame(frame({ ReplayFrameNum: 3060, ReplaySessionTime: 51 }));
+    expect(p.snapshot().program.sessionTime).toBe(101);
+  });
+
   it('scrub follows on program', () => {
     const p = new ReplayTimecodeProcessor();
     p.onFrame(frame({ ReplaySessionTime: 60.0 }));
@@ -49,7 +146,7 @@ describe('ReplayTimecodeProcessor', () => {
     expect(snap.program.sessionTime).toBe(130);
   });
 
-  it('paused cut does not advance program', () => {
+  it('Live keeps ticking while the replay playhead is paused', () => {
     let nowMs = 0;
     const p = new ReplayTimecodeProcessor(() => nowMs);
     p.onFrame(frame({ ReplayPlaySpeed: 0 }));
@@ -57,10 +154,10 @@ describe('ReplayTimecodeProcessor', () => {
     nowMs = 10_000;
     p.onFrame(frame({ ReplayPlaySpeed: 0 }));
     const snap = p.snapshot();
-    expect(snap.program.sessionTime).toBe(100);
+    expect(snap.program.sessionTime).toBe(110);
   });
 
-  it('4x speed advances program at 4x', () => {
+  it('Live advances at real time while the replay plays at 4x', () => {
     let nowMs = 0;
     const p = new ReplayTimecodeProcessor(() => nowMs);
     p.onFrame(frame({ ReplayPlaySpeed: 4 }));
@@ -68,10 +165,10 @@ describe('ReplayTimecodeProcessor', () => {
     nowMs = 10_000;
     p.onFrame(frame());
     const snap = p.snapshot();
-    expect(snap.program.sessionTime).toBe(140);
+    expect(snap.program.sessionTime).toBe(110);
   });
 
-  it('slow motion 4x uses 1/speed', () => {
+  it('Live advances at real time while the replay plays in slow motion', () => {
     let nowMs = 0;
     const p = new ReplayTimecodeProcessor(() => nowMs);
     p.onFrame(frame({ ReplayPlaySpeed: 4, ReplayPlaySlowMotion: true }));
@@ -79,7 +176,7 @@ describe('ReplayTimecodeProcessor', () => {
     nowMs = 8_000;
     p.onFrame(frame({ ReplayPlaySpeed: 4, ReplayPlaySlowMotion: true }));
     const snap = p.snapshot();
-    expect(snap.program.sessionTime).toBe(102);
+    expect(snap.program.sessionTime).toBe(108);
   });
 
   it('second cut keeps the first cue', () => {
@@ -171,6 +268,7 @@ describe('ReplayTimecodeProcessor', () => {
     p.returned();
     expect(p.getCue()).toBeNull();
     expect(p.snapshot().program.state).toBe('onProgram');
+    expect(p.snapshot().program.sessionTime).toBe(p.snapshot().sessionTime);
   });
 
   it('snapshot inactive when not playing', () => {

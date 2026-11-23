@@ -5,6 +5,7 @@ export const LIVE_EDGE_FRAMES = 60;
 
 const FPS_MIN_WINDOW_SECONDS = 2;
 const FPS_DEFAULT = 60;
+const SEEK_THRESHOLD_SECONDS = 3;
 
 interface ReplayCue {
   frame: number;
@@ -19,8 +20,21 @@ interface ReplayCue {
   wasLive: boolean;
 }
 
-const effectiveSpeed = (cue: ReplayCue): number =>
-  cue.slowMotion && cue.playSpeed !== 0 ? 1 / cue.playSpeed : cue.playSpeed;
+interface PendingLivePosition {
+  sessionNum: number;
+  sessionTime: number;
+  playSpeed: number;
+  slowMotion: boolean;
+  wallMs: number;
+}
+
+const effectiveSpeed = (speed: {
+  playSpeed: number;
+  slowMotion: boolean;
+}): number =>
+  speed.slowMotion && speed.playSpeed !== 0
+    ? 1 / speed.playSpeed
+    : speed.playSpeed;
 
 export class ReplayTimecodeProcessor {
   private cue: ReplayCue | null = null;
@@ -33,6 +47,9 @@ export class ReplayTimecodeProcessor {
   private playSpeed = 1;
   private slowMotion = false;
   private atLiveEdge = false;
+  private pendingLivePosition: PendingLivePosition | null = null;
+  private lastFrameWallMs: number | null = null;
+  private suppressNextSeek = false;
   private programState: ProgramState = 'onProgram';
   private programSessionNum = 0;
   private programSessionTime = 0;
@@ -59,6 +76,9 @@ export class ReplayTimecodeProcessor {
         this.fpsBaseSessionTime = null;
         this.fpsWindowFrames = 0;
         this.fpsWindowTime = 0;
+        this.lastFrameWallMs = null;
+        this.suppressNextSeek = false;
+        this.pendingLivePosition = null;
         this.version++;
         return true;
       }
@@ -86,21 +106,71 @@ export class ReplayTimecodeProcessor {
     const camCameraNum =
       (telemetry.CamCameraNumber?.value?.[0] as number | undefined) ?? 0;
 
+    const wallMs = this.now();
+    const elapsedSeconds =
+      this.lastFrameWallMs === null
+        ? 0
+        : Math.max(0, (wallMs - this.lastFrameWallMs) / 1000);
+    const expectedAdvance =
+      elapsedSeconds *
+      effectiveSpeed({
+        playSpeed: this.playSpeed,
+        slowMotion: this.slowMotion,
+      });
+    const frameDelta = rawFrame - this.frame;
+    const seekThreshold = SEEK_THRESHOLD_SECONDS * this.fps;
+    const isSeek =
+      this.active &&
+      this.lastFrameWallMs !== null &&
+      Math.abs(frameDelta - expectedAdvance * this.fps) > seekThreshold &&
+      (rawSessionNum !== this.sessionNum ||
+        Math.abs(rawSessionTimeF - this.sessionTime - expectedAdvance) >
+          SEEK_THRESHOLD_SECONDS);
+
+    const programmaticSeekArrived = isSeek && this.suppressNextSeek;
+    if (isSeek) {
+      this.fpsBaseFrame = null;
+      this.fpsBaseSessionTime = null;
+      if (this.suppressNextSeek) {
+        this.suppressNextSeek = false;
+      } else {
+        this.cut(this.lastFrameWallMs ?? wallMs);
+      }
+    } else if (this.suppressNextSeek && elapsedSeconds > 5) {
+      this.suppressNextSeek = false;
+    }
+    this.lastFrameWallMs = wallMs;
     this.measureFps(rawFrame, rawSessionTimeF);
 
     const atLiveEdge =
       rawFrameEnd > 0 && rawFrame >= rawFrameEnd - LIVE_EDGE_FRAMES;
-
     let newProgramSessionNum: number;
     let newProgramSessionTime: number;
     if (this.cue === null) {
-      newProgramSessionNum = rawSessionNum;
-      newProgramSessionTime = rawSessionTime;
+      const pending = this.pendingLivePosition;
+      if (
+        pending &&
+        (programmaticSeekArrived ||
+          (rawSessionNum === pending.sessionNum &&
+            Math.abs(rawSessionTimeF - pending.sessionTime) < 2))
+      ) {
+        this.pendingLivePosition = null;
+        this.suppressNextSeek = false;
+      }
+      if (this.pendingLivePosition) {
+        const anchor = this.pendingLivePosition;
+        const elapsed = Math.max(0, (wallMs - anchor.wallMs) / 1000);
+        newProgramSessionNum = anchor.sessionNum;
+        newProgramSessionTime = Math.floor(
+          anchor.sessionTime + elapsed * effectiveSpeed(anchor)
+        );
+      } else {
+        newProgramSessionNum = rawSessionNum;
+        newProgramSessionTime = rawSessionTime;
+      }
     } else {
       const elapsed = (this.now() - this.cue.wallMs) / 1000;
-      const speed = this.cue.playSpeed === 0 ? 0 : effectiveSpeed(this.cue);
-      const advance = elapsed * speed;
-      newProgramSessionTime = Math.floor(this.cue.sessionTime + advance);
+      newProgramSessionTime = Math.floor(this.cue.sessionTime + elapsed);
       newProgramSessionNum = this.cue.sessionNum;
     }
 
@@ -173,7 +243,7 @@ export class ReplayTimecodeProcessor {
     this.fpsBaseSessionTime = sessionTimeF;
   }
 
-  cut(): void {
+  cut(wallMs = this.now()): void {
     if (this.cue !== null) return;
     if (!this.active) return;
     this.cue = {
@@ -185,7 +255,7 @@ export class ReplayTimecodeProcessor {
       camCarIdx: this.camCarIdx,
       camGroupNum: this.camGroupNum,
       camCameraNum: this.camCameraNum,
-      wallMs: this.now(),
+      wallMs,
       wasLive: this.atLiveEdge,
     };
   }
@@ -197,16 +267,14 @@ export class ReplayTimecodeProcessor {
   } | null {
     if (this.cue === null) return null;
     const elapsed = (this.now() - this.cue.wallMs) / 1000;
-    const speed = this.cue.playSpeed === 0 ? 0 : effectiveSpeed(this.cue);
-    const advance = elapsed * speed;
     const targetFrame = Math.min(
-      this.cue.frame + Math.round(advance * this.fps),
+      this.cue.frame + Math.round(elapsed * this.fps),
       this.frameEnd
     );
     return {
       frame: targetFrame,
       sessionNum: this.cue.sessionNum,
-      sessionTime: Math.floor(this.cue.sessionTime + advance),
+      sessionTime: Math.floor(this.cue.sessionTime + elapsed),
     };
   }
 
@@ -218,10 +286,24 @@ export class ReplayTimecodeProcessor {
     return this.cue;
   }
 
-  returned(): void {
+  returned(target?: {
+    sessionNum: number;
+    sessionTime: number;
+    playSpeed: number;
+    slowMotion: boolean;
+  }): void {
     this.cue = null;
     this.programState = 'onProgram';
+    this.pendingLivePosition = target
+      ? { ...target, wallMs: this.now() }
+      : null;
+    this.programSessionNum = target?.sessionNum ?? this.sessionNum;
+    this.programSessionTime = target?.sessionTime ?? this.sessionTime;
     this.version++;
+  }
+
+  expectProgrammaticSeek(): void {
+    this.suppressNextSeek = true;
   }
 
   onLifecycle(event: {
@@ -229,6 +311,9 @@ export class ReplayTimecodeProcessor {
   }): void {
     if (event.type === 'enter' || event.type === 'disconnect') {
       this.cue = null;
+      this.lastFrameWallMs = null;
+      this.suppressNextSeek = false;
+      this.pendingLivePosition = null;
       if (event.type === 'disconnect') {
         this.active = false;
       }
@@ -255,6 +340,7 @@ export class ReplayTimecodeProcessor {
           state: 'onProgram',
           sessionNum: 0,
           sessionTime: 0,
+          cutawaySessionTime: null,
           offsetSeconds: 0,
           wasLive: false,
         },
@@ -277,6 +363,7 @@ export class ReplayTimecodeProcessor {
         state: this.programState,
         sessionNum: this.programSessionNum,
         sessionTime: this.programSessionTime,
+        cutawaySessionTime: this.cue?.sessionTime ?? null,
         offsetSeconds,
         wasLive: this.cue?.wasLive ?? false,
       },

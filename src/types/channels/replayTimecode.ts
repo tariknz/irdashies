@@ -23,6 +23,8 @@ export interface ReplayTimecodeSnapshot {
     sessionNum: number;
     /** Whole seconds. */
     sessionTime: number;
+    /** Frozen departure position while cut away; null after returning. */
+    cutawaySessionTime: number | null;
     /** Playhead minus program, 0 on program. */
     offsetSeconds: number;
     /** True if the program line was at the live edge when the director cut. */

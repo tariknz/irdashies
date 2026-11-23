@@ -14,6 +14,7 @@ export const INITIAL_REPLAY_TIMECODE: ReplayTimecodeSnapshot = {
     state: 'onProgram',
     sessionNum: 0,
     sessionTime: 0,
+    cutawaySessionTime: null,
     offsetSeconds: 0,
     wasLive: false,
   },

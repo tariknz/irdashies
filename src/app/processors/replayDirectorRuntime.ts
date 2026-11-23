@@ -77,6 +77,7 @@ export class ReplayDirectorRuntime {
     }
 
     const snap = this.processor.snapshot();
+    this.processor.expectProgrammaticSeek();
     if (snap.atLiveEdge) {
       logger.info('[ReplayDirector] backToProgram: live edge — seeking to end');
       bridge.changeReplaySpeed(1, false);
@@ -95,7 +96,12 @@ export class ReplayDirectorRuntime {
       );
     }
 
-    this.processor.returned();
+    this.processor.returned({
+      sessionNum: target.sessionNum,
+      sessionTime: target.sessionTime,
+      playSpeed: 1,
+      slowMotion: false,
+    });
     this.bus.publish(CHANNEL, this.processor.snapshot());
   }
 
@@ -108,7 +114,8 @@ export class ReplayDirectorRuntime {
     logger.info(
       `[ReplayDirector] resumeAtCut: seeking to cue frame ${cue.frame}`
     );
-    bridge.changeReplaySpeed(cue.playSpeed, cue.slowMotion);
+    this.processor.expectProgrammaticSeek();
+    bridge.changeReplaySpeed(1, false);
     bridge.triggerReplaySessionSearch(cue.sessionNum, cue.sessionTime * 1000);
     bridge.changeCameraNumber(
       String(cue.camCarIdx),
@@ -116,7 +123,12 @@ export class ReplayDirectorRuntime {
       cue.camCameraNum
     );
 
-    this.processor.returned();
+    this.processor.returned({
+      sessionNum: cue.sessionNum,
+      sessionTime: cue.sessionTime,
+      playSpeed: 1,
+      slowMotion: false,
+    });
     this.bus.publish(CHANNEL, this.processor.snapshot());
   }
 
