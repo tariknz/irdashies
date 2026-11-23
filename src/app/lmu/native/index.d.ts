@@ -1,6 +1,6 @@
 /** Raw shapes returned by the LMU shared-memory addon (see lmu_node.cc). */
 
-export type LmuVec = number[];
+export type LmuVec = Float64Array;
 
 export interface LmuRawVehicle {
   id: number;
@@ -203,11 +203,17 @@ export interface LmuRawTelemetry {
   localVel?: LmuVec;
   localAccel?: LmuVec;
   pos?: LmuVec;
+  /** Celsius, three per wheel (LF, RF, LR, RR): left, centre, right as LMU reports them. */
   tyreTemperature?: Float64Array;
   tyrePressure?: Float64Array;
   tyreWear?: Float64Array;
   brakePressure?: Float64Array;
   suspensionDeflection?: Float64Array;
+  wheelDetached?: Uint8Array;
+  dentSeverity?: Uint8Array;
+  bodyDetached?: boolean;
+  lastImpactET?: number;
+  lastImpactPos?: LmuVec;
   // Per-vehicle arrays, indexed by CarIdx (vehicle slot id)
   vehIds: Int32Array;
   vehIsPlayer: Uint8Array;

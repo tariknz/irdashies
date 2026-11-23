@@ -264,6 +264,30 @@ describe('ChannelBus', () => {
     });
   });
 
+  it('drops per-renderer counters when the renderer unsubscribes', () => {
+    const { bus } = createBus();
+    const first = createTarget(9);
+    const second = createTarget(10);
+    bus.subscribe(first, 'event');
+    bus.subscribe(second, 'event');
+    bus.publish('event', { type: 'first' });
+
+    expect(bus.metricsSnapshot().publications).toEqual({
+      '9:event': 1,
+      '10:event': 1,
+    });
+
+    bus.removeRenderer(9);
+    const remaining = bus.metricsSnapshot();
+    expect(remaining.publications).toEqual({ '10:event': 1 });
+    expect(remaining.deliveries).toEqual({ '10:event': 1 });
+
+    bus.unsubscribe(10, 'event');
+    const unsubscribed = bus.metricsSnapshot();
+    expect(unsubscribed.publications).toEqual({});
+    expect(unsubscribed.deliveries).toEqual({});
+  });
+
   it('keeps processor demand and publication counts with delivery disabled', () => {
     const target = createTarget();
     const bus = new ChannelBus({ registry, deliveryEnabled: false });

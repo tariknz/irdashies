@@ -13,6 +13,7 @@ import { InputSettings } from './sections/InputSettings';
 import { TachometerSettings } from './sections/TachometerSettings';
 import { ShiftLightSettings } from './sections/ShiftLightSettings';
 import { AboutSettings } from './sections/AboutSettings';
+import { UpdatesSettings } from './sections/UpdatesSettings';
 import { FasterCarsFromBehindSettings } from './sections/FasterCarsFromBehindSettings';
 import { FuelSettings } from './sections/FuelSettings';
 import { RejoinIndicatorSettings } from './sections/RejoinIndicatorSettings';
@@ -44,6 +45,8 @@ import { BroadcastTransitionSettings } from './sections/BroadcastTransitionSetti
 import { GantrySettings } from './sections/GantrySettings';
 import { SettingsPreviewContext } from '@irdashies/domain/widgetPreview/settingsPreviewContext';
 import { widgetSettingsType } from './widgetSettingsType';
+import { drivingMetricSettingsPages } from './sections/DrivingMetricSettings';
+import { DamageSettings } from './sections/DamageSettings';
 import { StintPlanSettings } from './sections/StintPlanSettings';
 import { StrategyTimelineSettings } from './sections/StrategyTimelineSettings';
 
@@ -90,6 +93,8 @@ export const WIDGET_SETTINGS: Record<
   broadcastweather: BroadcastSettingsPage,
   broadcastpodium: BroadcastSettingsPage,
   gantry: GantrySettings,
+  damage: DamageSettings,
+  ...drivingMetricSettingsPages,
   stintplan: StintPlanSettings,
   strategytimeline: StrategyTimelineSettings,
 };
@@ -109,6 +114,7 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
   if (widgetId === 'advanced') return <AdvancedSettings />;
   if (widgetId === 'car-setup') return <CarSetupSettings />;
   if (widgetId === 'about') return <AboutSettings />;
+  if (widgetId === 'updates') return <UpdatesSettings />;
   if (widgetId === 'release-notes') return <ReleaseNotesSettings />;
   if (widgetId === 'driver-tags') return <DriverTagsSettings />;
   if (widgetId === 'keybindings') return <KeybindingsSettings />;

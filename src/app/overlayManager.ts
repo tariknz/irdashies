@@ -22,7 +22,11 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { Notification } from 'electron';
 import { readData, writeData } from './storage/storage';
-import { getDashboard, getCurrentProfileId } from './storage/dashboards';
+import {
+  getDashboard,
+  getCurrentProfileId,
+  saveDashboard,
+} from './storage/dashboards';
 
 /**
  * Settings read outside a dashboard update must come from the profile the user
@@ -34,9 +38,16 @@ import { getDashboard, getCurrentProfileId } from './storage/dashboards';
 const activeDashboard = () => getDashboard(getCurrentProfileId());
 import { getChromiumFlags, parseCustomSwitches } from './storage/chromiumFlags';
 import {
+  flushWindowMovementOnShutdown,
   markCorrectedBounds,
+  trackGantryWindowMovement,
   trackSettingsWindowMovement,
 } from './trackWindowMovement';
+import {
+  readGantryWindowPlacement,
+  withGantryWindowPlacement,
+  type GantryWindowPlacement,
+} from './gantryWindowPlacement';
 import {
   defaultSettingsWindowBounds,
   sanitizeWindowBounds,
@@ -1001,8 +1012,32 @@ export class OverlayManager {
   }
 
   public hasTelemetryInspectorSubscribers(): boolean {
+    const subscriptions = this.rendererDataSubscriptions;
+    if (!subscriptions) return false;
+    for (const win of this.displayWindows.values()) {
+      if (
+        !win.isDestroyed() &&
+        win.isVisible() &&
+        subscriptions.has(win.webContents.id, 'telemetryInspector')
+      ) {
+        return true;
+      }
+    }
+    const gantry = this.gantryWindow;
+    if (
+      gantry &&
+      !gantry.isDestroyed() &&
+      gantry.isVisible() &&
+      subscriptions.has(gantry.webContents.id, 'telemetryInspector')
+    ) {
+      return true;
+    }
+    const settings = this.currentSettingsWindow;
     return (
-      this.rendererDataSubscriptions?.hasAny('telemetryInspector') ?? false
+      !!settings &&
+      !settings.isDestroyed() &&
+      settings.isVisible() &&
+      subscriptions.has(settings.webContents.id, 'telemetryInspector')
     );
   }
 
@@ -1048,6 +1083,7 @@ export class OverlayManager {
   public quitApp(): void {
     if (this.isQuitting) return;
 
+    flushWindowMovementOnShutdown();
     this.isQuitting = true;
     this.closeAllOverlays();
 
@@ -1141,6 +1177,7 @@ export class OverlayManager {
    * Widget visibility is handled by the React OverlayContainer.
    */
   public closeOrCreateWindows(dashboardLayout?: DashboardLayout): void {
+    if (this.isQuitting) return;
     if (dashboardLayout) {
       this.ensureDisplayWindows(dashboardLayout);
       // The Gantry is not an OverlayContainer widget, so it has to be opened
@@ -1358,11 +1395,17 @@ export class OverlayManager {
       return true;
     }
 
+    const saved = readGantryWindowPlacement(dashboardLayout);
+    const bounds = sanitizeWindowBounds(
+      saved.bounds,
+      screen.getAllDisplays().map((display) => display.workArea),
+      screen.getPrimaryDisplay().workArea
+    );
+
     const browserWindow = new BrowserWindow({
       title: 'irDashies - Gantry',
       frame: true,
-      width: 1400,
-      height: 800,
+      ...(bounds ?? { width: 1400, height: 800 }),
       autoHideMenuBar: true,
       icon: getIconPath(),
       show: false,
@@ -1376,11 +1419,18 @@ export class OverlayManager {
     this.gantryPinned = undefined;
     applyBaselineSecurity(browserWindow, 'Gantry');
     this.applyGantryWindowPrefs(dashboardLayout);
+    if (bounds && bounds !== saved.bounds) {
+      markCorrectedBounds(browserWindow, bounds);
+    }
 
     browserWindow.once('ready-to-show', () => {
       if (browserWindow.isDestroyed()) return;
+      if (bounds && saved.maximized) browserWindow.maximize();
       browserWindow.show();
     });
+    trackGantryWindowMovement(browserWindow, (placement) =>
+      this.saveGantryWindowPlacement(placement)
+    );
 
     // Focusing a window on Windows lifts it to the top of its band, above
     // the overlays, so lift them back over a pinned Gantry.
@@ -1482,6 +1532,14 @@ export class OverlayManager {
       this.gantryWindow.destroy();
     }
     this.gantryWindow = undefined;
+  }
+
+  private saveGantryWindowPlacement(placement: GantryWindowPlacement): void {
+    const profileId = getCurrentProfileId();
+    const dashboard = getDashboard(profileId);
+    if (!dashboard) return;
+    const updated = withGantryWindowPlacement(dashboard, placement);
+    if (updated) saveDashboard(profileId, updated);
   }
 
   /**

@@ -1,6 +1,10 @@
 import type { RendererPerfMeasureName } from '@irdashies/types';
 
 export const perfMetrics = {
+  recordRaw(name: RendererPerfMeasureName, durationMs: number): void {
+    window.rendererPerfBridge?.recordMeasure(name, durationMs);
+  },
+
   measure<T>(
     name: RendererPerfMeasureName,
     measured: () => T,

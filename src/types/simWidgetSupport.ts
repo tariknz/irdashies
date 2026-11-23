@@ -40,10 +40,22 @@ export interface SimWidgetSupportConfig {
  */
 export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'battle',
+  'brakepressure',
+  'broadcast',
+  'broadcastevents',
+  'broadcastpodium',
+  'broadcastticker',
+  'broadcastweather',
+  'carsystems',
   'cornername',
+  'cruiseodometer',
+  'damage',
   'deltaspeed',
   'fastercarsfrombehind',
   'flag',
+  'frictioncircle',
+  'fuel',
+  'gantry',
   'garagecover',
   'heartrate',
   'infobar',
@@ -51,21 +63,29 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'laptimelog',
   'laptrace',
   'pitlanehelper',
+  'radar',
+  'rejoin',
   'relative',
-  // Timed over nominal thirds of the lap, not LMU's own sector lines: LMU
-  // publishes no boundary distances (see SplitTimeInfo in mapSession.ts).
+  // Timed over LMU's real sector lines once the player has crossed both, as
+  // learned in sectorBoundaries.ts; nominal thirds of the lap until then.
   'sectordelta',
   // Shift point from shiftPoints.ts for GT3 and LMP2, else 95% of the rev
   // limit. LMU publishes no shift point of its own.
   'shiftlight',
   'slowcarahead',
   'standings',
+  'steeringmeter',
+  'stinthistory',
   'streamchat',
+  'suspensionposition',
+  'tachometer',
   // Not a sim-specific widget: it reports whatever channels the running sim
   // publishes, which is how LMU's own mapping gets checked. It is also the
   // one widget absent from the settings menu, so there would be no toggle to
   // grey out if it were listed as unsupported.
   'telemetryinspector',
+  'trackclock',
+  'tyrepanel',
   // Without its wind cell, which the widget drops under LMU.
   'weather',
 ];
@@ -73,26 +93,24 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
 /** Everything else, hidden while LMU is the running sim. */
 export const LMU_DISABLED_WIDGETS: readonly string[] = [
   'blindspotmonitor',
-  // Broadcast reads iRacing's standings, timing and race control; not yet
-  // checked against LMU's data.
-  'broadcast',
-  'broadcastevents',
-  'broadcastpodium',
-  'broadcastticker',
-  'broadcastweather',
-  'carsystems',
   'flatmap',
-  'fuel',
-  'gantry',
   'map',
-  'radar',
-  'rejoin',
   // Race plans name drivers by iRacing customer id.
   'stintplan',
   'strategytimeline',
-  'tachometer',
   // LMU simulates no wind: its wind vector is always zero.
   'wind',
+];
+
+/** LMU-only data, so nothing to show under iRacing. */
+export const IRACING_DISABLED_WIDGETS: readonly string[] = [
+  'brakepressure',
+  'cruiseodometer',
+  'frictioncircle',
+  'steeringmeter',
+  'stinthistory',
+  'suspensionposition',
+  'tyrepanel',
 ];
 
 /**
@@ -107,7 +125,7 @@ export const LMU_DISABLED_WIDGETS: readonly string[] = [
 export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
   message: 'This widget is not compatible with the running sim',
   disabledWidgets: {
-    iracing: [],
+    iracing: [...IRACING_DISABLED_WIDGETS],
     lmu: [...LMU_DISABLED_WIDGETS],
   },
 };
@@ -123,7 +141,7 @@ export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
  * it did, which costs a user their hand edits once per change and is why the
  * number is bumped only for a real one.
  */
-export const SIM_WIDGET_SUPPORT_VERSION = 10;
+export const SIM_WIDGET_SUPPORT_VERSION = 15;
 
 /**
  * Whether a widget is unavailable under the running sim.

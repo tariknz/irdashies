@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   useDashboard,
   useChannelSelector,
   useSessionStore,
 } from '@irdashies/context';
-import { getGearKey, loadCarData } from '@irdashies/utils/carData';
+import { getGearKey } from '@irdashies/utils/carData';
+import { usePlayerCarData } from '../tachometer/usePlayerCarData';
 import type {
   DriverControlsSnapshot,
   ShiftPointSettings,
@@ -45,10 +46,8 @@ export const useShiftFlashActive = (
     return state.session?.DriverInfo?.Drivers?.find((d) => d.CarIdx === idx)
       ?.CarPath;
   });
-  const carData = useMemo(
-    () => (enabled && carPath ? loadCarData(carPath) : null),
-    [enabled, carPath]
-  );
+  const playerCarData = usePlayerCarData();
+  const carData = enabled ? playerCarData : null;
 
   const selectActive = useCallback(
     (snapshot: DriverControlsSnapshot) => {

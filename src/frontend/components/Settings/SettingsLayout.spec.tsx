@@ -10,6 +10,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SIM_WIDGET_SUPPORT } from '@irdashies/types';
+import type { AppUpdateAction, AppUpdateStatus } from '@irdashies/types';
 import { SettingsLayout } from './SettingsLayout';
 import { TrailingSlashRedirect } from './TrailingSlashRedirect';
 
@@ -79,6 +80,142 @@ const layoutAt = (path: string) => (
 function renderLayout(path = '/settings/relative') {
   return render(layoutAt(path));
 }
+
+function mockAppUpdates() {
+  const previousBridge = window.appUpdatesBridge;
+  const status: AppUpdateStatus = {
+    currentVersion: '3.0.0',
+    latestVersion: '3.0.0',
+    autoUpdate: false,
+    preferenceSaveFailed: false,
+    canUpdate: true,
+    newerVersionAvailable: false,
+    checkingLatest: false,
+    latestCheckFailed: false,
+    restartNotice: false,
+    phase: 'idle',
+  };
+  let publish: (next: AppUpdateStatus) => void = () => undefined;
+  const install = vi.fn(async (action: AppUpdateAction) => {
+    publish({
+      ...status,
+      phase: action === 'download' ? 'downloading' : 'restarting',
+    });
+  });
+  window.appUpdatesBridge = {
+    onStatus: (callback) => {
+      publish = callback;
+      publish(status);
+      return () => undefined;
+    },
+    checkLatest: vi.fn(),
+    setAutoUpdate: vi.fn(),
+    install,
+  };
+  return {
+    install,
+    update: (next: Partial<AppUpdateStatus>) =>
+      act(() => publish({ ...status, ...next })),
+    restore: () => {
+      window.appUpdatesBridge = previousBridge;
+    },
+  };
+}
+
+it('keeps the sidebar update control in sync as the user downloads and restarts', async () => {
+  const { install, update, restore } = mockAppUpdates();
+  try {
+    const user = userEvent.setup();
+    renderLayout();
+    const sidebar = () => within(screen.getByRole('navigation'));
+    const downloadLabel = 'Download update';
+    const download = () =>
+      sidebar().getByRole('button', { name: downloadLabel });
+    expect(sidebar().queryByRole('button', { name: downloadLabel })).toBeNull();
+
+    update({ latestVersion: '3.1.0', newerVersionAvailable: true });
+    await user.click(download());
+
+    const downloading = () =>
+      sidebar().getByRole('button', { name: 'Downloading update…' });
+    expect(downloading()).toHaveAttribute('aria-disabled', 'true');
+    await user.click(downloading());
+    expect(install).toHaveBeenCalledExactlyOnceWith('download');
+
+    await user.click(sidebar().getByRole('link', { name: 'Tools' }));
+    expect(downloading()).toBeVisible();
+    update({ phase: 'ready' });
+    expect(
+      screen.queryByRole('complementary', { name: 'Application update' })
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      sidebar().getByRole('button', { name: 'Restart app to install update' })
+    );
+    expect(install).toHaveBeenNthCalledWith(2, 'restart');
+    expect(
+      sidebar().getByRole('button', { name: 'Restarting irDashies…' })
+    ).toHaveAttribute('aria-disabled', 'true');
+  } finally {
+    restore();
+  }
+});
+
+it('shows a background download inside Settings and lets the user defer it', async () => {
+  const { install, update, restore } = mockAppUpdates();
+  try {
+    const user = userEvent.setup();
+    const { unmount } = renderLayout();
+    const notice = () =>
+      screen.queryByRole('complementary', { name: 'Application update' });
+    const toolsLink = screen.getByRole('link', { name: 'Tools' });
+    toolsLink.focus();
+
+    const ready = {
+      phase: 'ready',
+      autoUpdate: true,
+      restartNotice: true,
+    } as const;
+    update(ready);
+    expect(notice()).toBeVisible();
+    expect(toolsLink).toHaveFocus();
+    expect(install).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Later' }));
+    expect(notice()).not.toBeInTheDocument();
+    expect(install).not.toHaveBeenCalled();
+    await user.click(toolsLink);
+    update({ ...ready, latestVersion: '3.1.0' });
+    expect(notice()).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Restart app to install update' })
+    ).toBeVisible();
+
+    unmount();
+    renderLayout();
+    update(ready);
+    expect(notice()).not.toBeInTheDocument();
+  } finally {
+    sessionStorage.clear();
+    restore();
+  }
+});
+
+it('restarts from the update notice when the user chooses Restart', async () => {
+  const { install, update, restore } = mockAppUpdates();
+  try {
+    const user = userEvent.setup();
+    renderLayout();
+    update({ phase: 'ready', autoUpdate: true, restartNotice: true });
+    await user.click(screen.getByRole('button', { name: 'Restart' }));
+    expect(install).toHaveBeenCalledExactlyOnceWith('restart');
+    expect(
+      screen.queryByRole('complementary', { name: 'Application update' })
+    ).not.toBeInTheDocument();
+  } finally {
+    restore();
+  }
+});
 
 describe('SettingsLayout navigation', () => {
   beforeEach(() => {

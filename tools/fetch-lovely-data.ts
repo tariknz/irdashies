@@ -1,5 +1,5 @@
 /**
- * Fetch and bundle iRacing car data from lovely-car-data repository
+ * Fetch and bundle iRacing and LMU car data from lovely-car-data repository
  *
  * Usage:
  *   npm run fetch-lovely-data          # Fetches only if missing or stale
@@ -39,9 +39,12 @@ interface CarDataBundle {
 
 const GITHUB_RAW_BASE =
   'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data';
-const TARGET_GAME = 'iracing';
 const DATA_DIR = path.join(process.cwd(), 'src', 'frontend', 'assets', 'data');
-const OUTPUT_FILE = path.join(DATA_DIR, 'cars-bundle.json');
+
+const GAMES: readonly { game: string; output: string }[] = [
+  { game: 'iracing', output: 'cars-bundle.json' },
+  { game: 'lmu', output: 'lmu-cars-bundle.json' },
+];
 
 // Check if force flag is passed
 const FORCE_FETCH = process.argv.includes('--force');
@@ -49,13 +52,13 @@ const FORCE_FETCH = process.argv.includes('--force');
 /**
  * Check if the bundle file exists and is recent enough
  */
-async function shouldSkipFetch(): Promise<boolean> {
+async function shouldSkipFetch(outputFile: string): Promise<boolean> {
   if (FORCE_FETCH) {
     console.log('🔄 Force flag detected, fetching fresh data...\n');
     return false;
   }
 
-  const age = await getFreshBundleAgeMs(OUTPUT_FILE);
+  const age = await getFreshBundleAgeMs(outputFile);
   if (age === null) {
     console.log(
       'Bundle is missing, stale, or has an invalid fetch timestamp; fetching fresh data...\n'
@@ -103,17 +106,17 @@ function fetchJson<T>(url: string): Promise<T> {
 /**
  * Fetch the manifest to get list of all cars
  */
-async function fetchManifest(): Promise<CarManifestEntry[]> {
-  console.log(`📋 Fetching manifest for ${TARGET_GAME}...`);
+async function fetchManifest(game: string): Promise<CarManifestEntry[]> {
+  console.log(`📋 Fetching manifest for ${game}...`);
   const url = `${GITHUB_RAW_BASE}/manifest.json`;
   const manifest = await fetchJson<CarDataManifest>(url);
-  const cars = manifest.cars?.[TARGET_GAME] ?? [];
+  const cars = manifest.cars?.[game] ?? [];
 
   if (!cars.length) {
-    throw new Error(`No cars found for ${TARGET_GAME} in manifest`);
+    throw new Error(`No cars found for ${game} in manifest`);
   }
 
-  console.log(`✓ Found ${cars.length} cars for ${TARGET_GAME}`);
+  console.log(`✓ Found ${cars.length} cars for ${game}`);
   return cars;
 }
 
@@ -139,9 +142,9 @@ async function fetchCarData(entry: CarManifestEntry): Promise<CarData | null> {
  */
 async function fetchAllCarData(
   manifest: CarManifestEntry[]
-): Promise<CarData[]> {
+): Promise<{ entry: CarManifestEntry; car: CarData }[]> {
   console.log(`\n🚗 Fetching ${manifest.length} car files...`);
-  const cars: CarData[] = [];
+  const cars: { entry: CarManifestEntry; car: CarData }[] = [];
   let successCount = 0;
 
   for (let i = 0; i < manifest.length; i++) {
@@ -149,7 +152,7 @@ async function fetchAllCarData(
     const carData = await fetchCarData(entry);
 
     if (carData) {
-      cars.push(carData);
+      cars.push({ entry, car: carData });
       successCount++;
     }
 
@@ -168,15 +171,27 @@ async function fetchAllCarData(
 /**
  * Create a bundle with all car data indexed by carId
  */
-function createBundle(cars: CarData[]): CarDataBundle {
+function bundleKey(
+  game: string,
+  entry: CarManifestEntry,
+  car: CarData
+): string {
+  if (game !== 'lmu') return car.carId;
+  return entry.path.replace(/^.*\//, '').replace(/\.json$/i, '') || car.carId;
+}
+
+function createBundle(
+  game: string,
+  cars: { entry: CarManifestEntry; car: CarData }[]
+): CarDataBundle {
   const bundle: CarDataBundle = {
     version: '1.0',
     timestamp: Date.now(),
     cars: {},
   };
 
-  for (const car of cars) {
-    bundle.cars[car.carId] = car;
+  for (const { entry, car } of cars) {
+    bundle.cars[bundleKey(game, entry, car)] = car;
   }
 
   return bundle;
@@ -195,12 +210,12 @@ function ensureDataDir(): void {
 /**
  * Save bundle to file
  */
-function saveBundle(bundle: CarDataBundle): void {
+function saveBundle(bundle: CarDataBundle, outputFile: string): void {
   ensureDataDir();
-  fs.writeFileSync(OUTPUT_FILE, JSON.stringify(bundle, null, 2));
-  const fileSize = fs.statSync(OUTPUT_FILE).size;
+  fs.writeFileSync(outputFile, JSON.stringify(bundle, null, 2));
+  const fileSize = fs.statSync(outputFile).size;
   const fileSizeKb = (fileSize / 1024).toFixed(2);
-  console.log(`\n💾 Saved bundle to: ${OUTPUT_FILE}`);
+  console.log(`\n💾 Saved bundle to: ${outputFile}`);
   console.log(`   File size: ${fileSizeKb} KB`);
 }
 
@@ -209,19 +224,19 @@ function saveBundle(bundle: CarDataBundle): void {
  */
 async function main(): Promise<void> {
   try {
-    // Skip if bundle exists and is recent
-    if (await shouldSkipFetch()) {
-      return;
+    for (const { game, output } of GAMES) {
+      const outputFile = path.join(DATA_DIR, output);
+      if (await shouldSkipFetch(outputFile)) continue;
+
+      console.log('🔄 Fetching car data from lovely-car-data repository...\n');
+
+      const manifest = await fetchManifest(game);
+      const cars = await fetchAllCarData(manifest);
+      const bundle = createBundle(game, cars);
+      saveBundle(bundle, outputFile);
+
+      console.log(`\n✅ Car data bundle successfully created!`);
     }
-
-    console.log('🔄 Fetching car data from lovely-car-data repository...\n');
-
-    const manifest = await fetchManifest();
-    const cars = await fetchAllCarData(manifest);
-    const bundle = createBundle(cars);
-    saveBundle(bundle);
-
-    console.log(`\n✅ Car data bundle successfully created!`);
   } catch (error) {
     console.error('❌ Error fetching car data:', error);
     process.exit(1);

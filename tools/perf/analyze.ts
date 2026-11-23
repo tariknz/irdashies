@@ -5,21 +5,41 @@ import type {
   NumericSampleStats,
   RendererPerfSample,
 } from '../../src/types/performance';
+import { listArgument, numericArgument, parseArguments } from './args.ts';
+import {
+  MIN_ANALYSIS_SECONDS,
+  PERF_GATES,
+  comparisonCheckSatisfied,
+  comparisonCheckStatus,
+  contrastDescription,
+  parseComparisonContrast,
+  type ComparisonContrast,
+} from './gates.ts';
 
 const MAIN_PREFIX = '[PerfMetrics:JSON] ';
 const RENDERER_PREFIX = '[PerfRenderer:JSON] ';
 const VISIBILITY_PREFIX = '[PerfVisibility:JSON] ';
 const ORIGIN_PREFIX = '[PerfRunOrigin:JSON] ';
-const MIN_ANALYSIS_SECONDS = 300;
 const MIN_PRIVATE_OBSERVATIONS = 2;
 const MIN_PRIVATE_SPAN_RATIO = 0.8;
 const MAX_PRIVATE_SAMPLE_GAP_SECONDS = 60;
+const WORKLOAD_TIMING_TOLERANCE_SECONDS = 1;
 
 interface SectionStats {
   count: number;
   avgMs: number;
   maxMs: number;
   p99Ms: number;
+}
+
+export interface SdkWaitSummary {
+  durationMs: NumericSampleStats;
+  calls: number;
+  reads: number;
+  unsuccessful: number;
+  totalMs: number;
+  timeoutMs: number;
+  targetHz: number;
 }
 
 interface MainPerfSample {
@@ -31,6 +51,15 @@ interface MainPerfSample {
   tickRateHz: number;
   sections: Record<string, SectionStats>;
   eventLoopDelayMs: { mean: number; max: number; p99: number };
+  sdkWait?: {
+    durationMs: NumericSampleStats;
+    calls: number;
+    reads: number;
+    unsuccessful: number;
+    totalMs: number;
+    timeoutMs: number;
+    targetHz: number;
+  };
   iracing: {
     frameRate: NumericSampleStats;
     cpuUsageForeground: NumericSampleStats;
@@ -40,6 +69,7 @@ interface MainPerfSample {
   totalAppCpuPercent?: number;
   totalAppMemoryMB?: number;
   totalAppPrivateMemoryMB?: number;
+  privateMemoryReused?: boolean;
   scenarioMetadata?: Record<string, unknown>;
   channelMetrics?: {
     processorExecutions: Record<string, number>;
@@ -83,6 +113,7 @@ export interface AnalysisWindow {
 
 export interface PerfSummary {
   runId: string;
+  captureOrigin?: string;
   scenario: string;
   overlayMode: string;
   durationMinutes: number;
@@ -90,6 +121,7 @@ export interface PerfSummary {
   analysisWindow: {
     startSeconds: number;
     endSeconds?: number;
+    openEnded?: boolean;
   };
   scenarioMetadata: Record<string, unknown>;
   visibilityPhases: VisibilityMarker[];
@@ -103,6 +135,7 @@ export interface PerfSummary {
     reasons: string[];
   }[];
   iracing: {
+    fpsObservationCount?: number;
     averageFps: number;
     meanOnePercentLowFps: number;
     worstFps: number;
@@ -154,10 +187,12 @@ export interface PerfSummary {
   telemetry: {
     averageTickRateHz: number;
     minimumTickRateHz: number;
+    processTelemetryObservationCount?: number;
     processTelemetryP99MeanMs: number;
     processTelemetryP99WorstMs: number;
     broadcastP99MeanMs: number;
   };
+  sdkWait?: SdkWaitSummary;
   eventLoop: {
     p99MeanMs: number;
     p99WorstMs: number;
@@ -181,6 +216,9 @@ export interface PerfSummary {
     radarFrameRateHz: number;
     radarFrameP99MeanMs: number;
     radarFrameP99WorstMs: number;
+    widgetRenderRateHz: number | null;
+    widgetRenderP99MeanMs: number | null;
+    widgetRenderP99WorstMs: number | null;
     lapTraceFrameRateHz: number;
     lapTraceFrameP99MeanMs: number;
     lapTraceFrameP99WorstMs: number;
@@ -189,6 +227,7 @@ export interface PerfSummary {
     lapTraceBrakeCueP99WorstMs: number;
     framesOver25MsPercent: number;
     framesOver50MsPercent: number;
+    frameCount: number;
   };
   channels: Record<
     string,
@@ -234,6 +273,7 @@ export interface PerfSummary {
 export interface PerfComparison {
   baseline: PerfSummary;
   candidate: PerfSummary;
+  contrast: ComparisonContrast;
   delta: {
     averageFpsPercent: number;
     onePercentLowFpsPercent: number;
@@ -247,6 +287,8 @@ export interface PerfComparison {
     inputTraceFrameP99Ms: number;
     radarFrameRateHz: number;
     radarFrameP99Ms: number;
+    widgetRenderRateHz: number | null;
+    widgetRenderP99Ms: number | null;
     lapTraceFrameRateHz: number;
     lapTraceFrameP99Ms: number;
     lapTraceBrakeCueRateHz: number;
@@ -408,7 +450,7 @@ const overlaps = (
     ? bounds.end >= start && bounds.end < end
     : bounds.end > start && bounds.start < end;
 
-const coveredDurationSeconds = (
+export const coveredDurationSeconds = (
   samples: readonly MainPerfSample[],
   start: number,
   end: number
@@ -528,7 +570,16 @@ export function summarizeCapture(
   const validOrigins = (capture.origins ?? []).filter((origin) =>
     Number.isFinite(Date.parse(origin.timestamp))
   );
-  const runOriginAvailable = validOrigins.length === 1;
+  const runId = capture.main[0].runId;
+  if (
+    capture.main.some((sample) => sample.runId !== runId) ||
+    capture.renderer.some((sample) => sample.runId !== runId) ||
+    capture.visibility?.some((marker) => marker.runId !== runId)
+  ) {
+    throw new Error('Capture log contains samples from multiple runs.');
+  }
+  const runOriginAvailable =
+    validOrigins.length === 1 && validOrigins[0].runId === runId;
   const originTimestamp = runOriginAvailable
     ? Date.parse(validOrigins[0].timestamp)
     : Date.parse(capture.main[0].timestamp);
@@ -598,6 +649,9 @@ export function summarizeCapture(
     renderer,
     (sample) => sample.radarFrameMs
   );
+  const widgetRender = renderer.some((sample) => sample.widgetRenderMs?.count)
+    ? summarizeRendererMeasure(renderer, (sample) => sample.widgetRenderMs)
+    : undefined;
   const lapTraceFrame = summarizeRendererMeasure(
     renderer,
     (sample) => sample.lapTraceFrameMs
@@ -620,7 +674,7 @@ export function summarizeCapture(
   );
   const processTelemetry = effectiveMain
     .map((sample) => sample.sections.processTelemetry)
-    .filter((value): value is SectionStats => value !== undefined);
+    .filter((value): value is SectionStats => (value?.count ?? 0) > 0);
   const broadcast = effectiveMain
     .map((sample) => sample.sections.broadcast)
     .filter((value): value is SectionStats => value !== undefined);
@@ -838,15 +892,19 @@ export function summarizeCapture(
         typeof sample.totalAppPrivateMemoryMB === 'number' &&
         Number.isFinite(sample.totalAppPrivateMemoryMB)
     );
-  const privateTimestamps = pointMain
-    .filter(
-      (sample) =>
-        typeof sample.totalAppPrivateMemoryMB === 'number' &&
-        Number.isFinite(sample.totalAppPrivateMemoryMB)
-    )
-    .map((sample) => Date.parse(sample.timestamp))
-    .filter(Number.isFinite)
-    .sort((left, right) => left - right);
+  const privateSamples = pointMain.filter(
+    (sample) =>
+      !sample.privateMemoryReused &&
+      typeof sample.totalAppPrivateMemoryMB === 'number' &&
+      Number.isFinite(sample.totalAppPrivateMemoryMB)
+  );
+  const privateTimestamps = [
+    ...new Set(
+      privateSamples
+        .map((sample) => Date.parse(sample.timestamp))
+        .filter(Number.isFinite)
+    ),
+  ].sort((left, right) => left - right);
   const privateMemorySampleCount = privateTimestamps.length;
   const firstPrivateTimestamp = privateTimestamps[0] ?? 0;
   const lastPrivateTimestamp = privateTimestamps.at(-1) ?? 0;
@@ -902,15 +960,97 @@ export function summarizeCapture(
         : []),
   ];
 
+  const sdkWaitSamples = effectiveMain
+    .map((sample) => sample.sdkWait)
+    .filter(
+      (wait): wait is NonNullable<MainPerfSample['sdkWait']> =>
+        wait !== undefined
+    );
+  for (const wait of sdkWaitSamples) {
+    if (
+      !wait ||
+      typeof wait !== 'object' ||
+      !wait.durationMs ||
+      !['count', 'avg', 'min', 'max', 'p1', 'p50', 'p95', 'p99'].every((key) =>
+        Number.isFinite(wait.durationMs[key as keyof NumericSampleStats])
+      ) ||
+      ![
+        wait.calls,
+        wait.reads,
+        wait.unsuccessful,
+        wait.totalMs,
+        wait.timeoutMs,
+        wait.targetHz,
+      ].every(Number.isFinite)
+    ) {
+      throw new Error('Malformed SDK wait instrumentation in performance log.');
+    }
+  }
+  const sdkWait: SdkWaitSummary | undefined =
+    sdkWaitSamples.length > 0
+      ? {
+          durationMs: {
+            count: sdkWaitSamples.reduce(
+              (sum, wait) => sum + wait.durationMs.count,
+              0
+            ),
+            avg: weightedAverage(
+              sdkWaitSamples.map((wait) => ({
+                value: wait.durationMs.avg,
+                weight: wait.durationMs.count,
+              }))
+            ),
+            min: minimum(sdkWaitSamples.map((wait) => wait.durationMs.min)),
+            max: maximum(sdkWaitSamples.map((wait) => wait.durationMs.max)),
+            p1: weightedAverage(
+              sdkWaitSamples.map((wait) => ({
+                value: wait.durationMs.p1,
+                weight: wait.durationMs.count,
+              }))
+            ),
+            p50: weightedAverage(
+              sdkWaitSamples.map((wait) => ({
+                value: wait.durationMs.p50,
+                weight: wait.durationMs.count,
+              }))
+            ),
+            p95: weightedAverage(
+              sdkWaitSamples.map((wait) => ({
+                value: wait.durationMs.p95,
+                weight: wait.durationMs.count,
+              }))
+            ),
+            p99: weightedAverage(
+              sdkWaitSamples.map((wait) => ({
+                value: wait.durationMs.p99,
+                weight: wait.durationMs.count,
+              }))
+            ),
+          },
+          calls: sdkWaitSamples.reduce((sum, wait) => sum + wait.calls, 0),
+          reads: sdkWaitSamples.reduce((sum, wait) => sum + wait.reads, 0),
+          unsuccessful: sdkWaitSamples.reduce(
+            (sum, wait) => sum + wait.unsuccessful,
+            0
+          ),
+          totalMs: sdkWaitSamples.reduce((sum, wait) => sum + wait.totalMs, 0),
+          timeoutMs: sdkWaitSamples.at(-1)?.timeoutMs ?? 0,
+          targetHz: average(sdkWaitSamples.map((wait) => wait.targetHz)),
+        }
+      : undefined;
+
   return {
-    runId: effectiveMain[0].runId,
+    runId,
+    captureOrigin: runOriginAvailable ? validOrigins[0].timestamp : undefined,
     scenario: effectiveMain[0].scenario,
     overlayMode: effectiveMain[0].overlayMode,
     durationMinutes: durationSeconds / 60,
     sampleCount: effectiveMain.length,
     analysisWindow: {
       startSeconds,
-      endSeconds: analysisWindow.endSeconds,
+      endSeconds:
+        analysisWindow.endSeconds ?? (lastSampleEnd - originTimestamp) / 1000,
+      ...(analysisWindow.endSeconds === undefined ? { openEnded: true } : {}),
     },
     scenarioMetadata,
     // Keep the complete schedule in the summary. The first visibility marker
@@ -919,6 +1059,10 @@ export function summarizeCapture(
     visibilityPhases: capture.visibility ?? [],
     phaseEvidence,
     iracing: {
+      fpsObservationCount: iracingStats.reduce(
+        (sum, stats) => sum + stats.count,
+        0
+      ),
       averageFps: weightedAverage(
         iracingStats.map((stats) => ({
           value: stats.avg,
@@ -1054,7 +1198,7 @@ export function summarizeCapture(
       ),
       privateMemorySlopeMBPerMinute: linearSlopePerMinute(
         privateMemorySamplingAdequate
-          ? pointMain.map((sample) => ({
+          ? privateSamples.map((sample) => ({
               timestamp: sample.timestamp,
               value: sample.totalAppPrivateMemoryMB as number,
             }))
@@ -1125,6 +1269,10 @@ export function summarizeCapture(
       minimumTickRateHz: minimum(
         effectiveMain.map((sample) => sample.tickRateHz)
       ),
+      processTelemetryObservationCount: processTelemetry.reduce(
+        (sum, stats) => sum + stats.count,
+        0
+      ),
       processTelemetryP99MeanMs: average(
         processTelemetry.map((stats) => stats.p99Ms)
       ),
@@ -1133,6 +1281,7 @@ export function summarizeCapture(
       ),
       broadcastP99MeanMs: average(broadcast.map((stats) => stats.p99Ms)),
     },
+    sdkWait,
     eventLoop: {
       p99MeanMs: average(
         effectiveMain.map((sample) => sample.eventLoopDelayMs.p99)
@@ -1184,12 +1333,16 @@ export function summarizeCapture(
       radarFrameRateHz: radarFrame.rateHz,
       radarFrameP99MeanMs: radarFrame.p99MeanMs,
       radarFrameP99WorstMs: radarFrame.p99WorstMs,
+      widgetRenderRateHz: widgetRender?.rateHz ?? null,
+      widgetRenderP99MeanMs: widgetRender?.p99MeanMs ?? null,
+      widgetRenderP99WorstMs: widgetRender?.p99WorstMs ?? null,
       lapTraceFrameRateHz: lapTraceFrame.rateHz,
       lapTraceFrameP99MeanMs: lapTraceFrame.p99MeanMs,
       lapTraceFrameP99WorstMs: lapTraceFrame.p99WorstMs,
       lapTraceBrakeCueRateHz: lapTraceBrakeCue.rateHz,
       lapTraceBrakeCueP99MeanMs: lapTraceBrakeCue.p99MeanMs,
       lapTraceBrakeCueP99WorstMs: lapTraceBrakeCue.p99WorstMs,
+      frameCount: rendererFrameCount,
       framesOver25MsPercent:
         rendererFrameCount === 0
           ? 0
@@ -1227,11 +1380,204 @@ function percentChange(baseline: number, candidate: number): number {
   return ((candidate - baseline) / baseline) * 100;
 }
 
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+  if (typeof value === 'object' && value !== null) {
+    return `{${Object.entries(value)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, item]) => `${JSON.stringify(key)}:${stableJson(item)}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(value) ?? 'undefined';
+}
+
+const contrastExcludedKeys = (
+  contrast: ComparisonContrast
+): ReadonlySet<string> => {
+  const keys = new Set<string>();
+  if (contrast.includes('overlay')) {
+    [
+      'activeWidgetTypes',
+      'requestedWidgetTypes',
+      'overlayWindowMode',
+      'widgetInputRequirements',
+    ].forEach((key) => keys.add(key));
+  }
+  if (contrast.includes('widgets')) {
+    [
+      'activeWidgetTypes',
+      'requestedWidgetTypes',
+      'widgetInputRequirements',
+    ].forEach((key) => keys.add(key));
+  }
+  if (contrast.includes('channels')) {
+    ['channelDelivery', 'telemetryDelivery', 'telemetryPayload'].forEach(
+      (key) => keys.add(key)
+    );
+  }
+  return keys;
+};
+
+export function isTapeReplay(
+  metadata: Record<string, unknown> | undefined
+): boolean {
+  return (
+    metadata?.simulatorMode === 'replay' &&
+    typeof metadata.tapeSha256 === 'string'
+  );
+}
+
+function workloadMetadata(
+  summary: PerfSummary,
+  contrast: ComparisonContrast
+): string | undefined {
+  if (
+    !summary.evidence.scenarioMetadataConsistent ||
+    Object.keys(summary.scenarioMetadata).length === 0
+  )
+    return undefined;
+  const excluded = contrastExcludedKeys(contrast);
+  const metadata = Object.fromEntries(
+    Object.entries(summary.scenarioMetadata).filter(
+      ([key]) =>
+        key !== 'sourceCommit' && key !== 'sourceDirty' && !excluded.has(key)
+    )
+  );
+  const { activeWidgetTypes, widgetInputRequirements } = metadata;
+  if (
+    Array.isArray(activeWidgetTypes) &&
+    widgetInputRequirements !== null &&
+    typeof widgetInputRequirements === 'object'
+  ) {
+    const active = new Set(activeWidgetTypes);
+    metadata.widgetInputRequirements = Object.fromEntries(
+      Object.entries(widgetInputRequirements).filter(([widget]) =>
+        active.has(widget)
+      )
+    );
+  }
+  return stableJson({
+    ...(contrast.includes('overlay')
+      ? {}
+      : { overlayMode: summary.overlayMode }),
+
+    visibilitySchedule: (summary.visibilityPhases ?? [])
+      .map(({ index, visibility, durationSeconds }) => ({
+        index,
+        visibility,
+        durationSeconds,
+      }))
+      .sort((left, right) => left.index - right.index),
+    metadata,
+  });
+}
+
+function workloadMetadataMatch(
+  baseline: PerfSummary,
+  candidate: PerfSummary,
+  contrast: ComparisonContrast
+): boolean | undefined {
+  const baselineMetadata = workloadMetadata(baseline, contrast);
+  const candidateMetadata = workloadMetadata(candidate, contrast);
+  if (baselineMetadata === undefined || candidateMetadata === undefined)
+    return undefined;
+  if (baselineMetadata !== candidateMetadata) return false;
+
+  const left = baseline.analysisWindow;
+  const right = candidate.analysisWindow;
+  if (
+    !left ||
+    !right ||
+    left.startSeconds !== right.startSeconds ||
+    Boolean(left.openEnded) !== Boolean(right.openEnded)
+  )
+    return false;
+  if (left.openEnded) {
+    if (
+      left.endSeconds === undefined ||
+      right.endSeconds === undefined ||
+      Math.abs(left.endSeconds - right.endSeconds) >
+        WORKLOAD_TIMING_TOLERANCE_SECONDS
+    )
+      return false;
+  } else if (left.endSeconds !== right.endSeconds) {
+    return false;
+  }
+
+  const transitionOffsets = (summary: PerfSummary): number[] =>
+    [...(summary.visibilityPhases ?? [])]
+      .sort((a, b) => a.index - b.index)
+      .map(
+        (phase) =>
+          (Date.parse(phase.timestamp) -
+            Date.parse(summary.captureOrigin ?? '')) /
+          1000
+      );
+  const leftOffsets = transitionOffsets(baseline);
+  const rightOffsets = transitionOffsets(candidate);
+  return leftOffsets.every(
+    (offset, index) =>
+      Math.abs(offset - rightOffsets[index]) <=
+      WORKLOAD_TIMING_TOLERANCE_SECONDS
+  );
+}
+
+function coreEvidenceReasons(summary: PerfSummary, label: string): string[] {
+  return [
+    ...(!summary.evidence.runOriginAvailable
+      ? [`${label} lacks a single explicit capture origin`]
+      : []),
+    ...(!summary.evidence.durationSufficient
+      ? [`${label} analysis duration is shorter than five minutes`]
+      : []),
+    ...(!summary.evidence.scenarioMetadataConsistent
+      ? [`${label} scenario metadata is inconsistent`]
+      : []),
+    ...(!summary.evidence.inputCoverageAvailable
+      ? [`${label} widget input coverage is unavailable`]
+      : !summary.evidence.inputCoverageComplete
+        ? [`${label} visibility phases violated widget input expectations`]
+        : []),
+  ];
+}
+
+export function coreEvidenceComplete(summary: PerfSummary): boolean {
+  return (
+    summary.evidence.runOriginAvailable &&
+    summary.evidence.durationSufficient &&
+    summary.evidence.scenarioMetadataConsistent &&
+    summary.evidence.inputCoverageComplete
+  );
+}
+
+export function comparisonCoreComplete(
+  baseline: PerfSummary,
+  candidate: PerfSummary,
+  contrast: ComparisonContrast = []
+): boolean {
+  return (
+    coreEvidenceComplete(baseline) &&
+    coreEvidenceComplete(candidate) &&
+    workloadMetadataMatch(baseline, candidate, contrast) === true
+  );
+}
+
 /** Compute candidate-minus-baseline deltas for the summary metrics. */
 export function compareSummaries(
   baseline: PerfSummary,
-  candidate: PerfSummary
+  candidate: PerfSummary,
+  contrast: ComparisonContrast = [],
+  ignoredGates: readonly string[] = []
 ): PerfComparison {
+  const widgetRenderDelta = (
+    metric: 'widgetRenderRateHz' | 'widgetRenderP99MeanMs'
+  ): number | null => {
+    const before = baseline.renderer[metric];
+    const after = candidate.renderer[metric];
+    return typeof before === 'number' && typeof after === 'number'
+      ? after - before
+      : null;
+  };
   const averageFpsPercent = percentChange(
     baseline.iracing.averageFps,
     candidate.iracing.averageFps
@@ -1240,25 +1586,98 @@ export function compareSummaries(
     baseline.iracing.meanOnePercentLowFps,
     candidate.iracing.meanOnePercentLowFps
   );
-  const comparisonConclusive =
-    baseline.evidence.conclusive && candidate.evidence.conclusive;
-  const verdict = (passed: boolean): boolean | null =>
-    comparisonConclusive ? passed : null;
-  const evidenceTarget = (target: string): string =>
-    comparisonConclusive
-      ? target
-      : `inconclusive: ${[
-          ...baseline.evidence.inconclusiveReasons.map(
-            (reason) => `baseline ${reason}`
-          ),
-          ...candidate.evidence.inconclusiveReasons.map(
-            (reason) => `candidate ${reason}`
-          ),
-        ].join('; ')}`;
+  const workloadMatch = workloadMetadataMatch(baseline, candidate, contrast);
+  const workloadReasons =
+    workloadMatch === false
+      ? ['baseline and candidate workload metadata differ']
+      : workloadMatch === undefined
+        ? ['workload metadata is unavailable or inconsistent']
+        : [];
+  const comparableReasons = [
+    ...coreEvidenceReasons(baseline, 'baseline'),
+    ...coreEvidenceReasons(candidate, 'candidate'),
+    ...workloadReasons,
+  ];
+  const memoryReasons = [
+    ...(!baseline.evidence.privateMemorySamplingAdequate
+      ? ['baseline private-memory samples are unavailable or incomplete']
+      : []),
+    ...(!candidate.evidence.privateMemorySamplingAdequate
+      ? ['candidate private-memory samples are unavailable or incomplete']
+      : []),
+  ];
+  const gameFpsReasons =
+    isTapeReplay(baseline.scenarioMetadata) ||
+    isTapeReplay(candidate.scenarioMetadata)
+      ? ['game FPS is historical in an isolated replay tape']
+      : [];
+  const fpsEvidenceReasons = [baseline, candidate].flatMap((summary, index) =>
+    (summary.iracing.fpsObservationCount ?? 0) > 0
+      ? []
+      : [
+          `${index === 0 ? 'baseline' : 'candidate'} FPS observations are unavailable`,
+        ]
+  );
+  const telemetryEvidenceReasons = [baseline, candidate].flatMap(
+    (summary, index) =>
+      (summary.telemetry.processTelemetryObservationCount ?? 0) > 0
+        ? []
+        : [
+            `${index === 0 ? 'baseline' : 'candidate'} telemetry timing observations are unavailable`,
+          ]
+  );
+  const rendererNotApplicable = [baseline, candidate].some(
+    (summary) =>
+      summary.overlayMode === 'observer' ||
+      summary.overlayMode === 'empty' ||
+      (Array.isArray(summary.scenarioMetadata.activeWidgetTypes) &&
+        summary.scenarioMetadata.activeWidgetTypes.length === 0)
+  )
+    ? ['no dashboard widgets were active on one or both sides']
+    : [];
+  const rendererReasons =
+    rendererNotApplicable.length === 0
+      ? [baseline, candidate].flatMap((summary, index) =>
+          summary.renderer.frameCount > 0
+            ? []
+            : [
+                `${index === 0 ? 'baseline' : 'candidate'} renderer frame observations are unavailable`,
+              ]
+        )
+      : [];
+  const gate = (
+    name: string,
+    actual: number,
+    passed: boolean,
+    evidenceReasons: string[],
+    notApplicableReasons: string[],
+    target: string
+  ) => {
+    const ignored = ignoredGates.some((flag) =>
+      name.toLowerCase().includes(flag.toLowerCase())
+    );
+    const reasons = [
+      ...evidenceReasons,
+      ...notApplicableReasons,
+      ...(ignored ? ['ignored by --ignore-gates'] : []),
+    ];
+    const applicable =
+      evidenceReasons.length === 0 &&
+      notApplicableReasons.length === 0 &&
+      !ignored;
+    return {
+      passed: applicable ? passed : null,
+      actual,
+      target: applicable
+        ? target
+        : `${!ignored && notApplicableReasons.length === 0 ? 'inconclusive:' : 'not-applicable:'} ${reasons.join('; ')}`,
+    };
+  };
 
   return {
     baseline,
     candidate,
+    contrast,
     delta: {
       averageFpsPercent,
       onePercentLowFpsPercent,
@@ -1288,6 +1707,8 @@ export function compareSummaries(
       radarFrameP99Ms:
         candidate.renderer.radarFrameP99MeanMs -
         baseline.renderer.radarFrameP99MeanMs,
+      widgetRenderRateHz: widgetRenderDelta('widgetRenderRateHz'),
+      widgetRenderP99Ms: widgetRenderDelta('widgetRenderP99MeanMs'),
       lapTraceFrameRateHz:
         candidate.renderer.lapTraceFrameRateHz -
         baseline.renderer.lapTraceFrameRateHz,
@@ -1303,47 +1724,94 @@ export function compareSummaries(
     },
     checks: [
       {
+        name: 'Matched workload metadata',
+        passed: workloadMatch ?? null,
+        actual:
+          workloadMatch === undefined ? Number.NaN : Number(!workloadMatch),
+        target:
+          workloadMatch === undefined
+            ? 'n/a: workload metadata unavailable or inconsistent'
+            : 'same scenario settings, excluding source commit and worktree state',
+      },
+      {
         name: 'iRacing average FPS regression',
-        passed: verdict(averageFpsPercent >= -2),
-        actual: averageFpsPercent,
-        target: evidenceTarget('>= -2%'),
+        ...gate(
+          'iRacing average FPS regression',
+          averageFpsPercent,
+          averageFpsPercent >= PERF_GATES.averageFpsPercent.minimum,
+          [...comparableReasons, ...fpsEvidenceReasons],
+          gameFpsReasons,
+          `>= ${PERF_GATES.averageFpsPercent.minimum}%`
+        ),
       },
       {
         name: 'iRacing sampled FPS p1 regression',
-        passed: verdict(onePercentLowFpsPercent >= -5),
-        actual: onePercentLowFpsPercent,
-        target: evidenceTarget('>= -5%'),
+        ...gate(
+          'iRacing sampled FPS p1 regression',
+          onePercentLowFpsPercent,
+          onePercentLowFpsPercent >= PERF_GATES.onePercentLowFpsPercent.minimum,
+          [...comparableReasons, ...fpsEvidenceReasons],
+          gameFpsReasons,
+          `>= ${PERF_GATES.onePercentLowFpsPercent.minimum}%`
+        ),
       },
       {
         name: 'Telemetry processing p99',
-        passed: verdict(candidate.telemetry.processTelemetryP99MeanMs < 3),
-        actual: candidate.telemetry.processTelemetryP99MeanMs,
-        target: evidenceTarget('< 3 ms'),
+        ...gate(
+          'Telemetry processing p99',
+          candidate.telemetry.processTelemetryP99MeanMs,
+          candidate.telemetry.processTelemetryP99MeanMs <
+            PERF_GATES.processTelemetryP99Ms.maximum,
+          [...comparableReasons, ...telemetryEvidenceReasons],
+          [],
+          `< ${PERF_GATES.processTelemetryP99Ms.maximum} ms`
+        ),
       },
       {
         name: 'Telemetry tick rate',
-        passed: verdict(candidate.telemetry.minimumTickRateHz >= 20),
-        actual: candidate.telemetry.minimumTickRateHz,
-        target: evidenceTarget('>= 20 Hz'),
+        ...gate(
+          'Telemetry tick rate',
+          candidate.telemetry.minimumTickRateHz,
+          candidate.telemetry.minimumTickRateHz >=
+            PERF_GATES.minimumTickRateHz.minimum,
+          comparableReasons,
+          [],
+          `>= ${PERF_GATES.minimumTickRateHz.minimum} Hz`
+        ),
       },
       {
         name: 'Steady-state private-memory slope',
-        passed: verdict(candidate.app.privateMemorySlopeMBPerMinute < 5),
-        actual: candidate.app.privateMemorySlopeMBPerMinute,
-        target: evidenceTarget('< 5 MB/min'),
+        ...gate(
+          'Steady-state private-memory slope',
+          candidate.app.privateMemorySlopeMBPerMinute,
+          Number.isFinite(candidate.app.privateMemorySlopeMBPerMinute) &&
+            candidate.app.privateMemorySlopeMBPerMinute <
+              PERF_GATES.privateMemorySlopeMBPerMinute.maximum,
+          [...comparableReasons, ...memoryReasons],
+          [],
+          `< ${PERF_GATES.privateMemorySlopeMBPerMinute.maximum} MB/min`
+        ),
       },
       {
         name: 'Renderer frames over 50 ms',
-        passed: verdict(candidate.renderer.framesOver50MsPercent < 0.1),
-        actual: candidate.renderer.framesOver50MsPercent,
-        target: evidenceTarget('< 0.1%'),
+        ...gate(
+          'Renderer frames over 50 ms',
+          candidate.renderer.framesOver50MsPercent,
+          candidate.renderer.framesOver50MsPercent <
+            PERF_GATES.framesOver50MsPercent.maximum,
+          [...comparableReasons, ...rendererReasons],
+          rendererNotApplicable,
+          `< ${PERF_GATES.framesOver50MsPercent.maximum}%`
+        ),
       },
     ],
   };
 }
 
-function format(value: number, digits = 2): string {
-  return Number.isFinite(value) ? value.toFixed(digits) : 'n/a';
+function format(value: number | null, digits = 2): string {
+  return value !== null && Number.isFinite(value)
+    ? value.toFixed(digits)
+    : 'n/a';
 }
 
 /** Format the summary as a Markdown report. */
@@ -1429,13 +1897,15 @@ export function summaryMarkdown(summary: PerfSummary): string {
 | broadcast p99 mean | ${format(summary.telemetry.broadcastP99MeanMs)} ms |
 | Main event-loop p99, mean / worst interval | ${format(summary.eventLoop.p99MeanMs)} / ${format(summary.eventLoop.p99WorstMs)} ms |
 | Worst main event-loop stall | ${format(summary.eventLoop.worstStallMs)} ms |
-| Renderer frame-time p99 mean | ${format(summary.renderer.frameTimeP99MeanMs)} ms |
+${summary.sdkWait ? `| SDK wait p50/p95/p99, mean | ${format(summary.sdkWait.durationMs.p50, 3)} / ${format(summary.sdkWait.durationMs.p95, 3)} / ${format(summary.sdkWait.durationMs.p99, 3)} ms (${format(summary.sdkWait.targetHz)} Hz target, ${summary.sdkWait.unsuccessful}/${summary.sdkWait.calls} unsuccessful) |\n` : ''}| Renderer frame-time p99 mean | ${format(summary.renderer.frameTimeP99MeanMs)} ms |
 | Renderer telemetry callbacks / second | ${format(summary.renderer.telemetryCallbackRateHz)} |
 | Renderer telemetry callback p99, mean / worst interval | ${format(summary.renderer.telemetryCallbackP99MeanMs, 3)} / ${format(summary.renderer.telemetryCallbackP99WorstMs, 3)} ms |
 | Input trace frames / second | ${format(summary.renderer.inputTraceFrameRateHz)} |
 | Input trace frame p99, mean / worst interval | ${format(summary.renderer.inputTraceFrameP99MeanMs, 3)} / ${format(summary.renderer.inputTraceFrameP99WorstMs, 3)} ms |
 | Radar frames / second | ${format(summary.renderer.radarFrameRateHz)} |
 | Radar frame p99, mean / worst interval | ${format(summary.renderer.radarFrameP99MeanMs, 3)} / ${format(summary.renderer.radarFrameP99WorstMs, 3)} ms |
+| Widget React commits / second | ${format(summary.renderer.widgetRenderRateHz)} |
+| Widget React commit p99, mean / worst interval | ${format(summary.renderer.widgetRenderP99MeanMs, 3)} / ${format(summary.renderer.widgetRenderP99WorstMs, 3)} ms |
 | Track-map animation frames / second | ${format(summary.renderer.trackMapAnimationFrameRateHz)} |
 | Track-map animation-frame p99, mean / worst interval | ${format(summary.renderer.trackMapAnimationFrameP99MeanMs, 3)} / ${format(summary.renderer.trackMapAnimationFrameP99WorstMs, 3)} ms |
 | Lap Trace plot frames / second | ${format(summary.renderer.lapTraceFrameRateHz)} |
@@ -1483,17 +1953,66 @@ ${processes}
 `;
 }
 
+function sourceProvenance(summary: PerfSummary): string {
+  const commit = summary.scenarioMetadata.sourceCommit;
+  const dirty = summary.scenarioMetadata.sourceDirty;
+  const revision = typeof commit === 'string' ? commit : 'not recorded';
+  const worktree =
+    typeof dirty === 'boolean' ? (dirty ? 'dirty' : 'clean') : 'unknown';
+  return `${revision} (${worktree} worktree)`;
+}
+
+function workloadConditions(summary: PerfSummary): string {
+  const metadata = Object.fromEntries(
+    Object.entries(summary.scenarioMetadata).filter(
+      ([key]) => key !== 'sourceCommit' && key !== 'sourceDirty'
+    )
+  );
+  return stableJson({
+    scenario: summary.scenario,
+    overlayMode: summary.overlayMode,
+    metadata,
+  });
+}
+
+export function comparisonEvidenceReasons(
+  comparison: PerfComparison
+): string[] {
+  const { baseline, candidate, checks } = comparison;
+  const matched = checks.find(
+    (check) => check.name === 'Matched workload metadata'
+  );
+  return [
+    ...coreEvidenceReasons(candidate, 'candidate'),
+    ...coreEvidenceReasons(baseline, 'baseline'),
+    ...(matched?.passed === true
+      ? []
+      : ['workload metadata differs or is unavailable']),
+    ...checks
+      .filter(
+        (check) =>
+          check.passed === null &&
+          !comparisonCheckSatisfied(check) &&
+          check !== matched
+      )
+      .map((check) => `${check.name}: ${check.target}`),
+  ];
+}
+
 /** Format the comparison as a Markdown table. */
 export function comparisonMarkdown(comparison: PerfComparison): string {
   const { baseline, candidate, delta } = comparison;
+  const workloadMatch = comparison.checks.find(
+    (check) => check.name === 'Matched workload metadata'
+  )?.passed;
   const evidenceStatus =
-    baseline.evidence.conclusive && candidate.evidence.conclusive
+    comparisonEvidenceReasons(comparison).length === 0
       ? 'CONCLUSIVE'
       : 'INCONCLUSIVE';
   const checks = comparison.checks
     .map(
       (check) =>
-        `| ${check.name} | ${check.passed === null ? 'INCONCLUSIVE' : check.passed ? 'PASS' : 'FAIL'} | ${format(check.actual, 3)} | ${check.target} |`
+        `| ${check.name} | ${comparisonCheckStatus(check)} | ${format(check.actual, 3)} | ${check.target} |`
     )
     .join('\n');
 
@@ -1502,6 +2021,15 @@ export function comparisonMarkdown(comparison: PerfComparison): string {
 - Baseline: \`${baseline.runId}\` (${baseline.scenario})
 - Candidate: \`${candidate.runId}\` (${candidate.scenario})
 - Evidence: **${evidenceStatus}**
+- Declared contrast: ${contrastDescription(comparison.contrast)}
+
+## Provenance and workload
+
+- Baseline source: \`${sourceProvenance(baseline)}\`
+- Candidate source: \`${sourceProvenance(candidate)}\`
+- Workload metadata excluding source revision/state: **${workloadMatch === true ? 'MATCH' : workloadMatch === false ? 'DIFFERENT' : 'UNAVAILABLE'}**
+- Baseline conditions: \`${workloadConditions(baseline)}\`
+- Candidate conditions: \`${workloadConditions(candidate)}\`
 
 | Delta | Result |
 | --- | ---: |
@@ -1515,6 +2043,8 @@ export function comparisonMarkdown(comparison: PerfComparison): string {
 | Input trace frame p99 mean | ${format(delta.inputTraceFrameP99Ms, 3)} ms |
 | Radar frames / second | ${format(delta.radarFrameRateHz)} Hz |
 | Radar frame p99 mean | ${format(delta.radarFrameP99Ms, 3)} ms |
+| Widget React commits / second | ${format(delta.widgetRenderRateHz)} Hz |
+| Widget React commit p99 mean | ${format(delta.widgetRenderP99Ms, 3)} ms |
 | Track-map animation frames / second | ${format(delta.trackMapAnimationFrameRateHz)} Hz |
 | Track-map animation-frame p99 mean | ${format(delta.trackMapAnimationFrameP99Ms, 3)} ms |
 | Lap Trace plot frames / second | ${format(delta.lapTraceFrameRateHz)} Hz |
@@ -1546,7 +2076,9 @@ async function writeAnalysis(
   baselinePath: string | undefined,
   warmupSeconds: number,
   analysisWindow: AnalysisWindow,
-  requireConclusive: boolean
+  requireConclusive: boolean,
+  contrast: ComparisonContrast,
+  ignoredGates: readonly string[]
 ): Promise<void> {
   const candidate = await readSummary(
     candidatePath,
@@ -1557,10 +2089,17 @@ async function writeAnalysis(
   const summaryPath = `${outputBase}.summary.json`;
   const markdownPath = `${outputBase}.summary.md`;
   let baseline: PerfSummary | undefined;
+  let inconclusiveReasons = candidate.evidence.inconclusiveReasons;
 
   if (baselinePath) {
     baseline = await readSummary(baselinePath, warmupSeconds, analysisWindow);
-    const comparison = compareSummaries(baseline, candidate);
+    const comparison = compareSummaries(
+      baseline,
+      candidate,
+      contrast,
+      ignoredGates
+    );
+    inconclusiveReasons = comparisonEvidenceReasons(comparison);
     await Promise.all([
       fs.writeFile(summaryPath, JSON.stringify(comparison, null, 2), 'utf8'),
       fs.writeFile(markdownPath, comparisonMarkdown(comparison), 'utf8'),
@@ -1573,24 +2112,22 @@ async function writeAnalysis(
   }
 
   process.stdout.write(`${markdownPath}\n`);
-  if (
-    requireConclusive &&
-    (!candidate.evidence.conclusive ||
-      (baseline !== undefined && !baseline.evidence.conclusive))
-  ) {
-    const reasons = [
-      ...candidate.evidence.inconclusiveReasons.map(
-        (reason) => `candidate: ${reason}`
-      ),
-      ...(baseline?.evidence.inconclusiveReasons ?? []).map(
-        (reason) => `baseline: ${reason}`
-      ),
-    ];
+  if (requireConclusive && inconclusiveReasons.length > 0) {
     throw new Error(
-      `Performance evidence is inconclusive: ${reasons.join('; ')}`
+      `Performance evidence is inconclusive: ${inconclusiveReasons.join('; ')}`
     );
   }
 }
+
+export const ANALYZE_USAGE = `Usage: npm run perf:analyze -- <candidate.log> [options]
+  --baseline <file>            Baseline raw performance log
+  --warmup-seconds N           Ignore startup samples (default 30)
+  --analysis-start-seconds N   Start analysis after capture origin
+  --analysis-end-seconds N     End analysis after capture origin
+  --contrast overlay,widgets   Declare intentional A/B differences
+  --ignore-gates a,b           Skip selected gate names explicitly
+  --allow-inconclusive         Write reports for partial evidence
+`;
 
 export function parseCliArgs(args: string[]): {
   candidatePath: string;
@@ -1598,48 +2135,52 @@ export function parseCliArgs(args: string[]): {
   warmupSeconds: number;
   analysisWindow: AnalysisWindow;
   requireConclusive: boolean;
+  contrast: ComparisonContrast;
+  ignoredGates: string[];
 } {
-  const valueFlags = new Set([
-    '--baseline',
-    '--warmup-seconds',
-    '--analysis-start-seconds',
-    '--analysis-end-seconds',
-  ]);
-  const positional = args.filter(
-    (arg, index) =>
-      !arg.startsWith('--') && !valueFlags.has(args[index - 1] ?? '')
-  );
-  const baselineIndex = args.indexOf('--baseline');
-  const warmupIndex = args.indexOf('--warmup-seconds');
-  const startIndex = args.indexOf('--analysis-start-seconds');
-  const endIndex = args.indexOf('--analysis-end-seconds');
-  if (!positional[0]) {
+  const parsed = parseArguments(args, {
+    usage: ANALYZE_USAGE,
+    values: [
+      '--baseline',
+      '--warmup-seconds',
+      '--analysis-start-seconds',
+      '--analysis-end-seconds',
+      '--contrast',
+      '--ignore-gates',
+    ],
+    booleans: ['--allow-inconclusive'],
+    positional: 'one',
+  });
+  const baselinePath = parsed.value('--baseline');
+  const analysisWindow: AnalysisWindow = {
+    startSeconds: numericArgument(parsed, '--analysis-start-seconds', 0, {
+      min: 0,
+    }),
+    endSeconds: numericArgument(parsed, '--analysis-end-seconds', 0, {
+      min: 0,
+    }),
+  };
+  if (!parsed.has('--analysis-start-seconds'))
+    analysisWindow.startSeconds = undefined;
+  if (!parsed.has('--analysis-end-seconds'))
+    analysisWindow.endSeconds = undefined;
+  if (
+    analysisWindow.startSeconds !== undefined &&
+    analysisWindow.endSeconds !== undefined &&
+    analysisWindow.endSeconds <= analysisWindow.startSeconds
+  )
     throw new Error(
-      'Usage: npm run perf:analyze -- <candidate.log> [--baseline <baseline.log>] [--warmup-seconds 30] [--analysis-start-seconds 60] [--analysis-end-seconds 420] [--allow-inconclusive]'
+      '--analysis-end-seconds must be greater than --analysis-start-seconds.'
     );
-  }
 
   return {
-    candidatePath: path.resolve(positional[0]),
-    baselinePath:
-      baselineIndex >= 0 && args[baselineIndex + 1]
-        ? path.resolve(args[baselineIndex + 1])
-        : undefined,
-    warmupSeconds:
-      warmupIndex >= 0 && Number.isFinite(Number(args[warmupIndex + 1]))
-        ? Number(args[warmupIndex + 1])
-        : 30,
-    analysisWindow: {
-      startSeconds:
-        startIndex >= 0 && Number.isFinite(Number(args[startIndex + 1]))
-          ? Number(args[startIndex + 1])
-          : undefined,
-      endSeconds:
-        endIndex >= 0 && Number.isFinite(Number(args[endIndex + 1]))
-          ? Number(args[endIndex + 1])
-          : undefined,
-    },
-    requireConclusive: !args.includes('--allow-inconclusive'),
+    candidatePath: path.resolve(parsed.positionals[0]),
+    baselinePath: baselinePath ? path.resolve(baselinePath) : undefined,
+    warmupSeconds: numericArgument(parsed, '--warmup-seconds', 30, { min: 0 }),
+    analysisWindow,
+    requireConclusive: !parsed.flag('--allow-inconclusive'),
+    contrast: parseComparisonContrast(listArgument(parsed, '--contrast')),
+    ignoredGates: listArgument(parsed, '--ignore-gates'),
   };
 }
 
@@ -1648,12 +2189,19 @@ const isCli =
   path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 if (isCli) {
-  const options = parseCliArgs(process.argv.slice(2));
-  await writeAnalysis(
-    options.candidatePath,
-    options.baselinePath,
-    options.warmupSeconds,
-    options.analysisWindow,
-    options.requireConclusive
-  );
+  const args = process.argv.slice(2);
+  if (args.includes('--help') || args.includes('-h')) {
+    process.stdout.write(ANALYZE_USAGE);
+  } else {
+    const options = parseCliArgs(args);
+    await writeAnalysis(
+      options.candidatePath,
+      options.baselinePath,
+      options.warmupSeconds,
+      options.analysisWindow,
+      options.requireConclusive,
+      options.contrast,
+      options.ignoredGates
+    );
+  }
 }

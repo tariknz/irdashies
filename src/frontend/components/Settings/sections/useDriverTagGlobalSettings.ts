@@ -4,7 +4,6 @@ import { useDashboard } from '@irdashies/context';
 
 const DEFAULT_SETTINGS: DriverTagSettings = {
   groups: [],
-  mapping: {},
   display: { enabled: false, displayStyle: 'badge' },
 };
 

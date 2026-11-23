@@ -17,3 +17,4 @@ export * from './useWidgetsForThisDisplay';
 export * from './useActiveSimulator';
 export * from './useSimWidgetSupport';
 export * from './useHiddenWidgetIds';
+export * from './useDemoFrame';

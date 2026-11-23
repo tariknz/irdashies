@@ -224,6 +224,7 @@ export class ProcessorHost {
   private readonly states: readonly RuntimeState[];
   private readonly statesByChannel = new Map<ProcessorChannel, RuntimeState>();
   private readonly directDemand = new Set<ProcessorChannel>();
+  private readonly forceDemand: boolean;
   private activeDemand = new Set<ProcessorChannel>();
   /** Last visible subscriber count per channel, to spot a window being shown. */
   private readonly activeCounts = new Map<ProcessorChannel, number>();
@@ -243,6 +244,7 @@ export class ProcessorHost {
     this.aggregateReplay = options.aggregateReplay ?? false;
     this.frameClock = options.frameClock ?? iracingFrameClock;
     this.logError = options.logError ?? (() => undefined);
+    this.forceDemand = process.env.PERF_FORCE_PROCESSOR_DEMAND === '1';
 
     const definitions = this.sortDefinitions(options.definitions);
     this.states = definitions.map((definition) => ({
@@ -255,7 +257,10 @@ export class ProcessorHost {
       const activeCount = this.bus.subscriberCount(channel);
       this.activeCounts.set(channel, activeCount);
       const registeredCount = this.bus.registeredSubscriberCount(channel);
-      if (hasDirectDemand(state.definition, activeCount, registeredCount)) {
+      if (
+        this.forceDemand ||
+        hasDirectDemand(state.definition, activeCount, registeredCount)
+      ) {
         this.directDemand.add(channel);
       }
     }
@@ -268,7 +273,10 @@ export class ProcessorHost {
           if (!state) return;
           const wasVisible = (this.activeCounts.get(processorChannel) ?? 0) > 0;
           this.activeCounts.set(processorChannel, activeCount);
-          if (hasDirectDemand(state.definition, activeCount, registeredCount)) {
+          if (
+            this.forceDemand ||
+            hasDirectDemand(state.definition, activeCount, registeredCount)
+          ) {
             this.directDemand.add(processorChannel);
           } else {
             this.directDemand.delete(processorChannel);

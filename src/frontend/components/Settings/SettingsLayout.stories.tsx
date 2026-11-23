@@ -9,6 +9,7 @@ import {
 } from '@irdashies/context';
 import type {
   ActiveSimulator,
+  AppUpdateStatus,
   DashboardBridge,
   DriverTagSettings,
   PitLaneBridge,
@@ -98,7 +99,6 @@ const driverTagsFixture: DriverTagSettings = {
     { id: '10001', name: 'Alex Morgan', label: 'TEAM', groupId: 'team' },
     { id: '10002', name: 'Jamie Taylor', label: 'LEAGUE', groupId: 'league' },
   ],
-  mapping: {},
   display: { enabled: true, displayStyle: 'badge', iconWeight: 'regular' },
 };
 
@@ -580,6 +580,84 @@ export const NewReleaseNotesBadge: Story = {
 export const ReleaseNotesPage: Story = {
   args: { initialPath: '/settings/release-notes' },
   beforeEach: withReleaseNotesBadge,
+};
+
+const withUpdatesStatus =
+  (initial: Partial<AppUpdateStatus> = {}, downloadDelay = 0) =>
+  () => {
+    const previous = window.appUpdatesBridge;
+    let notify: (status: AppUpdateStatus) => void;
+    let timer: number | undefined;
+    let status: AppUpdateStatus = {
+      currentVersion: '3.0.0',
+      latestVersion: '3.1.0',
+      autoUpdate: true,
+      preferenceSaveFailed: false,
+      canUpdate: true,
+      newerVersionAvailable: true,
+      checkingLatest: false,
+      latestCheckFailed: false,
+      restartNotice: false,
+      phase: 'idle',
+      ...initial,
+    };
+    const update = (partial: Partial<AppUpdateStatus>) => {
+      status = { ...status, ...partial };
+      notify(status);
+    };
+    window.appUpdatesBridge = {
+      onStatus: (callback) => {
+        notify = callback;
+        notify(status);
+        return () => undefined;
+      },
+      checkLatest: async () => notify(status),
+      setAutoUpdate: async (autoUpdate) => update({ autoUpdate }),
+      install: async (action) => {
+        if (action === 'restart') {
+          if (status.phase === 'ready') update({ phase: 'restarting' });
+          return;
+        }
+        if (status.phase !== 'idle') return;
+        update({ phase: 'downloading' });
+        const finish = () =>
+          update({
+            phase: 'ready',
+            latestVersion: '3.1.0',
+            newerVersionAvailable: true,
+          });
+        if (downloadDelay) timer = window.setTimeout(finish, downloadDelay);
+        else finish();
+      },
+    };
+    return () => {
+      window.clearTimeout(timer);
+      window.appUpdatesBridge = previous;
+    };
+  };
+
+export const UpdatesPage: Story = {
+  args: { initialPath: '/settings/updates' },
+  beforeEach: withUpdatesStatus(),
+};
+
+export const UpdatesCurrentRelease: Story = {
+  args: { initialPath: '/settings/updates' },
+  beforeEach: withUpdatesStatus({
+    latestVersion: '3.0.0',
+    autoUpdate: false,
+    newerVersionAvailable: false,
+  }),
+};
+
+export const SidebarUpdate: Story = {
+  args: { initialPath: '/settings/relative' },
+  beforeEach: withUpdatesStatus({ autoUpdate: false }, 2_000),
+};
+
+export const UpdateReadyNotice: Story = {
+  args: { initialPath: '/settings/general' },
+  beforeEach: withUpdatesStatus({ phase: 'ready', restartNotice: true }),
 };
 
 // Controlled disk-full bridge response; no disk space is consumed.

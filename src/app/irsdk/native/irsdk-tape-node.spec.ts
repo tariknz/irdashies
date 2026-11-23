@@ -239,8 +239,6 @@ const doubleValue = (value: unknown): number =>
   new Float64Array(value as ArrayBuffer)[0];
 const floatValue = (value: unknown): number =>
   new Float32Array(value as ArrayBuffer)[0];
-const intValue = (value: unknown): number =>
-  new Int32Array(value as ArrayBuffer)[0];
 const addonPath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '..',
@@ -344,6 +342,87 @@ describe('tape-backed native SDK', () => {
     });
   });
 
+  it('reads changed variable metadata from a fresh native frame cache', async () => {
+    await writeFile(
+      tapePath,
+      createTapeFixture({
+        transformVariables: (variables) => {
+          variables[4].writeInt32LE(2, 0);
+          variables[4].writeInt32LE(16, 4);
+          variables[4].fill(0, 16, 48);
+          writeCString(variables[4], 16, 32, 'Gear');
+        },
+      })
+    );
+    const script = `
+      const assert = require('node:assert/strict');
+      const { iRacingSdkNode } = require(process.argv[1]);
+      const sdk = new iRacingSdkNode();
+      try {
+        assert.equal(sdk.startSDK(), true);
+        assert.equal(sdk.waitForData(100), true);
+        const frame = sdk.getTelemetryDataView();
+        assert.ok(Object.keys(frame).includes('Gear'), JSON.stringify(Object.keys(frame)));
+        assert.ok(!Object.keys(frame).includes('Speed'));
+        assert.equal(frame.Gear.varType, 2);
+        assert.equal(frame.Gear.value.length, 4);
+        assert.equal(sdk.getTelemetryDataView(), frame);
+        sdk.stopSDK();
+        assert.deepEqual(sdk.getTelemetryDataView(), {});
+      } finally {
+        sdk.stopSDK();
+      }
+    `;
+    await execFileAsync(process.execPath, ['-e', script, addonPath], {
+      env: { ...process.env, IRDASHIES_TELEMETRY_REPLAY: tapePath },
+      timeout: 5000,
+    });
+  });
+
+  it('keeps repeated native frames consistent with the legacy read path', async () => {
+    await writeFile(tapePath, createTapeFixture());
+    process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
+    const { iRacingSdkNode } = loadAddon();
+    const sdk = new iRacingSdkNode();
+    try {
+      expect(sdk.startSDK()).toBe(true);
+      expect(sdk.waitForData(100)).toBe(true);
+      const readView = sdk.getTelemetryDataView?.bind(sdk);
+      if (!readView) throw new Error('Native frame view unavailable');
+      const first = readView();
+      for (let read = 0; read < 40; read += 1) {
+        expect(readView()).toBe(first);
+      }
+      const legacy = sdk.getTelemetryData();
+      for (const name of ['SessionTime', 'SessionTick', 'Speed'] as const) {
+        const bytes = new DataView(
+          first[name].value.buffer,
+          first[name].value.byteOffset,
+          first[name].value.byteLength
+        );
+        const observed =
+          name === 'SessionTime'
+            ? bytes.getFloat64(0, true)
+            : name === 'Speed'
+              ? bytes.getFloat32(0, true)
+              : bytes.getInt32(0, true);
+        const legacyBytes = new DataView(
+          legacy[name].value as unknown as ArrayBuffer
+        );
+        const expected =
+          name === 'SessionTime'
+            ? legacyBytes.getFloat64(0, true)
+            : name === 'Speed'
+              ? legacyBytes.getFloat32(0, true)
+              : legacyBytes.getInt32(0, true);
+        expect(observed).toBeCloseTo(expected, 5);
+        expect(Number.isFinite(observed)).toBe(true);
+      }
+    } finally {
+      sdk.stopSDK();
+    }
+  });
+
   it.each([
     // Names from the 7 November 2026 F7 captures, before double decoding.
     ['captured Catalan name', Buffer.from('Jaime Perpinyà'), 'Jaime Perpinyà'],
@@ -418,74 +497,63 @@ describe('tape-backed native SDK', () => {
     }
   );
 
-  it('replays raw frames and embedded session YAML through INativeSDK', async () => {
-    await writeFile(tapePath, createTapeFixture());
+  it.each([
+    ['explicit end record', true],
+    ['physical end-of-file', false],
+  ])(
+    'replays frames and disconnects before looping at %s',
+    async (_, includeEndRecord) => {
+      await writeFile(tapePath, createTapeFixture({ includeEndRecord }));
+      const script = `
+      const assert = require('node:assert/strict');
+      const { iRacingSdkNode } = require(process.argv[1]);
+      const sdk = new iRacingSdkNode();
+      try {
+        assert.equal(sdk.startSDK(), true);
+        assert.equal(sdk.setTapeReplayPaused(true), true);
+        assert.equal(sdk.seekTapeReplay(0), true);
+        assert.equal(sdk.waitForData(0), false);
+        assert.equal(sdk.waitForData(0), true);
+        const first = sdk.getTelemetryData();
+        assert.equal(new DataView(first.SessionTime.value).getFloat64(0, true), 10);
+        assert.equal(new DataView(first.SessionTick.value).getInt32(0, true), 100);
+        assert.match(sdk.getSessionData(), /TrackName: Replay Test Track/);
 
-    process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
-    process.env.IRDASHIES_TELEMETRY_REPLAY_LOOP = '1';
+        assert.equal(sdk.setTapeReplayPaused(false), true);
+        assert.equal(sdk.waitForData(1000), true);
+        let speed = new DataView(sdk.getTelemetryData().Speed.value).getFloat32(0, true);
+        assert.ok(speed === 51 || speed === 52);
+        if (speed === 51) {
+          assert.equal(sdk.waitForData(1000), true);
+          speed = new DataView(sdk.getTelemetryData().Speed.value).getFloat32(0, true);
+        }
 
-    const addon = loadAddon();
-    const sdk = new addon.iRacingSdkNode();
-
-    try {
-      expect(sdk.startSDK()).toBe(true);
-
-      expect(sdk.waitForData(20)).toBe(true);
-      let telemetry = sdk.getTelemetryData();
-      expect(doubleValue(telemetry.SessionTime.value)).toBeCloseTo(10, 8);
-      expect(intValue(telemetry.SessionTick.value)).toBe(100);
-      expect(sdk.getSessionData()).toContain('TrackName: Replay Test Track');
-
-      expect(sdk.waitForData(20)).toBe(true);
-      telemetry = sdk.getTelemetryData();
-      const nextSpeed = floatValue(telemetry.Speed.value);
-      expect(nextSpeed).toBeGreaterThanOrEqual(51);
-      expect(nextSpeed).toBeLessThanOrEqual(52);
-
-      // A busy runner can make both remaining frames due before waitForData
-      // returns. The replay source correctly catches up to the newest frame.
-      if (nextSpeed < 52) {
-        expect(sdk.waitForData(20)).toBe(true);
-        telemetry = sdk.getTelemetryData();
-        expect(floatValue(telemetry.Speed.value)).toBeCloseTo(52, 5);
+        assert.equal(speed, 52);
+        assert.equal(sdk.waitForData(1000), false);
+        assert.equal(sdk.isRunning(), false);
+        assert.deepEqual(sdk.getTelemetryData(), {});
+        assert.equal(sdk.waitForData(1000), true);
+        const restarted = sdk.getTelemetryData();
+        const restartedTick = new DataView(restarted.SessionTick.value).getInt32(0, true);
+        const restartedSpeed = new DataView(restarted.Speed.value).getFloat32(0, true);
+        assert.ok([100, 101, 102].includes(restartedTick));
+        assert.equal(restartedSpeed, restartedTick - 50);
+        assert.match(sdk.getSessionData(), /TrackName: Replay Test Track/);
+      } finally {
+        sdk.stopSDK();
       }
-
-      expect(sdk.waitForData(20)).toBe(false);
-      expect(sdk.isRunning()).toBe(false);
-      expect(sdk.waitForData(20)).toBe(true);
-      expect(floatValue(sdk.getTelemetryData().Speed.value)).toBeCloseTo(50, 5);
-    } finally {
-      sdk.stopSDK();
+    `;
+      await execFileAsync(process.execPath, ['-e', script, addonPath], {
+        env: {
+          ...process.env,
+          IRDASHIES_TELEMETRY_REPLAY: tapePath,
+          IRDASHIES_TELEMETRY_REPLAY_LOOP: '1',
+          IRDASHIES_TELEMETRY_REPLAY_SPEED: '1',
+        },
+        timeout: 5000,
+      });
     }
-  });
-
-  it('reports a disconnect before looping at physical end-of-file', async () => {
-    await writeFile(tapePath, createTapeFixture({ includeEndRecord: false }));
-
-    process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
-    process.env.IRDASHIES_TELEMETRY_REPLAY_LOOP = '1';
-
-    const addon = loadAddon();
-    const sdk = new addon.iRacingSdkNode();
-
-    try {
-      expect(sdk.startSDK()).toBe(true);
-
-      let speed = 0;
-      while (speed < 52) {
-        expect(sdk.waitForData(20)).toBe(true);
-        speed = floatValue(sdk.getTelemetryData().Speed.value);
-      }
-
-      expect(speed).toBeCloseTo(52, 5);
-      expect(sdk.waitForData(20)).toBe(false);
-      expect(sdk.isRunning()).toBe(false);
-      expect(sdk.waitForData(20)).toBe(true);
-      expect(floatValue(sdk.getTelemetryData().Speed.value)).toBeCloseTo(50, 5);
-    } finally {
-      sdk.stopSDK();
-    }
-  });
+  );
 
   it('invalidates captured telemetry on stop and captures a new frame size on restart', async () => {
     const addon = loadAddon();

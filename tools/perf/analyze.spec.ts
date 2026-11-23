@@ -6,12 +6,15 @@ import type {
 } from '../../src/types/performance';
 import {
   compareSummaries,
+  comparisonCoreComplete,
   comparisonMarkdown,
   parseCliArgs,
   parsePerfLog,
   summarizeCapture,
+  type PerfSummary,
   summaryMarkdown,
 } from './analyze';
+import { evaluateBranchRuns } from './branches';
 
 const stats = (
   avg: number,
@@ -75,6 +78,7 @@ type TestMainSample = Omit<
   'totalAppPrivateMemoryMB'
 > & {
   totalAppPrivateMemoryMB?: number;
+  sdkWait?: PerfSummary['sdkWait'];
 };
 
 const capture = (
@@ -89,7 +93,19 @@ const capture = (
   originSeconds = 0
 ) => ({
   main,
-  renderer: [] as RendererPerfSample[],
+  renderer: main.map((sample): RendererPerfSample => ({
+    schemaVersion: 1,
+    timestamp: sample.timestamp,
+    runId: sample.runId,
+    scenario: sample.scenario,
+    pid: 1,
+    route: '/',
+    visibilityState: 'visible',
+    intervalMs: sample.intervalMs ?? 5000,
+    frameTimeMs: stats(16),
+    framesOver25Ms: 0,
+    framesOver50Ms: 0,
+  })),
   visibility,
   origins: [
     {
@@ -105,6 +121,125 @@ const conclusiveSamples = (fps = 100) =>
   );
 
 describe('performance analysis', () => {
+  it('validates both ABBA pairs and withholds the verdict for an unmatched run', () => {
+    const matched = summarizeCapture(capture(conclusiveSamples()), 0);
+    const changedDemand = {
+      ...matched,
+      scenarioMetadata: {
+        ...matched.scenarioMetadata,
+        forceProcessorDemand: true,
+      },
+    };
+    const runs = [
+      { label: 'baseline', runId: 'a1', summary: matched },
+      { label: 'candidate', runId: 'b1', summary: matched },
+      { label: 'candidate', runId: 'b2', summary: changedDemand },
+      { label: 'baseline', runId: 'a2', summary: matched },
+    ] as const;
+    const scheduled = runs.map((run, index) => ({
+      ...run,
+      cycle: 0,
+      position: index + 1,
+      logPath: '',
+    }));
+    const result = evaluateBranchRuns(scheduled, []);
+    expect(result.inconclusiveRunIds).toEqual(['b2']);
+    expect(result.aggregate).toMatchObject({
+      verdict: 'INCONCLUSIVE',
+      metrics: [],
+    });
+    expect(result.checks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'a1 / b1 — Matched workload metadata',
+          passed: true,
+        }),
+        expect.objectContaining({
+          name: 'a2 / b2 — Matched workload metadata',
+          passed: false,
+        }),
+      ])
+    );
+    expect(
+      evaluateBranchRuns(
+        scheduled.map((run) => ({ ...run, summary: matched })),
+        []
+      ).aggregate.verdict
+    ).toBe('NO REPRODUCIBLE EFFECT');
+    const missingMemory = {
+      ...matched,
+      evidence: { ...matched.evidence, privateMemorySamplingAdequate: false },
+    };
+    expect(
+      evaluateBranchRuns(
+        scheduled.map((run) => ({
+          ...run,
+          summary: run.runId === 'b2' ? missingMemory : matched,
+        })),
+        []
+      ).aggregate.verdict
+    ).toBe('INCONCLUSIVE');
+  });
+
+  it('reports unavailable widget profiler measurements without a numeric delta', () => {
+    const summary = summarizeCapture(capture(conclusiveSamples()), 0);
+    const measured = {
+      ...summary,
+      renderer: {
+        ...summary.renderer,
+        widgetRenderRateHz: 20,
+        widgetRenderP99MeanMs: 2,
+      },
+    };
+
+    expect(summary.renderer.widgetRenderRateHz).toBeNull();
+    expect(summaryMarkdown(summary)).toContain(
+      '| Widget React commits / second | n/a |'
+    );
+    expect(compareSummaries(summary, measured).delta).toMatchObject({
+      widgetRenderRateHz: null,
+      widgetRenderP99Ms: null,
+    });
+  });
+
+  it('aggregates optional SDK wait instrumentation when present', () => {
+    const waitStats = stats(4);
+    const sdkWait = (count: number, p95: number) => ({
+      durationMs: { ...waitStats, count, p95 },
+      calls: count / 10,
+      reads: count / 10 - 1,
+      unsuccessful: 1,
+      totalMs: count / 2,
+      timeoutMs: 16,
+      targetHz: 60,
+    });
+    const summary = summarizeCapture(
+      capture([
+        {
+          ...mainSample(5, 100, 100, 100, 5000),
+          sdkWait: sdkWait(100, 7),
+        },
+        {
+          ...mainSample(10, 100, 100, 100, 5000),
+          sdkWait: sdkWait(300, 15),
+        },
+      ]),
+      0
+    );
+
+    expect(summary.sdkWait).toMatchObject({
+      calls: 40,
+      reads: 38,
+      unsuccessful: 2,
+      totalMs: 200,
+      timeoutMs: 16,
+      targetHz: 60,
+    });
+    expect(summary.sdkWait?.durationMs.count).toBe(400);
+    expect(summary.sdkWait?.durationMs.p95).toBeCloseTo(13);
+    expect(summaryMarkdown(summary)).toContain('SDK wait p50/p95/p99');
+  });
+
   it('parses structured records mixed with normal logs', () => {
     const main = mainSample(5, 100, 100, 100, 5000);
     const contents = [
@@ -355,7 +490,11 @@ describe('performance analysis', () => {
 
     const comparison = compareSummaries(baseline, candidate);
     expect(comparison.delta.averageFpsPercent).toBe(-10);
-    expect(comparison.checks[0].passed).toBe(false);
+    expect(
+      comparison.checks.find(
+        (check) => check.name === 'iRacing average FPS regression'
+      )?.passed
+    ).toBe(false);
   });
 
   it('anchors fixed windows to the explicit origin and includes overlapping intervals', () => {
@@ -381,6 +520,131 @@ describe('performance analysis', () => {
     });
   });
 
+  it.each([0, 2])('rejects comparisons with %i capture origins', (count) => {
+    const input = capture(conclusiveSamples());
+    input.origins = Array.from({ length: count }, () => input.origins[0]);
+    const summary = summarizeCapture(input, 0);
+
+    expect(comparisonCoreComplete(summary, summary)).toBe(false);
+    expect(compareSummaries(summary, summary).checks).toContainEqual(
+      expect.objectContaining({
+        name: 'Telemetry processing p99',
+        passed: null,
+        target: expect.stringContaining(
+          'lacks a single explicit capture origin'
+        ),
+      })
+    );
+  });
+
+  it('matches only active widget input requirements', () => {
+    const baseline = summarizeCapture(capture(conclusiveSamples()), 0);
+    const candidate = summarizeCapture(capture(conclusiveSamples()), 0);
+    candidate.scenarioMetadata.widgetInputRequirements = {
+      standings: ['standings.snapshot'],
+      radar: ['radar.snapshot'],
+    };
+
+    expect(comparisonCoreComplete(baseline, candidate)).toBe(true);
+    candidate.scenarioMetadata.widgetInputRequirements = {
+      standings: ['driver.snapshot'],
+    };
+    expect(comparisonCoreComplete(baseline, candidate)).toBe(false);
+  });
+
+  it('withholds the renderer gate without observations and passes a measured zero', () => {
+    const input = capture(conclusiveSamples());
+    const measured = summarizeCapture(input, 0);
+    const unmeasured = summarizeCapture({ ...input, renderer: [] }, 0);
+    const rendererCheck = (candidate: PerfSummary) =>
+      compareSummaries(measured, candidate).checks.find(
+        ({ name }) => name === 'Renderer frames over 50 ms'
+      );
+    expect(rendererCheck(unmeasured)?.passed).toBeNull();
+    expect(rendererCheck(measured)).toMatchObject({ passed: true, actual: 0 });
+  });
+
+  it('rejects origins from a different run and tolerates open-ended timing jitter', () => {
+    const input = capture(conclusiveSamples());
+    const baseline = summarizeCapture(input, 0);
+    const wrongOrigin = summarizeCapture(
+      { ...input, origins: [{ ...input.origins[0], runId: 'other' }] },
+      0
+    );
+    expect(wrongOrigin.evidence.runOriginAvailable).toBe(false);
+    const candidate = summarizeCapture(input, 0);
+    candidate.analysisWindow.endSeconds = 300.005;
+    expect(comparisonCoreComplete(baseline, candidate)).toBe(true);
+    candidate.analysisWindow.endSeconds = 302;
+    expect(comparisonCoreComplete(baseline, candidate)).toBe(false);
+    expect(
+      comparisonCoreComplete(
+        summarizeCapture(input, 0, { endSeconds: 300 }),
+        summarizeCapture(input, 0, { endSeconds: 300.005 })
+      )
+    ).toBe(false);
+  });
+
+  it('withholds gates without measured FPS, processing latency or baseline frames', () => {
+    const input = capture(conclusiveSamples());
+    const baseline = summarizeCapture({ ...input, renderer: [] }, 0);
+    const candidate = summarizeCapture(input, 0);
+    baseline.iracing.fpsObservationCount = 0;
+    candidate.telemetry.processTelemetryObservationCount = 0;
+    const checks = compareSummaries(baseline, candidate).checks;
+    for (const name of [
+      'iRacing average FPS regression',
+      'iRacing sampled FPS p1 regression',
+      'Telemetry processing p99',
+      'Renderer frames over 50 ms',
+    ]) {
+      expect(checks.find((check) => check.name === name)?.passed).toBeNull();
+    }
+  });
+
+  it('excludes repeated Linux memory batches from sampling coverage and slope', () => {
+    const samples = conclusiveSamples().map((sample, index) => ({
+      ...sample,
+      privateMemoryReused: index !== 0,
+    }));
+    const summary = summarizeCapture(capture(samples), 0);
+    expect(summary.evidence).toMatchObject({
+      privateMemorySampleCount: 1,
+      privateMemorySamplingAdequate: false,
+    });
+  });
+
+  it('matches visibility schedules and effective windows across captures', () => {
+    const baseline = summarizeCapture(capture(conclusiveSamples()), 0);
+    const candidate = summarizeCapture(capture(conclusiveSamples()), 0);
+    candidate.visibilityPhases = [
+      {
+        runId: 'different',
+        timestamp: new Date(0).toISOString(),
+        index: 0,
+        visibility: 'hidden',
+        durationSeconds: 120,
+      },
+    ];
+    expect(comparisonCoreComplete(baseline, candidate)).toBe(false);
+
+    baseline.visibilityPhases = [
+      {
+        ...candidate.visibilityPhases[0],
+        runId: 'baseline',
+        timestamp: candidate.visibilityPhases[0].timestamp,
+      },
+    ];
+    expect(comparisonCoreComplete(baseline, candidate)).toBe(true);
+    baseline.visibilityPhases[0].timestamp = new Date(5000).toISOString();
+    expect(comparisonCoreComplete(baseline, candidate)).toBe(false);
+    baseline.visibilityPhases[0].timestamp =
+      candidate.visibilityPhases[0].timestamp;
+
+    candidate.analysisWindow.endSeconds = 310;
+    expect(comparisonCoreComplete(baseline, candidate)).toBe(false);
+  });
+
   it('uses private memory as the conclusive memory gate', () => {
     const samples = Array.from({ length: 6 }, (_, index) =>
       mainSample(index * 60, 100 + index * 100, 100, 200 + index * 2)
@@ -397,19 +661,131 @@ describe('performance analysis', () => {
     expect(memoryCheck?.passed).toBe(true);
   });
 
-  it('marks all checks inconclusive when private bytes are missing', () => {
+  it('isolates missing private bytes to the memory gate', () => {
     const samples = conclusiveSamples().map((sample) => ({
       ...sample,
       totalAppPrivateMemoryMB: undefined,
     }));
     const summary = summarizeCapture(capture(samples), 0);
     const comparison = compareSummaries(summary, summary);
+    const memoryCheck = comparison.checks.find((check) =>
+      check.name.includes('private-memory')
+    );
 
     expect(summary.evidence.privateMemoryAvailable).toBe(false);
     expect(summary.evidence.conclusive).toBe(false);
-    expect(comparison.checks.every((check) => check.passed === null)).toBe(
-      true
+    expect(memoryCheck?.passed).toBeNull();
+    expect(
+      comparison.checks
+        .filter(
+          (check) =>
+            check.name !== 'Matched workload metadata' &&
+            check.name !== 'Steady-state private-memory slope'
+        )
+        .every((check) => check.passed === true)
+    ).toBe(true);
+    expect(
+      comparison.checks.find(
+        (check) => check.name === 'Matched workload metadata'
+      )?.passed
+    ).toBe(true);
+  });
+
+  it('compares matched workload metadata while allowing source revisions to differ', () => {
+    const baseline = summarizeCapture(capture(conclusiveSamples()), 0);
+    const candidate = summarizeCapture(capture(conclusiveSamples()), 0);
+    baseline.scenarioMetadata.sourceCommit = 'baseline-commit';
+    baseline.scenarioMetadata.sourceDirty = false;
+    candidate.scenarioMetadata.sourceCommit = 'candidate-commit';
+    candidate.scenarioMetadata.sourceDirty = true;
+
+    const matching = compareSummaries(baseline, candidate);
+    const workloadCheck = matching.checks.find(
+      ({ name }) => name === 'Matched workload metadata'
     );
+    const markdown = comparisonMarkdown(matching);
+
+    expect(workloadCheck?.passed).toBe(true);
+    expect(markdown).toContain('baseline-commit (clean worktree)');
+    expect(markdown).toContain('candidate-commit (dirty worktree)');
+    expect(markdown).toContain(
+      'Workload metadata excluding source revision/state: **MATCH**'
+    );
+
+    candidate.scenarioMetadata.activeWidgetTypes = ['radar'];
+    const mismatched = compareSummaries(baseline, candidate);
+    const mismatchCheck = mismatched.checks.find(
+      ({ name }) => name === 'Matched workload metadata'
+    );
+
+    expect(mismatchCheck?.passed).toBe(false);
+    expect(
+      mismatched.checks
+        .filter(({ name }) => name !== 'Matched workload metadata')
+        .every(({ passed }) => passed === null)
+    ).toBe(true);
+    expect(comparisonMarkdown(mismatched)).toContain(
+      'Workload metadata excluding source revision/state: **DIFFERENT**'
+    );
+  });
+
+  it('accepts declared contrasts for the variable under test', () => {
+    const baseline = summarizeCapture(capture(conclusiveSamples()), 0);
+    const candidate = summarizeCapture(capture(conclusiveSamples()), 0);
+    baseline.overlayMode = 'observer';
+    baseline.scenarioMetadata.activeWidgetTypes = [];
+    candidate.overlayMode = 'full';
+    candidate.scenarioMetadata.activeWidgetTypes = ['radar'];
+
+    const strict = compareSummaries(baseline, candidate);
+    const contrasted = compareSummaries(baseline, candidate, ['overlay']);
+    const workloadCheck = (comparison: ReturnType<typeof compareSummaries>) =>
+      comparison.checks.find(
+        ({ name }) => name === 'Matched workload metadata'
+      );
+
+    expect(workloadCheck(strict)?.passed).toBe(false);
+    expect(workloadCheck(contrasted)?.passed).toBe(true);
+    expect(
+      contrasted.checks.find(
+        ({ name }) => name === 'Renderer frames over 50 ms'
+      )
+    ).toMatchObject({
+      passed: null,
+      target: expect.stringContaining('not-applicable:'),
+    });
+    expect(
+      contrasted.checks.every(
+        (check) =>
+          check.passed === true || check.target.startsWith('not-applicable:')
+      )
+    ).toBe(true);
+    expect(comparisonMarkdown(contrasted)).toContain(
+      'Declared contrast: overlay'
+    );
+  });
+
+  it('does not apply game FPS gates to historical values from a replay tape', () => {
+    const baseline = summarizeCapture(capture(conclusiveSamples()), 0);
+    const candidate = summarizeCapture(capture(conclusiveSamples()), 0);
+    baseline.scenarioMetadata.simulatorMode = 'replay';
+    baseline.scenarioMetadata.tapeSha256 = 'abc';
+    candidate.scenarioMetadata.simulatorMode = 'replay';
+    candidate.scenarioMetadata.tapeSha256 = 'abc';
+
+    const comparison = compareSummaries(baseline, candidate);
+    const fpsChecks = comparison.checks.filter((check) =>
+      check.name.includes('FPS')
+    );
+
+    expect(fpsChecks).toHaveLength(2);
+    expect(fpsChecks.every((check) => check.passed === null)).toBe(true);
+    expect(fpsChecks[0].target).toContain('not-applicable');
+    expect(
+      comparison.checks.find(
+        (check) => check.name === 'Telemetry processing p99'
+      )?.passed
+    ).toBe(true);
   });
 
   it('requires publication rather than processor execution for visible coverage', () => {
@@ -421,6 +797,25 @@ describe('performance analysis', () => {
       },
     }));
     const summary = summarizeCapture(capture(samples), 0);
+
+    const comparison = compareSummaries(summary, summary);
+    expect(
+      comparison.checks.find(({ name }) => name === 'Telemetry processing p99')
+    ).toMatchObject({
+      passed: null,
+      target: expect.stringContaining(
+        'visibility phases violated widget input expectations'
+      ),
+    });
+    const runs = (['baseline', 'candidate'] as const).map((label, index) => ({
+      label,
+      summary,
+      cycle: 0,
+      position: index + 1,
+      runId: label,
+      logPath: '',
+    }));
+    expect(evaluateBranchRuns(runs, []).aggregate.verdict).toBe('INCONCLUSIVE');
 
     expect(summary.widgetInputs.standings.covered).toBe(false);
     expect(summary.evidence.inputCoverageComplete).toBe(false);

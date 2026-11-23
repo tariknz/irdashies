@@ -13,6 +13,7 @@ import { app, BrowserWindow } from 'electron';
 import type { NumericSampleStats, Telemetry } from '@irdashies/types';
 import type { ChannelBusMetricsSnapshot } from './bridge/channelBridge';
 import { FixedSampleBuffer } from '../shared/performanceSamples';
+import { readProcessPrivateMemoryKB } from './processPrivateMemory';
 import logger from './logger';
 
 export interface SectionStats {
@@ -33,6 +34,16 @@ export interface ProcessMetrics {
   privateMemoryMB?: number;
 }
 
+export interface SdkWaitStats {
+  durationMs: NumericSampleStats;
+  calls: number;
+  reads: number;
+  unsuccessful: number;
+  totalMs: number;
+  timeoutMs: number;
+  targetHz: number;
+}
+
 export interface PerfReport {
   schemaVersion: 1;
   timestamp: string;
@@ -43,6 +54,7 @@ export interface PerfReport {
   tickCount: number;
   tickRateHz: number;
   tickIntervalMs: NumericSampleStats;
+  sdkWait?: SdkWaitStats;
   sections: Record<string, SectionStats>;
   eventLoopDelayMs: {
     mean: number;
@@ -60,6 +72,7 @@ export interface PerfReport {
   totalAppCpuPercent?: number;
   totalAppMemoryMB?: number;
   totalAppPrivateMemoryMB?: number;
+  privateMemoryReused?: boolean;
   scenarioMetadata?: Record<string, unknown>;
   channelMetrics?: {
     processorExecutions: Record<string, number>;
@@ -158,8 +171,20 @@ export class TelemetryPerfMetrics {
   private iracingCpuForeground = new FixedSampleBuffer();
   private iracingCpuBackground = new FixedSampleBuffer();
   private iracingGpuUsage = new FixedSampleBuffer();
+  private sdkWaitDurations = new FixedSampleBuffer();
+  private sdkWaitCalls = 0;
+  private sdkWaitReads = 0;
+  private sdkWaitUnsuccessful = 0;
+  private sdkWaitTotalMs = 0;
+  private sdkWaitTimeoutMs = 0;
+  private sdkWaitTargetHz = 0;
   private eventLoopDelay = monitorEventLoopDelay({ resolution: 20 });
   private reportTimer: NodeJS.Timeout | null = null;
+  private privateMemorySampler: NodeJS.Timeout | null = null;
+  private linuxMemorySampleId = 0;
+  private appliedLinuxMemorySampleId = 0;
+  private reportedLinuxMemorySampleId = 0;
+  private linuxPrivateMemoryKB = new Map<number, number>();
   private lastReportTime = 0;
   private lastTickTime = 0;
   private lastCpuUsage: NodeJS.CpuUsage = { user: 0, system: 0 };
@@ -177,6 +202,26 @@ export class TelemetryPerfMetrics {
 
   get enabled(): boolean {
     return this._enabled;
+  }
+
+  get sdkWaitEnabled(): boolean {
+    return this._enabled && process.env.PERF_SDK_WAIT === '1';
+  }
+
+  recordSdkWait(
+    durationMs: number,
+    success: boolean,
+    timeoutMs: number,
+    targetHz: number
+  ): void {
+    if (!this.sdkWaitEnabled) return;
+    this.sdkWaitDurations.add(durationMs);
+    this.sdkWaitCalls += 1;
+    if (success) this.sdkWaitReads += 1;
+    else this.sdkWaitUnsuccessful += 1;
+    this.sdkWaitTotalMs += durationMs;
+    this.sdkWaitTimeoutMs = timeoutMs;
+    this.sdkWaitTargetHz = targetHz;
   }
 
   startReporting(intervalMs: number = DEFAULT_REPORT_INTERVAL_MS): void {
@@ -199,6 +244,12 @@ export class TelemetryPerfMetrics {
       const report = this.report();
       this.logReport(report);
     }, effectiveInterval);
+    if (process.platform === 'linux') {
+      this.sampleLinuxPrivateMemory();
+      this.privateMemorySampler = setInterval(() => {
+        this.sampleLinuxPrivateMemory();
+      }, effectiveInterval);
+    }
     setActivePerfMetrics(this);
   }
 
@@ -207,8 +258,42 @@ export class TelemetryPerfMetrics {
       clearInterval(this.reportTimer);
       this.reportTimer = null;
     }
+    if (this.privateMemorySampler) {
+      clearInterval(this.privateMemorySampler);
+      this.privateMemorySampler = null;
+    }
+    this.appliedLinuxMemorySampleId = this.linuxMemorySampleId;
+    this.linuxPrivateMemoryKB.clear();
     this.eventLoopDelay.disable();
     if (activePerfMetrics === this) setActivePerfMetrics(null);
+  }
+
+  private sampleLinuxPrivateMemory(): void {
+    const sampleId = ++this.linuxMemorySampleId;
+    const pids = app
+      .getAppMetrics()
+      .map((metric) => metric.pid)
+      .filter((pid) => Number.isSafeInteger(pid) && pid > 0);
+    void Promise.all(
+      pids.map(async (pid) => {
+        try {
+          const kilobytes = await readProcessPrivateMemoryKB(pid);
+          return kilobytes === undefined
+            ? undefined
+            : ([pid, kilobytes] as const);
+        } catch {
+          return undefined;
+        }
+      })
+    ).then((entries) => {
+      if (sampleId <= this.appliedLinuxMemorySampleId) return;
+      this.appliedLinuxMemorySampleId = sampleId;
+      const next = new Map<number, number>();
+      for (const entry of entries) {
+        if (entry) next.set(entry[0], entry[1]);
+      }
+      this.linuxPrivateMemoryKB = next;
+    });
   }
 
   markStart(label: string): void {
@@ -249,8 +334,13 @@ export class TelemetryPerfMetrics {
       sections[label] = buf.getStats();
     }
 
-    const { processes, totalCpu, totalMemory, totalPrivateMemory } =
-      this.getProcessMetrics();
+    const {
+      processes,
+      totalCpu,
+      totalMemory,
+      totalPrivateMemory,
+      privateMemoryReused,
+    } = this.getProcessMetrics();
     const elapsedMs = now - this.lastReportTime;
     const nanosecondsToMilliseconds = (value: number): number =>
       Number.isFinite(value) ? value / 1_000_000 : 0;
@@ -265,6 +355,19 @@ export class TelemetryPerfMetrics {
       tickCount: this.tickCount,
       tickRateHz: this.tickCount / (elapsedMs / 1000),
       tickIntervalMs: this.tickIntervals.summarize(),
+      ...(this.sdkWaitEnabled
+        ? {
+            sdkWait: {
+              durationMs: this.sdkWaitDurations.summarize(),
+              calls: this.sdkWaitCalls,
+              reads: this.sdkWaitReads,
+              unsuccessful: this.sdkWaitUnsuccessful,
+              totalMs: this.sdkWaitTotalMs,
+              timeoutMs: this.sdkWaitTimeoutMs,
+              targetHz: this.sdkWaitTargetHz,
+            },
+          }
+        : {}),
       sections,
       eventLoopDelayMs: {
         mean: nanosecondsToMilliseconds(this.eventLoopDelay.mean),
@@ -282,6 +385,7 @@ export class TelemetryPerfMetrics {
       totalAppCpuPercent: totalCpu,
       totalAppMemoryMB: totalMemory,
       totalAppPrivateMemoryMB: totalPrivateMemory,
+      privateMemoryReused,
       scenarioMetadata: this.scenarioMetadata(),
       channelMetrics: this.channelMetrics(sections),
     };
@@ -294,6 +398,11 @@ export class TelemetryPerfMetrics {
     this.iracingCpuForeground.reset();
     this.iracingCpuBackground.reset();
     this.iracingGpuUsage.reset();
+    this.sdkWaitDurations.reset();
+    this.sdkWaitCalls = 0;
+    this.sdkWaitReads = 0;
+    this.sdkWaitUnsuccessful = 0;
+    this.sdkWaitTotalMs = 0;
     this.eventLoopDelay.reset();
     for (const buf of this.sections.values()) {
       buf.reset();
@@ -388,15 +497,27 @@ export class TelemetryPerfMetrics {
     totalCpu: number;
     totalMemory: number;
     totalPrivateMemory?: number;
+    privateMemoryReused?: boolean;
   } {
     try {
       const metrics = app.getAppMetrics();
       const processes: ProcessMetrics[] = [];
       let totalCpu = 0;
       let totalMemory = 0;
-      const totalPrivateMemory = sumCompletePrivateMemoryMB(
-        metrics.map((metric) => metric.memory.privateBytes)
+      const privateBytes = metrics.map(
+        (metric) =>
+          metric.memory.privateBytes ??
+          this.linuxPrivateMemoryKB.get(metric.pid)
       );
+      const usesLinuxSample = metrics.some(
+        (metric) => metric.memory.privateBytes === undefined
+      );
+      const freshLinuxSample =
+        this.appliedLinuxMemorySampleId > this.reportedLinuxMemorySampleId;
+      const totalPrivateMemory = sumCompletePrivateMemoryMB(privateBytes);
+      const privateMemoryReused = usesLinuxSample && !freshLinuxSample;
+      if (usesLinuxSample && totalPrivateMemory !== undefined)
+        this.reportedLinuxMemorySampleId = this.appliedLinuxMemorySampleId;
 
       const pidToWindowName = new Map<number, string>();
       try {
@@ -420,13 +541,12 @@ export class TelemetryPerfMetrics {
         // Ignore errors getting window info
       }
 
-      for (const metric of metrics) {
+      for (const [index, metric] of metrics.entries()) {
         const cpuPercent = metric.cpu.percentCPUUsage;
         const memoryMB = metric.memory.workingSetSize / 1024;
+        const bytes = privateBytes[index];
         const privateMemoryMB =
-          metric.memory.privateBytes === undefined
-            ? undefined
-            : metric.memory.privateBytes / 1024;
+          bytes === undefined ? undefined : bytes / 1024;
 
         totalCpu += cpuPercent;
         totalMemory += memoryMB;
@@ -452,6 +572,7 @@ export class TelemetryPerfMetrics {
         totalCpu,
         totalMemory,
         totalPrivateMemory,
+        privateMemoryReused,
       };
     } catch {
       return {

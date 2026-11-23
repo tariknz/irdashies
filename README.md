@@ -852,6 +852,9 @@ npm run storybook
 
 ## Usage (for development)
 
+For replay-based benchmarks, branch comparisons, and CPU traces, see the
+[performance diagnostics CLI quickstart](tools/perf/README.md).
+
 To start using IRDashies, run the following command:
 
 ```bash

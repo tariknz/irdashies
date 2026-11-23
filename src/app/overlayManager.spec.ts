@@ -97,6 +97,7 @@ vi.mock('./storage/chromiumFlags', () => ({
 }));
 vi.mock('./trackWindowMovement', () => ({
   markCorrectedBounds: vi.fn(),
+  trackGantryWindowMovement: vi.fn(),
   trackSettingsWindowMovement: vi.fn(),
 }));
 vi.mock('./perfRendererArguments', () => ({
@@ -419,6 +420,35 @@ describe('individual overlay windows', () => {
     manager.publishMessageToOverlay('widget:flag-left', 'sessionData', {});
     expect(target.webContents.send).not.toHaveBeenCalled();
     expect(createdWindows[1].webContents.send).not.toHaveBeenCalled();
+  });
+
+  it('only reports telemetry inspector demand from visible subscribed windows', () => {
+    const manager = new OverlayManager();
+    manager.createOverlays(dashboard(), { createSettingsWindow: false });
+    createdWindows.forEach(ready);
+    const subscribedIds = new Set(
+      createdWindows.map((win) => win.webContents.id)
+    );
+    manager.setRendererDataSubscriptions({
+      has: (id) => subscribedIds.has(id),
+      hasAny: () => true,
+    });
+
+    expect(manager.hasTelemetryInspectorSubscribers()).toBe(true);
+    createdWindows.forEach((win) => {
+      win.shown = false;
+    });
+    expect(manager.hasTelemetryInspectorSubscribers()).toBe(false);
+
+    createdWindows.forEach((win) => {
+      win.shown = true;
+    });
+    manager.setRendererDataSubscriptions({
+      has: (id) => id === createdWindows[0].webContents.id,
+      hasAny: () => true,
+    });
+    createdWindows[0].isDestroyed.mockReturnValue(true);
+    expect(manager.hasTelemetryInspectorSubscribers()).toBe(false);
   });
 
   it('resolves display readiness IDs without broadcasting', () => {

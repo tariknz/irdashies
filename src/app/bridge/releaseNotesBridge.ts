@@ -43,7 +43,6 @@ export function setupReleaseNotesBridge() {
         : undefined,
   });
   // Electron only supplies the target name after download, not update-available.
-  // Keep the existing updater and its native install prompt unchanged.
   const onDownloaded = (
     _event: unknown,
     _notes: string,

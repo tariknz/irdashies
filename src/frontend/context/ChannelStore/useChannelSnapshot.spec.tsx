@@ -5,7 +5,11 @@ import type {
   ChannelPayloads,
   RadioSnapshot,
 } from '@irdashies/types';
-import { useChannelSelector, useChannelSnapshot } from './useChannelSnapshot';
+import {
+  useChannelListener,
+  useChannelSelector,
+  useChannelSnapshot,
+} from './useChannelSnapshot';
 
 const createBridge = () => {
   let publish: ((payload: RadioSnapshot) => void) | undefined;
@@ -202,6 +206,72 @@ describe('channel snapshot hooks', () => {
     expect(source.subscribe).toHaveBeenCalledOnce();
     rerender({ enabled: false });
     expect(source.unsubscribe).toHaveBeenCalledOnce();
+    unmount();
+    expect(source.unsubscribe).toHaveBeenCalledOnce();
+  });
+});
+
+describe('useChannelListener', () => {
+  it('hands each changed selection to the listener without rerendering', () => {
+    const source = createBridge();
+    const listener = vi.fn();
+    let renders = 0;
+    renderHook(() => {
+      renders += 1;
+      useChannelListener(
+        'radio.snapshot',
+        (snapshot) => snapshot.transmittingCarIdxs.length,
+        listener,
+        { bridge: source.bridge }
+      );
+    });
+
+    act(() => source.publish(radioSnapshot(1, [7])));
+    act(() => source.publish(radioSnapshot(2, [9])));
+    act(() => source.publish(radioSnapshot(3, [1, 2])));
+
+    expect(listener.mock.calls).toEqual([[1], [2]]);
+    expect(renders).toBe(1);
+  });
+
+  it('calls the latest listener without resubscribing', () => {
+    const source = createBridge();
+    const seen: string[] = [];
+    const { rerender } = renderHook(
+      ({ label }) =>
+        useChannelListener(
+          'radio.snapshot',
+          (snapshot) => snapshot.version,
+          (version) => seen.push(`${label}${version}`),
+          { bridge: source.bridge }
+        ),
+      { initialProps: { label: 'a' } }
+    );
+
+    act(() => source.publish(radioSnapshot(1)));
+    rerender({ label: 'b' });
+    act(() => source.publish(radioSnapshot(2)));
+
+    expect(seen).toEqual(['a1', 'b2']);
+    expect(source.subscribe).toHaveBeenCalledOnce();
+  });
+
+  it('requests its rate from the bridge and unsubscribes on unmount', () => {
+    const source = createBridge();
+    const { unmount } = renderHook(() =>
+      useChannelListener(
+        'radio.snapshot',
+        (snapshot) => snapshot.version,
+        () => undefined,
+        { bridge: source.bridge, rateHz: 20 }
+      )
+    );
+
+    expect(source.subscribe).toHaveBeenCalledWith(
+      'radio.snapshot',
+      expect.any(Function),
+      20
+    );
     unmount();
     expect(source.unsubscribe).toHaveBeenCalledOnce();
   });

@@ -8,6 +8,7 @@ import {
   useDrivingState,
   useSessionVisibility,
   useDashboard,
+  useDemoFrame,
   useGeneralSettings,
 } from '@irdashies/context';
 import { useLapTimeLog } from './hooks/useLapTimeLog';
@@ -18,34 +19,45 @@ import { LapHistoryChart } from './components/LapHistoryChart';
 import type { LapTimeLogConfig } from '@irdashies/types';
 import { formatTime, formatDelta } from '@irdashies/utils/time';
 import { LapTimeCell } from './components/LapTimeCell';
+import { LiveDeltaBar } from './components/LiveDeltaBar';
 
 const FREEZE_TIME = 5;
+const EMBEDDED_HISTORY_LAPS = 20;
 
-export const LapTimeLog = () => {
+export const LapTimeLog = ({ embedded = false }: { embedded?: boolean }) => {
   const { isDemoMode } = useDashboard();
   const { isDriving } = useDrivingState();
   const playerIndex = useFocusCarIdx();
-  const data = useLapTimeLog();
-  const isSessionVisible = useSessionVisibility(
-    data.settings?.sessionVisibility
+  const data = useLapTimeLog(embedded);
+  const demoData = useDemoFrame(isDemoMode, getDemoLapTimeLogData);
+  const settings = useMemo(
+    () =>
+      embedded && data.settings
+        ? {
+            ...data.settings,
+            history: {
+              ...data.settings.history,
+              enabled: true,
+              count: EMBEDDED_HISTORY_LAPS,
+            },
+          }
+        : data.settings,
+    [embedded, data.settings]
   );
+  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
-  // session visible?
-  if (!data.settings || playerIndex === undefined || !isSessionVisible) {
+  if (!settings || playerIndex === undefined || !isSessionVisible) {
     return null;
   }
 
-  // Show only when on track setting
-  if (data.settings?.showOnlyWhenOnTrack && !isDriving) {
+  if (settings.showOnlyWhenOnTrack && !isDriving) {
     return null;
   }
 
-  // demo mode
-  if (isDemoMode) {
-    const demoData = getDemoLapTimeLogData();
+  if (isDemoMode && demoData) {
     return (
       <LapTimeLogDisplay
-        settings={data.settings}
+        settings={settings}
         current={demoData.current}
         lastlap={demoData.lastlap}
         bestlap={demoData.bestlap}
@@ -55,13 +67,14 @@ export const LapTimeLog = () => {
         overall={demoData.overall}
         dirty={demoData.dirty}
         history={demoData.history}
+        embedded={embedded}
       />
     );
   }
 
   return (
     <LapTimeLogDisplay
-      settings={data.settings}
+      settings={settings}
       current={isDriving ? data.current : undefined}
       lastlap={data.lastlap}
       bestlap={data.bestlap}
@@ -71,6 +84,7 @@ export const LapTimeLog = () => {
       overall={data.overall}
       dirty={data.dirty}
       history={data.history}
+      embedded={embedded}
     />
   );
 };
@@ -86,6 +100,7 @@ export const LapTimeLogDisplay = ({
   overall,
   dirty,
   history,
+  embedded = false,
 }: {
   settings: LapTimeLogConfig;
   current?: number;
@@ -97,6 +112,7 @@ export const LapTimeLogDisplay = ({
   overall?: number;
   dirty?: boolean;
   history?: LapEntry[];
+  embedded?: boolean;
 }) => {
   // sort laps
   const sortedHistory = useMemo(() => {
@@ -162,10 +178,19 @@ export const LapTimeLogDisplay = ({
     settings.alignment === 'bottom' ? 'items-end' : 'items-start';
   const reverse = settings.reverse ? 'flex-col-reverse' : 'flex-col';
 
+  const embeddedAlignment =
+    settings.alignment === 'bottom' ? 'mt-auto shrink-0' : 'shrink-0';
+
   return (
-    <div className={`h-full flex ${alignment}`}>
+    <div
+      className={
+        embedded
+          ? 'h-full overflow-y-auto flex flex-col'
+          : `h-full flex ${alignment}`
+      }
+    >
       <div
-        className={`w-full text-sm bg-slate-800/[var(--bg-opacity)] rounded-md text-white ${!isCompact ? 'p-2' : 'p-0.5'}`}
+        className={`w-full text-sm bg-slate-800/[var(--bg-opacity)] rounded-md text-white ${!isCompact ? 'p-2' : 'p-0.5'} ${embedded ? embeddedAlignment : ''}`}
         style={
           {
             '--bg-opacity': `${settings.background.opacity}%`,
@@ -200,6 +225,14 @@ export const LapTimeLogDisplay = ({
                 )}
               </div>
             </div>
+          )}
+
+          {settings.delta.enabled && settings.delta.showOnCurrentLap && (
+            <LiveDeltaBar
+              delta={delta}
+              active={hasPredictedDelta}
+              dirty={dirty}
+            />
           )}
 
           {/* Predicted (With Delta) */}

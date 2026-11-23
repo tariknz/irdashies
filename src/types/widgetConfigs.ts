@@ -69,6 +69,7 @@ export interface SessionBarConfig {
   localTime: { enabled: boolean };
   sessionClockTime: { enabled: boolean };
   trackWetness: { enabled: boolean };
+  trackState?: { enabled: boolean };
   precipitation?: { enabled: boolean };
   humidity?: { enabled: boolean };
   airTemperature: { enabled: boolean; unit: TemperatureUnit };
@@ -947,6 +948,7 @@ export interface LapTimeLogConfig {
   delta: {
     enabled: boolean;
     method: 'lastlap' | 'bestlap';
+    showOnCurrentLap?: boolean;
   };
   history: {
     enabled: boolean;
@@ -1276,6 +1278,7 @@ export const GANTRY_DOCK_WIDGET_TYPES = [
   'map',
   'flatmap',
   'strategytimeline',
+  'laptimelog',
 ] as const;
 export type GantryDockWidgetType = (typeof GANTRY_DOCK_WIDGET_TYPES)[number];
 
@@ -1352,6 +1355,15 @@ export interface GantryConfig {
 export interface GantryWindowConfig {
   /** Keep the Gantry window above iRacing and other apps. */
   alwaysOnTop: boolean;
+  bounds?: GantryWindowBounds;
+  maximized?: boolean;
+}
+
+export interface GantryWindowBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 /** Chase camera far enough back to show what happened around the car. */
@@ -1500,6 +1512,42 @@ export interface InformationBarConfig extends SessionBarConfig {
   sessionVisibility: SessionVisibilitySettings;
 }
 
+export interface CompactTelemetryWidgetConfig {
+  background: { opacity: number };
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+export interface StintHistoryConfig extends CompactTelemetryWidgetConfig {
+  maxStints: number;
+}
+
+export interface TyrePanelConfig extends CompactTelemetryWidgetConfig {
+  pressureUnit: 'kPa' | 'psi';
+  temperatureUnit: 'C' | 'F';
+  temperatureThresholds: {
+    cold: number;
+    hot: number;
+  };
+  wearThresholds: {
+    worn: number;
+    replace: number;
+  };
+}
+
+export interface CruiseOdometerConfig extends CompactTelemetryWidgetConfig {
+  distanceUnit: 'km' | 'mi';
+}
+
+export interface DamageConfig {
+  background: { opacity: number };
+  showOnlyWhenOnTrack: boolean;
+  showOnlyWhenDamaged: boolean;
+  showIntegrity: boolean;
+  showStats: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
 /** Where the car stands against the race plan, for the driver in it. */
 export interface StintPlanConfig {
   background: { opacity: number };
@@ -1557,6 +1605,15 @@ export interface WidgetConfigMap {
   broadcastevents: BroadcastEventsConfig;
   broadcastweather: BroadcastWeatherConfig;
   broadcastpodium: BroadcastPodiumConfig;
+  stinthistory: StintHistoryConfig;
+  frictioncircle: CompactTelemetryWidgetConfig;
+  tyrepanel: TyrePanelConfig;
+  brakepressure: CompactTelemetryWidgetConfig;
+  suspensionposition: CompactTelemetryWidgetConfig;
+  trackclock: CompactTelemetryWidgetConfig;
+  steeringmeter: CompactTelemetryWidgetConfig;
+  cruiseodometer: CruiseOdometerConfig;
+  damage: DamageConfig;
   stintplan: StintPlanConfig;
   strategytimeline: StrategyTimelineConfig;
 }
@@ -1676,6 +1733,7 @@ export type CornerNameWidgetSettings =
   BaseWidgetSettings<CornerNameOverlayConfig>;
 export type BattleWidgetSettings = BaseWidgetSettings<BattleConfig>;
 export type LapTraceWidgetSettings = BaseWidgetSettings<LapTraceConfig>;
+export type DamageWidgetSettings = BaseWidgetSettings<DamageConfig>;
 export type StintPlanWidgetSettings = BaseWidgetSettings<StintPlanConfig>;
 export type StrategyTimelineWidgetSettings =
   BaseWidgetSettings<StrategyTimelineConfig>;

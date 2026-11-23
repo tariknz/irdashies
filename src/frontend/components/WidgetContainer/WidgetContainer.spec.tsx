@@ -189,11 +189,11 @@ describe('WidgetContainer center line', () => {
     dragTo(310);
     release();
 
-    expect(recordMeasure).toHaveBeenCalledTimes(2);
-    expect(recordMeasure).toHaveBeenCalledWith(
-      'widgetDrag',
-      expect.any(Number)
+    const dragMeasures = recordMeasure.mock.calls.filter(
+      ([name]) => name === 'widgetDrag'
     );
+    expect(dragMeasures).toHaveLength(2);
+    expect(dragMeasures[0]).toEqual(['widgetDrag', expect.any(Number)]);
   });
 
   it('saves a dragged position in whole pixels', () => {

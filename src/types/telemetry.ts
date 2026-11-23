@@ -122,6 +122,8 @@ export type Telemetry = {
    */
   LmuPitStopTime?: TelemetryVar<number[]>;
   LmuRepairTime?: TelemetryVar<number[]>;
+  PitRepairNeeded?: TelemetryVar<boolean[]>;
+  PitOptRepairNeeded?: TelemetryVar<boolean[]>;
   /**
    * What the next pit stop will add. Litres, or a virtual-energy percentage --
    * the companion flag says which, and nothing downstream should guess.
@@ -132,6 +134,11 @@ export type Telemetry = {
   LmuBrakeWear?: TelemetryVar<number[]>;
   LmuSuspensionDamage?: TelemetryVar<number[]>;
   LmuAeroDamage?: TelemetryVar<number[]>;
+  LmuDentSeverity?: TelemetryVar<number[]>;
+  LmuWheelDetached?: TelemetryVar<boolean[]>;
+  LmuBodyDetached?: TelemetryVar<boolean[]>;
+  LmuLastImpactET?: TelemetryVar<number[]>;
+  LmuLastImpactPos?: TelemetryVar<number[]>;
   /**
    * From shared memory, not REST. Virtual energy remaining; the budget it
    * counts down from is LmuRest.maxVirtualEnergy on the session.
@@ -139,6 +146,8 @@ export type Telemetry = {
   LmuVirtualEnergy?: TelemetryVar<number[]>;
   LmuStateOfCharge?: TelemetryVar<number[]>;
   LmuRegen?: TelemetryVar<number[]>;
+  LmuTCSlip?: TelemetryVar<number[]>;
+  LmuTCCut?: TelemetryVar<number[]>;
 };
 /**
  * What SessionLapsRemain and SessionLapsTotal carry when the session has no

@@ -76,6 +76,7 @@ export const GANTRY_DOCK_PANEL_LABELS: Readonly<
   map: 'Track Map',
   flatmap: 'Flat Track Map',
   strategytimeline: 'Strategy Timeline',
+  laptimelog: 'Lap Timer',
 };
 
 /**

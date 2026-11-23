@@ -29,6 +29,7 @@ vi.mock('@irdashies/context', async () => {
 });
 
 const additionalItems = [
+  ['trackState', 'Track State'],
   ['fuelLevel', 'Fuel Level'],
   ['lastLap', 'Last Lap'],
   ['bestLap', 'Best Lap'],
@@ -111,7 +112,7 @@ describe('Information Bar shared items', () => {
     expect(saved.displayOrder).toEqual(savedOrder);
   });
 
-  it('shows all six selectable settings after loading a legacy dashboard', () => {
+  it('shows the shared settings after loading a legacy dashboard', () => {
     mocks.dashboard = dashboardFor(load({ displayOrder: legacyOrder }));
     render(<InformationBarSettings />);
 

@@ -26,6 +26,11 @@ export interface PersonalBestStore {
     carName: string,
     time: number
   ) => Promise<void>;
+  rememberPersonalBest: (
+    trackId: string | number,
+    carName: string,
+    time: number
+  ) => void;
 }
 
 const generateKey = (trackId: string | number, carName: string): string => {
@@ -107,6 +112,16 @@ export const usePersonalBestStore = create<PersonalBestStore>((set, get) => {
       await ensurePersonalBestLoaded(trackId, carName, key);
     },
 
+    rememberPersonalBest: (trackId, carName, time) => {
+      if (!Number.isFinite(time) || time <= 0) return;
+      const key = generateKey(trackId, carName);
+      set((state) => {
+        const currentBest = state.personalBests[key];
+        if (currentBest != null && currentBest <= time) return state;
+        return { personalBests: { ...state.personalBests, [key]: time } };
+      });
+    },
+
     setPersonalBest: async (trackId, carName, time) => {
       const key = generateKey(trackId, carName);
       try {
@@ -118,7 +133,10 @@ export const usePersonalBestStore = create<PersonalBestStore>((set, get) => {
           trackId,
           carName
         );
-        if (typeof persistedBest !== 'number' || !Number.isFinite(persistedBest)) {
+        if (
+          typeof persistedBest !== 'number' ||
+          !Number.isFinite(persistedBest)
+        ) {
           return;
         }
         // Update local store from authoritative persisted value

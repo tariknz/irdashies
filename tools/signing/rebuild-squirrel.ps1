@@ -26,10 +26,10 @@ function Invoke-SquirrelInstallerRebuild {
         [Parameter(Mandatory)] [string] $PackagePath,
         [Parameter(Mandatory)] [string] $ReleaseDirectory,
         [Parameter(Mandatory)] [string] $SquirrelPath,
-        [Parameter(Mandatory)] [string] $LoadingGif,
         [Parameter(Mandatory)] [string] $SetupIcon
     )
 
+    $loadingGif = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '../../docs/assets/install-splash.gif')).Path
     # A -full.nupkg is already releasified: Squirrel skips the transformation
     # that generates stubs. Seed RELEASES with its new hash, then let Squirrel
     # build Setup.exe from that exact ZIP. Do not run Forge make again.
@@ -74,7 +74,6 @@ if ($installers.Count -ne 1) {
 $installerRoot = node -p "require('node:path').dirname(require.resolve('electron-winstaller/package.json'))"
 if ($LASTEXITCODE -ne 0) { throw 'Could not locate electron-winstaller.' }
 $squirrel = Join-Path $installerRoot 'vendor/Squirrel.exe'
-$loadingGif = Join-Path $installerRoot 'resources/install-spinner.gif'
 $setupIcon = (Resolve-Path -LiteralPath 'docs/assets/icons/logo.ico').Path
 $workspace = Join-Path ([System.IO.Path]::GetTempPath()) ('irdashies-signing-' + [guid]::NewGuid())
 
@@ -100,7 +99,7 @@ try {
 
     Invoke-SquirrelInstallerRebuild -PackagePath $packagePath `
         -ReleaseDirectory $releaseDirectory -SquirrelPath $squirrel `
-        -LoadingGif $loadingGif -SetupIcon $setupIcon
+        -SetupIcon $setupIcon
     $rebuiltPackage = Join-Path $releaseDirectory $packages[0].Name
     $rebuiltInstaller = Join-Path $releaseDirectory 'Setup.exe'
 
