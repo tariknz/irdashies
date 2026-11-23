@@ -7,7 +7,14 @@ import {
 } from '@irdashies/storybook';
 import type { NameFormat } from '@irdashies/types';
 import { GantryStandings } from './GantryStandings';
-import { GantrySessionDataProvider } from '../../hooks/useGantrySessionData';
+import {
+  DEMO_GROUPS,
+  DEMO_SAFETY_CAR,
+} from '@irdashies/domain/broadcast/demoField';
+import {
+  GantrySessionDataContext,
+  GantrySessionDataProvider,
+} from '../../hooks/useGantrySessionData';
 
 interface StandingsArgs {
   followedCarIdx: number | null;
@@ -64,6 +71,27 @@ export const Narrow: Story = {
       <div className="w-[420px] h-[480px]">
         <Story />
       </div>
+    ),
+  ],
+};
+
+export const WithSafetyCar: Story = {
+  decorators: [
+    (Story) => (
+      <GantrySessionDataContext.Provider
+        value={{
+          standingsByClass: DEMO_GROUPS,
+          safetyCars: [DEMO_SAFETY_CAR],
+          qualifyingResults: undefined,
+          sessions: undefined,
+          history: undefined,
+          isReplayFile: false,
+          isArchivedReplay: false,
+          hasArchivedHistory: false,
+        }}
+      >
+        <Story />
+      </GantrySessionDataContext.Provider>
     ),
   ],
 };

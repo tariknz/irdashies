@@ -7,14 +7,26 @@ import { GantryStandings } from './GantryStandings';
 import { GantrySessionDataProvider } from '../../hooks/useGantrySessionData';
 import type { NameFormat } from '@irdashies/types';
 
+const standingsMock = vi.hoisted(() => ({ safetyCars: [] as unknown[] }));
+
 vi.mock('@irdashies/domain', () => ({
   useHighlightColor: () => 0xffffff,
   useFocusDriver: () => () => undefined,
 }));
 
-vi.mock('@irdashies/domain/standings/useDriverStandings', () => ({
-  useDriverStandings: vi.fn(() => []),
+vi.mock('@irdashies/domain/broadcast/useBroadcastExcludedCarIdxs', () => ({
+  useBroadcastExcludedCarIdxs: () => new Set<number>(),
 }));
+vi.mock('@irdashies/domain/standings/useDriverStandings', () => {
+  const useDriverStandings = vi.fn<(...args: unknown[]) => unknown[]>(() => []);
+  return {
+    useDriverStandings,
+    useDriverStandingsWithExcluded: vi.fn((...args: unknown[]) => ({
+      groups: useDriverStandings(...args),
+      excluded: standingsMock.safetyCars,
+    })),
+  };
+});
 
 const dashboardMock = vi.hoisted(() => ({
   current: undefined as unknown,
@@ -39,6 +51,7 @@ vi.mock('@irdashies/context', () => ({
   useSessionList: () => undefined,
   // iRacing by default, so these specs keep exercising the rating badge.
   useActiveSimulator: () => simulatorMock.current,
+  useSessionDrivers: () => undefined,
 }));
 
 vi.mock('@irdashies/domain/standings/useQualifyingGrid', () => ({
@@ -94,8 +107,39 @@ describe('GantryStandings', () => {
       expect.objectContaining({
         lapTimeDeltas: { enabled: true, numLaps: 3 },
       }),
-      { showAll: true }
+      { showAll: true, excludedCarIdxs: new Set() }
     );
+  });
+
+  it('lists excluded cars unnumbered in a Safety car group at the bottom', () => {
+    vi.mocked(useDriverStandings).mockReturnValue(
+      standings([driverRow('Max Emilian Verstappen')])
+    );
+    standingsMock.safetyCars = [
+      {
+        ...driverRow('Bernd Maylander'),
+        carIdx: 40,
+        position: undefined,
+        classPosition: undefined,
+        gap: undefined,
+        interval: undefined,
+      },
+    ];
+    try {
+      const { getByText, getAllByRole } = render(
+        <GantryStandings followedCarIdx={null} />
+      );
+
+      expect(getByText('Safety car')).toBeTruthy();
+      const rows = getAllByRole('button');
+      const safetyRow = rows.at(-1);
+      expect(safetyRow?.textContent).toContain('Maylander');
+      expect(safetyRow?.firstElementChild?.textContent).toBe('');
+      expect(safetyRow?.textContent).not.toContain('gap');
+      expect(safetyRow?.textContent).not.toContain('int');
+    } finally {
+      standingsMock.safetyCars = [];
+    }
   });
 
   // Every NameFormat the picker offers.

@@ -42,6 +42,7 @@ import { LapTraceSettings } from './sections/LapTraceSettings';
 import { BattleSettings } from './sections/BattleSettings';
 import { BroadcastSettingsPage } from './sections/BroadcastGroupSettings';
 import { BroadcastTransitionSettings } from './sections/BroadcastTransitionSettings';
+import { BroadcastExcludedCarsSettings } from './sections/BroadcastExcludedCarsSettings';
 import { GantrySettings } from './sections/GantrySettings';
 import { SettingsPreviewContext } from '@irdashies/domain/widgetPreview/settingsPreviewContext';
 import { widgetSettingsType } from './widgetSettingsType';
@@ -119,7 +120,12 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
   if (widgetId === 'driver-tags') return <DriverTagsSettings />;
   if (widgetId === 'keybindings') return <KeybindingsSettings />;
   if (widgetId === 'race-plan') return <RacePlanSettings />;
-  if (widgetId === 'broadcast-settings') return <BroadcastTransitionSettings />;
+  if (widgetId === 'broadcast-settings')
+    return (
+      <BroadcastTransitionSettings>
+        <BroadcastExcludedCarsSettings />
+      </BroadcastTransitionSettings>
+    );
 
   // 2. Find specific widget instance (may be undefined if widgetId is a type name)
   const widget = currentDashboard?.widgets.find((w) => w.id === widgetId);

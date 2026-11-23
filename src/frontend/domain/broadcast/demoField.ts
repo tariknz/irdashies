@@ -1,4 +1,5 @@
 import type { Standings } from '@irdashies/domain';
+import { excludedStandings } from './excludedCars';
 
 // A made-up field, so previews and stories work with no sim running.
 
@@ -68,3 +69,7 @@ export const DEMO_GROUPS: [string, Standings[]][] = [
     ],
   ],
 ];
+
+export const DEMO_SAFETY_CAR: Standings = excludedStandings([
+  car(8, 5, 'Safety Car', 132, GTD, { gap: undefined, interval: undefined }),
+])[0];

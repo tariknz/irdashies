@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  broadcastExcludedCars,
+  broadcastModuleChanged,
+  broadcastModuleDefaults,
   broadcastTransition,
   broadcastTransitionChanged,
 } from './broadcastModules';
@@ -24,5 +27,30 @@ describe('broadcastTransition', () => {
       );
       expect(broadcastTransitionChanged(config)).toBe(false);
     }
+  });
+});
+
+describe('broadcastExcludedCars', () => {
+  it('reads the saved list from the tower config, dropping bad entries', () => {
+    expect(
+      broadcastExcludedCars({
+        excludedCars: [{ carId: 7, name: 'Safety' }, { carId: 'x' }],
+      })
+    ).toEqual([{ carId: 7, name: 'Safety' }]);
+    expect(broadcastExcludedCars(undefined)).toEqual([]);
+  });
+
+  it('is left alone by a tower reset and does not mark the tower changed', () => {
+    expect(broadcastModuleDefaults('broadcast')).not.toHaveProperty(
+      'excludedCars'
+    );
+    const saved = {
+      ...broadcastModuleDefaults('broadcast'),
+      excludedCars: [{ carId: 7, name: 'Safety' }],
+    };
+    expect(broadcastModuleChanged('broadcast', saved)).toBe(false);
+    expect({ ...saved, ...broadcastModuleDefaults('broadcast') }).toMatchObject(
+      { excludedCars: [{ carId: 7, name: 'Safety' }] }
+    );
   });
 });

@@ -16,6 +16,7 @@ import type {
 } from '@irdashies/types';
 import { clampSetting } from '@irdashies/utils/clampSetting';
 import { useBroadcastConfig } from '@irdashies/domain/broadcast/useBroadcastConfig';
+import { useBroadcastExcludedCarIdxs } from '@irdashies/domain/broadcast/useBroadcastExcludedCarIdxs';
 import { usePageRotation } from './hooks/usePageRotation';
 import { usePositionChanges } from './hooks/usePositionChanges';
 import {
@@ -52,9 +53,11 @@ export const Broadcast = () => {
   const settings = useBroadcastConfig('broadcast');
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
   const trackName = useTrackDisplayName();
+  const excludedCarIdxs = useBroadcastExcludedCarIdxs();
   const groups = useDriverStandings(STANDINGS_OPTIONS, {
     showAll: true,
     livePositions: true,
+    excludedCarIdxs,
   });
   const standings = useMemo(() => groups.flatMap(([, d]) => d), [groups]);
   const sessionNum = useSessionBarSelector(sessionBarSelectors.sessionNum);

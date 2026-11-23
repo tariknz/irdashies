@@ -9,6 +9,9 @@ vi.mock('@irdashies/context', () => ({
   useSessionVisibility: () => true,
   useWeekendInfoTeamRacing: () => 0,
 }));
+vi.mock('@irdashies/domain/broadcast/useBroadcastExcludedCarIdxs', () => ({
+  useBroadcastExcludedCarIdxs: () => new Set<number>(),
+}));
 vi.mock('@irdashies/domain/standings/useDriverStandings', () => ({
   useDriverStandings: () => [['1', standings.cars]],
 }));

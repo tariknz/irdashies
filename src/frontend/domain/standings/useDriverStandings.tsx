@@ -22,7 +22,17 @@ import {
   augmentStandingsWithPlayerGap,
   augmentStandingsWithPositionChange,
 } from './createStandings';
-import type { StandingsWidgetSettings } from '@irdashies/types';
+import type {
+  Driver,
+  SessionResults,
+  StandingsWidgetSettings,
+} from '@irdashies/types';
+import type { Standings } from './createStandings';
+import {
+  competitorsOnly,
+  excludedStandings,
+  reRankClassPositions,
+} from '../broadcast/excludedCars';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useStandingsSettings } from './useStandingsSettings';
 import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
@@ -34,6 +44,23 @@ import { augmentStandingsWithFinalTiming } from './finalRaceTiming';
 const EMPTY_NUMBERS: number[] = [];
 const EMPTY_BOOLEANS: boolean[] = [];
 const EMPTY_TRACK_LOCATIONS: TrackLocation[] = [];
+const EMPTY_STANDINGS: Standings[] = [];
+
+export interface DriverStandingsOptions {
+  showAll?: boolean;
+  livePositions?: boolean;
+  excludedCarIdxs?: ReadonlySet<number>;
+}
+
+export interface DriverStandingsWithExcluded {
+  groups: [string, Standings[]][];
+  excluded: Standings[];
+}
+
+const excludedOnly = <T extends { CarIdx: number }>(
+  items: T[] | undefined,
+  excludedIdxs: ReadonlySet<number>
+): T[] | undefined => items?.filter((item) => excludedIdxs.has(item.CarIdx));
 
 export const shouldCalculateIRatingChange = (
   eventType: string | undefined,
@@ -52,8 +79,13 @@ export const shouldCalculateIRatingChange = (
  */
 export const useDriverStandings = (
   settings?: StandingsWidgetSettings['config'],
-  options?: { showAll?: boolean; livePositions?: boolean }
-) => {
+  options?: DriverStandingsOptions
+) => useDriverStandingsWithExcluded(settings, options).groups;
+
+export const useDriverStandingsWithExcluded = (
+  settings?: StandingsWidgetSettings['config'],
+  options?: DriverStandingsOptions
+): DriverStandingsWithExcluded => {
   const {
     driverStandings: {
       buffer,
@@ -84,7 +116,16 @@ export const useDriverStandings = (
   const sessionState = standingsSnapshot?.sessionState ?? 0;
   const sessionType = useSessionType(sessionNum);
   const positions = useSessionPositions(sessionNum);
-  const qualifyingResults = useQualifyingResults();
+  const allQualifyingResults = useQualifyingResults();
+  const excludedIdxs = options?.excludedCarIdxs;
+  const qualifyingResults = useMemo(
+    () => competitorsOnly(allQualifyingResults, excludedIdxs, sessionDrivers),
+    [allQualifyingResults, excludedIdxs, sessionDrivers]
+  );
+  const resultsPositions = useMemo(
+    () => competitorsOnly(positions, excludedIdxs, sessionDrivers),
+    [positions, excludedIdxs, sessionDrivers]
+  );
   const standingsSettings = useStandingsSettings();
   const useLivePositionStandings =
     options?.livePositions ?? standingsSettings?.useLivePosition ?? false;
@@ -146,42 +187,66 @@ export const useDriverStandings = (
   const standingsWithGain = useMemo(
     () =>
       measureStandingsRebuild('standings', sessionDrivers?.length ?? 0, () => {
-        const initialStandings = createDriverStandings(
-          {
-            playerIdx: driverCarIdx,
-            ownCarIdx,
-            drivers: sessionDrivers,
-            qualifyingResults: qualifyingResults,
-          },
-          {
-            carIdxLastLapTime: carIdxLastLapTime,
-            carIdxBestLapTime: carIdxBestLapTime,
-            carIdxF2TimeValue: carIdxF2Time,
-            carIdxOnPitRoadValue: carIdxOnPitRoad,
-            carIdxTrackSurfaceValue: carIdxTrackSurface,
-            radioTransmitCarIdx: radioTransmitCarIdx,
-            carIdxTireCompoundValue: carIdxTireCompound,
-            carIdxWheelCompoundsValue: carIdxWheelCompounds,
-            carIdxTrackLimitsPointsValue: carIdxTrackLimitsPoints,
-            carIdxEnergyRemainingValue: carIdxEnergyRemaining,
-            carIdxPenaltiesValue: carIdxPenalties,
-            carIdxPenaltyKindValue: carIdxPenaltyKind,
-            carIdxPenaltySecondsValue: carIdxPenaltySeconds,
-            carIdxFinishStatusValue: carIdxFinishStatus,
-            penaltySeconds,
-            carIdxSessionFlags: carIdxSessionFlags,
-          },
-          {
-            resultsPositions: positions,
-            resultsFastestLap: fastestLaps,
-            sessionType,
-          },
-          lastPitLap,
-          lastLap,
-          prevCarTrackSurface,
-          lapTimeDeltasEnabled ? numLapDeltas : undefined,
-          lapDeltasForCalc
+        const buildStandings = (
+          drivers: Driver[] | undefined,
+          results: SessionResults[] | undefined,
+          qualifying: SessionResults[] | undefined,
+          excludedCarIdxs: ReadonlySet<number> | undefined
+        ) =>
+          createDriverStandings(
+            {
+              playerIdx: driverCarIdx,
+              ownCarIdx,
+              drivers,
+              qualifyingResults: qualifying,
+              excludedCarIdxs,
+            },
+            {
+              carIdxLastLapTime: carIdxLastLapTime,
+              carIdxBestLapTime: carIdxBestLapTime,
+              carIdxF2TimeValue: carIdxF2Time,
+              carIdxOnPitRoadValue: carIdxOnPitRoad,
+              carIdxTrackSurfaceValue: carIdxTrackSurface,
+              radioTransmitCarIdx: radioTransmitCarIdx,
+              carIdxTireCompoundValue: carIdxTireCompound,
+              carIdxWheelCompoundsValue: carIdxWheelCompounds,
+              carIdxTrackLimitsPointsValue: carIdxTrackLimitsPoints,
+              carIdxEnergyRemainingValue: carIdxEnergyRemaining,
+              carIdxPenaltiesValue: carIdxPenalties,
+              carIdxPenaltyKindValue: carIdxPenaltyKind,
+              carIdxPenaltySecondsValue: carIdxPenaltySeconds,
+              carIdxFinishStatusValue: carIdxFinishStatus,
+              penaltySeconds,
+              carIdxSessionFlags: carIdxSessionFlags,
+            },
+            {
+              resultsPositions: results,
+              resultsFastestLap: fastestLaps,
+              sessionType,
+            },
+            lastPitLap,
+            lastLap,
+            prevCarTrackSurface,
+            lapTimeDeltasEnabled ? numLapDeltas : undefined,
+            lapDeltasForCalc
+          );
+
+        const initialStandings = buildStandings(
+          sessionDrivers,
+          resultsPositions,
+          qualifyingResults,
+          excludedIdxs
         );
+        const excluded = excludedIdxs?.size
+          ? excludedStandings(
+              buildStandings(
+                excludedOnly(sessionDrivers, excludedIdxs),
+                excludedOnly(positions, excludedIdxs),
+                excludedOnly(allQualifyingResults, excludedIdxs),
+                undefined
+              )
+            )
+          : EMPTY_STANDINGS;
 
         if (useLivePositionStandings) {
           // Apply live positions as per-class positions, then sort class arrays by class position
@@ -205,6 +270,9 @@ export const useDriverStandings = (
                 (a, b) => (a.classPosition ?? 999) - (b.classPosition ?? 999)
               ),
           ]) as [string, typeof initialStandings][];
+          if (excludedIdxs?.size) {
+            groupedByClass = reRankClassPositions(groupedByClass);
+          }
         }
 
         // Calculate position changes vs qualifying grid for race sessions
@@ -284,18 +352,24 @@ export const useDriverStandings = (
               )
             : displayedStandings;
 
-        if (options?.showAll) return finalStandings;
-        return sliceRelevantDrivers(finalStandings, driverClass, {
-          buffer,
-          numNonClassDrivers,
-          minPlayerClassDrivers,
-          numTopDrivers,
-        });
+        if (options?.showAll) return { groups: finalStandings, excluded };
+        return {
+          groups: sliceRelevantDrivers(finalStandings, driverClass, {
+            buffer,
+            numNonClassDrivers,
+            minPlayerClassDrivers,
+            numTopDrivers,
+          }),
+          excluded,
+        };
       }),
     [
       driverCarIdx,
       sessionDrivers,
       qualifyingResults,
+      allQualifyingResults,
+      excludedIdxs,
+      resultsPositions,
       carIdxLastLapTime,
       carIdxBestLapTime,
       carIdxF2Time,

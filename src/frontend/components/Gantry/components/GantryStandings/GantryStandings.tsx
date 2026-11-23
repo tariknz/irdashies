@@ -157,7 +157,7 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
   const simulator = useActiveSimulator();
   const showRatings = simulatorHasDriverRatings(simulator);
   const nameFormat = useGantrySettings()?.driverNameFormat ?? 'surname';
-  const { standingsByClass } = useGantrySessionData();
+  const { standingsByClass, safetyCars } = useGantrySessionData();
   const followedRef = useRef<HTMLDivElement | null>(null);
 
   // Clicking a row points the sim's camera at that car.
@@ -228,6 +228,28 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
               </div>
             );
           })}
+          {safetyCars.length > 0 && (
+            <div>
+              <div className="flex h-[26px] items-center border-b border-slate-700 bg-slate-900 px-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.06em] text-slate-400">
+                  Safety car
+                </span>
+              </div>
+              {safetyCars.map((driver) => (
+                <GantryDriverRow
+                  key={driver.carIdx}
+                  driver={driver}
+                  followedCarIdx={followedCarIdx}
+                  followedRef={followedRef}
+                  isMultiClass={isMultiClass}
+                  highlightColorHex={highlightColorHex}
+                  nameFormat={nameFormat}
+                  onFocusDriver={handleFocusDriver}
+                  showRatings={showRatings}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </GantryPanel>

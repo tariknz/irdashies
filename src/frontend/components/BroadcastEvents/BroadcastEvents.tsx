@@ -25,6 +25,7 @@ import {
 import { CarManufacturer } from '../shared/CarManufacturer/CarManufacturer';
 import { BroadcastEnter } from '../shared/Broadcast/BroadcastEnter';
 import { useBroadcastConfig } from '@irdashies/domain/broadcast/useBroadcastConfig';
+import { useBroadcastExcludedCarIdxs } from '@irdashies/domain/broadcast/useBroadcastExcludedCarIdxs';
 import {
   carEvents,
   demoEvent,
@@ -187,7 +188,11 @@ export const BroadcastEvents = () => {
   const { isDemoMode } = useDashboard();
   const settings = useBroadcastConfig('broadcastevents');
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
-  const groups = useDriverStandings(undefined, { showAll: true });
+  const excludedCarIdxs = useBroadcastExcludedCarIdxs();
+  const groups = useDriverStandings(undefined, {
+    showAll: true,
+    excludedCarIdxs,
+  });
   const byCarIdx = useMemo(
     () => new Map(groups.flatMap(([, d]) => d).map((s) => [s.carIdx, s])),
     [groups]
@@ -200,12 +205,13 @@ export const BroadcastEvents = () => {
   useEffect(
     () =>
       window.channelBridge?.subscribe('raceControl.incidents', (incident) => {
+        if (excludedCarIdxs.has(incident.carIdx)) return;
         const event = eventFromIncident(incident);
         if (!event) return;
         lastIncident.current = { event, at: Date.now() };
         if (kinds?.[event.kind] !== false) push(event);
       }),
-    [kinds, push]
+    [kinds, push, excludedCarIdxs]
   );
 
   // Pit stops, fastest laps, meatballs and DQs come from the standings.

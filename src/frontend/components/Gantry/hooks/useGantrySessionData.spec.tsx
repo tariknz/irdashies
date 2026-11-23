@@ -10,6 +10,7 @@ import {
 const sim = vi.hoisted(() => ({
   hasDrivers: true,
   standings: [] as unknown[],
+  safetyCars: [] as unknown[],
   live: undefined as unknown,
   replay: { mode: 'live', provenance: 'none', subSessionId: '' },
   cursorSessionNum: null as number | null,
@@ -34,10 +35,17 @@ vi.mock('@irdashies/context', () => ({
   useTrackStateSelector: () => sim.cursorSessionNum,
   useArchivedLapHistory: () => sim.archived,
   useSessionList: () => sim.sessions,
+  useSessionDrivers: () => undefined,
 }));
 
+vi.mock('@irdashies/domain/broadcast/useBroadcastExcludedCarIdxs', () => ({
+  useBroadcastExcludedCarIdxs: () => new Set<number>(),
+}));
 vi.mock('@irdashies/domain/standings/useDriverStandings', () => ({
-  useDriverStandings: () => sim.standings,
+  useDriverStandingsWithExcluded: () => ({
+    groups: sim.standings,
+    excluded: sim.safetyCars,
+  }),
 }));
 
 vi.mock('@irdashies/domain/standings/useQualifyingGrid', () => ({

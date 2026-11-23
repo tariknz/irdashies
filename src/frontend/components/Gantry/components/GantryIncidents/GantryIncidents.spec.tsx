@@ -81,11 +81,19 @@ vi.mock('@irdashies/context', () => ({
     subSessionId: '',
   }),
   useArchivedLapHistory: () => null,
+  useSessionDrivers: () => undefined,
 }));
 
+vi.mock('@irdashies/domain/broadcast/useBroadcastExcludedCarIdxs', () => ({
+  useBroadcastExcludedCarIdxs: () => new Set<number>(),
+}));
 vi.mock('@irdashies/domain/standings/useDriverStandings', () => {
   const none: unknown[] = [];
-  return { useDriverStandings: () => none };
+  const empty = { groups: none, excluded: none };
+  return {
+    useDriverStandings: () => none,
+    useDriverStandingsWithExcluded: () => empty,
+  };
 });
 
 vi.mock('@irdashies/domain/standings/useQualifyingGrid', () => ({
