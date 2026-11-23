@@ -73,7 +73,17 @@ const mapSessionSpy = vi.hoisted(() =>
  */
 const restState = vi.hoisted(() => ({
   data: { revision: 0, cells: {}, session: {} as Record<string, unknown> },
-  poller: { setActive: vi.fn(), invalidateOnce: vi.fn(), stop: vi.fn() },
+  poller: {
+    setActive: vi.fn(),
+    invalidateOnce: vi.fn(),
+    burst: vi.fn(),
+    stop: vi.fn(),
+  },
+}));
+
+const worldTrackState = vi.hoisted(() => ({
+  map: null as unknown,
+  setTrack: vi.fn(),
 }));
 
 /** Shared so the specs can observe how the bridge drives them. */
@@ -176,6 +186,29 @@ vi.mock('../../lmu/trackMap', () => ({
   LmuTrackMapStorage: class {
     save = vi.fn();
   },
+}));
+
+vi.mock('../../lmu/worldTrack', () => ({
+  LmuWorldTrackStorage: class {
+    load = vi.fn(() => null);
+  },
+  LmuWorldTrackSource: class {
+    setTrack = worldTrackState.setTrack;
+    update = vi.fn(() => false);
+    get map() {
+      return worldTrackState.map;
+    }
+    get fit() {
+      return worldTrackState.map === null
+        ? null
+        : { ar: 0, ai: 1, tx: 0, ty: 0, mirrored: false, rmsM: 0 };
+    }
+    get wantsLiveTrack() {
+      return worldTrackState.map === null;
+    }
+  },
+  worldTrackFitsLap: () => false,
+  parseLmuWorldTrack: () => undefined,
 }));
 
 // Mapping is covered by its own specs; here it only has to not be the thing
@@ -523,6 +556,35 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
     sdkState.sessionEndEvents = 0;
     restState.data.revision = 0;
     restState.data.session = {};
+    worldTrackState.map = null;
+  });
+
+  it('asks for the world track once LMU is up, reading the body afresh', async () => {
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() =>
+      expect(restState.poller.burst).toHaveBeenCalledWith(
+        'watch-trackmap',
+        expect.objectContaining({ delayMs: 0, rereadBody: true })
+      )
+    );
+    expect(worldTrackState.setTrack).toHaveBeenCalledWith(rawFrame().trackName);
+    bridge.stop();
+  });
+
+  it('publishes the cached world track ahead of the bundled map', async () => {
+    const worldMap = { marker: 'world track' };
+    worldTrackState.map = worldMap;
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(sessionPublishCount(overlayManager)).toBe(1));
+    expect(mapSessionSpy.mock.calls.at(-1)?.[1]).toBe(worldMap);
+    expect(restState.poller.burst).not.toHaveBeenCalled();
+    bridge.stop();
   });
 
   it('republishes the session when only the REST revision moved', async () => {

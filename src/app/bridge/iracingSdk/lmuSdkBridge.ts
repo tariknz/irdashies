@@ -50,7 +50,7 @@ import { lmuRestOrigin } from '../../lmu/rest/constants';
 import { createLmuRestTransport } from '../../lmu/rest/httpJson';
 import { createLmuRestPoller } from '../../lmu/rest/poller';
 import { createLmuRestData } from '../../lmu/rest/state';
-import { LMU_TEAMS_TASK_ID } from '../../lmu/rest/tasks';
+import { LMU_TEAMS_TASK_ID, LMU_TRACKMAP_TASK_ID } from '../../lmu/rest/tasks';
 import { createLmuTapeRestTransport } from '../../lmu/rest/tapeTransport';
 import { createLmuLiveStandings } from '../../lmu/liveStandings/client';
 import { lmuLivePenaltyChannels } from '../../lmu/liveStandings/penalties';
@@ -62,6 +62,11 @@ import {
   LmuTrackMapStorage,
 } from '../../lmu/trackMap';
 import { LmuSectorBoundaryLearner } from '../../lmu/sectorBoundaries';
+import {
+  LmuWorldTrackSource,
+  LmuWorldTrackStorage,
+  worldTrackFitsLap,
+} from '../../lmu/worldTrack';
 import { createRaceosClient, type RaceosClient } from '../../lmu/raceos/client';
 import { raceosUsername } from '../../lmu/raceos/parse';
 import { createLmuTapeRatingClient } from '../../lmu/raceos/tapeRatings';
@@ -208,6 +213,7 @@ const gridUsernames = (raw: {
  * them to the overlays. Resolves to the bridge the app drives, as for iRacing.
  */
 const NO_MAP_FRAME: { value: number[] } = { value: [] };
+const TRACKMAP_BURST_RETRY_MS = 120_000;
 
 export async function publishLmuSDKEvents(
   overlayManager: OverlayManager,
@@ -226,6 +232,18 @@ export async function publishLmuSDKEvents(
   const mapStorage = new LmuTrackMapStorage(
     path.join(app.getPath('userData'), 'lmu-track-maps.json')
   );
+  const worldTracks = new LmuWorldTrackSource(
+    new LmuWorldTrackStorage(
+      path.join(app.getPath('userData'), 'lmu-world-tracks.json')
+    ),
+    {
+      info: (message) => logger.info(message),
+      warn: (message) => logger.warn(message),
+    }
+  );
+  let latestLapDistM = 0;
+  let lastTrackMapBurstAt = Number.NEGATIVE_INFINITY;
+  let trackMapBurstRereads = false;
 
   // Properties LMU serves over its local REST API. The poller runs on its own
   // timers; this loop only ever reads the object it fills, synchronously. See
@@ -543,7 +561,13 @@ export async function publishLmuSDKEvents(
 
       if (raw.trackName !== activeTrackName) {
         activeTrackName = raw.trackName;
-        const loadedMap = loadLmuTrackMap(activeTrackName, mapStorage);
+        worldTracks.setTrack(activeTrackName);
+        restData.worldTrack = undefined;
+        lastTrackMapBurstAt = Number.NEGATIVE_INFINITY;
+        trackMapBurstRereads = true;
+        const loadedMap = worldTracks.map
+          ? { map: worldTracks.map, source: 'world track cache' }
+          : loadLmuTrackMap(activeTrackName, mapStorage);
         trackMap = loadedMap?.map ?? null;
         mapRecorder.reset(activeTrackName);
         sectorBoundaries.reset(activeTrackName);
@@ -834,19 +858,54 @@ export async function publishLmuSDKEvents(
           `[lmuSdkBridge] Learned sector boundaries for ${activeTrackName}: S2 ${s2?.toFixed(4)}, S3 ${s3?.toFixed(4)}`
         );
       }
+      latestLapDistM = raw.lapDist;
+      perfMetrics.markStart('lmuWorldTrack');
+      if (
+        worldTracks.update({
+          restTrack: restData.worldTrack,
+          time: pollStartedAt / 1000,
+          lapDistM: raw.lapDist,
+          posX: raw.vehPosX,
+          posZ: raw.vehPosZ,
+          available: raw.vehTelemetryAvailable,
+          pcts: telemetry.CarIdxLapDistPct?.value ?? [],
+          inPits: raw.vehInPits,
+          speeds: raw.vehSpeed,
+        })
+      ) {
+        trackMap = worldTracks.map;
+        lastSessionSignature = null;
+      }
+      if (
+        worldTracks.wantsLiveTrack &&
+        pollStartedAt - lastTrackMapBurstAt >= TRACKMAP_BURST_RETRY_MS
+      ) {
+        lastTrackMapBurstAt = pollStartedAt;
+        restPoller.burst(LMU_TRACKMAP_TASK_ID, {
+          delayMs: 0,
+          rereadBody: trackMapBurstRereads,
+          isComplete: () =>
+            worldTrackFitsLap(restData.worldTrack, latestLapDistM),
+        });
+        trackMapBurstRereads = false;
+      }
+      perfMetrics.markEnd('lmuWorldTrack');
       perfMetrics.markStart('lmuMapRegistration');
-      const mapFit = mapRegistration.update({
-        map: trackMap,
-        time: pollStartedAt / 1000,
-        trackLengthM: raw.lapDist,
-        posX: raw.vehPosX,
-        posZ: raw.vehPosZ,
-        available: raw.vehTelemetryAvailable,
-        pcts: telemetry.CarIdxLapDistPct?.value ?? [],
-        inPits: raw.vehInPits,
-        speeds: raw.vehSpeed,
-      });
-      if (mapRegistration.status !== lastMapRegistrationStatus) {
+      const worldFit = worldTracks.fit;
+      const mapFit =
+        worldFit ??
+        mapRegistration.update({
+          map: trackMap,
+          time: pollStartedAt / 1000,
+          trackLengthM: raw.lapDist,
+          posX: raw.vehPosX,
+          posZ: raw.vehPosZ,
+          available: raw.vehTelemetryAvailable,
+          pcts: telemetry.CarIdxLapDistPct?.value ?? [],
+          inPits: raw.vehInPits,
+          speeds: raw.vehSpeed,
+        });
+      if (!worldFit && mapRegistration.status !== lastMapRegistrationStatus) {
         lastMapRegistrationStatus = mapRegistration.status;
         const attempt = mapRegistration.fit ?? mapRegistration.lastAttempt;
         const detail = attempt
