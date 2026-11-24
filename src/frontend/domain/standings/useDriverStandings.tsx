@@ -241,19 +241,13 @@ export const useDriverStandings = (
               )
             : iratingAugmentedGroupedByClass;
 
-        // Live intervals compare consecutive cars directly. Official intervals
-        // retain the SDK gaps, regardless of the displayed GAP reference.
         const intervalAugmentedGroupedByClass = intervalEnabled
           ? augmentStandingsWithInterval(
               gapAugmentedGroupedByClass,
               carIdxLap,
               carIdxLapDistPct,
               intervalDisplayMode === 'laps',
-              {
-                useLivePositionStandings,
-                carIdxOnPitRoad,
-                carIdxEstTime,
-              }
+              useLivePositionStandings ? carIdxOnPitRoad : undefined
             )
           : gapAugmentedGroupedByClass;
 

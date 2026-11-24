@@ -925,23 +925,13 @@ export const augmentStandingsWithPlayerGap = (
   ]);
 };
 
-/**
- * Live intervals use the preceding car directly. Leader gaps wrap within one
- * lap, so subtracting them loses whole laps and can reverse a near-lap gap.
- */
-interface LiveIntervalTiming {
-  useLivePositionStandings: boolean;
-  carIdxOnPitRoad: boolean[];
-  carIdxEstTime: number[];
-}
-
 const calculateLiveRaceInterval = (
   ahead: Standings,
   behind: Standings,
   laps: number[],
   pcts: number[],
   showLapDifferences: boolean,
-  timing: LiveIntervalTiming,
+  carIdxOnPitRoad: boolean[],
   refLapStore: ReturnType<typeof useReferenceLapStore.getState>
 ): number | Gap | undefined => {
   const aheadLap = laps[ahead.carIdx];
@@ -964,10 +954,8 @@ const calculateLiveRaceInterval = (
   )
     return undefined;
 
-  // Use integer lap counts for the whole-lap part to avoid rounding a nearly
-  // complete lap up at the boundary. The fractional part always looks forward
-  // from the lower-ranked car to the higher-ranked car.
-  const wholeLaps = aheadLap - behindLap - (aheadPct < behindPct ? 1 : 0);
+  const wrapsAtStartFinish = aheadPct < behindPct;
+  const wholeLaps = aheadLap - behindLap - (wrapsAtStartFinish ? 1 : 0);
   if (wholeLaps < 0) return undefined;
   if (showLapDifferences && wholeLaps > 0)
     return { value: undefined, laps: -wholeLaps };
@@ -981,8 +969,8 @@ const calculateLiveRaceInterval = (
   let lapTime: number;
   let fractionTime: number;
   if (
-    !timing.carIdxOnPitRoad[ahead.carIdx] &&
-    !timing.carIdxOnPitRoad[behind.carIdx] &&
+    !carIdxOnPitRoad[ahead.carIdx] &&
+    !carIdxOnPitRoad[behind.carIdx] &&
     refLap.finishTime >= 0 &&
     Number.isFinite(refLapTime) &&
     refLapTime > 0
@@ -992,20 +980,8 @@ const calculateLiveRaceInterval = (
   } else {
     lapTime = behind.carClass.estLapTime;
     if (!Number.isFinite(lapTime) || lapTime <= 0) return undefined;
-    const aheadEstTime = timing.carIdxEstTime[ahead.carIdx];
-    const behindEstTime = timing.carIdxEstTime[behind.carIdx];
-    fractionTime =
-      Number.isFinite(aheadEstTime) &&
-      aheadEstTime >= 0 &&
-      Number.isFinite(behindEstTime) &&
-      behindEstTime >= 0 &&
-      Number.isFinite(ahead.carClass.estLapTime) &&
-      ahead.carClass.estLapTime > 0
-        ? calculateClassEstimatedGap(
-            getStats(aheadEstTime, ahead),
-            getStats(behindEstTime, behind)
-          )
-        : (aheadPct - behindPct + (aheadPct < behindPct ? 1 : 0)) * lapTime;
+    const fractionalLap = aheadPct - behindPct + (wrapsAtStartFinish ? 1 : 0);
+    fractionTime = fractionalLap * lapTime;
   }
   const interval = wholeLaps * lapTime + fractionTime;
   return Number.isFinite(interval) && interval >= 0 ? interval : undefined;
@@ -1021,15 +997,14 @@ export const augmentStandingsWithInterval = (
   carIdxLap: number[] = [],
   carIdxLapDistPct: number[] = [],
   showLapDifferences = false,
-  liveTiming?: LiveIntervalTiming
+  carIdxOnPitRoad?: boolean[]
 ): [string, Standings[]][] => {
-  const refLapStore = liveTiming?.useLivePositionStandings
+  const refLapStore = carIdxOnPitRoad
     ? useReferenceLapStore.getState()
     : undefined;
   return groupedStandings.map(([classId, classStandings]) => {
     const augmentedClassStandings = classStandings.map(
       (driverStanding, index) => {
-        // The preceding car in class race order, regardless of track proximity.
         const driverAhead = classStandings[index - 1];
 
         let interval: number | Gap | undefined = undefined;
@@ -1056,18 +1031,14 @@ export const augmentStandingsWithInterval = (
         // If there's no one ahead (P1 in class), the interval is typically undefined or 0
         if (!driverAhead) {
           interval = undefined;
-        } else if (
-          isRace &&
-          liveTiming?.useLivePositionStandings &&
-          refLapStore
-        ) {
+        } else if (isRace && refLapStore && carIdxOnPitRoad) {
           interval = calculateLiveRaceInterval(
             driverAhead,
             driverStanding,
             carIdxLap,
             carIdxLapDistPct,
             showLapDifferences,
-            liveTiming,
+            carIdxOnPitRoad,
             refLapStore
           );
         } else if (
