@@ -1,29 +1,39 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ReplayDirectorRuntime } from '../processors/replayDirectorRuntime';
+
+const handlers = new Map<string, () => Promise<void>>();
+vi.mock('electron', () => ({
+  ipcMain: { handle: vi.fn((name, handler) => handlers.set(name, handler)) },
+}));
+
+import { setupReplayDirectorBridge } from './replayDirectorBridge';
 
 describe('replayDirectorBridge', () => {
-  it('delegates backToProgram to runtime', async () => {
-    const runtime = {
-      backToProgram: vi.fn().mockResolvedValue(undefined),
-      resumeAtCut: vi.fn().mockResolvedValue(undefined),
-      stayHere: vi.fn().mockResolvedValue(undefined),
-    };
-    await runtime.backToProgram();
-    expect(runtime.backToProgram).toHaveBeenCalledOnce();
-  });
+  beforeEach(() => handlers.clear());
 
-  it('delegates resumeAtCut to runtime', async () => {
-    const runtime = {
-      resumeAtCut: vi.fn().mockResolvedValue(undefined),
-    };
-    await runtime.resumeAtCut();
-    expect(runtime.resumeAtCut).toHaveBeenCalledOnce();
-  });
+  it.each(['backToProgram', 'resumeAtCut', 'stayHere'] as const)(
+    'delegates %s through its registered IPC handler',
+    async (method) => {
+      const promise = Promise.resolve();
+      const runtime = {
+        backToProgram: vi.fn(() => promise),
+        resumeAtCut: vi.fn(() => promise),
+        stayHere: vi.fn(() => promise),
+      };
+      setupReplayDirectorBridge(runtime as unknown as ReplayDirectorRuntime);
 
-  it('delegates stayHere to runtime', async () => {
-    const runtime = {
-      stayHere: vi.fn().mockResolvedValue(undefined),
-    };
-    await runtime.stayHere();
-    expect(runtime.stayHere).toHaveBeenCalledOnce();
-  });
+      expect(handlers.size).toBe(3);
+      const handler = handlers.get(`replayDirector:${method}`);
+      expect(handler).toBeDefined();
+      expect(handler?.()).toBe(promise);
+      await promise;
+      for (const name of [
+        'backToProgram',
+        'resumeAtCut',
+        'stayHere',
+      ] as const) {
+        expect(runtime[name]).toHaveBeenCalledTimes(name === method ? 1 : 0);
+      }
+    }
+  );
 });

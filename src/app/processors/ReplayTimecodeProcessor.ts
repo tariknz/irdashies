@@ -148,11 +148,16 @@ export class ReplayTimecodeProcessor {
     let newProgramSessionTime: number;
     if (this.cue === null) {
       const pending = this.pendingLivePosition;
+      const pendingNow = pending
+        ? pending.sessionTime +
+          Math.max(0, (wallMs - pending.wallMs) / 1000) *
+            effectiveSpeed(pending)
+        : 0;
       if (
         pending &&
         (programmaticSeekArrived ||
           (rawSessionNum === pending.sessionNum &&
-            Math.abs(rawSessionTimeF - pending.sessionTime) < 2))
+            Math.abs(rawSessionTimeF - pendingNow) < 2))
       ) {
         this.pendingLivePosition = null;
         this.suppressNextSeek = false;

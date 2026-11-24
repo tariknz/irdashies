@@ -1,4 +1,4 @@
-import type { Telemetry } from '@irdashies/types';
+import type { Session, Telemetry } from '@irdashies/types';
 import type { ChannelBus } from '../bridge/channelBus';
 import type { SessionLifecycle } from '../sessionLifecycle';
 import { ReplayTimecodeProcessor } from './ReplayTimecodeProcessor';
@@ -14,6 +14,7 @@ const CHANNEL = 'replay.timecode';
 export class ReplayDirectorRuntime {
   private readonly processor: ReplayTimecodeProcessor;
   private subscribers = 0;
+  private driverInfo: Session['DriverInfo'] | undefined;
   private readonly disconnects: (() => void)[] = [];
 
   constructor(
@@ -41,12 +42,15 @@ export class ReplayDirectorRuntime {
   }
 
   private wireSource(): void {
+    this.driverInfo = undefined;
     const bridge = getCurrentBridge();
     if (!bridge) return;
 
     this.disconnects.push(
-      bridge.onSessionData(() => this.processor.onSession()) ??
-        (() => undefined),
+      bridge.onSessionData((session) => {
+        this.driverInfo = session.DriverInfo;
+        this.processor.onSession();
+      }) ?? (() => undefined),
       bridge.onTelemetry((telemetry: Telemetry) => {
         if (this.isInactive()) return;
         const changed = this.processor.onFrame(telemetry);
@@ -115,19 +119,24 @@ export class ReplayDirectorRuntime {
       `[ReplayDirector] resumeAtCut: seeking to cue frame ${cue.frame}`
     );
     this.processor.expectProgrammaticSeek();
-    bridge.changeReplaySpeed(1, false);
+    bridge.changeReplaySpeed(cue.playSpeed, cue.slowMotion);
     bridge.triggerReplaySessionSearch(cue.sessionNum, cue.sessionTime * 1000);
-    bridge.changeCameraNumber(
-      String(cue.camCarIdx),
-      cue.camGroupNum,
-      cue.camCameraNum
+    const driver = this.driverInfo?.Drivers.find(
+      (driver) => driver.CarIdx === cue.camCarIdx
     );
+    if (driver?.CarNumber) {
+      bridge.changeCameraNumber(
+        driver.CarNumber,
+        cue.camGroupNum,
+        cue.camCameraNum
+      );
+    }
 
     this.processor.returned({
       sessionNum: cue.sessionNum,
       sessionTime: cue.sessionTime,
-      playSpeed: 1,
-      slowMotion: false,
+      playSpeed: cue.playSpeed,
+      slowMotion: cue.slowMotion,
     });
     this.bus.publish(CHANNEL, this.processor.snapshot());
   }

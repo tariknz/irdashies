@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Telemetry } from '@irdashies/types';
+import recordedReplayStart from '../../../test-data/1763227688917/telemetry.json';
+import recordedReplayLater from '../../../test-data/1763228431951/telemetry.json';
+import recordedReplayStopped from '../../../test-data/1763241199586/telemetry.json';
 import {
   ReplayTimecodeProcessor,
   LIVE_EDGE_FRAMES,
@@ -27,6 +30,70 @@ const frame = (overrides: Record<string, unknown> = {}): Telemetry => {
 };
 
 describe('ReplayTimecodeProcessor', () => {
+  it('processes recorded replay frames through playback and stopping', () => {
+    let nowMs = 0;
+    const p = new ReplayTimecodeProcessor(() => nowMs);
+    for (const recorded of [recordedReplayStart, recordedReplayLater]) {
+      nowMs = recorded.ReplaySessionTime.value[0] * 1000;
+      p.onFrame(recorded as unknown as Telemetry);
+      expect(p.snapshot()).toMatchObject({
+        active: true,
+        sessionNum: recorded.ReplaySessionNum.value[0],
+        sessionTime: Math.floor(recorded.ReplaySessionTime.value[0]),
+        frame: recorded.ReplayFrameNum.value[0],
+        frameEnd: recorded.ReplayFrameNumEnd.value[0],
+        playSpeed: recorded.ReplayPlaySpeed.value[0],
+        slowMotion: recorded.ReplayPlaySlowMotion.value[0],
+        atLiveEdge: true,
+        program: { state: 'onProgram' },
+      });
+      expect(p.getCue()).toBeNull();
+    }
+    expect(p.fps_()).toBeCloseTo(60, 1);
+    p.onFrame(recordedReplayStopped as unknown as Telemetry);
+    expect(p.snapshot().active).toBe(false);
+  });
+
+  it.each([
+    { playSpeed: 1, slowMotion: false, delayMs: 0, advance: 0 },
+    { playSpeed: 1, slowMotion: false, delayMs: 2000, advance: 2 },
+    { playSpeed: 4, slowMotion: false, delayMs: 2000, advance: 8 },
+    { playSpeed: 4, slowMotion: true, delayMs: 8000, advance: 2 },
+    { playSpeed: 0, slowMotion: false, delayMs: 2000, advance: 0 },
+    { playSpeed: -1, slowMotion: false, delayMs: 2000, advance: -2 },
+  ])(
+    'acknowledges returned playback at observation time: %j',
+    ({ playSpeed, slowMotion, delayMs, advance }) => {
+      let nowMs = 0;
+      const p = new ReplayTimecodeProcessor(() => nowMs);
+      p.onFrame(
+        frame({
+          ReplayFrameNum: 6000,
+          ReplaySessionTime: 100,
+          ReplayPlaySpeed: playSpeed,
+          ReplayPlaySlowMotion: slowMotion,
+        })
+      );
+      p.cut();
+      p.expectProgrammaticSeek();
+      p.returned({ sessionNum: 0, sessionTime: 100, playSpeed, slowMotion });
+      nowMs = delayMs;
+      p.onFrame(
+        frame({
+          ReplayFrameNum: 6000 + advance * 60,
+          ReplaySessionTime: 100 + advance,
+          ReplayPlaySpeed: playSpeed,
+          ReplayPlaySlowMotion: slowMotion,
+        })
+      );
+      expect(p.getCue()).toBeNull();
+      nowMs += 100;
+      p.onFrame(frame({ ReplayFrameNum: 3000, ReplaySessionTime: 50 }));
+      expect(p.getCue()?.sessionTime).toBe(100 + advance);
+      expect(p.snapshot().program.state).toBe('cutAway');
+    }
+  );
+
   it('detects a manual jump back and keeps the previous program position', () => {
     let nowMs = 0;
     const p = new ReplayTimecodeProcessor(() => nowMs);
