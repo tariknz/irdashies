@@ -35,6 +35,7 @@ export interface RendererPerfSample {
   inputTraceFrameMs?: NumericSampleStats;
   radarFrameMs?: NumericSampleStats;
   standingsPlayerGapsMs?: NumericSampleStats;
+  standingsIntervalsMs?: NumericSampleStats;
   standingsFinalTimingMs?: NumericSampleStats;
   lapTraceFrameMs?: NumericSampleStats;
   lapTraceBrakeCueMs?: NumericSampleStats;
@@ -54,6 +55,7 @@ export const RENDERER_PERF_MEASURE_NAMES = [
   'inputTraceFrame',
   'radarFrame',
   'standingsPlayerGaps',
+  'standingsIntervals',
   'standingsFinalTiming',
   'lapTraceFrame',
   'lapTraceBrakeCue',

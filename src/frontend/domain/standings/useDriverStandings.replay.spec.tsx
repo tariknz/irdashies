@@ -329,7 +329,7 @@ describe('class standings over a real multiclass field', () => {
     expect(player.some((d) => (d.gap?.value ?? 0) > 0)).toBe(true);
   });
 
-  it('records player gap work through the existing performance bridge', () => {
+  it('records player gaps and intervals through the performance bridge', () => {
     const previous = window.rendererPerfBridge;
     const recordMeasure = vi.fn();
     window.rendererPerfBridge = { recordMeasure };
@@ -337,13 +337,20 @@ describe('class standings over a real multiclass field', () => {
       renderHook(
         () =>
           useDriverStandings(
-            config({ gap: { enabled: true, reference: 'player' } }),
-            { showAll: true }
+            config({
+              gap: { enabled: true, reference: 'player' },
+              interval: { enabled: true },
+            }),
+            { showAll: true, livePositions: true }
           ),
         { wrapper: harness.wrapper }
       );
       expect(recordMeasure).toHaveBeenCalledWith(
         'standingsPlayerGaps',
+        expect.any(Number)
+      );
+      expect(recordMeasure).toHaveBeenCalledWith(
+        'standingsIntervals',
         expect.any(Number)
       );
     } finally {

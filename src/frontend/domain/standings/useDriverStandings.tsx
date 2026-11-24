@@ -242,12 +242,14 @@ export const useDriverStandings = (
             : iratingAugmentedGroupedByClass;
 
         const intervalAugmentedGroupedByClass = intervalEnabled
-          ? augmentStandingsWithInterval(
-              gapAugmentedGroupedByClass,
-              carIdxLap,
-              carIdxLapDistPct,
-              intervalDisplayMode === 'laps',
-              useLivePositionStandings ? carIdxOnPitRoad : undefined
+          ? perfMetrics.measure('standingsIntervals', () =>
+              augmentStandingsWithInterval(
+                gapAugmentedGroupedByClass,
+                carIdxLap,
+                carIdxLapDistPct,
+                intervalDisplayMode === 'laps',
+                useLivePositionStandings ? carIdxOnPitRoad : undefined
+              )
             )
           : gapAugmentedGroupedByClass;
 
