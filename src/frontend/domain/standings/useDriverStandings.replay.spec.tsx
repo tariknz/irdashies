@@ -21,17 +21,39 @@ const flatten = <T,>(grouped: [string, T[]][]): T[] =>
   grouped.flatMap(([, drivers]) => drivers);
 
 it.each([
-  { pct: 0.53, displayMode: 'time' as const, expected: 97 },
-  { pct: 0.53, displayMode: 'laps' as const, expected: 97 },
-  { pct: 0.49, displayMode: 'time' as const, expected: 101 },
+  {
+    pct: 0.53,
+    livePositions: true,
+    displayMode: 'time' as const,
+    expected: 97,
+  },
+  {
+    pct: 0.53,
+    livePositions: true,
+    displayMode: 'laps' as const,
+    expected: 97,
+  },
   {
     pct: 0.49,
+    livePositions: true,
+    displayMode: 'time' as const,
+    expected: 101,
+  },
+  {
+    pct: 0.49,
+    livePositions: true,
     displayMode: 'laps' as const,
     expected: { value: undefined, laps: -1 },
   },
+  {
+    pct: 0.49,
+    livePositions: false,
+    displayMode: 'time' as const,
+    expected: 97,
+  },
 ])(
-  'assembles the live P10/P11 interval with P11 at $pct and display $displayMode',
-  ({ pct, displayMode, expected }) => {
+  'assembles the P10/P11 interval with P11 at $pct, display $displayMode and live positions $livePositions',
+  ({ pct, livePositions, displayMode, expected }) => {
     const drivers = Array.from({ length: 11 }, (_, i) => ({
       CarIdx: i,
       UserName: `Driver ${i}`,
@@ -85,7 +107,7 @@ it.each([
             gap: { enabled: false },
             interval: { enabled: true, displayMode },
           }),
-          { showAll: true, livePositions: true }
+          { showAll: true, livePositions }
         ),
       { wrapper: harness.wrapper }
     );
