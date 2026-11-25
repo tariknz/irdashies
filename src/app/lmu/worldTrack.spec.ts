@@ -131,6 +131,33 @@ describe('parseLmuWorldTrack', () => {
     expect(parseLmuWorldTrack(open)).toBeUndefined();
   });
 
+  it('keeps the pit lane alone when LMU appends a separate road after it', () => {
+    const fixture = algarveTrackmapFixture();
+    const sideRoad = Array.from({ length: 10 }, (_, index) => ({
+      type: 1,
+      x: 2000 + index * 5,
+      y: 0,
+      z: 2000,
+    }));
+    const track = parseLmuWorldTrack([...fixture, ...sideRoad]);
+
+    expect(track?.pitLane).toHaveLength(26);
+    expect(track?.pitLane).toEqual(algarve().pitLane);
+  });
+
+  it('keeps the longest unbroken stretch of the pit lane', () => {
+    const lane = (from: number, count: number) =>
+      Array.from({ length: count }, (_, index) => ({
+        x: from + index * 5,
+        y: 0,
+      }));
+    const pitLane = [...lane(0, 4), ...lane(1000, 12), ...lane(5000, 6)];
+    const track = worldTrackFrom(algarve().racing, pitLane);
+
+    expect(track?.pitLane).toEqual(lane(1000, 12));
+    expect(worldTrackFrom(algarve().racing, [])?.pitLane).toEqual([]);
+  });
+
   it('is what the trackmap task writes for the bridge', () => {
     const task = LMU_REST_TASKS.find((t) => t.id === LMU_TRACKMAP_TASK_ID);
     const data = createLmuRestData();

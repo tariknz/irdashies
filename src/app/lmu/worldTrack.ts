@@ -13,6 +13,8 @@ const RACING_LINE_TYPE = 0;
 const PIT_LANE_TYPE = 1;
 const MIN_RACING_POINTS = 100;
 const MAX_CLOSING_GAP_STEPS = 3;
+const PIT_LANE_BREAK_M = 25;
+const PIT_LANE_BREAK_STEPS = 5;
 const MIN_LAP_RATIO = 0.95;
 const MAX_LAP_RATIO = 1.05;
 const SEARCH_WINDOW_SEGMENTS = 40;
@@ -41,10 +43,48 @@ export interface LmuWorldTrack {
   readonly lengthM: number;
 }
 
+export function longestPitLaneRun(
+  points: readonly GroundPoint[]
+): readonly GroundPoint[] {
+  const steps: number[] = [];
+  for (let index = 1; index < points.length; index += 1) {
+    steps.push(
+      Math.hypot(
+        points[index].x - points[index - 1].x,
+        points[index].y - points[index - 1].y
+      )
+    );
+  }
+  if (steps.length === 0) return points;
+  const sorted = [...steps].sort((a, b) => a - b);
+  const breakM = Math.max(
+    PIT_LANE_BREAK_M,
+    sorted[Math.floor(sorted.length / 2)] * PIT_LANE_BREAK_STEPS
+  );
+  let bestStart = 0;
+  let bestEnd = points.length;
+  let start = 0;
+  let longest = 0;
+  for (let index = 1; index <= points.length; index += 1) {
+    const broken = index === points.length || !(steps[index - 1] <= breakM);
+    if (!broken) continue;
+    if (index - start > longest) {
+      longest = index - start;
+      bestStart = start;
+      bestEnd = index;
+    }
+    start = index;
+  }
+  return bestStart === 0 && bestEnd === points.length
+    ? points
+    : points.slice(bestStart, bestEnd);
+}
+
 export function worldTrackFrom(
   racing: readonly GroundPoint[],
-  pitLane: readonly GroundPoint[]
+  rawPitLane: readonly GroundPoint[]
 ): LmuWorldTrack | undefined {
+  const pitLane = longestPitLaneRun(rawPitLane);
   if (racing.length < MIN_RACING_POINTS) return undefined;
   const steps: number[] = [];
   let lengthM = 0;
