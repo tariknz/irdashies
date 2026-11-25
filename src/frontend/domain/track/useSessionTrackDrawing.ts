@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { useSessionStore } from '@irdashies/context';
 import type { LmuTrackMap } from '@irdashies/types';
+import { lmuCorners, lmuTurnLabels } from './lmuTurnLabels';
 import type { TrackDrawing } from './trackDrawing';
 import { useTrackDrawing } from './useTrackDrawing';
 
@@ -43,10 +44,16 @@ export const useSessionTrackDrawing = (
     (state) => state.session?.LmuTrackMap,
     sameLmuTrackMap
   );
-  const lmuDrawing = useMemo(
-    () => (lmuTrackMap ? closeLmuTrackLoop(lmuTrackMap) : null),
-    [lmuTrackMap]
+  const trackName = useSessionStore(
+    (state) => state.session?.WeekendInfo?.TrackName
   );
+  const lmuDrawing = useMemo(() => {
+    if (!lmuTrackMap) return null;
+    const closed = closeLmuTrackLoop(lmuTrackMap);
+    if (closed.turns?.length) return closed;
+    const turns = lmuTurnLabels(closed, lmuCorners(trackName));
+    return turns.length ? { ...closed, turns } : closed;
+  }, [lmuTrackMap, trackName]);
   const loaded = useTrackDrawing(lmuDrawing ? undefined : trackId);
   if (trackId === undefined) return null;
   return lmuDrawing ?? loaded;

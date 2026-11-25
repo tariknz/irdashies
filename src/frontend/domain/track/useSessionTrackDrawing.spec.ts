@@ -42,8 +42,12 @@ const lmuMap: LmuTrackMap = {
   },
 };
 
-const withSession = (session: { LmuTrackMap?: LmuTrackMap } | null) =>
-  useSessionStore.setState({ session: session as Session | null });
+const withSession = (
+  session: {
+    LmuTrackMap?: LmuTrackMap;
+    WeekendInfo?: { TrackName: string };
+  } | null
+) => useSessionStore.setState({ session: session as Session | null });
 
 describe('useSessionTrackDrawing', () => {
   beforeEach(() => {
@@ -66,6 +70,27 @@ describe('useSessionTrackDrawing', () => {
 
     expect(result.current?.active.inside).toBe(lmuMap.active.inside);
     expect(useTrackDrawing).toHaveBeenCalledWith(undefined);
+  });
+
+  it('adds the corners of a known LMU track to its map', () => {
+    withSession({
+      LmuTrackMap: lmuMap,
+      WeekendInfo: { TrackName: 'Circuit de la Sarthe' },
+    });
+    const { result } = renderHook(() => useSessionTrackDrawing(1_234_567));
+
+    expect(result.current?.turns?.length).toBeGreaterThan(0);
+    expect(result.current?.turns?.[0].content).toBe('1');
+  });
+
+  it('leaves the map without corners for a track it does not know', () => {
+    withSession({
+      LmuTrackMap: lmuMap,
+      WeekendInfo: { TrackName: 'Unknown Test Circuit' },
+    });
+    const { result } = renderHook(() => useSessionTrackDrawing(1_234_567));
+
+    expect(result.current?.turns).toBeUndefined();
   });
 
   it('keeps the same drawing when a session update carries the same map', () => {
