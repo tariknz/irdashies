@@ -2,7 +2,11 @@ import { useMemo } from 'react';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { useSessionStore } from '@irdashies/context';
 import type { LmuTrackMap } from '@irdashies/types';
-import { lmuCorners, lmuTurnLabels } from './lmuTurnLabels';
+import {
+  lmuCorners,
+  lmuTurnLabels,
+  type LmuTurnLabelLayout,
+} from './lmuTurnLabels';
 import type { TrackDrawing } from './trackDrawing';
 import { useTrackDrawing } from './useTrackDrawing';
 
@@ -37,7 +41,8 @@ export const closeLmuTrackLoop = (map: LmuTrackMap): TrackDrawing => {
 };
 
 export const useSessionTrackDrawing = (
-  trackId: number | undefined
+  trackId: number | undefined,
+  turnLabelLayout?: LmuTurnLabelLayout
 ): TrackDrawing | null => {
   const lmuTrackMap = useStoreWithEqualityFn(
     useSessionStore,
@@ -47,13 +52,27 @@ export const useSessionTrackDrawing = (
   const trackName = useSessionStore(
     (state) => state.session?.WeekendInfo?.TrackName
   );
+  const closedLmuMap = useMemo(
+    () => (lmuTrackMap ? closeLmuTrackLoop(lmuTrackMap) : null),
+    [lmuTrackMap]
+  );
+  const fontScale = turnLabelLayout?.fontScale;
+  const trackWidth = turnLabelLayout?.trackWidth;
   const lmuDrawing = useMemo(() => {
-    if (!lmuTrackMap) return null;
-    const closed = closeLmuTrackLoop(lmuTrackMap);
-    if (closed.turns?.length) return closed;
-    const turns = lmuTurnLabels(closed, lmuCorners(trackName));
-    return turns.length ? { ...closed, turns } : closed;
-  }, [lmuTrackMap, trackName]);
+    if (
+      !closedLmuMap ||
+      closedLmuMap.turns?.length ||
+      fontScale === undefined ||
+      trackWidth === undefined
+    ) {
+      return closedLmuMap;
+    }
+    const turns = lmuTurnLabels(closedLmuMap, lmuCorners(trackName), {
+      fontScale,
+      trackWidth,
+    });
+    return turns.length ? { ...closedLmuMap, turns } : closedLmuMap;
+  }, [closedLmuMap, trackName, fontScale, trackWidth]);
   const loaded = useTrackDrawing(lmuDrawing ? undefined : trackId);
   if (trackId === undefined) return null;
   return lmuDrawing ?? loaded;

@@ -35,6 +35,24 @@ describe('lmuTurnLabels', () => {
     expect(label.y).toBeLessThan(CENTRE.y - RADIUS);
   });
 
+  it('keeps further from a wider track and grows with the label size', () => {
+    const distance = (layout: { fontScale: number; trackWidth: number }) =>
+      distanceFromCentre(lmuTurnLabels(circle, [{ marker: 0.25 }], layout)[0]);
+    const base = distance({ fontScale: 1, trackWidth: 40 });
+
+    expect(distance({ fontScale: 1, trackWidth: 80 })).toBeCloseTo(
+      base + 20,
+      0
+    );
+    expect(distance({ fontScale: 2, trackWidth: 40 })).toBeCloseTo(
+      base + 23,
+      0
+    );
+    expect(distance({ fontScale: Number.NaN, trackWidth: Number.NaN })).toBe(
+      base
+    );
+  });
+
   it('moves a label aside rather than over the one before it', () => {
     const [first, second] = lmuTurnLabels(circle, [
       { marker: 0.25 },

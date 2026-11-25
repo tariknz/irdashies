@@ -72,15 +72,48 @@ describe('useSessionTrackDrawing', () => {
     expect(useTrackDrawing).toHaveBeenCalledWith(undefined);
   });
 
+  const layout = { fontScale: 1, trackWidth: 40 };
+
   it('adds the corners of a known LMU track to its map', () => {
+    withSession({
+      LmuTrackMap: lmuMap,
+      WeekendInfo: { TrackName: 'Circuit de la Sarthe' },
+    });
+    const { result } = renderHook(() =>
+      useSessionTrackDrawing(1_234_567, layout)
+    );
+
+    expect(result.current?.turns?.length).toBeGreaterThan(0);
+    expect(result.current?.turns?.[0].content).toBe('1');
+  });
+
+  it('adds no corners when the caller does not draw them', () => {
     withSession({
       LmuTrackMap: lmuMap,
       WeekendInfo: { TrackName: 'Circuit de la Sarthe' },
     });
     const { result } = renderHook(() => useSessionTrackDrawing(1_234_567));
 
-    expect(result.current?.turns?.length).toBeGreaterThan(0);
-    expect(result.current?.turns?.[0].content).toBe('1');
+    expect(result.current?.turns).toBeUndefined();
+  });
+
+  it('places the corners again when the label size changes', () => {
+    withSession({
+      LmuTrackMap: lmuMap,
+      WeekendInfo: { TrackName: 'Circuit de la Sarthe' },
+    });
+    const { result, rerender } = renderHook(
+      ({ fontScale }) =>
+        useSessionTrackDrawing(1_234_567, { fontScale, trackWidth: 40 }),
+      { initialProps: { fontScale: 1 } }
+    );
+    const small = result.current;
+    rerender({ fontScale: 1 });
+    expect(result.current).toBe(small);
+
+    rerender({ fontScale: 2 });
+    expect(result.current).not.toBe(small);
+    expect(result.current?.turns).not.toEqual(small?.turns);
   });
 
   it('leaves the map without corners for a track it does not know', () => {
@@ -88,7 +121,9 @@ describe('useSessionTrackDrawing', () => {
       LmuTrackMap: lmuMap,
       WeekendInfo: { TrackName: 'Unknown Test Circuit' },
     });
-    const { result } = renderHook(() => useSessionTrackDrawing(1_234_567));
+    const { result } = renderHook(() =>
+      useSessionTrackDrawing(1_234_567, layout)
+    );
 
     expect(result.current?.turns).toBeUndefined();
   });

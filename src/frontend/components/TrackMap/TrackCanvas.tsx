@@ -96,7 +96,19 @@ const DEFAULT_TURN_LABELS: TurnLabels = {
 
 /** Mount canvas effects only once the requested drawing is available. */
 export const TrackCanvas = (props: TrackProps) => {
-  const drawing = useSessionTrackDrawing(props.trackId);
+  const turnLabels = props.turnLabels ?? DEFAULT_TURN_LABELS;
+  const drawnTrackWidth = props.isMinimalTrack
+    ? (props.trackLineWidth ?? 20)
+    : Math.max(props.trackLineWidth ?? 20, props.trackOutlineWidth ?? 40);
+  const drawing = useSessionTrackDrawing(
+    props.trackId,
+    turnLabels.enabled
+      ? {
+          fontScale: turnLabels.labelFontSize / 100,
+          trackWidth: drawnTrackWidth,
+        }
+      : undefined
+  );
   return drawing ? (
     <LoadedTrackCanvas key={props.trackId} {...props} trackDrawing={drawing} />
   ) : null;
