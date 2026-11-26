@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { lmuCorners, lmuTurnLabels } from './lmuTurnLabels';
 import type { TrackDrawing } from './trackDrawing';
+import lmuTrackMapStoryData from '../../components/TrackMap/lmuTrackMapStoryData.json';
 
 const CENTRE = { x: 960, y: 540 };
 const RADIUS = 400;
@@ -100,6 +101,65 @@ describe('lmuTurnLabels', () => {
     ]);
 
     expect(labels.map((label) => label.content)).toEqual(['1', '3']);
+  });
+
+  it('keeps large labels off the track and off each other at Barcelona', () => {
+    const values = lmuTrackMapStoryData['Circuit de Barcelona'];
+    const points = Array.from({ length: values.length / 2 }, (_, index) => ({
+      x: values[index * 2],
+      y: values[index * 2 + 1],
+    }));
+    const drawing: TrackDrawing = {
+      active: {
+        inside: '',
+        outside: '',
+        trackPathPoints: [...points, points[0]],
+        totalLength: points.length,
+      },
+      startFinish: {},
+    };
+    const scale = 1.5;
+    const trackWidth = 40;
+    const labels = lmuTurnLabels(drawing, lmuCorners('Circuit de Barcelona'), {
+      fontScale: scale,
+      trackWidth,
+    });
+    let corner = 0;
+    const boxes = labels.map((label) => {
+      if (/^[0-9]+$/.test(label.content ?? '')) corner += 1;
+      const halfWidth =
+        (((label.content ?? '').length * 17.6 + 20) * scale) / 2;
+      const halfHeight = 19 * scale;
+      return {
+        corner,
+        left: (label.x ?? 0) - halfWidth,
+        right: (label.x ?? 0) + halfWidth,
+        top: (label.y ?? 0) - halfHeight,
+        bottom: (label.y ?? 0) + halfHeight,
+      };
+    });
+
+    const overlaps = boxes.flatMap((a) =>
+      boxes.filter(
+        (b) =>
+          a.corner < b.corner &&
+          Math.min(a.right, b.right) > Math.max(a.left, b.left) &&
+          Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top)
+      )
+    );
+    const onTrack = boxes.filter((box) =>
+      points.some(
+        (point) =>
+          point.x > box.left - trackWidth / 2 &&
+          point.x < box.right + trackWidth / 2 &&
+          point.y > box.top - trackWidth / 2 &&
+          point.y < box.bottom + trackWidth / 2
+      )
+    );
+
+    expect(labels.length).toBeGreaterThan(20);
+    expect(overlaps).toEqual([]);
+    expect(onTrack).toEqual([]);
   });
 
   it('gives nothing for a drawing without a path', () => {
