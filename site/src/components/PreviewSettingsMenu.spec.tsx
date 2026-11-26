@@ -21,26 +21,26 @@ vi.mock('@irdashies/context', () => ({
 }));
 
 describe('PreviewSettingsMenu', () => {
-  it('reopens the broadcast module visited last, and goes back to the overlay before it', () => {
+  it('opens broadcast widgets directly and returns to them from Broadcast Settings', () => {
     render(
       <MemoryRouter initialEntries={['/settings/standings']}>
         <PreviewSettingsMenu />
       </MemoryRouter>
     );
-    fireEvent.click(screen.getByRole('link', { name: 'Broadcast' }));
-    fireEvent.click(
-      within(
-        screen.getByRole('region', { name: 'Broadcast modules' })
-      ).getByRole('link', { name: 'Ticker' })
-    );
+    const widgets = within(screen.getByRole('region', { name: 'Broadcast' }));
+    fireEvent.click(widgets.getByRole('link', { name: 'Broadcast Ticker' }));
+    expect(
+      widgets.getByRole('link', { name: 'Broadcast Ticker' })
+    ).toHaveAttribute('aria-current', 'page');
+    fireEvent.click(screen.getByRole('link', { name: 'App settings' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Broadcast Settings' }));
     expect(
       screen.getByRole('link', { name: 'Back to overlays' })
-    ).toHaveAttribute('href', '/settings/standings');
+    ).toHaveAttribute('href', '/settings/broadcastticker');
 
     fireEvent.click(screen.getByRole('link', { name: 'Back to overlays' }));
-    expect(screen.getByRole('link', { name: 'Broadcast' })).toHaveAttribute(
-      'href',
-      '/settings/broadcastticker'
-    );
+    expect(
+      widgets.getByRole('link', { name: 'Broadcast Ticker' })
+    ).toHaveAttribute('aria-current', 'page');
   });
 });

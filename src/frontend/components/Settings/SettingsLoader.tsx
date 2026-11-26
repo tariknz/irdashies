@@ -86,7 +86,6 @@ export const WIDGET_SETTINGS: Record<
   cornername: CornerNameSettings,
   laptrace: LapTraceSettings,
   battle: BattleSettings,
-  // The broadcast widgets share one page, opened from the Broadcast menu.
   broadcast: BroadcastSettingsPage,
   broadcastticker: BroadcastSettingsPage,
   broadcastevents: BroadcastSettingsPage,

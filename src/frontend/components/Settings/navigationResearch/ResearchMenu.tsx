@@ -21,6 +21,7 @@ import {
   type MenuItem,
 } from '../menuItems';
 import { ToggleSwitch } from '../components/ToggleSwitch';
+import { widgetSettingsType } from '../widgetSettingsType';
 
 const MenuLink = ({
   item,
@@ -43,7 +44,7 @@ const MenuLink = ({
   onToggle?: (enabled: boolean) => void;
   onNavigate?: () => void;
 }) => {
-  const isActive = pathname.startsWith(`/settings${item.path}`);
+  const isActive = pathname === item.to;
   const linkRef = useRef<HTMLAnchorElement>(null);
   useEffect(() => {
     const link = linkRef.current;
@@ -141,6 +142,10 @@ export const ResearchMenu = ({
   const [showHidden, setShowHidden] = useState(false);
   const [query, setQuery] = useState('');
   const appPage = generalItems.some((item) => pathname === item.to);
+  const activeWidgetType = widgetSettingsType(
+    currentDashboard?.widgets,
+    pathname.slice('/settings/'.length)
+  );
   const overlayPage = widgetItems.some((item) => pathname === item.to);
   const contextual = variant === 'contextual' || variant === 'dedicated';
   const appArea = [...generalItems, ...bottomItems].some(
@@ -169,13 +174,10 @@ export const ResearchMenu = ({
     instancesOf(widgetType).some((w) => w.enabled);
 
   // The settings page toggles the widget whose id is the widget type, so the
-  // menu does the same; extra instances keep their own state. Grouped items
-  // share a page and have no single widget to switch.
+  // menu does the same; extra instances keep their own state.
   const widgetIds = currentDashboard?.widgets.map((w) => w.id) ?? [];
   const canToggle = (item: MenuItem) =>
-    !!item.widgetType &&
-    !item.groupTypes &&
-    menuHasToggle(item.widgetType, widgetIds);
+    !!item.widgetType && menuHasToggle(item.widgetType, widgetIds);
 
   // Off switches every copy off; on revives only the primary widget.
   const setWidgetEnabled = (widgetType: string, enabled: boolean) => {
@@ -190,10 +192,8 @@ export const ResearchMenu = ({
     });
   };
 
-  // A grouped item is on while any widget sharing its page is.
   const isItemEnabled = (item: MenuItem) =>
-    !!item.widgetType &&
-    (item.groupTypes ?? [item.widgetType]).some(isWidgetEnabled);
+    !!item.widgetType && isWidgetEnabled(item.widgetType);
 
   const menuItems = widgetItems.filter((item) => !item.hideInMenu);
   const unsupported = (item: MenuItem) =>
@@ -342,7 +342,7 @@ export const ResearchMenu = ({
               <MenuLink
                 key={item.path}
                 item={item}
-                pathname={pathname}
+                pathname={`/settings/${activeWidgetType}`}
                 isEnabled={item.widgetType ? isItemEnabled(item) : undefined}
                 disabledReason={unsupported(item) ?? undefined}
                 onToggle={

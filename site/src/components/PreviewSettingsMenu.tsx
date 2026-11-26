@@ -8,11 +8,9 @@ import { EXCLUDED_WIDGETS } from '../utils/previewWidgets';
 export function PreviewSettingsMenu() {
   const { pathname } = useLocation();
   const lastOverlay = useRef('/settings/standings');
-  const lastBroadcast = useRef('/settings/broadcast');
   useEffect(() => {
-    const kind = settingsPageKind(pathname);
-    if (kind === 'overlay') lastOverlay.current = pathname;
-    else if (kind === 'broadcast') lastBroadcast.current = pathname;
+    if (settingsPageKind(pathname) === 'overlay')
+      lastOverlay.current = pathname;
   }, [pathname]);
 
   return (
@@ -21,7 +19,6 @@ export function PreviewSettingsMenu() {
         previewMode
         excludedWidgetTypes={EXCLUDED_WIDGETS}
         returnTo={lastOverlay.current}
-        broadcastTo={lastBroadcast.current}
       />
     </ReleaseNotesStatusProvider>
   );
