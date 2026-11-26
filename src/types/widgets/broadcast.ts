@@ -3,16 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'broadcast',
   name: 'Broadcast Tower',
-  category: 'Broadcast & Streaming',
-  menuLabel: 'Broadcast',
-  // Its row opens the Broadcast menu, with a page per broadcast widget.
-  groupTypes: [
-    'broadcast',
-    'broadcastticker',
-    'broadcastevents',
-    'broadcastweather',
-    'broadcastpodium',
-  ],
+  category: 'Broadcast',
   enabled: false,
   layout: {
     x: 20,

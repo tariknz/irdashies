@@ -45,14 +45,12 @@ const RESTORED = { restoredWidgetPage: true };
 const PAGE_HEADINGS: Record<SettingsPageKind, string> = {
   app: 'App settings',
   tool: 'Tools',
-  broadcast: 'Broadcast Settings',
   overlay: 'Overlay Settings',
 };
 
 const MAIN_LABELS: Record<SettingsPageKind, string> = {
   app: 'App settings page',
   tool: 'Tools page',
-  broadcast: 'Broadcast settings page',
   overlay: 'Overlay settings page',
 };
 
@@ -75,12 +73,10 @@ const SettingsLayoutContent = () => {
   const pageKind = settingsPageKind(pathname);
   const appPage = pageKind === 'app';
   const toolPage = pageKind === 'tool';
-  const broadcastPage = pageKind === 'broadcast';
   const lastApp = useRef('/settings/general');
   // Tool pages are neither overlays nor app settings: they keep their own
   // last page, so Back to overlays never lands on one.
   const lastTool = useRef('/settings/profiles');
-  const lastBroadcast = useRef('/settings/broadcast');
   // The widget page open when irDashies last quit, read once at start.
   const [storedWidgetPage] = useState(readLastWidgetPage);
   // The overlay pages visited this session, oldest first.
@@ -116,8 +112,7 @@ const SettingsLayoutContent = () => {
   useEffect(() => {
     if (appPage) lastApp.current = pathname;
     else if (toolPage) lastTool.current = pathname;
-    else if (broadcastPage) lastBroadcast.current = pathname;
-  }, [appPage, toolPage, broadcastPage, pathname]);
+  }, [appPage, toolPage, pathname]);
   // Only a page that counts goes on the way back or is kept to reopen:
   // passing through the Telemetry Inspector changes neither.
   useEffect(() => {
@@ -203,14 +198,10 @@ const SettingsLayoutContent = () => {
   // Back to overlays: the latest overlay page visited this session that
   // still exists. A profile switch can take a layout copy away without
   // remounting this, and then the one before it is the way back.
-  const leavesForOverlays = (path: string) =>
-    !broadcastPage || settingsPageKind(path) !== 'broadcast';
   const overlayReturn =
     visitedOverlays.current.findLast(
-      (path) =>
-        existingWidgetPage(path, hasWidgetPage) !== undefined &&
-        leavesForOverlays(path)
-    ) ?? (leavesForOverlays(startPage) ? startPage : DEFAULT_WIDGET_PAGE);
+      (path) => existingWidgetPage(path, hasWidgetPage) !== undefined
+    ) ?? startPage;
 
   return (
     <ReleaseNotesStatusProvider>
@@ -306,7 +297,6 @@ const SettingsLayoutContent = () => {
           <SettingsMenu
             appTo={lastApp.current}
             toolsTo={lastTool.current}
-            broadcastTo={lastBroadcast.current}
             returnTo={overlayReturn}
           />
 

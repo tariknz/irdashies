@@ -9,11 +9,6 @@ import {
   NewspaperIcon,
   ArrowClockwiseIcon,
   FlagCheckeredIcon,
-  ListNumbersIcon,
-  SubtitlesIcon,
-  MegaphoneIcon,
-  CloudSunIcon,
-  TrophyIcon,
   GearSixIcon,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
@@ -27,12 +22,11 @@ export interface MenuItem {
   label: string;
   widgetType?: string;
   category?: WidgetCategory;
-  /** Widgets that share this item's page; it shows On while any of them is. */
-  groupTypes?: string[];
   icon?: Icon;
-  /** Left out of the overlay list: reached through the Broadcast menu. */
   hideInMenu?: boolean;
 }
+
+export const BROADCAST_SETTINGS_PAGE = '/settings/broadcast-settings';
 
 export const generalItems: MenuItem[] = [
   {
@@ -46,6 +40,12 @@ export const generalItems: MenuItem[] = [
     path: '/keybindings',
     label: 'Key Bindings',
     icon: KeyboardIcon,
+  },
+  {
+    to: BROADCAST_SETTINGS_PAGE,
+    path: '/broadcast-settings',
+    label: 'Broadcast Settings',
+    icon: GearSixIcon,
   },
 ];
 
@@ -77,79 +77,28 @@ export const toolItems: MenuItem[] = [
 ];
 
 export const widgetItems: MenuItem[] = WIDGET_MANIFESTS.map(
-  ({ id, name, menuLabel, category, hideInMenu, groupTypes }) => ({
+  ({ id, name, menuLabel, category, hideInMenu }) => ({
     to: `/settings/${id}`,
     path: `/${id}`,
     label: menuLabel ?? name,
     widgetType: id,
     category,
-    ...(groupTypes && { groupTypes }),
     ...(hideInMenu && { hideInMenu }),
   })
 ).sort((a, b) => compareMenuLabels(a.label, b.label));
 
-export const BROADCAST_SETTINGS_PAGE = '/settings/broadcast-settings';
-
-export const broadcastItems: MenuItem[] = [
-  {
-    to: '/settings/broadcast',
-    path: '/broadcast',
-    label: 'Tower',
-    widgetType: 'broadcast',
-    icon: ListNumbersIcon,
-  },
-  {
-    to: '/settings/broadcastticker',
-    path: '/broadcastticker',
-    label: 'Ticker',
-    widgetType: 'broadcastticker',
-    icon: SubtitlesIcon,
-  },
-  {
-    to: '/settings/broadcastevents',
-    path: '/broadcastevents',
-    label: 'Events',
-    widgetType: 'broadcastevents',
-    icon: MegaphoneIcon,
-  },
-  {
-    to: '/settings/broadcastweather',
-    path: '/broadcastweather',
-    label: 'Weather',
-    widgetType: 'broadcastweather',
-    icon: CloudSunIcon,
-  },
-  {
-    to: '/settings/broadcastpodium',
-    path: '/broadcastpodium',
-    label: 'Podium',
-    widgetType: 'broadcastpodium',
-    icon: TrophyIcon,
-  },
-  {
-    to: BROADCAST_SETTINGS_PAGE,
-    path: '/broadcast-settings',
-    label: 'Settings',
-    icon: GearSixIcon,
-  },
-];
-
 /**
- * Whether the settings menu offers a switch for this widget: it is listed
- * there on its own, in the overlay list or the Broadcast menu, and exists in
- * the dashboard. The widget's page leaves its own switch out then, so there
- * is one place to flip it.
+ * Whether the widget has a switch in the overlay list. Its settings page
+ * omits its own switch when the menu provides one.
  */
 export const menuHasToggle = (
   widgetType: string,
   dashboardWidgetIds: readonly string[]
 ): boolean =>
   dashboardWidgetIds.includes(widgetType) &&
-  (widgetItems.some(
-    (item) =>
-      item.widgetType === widgetType && !item.hideInMenu && !item.groupTypes
-  ) ||
-    broadcastItems.some((item) => item.widgetType === widgetType));
+  widgetItems.some(
+    (item) => item.widgetType === widgetType && !item.hideInMenu
+  );
 
 export const bottomItems: MenuItem[] = [
   {
