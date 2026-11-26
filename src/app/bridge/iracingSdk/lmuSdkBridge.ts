@@ -279,6 +279,7 @@ export async function publishLmuSDKEvents(
           lifecycle,
           metrics: perfMetrics,
           aggregateReplay: false,
+          fuelClock: Date.now,
           // The LMU mapping puts session seconds into SessionTick.
           frameClock: sessionSecondsFrameClock,
           logError: (message, error) => logger.error(message, error),

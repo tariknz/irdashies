@@ -1,17 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useDashboard } from '@irdashies/context';
+import type { ProfileSwitchBridge } from '@irdashies/types';
 
 declare global {
   interface Window {
-    profileSwitch?: {
-      onTransition: (
-        cb: (data: {
-          hidden: boolean;
-          name: string;
-          showBanner?: boolean;
-        }) => void
-      ) => () => void;
-    };
+    profileSwitch?: ProfileSwitchBridge;
   }
 }
 

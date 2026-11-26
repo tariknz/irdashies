@@ -56,6 +56,33 @@ describe('processor registry', () => {
     }
   });
 
+  it('retains race-long state when the last subscriber switches profile', () => {
+    const definitions = createProcessorDefinitions({
+      referenceLapPersistence: {
+        load: () => null,
+        save: () => undefined,
+      },
+    });
+    const retained = new Set(
+      definitions
+        .filter(
+          ({ retainWhenInactive, processWhileUnsubscribed }) =>
+            retainWhenInactive || processWhileUnsubscribed
+        )
+        .map(({ channel }) => channel)
+    );
+
+    for (const channel of [
+      'lap-times.snapshot',
+      'standings.snapshot',
+      'session-timing.snapshot',
+      'race-plan.progress',
+      'fuel.projection',
+    ]) {
+      expect(retained).toContain(channel);
+    }
+  });
+
   it('declares the processor dependency graph explicitly', () => {
     const definitions = createProcessorDefinitions({
       referenceLapPersistence: {

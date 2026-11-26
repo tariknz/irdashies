@@ -74,6 +74,7 @@ export interface ProcessorDefinition<K extends ProcessorChannel> {
   readonly channel: K;
   readonly dependencies?: readonly ProcessorChannel[];
   readonly retainWhenInactive?: boolean;
+  readonly processWhileUnsubscribed?: boolean;
   /**
    * Keep processing frames while every subscribed window is hidden. Demand then
    * follows registered subscriptions instead of visible ones, so state built up
@@ -379,8 +380,9 @@ export class ProcessorHost {
     this.sourceReplay = undefined;
   }
 
-  private reconcileDemand(): void {
+  private reconcileDemand(keepUnsubscribed = true): void {
     if (this.disposed) return;
+    const previousDemand = this.activeDemand;
     const desired = new Set<ProcessorChannel>();
     const include = (channel: ProcessorChannel): void => {
       if (desired.has(channel)) return;
@@ -391,12 +393,24 @@ export class ProcessorHost {
       }
     };
     for (const channel of this.directDemand) include(channel);
+    for (const { definition, processor } of this.states) {
+      if (
+        keepUnsubscribed &&
+        processor &&
+        definition.processWhileUnsubscribed
+      ) {
+        include(definition.channel);
+      }
+    }
     this.activeDemand = desired;
 
     for (const state of [...this.states].reverse()) {
       if (state.processor && !desired.has(state.definition.channel)) {
-        if (state.definition.retainWhenInactive) this.suspend(state);
-        else this.deactivate(state);
+        if (state.definition.retainWhenInactive) {
+          if (previousDemand.has(state.definition.channel)) this.suspend(state);
+        } else {
+          this.deactivate(state);
+        }
       }
     }
     for (const state of this.states) {
@@ -451,9 +465,7 @@ export class ProcessorHost {
   }
 
   private suspend(state: RuntimeState): void {
-    const pausable = state.processor as
-      (TelemetryProcessor<unknown> & { pause?: () => void }) | undefined;
-    this.runSafely(state, 'suspend', () => pausable?.pause?.());
+    this.runSafely(state, 'suspend', () => state.processor?.pause?.());
     state.tickSchedule = {};
     state.lastPublishedToken = undefined;
     this.bus.clearSnapshot(state.definition.channel);
@@ -476,6 +488,7 @@ export class ProcessorHost {
       state.tickSchedule = {};
       if (succeeded) this.publishIfChanged(state);
     }
+    if (event.type === 'disconnect') this.reconcileDemand(false);
   }
 
   private publishIfChanged(state: RuntimeState, force = false): void {

@@ -42,6 +42,7 @@ import type { PoleSideSettings } from '@irdashies/types';
 
 interface ProcessorRegistryOptions {
   referenceLapPersistence: ReferenceLapPersistence;
+  fuelClock?: () => number;
   /** The radar's dev tuning from the current dashboard; defaults without. */
   radarTuning?: () => RadarProcessorTuning;
   /** The player's own pole side per track; the table's without. */
@@ -84,6 +85,7 @@ const defineProcessor = <K extends AnyProcessorDefinition['channel']>(
 
 export const createProcessorDefinitions = ({
   referenceLapPersistence,
+  fuelClock,
   radarTuning,
   radarPoleSides,
   racePlan,
@@ -95,13 +97,16 @@ export const createProcessorDefinitions = ({
   }),
   defineProcessor({
     channel: 'fuel.projection',
+    retainWhenInactive: true,
     metricsPrefix: 'fuelProjection',
-    create: ({ sourceReplay }) => new FuelProjectionProcessor({ sourceReplay }),
+    create: ({ sourceReplay }) =>
+      new FuelProjectionProcessor({ sourceReplay, clock: fuelClock }),
   }),
   defineProcessor({
     channel: 'lap-times.snapshot',
     // Gantry's last-lap columns need the history built while it was minimised.
     processWhileHidden: true,
+    processWhileUnsubscribed: true,
     metricsPrefix: 'lapTimes',
     create: () => new LapTimesProcessor(),
   }),
@@ -140,6 +145,7 @@ export const createProcessorDefinitions = ({
     metricsPrefix: 'standings',
     // Retain finish crossings when subscribed overlays are temporarily hidden.
     processWhileHidden: true,
+    processWhileUnsubscribed: true,
     create: () => new StandingsProcessor(),
   }),
   defineProcessor({
@@ -155,6 +161,7 @@ export const createProcessorDefinitions = ({
   defineProcessor({
     channel: 'session-timing.snapshot',
     dependencies: ['lap-times.snapshot'],
+    retainWhenInactive: true,
     metricsPrefix: 'sessionTiming',
     create: ({ snapshot }) =>
       new SessionTimingProcessor(
@@ -205,6 +212,7 @@ export const createProcessorDefinitions = ({
     channel: 'race-plan.progress',
     // Stint history is built over the whole race, so a minimised Gantry keeps it.
     processWhileHidden: true,
+    processWhileUnsubscribed: true,
     metricsPrefix: 'racePlanProgress',
     create: ({ aggregateReplay, sourceReplay }) =>
       new RacePlanProgressProcessor({

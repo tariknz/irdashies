@@ -173,6 +173,33 @@ describe('OverlayManager running state', () => {
     expect(manager.getRunningState()).toBe(true);
   });
 
+  it('replays only profile switches that are still in progress', () => {
+    const manager = new OverlayManager();
+    const send = vi.fn();
+    const sender = { send, isDestroyed: () => false };
+    const sendState = () =>
+      manager.sendOverlayState(sender as unknown as Electron.WebContents);
+
+    sendState();
+    expect(send).toHaveBeenCalledTimes(1);
+
+    const pending = { hidden: true, name: 'Broadcast' };
+    manager.publishProfileTransition(pending);
+    send.mockClear();
+    sendState();
+    expect(send).toHaveBeenNthCalledWith(1, 'profileTransition', pending);
+
+    manager.publishProfileTransition({
+      hidden: false,
+      name: 'Broadcast',
+      showBanner: true,
+    });
+    send.mockClear();
+    sendState();
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send).toHaveBeenCalledWith('editModeToggled', expect.any(Boolean));
+  });
+
   it('answers that nothing is running once the simulator has gone', () => {
     const manager = new OverlayManager();
     manager.publishMessage('runningState', true);

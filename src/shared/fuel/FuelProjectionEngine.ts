@@ -107,6 +107,7 @@ export class FuelProjectionEngine {
   private wasTowedDuringLap = false;
   private wasOnPitRoadDuringLap = false;
   private isLapFullyGreen = true;
+  private skipNextLapSample = false;
   private lastProjectedUsage: number | null = null;
   private smoothedProjectedUsage = 0;
   private lastSmoothedLap = -1;
@@ -131,7 +132,13 @@ export class FuelProjectionEngine {
     this.wasTowedDuringLap = false;
     this.wasOnPitRoadDuringLap = false;
     this.isLapFullyGreen = true;
+    this.skipNextLapSample = false;
     this.resetProjection();
+  }
+
+  discardPartialLap(): void {
+    this.reset();
+    this.skipNextLapSample = true;
   }
 
   onFrame(
@@ -170,6 +177,12 @@ export class FuelProjectionEngine {
       }
     }
     this.previousFuelLevel = frame.fuelLevel;
+
+    if (this.skipNextLapSample && this.lastSessionTime === undefined) {
+      this.startLap(frame);
+      this.lastSessionTime = frame.sessionTime;
+      return commands;
+    }
 
     if (frame.lap < this.state.lastLap) {
       if (
@@ -210,7 +223,12 @@ export class FuelProjectionEngine {
     const completedLap = frame.lap - 1;
     const fuelUsed =
       this.state.lapStartFuel + this.state.accumulatedRefuel - frame.fuelLevel;
-    if (completedLap >= 1 && fuelUsed > 0 && lapTime >= MIN_LAP_TIME) {
+    if (
+      !this.skipNextLapSample &&
+      completedLap >= 1 &&
+      fuelUsed > 0 &&
+      lapTime >= MIN_LAP_TIME
+    ) {
       const wasTowed = this.wasTowedDuringLap;
       const isOutlier = !validateLap(fuelUsed, lapTime, [
         ...history.getRecentLaps(10),
@@ -231,6 +249,7 @@ export class FuelProjectionEngine {
       if (settings.persistLaps) commands.push({ type: 'saveLap', lap });
     }
 
+    this.skipNextLapSample = false;
     this.wasTowedDuringLap = false;
     this.wasOnPitRoadDuringLap = false;
     this.isLapFullyGreen = isGreenFlag(frame.sessionFlags);
@@ -263,6 +282,7 @@ export class FuelProjectionEngine {
     let projected = historicalReference;
     if (
       input.currentFuel <= input.lapStartFuel &&
+      !this.skipNextLapSample &&
       !this.state.isLapDistPctReset &&
       input.lapDistPct <= 0.99 &&
       input.lapDistPct >= 0.001
