@@ -10,7 +10,6 @@ import {
   lmuGroundPosition,
   normalizeLmuTrackMap,
   parseTinyPedalTrackMap,
-  rotateLmuMapPointCounterClockwise,
   type LmuMapFrame,
 } from './trackMap';
 
@@ -49,17 +48,7 @@ describe('LMU track map', () => {
     expect(lmuGroundPosition([12, 99, -34])).toEqual({ x: 12, y: 34 });
   });
 
-  it('rotates LMU map coordinates 90 degrees counter-clockwise on screen', () => {
-    expect(rotateLmuMapPointCounterClockwise({ x: 12, y: 34 })).toEqual({
-      x: 34,
-      y: -12,
-    });
-    expect(
-      rotateLmuMapPointCounterClockwise({ x: 12, y: 0, distance: 5 })
-    ).toEqual({ x: 0, y: -12, distance: 5 });
-  });
-
-  it('turns a wide track into a tall one and keeps markers on the rotated path', () => {
+  it('keeps LMU north at the top and markers on the path', () => {
     const map = normalizeLmuTrackMap(
       [
         { x: 0, y: 0, distance: 0 },
@@ -76,7 +65,9 @@ describe('LMU track map', () => {
     const height =
       Math.max(...points.map((p) => p.y)) - Math.min(...points.map((p) => p.y));
 
-    expect(height).toBeGreaterThan(width);
+    expect(width).toBeGreaterThan(height);
+    expect(points[0].x).toBeLessThan(points[100].x);
+    expect(points[420].y).toBeGreaterThan(points[0].y);
     expect(map.startFinish.point).toMatchObject({
       x: points[0].x,
       y: points[0].y,
@@ -106,7 +97,7 @@ describe('LMU track map', () => {
     ).toBe(true);
     expect(map.active.inside).toMatch(/^M.+ Z$/);
     expect(map.startFinish.point.length).toBe(0);
-    expect(map.orientation).toBe('lmu-ccw-v1');
+    expect(map.orientation).toBe('lmu-north-v2');
   });
 
   it('closes a gap at the line between the two ends of the lap', () => {
@@ -451,26 +442,9 @@ describe('LMU track map', () => {
   ])('loads the bundled TinyPedal map for %s', (trackName) => {
     const map = findBundledLmuTrackMap(trackName);
 
-    expect(map?.orientation).toBe('lmu-ccw-v1');
+    expect(map?.orientation).toBe('lmu-north-v2');
     expect(map?.active.trackPathPoints).toHaveLength(512);
-  });
-
-  it.each([
-    'Algarve International Circuit',
-    'Autodromo Enzo e Dino Ferrari',
-    'Autodromo Nazionale Monza',
-    'Autódromo José Carlos Pace',
-    'Circuit de Barcelona',
-    'Circuit de la Sarthe',
-    'Circuit de la Sarthe Mulsanne',
-    'Circuit de Spa-Francorchamps',
-    'Circuit of the Americas',
-    'Daytona International Speedway Road Course',
-    'Sebring International Raceway',
-    'Silverstone Grand Prix Circuit - WEC',
-    'WeatherTech Raceway Laguna Seca',
-  ])('attaches trustworthy turn metadata for %s', (trackName) => {
-    expect(findBundledLmuTrackMap(trackName)?.turns?.length).toBeGreaterThan(0);
+    expect(map?.turns).toBeUndefined();
   });
 
   it('loads bundled maps through tolerant aliases', () => {
@@ -480,15 +454,6 @@ describe('LMU track map', () => {
       findBundledLmuTrackMap('Bahrain International Endurance Circuit')
     ).not.toBeNull();
     expect(findBundledLmuTrackMap('Fuji Classic')).not.toBeNull();
-  });
-
-  it('loads bundled maps with iRacing-style turn labels', () => {
-    const map = findBundledLmuTrackMap('Autodromo Nazionale Monza');
-
-    expect(map?.turns?.some((turn) => turn.content === '1')).toBe(true);
-    expect(
-      map?.turns?.some((turn) => turn.content?.includes('Parabolica'))
-    ).toBe(true);
   });
 
   it('loads a bundled map before a saved one, and a saved one only when nothing is bundled', () => {

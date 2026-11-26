@@ -23,7 +23,7 @@ const bundled: TrackDrawing = {
 };
 
 const lmuMap: LmuTrackMap = {
-  orientation: 'lmu-ccw-v1',
+  orientation: 'lmu-north-v2',
   active: {
     inside: 'M0,0 L10,0 L10,10 L0,10 Z',
     outside: 'M0,0 L10,0 L10,10 L0,10 Z',

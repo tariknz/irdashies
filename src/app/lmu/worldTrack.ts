@@ -216,10 +216,10 @@ export function fitFromMapTransform(
 ): MapRegistrationFit {
   const { scale, minX, minY, offsetX, offsetY } = transform;
   return {
-    ar: 0,
-    ai: 1 / scale,
-    tx: offsetY / scale - minY,
-    ty: minX - offsetX / scale,
+    ar: 1 / scale,
+    ai: 0,
+    tx: minX - offsetX / scale,
+    ty: minY - offsetY / scale,
     mirrored: false,
     rmsM: 0,
     metresPerUnit: 1 / scale,
