@@ -91,14 +91,22 @@ const numberAt = (
 
 const MAP_FRAME_LENGTH = 6;
 
-const readMapFrame = (values: readonly unknown[]): number[] | null => {
-  if (values.length !== MAP_FRAME_LENGTH) return null;
-  const frame: number[] = [];
+const isMapFrame = (
+  values: readonly unknown[]
+): values is readonly number[] => {
+  if (values.length !== MAP_FRAME_LENGTH) return false;
   for (const value of values) {
-    if (typeof value !== 'number' || !Number.isFinite(value)) return null;
-    frame.push(value);
+    if (typeof value !== 'number' || !Number.isFinite(value)) return false;
   }
-  return frame;
+  return true;
+};
+
+const readMapFrame = (
+  values: readonly unknown[],
+  previous: readonly number[] | null | undefined
+): readonly number[] | null => {
+  if (!isMapFrame(values)) return null;
+  return previous && sameMapFrame(previous, values) ? previous : values.slice();
 };
 
 const sameMapFrame = (
@@ -258,7 +266,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       ? scalarNumber(frame, 'LmuPlayerYaw', Number.NaN)
       : Number.NaN;
     const mapFrame = worldFocus
-      ? readMapFrame(valuesOf(frame, 'LmuRadarMapFrame'))
+      ? readMapFrame(valuesOf(frame, 'LmuRadarMapFrame'), this.latest.mapFrame)
       : null;
 
     const cars: RadarCar[] = [];
@@ -329,7 +337,10 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
           onPitRoad: onPitRoad[carIdx] === true,
           offTrack: surface === TrackLocation.OffTrack,
         };
-        if (worldFocus) applyWorldOffset(car, world, carIdx);
+        if (worldFocus) {
+          applyWorldOffset(car, world, carIdx);
+          if (Math.abs(car.dist) > RADAR_MAX_RANGE_M) continue;
+        }
         cars.push(car);
       }
       cars.sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist));
@@ -358,7 +369,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       }
       // Without the spotter nobody says a car is not alongside: cars side by
       // side on a replay or a camera car must not be pulled apart.
-      if (spotterSpeaks || worldFocus) separateInLaneCars(sameSide);
+      if (spotterSpeaks) separateInLaneCars(sameSide);
     }
 
     // The pedals are the player's, so they say nothing about a camera car.

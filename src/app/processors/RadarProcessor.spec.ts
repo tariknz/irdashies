@@ -12,7 +12,6 @@ import {
   RADAR_MAX_RANGE_M,
   RadarProcessor,
 } from './RadarProcessor';
-import { IN_LANE_GAP_M } from './radarLanes';
 
 const TRACK_LENGTH = 4000;
 
@@ -880,7 +879,7 @@ describe('RadarProcessor with LMU world positions', () => {
     expect(car.lateralM).toBeCloseTo(4);
   });
 
-  it('keeps a car without a measured position off our own car', () => {
+  it('leaves a car without a measured position where its lap puts it, as no spotter says it is apart', () => {
     const processor = createProcessor();
     processor.onFrame(
       worldFrame(
@@ -891,7 +890,45 @@ describe('RadarProcessor with LMU world positions', () => {
 
     const car = processor.snapshot().cars.find((c) => c.carIdx === 1);
     expect(car?.laneSource).toBe('none');
-    expect(car?.dist).toBeCloseTo(IN_LANE_GAP_M);
+    expect(car?.dist).toBeCloseTo(2);
+  });
+
+  it('drops a car the world offset puts beyond the radar range', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      worldFrame(
+        { time: 1, pcts: [0.5, 0.5 + m(95), 0.5 + m(60)] },
+        {
+          1: { lateral: 0, longitudinal: RADAR_MAX_RANGE_M + 5 },
+          2: { lateral: 0, longitudinal: 60 },
+        }
+      )
+    );
+
+    const carIdxs = processor.snapshot().cars.map((c) => c.carIdx);
+    expect(carIdxs).toEqual([2]);
+  });
+
+  it('keeps the same map frame while it does not change', () => {
+    const processor = createProcessor();
+    const mapFrame = [1, 2, 0, 1, 1, 0];
+    const withMap = (time: number, longitudinal: number) =>
+      ({
+        ...worldFrame(
+          { time, pcts: [0.5, 0.5 + m(longitudinal)] },
+          { 1: { lateral: 0, longitudinal } }
+        ),
+        LmuRadarMapFrame: { value: mapFrame },
+      }) as unknown as Telemetry;
+    processor.onFrame(withMap(1, 60));
+    const first = processor.snapshot();
+    processor.onFrame(withMap(1.04, 59));
+    const second = processor.snapshot();
+
+    expect(second.version).toBeGreaterThan(first.version);
+    expect(second.mapFrame).toEqual(mapFrame);
+    expect(second.mapFrame).toBe(first.mapFrame);
+    expect(second.mapFrame).not.toBe(mapFrame);
   });
 
   it('publishes our heading while cars are placed from world positions', () => {

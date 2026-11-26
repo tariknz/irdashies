@@ -1,5 +1,5 @@
-import fs from 'node:fs';
 import type { LmuTrackMap } from '@irdashies/types';
+import { JsonFileStore, type JsonFileStoreLogger } from './jsonFileStore';
 import {
   MAP_REGISTRATION_SAMPLE_INTERVAL_S,
   type MapRegistrationFit,
@@ -461,10 +461,26 @@ const unflatten = (values: unknown): GroundPoint[] | null => {
 };
 
 export class LmuWorldTrackStorage {
-  constructor(private readonly filePath: string) {}
+  private readonly store: JsonFileStore;
+
+  constructor(filePath: string, log?: JsonFileStoreLogger) {
+    this.store = new JsonFileStore(filePath, log);
+  }
+
+  restore(): Promise<void> {
+    return this.store.restore();
+  }
+
+  flush(): Promise<void> {
+    return this.store.flush();
+  }
+
+  close(): Promise<void> {
+    return this.store.close();
+  }
 
   load(trackName: string): StoredWorldTrack | null {
-    const entry = this.readAll()[trackName] as
+    const entry = this.store.get(trackName) as
       Partial<StoredWorldTrackEntry> | undefined;
     if (!entry || typeof entry !== 'object') return null;
     const racing = unflatten(entry.racing);
@@ -484,39 +500,22 @@ export class LmuWorldTrackStorage {
     offsetM: number,
     lapDistM: number
   ): void {
-    const data = this.readAll();
-    data[trackName] = {
+    const entry: StoredWorldTrackEntry = {
       racing: flatten(track.racing),
       pitLane: flatten(track.pitLane),
       offsetM: Math.round(offsetM * 100) / 100,
       lapDistM,
       savedAt: Date.now(),
-    } satisfies StoredWorldTrackEntry;
-    const kept = Object.entries(data)
+    };
+    const others = this.store.entries().filter(([name]) => name !== trackName);
+    const kept = [[trackName, entry] as [string, unknown], ...others]
       .sort(
         ([, a], [, b]) =>
           ((b as Partial<StoredWorldTrackEntry>)?.savedAt ?? 0) -
           ((a as Partial<StoredWorldTrackEntry>)?.savedAt ?? 0)
       )
       .slice(0, MAX_STORED_TRACKS);
-    const temporaryPath = `${this.filePath}.${process.pid}.tmp`;
-    fs.writeFileSync(temporaryPath, JSON.stringify(Object.fromEntries(kept)));
-    fs.renameSync(temporaryPath, this.filePath);
-  }
-
-  private readAll(): Record<string, unknown> {
-    try {
-      const parsed: unknown = JSON.parse(
-        fs.readFileSync(this.filePath, 'utf8')
-      );
-      return parsed !== null &&
-        typeof parsed === 'object' &&
-        !Array.isArray(parsed)
-        ? (parsed as Record<string, unknown>)
-        : {};
-    } catch {
-      return {};
-    }
+    this.store.replaceAll(Object.fromEntries(kept));
   }
 }
 

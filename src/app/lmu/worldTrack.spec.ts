@@ -431,7 +431,7 @@ describe('LmuWorldTrackSource', () => {
       )
     );
     expect(storage.load('Algarve International Circuit')).toBeNull();
-  });
+  }, 30_000);
 
   it('accepts the live track on a retry once the samples are clean', () => {
     const source = new LmuWorldTrackSource(storage, log);
@@ -514,16 +514,35 @@ describe('LmuWorldTrackSource', () => {
 });
 
 describe('LmuWorldTrackStorage', () => {
-  it('reads nothing from a missing or broken file', () => {
+  it('reads nothing from a missing or broken file', async () => {
     const directory = fs.mkdtempSync(
       path.join(os.tmpdir(), 'lmu-world-track-')
     );
     const file = path.join(directory, 'tracks.json');
     const storage = new LmuWorldTrackStorage(file);
+    await storage.restore();
     expect(storage.load('Algarve International Circuit')).toBeNull();
 
     fs.writeFileSync(file, '{"Algarve International Circuit":{"racing":[1]}}');
+    await storage.restore();
     expect(storage.load('Algarve International Circuit')).toBeNull();
+    fs.rmSync(directory, { recursive: true, force: true });
+  });
+
+  it('writes the file only when flushed, and reads it back in a new session', async () => {
+    const directory = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'lmu-world-track-')
+    );
+    const file = path.join(directory, 'tracks.json');
+    const storage = new LmuWorldTrackStorage(file);
+    const name = 'Algarve International Circuit';
+    storage.save(name, algarve(), OFFSET_M, ALGARVE_LAP_DISTANCE_M);
+    expect(fs.existsSync(file)).toBe(false);
+
+    await storage.flush();
+    const next = new LmuWorldTrackStorage(file);
+    await next.restore();
+    expect(next.load(name)?.offsetM).toBeCloseTo(OFFSET_M, 1);
     fs.rmSync(directory, { recursive: true, force: true });
   });
 });

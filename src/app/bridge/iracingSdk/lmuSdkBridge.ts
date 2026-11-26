@@ -232,20 +232,26 @@ export async function publishLmuSDKEvents(
   const mapRegistration = new LmuMapRegistration();
   let lastMapRegistrationStatus: MapRegistrationStatus = 'collecting';
   const sectorBoundaries = new LmuSectorBoundaryLearner();
+  const worldTrackLogger = {
+    info: (message: string) => logger.info(message),
+    warn: (message: string) => logger.warn(message),
+  };
   const mapStorage = new LmuTrackMapStorage(
-    path.join(app.getPath('userData'), 'lmu-track-maps.json')
+    path.join(app.getPath('userData'), 'lmu-track-maps.json'),
+    worldTrackLogger
   );
+  const worldTrackStorage = new LmuWorldTrackStorage(
+    path.join(app.getPath('userData'), 'lmu-world-tracks.json'),
+    worldTrackLogger
+  );
+  await Promise.all([mapStorage.restore(), worldTrackStorage.restore()]);
   const sampleGate = new LmuSampleGate();
   const worldTracks = new LmuWorldTrackSource(
-    new LmuWorldTrackStorage(
-      path.join(app.getPath('userData'), 'lmu-world-tracks.json')
-    ),
-    {
-      info: (message) => logger.info(message),
-      warn: (message) => logger.warn(message),
-    },
+    worldTrackStorage,
+    worldTrackLogger,
     () => sampleGate.describe()
   );
+  const radarFrame: { value: number[] } = { value: [] };
   let latestLapDistM = 0;
   let lastTrackMapBurstAt = Number.NEGATIVE_INFINITY;
   let trackMapBurstRereads = false;
@@ -966,12 +972,11 @@ export async function publishLmuSDKEvents(
               mapFit,
               raw.vehPosX[radarPlayerIdx],
               raw.vehPosZ[radarPlayerIdx],
-              radarPlayerYaw
+              radarPlayerYaw,
+              radarFrame.value
             )
           : null;
-      telemetry.LmuRadarMapFrame = mapFrame
-        ? { value: mapFrame }
-        : NO_MAP_FRAME;
+      telemetry.LmuRadarMapFrame = mapFrame ? radarFrame : NO_MAP_FRAME;
       perfMetrics.markEnd('lmuMapRegistration');
       processorHost?.onFrame(telemetry);
 
@@ -1108,6 +1113,7 @@ export async function publishLmuSDKEvents(
       leaveLifecycle();
       unsubscribeOverlayReady?.();
       restPoller.stop();
+      void Promise.all([mapStorage.close(), worldTrackStorage.close()]);
       ratingClient.reset();
       // Cache writes are debounced behind an unref'd timer, so a rating
       // resolved in the last second before a quit is only on disk if it is

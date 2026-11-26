@@ -1,6 +1,6 @@
-import fs from 'node:fs';
 import type { LmuTrackMap } from '@irdashies/types';
 import bundledTrackMaps from './lmu-track-maps.json';
+import { JsonFileStore, type JsonFileStoreLogger } from './jsonFileStore';
 
 const WIDTH = 1920;
 const HEIGHT = 1080;
@@ -407,37 +407,31 @@ const isTrackMap = (value: unknown): value is LmuTrackMap => {
 };
 
 export class LmuTrackMapStorage {
-  constructor(private readonly filePath: string) {}
+  private readonly store: JsonFileStore;
+
+  constructor(filePath: string, log?: JsonFileStoreLogger) {
+    this.store = new JsonFileStore(filePath, log);
+  }
+
+  restore(): Promise<void> {
+    return this.store.restore();
+  }
+
+  flush(): Promise<void> {
+    return this.store.flush();
+  }
+
+  close(): Promise<void> {
+    return this.store.close();
+  }
 
   load(trackName: string): LmuTrackMap | null {
-    try {
-      const data = JSON.parse(fs.readFileSync(this.filePath, 'utf8')) as Record<
-        string,
-        unknown
-      >;
-      return isTrackMap(data[trackName]) ? data[trackName] : null;
-    } catch {
-      return null;
-    }
+    const map = this.store.get(trackName);
+    return isTrackMap(map) ? map : null;
   }
 
   save(trackName: string, map: LmuTrackMap): void {
-    let data: Record<string, LmuTrackMap>;
-    try {
-      const parsed: unknown = JSON.parse(
-        fs.readFileSync(this.filePath, 'utf8')
-      );
-      data =
-        parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
-          ? (parsed as Record<string, LmuTrackMap>)
-          : {};
-    } catch {
-      data = {};
-    }
-    data[trackName] = map;
-    const temporaryPath = `${this.filePath}.${process.pid}.tmp`;
-    fs.writeFileSync(temporaryPath, JSON.stringify(data));
-    fs.renameSync(temporaryPath, this.filePath);
+    this.store.set(trackName, map);
   }
 }
 

@@ -185,12 +185,18 @@ vi.mock('../../lmu/trackMap', () => ({
   },
   LmuTrackMapStorage: class {
     save = vi.fn();
+    restore = vi.fn(() => Promise.resolve());
+    flush = vi.fn(() => Promise.resolve());
+    close = vi.fn(() => Promise.resolve());
   },
 }));
 
 vi.mock('../../lmu/worldTrack', () => ({
   LmuWorldTrackStorage: class {
     load = vi.fn(() => null);
+    restore = vi.fn(() => Promise.resolve());
+    flush = vi.fn(() => Promise.resolve());
+    close = vi.fn(() => Promise.resolve());
   },
   LmuWorldTrackSource: class {
     setTrack = worldTrackState.setTrack;

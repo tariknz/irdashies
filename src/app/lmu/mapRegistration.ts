@@ -351,7 +351,8 @@ export const radarMapFrame = (
   fit: MapRegistrationFit,
   playerX: number,
   playerZ: number,
-  playerYaw: number
+  playerYaw: number,
+  out: number[] = []
 ): number[] | null => {
   const gx = playerX;
   const gy = -playerZ;
@@ -374,12 +375,12 @@ export const radarMapFrame = (
 
   const c = Math.cos(playerYaw - Math.PI);
   const s = Math.sin(playerYaw - Math.PI);
-  return [
-    originX,
-    originY,
-    c * a00 - s * a10,
-    c * a01 - s * a11,
-    -s * a00 - c * a10,
-    -s * a01 - c * a11,
-  ];
+  out.length = 6;
+  out[0] = originX;
+  out[1] = originY;
+  out[2] = c * a00 - s * a10;
+  out[3] = c * a01 - s * a11;
+  out[4] = -s * a00 - c * a10;
+  out[5] = -s * a01 - c * a11;
+  return out;
 };
