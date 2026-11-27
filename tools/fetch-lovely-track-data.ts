@@ -10,7 +10,11 @@ import fs from 'fs';
 import path from 'path';
 import https from 'https';
 import { getFreshBundleAgeMs } from './lovely-bundle-cache';
-import { mergeLocalTracks, readLocalTracks } from './lovely-local-tracks';
+import {
+  hasTrackRecords,
+  mergeLocalTracks,
+  readLocalTracks,
+} from './lovely-local-tracks';
 
 interface TrackManifestEntry {
   trackName: string;
@@ -269,6 +273,18 @@ function saveBundle(bundle: TrackDataBundle, outputFile: string): void {
   console.log(`   File size: ${fileSizeKb} KB`);
 }
 
+function readCachedBundle(outputFile: string): TrackDataBundle | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(fs.readFileSync(outputFile, 'utf8'));
+  } catch {
+    parsed = null;
+  }
+  if (hasTrackRecords(parsed)) return parsed as unknown as TrackDataBundle;
+  console.log('Cached bundle has no track records; fetching fresh data...\n');
+  return null;
+}
+
 /**
  * Main function
  */
@@ -283,10 +299,10 @@ async function main(): Promise<void> {
       );
       // Each bundle ages on its own, so adding a game does not force the
       // others to be re-fetched.
-      if (await shouldSkipFetch(outputFile)) {
-        const cached = JSON.parse(
-          fs.readFileSync(outputFile, 'utf8')
-        ) as TrackDataBundle;
+      const cached = (await shouldSkipFetch(outputFile))
+        ? readCachedBundle(outputFile)
+        : null;
+      if (cached) {
         const added = mergeLocalTracks(cached.tracks, localTracks);
         if (added.length) {
           console.log(`Added local ${game} tracks: ${added.join(', ')}`);

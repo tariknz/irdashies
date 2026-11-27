@@ -6,6 +6,14 @@ export interface LocalLovelyTrack {
   name?: string;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+export const hasTrackRecords = (
+  bundle: unknown
+): bundle is { tracks: Record<string, unknown> } =>
+  isRecord(bundle) && isRecord(bundle.tracks);
+
 export const readLocalTracks = <T extends LocalLovelyTrack>(
   directory: string
 ): T[] => {

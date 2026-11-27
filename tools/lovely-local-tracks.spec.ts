@@ -2,7 +2,11 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mergeLocalTracks, readLocalTracks } from './lovely-local-tracks';
+import {
+  hasTrackRecords,
+  mergeLocalTracks,
+  readLocalTracks,
+} from './lovely-local-tracks';
 
 describe('local Lovely tracks', () => {
   let directory: string;
@@ -40,6 +44,14 @@ describe('local Lovely tracks', () => {
     await writeFile(path.join(directory, 'a.json'), JSON.stringify({}));
 
     expect(readLocalTracks(directory)).toEqual([]);
+  });
+
+  it('accepts a cached bundle only when its tracks are a record', () => {
+    expect(hasTrackRecords({ timestamp: 1, tracks: {} })).toBe(true);
+    expect(hasTrackRecords({ timestamp: 1 })).toBe(false);
+    expect(hasTrackRecords({ timestamp: 1, tracks: null })).toBe(false);
+    expect(hasTrackRecords({ timestamp: 1, tracks: [] })).toBe(false);
+    expect(hasTrackRecords(null)).toBe(false);
   });
 
   it('adds a layout the dataset lacks and keeps the dataset when it has one', () => {
