@@ -1156,7 +1156,7 @@ describe('LmuTrackWidth', () => {
       expect(width.seededFromBundle).toBe(false);
       expect(log.warn).toHaveBeenCalledWith(
         expect.stringMatching(
-          /^\[lmuTrackWidth\] Bundled track width for Test Oval dropped: live edges are 3\.\d m from it \(median of 200 samples\); learning live only$/
+          /^\[lmuTrackWidth\] Bundled track width for Test Oval dropped: live edges are 3\.\d m from it \(median of 100 samples\); learning live only$/
         )
       );
       drive(width, 180, false, { map, fit }, 20);
@@ -1242,6 +1242,27 @@ describe('LmuTrackWidth', () => {
         });
       }
 
+      expect(log.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Bundled track width for Test Oval dropped')
+      );
+    });
+
+    it('drops a disagreeing bundle even when every car stays on one side of the line', () => {
+      const log = createLog();
+      const width = new LmuTrackWidth(createStorage(), log, bundleShiftedBy(3));
+      width.setTrack('Test Oval');
+      const leftOnly = (carIdx: number, pct: number, time: number) =>
+        2 + Math.sin(carIdx * 1.7 + pct * 40 + time * 0.3);
+      for (let time = 0; time < 40; time += 0.2) {
+        width.update({
+          ...fieldAt(time, { lateral: leftOnly }),
+          map,
+          fit,
+          cacheable: false,
+        });
+      }
+
+      expect(width.seededFromBundle).toBe(false);
       expect(log.warn).toHaveBeenCalledWith(
         expect.stringContaining('Bundled track width for Test Oval dropped')
       );

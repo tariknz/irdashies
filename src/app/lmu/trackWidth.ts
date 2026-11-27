@@ -14,6 +14,12 @@ export const BUNDLE_CHECK_SAMPLES = 200;
 export const BUNDLE_CHECK_MAX_MEDIAN_M = 1.5;
 const BUNDLE_CHECK_SIDE_SAMPLES = BUNDLE_CHECK_SAMPLES / 2;
 
+interface ReferenceVerdict {
+  agrees: boolean;
+  samples: number;
+  medianM: number;
+}
+
 const medianOf = (values: Float64Array, count: number): number => {
   const sorted = values.slice(0, count).sort();
   return sorted[Math.floor(count / 2)];
@@ -626,18 +632,28 @@ export class LmuTrackWidthProfile {
     this.referenceRight = right;
   }
 
-  referenceCheck(): { samples: number; medianM: number } | null {
-    const leftCount = this.referenceLeftCount;
-    const rightCount = this.referenceRightCount;
-    if (!this.referenceLeft || leftCount === 0 || rightCount === 0) {
+  referenceCheck(): ReferenceVerdict | null {
+    if (!this.referenceLeft) return null;
+    const sides = [
+      { diffs: this.referenceLeftDiffs, count: this.referenceLeftCount },
+      { diffs: this.referenceRightDiffs, count: this.referenceRightCount },
+    ];
+    let worst = 0;
+    for (const { diffs, count } of sides) {
+      if (count < BUNDLE_CHECK_SIDE_SAMPLES) continue;
+      const medianM = medianOf(diffs, count);
+      if (medianM > BUNDLE_CHECK_MAX_MEDIAN_M) {
+        return { agrees: false, samples: count, medianM };
+      }
+      worst = Math.max(worst, medianM);
+    }
+    if (sides.some(({ count }) => count < BUNDLE_CHECK_SIDE_SAMPLES)) {
       return null;
     }
     return {
-      samples: leftCount + rightCount,
-      medianM: Math.max(
-        medianOf(this.referenceLeftDiffs, leftCount),
-        medianOf(this.referenceRightDiffs, rightCount)
-      ),
+      agrees: true,
+      samples: this.referenceLeftCount + this.referenceRightCount,
+      medianM: worst,
     };
   }
 
@@ -1561,11 +1577,11 @@ export class LmuTrackWidth {
     const seed = this.checkedSeed;
     if (!seed) return;
     const check = this.profile.referenceCheck();
-    if (!check || check.samples < BUNDLE_CHECK_SAMPLES) return;
+    if (!check) return;
     this.checkedSeed = null;
     this.profile.setReference(null);
     const source = this.seedSource === 'bundle' ? 'Bundled' : 'Cached';
-    if (check.medianM > BUNDLE_CHECK_MAX_MEDIAN_M) {
+    if (!check.agrees) {
       this.profile.unseed(seed);
       this.dirty = true;
       this.mode = 'learn';

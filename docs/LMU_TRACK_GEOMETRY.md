@@ -98,12 +98,13 @@ bundle only changes through this tool and a reviewed commit.
 - The caches (`lmu-world-tracks.json`, `lmu-track-maps.json`) are read once
   when the LMU bridge starts and written in the background a couple of seconds
   after a change, and on the way out.
-- Road edges on a bundled track come from the bundle alone. The first 200 live
-  samples, half on each side of the road, check it: with each edge within
-  1.5 m (median), learning stops for the session and nothing is saved; with
-  either edge further off, the bundle is dropped, the session learns live
-  (deciding LMU's lateral sign afresh) and saves to the cache, and the log says
-  so, which usually means LMU changed the track.
+- Road edges on a bundled track come from the bundle alone. Live samples check
+  each edge on its own: as soon as 100 samples on one side put that edge more
+  than 1.5 m (median) from the bundle, the bundle is dropped, the session
+  learns live (deciding LMU's lateral sign afresh) and saves to the cache, and
+  the log says so, which usually means LMU changed the track. Once both sides
+  have 100 samples within 1.5 m, learning stops for the session and nothing is
+  saved.
 - Sector boundaries on a bundled track come from the bundle and are not
   learned.
 - A track not in the bundle starts from the user's cache and learns road edges
