@@ -33,6 +33,7 @@ import { wrapDelta } from './radarMath';
 import {
   applyWorldOffset,
   hasWorldChannels,
+  radarDistanceOf,
   type RadarWorldChannels,
 } from './radarWorld';
 
@@ -390,7 +391,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         };
         if (worldFocus) {
           applyWorldOffset(car, world, carIdx);
-          if (Math.abs(car.dist) > RADAR_MAX_RANGE_M) continue;
+          if (radarDistanceOf(car) > RADAR_MAX_RANGE_M) continue;
         }
         cars.push(car);
       }

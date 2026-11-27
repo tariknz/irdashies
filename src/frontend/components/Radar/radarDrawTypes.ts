@@ -29,12 +29,21 @@ export type WarningLevel = 'none' | 'close' | 'alongside';
  * How worried to be about a rival: alongside once the bodies overlap along
  * the track, close inside `cautionDistance` metres of bumper-to-bumper gap.
  */
+export const WORLD_WARNING_MAX_LATERAL_M = 10;
+
 export const warningLevel = (
   dist: number,
   carLength: number,
   playerLength: number,
-  cautionDistance: number
+  cautionDistance: number,
+  measuredLateralM?: number
 ): WarningLevel => {
+  if (
+    measuredLateralM !== undefined &&
+    Math.abs(measuredLateralM) > WORLD_WARNING_MAX_LATERAL_M
+  ) {
+    return 'none';
+  }
   const gap = Math.abs(dist) - (carLength + playerLength) / 2;
   if (gap <= 0) return 'alongside';
   if (gap < cautionDistance) return 'close';

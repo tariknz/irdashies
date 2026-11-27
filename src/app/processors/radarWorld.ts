@@ -18,6 +18,13 @@ const finiteAt = (values: readonly unknown[], index: number): number | null => {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 };
 
+export const radarDistanceOf = (
+  car: Pick<RadarCar, 'dist' | 'lateralM'>
+): number =>
+  car.lateralM === undefined
+    ? Math.abs(car.dist)
+    : Math.hypot(car.dist, car.lateralM);
+
 export const worldLaneOf = (lateralM: number): number =>
   Math.max(
     -MAX_WORLD_LANE,

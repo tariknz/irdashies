@@ -7,7 +7,7 @@ import {
 import { drawPoleSideNotice } from './radarDrawNotice';
 import { overlapOf } from './radarHints';
 import { formatDistance, speedIn } from './radarStyle';
-import { warningLevel } from './radarDrawTypes';
+import { WORLD_WARNING_MAX_LATERAL_M, warningLevel } from './radarDrawTypes';
 import type { RadarScene, RadarStyle } from './radarDrawTypes';
 
 import {
@@ -408,7 +408,11 @@ export const drawRadar = (
       );
     }
 
-    if (style.showOverlap && Math.abs(car.lane) >= 0.5) {
+    const measuredLateral = car.world ? car.lateral : undefined;
+    const besideUs =
+      measuredLateral === undefined ||
+      Math.abs(measuredLateral) <= WORLD_WARNING_MAX_LATERAL_M;
+    if (style.showOverlap && besideUs && Math.abs(car.lane) >= 0.5) {
       const overlap = overlapOf(car.dist, car.length, style.carLength);
       if (overlap?.onRival) {
         // We attack: measured on its side facing us.
@@ -453,7 +457,8 @@ export const drawRadar = (
       car.dist,
       car.length,
       style.carLength,
-      style.cautionDistance
+      style.cautionDistance,
+      measuredLateral
     );
     const dive = scene.dives?.get(car.carIdx);
     let diveArcCar = -1;
