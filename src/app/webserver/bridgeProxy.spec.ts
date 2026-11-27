@@ -84,6 +84,7 @@ function makeSource() {
     }),
     stop: vi.fn(),
     changeCameraNumber: vi.fn(),
+    changeReplaySpeed: vi.fn(),
     changeReplayPosition: vi.fn(),
     triggerReplaySessionSearch: vi.fn(),
   } satisfies IrSdkSourceBridge;

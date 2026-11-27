@@ -50,7 +50,7 @@ import {
   createSubscriptionBridgeClient,
   defineBridge,
 } from './defineBridge';
-import type { TapeReplayBridge } from '@irdashies/types';
+import type { TapeReplayBridge, ReplayDirectorBridge } from '@irdashies/types';
 // The module itself, not the barrel: preload needs this one list, not every
 // default the types package exports.
 import { RENDERER_PERF_MEASURE_NAMES } from '../../types/performance';
@@ -543,5 +543,10 @@ export function exposeBridge() {
   defineBridge<LapHistoryBridge>('lapHistoryBridge', {
     getArchived: (sessionNum: number) =>
       ipcRenderer.invoke('lapHistory:getArchived', sessionNum),
+  });
+  defineBridge<ReplayDirectorBridge>('replayDirectorBridge', {
+    backToProgram: () => ipcRenderer.invoke('replayDirector:backToProgram'),
+    resumeAtCut: () => ipcRenderer.invoke('replayDirector:resumeAtCut'),
+    stayHere: () => ipcRenderer.invoke('replayDirector:stayHere'),
   });
 }

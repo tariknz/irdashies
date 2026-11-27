@@ -5,7 +5,8 @@ export type StaticKeybindingActionId =
   | 'save-telemetry'
   | 'prev-profile'
   | 'next-profile'
-  | 'radar-flip-pole-side';
+  | 'radar-flip-pole-side'
+  | 'gantry-back-to-program';
 
 /**
  * Dynamic per-widget show/hide action, keyed by the widget instance id, e.g.
@@ -130,6 +131,12 @@ export const DEFAULT_KEYBINDINGS: KeybindingsMap = {
     label: 'Radar: Flip Pole Side',
     description:
       'Swap the pole line side on the radar for the current track and remember it',
+    isDefault: true,
+  },
+  'gantry-back-to-program': {
+    accelerator: '',
+    label: 'Gantry: Back to Program',
+    description: 'Return the replay to live program after a cut-away',
     isDefault: true,
   },
 };

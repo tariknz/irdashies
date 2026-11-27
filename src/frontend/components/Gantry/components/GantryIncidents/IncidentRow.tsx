@@ -1,7 +1,7 @@
 import { memo, useState } from 'react';
 import { Copy } from '@phosphor-icons/react';
 import type { Incident } from '@irdashies/types';
-import { IncidentType } from '@irdashies/types';
+import { formatTimecode, IncidentType } from '@irdashies/types';
 import { Tooltip } from '../Tooltip/Tooltip';
 import logger from '@irdashies/utils/logger';
 
@@ -26,15 +26,6 @@ const TYPE_STYLES: Record<IncidentType, { label: string; classes: string }> = {
     label: 'Black Flag',
     classes: 'bg-white/10 text-slate-300',
   },
-};
-
-const formatSessionTime = (seconds: number): string => {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  return h > 0
-    ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-    : `${m}:${String(s).padStart(2, '0')}`;
 };
 
 interface Props {
@@ -88,7 +79,7 @@ export const IncidentRow = memo(({ incident, isReplayPlaying }: Props) => {
           L{incident.lapNum}
         </span>
         <span className="flex-shrink-0 text-sm text-slate-400 tabular-nums">
-          {formatSessionTime(incident.sessionTime)}
+          {formatTimecode(incident.sessionTime)}
         </span>
       </div>
       <div className="flex items-center justify-end gap-1.5">

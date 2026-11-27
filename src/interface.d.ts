@@ -45,5 +45,6 @@ declare global {
     tapeReplayBridge?: import('./types/tapeReplay').TapeReplayBridge;
     /** Absent outside the Electron preload, e.g. the browser server. */
     racePlanBridge?: import('./types/racePlan').RacePlanBridge;
+    replayDirectorBridge?: import('./types/replayDirector').ReplayDirectorBridge;
   }
 }

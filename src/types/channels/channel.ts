@@ -7,6 +7,7 @@ import type {
   StreamChatMessagesSnapshot,
 } from '../streamChat';
 import type { ReplayContextSnapshot } from './replayContext';
+import type { ReplayTimecodeSnapshot } from './replayTimecode';
 import type { RacePlanProgressSnapshot } from './racePlanProgress';
 import type { PitStopsSnapshot } from './pitStops';
 import type { PitLaneCalibration } from '../pitLane';
@@ -46,6 +47,7 @@ export interface ChannelPayloads {
    */
   'raceControl.sessionId': string;
   'replay.context': ReplayContextSnapshot;
+  'replay.timecode': ReplayTimecodeSnapshot;
   'streamchat.messages': StreamChatMessagesSnapshot;
   'streamchat.emotes': StreamChatEmotesSnapshot;
   'race-plan.progress': RacePlanProgressSnapshot;
@@ -851,6 +853,13 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 1,
     maxRateHz: 2,
+  },
+  // Publishes on visible change: a displayed second, state or flag change.
+  // About once per second while a replay is active.
+  'replay.timecode': {
+    kind: 'snapshot',
+    defaultRateHz: 2,
+    maxRateHz: 4,
   },
 } as const satisfies ChannelRegistry;
 

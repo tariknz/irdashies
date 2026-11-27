@@ -42,3 +42,4 @@ export * from './TrackTemperatureStore/TrackTemperatureStore';
 export * from './TrackTemperatureStore/TrackTemperatureStoreUpdater';
 
 export { useNativeWindowVisibility } from './shared/useNativeWindowVisibility';
+export * from './ReplayTimecodeStore';

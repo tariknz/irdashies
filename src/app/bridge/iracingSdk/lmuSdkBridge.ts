@@ -1143,6 +1143,7 @@ export async function publishLmuSDKEvents(
     // LMU has no broadcast/replay API; camera/replay controls are no-ops.
     changeCameraNumber: () => undefined,
     changeReplayPosition: () => undefined,
+    changeReplaySpeed: () => undefined,
     triggerReplaySessionSearch: () => undefined,
   };
 }

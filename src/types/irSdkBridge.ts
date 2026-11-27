@@ -51,6 +51,7 @@ export interface IrSdkSourceBridge extends IrSdkBridge {
     position: ReplayPositionCommand,
     frame: number
   ) => void;
+  changeReplaySpeed: (speed: number, slowMotion: boolean) => void;
   triggerReplaySessionSearch: (
     sessionNum: number,
     sessionTimeMs: number

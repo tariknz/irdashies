@@ -50,3 +50,5 @@ export * from './radarPoleSideSettings';
 export * from './streamChat';
 export * from './storageStatus';
 export * from './racePlan';
+export * from './timecode';
+export * from './replayDirector';

@@ -35,6 +35,7 @@ type RuntimeOwnedChannelName =
   | 'lap-history.snapshot'
   | 'pit-stops.snapshot'
   | 'replay.context'
+  | 'replay.timecode'
   | 'streamchat.messages'
   | 'streamchat.emotes';
 type SnapshotChannelName = Exclude<

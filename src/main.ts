@@ -102,6 +102,8 @@ import {
   sealLapHistorySession,
 } from './app/storage/lapHistoryStorage';
 import { ReplayContextRuntime } from './app/processors/replayContextRuntime';
+import { ReplayDirectorRuntime } from './app/processors/replayDirectorRuntime';
+import { setupReplayDirectorBridge } from './app/bridge/replayDirectorBridge';
 import { setupTapeReplayBridge } from './app/bridge/tapeReplayBridge';
 import { createTapeReplayWindow } from './app/tapeReplayWindow';
 import type { ArchiveIndex } from './app/processors/ReplayContextProcessor';
@@ -185,6 +187,7 @@ let disposeLapHistoryRuntime: (() => void) | undefined;
 let disposePitStopRuntime: (() => void) | undefined;
 let disposeStreamChat: (() => void) | undefined;
 let disposeReplayContextRuntime: (() => void) | undefined;
+let replayDirectorRuntimeHandle: ReplayDirectorRuntime | undefined;
 const knownLocalUserIds = createKnownLocalUserIdStore();
 let disposeGarage61SearchSession: (() => void) | undefined;
 let racePlan: ReturnType<typeof setupRacePlanBridge> | undefined;
@@ -554,7 +557,15 @@ void app.whenReady().then(async () => {
   replayContextRuntime.onChange((context) =>
     incidents.updateReplayPaused(context.mode === 'replayFile')
   );
-  setupRaceControlBridge(incidents, dashboard, replayContextRuntime);
+  replayDirectorRuntimeHandle = new ReplayDirectorRuntime(
+    channelBus,
+    getSessionLifecycle(),
+    () => getCurrentBridge()?.getTapeReplayStatus?.() ?? null
+  );
+  setupReplayDirectorBridge(replayDirectorRuntimeHandle);
+  setupRaceControlBridge(incidents, dashboard, replayContextRuntime, () =>
+    replayDirectorRuntimeHandle?.cut()
+  );
   setupLapHistoryRuntime(dashboard, replayContextRuntime);
   setupPitStopRuntime(dashboard, replayContextRuntime);
   disposeStreamChat = setupStreamChat(channelBus, listDashboards);
@@ -683,6 +694,9 @@ void app.whenReady().then(async () => {
   }
 
   keybindingManager = new KeybindingManager(overlayManager);
+  keybindingManager.setGantryBackToProgramHandler(() =>
+    replayDirectorRuntimeHandle?.backToProgram()
+  );
   keybindingManager.registerAll();
   if (!perfRun.enabled) {
     keybindingManager.startGamepad();

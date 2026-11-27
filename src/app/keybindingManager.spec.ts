@@ -86,6 +86,12 @@ const bindingsWithBadAccelerator = (): KeybindingsMap => ({
     description: '',
     isDefault: true,
   },
+  'gantry-back-to-program': {
+    accelerator: '',
+    label: 'Gantry: Back to Program',
+    description: '',
+    isDefault: true,
+  },
 });
 
 describe('KeybindingManager', () => {

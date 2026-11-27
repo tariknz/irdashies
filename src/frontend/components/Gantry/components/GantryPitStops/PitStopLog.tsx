@@ -3,7 +3,8 @@ import type { PitStopRow } from '@irdashies/domain';
 import logger from '@irdashies/utils/logger';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { LiveSeconds } from './LiveSeconds';
-import { formatSessionClock, formatSigned } from './pitStopFormat';
+import { formatTimecode } from '@irdashies/types';
+import { formatSigned } from './pitStopFormat';
 
 export interface PitStopReplay {
   /** The session the stops were recorded in. */
@@ -87,7 +88,7 @@ const LogRow = memo(
         ].join(' ')}
       >
         <td className="px-2 py-1 text-slate-400">
-          {formatSessionClock(stop.entryTime)}
+          {formatTimecode(stop.entryTime)}
         </td>
         <td className="px-2 py-1">{stop.lap}</td>
         <td className="px-2 py-1 font-semibold">
