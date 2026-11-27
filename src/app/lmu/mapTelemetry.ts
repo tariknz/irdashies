@@ -536,9 +536,7 @@ export function mapLmuTelemetry(
   updateLmuClassPositions(classPositionState, {
     classes: raw.vehClass,
     places: raw.vehPlaces,
-    bestLapTimes: raw.vehBestLapTime,
     lapDistPcts: raw.vehLapDistPct,
-    isRace: isLmuRaceSession(raw.session),
   });
   // Boundary note: a handful of generated Telemetry keys (e.g. SessionTime) are
   // typed with an `undefined[]` value shape although the iRacing native layer
