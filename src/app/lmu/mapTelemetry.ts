@@ -34,6 +34,7 @@ import {
   createLmuClassPositionState,
   updateLmuClassPositions,
 } from './classPosition';
+import { lmuOffTrackFlags } from './trackWidth';
 
 type Raw = import('./native').LmuRawTelemetry;
 
@@ -780,6 +781,17 @@ export function mapLmuTelemetry(
       blindSpot?.rightLongitudinalM ?? null
     ),
     LmuPlayerYaw: hold('LmuPlayerYaw', relativePositions?.playerYaw ?? null),
+    LmuCarIdxOffTrack: holdArray(
+      'LmuCarIdxOffTrack',
+      lmuOffTrackFlags(
+        raw.vehPathLateral,
+        raw.vehTrackEdge,
+        raw.vehInPits,
+        raw.vehInGarageStall,
+        scratch('LmuCarIdxOffTrack')
+      ),
+      copyNumbers
+    ),
   };
   if (raw.vehSpeed) {
     t.LmuCarIdxSpeed = holdArray(

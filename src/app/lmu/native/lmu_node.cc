@@ -215,6 +215,17 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
   auto lapDistPct = Napi::Float64Array::New(env, cap);
   if (cap > 0)
     std::fill(lapDistPct.Data(), lapDistPct.Data() + cap, -1.0);
+  auto pathLateral = Napi::Float64Array::New(env, cap);
+  auto trackEdge = Napi::Float64Array::New(env, cap);
+  auto scoringPosX = Napi::Float64Array::New(env, cap);
+  auto scoringPosZ = Napi::Float64Array::New(env, cap);
+  if (cap > 0)
+  {
+    std::fill(pathLateral.Data(), pathLateral.Data() + cap, NAN);
+    std::fill(trackEdge.Data(), trackEdge.Data() + cap, NAN);
+    std::fill(scoringPosX.Data(), scoringPosX.Data() + cap, NAN);
+    std::fill(scoringPosZ.Data(), scoringPosZ.Data() + cap, NAN);
+  }
   auto totalLaps = Napi::Int32Array::New(env, cap);
   auto bestLapTime = Napi::Float64Array::New(env, cap);
   auto lastLapTime = Napi::Float64Array::New(env, cap);
@@ -290,6 +301,10 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
     lapDistPct[id] = scoring.scoringInfo.mLapDist > 0.0
         ? std::clamp(v.mLapDist / scoring.scoringInfo.mLapDist, 0.0, 1.0)
         : 0.0;
+    pathLateral[id] = v.mPathLateral;
+    trackEdge[id] = v.mTrackEdge;
+    scoringPosX[id] = v.mPos.x;
+    scoringPosZ[id] = v.mPos.z;
     totalLaps[id] = v.mTotalLaps;
     bestLapTime[id] = v.mBestLapTime;
     lastLapTime[id] = v.mLastLapTime;
@@ -344,6 +359,10 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
   out.Set("vehIsPlayer", isPlayer);
   out.Set("vehPlaces", places);
   out.Set("vehLapDistPct", lapDistPct);
+  out.Set("vehPathLateral", pathLateral);
+  out.Set("vehTrackEdge", trackEdge);
+  out.Set("vehScoringPosX", scoringPosX);
+  out.Set("vehScoringPosZ", scoringPosZ);
   out.Set("vehTotalLaps", totalLaps);
   out.Set("vehBestLapTime", bestLapTime);
   out.Set("vehLastLapTime", lastLapTime);

@@ -219,6 +219,10 @@ export interface LmuRawTelemetry {
   vehIsPlayer: Uint8Array;
   vehPlaces: Int32Array;
   vehLapDistPct: Float64Array;
+  vehPathLateral?: ArrayLike<number>;
+  vehTrackEdge?: ArrayLike<number>;
+  vehScoringPosX?: ArrayLike<number>;
+  vehScoringPosZ?: ArrayLike<number>;
   vehTotalLaps: Int32Array;
   vehBestLapTime: Float64Array;
   vehLastLapTime: Float64Array;

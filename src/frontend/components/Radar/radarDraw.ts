@@ -46,6 +46,11 @@ import {
   drawFollowOutline,
   drawFollowPointer,
 } from './radarDrawFollow';
+import {
+  createRoadEdgeTrace,
+  traceRoadEdges,
+  validRoadEdges,
+} from './radarRoadEdges';
 
 export * from './radarDrawTypes';
 export { followLineEnds } from './radarDrawFollow';
@@ -63,12 +68,86 @@ const ROAD_STEP_M = 1;
 export const roadLateral = (roadLane: number, laneWidth: number): number =>
   -roadLane * laneWidth;
 
+const roadTrace = createRoadEdgeTrace();
+
+const strokeTrace = (
+  ctx: CanvasRenderingContext2D,
+  xs: Float64Array,
+  ys: Float64Array,
+  count: number
+) => {
+  ctx.beginPath();
+  ctx.moveTo(xs[0], ys[0]);
+  for (let index = 1; index < count; index += 1) {
+    ctx.lineTo(xs[index], ys[index]);
+  }
+  ctx.stroke();
+};
+
+const drawRoadBetweenEdges = (
+  ctx: CanvasRenderingContext2D,
+  style: RadarStyle,
+  pixelsPerMetre: number,
+  lateral: number,
+  edges: readonly number[],
+  playerPct: number,
+  trackLength: number
+) => {
+  const half = style.trackWidth / 2;
+  const trace = traceRoadEdges(
+    roadTrace,
+    projector,
+    pose,
+    edges,
+    playerPct,
+    trackLength,
+    style.range * ROAD_OVERSCAN,
+    ROAD_STEP_M,
+    lateral + half,
+    lateral - half
+  );
+  const { count, leftX, leftY, rightX, rightY } = trace;
+  const opacity = style.mapOpacity / 100;
+  ctx.beginPath();
+  ctx.moveTo(leftX[0], leftY[0]);
+  for (let index = 1; index < count; index += 1) {
+    ctx.lineTo(leftX[index], leftY[index]);
+  }
+  for (let index = count - 1; index >= 0; index -= 1) {
+    ctx.lineTo(rightX[index], rightY[index]);
+  }
+  ctx.closePath();
+  ctx.fillStyle = `rgba(71, 85, 105, ${opacity})`;
+  ctx.fill();
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'butt';
+  ctx.strokeStyle = `rgba(226, 232, 240, ${opacity})`;
+  ctx.lineWidth = Math.max(1, Math.max(2, pixelsPerMetre * 0.4) / 2);
+  strokeTrace(ctx, leftX, leftY, count);
+  strokeTrace(ctx, rightX, rightY, count);
+};
+
 const drawRoad = (
   ctx: CanvasRenderingContext2D,
   style: RadarStyle,
   pixelsPerMetre: number,
-  lateral: number
+  lateral: number,
+  edges: readonly number[] | null | undefined,
+  playerPct: number,
+  trackLength: number
 ) => {
+  if (validRoadEdges(edges) && projector.hasTrack && trackLength > 0) {
+    drawRoadBetweenEdges(
+      ctx,
+      style,
+      pixelsPerMetre,
+      lateral,
+      edges,
+      playerPct,
+      trackLength
+    );
+    return;
+  }
   const reach = style.range * ROAD_OVERSCAN;
   ctx.beginPath();
   for (let dist = -reach; dist <= reach; dist += ROAD_STEP_M) {
@@ -239,7 +318,15 @@ export const drawRadar = (
     scene.laneWidth ?? style.carWidth + 0.7
   );
   if (style.showTrackMap) {
-    drawRoad(ctx, style, pixelsPerMetre, roadX);
+    drawRoad(
+      ctx,
+      style,
+      pixelsPerMetre,
+      roadX,
+      scene.roadEdges,
+      scene.playerPct,
+      scene.trackLength
+    );
   }
   if (style.showCrosshair) {
     drawCrosshair(ctx, centre, radius, style, pixelsPerMetre, scene.travelled);

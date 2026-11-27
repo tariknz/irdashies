@@ -29,8 +29,12 @@ const MAX_SPREAD_M = 10;
 const MIN_SAMPLE_SPEED_MS = 5;
 const SAME_TRACK_TOLERANCE_M = 1;
 const MAX_STORED_TRACKS = 64;
+export const LAP_MATCH_TOLERANCE_M = 2;
 export const WORLD_TRACK_RETRY_S = 30;
 export const WORLD_TRACK_MAX_ATTEMPTS = 5;
+
+export const lapDistMatches = (stored: number, live: number): boolean =>
+  !(live > 0) || Math.abs(stored - live) <= LAP_MATCH_TOLERANCE_M;
 
 export interface GroundPoint {
   readonly x: number;
@@ -460,6 +464,20 @@ const unflatten = (values: unknown): GroundPoint[] | null => {
   return points;
 };
 
+export function parseStoredWorldTrack(value: unknown): StoredWorldTrack | null {
+  if (value === null || typeof value !== 'object') return null;
+  const entry = value as Partial<StoredWorldTrackEntry>;
+  const racing = unflatten(entry.racing);
+  const pitLane = unflatten(entry.pitLane ?? []);
+  const { offsetM, lapDistM } = entry;
+  if (!racing || !pitLane) return null;
+  if (typeof offsetM !== 'number' || !Number.isFinite(offsetM)) return null;
+  if (typeof lapDistM !== 'number' || !(lapDistM > 0)) return null;
+  const track = worldTrackFrom(racing, pitLane);
+  if (!track || !worldTrackFitsLap(track, lapDistM)) return null;
+  return { track, offsetM, lapDistM };
+}
+
 export class LmuWorldTrackStorage {
   private readonly store: JsonFileStore;
 
@@ -480,18 +498,7 @@ export class LmuWorldTrackStorage {
   }
 
   load(trackName: string): StoredWorldTrack | null {
-    const entry = this.store.get(trackName) as
-      Partial<StoredWorldTrackEntry> | undefined;
-    if (!entry || typeof entry !== 'object') return null;
-    const racing = unflatten(entry.racing);
-    const pitLane = unflatten(entry.pitLane ?? []);
-    const { offsetM, lapDistM } = entry;
-    if (!racing || !pitLane) return null;
-    if (typeof offsetM !== 'number' || !Number.isFinite(offsetM)) return null;
-    if (typeof lapDistM !== 'number' || !(lapDistM > 0)) return null;
-    const track = worldTrackFrom(racing, pitLane);
-    if (!track || !worldTrackFitsLap(track, lapDistM)) return null;
-    return { track, offsetM, lapDistM };
+    return parseStoredWorldTrack(this.store.get(trackName));
   }
 
   save(
@@ -517,6 +524,19 @@ export class LmuWorldTrackStorage {
       .slice(0, MAX_STORED_TRACKS);
     this.store.replaceAll(Object.fromEntries(kept));
   }
+
+  loadTrackWidth(trackName: string): unknown {
+    const entry = this.store.get(trackName);
+    if (entry === null || typeof entry !== 'object') return undefined;
+    return (entry as Record<string, unknown>).width;
+  }
+
+  saveTrackWidth(trackName: string, width: unknown): boolean {
+    const entry = this.store.get(trackName);
+    if (entry === null || typeof entry !== 'object') return false;
+    this.store.set(trackName, { ...(entry as Record<string, unknown>), width });
+    return true;
+  }
 }
 
 const sameTrack = (a: LmuWorldTrack, b: LmuWorldTrack): boolean =>
@@ -528,6 +548,11 @@ const sameTrack = (a: LmuWorldTrack, b: LmuWorldTrack): boolean =>
       SAME_TRACK_TOLERANCE_M
   );
 
+const sameStoredTrack = (a: StoredWorldTrack, b: StoredWorldTrack): boolean =>
+  sameTrack(a.track, b.track) &&
+  Math.abs(a.offsetM - b.offsetM) <= SAME_TRACK_TOLERANCE_M &&
+  Math.abs(a.lapDistM - b.lapDistM) <= LAP_MATCH_TOLERANCE_M;
+
 export interface WorldTrackLogger {
   info: (message: string) => void;
   warn: (message: string) => void;
@@ -537,13 +562,19 @@ export interface WorldTrackFrame extends WorldTrackAlignmentInput {
   restTrack: LmuWorldTrack | undefined;
 }
 
-export type WorldTrackSourceKind = 'live' | 'cache';
+export type WorldTrackSourceKind = 'live' | 'cache' | 'bundle';
+
+export interface WorldTrackBundle {
+  worldTrack: (trackName: string, lapDistM: number) => StoredWorldTrack | null;
+}
 
 export class LmuWorldTrackSource {
   private trackName = '';
   private active: (WorldTrackMap & { source: WorldTrackSourceKind }) | null =
     null;
   private cached: StoredWorldTrack | null = null;
+  private bundled: StoredWorldTrack | null = null;
+  private bundledStored = false;
   private lastRestTrack: LmuWorldTrack | undefined;
   private candidate: LmuWorldTrack | null = null;
   private settled = false;
@@ -554,6 +585,7 @@ export class LmuWorldTrackSource {
   constructor(
     private readonly storage: LmuWorldTrackStorage,
     private readonly log: WorldTrackLogger,
+    private readonly bundle: WorldTrackBundle | null = null,
     private readonly describeSkipped: () => string = () => ''
   ) {}
 
@@ -573,23 +605,61 @@ export class LmuWorldTrackSource {
     return !this.settled && this.candidate === null;
   }
 
-  setTrack(trackName: string): void {
+  setTrack(trackName: string, lapDistM = 0): void {
     this.trackName = trackName;
     this.active = null;
     this.lastRestTrack = undefined;
     this.candidate = null;
     this.settled = false;
+    this.bundledStored = false;
     this.rejections = 0;
     this.retryAt = Number.POSITIVE_INFINITY;
     this.alignment.reset(null);
-    this.cached = trackName ? this.storage.load(trackName) : null;
-    if (this.cached) {
-      const { track, offsetM, lapDistM } = this.cached;
+    const stored = trackName ? this.storage.load(trackName) : null;
+    const cached =
+      stored && lapDistMatches(stored.lapDistM, lapDistM) ? stored : null;
+    const bundled =
+      trackName && this.bundle
+        ? this.bundle.worldTrack(trackName, lapDistM)
+        : null;
+    this.bundled = bundled ? this.onLiveLap(bundled, lapDistM) : null;
+    this.cached =
+      cached && (!this.bundled || sameStoredTrack(cached, this.bundled))
+        ? cached
+        : null;
+    if (cached && !this.cached) {
+      this.log.info(
+        `[lmuWorldTrack] Cached world track for ${trackName} differs from the bundled one; using the bundled one`
+      );
+    }
+    this.bundledStored = this.bundled !== null && this.cached !== null;
+    const chosen = this.bundled ?? this.cached;
+    if (chosen) {
       this.active = {
-        ...buildWorldTrackMap(track, offsetM, lapDistM),
-        source: 'cache',
+        ...buildWorldTrackMap(chosen.track, chosen.offsetM, chosen.lapDistM),
+        source: this.bundled ? 'bundle' : 'cache',
       };
     }
+  }
+
+  get storedMatchesActive(): boolean {
+    const source = this.active?.source;
+    return (
+      source === 'live' ||
+      source === 'cache' ||
+      (source === 'bundle' && this.bundledStored)
+    );
+  }
+
+  private onLiveLap(
+    bundled: StoredWorldTrack,
+    lapDistM: number
+  ): StoredWorldTrack {
+    if (lapDistMatches(bundled.lapDistM, lapDistM)) return bundled;
+    this.log.info(
+      `[lmuWorldTrack] Bundled world track for ${this.trackName} was made for a ${bundled.lapDistM.toFixed(1)} m lap and LMU reports ${lapDistM.toFixed(1)} m; stretching it to the live lap`
+    );
+    return { ...bundled, lapDistM };
   }
 
   restart(): void {
@@ -601,6 +671,20 @@ export class LmuWorldTrackSource {
     this.rejections = 0;
     this.retryAt = Number.POSITIVE_INFINITY;
     this.alignment.reset(null);
+  }
+
+  ensureStored(): void {
+    if (this.active?.source !== 'bundle' || this.bundledStored) return;
+    if (!this.bundled) return;
+    this.bundledStored = true;
+    const { track, offsetM, lapDistM } = this.bundled;
+    try {
+      this.storage.save(this.trackName, track, offsetM, lapDistM);
+    } catch (error) {
+      this.log.warn(
+        `[lmuWorldTrack] Failed to save the bundled world track for ${this.trackName}: ${String(error)}`
+      );
+    }
   }
 
   update(frame: WorldTrackFrame): boolean {
@@ -658,7 +742,7 @@ export class LmuWorldTrackSource {
         this.candidate = null;
         this.settled = true;
         this.log.warn(
-          `${message}; ${this.active ? `keeping the cached world track` : 'using the fallback map'}`
+          `${message}; ${this.active ? `keeping the ${this.active.source === 'bundle' ? 'bundled' : 'cached'} world track` : 'using the fallback map'}`
         );
       }
     }
@@ -669,6 +753,18 @@ export class LmuWorldTrackSource {
     if (!worldTrackFitsLap(restTrack, lapDistM)) {
       this.log.warn(
         `[lmuWorldTrack] World track for ${this.trackName} is ${restTrack.lengthM.toFixed(0)} m against a ${lapDistM.toFixed(0)} m lap; not used`
+      );
+      return;
+    }
+    if (
+      this.active?.source === 'bundle' &&
+      this.bundled &&
+      sameTrack(this.bundled.track, restTrack)
+    ) {
+      this.settled = true;
+      this.ensureStored();
+      this.log.info(
+        `[lmuWorldTrack] World track for ${this.trackName} matches the bundled one`
       );
       return;
     }

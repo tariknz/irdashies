@@ -47,6 +47,7 @@ export interface RadarFrame {
   /** Middle of the road from our car, in lanes, positive to the right. */
   roadLane?: number;
   mapFrame?: readonly number[] | null;
+  roadEdges?: readonly number[] | null;
 }
 
 export interface RadarDiveOptions {
@@ -301,6 +302,7 @@ export const RadarDisplay = memo(
             poleSideNotice: snap.poleSideNotice,
             roadLane,
             mapFrame: snap.mapFrame ?? null,
+            roadEdges: snap.roadEdges ?? null,
           },
           ringsLayer
         );

@@ -141,7 +141,7 @@ export default defineWidgetManifest({
       type: 'number',
       label: 'Road Width',
       description:
-        'The track drawings carry no width, so pick one that looks right.',
+        'iRacing track drawings carry no width, so pick one that looks right. In Le Mans Ultimate the radar draws the real road edges and uses this only where they are not known yet.',
       min: 6,
       max: 25,
       step: 1,

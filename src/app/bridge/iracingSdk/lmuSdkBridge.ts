@@ -58,17 +58,15 @@ import { createLmuLiveStandings } from '../../lmu/liveStandings/client';
 import { lmuLivePenaltyChannels } from '../../lmu/liveStandings/penalties';
 import { createLmuWebSocket } from '../../lmu/liveStandings/socket';
 import type { LmuLivePenaltyChannels } from '../../lmu/liveStandings/penalties';
-import {
-  loadLmuTrackMap,
-  LmuTrackMapRecorder,
-  LmuTrackMapStorage,
-} from '../../lmu/trackMap';
+import { LmuTrackMapRecorder, LmuTrackMapStorage } from '../../lmu/trackMap';
 import { LmuSectorBoundaryLearner } from '../../lmu/sectorBoundaries';
 import {
   LmuWorldTrackSource,
   LmuWorldTrackStorage,
   worldTrackFitsLap,
 } from '../../lmu/worldTrack';
+import { LmuTrackWidth } from '../../lmu/trackWidth';
+import { defaultLmuTrackGeometry } from '../../lmu/bundledTrackGeometry';
 import { LmuSampleGate } from '../../lmu/sampleGate';
 import { createRaceosClient, type RaceosClient } from '../../lmu/raceos/client';
 import { raceosUsername } from '../../lmu/raceos/parse';
@@ -216,6 +214,7 @@ const gridUsernames = (raw: {
  * them to the overlays. Resolves to the bridge the app drives, as for iRacing.
  */
 const NO_MAP_FRAME: { value: number[] } = { value: [] };
+const NO_ROAD_EDGES: { value: number[] } = { value: [] };
 const TRACKMAP_BURST_RETRY_MS = 120_000;
 
 export async function publishLmuSDKEvents(
@@ -231,7 +230,17 @@ export async function publishLmuSDKEvents(
   const mapRecorder = new LmuTrackMapRecorder();
   const mapRegistration = new LmuMapRegistration();
   let lastMapRegistrationStatus: MapRegistrationStatus = 'collecting';
-  const sectorBoundaries = new LmuSectorBoundaryLearner();
+  const bundledGeometry = defaultLmuTrackGeometry();
+  const learnBundledTracks = process.env.IRDASHIES_LMU_LEARN === '1';
+  if (learnBundledTracks) {
+    logger.info(
+      '[lmuSdkBridge] IRDASHIES_LMU_LEARN=1: learning track width and sector boundaries on bundled tracks too'
+    );
+  }
+  const sectorBoundaries = new LmuSectorBoundaryLearner(
+    (trackName) => bundledGeometry.sectorBoundaries(trackName),
+    learnBundledTracks
+  );
   const worldTrackLogger = {
     info: (message: string) => logger.info(message),
     warn: (message: string) => logger.warn(message),
@@ -249,9 +258,26 @@ export async function publishLmuSDKEvents(
   const worldTracks = new LmuWorldTrackSource(
     worldTrackStorage,
     worldTrackLogger,
+    bundledGeometry,
     () => sampleGate.describe()
   );
+  const trackWidth = new LmuTrackWidth(
+    {
+      loadTrackWidth: (trackName) =>
+        worldTracks.storedMatchesActive
+          ? worldTrackStorage.loadTrackWidth(trackName)
+          : undefined,
+      saveTrackWidth: (trackName, width) => {
+        worldTracks.ensureStored();
+        return worldTrackStorage.saveTrackWidth(trackName, width);
+      },
+    },
+    worldTrackLogger,
+    bundledGeometry,
+    learnBundledTracks
+  );
   const radarFrame: { value: number[] } = { value: [] };
+  const roadEdges: { value: number[] } = { value: [] };
   let latestLapDistM = 0;
   let lastTrackMapBurstAt = Number.NEGATIVE_INFINITY;
   let trackMapBurstRereads = false;
@@ -575,16 +601,28 @@ export async function publishLmuSDKEvents(
 
       if (raw.trackName !== activeTrackName) {
         activeTrackName = raw.trackName;
-        worldTracks.setTrack(activeTrackName);
+        trackWidth.setTrack(activeTrackName);
+        worldTracks.setTrack(activeTrackName, raw.lapDist);
         sampleGate.reset();
         lastScoringET = Number.NaN;
         lastSessionNumber = undefined;
         restData.worldTrack = undefined;
         lastTrackMapBurstAt = Number.NEGATIVE_INFINITY;
         trackMapBurstRereads = true;
+        const storedMap = worldTracks.map
+          ? null
+          : mapStorage.load(activeTrackName);
         const loadedMap = worldTracks.map
-          ? { map: worldTracks.map, source: 'world track cache' }
-          : loadLmuTrackMap(activeTrackName, mapStorage);
+          ? {
+              map: worldTracks.map,
+              source:
+                worldTracks.source === 'bundle'
+                  ? 'bundled world track'
+                  : 'world track cache',
+            }
+          : storedMap
+            ? { map: storedMap, source: 'storage' }
+            : null;
         trackMap = loadedMap?.map ?? null;
         mapRecorder.reset(activeTrackName);
         sectorBoundaries.reset(activeTrackName);
@@ -984,6 +1022,36 @@ export async function publishLmuSDKEvents(
           : null;
       telemetry.LmuRadarMapFrame = mapFrame ? radarFrame : NO_MAP_FRAME;
       perfMetrics.markEnd('lmuMapRegistration');
+      perfMetrics.markStart('lmuTrackWidth');
+      trackWidth.update({
+        map: trackMap,
+        fit: mapFit,
+        cacheable: worldFit !== null && mapFit === worldFit,
+        time: pollStartedAt / 1000,
+        scoringTime: raw.currentET,
+        lapDistM: raw.lapDist,
+        posX: raw.vehPosX,
+        posZ: raw.vehPosZ,
+        scoringPosX: raw.vehScoringPosX,
+        scoringPosZ: raw.vehScoringPosZ,
+        playerIdx: radarPlayerIdx,
+        available: raw.vehTelemetryAvailable,
+        pcts: telemetry.CarIdxLapDistPct?.value ?? [],
+        scoringPcts: raw.vehLapDistPct,
+        inPits: raw.vehInPits,
+        speeds: raw.vehSpeed,
+        pathLateral: raw.vehPathLateral,
+        trackEdge: raw.vehTrackEdge,
+        valid: sampleGate.valid,
+      });
+      const radarPlayerPct = telemetry.CarIdxLapDistPct?.value[radarPlayerIdx];
+      telemetry.LmuRadarRoadEdges =
+        mapFrame &&
+        typeof radarPlayerPct === 'number' &&
+        trackWidth.fillRoadEdges(radarPlayerPct, roadEdges.value)
+          ? roadEdges
+          : NO_ROAD_EDGES;
+      perfMetrics.markEnd('lmuTrackWidth');
       processorHost?.onFrame(telemetry);
 
       if (
@@ -1119,6 +1187,7 @@ export async function publishLmuSDKEvents(
       leaveLifecycle();
       unsubscribeOverlayReady?.();
       restPoller.stop();
+      trackWidth.flush();
       void Promise.all([mapStorage.close(), worldTrackStorage.close()]);
       ratingClient.reset();
       // Cache writes are debounced behind an unref'd timer, so a rating

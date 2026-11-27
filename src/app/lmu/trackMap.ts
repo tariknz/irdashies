@@ -1,5 +1,4 @@
 import type { LmuTrackMap } from '@irdashies/types';
-import bundledTrackMaps from './lmu-track-maps.json';
 import { JsonFileStore, type JsonFileStoreLogger } from './jsonFileStore';
 
 const WIDTH = 1920;
@@ -140,107 +139,6 @@ export function normalizeLmuTrackMapWithTransform(
     },
     transform: { scale, minX, minY, offsetX, offsetY },
   };
-}
-
-const normalizeTrackName = (value: string) =>
-  value
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '');
-
-const BUNDLED_LMU_ALIASES: Record<string, string> = {
-  portimao: 'Algarve International Circuit',
-  autodromointernacionaldoalgarve: 'Algarve International Circuit',
-  imola: 'Autodromo Enzo e Dino Ferrari',
-  interlagos: 'Autódromo José Carlos Pace',
-  monza: 'Autodromo Nazionale Monza',
-  barcelona: 'Circuit de Barcelona',
-  circuitdecatalunya: 'Circuit de Barcelona',
-  circuitdebarcelonacatalunya: 'Circuit de Barcelona',
-  lemans: 'Circuit de la Sarthe',
-  circuitdes24heuresdumans: 'Circuit de la Sarthe',
-  lemansnochicane: 'Circuit de la Sarthe Mulsanne',
-  circuitdelasarthemulsannenochicanes: 'Circuit de la Sarthe Mulsanne',
-  cota: 'Circuit of the Americas',
-  spa: 'Circuit de Spa-Francorchamps',
-  spafrancorchamps: 'Circuit de Spa-Francorchamps',
-  spaendurancelayout: 'Circuit de Spa-Francorchamps',
-  fuji: 'Fuji Speedway',
-  fujiclassic: 'Fuji Speedway Classic',
-  qatar: 'Lusail International Circuit',
-  lusail: 'Lusail International Circuit',
-  paulricard: 'Paul Ricard - ELMS',
-  circuitpaulricard: 'Paul Ricard - ELMS',
-  sebring: 'Sebring International Raceway',
-  silverstone: 'Silverstone Grand Prix Circuit - WEC',
-  silverstonegrandprix: 'Silverstone Grand Prix Circuit - WEC',
-  bahrain: 'Bahrain International Circuit',
-  bahraininternationalendurancecircuit: 'Bahrain Endurance Circuit',
-  bahraininternationaloutercircuit: 'Bahrain Outer Circuit',
-  bahraininternationalpaddockcircuit: 'Bahrain Paddock Circuit',
-  daytona: 'Daytona International Speedway Road Course',
-  lagunaseca: 'WeatherTech Raceway Laguna Seca',
-};
-
-const bundledMaps = bundledTrackMaps as unknown as Record<string, LmuTrackMap>;
-
-function findExactBundledLmuTrackMap(normalized: string): LmuTrackMap | null {
-  const exactTitle = Object.keys(bundledMaps).find(
-    (title) => normalizeTrackName(title) === normalized
-  );
-  const alias = BUNDLED_LMU_ALIASES[normalized];
-  return bundledMaps[exactTitle ?? alias] ?? null;
-}
-
-function findPartialBundledLmuTrackMap(normalized: string): LmuTrackMap | null {
-  const partialTitle = Object.keys(bundledMaps)
-    .filter((title) => {
-      const candidate = normalizeTrackName(title);
-      return candidate.includes(normalized) || normalized.includes(candidate);
-    })
-    .sort(
-      (a, b) => normalizeTrackName(b).length - normalizeTrackName(a).length
-    )[0];
-  return partialTitle ? (bundledMaps[partialTitle] ?? null) : null;
-}
-
-export function findBundledLmuTrackMap(trackName: string): LmuTrackMap | null {
-  const normalized = normalizeTrackName(trackName);
-  if (!normalized) return null;
-  return (
-    findExactBundledLmuTrackMap(normalized) ??
-    findPartialBundledLmuTrackMap(normalized)
-  );
-}
-
-export function parseTinyPedalTrackMap(svg: string): LmuTrackMap | null {
-  const pointsAttribute = svg.match(
-    /<polyline\b[^>]*\bid=["']map["'][^>]*\bpoints=["']([^"']+)["']/i
-  )?.[1];
-  if (!pointsAttribute) return null;
-
-  const coordinates = pointsAttribute
-    .trim()
-    .split(/\s+/)
-    .map((pair) => pair.split(',').map(Number))
-    .filter(
-      (pair): pair is [number, number] =>
-        pair.length === 2 && pair.every(Number.isFinite)
-    );
-  if (coordinates.length < MIN_RECORDED_POINTS) return null;
-
-  let distance = 0;
-  const recorded = coordinates.map(([x, y], index) => {
-    if (index > 0) {
-      const [previousX, previousY] = coordinates[index - 1];
-      distance += Math.hypot(x - previousX, y - previousY);
-    }
-    return { x, y, distance };
-  });
-  if (distance <= 0) return null;
-
-  return normalizeLmuTrackMap(recorded, distance);
 }
 
 export class LmuTrackMapRecorder {
@@ -425,22 +323,4 @@ export class LmuTrackMapStorage {
   save(trackName: string, map: LmuTrackMap): void {
     this.store.set(trackName, map);
   }
-}
-
-export function loadLmuTrackMap(
-  trackName: string,
-  storage: LmuTrackMapStorage
-): {
-  map: LmuTrackMap;
-  source: 'bundled' | 'storage';
-} | null {
-  const normalized = normalizeTrackName(trackName);
-  const exact = normalized ? findExactBundledLmuTrackMap(normalized) : null;
-  if (exact) return { map: exact, source: 'bundled' };
-
-  const stored = storage.load(trackName);
-  if (stored) return { map: stored, source: 'storage' };
-
-  const partial = normalized ? findPartialBundledLmuTrackMap(normalized) : null;
-  return partial ? { map: partial, source: 'bundled' } : null;
 }
