@@ -187,6 +187,19 @@ describe('LmuBundledTrackGeometry', () => {
     expect(geometry.worldTrack('Test Oval', LAP * 1.2)).toBeNull();
   });
 
+  it('stretches by the bundled lap, not by the length of its racing line', () => {
+    const geometry = new LmuBundledTrackGeometry({
+      version: TRACK_GEOMETRY_BUNDLE_VERSION,
+      tracks: {
+        'Test Oval': { ...entry, lapDistCm: Math.round(LAP * 1.04 * 100) },
+      },
+    });
+
+    expect(geometry.worldTrack('Test Oval', LAP * 1.08)).not.toBeNull();
+    expect(geometry.worldTrack('Test Oval', LAP * 0.995)).not.toBeNull();
+    expect(geometry.worldTrack('Test Oval', LAP * 0.97)).toBeNull();
+  });
+
   it('finds a track whatever its case and spacing', () => {
     const geometry = new LmuBundledTrackGeometry({
       version: TRACK_GEOMETRY_BUNDLE_VERSION,

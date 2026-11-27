@@ -37,6 +37,31 @@ const geometryFor = (withWidth: boolean) => {
   return geometry;
 };
 
+const geometryWithGap = () => {
+  const gap = (bin: number) => (bin >= 300 && bin < 480 ? 0 : 30);
+  const entry = fixtureCacheEntry(
+    track,
+    fixtureStoredWidth(line, {
+      centreCount: gap,
+      leftCount: gap,
+      rightCount: gap,
+    })
+  );
+  const { bundle } = exportLmuTrackGeometry(
+    [{ file: 'a.json', data: { 'Test Oval': entry } }],
+    undefined,
+    options
+  );
+  const geometry = parseTrackGeometryEntry(bundle.tracks['Test Oval']);
+  if (!geometry) throw new Error('fixture does not parse');
+  return geometry;
+};
+
+const roadPointCount = (svg: string): number => {
+  const road = /<path d="([^"]*)" fill="#334155" fill-rule="evenodd"/.exec(svg);
+  return road ? (road[1].match(/[ML]/g)?.length ?? 0) : 0;
+};
+
 const turns = [
   { number: 1, name: 'First', marker: 0.1 },
   { number: 2, marker: 0.1 },
@@ -65,6 +90,21 @@ describe('renderLmuTrackSvg', () => {
     expect(result.svg).toContain('>T1 First<');
     expect(result.svg).toContain('>T3<');
     expect(result.svg).toContain(`${Math.round(FIXTURE_LAP_M)} m`);
+  });
+
+  it('draws an unknown stretch at the fixed width instead of cutting across it', () => {
+    const full = renderLmuTrackSvg({
+      trackName: 'Test Oval',
+      geometry: geometryFor(true),
+    });
+    const gapped = renderLmuTrackSvg({
+      trackName: 'Test Oval',
+      geometry: geometryWithGap(),
+    });
+
+    expect(gapped.hasWidth).toBe(true);
+    expect(gapped.unknownBins).toBeGreaterThan(0);
+    expect(roadPointCount(gapped.svg)).toBe(roadPointCount(full.svg));
   });
 
   it('keeps corner labels that share a spot from overlapping', () => {

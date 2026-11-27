@@ -6,6 +6,7 @@ import {
 } from './trackWidth';
 import {
   lapDistMatches,
+  lapDistWithinStretch,
   worldTrackFitsLap,
   worldTrackFrom,
   type GroundPoint,
@@ -193,7 +194,7 @@ export class LmuBundledTrackGeometry
     const entry = byName(this.tracks, trackName);
     if (!entry) return null;
     return lapDistMatches(entry.lapDistM, lapDistM) ||
-      worldTrackFitsLap(entry.world.track, lapDistM)
+      lapDistWithinStretch(entry.lapDistM, lapDistM)
       ? entry.world
       : null;
   }

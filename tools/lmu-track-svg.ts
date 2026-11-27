@@ -122,11 +122,13 @@ export function renderLmuTrackSvg(input: TrackSvgInput): TrackSvgResult {
   const widths: number[] = [];
   let unknownBins = 0;
   for (let bin = 0; bin < bins; bin += 1) {
+    const pct = (bin + 0.5) / bins;
     if (!Number.isFinite(left[bin]) || !Number.isFinite(right[bin])) {
       unknownBins += 1;
+      leftEdge.push(at(pct, half));
+      rightEdge.push(at(pct, -half));
       continue;
     }
-    const pct = (bin + 0.5) / bins;
     leftEdge.push(at(pct, left[bin]));
     rightEdge.push(at(pct, right[bin]));
     widths.push(left[bin] - right[bin]);

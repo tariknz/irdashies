@@ -124,6 +124,12 @@ export function parseLmuWorldTrack(
   return worldTrackFrom(racing, pitLane);
 }
 
+export const lapDistWithinStretch = (stored: number, live: number): boolean => {
+  if (!(stored > 0) || !(live > 0)) return false;
+  const ratio = stored / live;
+  return ratio >= MIN_LAP_RATIO && ratio <= MAX_LAP_RATIO;
+};
+
 export function worldTrackFitsLap(
   track: LmuWorldTrack | undefined,
   lapDistM: number

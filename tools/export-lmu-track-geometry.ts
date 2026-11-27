@@ -20,15 +20,30 @@ let outputPath = path.join(
   'lmu-track-geometry.json'
 );
 let createdAt = new Date().toISOString().slice(0, 10);
+const valueAfter = (index: number): string => {
+  const value = args[index + 1];
+  if (value === undefined || value.startsWith('--')) {
+    console.error(`${args[index]} needs a value
+${usage}`);
+    process.exit(1);
+  }
+  return value;
+};
 for (let index = 0; index < args.length; index += 1) {
   const arg = args[index];
   if (arg === '--out') {
-    outputPath = path.resolve(args[++index] ?? '');
+    outputPath = path.resolve(valueAfter(index));
+    index += 1;
   } else if (arg === '--date') {
-    createdAt = args[++index] ?? createdAt;
+    createdAt = valueAfter(index);
+    index += 1;
   } else if (arg === '--sectors') {
-    const file = args[++index];
-    if (file) sectorFiles.push(file);
+    sectorFiles.push(valueAfter(index));
+    index += 1;
+  } else if (arg.startsWith('--')) {
+    console.error(`Unknown option ${arg}
+${usage}`);
+    process.exit(1);
   } else {
     files.push(arg);
   }
@@ -67,6 +82,12 @@ const sectorLogs: SectorLogInput[] = sectorFiles.flatMap((file) => {
   return text === undefined ? [] : [{ file: path.basename(file), text }];
 });
 const existing = fs.existsSync(outputPath) ? readJson(outputPath) : undefined;
+if (fs.existsSync(outputPath) && existing === undefined) {
+  console.error(
+    `${outputPath} exists but could not be read; fix or remove it before exporting`
+  );
+  process.exit(1);
+}
 const packageJson = JSON.parse(
   fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8')
 ) as { version?: string };

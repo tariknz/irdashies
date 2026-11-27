@@ -10,8 +10,10 @@ each machine.
 On a track that is not in the bundle (a new layout), or whose road edges no
 longer fit because LMU changed its lap length by more than 2 m, every session
 learns the edges into the user's own cache. On a bundled track the bundle is
-the only source and nothing is learned or saved. This page is how to turn a
-good cache into a bundled entry.
+the only source, and nothing is learned or saved once the first live samples
+confirm it (see "How the app uses it" below for when it is dropped instead, and
+for `IRDASHIES_LMU_LEARN`). This page is how to turn a good cache into a bundled
+entry.
 
 ## 1. Record a good sample
 
@@ -57,13 +59,14 @@ that has widths. A track with a width is refused unless:
 
 - the track width is of the current version and LMU's lateral sign is decided;
 - 85% or more of the lap has both smoothed edges;
-- 20% or more of the lap has both edges actually measured;
+- 20% or more of the lap has both edges measured or interpolated;
 - it holds at least 2000 samples;
 - its racing line is within 5% of LMU's lap length.
 
 Several files for the same track are merged when they agree on the lap length
-(within 2 m), the lateral sign, and the racing line (length within 0.5%, no
-point more than 2 m from the reference). A file that disagrees is left out and
+(within 2 m), the lateral sign, the racing line (length within 0.5%, no point
+more than 2 m from the reference), and where the lap starts on it (within
+2 m). A file that disagrees is left out and
 named in the report.
 
 Tracks already in the bundle are kept unless a new file replaces them.
@@ -89,23 +92,26 @@ bundle only changes through this tool and a reviewed commit.
   the same track. A cached copy that differs from the bundle is ignored, so a
   corrected bundle reaches every user. Track names match whatever their case
   and spacing. The cache must match LMU's live lap length within 2 m; the
-  bundled racing line is used within 5% of it, stretched to the live lap when
-  it is more than 2 m off, and its road edges then are not.
+  bundled racing line is used while the bundled lap is within 5% of it,
+  stretched to the live lap when it is more than 2 m off, and its road edges
+  then are not.
 - The caches (`lmu-world-tracks.json`, `lmu-track-maps.json`) are read once
   when the LMU bridge starts and written in the background a couple of seconds
   after a change, and on the way out.
 - Road edges on a bundled track come from the bundle alone. The first 200 live
-  samples check it: within 1.5 m (median), learning stops for the session and
-  nothing is saved; further off, the bundle is dropped, the session learns live
-  and saves to the cache, and the log says so, which usually means LMU changed
-  the track.
+  samples, half on each side of the road, check it: with each edge within
+  1.5 m (median), learning stops for the session and nothing is saved; with
+  either edge further off, the bundle is dropped, the session learns live
+  (deciding LMU's lateral sign afresh) and saves to the cache, and the log says
+  so, which usually means LMU changed the track.
 - Sector boundaries on a bundled track come from the bundle and are not
   learned.
 - A track not in the bundle starts from the user's cache and learns road edges
   and sector boundaries live.
 - `IRDASHIES_LMU_LEARN=1` learns on bundled tracks too, starting from the
   cached road edges before the bundle's when the cache holds the bundled
-  racing line.
+  racing line. Cached road edges get the same live check as the bundle: when
+  they disagree they are dropped and learned again.
 
 ## Look at it as SVG
 

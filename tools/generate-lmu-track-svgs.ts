@@ -79,6 +79,19 @@ if (names.length === 0) {
   process.exit(1);
 }
 
+const namesByFile = new Map<string, string[]>();
+for (const trackName of names) {
+  const file = trackSvgFileName(trackName);
+  namesByFile.set(file, [...(namesByFile.get(file) ?? []), trackName]);
+}
+const collisions = [...namesByFile].filter(([, shared]) => shared.length > 1);
+if (collisions.length > 0) {
+  for (const [file, shared] of collisions) {
+    console.error(`${shared.join(' and ')} would both be written to ${file}`);
+  }
+  process.exit(1);
+}
+
 fs.mkdirSync(outputDirectory, { recursive: true });
 for (const trackName of names) {
   const geometry = parseTrackGeometryEntry(raw.tracks?.[trackName]);

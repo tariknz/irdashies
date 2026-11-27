@@ -12,6 +12,12 @@ export const TRACK_WIDTH_STORE_VERSION = 2;
 export const TRACK_WIDTH_BUNDLE_BIN_M = 4;
 export const BUNDLE_CHECK_SAMPLES = 200;
 export const BUNDLE_CHECK_MAX_MEDIAN_M = 1.5;
+const BUNDLE_CHECK_SIDE_SAMPLES = BUNDLE_CHECK_SAMPLES / 2;
+
+const medianOf = (values: Float64Array, count: number): number => {
+  const sorted = values.slice(0, count).sort();
+  return sorted[Math.floor(count / 2)];
+};
 
 const MIN_SIDE_LATERAL_M = 0.5;
 const MIN_HALF_WIDTH_M = 3;
@@ -210,10 +216,20 @@ export interface StoredTrackWidth {
   rightCount: number[];
 }
 
-const intArray = (value: unknown, length: number): number[] | null => {
+const intArray = (
+  value: unknown,
+  length: number,
+  minimum = Number.NEGATIVE_INFINITY
+): number[] | null => {
   if (!Array.isArray(value) || value.length !== length) return null;
   for (const entry of value) {
-    if (typeof entry !== 'number' || !Number.isFinite(entry)) return null;
+    if (
+      typeof entry !== 'number' ||
+      !Number.isFinite(entry) ||
+      entry < minimum
+    ) {
+      return null;
+    }
   }
   return value as number[];
 };
@@ -231,9 +247,9 @@ export function parseStoredTrackWidth(value: unknown): StoredTrackWidth | null {
   const centre = intArray(entry.centre, bins);
   const left = intArray(entry.left, bins);
   const right = intArray(entry.right, bins);
-  const centreCount = intArray(entry.centreCount, bins);
-  const leftCount = intArray(entry.leftCount, bins);
-  const rightCount = intArray(entry.rightCount, bins);
+  const centreCount = intArray(entry.centreCount, bins, 0);
+  const leftCount = intArray(entry.leftCount, bins, 0);
+  const rightCount = intArray(entry.rightCount, bins, 0);
   if (!centre || !left || !right || !centreCount || !leftCount || !rightCount) {
     return null;
   }
@@ -478,8 +494,14 @@ export class LmuTrackWidthProfile {
   private lastCheck: TrackWidthSignCheck | null = null;
   private referenceLeft: Float64Array | null = null;
   private referenceRight: Float64Array | null = null;
-  private readonly referenceDiffs = new Float64Array(BUNDLE_CHECK_SAMPLES);
-  private referenceCount = 0;
+  private readonly referenceLeftDiffs = new Float64Array(
+    BUNDLE_CHECK_SIDE_SAMPLES
+  );
+  private readonly referenceRightDiffs = new Float64Array(
+    BUNDLE_CHECK_SIDE_SAMPLES
+  );
+  private referenceLeftCount = 0;
+  private referenceRightCount = 0;
 
   get sign(): Sign | null {
     return this.signValue;
@@ -578,11 +600,13 @@ export class LmuTrackWidthProfile {
     this.lastCheck = null;
     this.referenceLeft = null;
     this.referenceRight = null;
-    this.referenceCount = 0;
+    this.referenceLeftCount = 0;
+    this.referenceRightCount = 0;
   }
 
   setReference(stored: StoredTrackWidth | null): void {
-    this.referenceCount = 0;
+    this.referenceLeftCount = 0;
+    this.referenceRightCount = 0;
     if (!stored || stored.bins !== this.bins) {
       this.referenceLeft = null;
       this.referenceRight = null;
@@ -603,13 +627,17 @@ export class LmuTrackWidthProfile {
   }
 
   referenceCheck(): { samples: number; medianM: number } | null {
-    if (!this.referenceLeft || this.referenceCount === 0) return null;
-    const sorted = this.referenceDiffs
-      .slice(0, this.referenceCount)
-      .sort((a, b) => a - b);
+    const leftCount = this.referenceLeftCount;
+    const rightCount = this.referenceRightCount;
+    if (!this.referenceLeft || leftCount === 0 || rightCount === 0) {
+      return null;
+    }
     return {
-      samples: this.referenceCount,
-      medianM: sorted[Math.floor(this.referenceCount / 2)],
+      samples: leftCount + rightCount,
+      medianM: Math.max(
+        medianOf(this.referenceLeftDiffs, leftCount),
+        medianOf(this.referenceRightDiffs, rightCount)
+      ),
     };
   }
 
@@ -622,14 +650,21 @@ export class LmuTrackWidthProfile {
   ): void {
     const left = this.referenceLeft;
     const right = this.referenceRight;
-    if (!left || !right || this.referenceCount >= BUNDLE_CHECK_SAMPLES) return;
-    const centre = offset - sign * lateral;
+    if (!left || !right) return;
     const isLeft = sign > 0 ? lateral > 0 : lateral < 0;
+    const count = isLeft ? this.referenceLeftCount : this.referenceRightCount;
+    if (count >= BUNDLE_CHECK_SIDE_SAMPLES) return;
     const reference = isLeft ? left[bin] : right[bin];
     if (!finite(reference)) return;
+    const centre = offset - sign * lateral;
     const edge = isLeft ? centre + halfWidth : centre - halfWidth;
-    this.referenceDiffs[this.referenceCount] = Math.abs(edge - reference);
-    this.referenceCount += 1;
+    if (isLeft) {
+      this.referenceLeftDiffs[count] = Math.abs(edge - reference);
+      this.referenceLeftCount += 1;
+    } else {
+      this.referenceRightDiffs[count] = Math.abs(edge - reference);
+      this.referenceRightCount += 1;
+    }
   }
 
   update(input: TrackWidthSampleInput): boolean {
@@ -1108,7 +1143,9 @@ export class LmuTrackWidthProfile {
     this.edgeDirty.fill(1);
     this.edgeVersion += 1;
     this.dirty = true;
-    this.global(this.lastGlobalTime);
+    this.signValue = null;
+    this.lastCheck = null;
+    this.sinceEvaluation = SIGN_EVALUATE_EVERY_SAMPLES;
   }
 
   private applySeed(stored: StoredTrackWidth, factor: 1 | -1): void {
@@ -1368,7 +1405,8 @@ export class LmuTrackWidth {
   private dirty = false;
   private savedCoverage = 0;
   private lastSaveTime = Number.NEGATIVE_INFINITY;
-  private bundleSeed: StoredTrackWidth | null = null;
+  private checkedSeed: StoredTrackWidth | null = null;
+  private seedSource: 'bundle' | 'cache' = 'bundle';
   private line: LmuDrawnLine | null = null;
   private mode: 'learn' | 'checkBundle' | 'bundle' = 'learn';
   private readonly profile = new LmuTrackWidthProfile();
@@ -1381,7 +1419,7 @@ export class LmuTrackWidth {
   ) {}
 
   get seededFromBundle(): boolean {
-    return this.bundleSeed !== null;
+    return this.checkedSeed !== null && this.seedSource === 'bundle';
   }
 
   get learning(): boolean {
@@ -1411,7 +1449,7 @@ export class LmuTrackWidth {
     this.dirty = false;
     this.savedCoverage = 0;
     this.lastSaveTime = Number.NEGATIVE_INFINITY;
-    this.bundleSeed = null;
+    this.checkedSeed = null;
     this.line = null;
     this.mode = 'learn';
     this.profile.reset(null, 0);
@@ -1465,7 +1503,7 @@ export class LmuTrackWidth {
     this.dirty = false;
     this.savedCoverage = 0;
     this.lastSaveTime = frame.time;
-    this.bundleSeed = null;
+    this.checkedSeed = null;
     this.mode = 'learn';
     const points = frame.map?.active.trackPathPoints;
     const line =
@@ -1492,6 +1530,9 @@ export class LmuTrackWidth {
       this.storage.loadTrackWidth(this.trackName)
     );
     if (!stored || !this.profile.seed(stored)) return false;
+    this.checkedSeed = stored;
+    this.seedSource = 'cache';
+    this.profile.setReference(stored);
     this.savedCoverage = this.profile.coverage();
     this.announced = true;
     this.log.info(
@@ -1505,7 +1546,8 @@ export class LmuTrackWidth {
     if (!entry) return false;
     const stored = storedTrackWidthFromBundle(entry.width, line, lapDistM);
     if (!stored || !this.profile.seed(stored)) return false;
-    this.bundleSeed = stored;
+    this.checkedSeed = stored;
+    this.seedSource = 'bundle';
     this.profile.setReference(stored);
     this.savedCoverage = this.profile.coverage();
     this.announced = true;
@@ -1516,22 +1558,23 @@ export class LmuTrackWidth {
   }
 
   private checkBundle(): void {
-    const seed = this.bundleSeed;
+    const seed = this.checkedSeed;
     if (!seed) return;
     const check = this.profile.referenceCheck();
     if (!check || check.samples < BUNDLE_CHECK_SAMPLES) return;
-    this.bundleSeed = null;
+    this.checkedSeed = null;
     this.profile.setReference(null);
+    const source = this.seedSource === 'bundle' ? 'Bundled' : 'Cached';
     if (check.medianM > BUNDLE_CHECK_MAX_MEDIAN_M) {
       this.profile.unseed(seed);
       this.dirty = true;
       this.mode = 'learn';
       this.log.warn(
-        `[lmuTrackWidth] Bundled track width for ${this.trackName} dropped: live edges are ${check.medianM.toFixed(1)} m from it (median of ${check.samples} samples); learning live only`
+        `[lmuTrackWidth] ${source} track width for ${this.trackName} dropped: live edges are ${check.medianM.toFixed(1)} m from it (median of ${check.samples} samples); learning live only`
       );
       return;
     }
-    const confirmed = `[lmuTrackWidth] Bundled track width for ${this.trackName} confirmed: live edges within ${check.medianM.toFixed(1)} m (median of ${check.samples} samples)`;
+    const confirmed = `[lmuTrackWidth] ${source} track width for ${this.trackName} confirmed: live edges within ${check.medianM.toFixed(1)} m (median of ${check.samples} samples)`;
     if (this.mode !== 'checkBundle') {
       this.log.info(confirmed);
       return;
@@ -1562,11 +1605,11 @@ export class LmuTrackWidth {
   private save(time: number): void {
     const stored = this.profile.export();
     if (!stored || !this.trackName) return;
-    this.dirty = false;
     this.lastSaveTime = time;
     const coverage = this.profile.coverage();
     try {
       if (this.storage.saveTrackWidth(this.trackName, stored)) {
+        this.dirty = false;
         this.savedCoverage = coverage;
         this.log.info(
           `[lmuTrackWidth] Saved track width for ${this.trackName}: ${describeCoverage(this.profile)}; ${describeDiagnostics(this.profile)}`

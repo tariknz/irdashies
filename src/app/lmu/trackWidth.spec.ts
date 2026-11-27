@@ -374,7 +374,9 @@ describe('LmuTrackWidthProfile', () => {
         sign: 1,
         centre: filled(0),
         left: Array.from({ length: bins }, (_, bin) => (bin < 110 ? 40 : 60)),
-        right: filled(60),
+        right: Array.from({ length: bins }, (_, bin) =>
+          bin >= 450 && bin < 550 ? 50 : 60
+        ),
         centreCount: filled(5),
         leftCount: filled(5),
         rightCount: filled(5),
@@ -425,8 +427,9 @@ describe('LmuTrackWidthProfile', () => {
       const profile = seededWithGaps();
       const entry = slotOf(profile, 500, 500);
 
-      expect(entry.left).toBeCloseTo(6, 5);
-      expect(entry.right).toBeCloseTo(-6, 5);
+      expect(entry.left).toBeCloseTo(6, 0);
+      expect(entry.right).toBeCloseTo(-5, 0);
+      expect(entry.left - entry.right).toBeCloseTo(11, 1);
     });
   });
 });
@@ -800,6 +803,34 @@ describe('smoothed road edges', () => {
     expect(parseStoredTrackWidth({ ...stored, version: 1 })).toBeNull();
     expect(parseStoredTrackWidth(stored)).not.toBeNull();
   });
+
+  it('refuses a cached profile with a negative sample count', () => {
+    const stored = learnedProfile().export();
+    if (!stored) throw new Error('profile did not learn');
+    const negative = (counts: number[]) => counts.map((n, i) => (i ? n : -3));
+
+    expect(
+      parseStoredTrackWidth({
+        ...stored,
+        centreCount: negative(stored.centreCount),
+      })
+    ).toBeNull();
+    expect(
+      parseStoredTrackWidth({
+        ...stored,
+        leftCount: negative(stored.leftCount),
+      })
+    ).toBeNull();
+    expect(
+      parseStoredTrackWidth({
+        ...stored,
+        rightCount: negative(stored.rightCount),
+      })
+    ).toBeNull();
+    expect(
+      parseStoredTrackWidth({ ...stored, centre: negative(stored.centre) })
+    ).not.toBeNull();
+  });
 });
 
 describe('lmuOffTrackFlags', () => {
@@ -927,6 +958,24 @@ describe('LmuTrackWidth', () => {
     });
     expect(width.status).toBe('collecting');
     expect(width.fillRoadEdges(0.5, [])).toBe(false);
+  });
+
+  it('saves again on flush when the store turned the last save away', () => {
+    const storage = createStorage();
+    storage.saveTrackWidth.mockReturnValueOnce(false);
+    const width = new LmuTrackWidth(storage, createLog());
+    width.setTrack('Test Oval');
+    for (
+      let time = 0;
+      time < 180 && storage.saveTrackWidth.mock.calls.length === 0;
+      time += 0.2
+    ) {
+      width.update({ ...fieldAt(time), map, fit, cacheable: true });
+    }
+    expect(storage.saveTrackWidth).toHaveBeenCalledTimes(1);
+
+    width.flush();
+    expect(storage.saveTrackWidth).toHaveBeenCalledTimes(2);
   });
 
   it('saves nothing learned on one drawn line against the next one', () => {
@@ -1147,6 +1196,94 @@ describe('LmuTrackWidth', () => {
       expectEdgesNearTruth(learnedFrom(width), 0.4);
       width.flush();
       expect(storage.saves.length).toBeGreaterThan(0);
+    });
+
+    const bundleFrom = (stored: StoredTrackWidth): TrackWidthBundle => {
+      const width = bundledTrackWidthFromStored(
+        stored,
+        line,
+        bundleBinsFor(LAP)
+      );
+      return {
+        trackWidth: (trackName: string) =>
+          trackName === 'Test Oval'
+            ? {
+                width,
+                samples: 1234,
+                smoothedCoverage: 0.9,
+                irdashiesVersion: '3.0.0',
+              }
+            : null,
+      };
+    };
+
+    const mostlyLeft = (carIdx: number, pct: number, time: number) =>
+      racingOffset(pct) +
+      (carIdx % 10 < 7 ? 3 : -3) +
+      Math.sin(carIdx * 1.7 + pct * 40 + time * 0.3);
+
+    it('drops a bundle when one edge is off, even with fewer samples on that side', () => {
+      const log = createLog();
+      const width = new LmuTrackWidth(
+        createStorage(),
+        log,
+        bundleFrom({
+          ...learned,
+          right: learned.right.map((value) => value + 40),
+        })
+      );
+      width.setTrack('Test Oval');
+      for (let time = 0; time < 40; time += 0.2) {
+        width.update({
+          ...fieldAt(time, { lateral: mostlyLeft }),
+          map,
+          fit,
+          cacheable: false,
+        });
+      }
+
+      expect(log.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Bundled track width for Test Oval dropped')
+      );
+    });
+
+    it('learns the lateral sign afresh after dropping a bundle with the wrong one', () => {
+      const width = new LmuTrackWidth(
+        createStorage(),
+        createLog(),
+        bundleFrom({ ...learned, sign: learned.sign === 1 ? -1 : 1 })
+      );
+      width.setTrack('Test Oval');
+      drive(width, 20, false);
+      expect(width.seededFromBundle).toBe(false);
+
+      drive(width, 180, false, { map, fit }, 20);
+      expect(width.sign).toBe(1);
+      expectEdgesNearTruth(learnedFrom(width), 0.4);
+    });
+
+    it('drops a stale cached width when told to learn bundled tracks', () => {
+      const stale = {
+        ...learned,
+        centre: learned.centre.map((value) => value + 30),
+      };
+      const log = createLog();
+      const width = new LmuTrackWidth(
+        createStorage(stale),
+        log,
+        bundleShiftedBy(0),
+        true
+      );
+      width.setTrack('Test Oval');
+      drive(width, 20, true);
+
+      expect(log.warn).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /^\[lmuTrackWidth\] Cached track width for Test Oval dropped: live edges are 3\.\d m from it/
+        )
+      );
+      drive(width, 180, true, { map, fit }, 20);
+      expectEdgesNearTruth(learnedFrom(width), 0.4);
     });
   });
 });

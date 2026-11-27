@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LmuBundledTrackGeometry } from '../src/app/lmu/bundledTrackGeometry';
+import { LmuWorldLine } from '../src/app/lmu/worldTrack';
 import {
   FIXTURE_LAP_M,
   fixtureCacheEntry,
@@ -262,6 +263,61 @@ describe('exportLmuTrackGeometry', () => {
         /^ {2}b\.json: left out, racing line up to 3\.0 m from the reference$/
       )
     );
+  });
+
+  it('leaves out a file whose lap starts elsewhere on the same line', () => {
+    const result = exportLmuTrackGeometry(
+      [
+        cacheFile('a.json'),
+        {
+          file: 'b.json',
+          data: {
+            'Test Oval': fixtureCacheEntry(
+              track,
+              fixtureStoredWidth(line, { centreCount: () => 10 }),
+              12
+            ),
+          },
+        },
+      ],
+      undefined,
+      options
+    );
+
+    expect(result.bundle.tracks['Test Oval'].stats.files).toBe(1);
+    expect(result.report).toContainEqual(
+      expect.stringMatching(
+        /^ {2}b\.json: left out, lap starts 12\.0 m from the reference$/
+      )
+    );
+  });
+
+  it('merges a file whose racing points start elsewhere but whose lap starts at the same place', () => {
+    const shift = Math.floor(track.racing.length / 3);
+    const rotated = {
+      ...track,
+      racing: [...track.racing.slice(shift), ...track.racing.slice(0, shift)],
+    };
+    const along = new LmuWorldLine(track.racing).cumulative[shift];
+    const result = exportLmuTrackGeometry(
+      [
+        cacheFile('a.json'),
+        {
+          file: 'b.json',
+          data: {
+            'Test Oval': fixtureCacheEntry(
+              rotated,
+              fixtureStoredWidth(line),
+              track.lengthM - along
+            ),
+          },
+        },
+      ],
+      undefined,
+      options
+    );
+
+    expect(result.bundle.tracks['Test Oval'].stats.files).toBe(2);
   });
 
   it('writes the same bytes for the same input', () => {

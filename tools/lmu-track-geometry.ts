@@ -152,6 +152,40 @@ const largestLineDistance = (
   return largest;
 };
 
+const pointAlong = (
+  points: readonly GroundPoint[],
+  distanceM: number
+): GroundPoint => {
+  const line = new LmuWorldLine(points);
+  const target = ((distanceM % line.lengthM) + line.lengthM) % line.lengthM;
+  let index = 0;
+  while (index < line.count - 1 && line.cumulative[index + 1] < target) {
+    index += 1;
+  }
+  const from = points[index];
+  const to = points[(index + 1) % line.count];
+  const span = line.cumulative[index + 1] - line.cumulative[index];
+  const amount = span > 0 ? (target - line.cumulative[index]) / span : 0;
+  return {
+    x: from.x + (to.x - from.x) * amount,
+    y: from.y + (to.y - from.y) * amount,
+  };
+};
+
+const lapStartShift = (
+  reference: WidthCandidate,
+  other: WidthCandidate,
+  referenceLine: LmuWorldLine
+): number => {
+  const start = pointAlong(other.world.track.racing, other.world.offsetM);
+  const hit: LineHit = { distance: 0, along: 0, segment: -1 };
+  referenceLine.project(start.x, start.y, -1, hit);
+  const length = referenceLine.lengthM;
+  const shift =
+    (((hit.along - reference.world.offsetM) % length) + length) % length;
+  return Math.min(shift, length - shift);
+};
+
 const disagreement = (
   reference: WidthCandidate,
   other: WidthCandidate,
@@ -175,6 +209,10 @@ const disagreement = (
   const distance = largestLineDistance(referenceLine, other.world.track.racing);
   if (distance >= MAX_LINE_DISTANCE_M) {
     return `racing line up to ${distance.toFixed(1)} m from the reference`;
+  }
+  const shift = lapStartShift(reference, other, referenceLine);
+  if (shift > LAP_MATCH_TOLERANCE_M) {
+    return `lap starts ${shift.toFixed(1)} m from the reference`;
   }
   return null;
 };
