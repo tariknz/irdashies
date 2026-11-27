@@ -4,6 +4,7 @@ const MAX_GAP_S = 1;
 const JUMP_SLACK_M = 30;
 const JUMP_SPEED_SHARE = 0.5;
 const JUMP_HOLD_S = 2;
+const MAX_PLAUSIBLE_SPEED_MS = 120;
 
 export interface SampleGateInput {
   time: number;
@@ -93,12 +94,12 @@ export class LmuSampleGate {
       let travelled = wrap01(pct - previous) * lapDistM;
       if (travelled > lapDistM / 2) travelled -= lapDistM;
       const speed = input.speeds?.[carIdx];
-      const expected =
-        speed !== undefined && Number.isFinite(speed) ? speed * dt : travelled;
-      if (
-        Math.abs(travelled - expected) >
-        JUMP_SLACK_M + JUMP_SPEED_SHARE * Math.abs(expected)
-      ) {
+      const jumped =
+        speed !== undefined && Number.isFinite(speed)
+          ? Math.abs(travelled - speed * dt) >
+            JUMP_SLACK_M + JUMP_SPEED_SHARE * Math.abs(speed * dt)
+          : Math.abs(travelled) > JUMP_SLACK_M + MAX_PLAUSIBLE_SPEED_MS * dt;
+      if (jumped) {
         this.heldUntil[carIdx] = time + JUMP_HOLD_S;
       }
       if (time < this.heldUntil[carIdx]) {
@@ -107,6 +108,7 @@ export class LmuSampleGate {
       }
       this.valid[carIdx] = 1;
     }
+    this.lastPct.fill(Number.NaN, cars);
     this.lastTime = time;
   }
 }

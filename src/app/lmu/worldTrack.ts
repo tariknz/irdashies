@@ -522,8 +522,11 @@ export class LmuWorldTrackStorage {
 const sameTrack = (a: LmuWorldTrack, b: LmuWorldTrack): boolean =>
   a.racing.length === b.racing.length &&
   Math.abs(a.lengthM - b.lengthM) <= SAME_TRACK_TOLERANCE_M &&
-  Math.hypot(a.racing[0].x - b.racing[0].x, a.racing[0].y - b.racing[0].y) <=
-    SAME_TRACK_TOLERANCE_M;
+  a.racing.every(
+    (point, index) =>
+      Math.hypot(point.x - b.racing[index].x, point.y - b.racing[index].y) <=
+      SAME_TRACK_TOLERANCE_M
+  );
 
 export interface WorldTrackLogger {
   info: (message: string) => void;
@@ -664,7 +667,6 @@ export class LmuWorldTrackSource {
 
   private consider(restTrack: LmuWorldTrack, lapDistM: number): void {
     if (!worldTrackFitsLap(restTrack, lapDistM)) {
-      this.settled = true;
       this.log.warn(
         `[lmuWorldTrack] World track for ${this.trackName} is ${restTrack.lengthM.toFixed(0)} m against a ${lapDistM.toFixed(0)} m lap; not used`
       );

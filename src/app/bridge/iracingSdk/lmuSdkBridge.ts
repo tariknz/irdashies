@@ -383,6 +383,7 @@ export async function publishLmuSDKEvents(
   const nationalityWatch = createLmuNationalityWatch();
   let activeTrackName = '';
   let trackMap: LmuTrackMap | null = null;
+  let publishedTrackMap: LmuTrackMap | null = null;
   let lastBlindSpotDataIssue: string | null | undefined;
   // Lifts the player's lap fraction from LMU's 5 Hz scoring block to the poll
   // rate. Held across frames, and reset only at the two real discontinuities
@@ -752,6 +753,7 @@ export async function publishLmuSDKEvents(
           // does and cannot be shown to have changed.
           perfMetrics.markStart('mapSession');
           const mapStartedAt = performance.now();
+          publishedTrackMap = trackMap;
           session = mapLmuSession(
             rawSession,
             trackMap,
@@ -877,6 +879,7 @@ export async function publishLmuSDKEvents(
       latestLapDistM = raw.lapDist;
       perfMetrics.markStart('lmuWorldTrack');
       const sessionRestarted =
+        sessionChange !== null ||
         (lastSessionNumber !== undefined &&
           raw.session !== lastSessionNumber) ||
         raw.currentET < lastScoringET - 1;
@@ -967,7 +970,10 @@ export async function publishLmuSDKEvents(
       const radarPlayerIdx = raw.playerHasVehicle ? raw.playerVehicleIdx : -1;
       const radarPlayerYaw = telemetry.LmuPlayerYaw?.value[0];
       const mapFrame =
-        mapFit && radarPlayerIdx >= 0 && typeof radarPlayerYaw === 'number'
+        mapFit &&
+        trackMap === publishedTrackMap &&
+        radarPlayerIdx >= 0 &&
+        typeof radarPlayerYaw === 'number'
           ? radarMapFrame(
               mapFit,
               raw.vehPosX[radarPlayerIdx],

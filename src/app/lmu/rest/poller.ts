@@ -537,6 +537,7 @@ export function createLmuRestPoller({
     /** Re-runs the one-shot tasks, for a track or session change. */
     invalidateOnce: () => {
       if (stopped) return;
+      generation += 1;
       tasks.forEach((task) => {
         if (task.mode !== 'once') return;
         const state = stateOf(task);

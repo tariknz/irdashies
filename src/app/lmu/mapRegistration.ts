@@ -84,6 +84,7 @@ export class LmuMapRegistration {
   private readonly residuals = new Float64Array(RESERVOIR_SIZE);
   private readonly sorted = new Float64Array(RESERVOIR_SIZE);
   private readonly inliers = new Uint8Array(RESERVOIR_SIZE);
+  private readonly bins = new Uint8Array(RESERVOIR_SIZE);
   private readonly point = { x: 0, y: 0 };
   private currentStatus: MapRegistrationStatus = 'collecting';
   private currentFit: MapRegistrationFit | null = null;
@@ -195,8 +196,8 @@ export class LmuMapRegistration {
       const m = mapPointAt(points, pct, this.point);
       this.n += 1;
       this.sinceEvaluation += 1;
-      this.coverage |=
-        1 << Math.min(COVERAGE_BINS - 1, Math.floor(pct * COVERAGE_BINS));
+      const bin = Math.min(COVERAGE_BINS - 1, Math.floor(pct * COVERAGE_BINS));
+      this.coverage |= 1 << bin;
       let slot = -1;
       if (this.stored < RESERVOIR_SIZE) {
         slot = this.stored;
@@ -210,16 +211,25 @@ export class LmuMapRegistration {
         this.my[slot] = m.y;
         this.wx[slot] = wx;
         this.wy[slot] = wy;
+        this.bins[slot] = bin;
       }
     }
   }
 
-  private coveredBins(): number {
+  private coveredBins(coverage = this.coverage): number {
     let bins = 0;
     for (let bit = 0; bit < COVERAGE_BINS; bit += 1) {
-      if (this.coverage & (1 << bit)) bins += 1;
+      if (coverage & (1 << bit)) bins += 1;
     }
     return bins;
+  }
+
+  private inlierCoverage(): number {
+    let coverage = 0;
+    for (let index = 0; index < this.stored; index += 1) {
+      if (this.inliers[index] === 1) coverage |= 1 << this.bins[index];
+    }
+    return this.coveredBins(coverage);
   }
 
   private solve(
@@ -333,7 +343,8 @@ export class LmuMapRegistration {
     if (
       attempt.rmsM <= MAX_RMS_M &&
       scaleOk &&
-      inlierShare >= MIN_INLIER_SHARE
+      inlierShare >= MIN_INLIER_SHARE &&
+      this.inlierCoverage() >= MIN_COVERED_BINS
     ) {
       this.currentFit = attempt;
       this.currentStatus = 'accepted';

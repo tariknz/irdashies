@@ -81,9 +81,14 @@ const restState = vi.hoisted(() => ({
   },
 }));
 
+const trackMapState = vi.hoisted(() => ({
+  bundled: null as unknown,
+}));
+
 const worldTrackState = vi.hoisted(() => ({
   map: null as unknown,
   setTrack: vi.fn(),
+  restart: vi.fn(),
 }));
 
 /** Shared so the specs can observe how the bridge drives them. */
@@ -178,7 +183,10 @@ vi.mock('../../processors/processorRegistry', () => ({
 
 // Keeps the track-map work off the filesystem.
 vi.mock('../../lmu/trackMap', () => ({
-  loadLmuTrackMap: () => null,
+  loadLmuTrackMap: () =>
+    trackMapState.bundled
+      ? { map: trackMapState.bundled, source: 'bundled' }
+      : null,
   LmuTrackMapRecorder: class {
     reset = recorderReset;
     update = recorderUpdate;
@@ -200,6 +208,7 @@ vi.mock('../../lmu/worldTrack', () => ({
   },
   LmuWorldTrackSource: class {
     setTrack = worldTrackState.setTrack;
+    restart = worldTrackState.restart;
     update = vi.fn(() => false);
     get map() {
       return worldTrackState.map;
@@ -563,6 +572,7 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
     restState.data.revision = 0;
     restState.data.session = {};
     worldTrackState.map = null;
+    trackMapState.bundled = null;
   });
 
   it('asks for the world track once LMU is up, reading the body afresh', async () => {
@@ -583,6 +593,7 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
   it('publishes the cached world track ahead of the bundled map', async () => {
     const worldMap = { marker: 'world track' };
     worldTrackState.map = worldMap;
+    trackMapState.bundled = { marker: 'bundled map' };
     const overlayManager = createOverlayManager();
     const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
     const bridge = await publishLmuSDKEvents(overlayManager);
@@ -644,13 +655,14 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
     bridge.stop();
   });
 
-  it('restarts the track-map recording when a new session starts on the same track', async () => {
+  it('restarts the track-map recording and world track checks when a new session starts on the same track', async () => {
     const overlayManager = createOverlayManager();
     const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
     const bridge = await publishLmuSDKEvents(overlayManager);
 
     await vi.waitFor(() => expect(sessionPublishCount(overlayManager)).toBe(1));
     const resetsBefore = recorderReset.mock.calls.length;
+    const restartsBefore = worldTrackState.restart.mock.calls.length;
 
     sdkState.sessionEndEvents = 1;
 
@@ -658,6 +670,9 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
       expect(recorderReset.mock.calls.length).toBeGreaterThan(resetsBefore)
     );
     expect(recorderReset).toHaveBeenLastCalledWith(rawFrame().trackName);
+    expect(worldTrackState.restart.mock.calls.length).toBeGreaterThan(
+      restartsBefore
+    );
     bridge.stop();
   });
 

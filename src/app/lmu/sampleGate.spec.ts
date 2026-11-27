@@ -56,6 +56,32 @@ describe('LmuSampleGate', () => {
     expect(gate.describe()).toContain('2 car samples before the start line');
   });
 
+  it('starts a car that left the frame afresh when it comes back', () => {
+    const gate = new LmuSampleGate();
+    const pct = driveTo(gate, 0, 1);
+    gate.update(frame(1, [pct]));
+    gate.update(frame(1.01, [pct + 0.004, 0.3 + (SPEED * 1.01) / LAP_M]));
+
+    expect(gate.valid[1]).toBe(0);
+    expect(gate.counts.jumping).toBe(0);
+
+    gate.update(frame(1.02, [pct + 0.0041, 0.3 + (SPEED * 1.02) / LAP_M]));
+    expect(gate.valid[1]).toBe(1);
+  });
+
+  it('holds back a jump of a car whose speed is unknown', () => {
+    const gate = new LmuSampleGate();
+    const noSpeed = { speeds: undefined };
+    gate.update(frame(0, [0.1], noSpeed));
+    gate.update(frame(0.01, [0.1001], noSpeed));
+    expect(gate.valid[0]).toBe(1);
+
+    gate.update(frame(0.02, [0.3], noSpeed));
+    expect(gate.valid[0]).toBe(0);
+    gate.update(frame(0.03, [0.3001], noSpeed));
+    expect(gate.valid[0]).toBe(0);
+  });
+
   it('holds back a car that jumps along the lap for two seconds', () => {
     const gate = new LmuSampleGate();
     const pct = driveTo(gate, 0, 1);

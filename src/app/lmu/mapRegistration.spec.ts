@@ -130,6 +130,40 @@ describe('LmuMapRegistration', () => {
     expect(registration.fit?.rmsM).toBeLessThan(4);
   });
 
+  it('rejects a fit that only one part of the lap supports', () => {
+    const registration = new LmuMapRegistration();
+    for (let time = 0; time < 120; time += 0.05) {
+      const posX: number[] = [];
+      const posZ: number[] = [];
+      const pcts: number[] = [];
+      for (let carIdx = 0; carIdx < CAR_COUNT; carIdx += 1) {
+        const onFirstPart = carIdx < 22;
+        const pct = onFirstPart
+          ? 0.01 + ((carIdx / 22 + time * 0.01) % 1) * 0.28
+          : 0.3 + (((carIdx - 22) / 2 + time * 0.01) % 1) * 0.69;
+        const point = track.at(pct);
+        const shift = onFirstPart ? 0 : 200;
+        posX.push(point.x + shift);
+        posZ.push(-(point.y + shift));
+        pcts.push(pct);
+      }
+      registration.update({
+        map,
+        time,
+        trackLengthM: track.length,
+        posX,
+        posZ,
+        available: posX.map(() => 1),
+        pcts,
+        speeds: posX.map(() => 50),
+      });
+      if (registration.status !== 'collecting') break;
+    }
+
+    expect(registration.lastAttempt?.inlierShare).toBeGreaterThan(0.7);
+    expect(registration.status).toBe('rejected');
+  });
+
   it('fits a map whose handedness is flipped', () => {
     const mirroredMap: LmuTrackMap = {
       ...map,

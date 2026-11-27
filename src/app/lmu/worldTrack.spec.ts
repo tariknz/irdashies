@@ -385,6 +385,26 @@ describe('LmuWorldTrackSource', () => {
     expect(stored?.track.racing).toHaveLength(155);
   });
 
+  it('checks a live track again when only its length and start match the cache', () => {
+    const first = new LmuWorldTrackSource(storage, log);
+    first.setTrack('Algarve International Circuit');
+    drive(first, track);
+    const start = track.racing[0];
+    const reflected = worldTrackFrom(
+      track.racing.map((point) => ({ x: 2 * start.x - point.x, y: point.y })),
+      track.pitLane
+    ) as LmuWorldTrack;
+
+    const next = new LmuWorldTrackSource(storage, log);
+    next.setTrack('Algarve International Circuit');
+    log.info.mockClear();
+    drive(next, reflected);
+
+    expect(log.info).not.toHaveBeenCalledWith(
+      expect.stringContaining('matches the cached one')
+    );
+  });
+
   it('starts from the cached track and keeps it when the live one matches', () => {
     const first = new LmuWorldTrackSource(storage, log);
     first.setTrack('Algarve International Circuit');
@@ -486,10 +506,19 @@ describe('LmuWorldTrackSource', () => {
 
     expect(drive(source, track, 3083.3)).toBe(false);
     expect(source.map).toBeNull();
-    expect(source.wantsLiveTrack).toBe(false);
     expect(log.warn).toHaveBeenCalledWith(
       expect.stringContaining('against a 3083 m lap; not used')
     );
+    expect(source.wantsLiveTrack).toBe(true);
+  });
+
+  it('still takes the right track after one whose length is not the lap', () => {
+    const source = new LmuWorldTrackSource(storage, log);
+    source.setTrack('Algarve International Circuit');
+
+    expect(drive(source, track, 3083.3)).toBe(false);
+    expect(drive(source, algarve())).toBe(true);
+    expect(source.source).toBe('live');
   });
 
   it('waits for the lap length before judging a live track', () => {

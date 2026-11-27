@@ -283,6 +283,35 @@ describe('createLmuRestPoller', () => {
     expect(calls.filter((p) => p === '/rest/sessions')).toHaveLength(2);
   });
 
+  it('drops a response requested before invalidateOnce and asks again', async () => {
+    const data = createLmuRestData();
+    const pending: ((response: LmuRestResponse) => void)[] = [];
+    const calls: string[] = [];
+    const transport: LmuRestTransport = (path) => {
+      calls.push(path);
+      return new Promise((resolve) => pending.push(resolve));
+    };
+    const poller = createLmuRestPoller({
+      data,
+      transport,
+      tasks: [sessionTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    expect(calls).toHaveLength(1);
+
+    poller.invalidateOnce();
+    pending[0](ok('{"scale":6}'));
+    await advance(0);
+    expect(data.session.timeScale).toBeUndefined();
+    expect(calls).toHaveLength(2);
+
+    pending[1](ok('{"scale":8}'));
+    await advance(0);
+    expect(data.session.timeScale).toBe(8);
+  });
+
   it('retries a failing task, then gives up and logs once', async () => {
     const logger = { info: vi.fn(), warn: vi.fn() };
     // Timeout rather than refused: a refusal on a first request means the whole
