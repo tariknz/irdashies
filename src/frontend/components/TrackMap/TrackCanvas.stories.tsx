@@ -5,7 +5,7 @@ import { availableTrackIds } from '@irdashies/domain/track';
 import { BROKEN_TRACKS } from '@irdashies/domain/track/tracks/brokenTracks';
 import { useSessionStore, useTelemetryStore } from '@irdashies/context';
 import type { LmuTrackMap, Session, Telemetry } from '@irdashies/types';
-import lmuTrackMapStoryData from './lmuTrackMapStoryData.json';
+import lmuTrackMapStoryData from '@irdashies/domain/track/lmuTrackMapFixture.json';
 import { useTrackId } from './hooks/useTrackId';
 import {
   ChannelSnapshotDecorator,

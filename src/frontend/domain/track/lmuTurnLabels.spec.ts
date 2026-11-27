@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { lmuCorners, lmuTurnLabels } from './lmuTurnLabels';
 import type { TrackDrawing } from './trackDrawing';
-import lmuTrackMapStoryData from '../../components/TrackMap/lmuTrackMapStoryData.json';
+import lmuTrackMapStoryData from './lmuTrackMapFixture.json';
 
 const CENTRE = { x: 960, y: 540 };
 const RADIUS = 400;

@@ -8,7 +8,7 @@ import {
   useTrackDrawing,
   type TrackGeometry,
 } from '@irdashies/domain/track';
-import lmuTrackMapStoryData from '../TrackMap/lmuTrackMapStoryData.json';
+import lmuTrackMapStoryData from '@irdashies/domain/track/lmuTrackMapFixture.json';
 import {
   RadarDisplay,
   type RadarCarAppearance,
