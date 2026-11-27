@@ -12,13 +12,40 @@ export const TRACK_WIDTH_STORE_VERSION = 2;
 export const TRACK_WIDTH_BUNDLE_BIN_M = 4;
 export const BUNDLE_CHECK_SAMPLES = 200;
 export const BUNDLE_CHECK_MAX_MEDIAN_M = 1.5;
-const BUNDLE_CHECK_SIDE_SAMPLES = BUNDLE_CHECK_SAMPLES / 2;
+const BUNDLE_CHECK_STRETCHES = 20;
+const BUNDLE_CHECK_STRETCH_SAMPLES =
+  BUNDLE_CHECK_SAMPLES / BUNDLE_CHECK_STRETCHES;
+const BUNDLE_CHECK_STRETCH_MIN_SAMPLES = 3;
+const BUNDLE_CHECK_COVERED_STRETCHES = 16;
 
 interface ReferenceVerdict {
   agrees: boolean;
   samples: number;
   medianM: number;
 }
+
+interface ReferenceSide {
+  diffs: Float64Array;
+  counts: Int32Array;
+}
+
+const createReferenceSide = (): ReferenceSide => ({
+  diffs: new Float64Array(BUNDLE_CHECK_SAMPLES),
+  counts: new Int32Array(BUNDLE_CHECK_STRETCHES),
+});
+
+const medianOfSide = (side: ReferenceSide): number => {
+  const values: number[] = [];
+  for (let stretch = 0; stretch < BUNDLE_CHECK_STRETCHES; stretch += 1) {
+    const start = stretch * BUNDLE_CHECK_STRETCH_SAMPLES;
+    for (let index = 0; index < side.counts[stretch]; index += 1) {
+      values.push(side.diffs[start + index]);
+    }
+  }
+  if (values.length === 0) return 0;
+  values.sort((a, b) => a - b);
+  return values[Math.floor(values.length / 2)];
+};
 
 const medianOf = (values: Float64Array, count: number): number => {
   const sorted = values.slice(0, count).sort();
@@ -500,14 +527,10 @@ export class LmuTrackWidthProfile {
   private lastCheck: TrackWidthSignCheck | null = null;
   private referenceLeft: Float64Array | null = null;
   private referenceRight: Float64Array | null = null;
-  private readonly referenceLeftDiffs = new Float64Array(
-    BUNDLE_CHECK_SIDE_SAMPLES
-  );
-  private readonly referenceRightDiffs = new Float64Array(
-    BUNDLE_CHECK_SIDE_SAMPLES
-  );
-  private referenceLeftCount = 0;
-  private referenceRightCount = 0;
+  private readonly referenceSides = [
+    createReferenceSide(),
+    createReferenceSide(),
+  ];
 
   get sign(): Sign | null {
     return this.signValue;
@@ -606,13 +629,15 @@ export class LmuTrackWidthProfile {
     this.lastCheck = null;
     this.referenceLeft = null;
     this.referenceRight = null;
-    this.referenceLeftCount = 0;
-    this.referenceRightCount = 0;
+    this.clearReferenceSamples();
+  }
+
+  private clearReferenceSamples(): void {
+    for (const side of this.referenceSides) side.counts.fill(0);
   }
 
   setReference(stored: StoredTrackWidth | null): void {
-    this.referenceLeftCount = 0;
-    this.referenceRightCount = 0;
+    this.clearReferenceSamples();
     if (!stored || stored.bins !== this.bins) {
       this.referenceLeft = null;
       this.referenceRight = null;
@@ -634,27 +659,35 @@ export class LmuTrackWidthProfile {
 
   referenceCheck(): ReferenceVerdict | null {
     if (!this.referenceLeft) return null;
-    const sides = [
-      { diffs: this.referenceLeftDiffs, count: this.referenceLeftCount },
-      { diffs: this.referenceRightDiffs, count: this.referenceRightCount },
-    ];
     let worst = 0;
-    for (const { diffs, count } of sides) {
-      if (count < BUNDLE_CHECK_SIDE_SAMPLES) continue;
-      const medianM = medianOf(diffs, count);
-      if (medianM > BUNDLE_CHECK_MAX_MEDIAN_M) {
-        return { agrees: false, samples: count, medianM };
+    let samples = 0;
+    let covered = true;
+    for (const side of this.referenceSides) {
+      let coveredStretches = 0;
+      for (let stretch = 0; stretch < BUNDLE_CHECK_STRETCHES; stretch += 1) {
+        const count = side.counts[stretch];
+        samples += count;
+        if (count >= BUNDLE_CHECK_STRETCH_MIN_SAMPLES) coveredStretches += 1;
+        if (count < BUNDLE_CHECK_STRETCH_SAMPLES) continue;
+        const medianM = medianOf(
+          side.diffs.subarray(
+            stretch * BUNDLE_CHECK_STRETCH_SAMPLES,
+            (stretch + 1) * BUNDLE_CHECK_STRETCH_SAMPLES
+          ),
+          count
+        );
+        if (medianM > BUNDLE_CHECK_MAX_MEDIAN_M) {
+          return { agrees: false, samples: count, medianM };
+        }
       }
-      worst = Math.max(worst, medianM);
+      if (coveredStretches < BUNDLE_CHECK_COVERED_STRETCHES) covered = false;
+      worst = Math.max(worst, medianOfSide(side));
     }
-    if (sides.some(({ count }) => count < BUNDLE_CHECK_SIDE_SAMPLES)) {
-      return null;
+    if (!covered) return null;
+    if (worst > BUNDLE_CHECK_MAX_MEDIAN_M) {
+      return { agrees: false, samples, medianM: worst };
     }
-    return {
-      agrees: true,
-      samples: this.referenceLeftCount + this.referenceRightCount,
-      medianM: worst,
-    };
+    return { agrees: true, samples, medianM: worst };
   }
 
   private recordReference(
@@ -668,19 +701,21 @@ export class LmuTrackWidthProfile {
     const right = this.referenceRight;
     if (!left || !right) return;
     const isLeft = sign > 0 ? lateral > 0 : lateral < 0;
-    const count = isLeft ? this.referenceLeftCount : this.referenceRightCount;
-    if (count >= BUNDLE_CHECK_SIDE_SAMPLES) return;
+    const side = this.referenceSides[isLeft ? 0 : 1];
+    const stretch = Math.min(
+      BUNDLE_CHECK_STRETCHES - 1,
+      Math.floor((bin * BUNDLE_CHECK_STRETCHES) / this.bins)
+    );
+    const count = side.counts[stretch];
+    if (count >= BUNDLE_CHECK_STRETCH_SAMPLES) return;
     const reference = isLeft ? left[bin] : right[bin];
     if (!finite(reference)) return;
     const centre = offset - sign * lateral;
     const edge = isLeft ? centre + halfWidth : centre - halfWidth;
-    if (isLeft) {
-      this.referenceLeftDiffs[count] = Math.abs(edge - reference);
-      this.referenceLeftCount += 1;
-    } else {
-      this.referenceRightDiffs[count] = Math.abs(edge - reference);
-      this.referenceRightCount += 1;
-    }
+    side.diffs[stretch * BUNDLE_CHECK_STRETCH_SAMPLES + count] = Math.abs(
+      edge - reference
+    );
+    side.counts[stretch] = count + 1;
   }
 
   update(input: TrackWidthSampleInput): boolean {

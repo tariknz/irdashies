@@ -1083,7 +1083,7 @@ describe('LmuTrackWidth', () => {
       expect(width.learning).toBe(false);
       expect(log.info).toHaveBeenCalledWith(
         expect.stringMatching(
-          /^\[lmuTrackWidth\] Bundled track width for Test Oval confirmed: live edges within 1\.\d m \(median of 200 samples\); learning off$/
+          /^\[lmuTrackWidth\] Bundled track width for Test Oval confirmed: live edges within 1\.\d m \(median of \d+ samples\); learning off$/
         )
       );
 
@@ -1156,7 +1156,7 @@ describe('LmuTrackWidth', () => {
       expect(width.seededFromBundle).toBe(false);
       expect(log.warn).toHaveBeenCalledWith(
         expect.stringMatching(
-          /^\[lmuTrackWidth\] Bundled track width for Test Oval dropped: live edges are 3\.\d m from it \(median of 100 samples\); learning live only$/
+          /^\[lmuTrackWidth\] Bundled track width for Test Oval dropped: live edges are 3\.\d m from it \(median of \d+ samples\); learning live only$/
         )
       );
       drive(width, 180, false, { map, fit }, 20);
@@ -1261,6 +1261,53 @@ describe('LmuTrackWidth', () => {
           cacheable: false,
         });
       }
+
+      expect(width.seededFromBundle).toBe(false);
+      expect(log.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Bundled track width for Test Oval dropped')
+      );
+    });
+
+    it('confirms nothing from one short stretch, and drops a bundle wrong further round', () => {
+      const bins = learned.bins;
+      const widened = (values: number[]) =>
+        values.map((value, bin) =>
+          bin >= Math.floor(bins * 0.6) && bin < Math.floor(bins * 0.7)
+            ? value + 40
+            : value
+        );
+      const log = createLog();
+      const width = new LmuTrackWidth(
+        createStorage(),
+        log,
+        bundleFrom({
+          ...learned,
+          left: widened(learned.left),
+          right: widened(learned.right),
+        })
+      );
+      width.setTrack('Test Oval');
+      let time = 0;
+      for (; time < 120; time += 0.2) {
+        const field = fieldAt(time);
+        width.update({
+          ...field,
+          available: Array.from(field.pcts, (pct) =>
+            Number(pct) >= 0.1 && Number(pct) < 0.15 ? 1 : 0
+          ),
+          map,
+          fit,
+          cacheable: false,
+        });
+      }
+
+      expect(width.learning).toBe(true);
+      expect(width.seededFromBundle).toBe(true);
+      expect(log.info).not.toHaveBeenCalledWith(
+        expect.stringContaining('confirmed')
+      );
+
+      drive(width, 60, false, { map, fit }, time);
 
       expect(width.seededFromBundle).toBe(false);
       expect(log.warn).toHaveBeenCalledWith(

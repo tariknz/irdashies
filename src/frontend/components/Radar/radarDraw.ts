@@ -127,6 +127,10 @@ const drawRoadBetweenEdges = (
   strokeTrace(ctx, rightX, rightY, count);
 };
 
+export const isBesideUs = (measuredLateralM: number | undefined): boolean =>
+  measuredLateralM === undefined ||
+  Math.abs(measuredLateralM) <= WORLD_WARNING_MAX_LATERAL_M;
+
 export const drawnRoadLateral = (
   throughMapFrame: boolean,
   roadLane: number,
@@ -409,9 +413,7 @@ export const drawRadar = (
     }
 
     const measuredLateral = car.world ? car.lateral : undefined;
-    const besideUs =
-      measuredLateral === undefined ||
-      Math.abs(measuredLateral) <= WORLD_WARNING_MAX_LATERAL_M;
+    const besideUs = isBesideUs(measuredLateral);
     if (style.showOverlap && besideUs && Math.abs(car.lane) >= 0.5) {
       const overlap = overlapOf(car.dist, car.length, style.carLength);
       if (overlap?.onRival) {
@@ -460,7 +462,7 @@ export const drawRadar = (
       style.cautionDistance,
       measuredLateral
     );
-    const dive = scene.dives?.get(car.carIdx);
+    const dive = besideUs ? scene.dives?.get(car.carIdx) : undefined;
     let diveArcCar = -1;
     if (dive) {
       const carX = pose.x;

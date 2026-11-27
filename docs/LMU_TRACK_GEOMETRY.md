@@ -99,12 +99,13 @@ bundle only changes through this tool and a reviewed commit.
   when the LMU bridge starts and written in the background a couple of seconds
   after a change, and on the way out.
 - Road edges on a bundled track come from the bundle alone. Live samples check
-  each edge on its own: as soon as 100 samples on one side put that edge more
-  than 1.5 m (median) from the bundle, the bundle is dropped, the session
-  learns live (deciding LMU's lateral sign afresh) and saves to the cache, and
-  the log says so, which usually means LMU changed the track. Once both sides
-  have 100 samples within 1.5 m, learning stops for the session and nothing is
-  saved.
+  each edge on its own, in 20 stretches of the lap: as soon as 10 samples in
+  one stretch put that edge more than 1.5 m (median) from the bundle, the
+  bundle is dropped, the session learns live (deciding LMU's lateral sign
+  afresh) and saves to the cache, and the log says so, which usually means LMU
+  changed the track. Only once both edges have samples in 16 of the 20
+  stretches, all within 1.5 m, does learning stop for the session, with
+  nothing saved; samples from one part of the lap cannot confirm the rest.
 - Sector boundaries on a bundled track come from the bundle and are not
   learned.
 - A track not in the bundle starts from the user's cache and learns road edges
