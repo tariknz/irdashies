@@ -19,6 +19,7 @@ import { lmuEnergyChannel } from './fuelEnergy';
 import { lmuSessionUniqueId, type LmuSessionIdentity } from './sessionIdentity';
 import {
   estimateLmuLapDistPct,
+  LMU_PHASE_BEFORE_START_LINE,
   lmuCompletedLaps,
   type LmuLapDistanceState,
 } from './lapDistance';
@@ -430,6 +431,8 @@ export function mapLmuTelemetry(
           completedLaps: raw.vehTotalLaps[playerIdx],
           speedMs: raw.speed ?? 0,
           trackLengthM: raw.lapDist ?? 0,
+          beforeStartLine:
+            raw.vehIndividualPhase?.[playerIdx] === LMU_PHASE_BEFORE_START_LINE,
         })
       : scoringLapDistPct;
   // The player's completed laps to go with that position, for LapCompleted
@@ -514,6 +517,7 @@ export function mapLmuTelemetry(
         completedLaps: raw.vehTotalLaps,
         elapsedTimes: raw.vehElapsedTime,
         telemetryAvailable: raw.vehTelemetryAvailable,
+        individualPhases: raw.vehIndividualPhase,
         trackLengthM: raw.lapDist,
         playerCarIdx: playerIdx,
       },

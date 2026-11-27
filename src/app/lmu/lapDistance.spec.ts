@@ -17,6 +17,7 @@ const frame = (overrides: {
   completedLaps?: number;
   speedMs?: number;
   trackLengthM?: number;
+  beforeStartLine?: boolean;
 }) => ({
   scoringPct: overrides.scoringPct ?? 0.5,
   elapsedTime: overrides.elapsedTime,
@@ -24,6 +25,7 @@ const frame = (overrides: {
   completedLaps: overrides.completedLaps,
   speedMs: overrides.speedMs ?? SPEED,
   trackLengthM: overrides.trackLengthM ?? TRACK_M,
+  beforeStartLine: overrides.beforeStartLine,
 });
 
 describe('estimateLmuLapDistPct', () => {
@@ -723,5 +725,91 @@ describe('a lap that turns over before scoring wraps', () => {
     );
 
     expect(after).toBeCloseTo(0.02, 2);
+  });
+});
+
+describe('the race start, before a car first reaches the line', () => {
+  const START_SPEED = 40;
+  const startFrame = (
+    elapsedTime: number,
+    scoringPct: number,
+    beforeStartLine: boolean
+  ) =>
+    frame({
+      elapsedTime,
+      scoringPct,
+      lapNumber: 0,
+      completedLaps: 0,
+      speedMs: START_SPEED,
+      beforeStartLine,
+    });
+
+  it('keeps a car well short of the line moving instead of pinning it to 0', () => {
+    const state = createLmuLapDistanceState();
+    estimateLmuLapDistPct(state, startFrame(100, 0.9, false));
+
+    let pct = 0;
+    for (let i = 1; i <= 100; i += 1) {
+      pct = estimateLmuLapDistPct(state, startFrame(100 + i * 0.02, 0, true));
+    }
+
+    expect(pct).toBeCloseTo(0.9 + (START_SPEED * 2) / TRACK_M, 3);
+  });
+
+  it('keeps two cars short of the line in their order', () => {
+    const ahead = createLmuLapDistanceState();
+    const behind = createLmuLapDistanceState();
+    estimateLmuLapDistPct(ahead, startFrame(100, 0.92, false));
+    estimateLmuLapDistPct(behind, startFrame(100, 0.88, false));
+
+    const aheadPct = estimateLmuLapDistPct(ahead, startFrame(100.2, 0, true));
+    const behindPct = estimateLmuLapDistPct(behind, startFrame(100.2, 0, true));
+
+    expect(aheadPct).toBeGreaterThan(behindPct);
+    expect(behindPct).toBeGreaterThan(0.88);
+  });
+
+  it('does not count the first crossing after the start as a lap', () => {
+    const state = createLmuLapDistanceState();
+    estimateLmuLapDistPct(state, startFrame(100, 0.98, false));
+    let time = 100;
+    for (let i = 0; i < 15; i += 1) {
+      time += 0.02;
+      estimateLmuLapDistPct(state, startFrame(time, 0, true));
+    }
+    time += 0.02;
+    estimateLmuLapDistPct(state, startFrame(time, 0.004, false));
+
+    expect(lmuCompletedLaps(state)).toBe(0);
+  });
+
+  it('counts the next crossing as a lap again', () => {
+    const state = createLmuLapDistanceState();
+    estimateLmuLapDistPct(state, startFrame(100, 0.98, false));
+    estimateLmuLapDistPct(state, startFrame(100.2, 0, true));
+    estimateLmuLapDistPct(state, startFrame(100.4, 0.002, false));
+    estimateLmuLapDistPct(state, startFrame(160, 0.5, false));
+    estimateLmuLapDistPct(state, startFrame(200, 0.99, false));
+    estimateLmuLapDistPct(state, startFrame(200.4, 0.005, false));
+
+    expect(lmuCompletedLaps(state)).toBe(1);
+  });
+
+  it('still takes scoring at 0 far from the line without the start phase', () => {
+    const state = createLmuLapDistanceState();
+    estimateLmuLapDistPct(state, startFrame(100, 0.9, false));
+
+    expect(
+      estimateLmuLapDistPct(state, startFrame(100.2, 0, false))
+    ).toBeCloseTo(0, 3);
+  });
+
+  it('ignores the start phase while scoring still gives a position', () => {
+    const state = createLmuLapDistanceState();
+    estimateLmuLapDistPct(state, startFrame(100, 0.5, true));
+    estimateLmuLapDistPct(state, startFrame(140, 0.99, true));
+    estimateLmuLapDistPct(state, startFrame(140.4, 0.005, false));
+
+    expect(lmuCompletedLaps(state)).toBe(1);
   });
 });

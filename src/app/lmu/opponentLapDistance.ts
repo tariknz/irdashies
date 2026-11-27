@@ -38,6 +38,7 @@
 import {
   createLmuLapDistanceState,
   estimateLmuLapDistPct,
+  LMU_PHASE_BEFORE_START_LINE,
   lmuCompletedLaps,
   type LmuLapDistanceState,
 } from './lapDistance';
@@ -73,6 +74,7 @@ export interface LmuOpponentLapDistanceFrame {
   elapsedTimes: ArrayLike<number> | undefined;
   /** 1 when this slot had a telemetry entry this frame. */
   telemetryAvailable: ArrayLike<number> | undefined;
+  individualPhases?: ArrayLike<number>;
   trackLengthM: number;
   /** Slot the caller fills itself; -1 to integrate every car. */
   playerCarIdx: number;
@@ -102,6 +104,7 @@ export function refineLmuOpponentLapDistPcts(
     completedLaps,
     elapsedTimes,
     telemetryAvailable,
+    individualPhases,
     trackLengthM,
     playerCarIdx,
   } = frame;
@@ -145,6 +148,8 @@ export function refineLmuOpponentLapDistPcts(
       completedLaps: completedLaps?.[carIdx],
       speedMs: speeds[carIdx],
       trackLengthM,
+      beforeStartLine:
+        individualPhases?.[carIdx] === LMU_PHASE_BEFORE_START_LINE,
     });
     const laps = lmuCompletedLaps(carState);
     if (laps !== null) {

@@ -212,3 +212,29 @@ describe('refineLmuOpponentLapDistPcts', () => {
     expect(out[1]).toBeCloseTo(0.01, 5);
   });
 });
+
+describe('refineLmuOpponentLapDistPcts at the race start', () => {
+  it('keeps a car short of the line moving while its phase says it has not started', () => {
+    const state = createLmuOpponentLapDistanceState();
+    const out = [0.9, 0.8];
+    refineLmuOpponentLapDistPcts(
+      state,
+      out,
+      frame({ scoringPcts: [0.9, 0.8], elapsedTimes: [10, 10] })
+    );
+    out[0] = 0;
+    out[1] = 0;
+    refineLmuOpponentLapDistPcts(
+      state,
+      out,
+      frame({
+        scoringPcts: [0, 0],
+        elapsedTimes: [10.2, 10.2],
+        individualPhases: [9, 5],
+      })
+    );
+
+    expect(out[0]).toBeGreaterThan(0.9);
+    expect(out[1]).toBeCloseTo(0, 3);
+  });
+});
