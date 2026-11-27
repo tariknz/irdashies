@@ -40,7 +40,6 @@ export interface SimWidgetSupportConfig {
  */
 export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'battle',
-  'brakepressure',
   'broadcast',
   'broadcastevents',
   'broadcastpodium',
@@ -48,11 +47,11 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'broadcastweather',
   'carsystems',
   'cornername',
-  'cruiseodometer',
   'damage',
   'deltaspeed',
   'fastercarsfrombehind',
   'flag',
+  'flatmap',
   'frictioncircle',
   'fuel',
   'gantry',
@@ -62,6 +61,7 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'input',
   'laptimelog',
   'laptrace',
+  'map',
   'pitlanehelper',
   'radar',
   'rejoin',
@@ -74,8 +74,6 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'shiftlight',
   'slowcarahead',
   'standings',
-  'steeringmeter',
-  'stinthistory',
   'streamchat',
   'suspensionposition',
   'tachometer',
@@ -84,7 +82,6 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   // one widget absent from the settings menu, so there would be no toggle to
   // grey out if it were listed as unsupported.
   'telemetryinspector',
-  'trackclock',
   'tyrepanel',
   // Without its wind cell, which the widget drops under LMU.
   'weather',
@@ -93,11 +90,14 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
 /** Everything else, hidden while LMU is the running sim. */
 export const LMU_DISABLED_WIDGETS: readonly string[] = [
   'blindspotmonitor',
-  'flatmap',
-  'map',
+  'brakepressure',
+  'cruiseodometer',
+  'steeringmeter',
+  'stinthistory',
   // Race plans name drivers by iRacing customer id.
   'stintplan',
   'strategytimeline',
+  'trackclock',
   // LMU simulates no wind: its wind vector is always zero.
   'wind',
 ];
@@ -141,7 +141,7 @@ export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
  * it did, which costs a user their hand edits once per change and is why the
  * number is bumped only for a real one.
  */
-export const SIM_WIDGET_SUPPORT_VERSION = 15;
+export const SIM_WIDGET_SUPPORT_VERSION = 16;
 
 /**
  * Whether a widget is unavailable under the running sim.
