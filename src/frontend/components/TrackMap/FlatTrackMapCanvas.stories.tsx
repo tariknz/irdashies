@@ -480,3 +480,72 @@ export const CirclingAround: Story = {
     drivers: sampleData,
   },
 };
+
+const pitExitArgs = {
+  drivers: sampleData,
+  showCarNumbers: true,
+  driverCircleSize: 40,
+  playerCircleSize: 40,
+  trackmapFontSize: 100,
+  trackLineWidth: 20,
+  trackOutlineWidth: 40,
+  invertTrackColors: false,
+  highlightColor: undefined,
+  driverLivePositions: [0, 0],
+};
+
+export const PitExitEstimate: Story = {
+  args: {
+    ...pitExitArgs,
+    pitExit: {
+      anchorCarIdx: 24,
+      offsetPct: 0.42,
+      nearPct: 0.4,
+      farPct: 0.44,
+      state: 'ok',
+      ahead: { carIdx: 30, gapSeconds: 6.1 },
+      behind: { carIdx: 22, gapSeconds: 2.3 },
+    },
+  },
+};
+
+export const PitExitEstimateShortMap: Story = {
+  args: PitExitEstimate.args,
+  decorators: [
+    (Story) => (
+      <div style={{ width: '100%', height: '60px' }}>
+        <Story />
+      </div>
+    ),
+  ],
+};
+
+export const PitExitEstimateCalibrating: Story = {
+  args: {
+    ...pitExitArgs,
+    pitExit: {
+      anchorCarIdx: 24,
+      offsetPct: 0.42,
+      nearPct: 0.36,
+      farPct: 0.48,
+      state: 'calibrating',
+      ahead: null,
+      behind: null,
+    },
+  },
+};
+
+export const PitExitEstimateUnreliable: Story = {
+  args: {
+    ...pitExitArgs,
+    pitExit: {
+      anchorCarIdx: 24,
+      offsetPct: 0.42,
+      nearPct: 0.39,
+      farPct: 0.45,
+      state: 'unreliable',
+      ahead: null,
+      behind: null,
+    },
+  },
+};

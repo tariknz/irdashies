@@ -1,21 +1,59 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChannelBus } from '../channelBus';
-import type { Session } from '@irdashies/types';
+import { TrackLocation } from '@irdashies/types';
+import type {
+  ChannelPayloads,
+  PitLaneTrackData,
+  PitStopEstimateSnapshot,
+  PitStopModelFile,
+  PitStopReport,
+  ReferenceLap,
+  Session,
+  Telemetry,
+} from '@irdashies/types';
+import type { PitStopModelPersistence } from '../../storage/pitStopModel';
+import type {
+  ProcessorChannel,
+  ProcessorDefinition,
+  ProcessorFactoryContext,
+} from '../../processors/ProcessorHost';
+import type * as ProcessorRegistry from '../../processors/processorRegistry';
 
-const mocks = vi.hoisted(() => ({
-  waitForData: vi.fn(() => true),
-  ready: vi.fn(async () => true),
-  stopSDK: vi.fn(),
-  stopReporting: vi.fn(),
-  sdkWaitEnabled: false,
-  recordSdkWait: vi.fn(),
-  offOverlayReady: vi.fn(),
-  loadRadarPoleSideOverrides: vi.fn(async () => undefined),
-  onFrame: vi.fn(),
-  onSession: vi.fn(),
-  dispose: vi.fn(),
-  getTapeReplayStatus: vi.fn(() => ({ paused: true })),
-}));
+type HostOptions = Parameters<
+  typeof ProcessorRegistry.createDefaultProcessorHost
+>[0];
+
+const mocks = vi.hoisted(() => {
+  const host = { onFrame: vi.fn(), onSession: vi.fn(), dispose: vi.fn() };
+  return {
+    ...host,
+    createHost: vi.fn<(options: HostOptions) => typeof host>(() => host),
+    pitStopFile: {
+      version: 1,
+      transit: {},
+      service: {},
+      overrides: {},
+      order: [],
+    } as PitStopModelFile,
+    addTransit: vi.fn<PitStopModelPersistence['addTransit']>(),
+    addService: vi.fn<PitStopModelPersistence['addService']>(),
+    pitLane: vi.fn<(trackId: string) => Promise<PitLaneTrackData | null>>(
+      async () => ({ pitEntryPct: 0.9, pitExitPct: 0.05 })
+    ),
+    appendPitStopReport: vi.fn<(report: PitStopReport) => Promise<void>>(
+      async () => undefined
+    ),
+    waitForData: vi.fn(() => true),
+    ready: vi.fn(async () => true),
+    stopSDK: vi.fn(),
+    stopReporting: vi.fn(),
+    sdkWaitEnabled: false,
+    recordSdkWait: vi.fn(),
+    offOverlayReady: vi.fn(),
+    loadRadarPoleSideOverrides: vi.fn(async () => undefined),
+    getTapeReplayStatus: vi.fn(() => ({ paused: true })),
+  };
+});
 const session = { WeekendInfo: {} } as Session;
 const telemetry = {
   SessionTime: { value: [42] },
@@ -34,17 +72,26 @@ vi.mock('../../irsdk', () => ({
   },
 }));
 vi.mock('../../processors/processorRegistry', () => ({
-  createDefaultProcessorHost: () => ({
-    onFrame: mocks.onFrame,
-    onSession: mocks.onSession,
-    dispose: mocks.dispose,
-  }),
+  createDefaultProcessorHost: mocks.createHost,
 }));
 vi.mock('../../storage/referenceLaps', () => ({
   getReferenceLap: vi.fn(),
   saveReferenceLap: vi.fn(),
 }));
 vi.mock('../../storage/radarTuning', () => ({ getRadarTuning: vi.fn() }));
+vi.mock('../../storage/pitStopModel', () => ({
+  getPitStopModelStore: (): PitStopModelPersistence => ({
+    read: () => mocks.pitStopFile,
+    addTransit: mocks.addTransit,
+    addService: mocks.addService,
+  }),
+}));
+vi.mock('../../storage/pitLaneData', () => ({
+  getPitLaneDataForTrack: mocks.pitLane,
+}));
+vi.mock('../../storage/pitStopReports', () => ({
+  appendPitStopReport: mocks.appendPitStopReport,
+}));
 vi.mock('../../storage/radarPoleSideOverrides', () => ({
   radarPoleSideOverrides: {},
   loadRadarPoleSideOverrides: mocks.loadRadarPoleSideOverrides,
@@ -259,5 +306,195 @@ describe('paused tape processor demand', () => {
     expect(mocks.ready).not.toHaveBeenCalled();
     expect(mocks.offOverlayReady).not.toHaveBeenCalled();
     expect(mocks.dispose).not.toHaveBeenCalled();
+  });
+});
+
+describe('pit stop estimate during tape playback', () => {
+  const raceSession = {
+    WeekendInfo: {
+      TrackID: 10,
+      SeriesID: 1,
+      TrackLength: '5.00 km',
+      TrackPitSpeedLimit: '60.00 kph',
+      BuildVersion: 'test',
+    },
+    DriverInfo: {
+      DriverCarIdx: 0,
+      DriverCarFuelMaxLtr: 100,
+      DriverCarMaxFuelPct: 1,
+      Drivers: [
+        {
+          CarIdx: 0,
+          CarID: 20,
+          CarClassID: 30,
+          CarPath: 'car-a',
+          CarClassEstLapTime: 100,
+          CarIsPaceCar: 0,
+          IsSpectator: 0,
+        },
+      ],
+    },
+    SessionInfo: { Sessions: [{ SessionNum: 0, SessionType: 'Race' }] },
+  } as unknown as Session;
+
+  const evenLap = (): ReferenceLap => {
+    const points = 100;
+    const pointPos = new Float32Array(points);
+    const times = new Float32Array(points);
+    for (let i = 0; i < points; i++) {
+      pointPos[i] = i / points;
+      times[i] = i;
+    }
+    return {
+      pointPos,
+      times,
+      tangents: new Float32Array(points),
+      interval: 0.01,
+      pointsCount: points,
+      startTime: 0,
+      finishTime: 100,
+      lastTrackedPct: 0.99,
+      isCleanLap: true,
+    };
+  };
+
+  const playerAt = (t: number) => {
+    if (t < 40)
+      return {
+        pct: 0.5 + t * 0.01,
+        pit: false,
+        surface: TrackLocation.OnTrack,
+      };
+    if (t < 50)
+      return {
+        pct: 0.9 + (t - 40) * 0.005,
+        pit: true,
+        surface: TrackLocation.ApproachingPits,
+      };
+    if (t < 70)
+      return { pct: 0.95, pit: true, surface: TrackLocation.InPitStall };
+    if (t < 90)
+      return {
+        pct: (0.95 + (t - 70) * 0.005) % 1,
+        pit: true,
+        surface: TrackLocation.ApproachingPits,
+      };
+    return {
+      pct: (0.05 + (t - 90) * 0.01) % 1,
+      pit: false,
+      surface: TrackLocation.OnTrack,
+    };
+  };
+
+  const frameAt = (t: number): Telemetry => {
+    const player = playerAt(t);
+    return {
+      SessionTime: { value: [t] },
+      SessionNum: { value: [0] },
+      Gear: { value: [1] },
+      CarIdxLap: { value: [3] },
+      SessionFlags: { value: [0] },
+      IsOnTrack: { value: [true] },
+      CarIdxLapDistPct: { value: [player.pct] },
+      CarIdxOnPitRoad: { value: [player.pit] },
+      CarIdxTrackSurface: { value: [player.surface] },
+      PitstopActive: { value: [player.surface === TrackLocation.InPitStall] },
+      FuelLevel: { value: [t < 52 ? 20 : t < 68 ? 20 + 2.5 * (t - 52) : 60] },
+      PitSvFlags: { value: [0x1f] },
+      PitSvFuel: { value: [60] },
+      PitRepairLeft: { value: [0] },
+      PlayerCarTowTime: { value: [0] },
+    } as unknown as Telemetry;
+  };
+
+  const laneOnlyFrame = (t: number): Telemetry =>
+    ({ ...frameAt(t), PitSvFlags: { value: [0] } }) as Telemetry;
+
+  const createEstimate = async (aggregateReplay: boolean) => {
+    const { bridge } = await startBridge();
+    bridge.stop();
+    const options = mocks.createHost.mock.calls[0][0];
+    expect(options.aggregateReplay).toBe(true);
+    const registry = await vi.importActual<typeof ProcessorRegistry>(
+      '../../processors/processorRegistry'
+    );
+    const definition = registry
+      .createProcessorDefinitions(options)
+      .find(
+        (entry): entry is ProcessorDefinition<'pit-stop-estimate.snapshot'> =>
+          entry.channel === 'pit-stop-estimate.snapshot'
+      );
+    const context: ProcessorFactoryContext = {
+      aggregateReplay,
+      sourceReplay: false,
+      snapshot: <K extends ProcessorChannel>(channel: K) =>
+        (channel === 'reference-laps.snapshot'
+          ? {
+              bestLaps: [],
+              persistedLaps: [[30, evenLap()]],
+              sessionNum: 0,
+              version: 1,
+            }
+          : undefined) as ChannelPayloads[K] | undefined,
+    };
+    const processor = definition?.create(context);
+    if (!processor) throw new Error('pit stop estimate is not registered');
+    processor.onLifecycle({ type: 'enter', replay: false });
+    processor.init(raceSession);
+    await vi.advanceTimersByTimeAsync(0);
+    return processor;
+  };
+
+  const runStop = async (aggregateReplay: boolean) => {
+    const processor = await createEstimate(aggregateReplay);
+    const states = new Set<PitStopEstimateSnapshot['state']>();
+    let offsetSeen = false;
+    for (let i = 0; i <= 1100; i++) {
+      processor.onFrame(frameAt(i / 10));
+      const snapshot = processor.snapshot();
+      states.add(snapshot.state);
+      offsetSeen ||= snapshot.offsetPct !== null;
+    }
+    processor.onFrame(laneOnlyFrame(110.1));
+    return { states, offsetSeen, laneLoss: processor.snapshot().lossSeconds };
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.stubEnv('IRDASHIES_TELEMETRY_REPLAY', '/fixture.irdt');
+    vi.clearAllMocks();
+    mocks.waitForData.mockReturnValue(true);
+    mocks.ready.mockReset().mockResolvedValue(true);
+    mocks.loadRadarPoleSideOverrides.mockReset().mockResolvedValue(undefined);
+    mocks.getTapeReplayStatus.mockReturnValue({ paused: true });
+  });
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
+  });
+
+  it('publishes an estimate and learns in memory without saving reports', async () => {
+    const { states, offsetSeen, laneLoss } = await runStop(true);
+    const calibrationOnly = await createEstimate(true);
+    calibrationOnly.onFrame(laneOnlyFrame(110.1));
+    const calibrationLoss = calibrationOnly.snapshot().lossSeconds;
+
+    expect(mocks.pitLane).toHaveBeenCalledWith('10');
+    expect(states.has('calibrating')).toBe(true);
+    expect(offsetSeen).toBe(true);
+    expect(calibrationLoss).not.toBeNull();
+    expect(laneLoss).not.toBeNull();
+    expect(laneLoss).not.toBe(calibrationLoss);
+    expect(mocks.appendPitStopReport).not.toHaveBeenCalled();
+    expect(mocks.addTransit).not.toHaveBeenCalled();
+    expect(mocks.addService).not.toHaveBeenCalled();
+  });
+
+  it('saves the report for the same stop outside tape playback', async () => {
+    await runStop(false);
+
+    expect(mocks.appendPitStopReport).toHaveBeenCalledOnce();
+    expect(mocks.addService).toHaveBeenCalledOnce();
   });
 });

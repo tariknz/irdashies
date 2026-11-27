@@ -497,3 +497,206 @@ export const drawSectorColors = (
 
   ctx.restore();
 };
+
+const PIT_EXIT_BAND_STEPS = 32;
+const PIT_EXIT_LABEL = 'PIT';
+
+const wrapLap = (progress: number) => ((progress % 1) + 1) % 1;
+
+export interface PitExitDrawing {
+  offsetPct: number;
+  nearPct: number;
+  farPct: number;
+  state: 'ok' | 'calibrating' | 'unreliable';
+}
+
+type Project = (progress: number, output: { x: number; y: number }) => void;
+
+/**
+ * The likely rejoin range as a shaded stretch of the track, drawn under the
+ * cars. Dark on a light track and light on a dark one, so it never reads as a
+ * class colour.
+ */
+export const drawPitExitRange = (
+  ctx: CanvasRenderingContext2D,
+  marker: PitExitDrawing,
+  anchorProgress: number,
+  project: Project,
+  width: number,
+  trackIsDark: boolean,
+  scratch: { x: number; y: number }
+) => {
+  const from = wrapLap(anchorProgress - marker.farPct);
+  const span = wrapLap(marker.farPct - marker.nearPct);
+  if (span <= 0) return;
+
+  ctx.save();
+  ctx.shadowColor = 'transparent';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  let previous = -1;
+  for (let step = 0; step <= PIT_EXIT_BAND_STEPS; step++) {
+    const progress = wrapLap(from + (span * step) / PIT_EXIT_BAND_STEPS);
+    if (step === 0) {
+      project(progress, scratch);
+      ctx.moveTo(scratch.x, scratch.y);
+    } else {
+      if (progress < previous) {
+        project(1, scratch);
+        ctx.lineTo(scratch.x, scratch.y);
+        project(0, scratch);
+        ctx.moveTo(scratch.x, scratch.y);
+      }
+      if (progress > 0) {
+        project(progress, scratch);
+        ctx.lineTo(scratch.x, scratch.y);
+      }
+    }
+    previous = progress;
+  }
+  ctx.strokeStyle = trackIsDark
+    ? 'rgba(255, 255, 255, 0.55)'
+    : 'rgba(0, 0, 0, 0.45)';
+  ctx.lineWidth = width;
+  ctx.stroke();
+  ctx.restore();
+};
+
+interface AxisRange {
+  min: number;
+  max: number;
+}
+
+interface VisibleArea {
+  x: AxisRange;
+  y: AxisRange;
+}
+
+const spanOf = (values: number[]): AxisRange => ({
+  min: Math.min(...values),
+  max: Math.max(...values),
+});
+
+const visibleArea = (ctx: CanvasRenderingContext2D): VisibleArea | null => {
+  const canvas = ctx.canvas;
+  if (!canvas?.width || typeof ctx.getTransform !== 'function') return null;
+  const inverse = ctx.getTransform().inverse();
+  const corners = [
+    [0, 0],
+    [canvas.width, 0],
+    [0, canvas.height],
+    [canvas.width, canvas.height],
+  ];
+  return {
+    x: spanOf(
+      corners.map(([px, py]) => inverse.a * px + inverse.c * py + inverse.e)
+    ),
+    y: spanOf(
+      corners.map(([px, py]) => inverse.b * px + inverse.d * py + inverse.f)
+    ),
+  };
+};
+
+const keepInside = (
+  centre: number,
+  size: number,
+  range: AxisRange | undefined
+): number => {
+  if (!range || range.max - range.min < size) return centre;
+  return Math.min(range.max - size / 2, Math.max(range.min + size / 2, centre));
+};
+
+/**
+ * The rejoin point as a white ring with a black edge and a "PIT" tag, drawn
+ * over the cars, with the cars either side listed below it. It relies on shape
+ * and contrast, not colour, so it stands out from every class colour. Dashed
+ * while calibrating; dashed and faded under caution.
+ */
+export const drawPitExitMarker = (
+  ctx: CanvasRenderingContext2D,
+  marker: PitExitDrawing,
+  anchorProgress: number,
+  project: Project,
+  radius: number,
+  fontSize: number,
+  scratch: { x: number; y: number },
+  trafficLines: readonly string[] = []
+) => {
+  project(wrapLap(anchorProgress - marker.offsetPct), scratch);
+  const { x, y } = scratch;
+  const dash = marker.state === 'ok' ? [] : [radius * 0.6, radius * 0.35];
+
+  ctx.save();
+  ctx.shadowColor = 'transparent';
+  ctx.globalAlpha = marker.state === 'unreliable' ? 0.6 : 1;
+  ctx.setLineDash(dash);
+
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = radius * 0.55;
+  ctx.stroke();
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = radius * 0.28;
+  ctx.stroke();
+
+  ctx.setLineDash([]);
+  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const padX = fontSize * 0.35;
+  const height = fontSize * 1.3;
+  const width = fontSize * 2.2 + padX * 2;
+  const visible = visibleArea(ctx);
+  const tagX = keepInside(x, width, visible?.x);
+  const tagMiddle = keepInside(
+    y - radius - radius * 0.3 - height / 2,
+    height,
+    visible?.y
+  );
+  const top = tagMiddle - height / 2;
+  ctx.fillStyle = 'black';
+  ctx.beginPath();
+  ctx.roundRect(tagX - width / 2, top, width, height, height * 0.3);
+  ctx.fill();
+  ctx.fillStyle = 'white';
+  ctx.fillText(PIT_EXIT_LABEL, tagX, tagMiddle);
+
+  if (trafficLines.length > 0) {
+    const lineHeight = fontSize * 1.2;
+    let widest = 0;
+    for (const line of trafficLines) {
+      widest = Math.max(widest, ctx.measureText(line).width);
+    }
+    const boxWidth = widest + padX * 2;
+    const boxHeight = lineHeight * trafficLines.length + fontSize * 0.3;
+    const boxTop =
+      keepInside(
+        y + radius + radius * 0.3 + boxHeight / 2,
+        boxHeight,
+        visible?.y
+      ) -
+      boxHeight / 2;
+    const boxX = keepInside(x, boxWidth, visible?.x);
+    ctx.fillStyle = 'black';
+    ctx.beginPath();
+    ctx.roundRect(
+      boxX - boxWidth / 2,
+      boxTop,
+      boxWidth,
+      boxHeight,
+      lineHeight * 0.3
+    );
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    trafficLines.forEach((line, index) => {
+      ctx.fillText(
+        line,
+        boxX,
+        boxTop + fontSize * 0.15 + lineHeight * (index + 0.5)
+      );
+    });
+  }
+  ctx.restore();
+};

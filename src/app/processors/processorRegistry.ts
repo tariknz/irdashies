@@ -12,6 +12,11 @@ import { FuelProjectionProcessor } from './FuelProjectionProcessor';
 import { LapLogProcessor } from './LapLogProcessor';
 import { LapTimesProcessor } from './LapTimesProcessor';
 import { LapTraceSampleProcessor } from './LapTraceSampleProcessor';
+import {
+  memoryOverlay,
+  PitStopEstimateProcessor,
+  type PitStopEstimateDependencies,
+} from './PitStopEstimateProcessor';
 import type {
   AnyProcessorDefinition,
   ProcessorMetrics,
@@ -54,6 +59,11 @@ interface ProcessorRegistryOptions {
     /** Epoch milliseconds; defaults to Date.now. */
     now?: () => number;
   };
+  /** Learned pit timings. Without it the pit exit estimate stays hidden. */
+  pitStopEstimate?: Pick<
+    PitStopEstimateDependencies,
+    'persistence' | 'pitLane' | 'report' | 'now'
+  >;
 }
 
 interface DefaultProcessorHostOptions extends ProcessorRegistryOptions {
@@ -79,6 +89,8 @@ const noLapTimes: LapTimesSnapshot = {
   version: 0,
 };
 
+const tapeClock = () => 0;
+
 const defineProcessor = <K extends AnyProcessorDefinition['channel']>(
   definition: ProcessorDefinition<K>
 ): ProcessorDefinition<K> => definition;
@@ -89,6 +101,7 @@ export const createProcessorDefinitions = ({
   radarTuning,
   radarPoleSides,
   racePlan,
+  pitStopEstimate,
 }: ProcessorRegistryOptions): readonly AnyProcessorDefinition[] => [
   defineProcessor({
     channel: 'blind-spot.snapshot',
@@ -134,6 +147,33 @@ export const createProcessorDefinitions = ({
       new RelativeGapProcessor({
         snapshot: () => snapshot('reference-laps.snapshot') ?? noReferenceLaps,
       }),
+  }),
+  defineProcessor({
+    channel: 'pit-stop-estimate.snapshot',
+    dependencies: [
+      'reference-laps.snapshot',
+      'fuel.projection',
+      'lap-times.snapshot',
+    ],
+    // Keep learning from other cars' stops while the map is minimised.
+    processWhileHidden: true,
+    metricsPrefix: 'pitStopEstimate',
+    create: ({ aggregateReplay, snapshot }) =>
+      new PitStopEstimateProcessor(
+        pitStopEstimate
+          ? {
+              ...pitStopEstimate,
+              persistence: aggregateReplay
+                ? memoryOverlay(pitStopEstimate.persistence)
+                : pitStopEstimate.persistence,
+              report: aggregateReplay ? undefined : pitStopEstimate.report,
+              now: aggregateReplay ? tapeClock : pitStopEstimate.now,
+              referenceLaps: () => snapshot('reference-laps.snapshot'),
+              fuel: () => snapshot('fuel.projection'),
+              lapTimes: () => snapshot('lap-times.snapshot'),
+            }
+          : null
+      ),
   }),
   defineProcessor({
     channel: 'sector-timing.snapshot',

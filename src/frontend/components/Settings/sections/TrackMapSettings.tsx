@@ -288,6 +288,32 @@ export const TrackMapSettings = () => {
                         <SettingProp path="turnLabels.labelFontSize" />
                       </SettingsSection>
                     )}
+
+                    <SettingDivider />
+
+                    <SettingToggleRow
+                      title="Pit Exit Estimate"
+                      description="Show where you would rejoin, and the likely range, if you pitted now. Learns from every stop it sees, so it improves over a race and between races."
+                      enabled={
+                        settings.config.pitExitEstimate?.enabled ?? false
+                      }
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          pitExitEstimate: {
+                            showWhen:
+                              settings.config.pitExitEstimate?.showWhen ??
+                              'always',
+                            enabled: newValue,
+                          },
+                        })
+                      }
+                    />
+
+                    {settings.config.pitExitEstimate?.enabled && (
+                      <SettingsSection>
+                        <SettingProp path="pitExitEstimate.showWhen" />
+                      </SettingsSection>
+                    )}
                   </SettingsSection>
                 )}
 

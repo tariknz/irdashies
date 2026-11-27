@@ -2,6 +2,7 @@ import { useDriverProgress } from './hooks/useDriverProgress';
 import { useFlatTrackMapSettings } from './hooks/useFlatTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
 import { useTrackId } from './hooks/useTrackId';
+import { usePitExitMarker } from './hooks/usePitExitMarker';
 import { FlatTrackMapCanvas } from './FlatTrackMapCanvas';
 import { useTrackDrawing } from '@irdashies/domain/track';
 import {
@@ -24,6 +25,7 @@ export const FlatTrackMap = ({ embedded = false }: { embedded?: boolean }) => {
   const driverLivePositions = useDriverLivePositions({
     enabled: (settings?.displayMode ?? 'carNumber') === 'livePosition',
   });
+  const pitExit = usePitExitMarker(settings?.pitExitEstimate);
 
   const sessionVisible = useSessionVisibility(settings?.sessionVisibility);
   const trackDrawing = useTrackDrawing(
@@ -68,6 +70,7 @@ export const FlatTrackMap = ({ embedded = false }: { embedded?: boolean }) => {
         invertTrackColors={settings?.invertTrackColors ?? false}
         driverLivePositions={driverLivePositions}
         maxFps={embedded ? EMBEDDED_MAX_FPS : undefined}
+        pitExit={pitExit}
       />
     </div>
   );
