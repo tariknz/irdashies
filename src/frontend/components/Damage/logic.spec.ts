@@ -78,7 +78,9 @@ describe('damage logic', () => {
     expect(panelIntegrity(0)).toBe(1);
     expect(panelIntegrity(1)).toBe(0.5);
     expect(panelIntegrity(2)).toBe(0);
-    expect(panelsIntegrity([0, 1, 0])).toBe(0.5);
+    expect(panelsIntegrity([0, 1, 0])).toBeCloseTo(5 / 6);
+    expect(panelsIntegrity([0, 0, 2])).toBeCloseTo(2 / 3);
+    expect(panelsIntegrity([2, 2, 3])).toBe(0);
     expect(worstBodyTier(0, 1, 0)).toBe('light');
     expect(worstBodyTier(0, 0, 2)).toBe('heavy');
     expect(cornerIntegrity(false, 0.01, 1, true)).toBe(1);

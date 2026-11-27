@@ -12,9 +12,12 @@ import {
   CORNER_LABELS,
   CORNER_OK_BG,
   SUSP_FILL,
+  aeroIntegrity,
+  bodyIntegrity,
   bodyTier,
   cornerIntegrity,
   formatDamagedPct,
+  formatIntegrityPct,
   iracingBodyTier,
   isPunctured,
   LMU_DENT_PANELS,
@@ -22,6 +25,8 @@ import {
   REAR_PANEL,
   panelsIntegrity,
   suspTier,
+  suspensionIntegrity,
+  tyreIntegrity,
   tyreWearTier,
   worstBodyTier,
 } from '../logic';
@@ -33,7 +38,35 @@ export interface DamageDisplayProps {
   showIntegrity: boolean;
   showStats: boolean;
   bodyStyle?: DamageBodyStyle;
-  carLabel?: string;
+}
+
+function IntegrityRow({
+  label,
+  value,
+  warnAt,
+}: {
+  label: string;
+  value: number | null;
+  warnAt: number;
+}) {
+  if (value === null) return null;
+  const warn = value <= warnAt;
+  return (
+    <div className="flex items-center gap-1 text-[10px] leading-tight">
+      <span className="w-8 shrink-0 text-slate-400">{label}</span>
+      <div className="h-1.5 flex-1 overflow-hidden rounded-sm bg-slate-700">
+        <div
+          className={`h-full ${warn ? 'bg-red-500' : 'bg-slate-300'}`}
+          style={{ width: `${value * 100}%` }}
+        />
+      </div>
+      <span
+        className={`w-8 shrink-0 text-right font-mono ${warn ? 'text-red-400' : 'text-slate-100'}`}
+      >
+        {formatIntegrityPct(value)}
+      </span>
+    </div>
+  );
 }
 
 function StatusIcons({ warnings }: { warnings: number }) {
@@ -89,19 +122,11 @@ function cornerStyle(fill: string): {
   return { backgroundColor: fill, className: 'text-slate-950' };
 }
 
-function iracingBodyIntegrity(
-  repairNeeded: boolean,
-  optRepairNeeded: boolean
-): number {
-  if (repairNeeded) return 0.5;
-  if (optRepairNeeded) return 0.75;
-  return 1;
-}
-
 export const DamageDisplay = ({
   data,
   opacity,
   showIntegrity,
+  showStats,
   bodyStyle = 'gtMid',
 }: DamageDisplayProps) => {
   const repairNeeded = data.repairNeeded || (data.repairTime ?? 0) > 0;
@@ -175,14 +200,6 @@ export const DamageDisplay = ({
       labels.left = formatDamagedPct(
         panelsIntegrity([dents[0], dents[3], dents[5]])
       );
-    } else {
-      const bodyPct = formatDamagedPct(
-        iracingBodyIntegrity(repairNeeded, optRepairNeeded)
-      );
-      if (bodyPct) {
-        labels.front = bodyPct;
-        labels.rear = bodyPct;
-      }
     }
 
     const cornerKeys = ['fl', 'fr', 'rl', 'rr'] as const;
@@ -207,7 +224,7 @@ export const DamageDisplay = ({
         Vehicle Damage
       </div>
 
-      <div className="flex min-h-0 flex-1 gap-1.5">
+      <div className="flex min-h-0 flex-1 gap-1.5 overflow-hidden">
         <div className="relative min-h-0 min-w-0 flex-1">
           <CarSilhouette
             style={bodyStyle}
@@ -244,6 +261,54 @@ export const DamageDisplay = ({
           );
         })}
       </div>
+
+      {showStats && (
+        <div className="flex shrink-0 flex-col gap-0.5">
+          <IntegrityRow
+            label="Aero"
+            value={aeroIntegrity(data.aeroDamage)}
+            warnAt={0.5}
+          />
+          <IntegrityRow
+            label="Body"
+            value={bodyIntegrity(hasDents ? dents : [])}
+            warnAt={0.5}
+          />
+          <IntegrityRow
+            label="Susp"
+            value={suspensionIntegrity(
+              data.suspensionDamage,
+              data.wheelDetached
+            )}
+            warnAt={0.7}
+          />
+          <IntegrityRow
+            label="Tyre"
+            value={tyreIntegrity(
+              data.tyreWear,
+              [0, 1, 2, 3].map(
+                (index) => !!data.wheelDetached[index] || punctured[index]
+              )
+            )}
+            warnAt={0.2}
+          />
+          {data.repairTime !== undefined && data.repairTime > 0 && (
+            <div className="mt-0.5 text-center font-mono text-[10px] text-slate-400">
+              Repair {data.repairTime.toFixed(1)}s
+            </div>
+          )}
+          {data.optRepairTime !== undefined && data.optRepairTime > 0 && (
+            <div className="text-center font-mono text-[10px] text-slate-500">
+              Opt {data.optRepairTime.toFixed(1)}s
+            </div>
+          )}
+          {!hasDents && (repairNeeded || optRepairNeeded) && (
+            <div className="text-center text-[10px] text-amber-400">
+              {repairNeeded ? 'Repair needed' : 'Optional repair'}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

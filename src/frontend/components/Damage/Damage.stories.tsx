@@ -24,7 +24,6 @@ export const GtFrontUndamaged: Story = {
     showIntegrity: true,
     showStats: false,
     bodyStyle: 'gtFront',
-    carLabel: 'BMW M4 GT3',
   },
   decorators: box(),
 };
@@ -36,7 +35,6 @@ export const GtMidUndamaged: Story = {
     showIntegrity: true,
     showStats: false,
     bodyStyle: 'gtMid',
-    carLabel: 'Ferrari 296 GT3',
   },
   decorators: box(),
 };
@@ -48,7 +46,6 @@ export const GtRearUndamaged: Story = {
     showIntegrity: true,
     showStats: false,
     bodyStyle: 'gtRear',
-    carLabel: 'Porsche 992 GT3 R',
   },
   decorators: box(),
 };
@@ -117,4 +114,15 @@ export const Hatch: Story = {
     bodyStyle: 'hatch',
   },
   decorators: box(),
+};
+
+export const WithIntegrityBars: Story = {
+  args: {
+    data: DEMO_DAMAGE,
+    opacity: 80,
+    showIntegrity: true,
+    showStats: true,
+    bodyStyle: 'gtMid',
+  },
+  decorators: box(170, 320),
 };

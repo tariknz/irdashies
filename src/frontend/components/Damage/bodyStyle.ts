@@ -159,24 +159,3 @@ export function resolveDamageBodyStyle(
   }
   return 'gtMid';
 }
-
-export function damageBodyStyleLabel(style: DamageBodyStyle): string {
-  switch (style) {
-    case 'gtFront':
-      return 'GT front-engine';
-    case 'gtMid':
-      return 'GT mid-engine';
-    case 'gtRear':
-      return 'GT rear-engine';
-    case 'prototype':
-      return 'Prototype';
-    case 'openwheel':
-      return 'Open wheel';
-    case 'hatch':
-      return 'Street';
-    case 'stock':
-      return 'Stock car';
-    case 'truck':
-      return 'Truck';
-  }
-}

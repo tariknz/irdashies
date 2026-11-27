@@ -72,7 +72,11 @@ export const panelsIntegrity = (
   severities: readonly number[]
 ): number | null => {
   if (severities.length === 0) return null;
-  return Math.min(...severities.map(panelIntegrity));
+  const total = severities.reduce(
+    (sum, severity) => sum + (1 - panelIntegrity(severity)),
+    0
+  );
+  return Math.max(0, 1 - total / severities.length);
 };
 
 export const suspTier = (
