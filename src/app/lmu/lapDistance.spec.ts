@@ -3,6 +3,7 @@ import {
   createLmuLapDistanceState,
   estimateLmuLapDistPct,
   lmuCompletedLaps,
+  lmuProgressLaps,
   resetLmuLapDistanceState,
 } from './lapDistance';
 
@@ -802,6 +803,30 @@ describe('the race start, before a car first reaches the line', () => {
     expect(
       estimateLmuLapDistPct(state, startFrame(100.2, 0, false))
     ).toBeCloseTo(0, 3);
+  });
+
+  it('counts a car short of the start line a lap behind one that has crossed', () => {
+    const waiting = createLmuLapDistanceState();
+    const crossed = createLmuLapDistanceState();
+    estimateLmuLapDistPct(waiting, startFrame(100, 0.97, false));
+    estimateLmuLapDistPct(crossed, startFrame(100, 0.99, false));
+    const waitingPct = estimateLmuLapDistPct(
+      waiting,
+      startFrame(100.2, 0, true)
+    );
+    estimateLmuLapDistPct(crossed, startFrame(100.2, 0, true));
+    const crossedPct = estimateLmuLapDistPct(
+      crossed,
+      startFrame(100.4, 0.004, false)
+    );
+
+    const waitingProgress = (lmuProgressLaps(waiting) ?? 0) + waitingPct;
+    const crossedProgress = (lmuProgressLaps(crossed) ?? 0) + crossedPct;
+    expect(lmuProgressLaps(waiting)).toBe(-1);
+    expect(lmuCompletedLaps(waiting)).toBe(0);
+    expect(lmuProgressLaps(crossed)).toBe(0);
+    expect(crossedProgress).toBeGreaterThan(waitingProgress);
+    expect(crossedProgress - waitingProgress).toBeLessThan(0.1);
   });
 
   it('ignores the start phase while scoring still gives a position', () => {

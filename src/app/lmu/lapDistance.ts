@@ -101,6 +101,14 @@ export const resetLmuLapDistanceState = (state: LmuLapDistanceState): void => {
 export const lmuCompletedLaps = (state: LmuLapDistanceState): number | null =>
   state.lap === null ? null : state.lap + state.completedOffset;
 
+export const lmuProgressLaps = (state: LmuLapDistanceState): number | null => {
+  const completed = lmuCompletedLaps(state);
+  if (completed === null) return null;
+  const shortOfStartLine =
+    state.awaitingStart && state.lastPct >= 0.5 && state.lastPct < 1;
+  return shortOfStartLine ? completed - 1 : completed;
+};
+
 /**
  * Longest stretch that may be integrated before falling back to scoring.
  *

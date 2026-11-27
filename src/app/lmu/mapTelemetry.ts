@@ -21,6 +21,7 @@ import {
   estimateLmuLapDistPct,
   LMU_PHASE_BEFORE_START_LINE,
   lmuCompletedLaps,
+  lmuProgressLaps,
   type LmuLapDistanceState,
 } from './lapDistance';
 import {
@@ -441,6 +442,10 @@ export function mapLmuTelemetry(
     lapDistanceState && playerIdx >= 0
       ? lmuCompletedLaps(lapDistanceState)
       : null;
+  const playerProgressLaps =
+    lapDistanceState && playerIdx >= 0
+      ? lmuProgressLaps(lapDistanceState)
+      : null;
   // The estimator passes the negative "no car here" sentinel straight through;
   // clamping here keeps the published value inside the [0, 1] contract this
   // mapper has always had.
@@ -496,9 +501,9 @@ export function mapLmuTelemetry(
     estimatedLapDistPct >= 0
   ) {
     carIdxLapDistPct[playerIdx] = lapDistPct;
-    if (playerCompletedLaps !== null) {
+    if (playerProgressLaps !== null) {
       for (const laps of carIdxLaps) {
-        if (playerIdx < laps.length) laps[playerIdx] = playerCompletedLaps;
+        if (playerIdx < laps.length) laps[playerIdx] = playerProgressLaps;
       }
     }
   }
