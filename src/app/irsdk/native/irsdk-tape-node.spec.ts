@@ -302,7 +302,9 @@ describe('tape-backed native SDK', () => {
       try {
         assert.deepEqual(readFrame(), {});
         assert.equal(sdk.startSDK(), true);
-        assert.equal(sdk.waitForData(100), true);
+        assert.equal(sdk.seekTapeReplay(0), true);
+        assert.equal(sdk.waitForData(0), false);
+        assert.equal(sdk.waitForData(0), true);
         const first = readFrame();
         const variables = Object.values(first);
         assert.ok(variables.length > 1);
@@ -316,16 +318,17 @@ describe('tape-backed native SDK', () => {
           );
         }
         const speed = first.Speed.value;
-        const readSpeed = () =>
-          new DataView(speed.buffer, speed.byteOffset, speed.byteLength).getFloat32(0, true);
-        const retainedSpeed = readSpeed();
+        const readSpeed = (view) =>
+          new DataView(view.buffer, view.byteOffset, view.byteLength).getFloat32(0, true);
+        assert.equal(readSpeed(speed), 50);
         assert.equal(sdk.waitForData(100), true);
         const next = readFrame();
         assert.notEqual(next.Speed.value.buffer, speed.buffer);
-        assert.equal(readSpeed(), retainedSpeed);
+        assert.ok(readSpeed(next.Speed.value) > 50);
+        assert.equal(readSpeed(speed), 50);
         assert.ok(sdk.getTelemetryData().Speed.value instanceof ArrayBuffer);
         sdk.stopSDK();
-        assert.equal(readSpeed(), retainedSpeed);
+        assert.equal(readSpeed(speed), 50);
         assert.deepEqual(readFrame(), {});
       } finally {
         sdk.stopSDK();
@@ -335,8 +338,8 @@ describe('tape-backed native SDK', () => {
       env: {
         ...process.env,
         IRDASHIES_TELEMETRY_REPLAY: tapePath,
-        IRDASHIES_TELEMETRY_REPLAY_LOOP: '1',
-        IRDASHIES_TELEMETRY_REPLAY_SPEED: '100',
+        IRDASHIES_TELEMETRY_REPLAY_LOOP: '0',
+        IRDASHIES_TELEMETRY_REPLAY_SPEED: '1',
       },
       timeout: 5000,
     });

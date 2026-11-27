@@ -3,9 +3,8 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'broadcastticker',
   name: 'Broadcast Ticker',
-  category: 'Broadcast & Streaming',
+  category: 'Broadcast',
   // Reached through the Broadcast menu.
-  hideInMenu: true,
   enabled: false,
   layout: {
     x: 0,

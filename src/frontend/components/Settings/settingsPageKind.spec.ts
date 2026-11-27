@@ -7,9 +7,9 @@ describe('settingsPageKind', () => {
     expect(settingsPageKind('/settings/about')).toBe('app');
     expect(settingsPageKind('/settings/profiles')).toBe('tool');
     expect(settingsPageKind('/settings/driver-tags')).toBe('tool');
-    expect(settingsPageKind('/settings/broadcast')).toBe('broadcast');
-    expect(settingsPageKind('/settings/broadcastticker')).toBe('broadcast');
-    expect(settingsPageKind('/settings/broadcast-settings')).toBe('broadcast');
+    expect(settingsPageKind('/settings/broadcast')).toBe('overlay');
+    expect(settingsPageKind('/settings/broadcastticker')).toBe('overlay');
+    expect(settingsPageKind('/settings/broadcast-settings')).toBe('app');
     expect(settingsPageKind('/settings/standings')).toBe('overlay');
     expect(settingsPageKind('/settings')).toBe('overlay');
   });

@@ -39,7 +39,7 @@ export const BroadcastTransitionSettings = () => {
 
   return (
     <div className="h-full space-y-5 overflow-y-auto pr-1 [scrollbar-gutter:stable]">
-      <BroadcastHeading title="Settings" />
+      <BroadcastHeading title="Broadcast Settings" />
       <div className="relative pl-4">
         {broadcastTransitionChanged(towerConfig) && (
           <button

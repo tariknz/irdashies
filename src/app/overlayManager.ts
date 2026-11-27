@@ -10,6 +10,7 @@ import type {
   DashboardWidget,
   ContainerBoundsInfo,
   GantryConfig,
+  ProfileTransition,
 } from '@irdashies/types';
 import {
   fitLayoutToDisplay,
@@ -37,7 +38,7 @@ import {
 const activeDashboard = () => getDashboard(getCurrentProfileId());
 import { getChromiumFlags, parseCustomSwitches } from './storage/chromiumFlags';
 import {
-  flushWindowMovementOnShutdown,
+  flushWindowMovementSaves,
   markCorrectedBounds,
   trackGantryWindowMovement,
   trackSettingsWindowMovement,
@@ -179,6 +180,7 @@ export class OverlayManager {
   private onWindowReadyCallbacks = new Set<(windowId: string) => void>();
   private rendererDataSubscriptions?: RendererDataSubscriptions;
   private latestSessionData: unknown;
+  private latestProfileTransition?: ProfileTransition;
   private displayChangeTimer?: ReturnType<typeof setTimeout>;
   private watchingDisplays = false;
   /**
@@ -627,6 +629,9 @@ export class OverlayManager {
   /** Seed state after a renderer mounts, including windows rebuilt in edit mode. */
   public sendOverlayState(sender: Electron.WebContents): void {
     if (sender.isDestroyed()) return;
+    if (this.latestProfileTransition) {
+      sender.send('profileTransition', this.latestProfileTransition);
+    }
     sender.send('editModeToggled', !this.isLocked);
     for (const [id, win] of this.displayWindows) {
       if (win.isDestroyed() || win.webContents.id !== sender.id) continue;
@@ -969,6 +974,11 @@ export class OverlayManager {
     return this.latestRunningState;
   }
 
+  public publishProfileTransition(transition: ProfileTransition): void {
+    this.latestProfileTransition = transition.hidden ? transition : undefined;
+    this.publishMessage('profileTransition', transition);
+  }
+
   /**
    * Sends the cached session to a subscribed sender window. Visible windows
    * only, except the Gantry and the settings window, which are fed while
@@ -1073,7 +1083,7 @@ export class OverlayManager {
   public quitApp(): void {
     if (this.isQuitting) return;
 
-    flushWindowMovementOnShutdown();
+    flushWindowMovementSaves();
     this.isQuitting = true;
     this.closeAllOverlays();
 

@@ -3,7 +3,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'garagecover',
   name: 'Garage Cover',
-  category: 'Broadcast & Streaming',
+  category: 'Streaming',
   enabled: false,
   layout: {
     x: 50,

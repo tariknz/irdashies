@@ -16,21 +16,13 @@ import {
   X,
 } from '@phosphor-icons/react';
 import logo from '@irdashies/frontend/assets/icons/logo.svg';
-import {
-  settingsPageKind,
-  type SettingsPageKind,
-} from '@irdashies/frontend/components/Settings/settingsPageKind';
+import { settingsPageKind } from '@irdashies/frontend/components/Settings/settingsPageKind';
 
 const SettingsLoader = lazy(() =>
   import('@irdashies/frontend/components/Settings/SettingsLoader').then(
     (module) => ({ default: module.SettingsLoader })
   )
 );
-
-const MAIN_LABELS: Partial<Record<SettingsPageKind, string>> = {
-  app: 'App settings page',
-  broadcast: 'Broadcast settings page',
-};
 
 interface SettingsContentProps {
   onClose: () => void;
@@ -73,6 +65,7 @@ function fitPanel(
 
 function SettingsContent({ onClose, request }: SettingsContentProps) {
   const { pathname } = useLocation();
+  const appPage = settingsPageKind(pathname) === 'app';
   const navigate = useNavigate();
   const navigateRef = useRef(navigate);
   const mainRef = useRef<HTMLElement>(null);
@@ -250,9 +243,7 @@ function SettingsContent({ onClose, request }: SettingsContentProps) {
                     minimized ? 'sr-only' : 'text-xs font-medium text-slate-400'
                   }
                 >
-                  {pathname === '/settings/general'
-                    ? 'App settings'
-                    : 'Overlay Settings'}
+                  {appPage ? 'App settings' : 'Overlay Settings'}
                 </h1>
               </div>
               <p className={minimized ? 'sr-only' : 'text-xs text-slate-400'}>
@@ -325,8 +316,7 @@ function SettingsContent({ onClose, request }: SettingsContentProps) {
               ref={mainRef}
               tabIndex={-1}
               aria-label={
-                MAIN_LABELS[settingsPageKind(pathname)] ??
-                'Overlay settings page'
+                appPage ? 'App settings page' : 'Overlay settings page'
               }
               className="min-w-0 flex-1 bg-slate-900 p-4 focus:outline-none"
             >

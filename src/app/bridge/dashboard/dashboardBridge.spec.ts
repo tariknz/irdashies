@@ -87,6 +87,7 @@ beforeAll(async () => {
     {
       closeOrCreateWindows: mocks.closeOrCreate,
       publishMessage: mocks.publish,
+      publishProfileTransition: vi.fn(),
       sendOverlayState: mocks.sendState,
       forceRefreshOverlays: mocks.refresh,
     } as unknown as OverlayManager,

@@ -218,6 +218,7 @@ export async function publishIRacingSDKEvents(
             lifecycle,
             metrics: perfMetrics,
             aggregateReplay: isTapeReplay,
+            fuelClock: isTapeReplay ? undefined : Date.now,
             logError: (message, error) => logger.error(message, error),
             referenceLapPersistence: {
               load: referenceLapStorage.getReferenceLap,

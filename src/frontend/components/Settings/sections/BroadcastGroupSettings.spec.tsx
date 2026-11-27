@@ -58,7 +58,7 @@ const renderAt = (
   );
 
 describe('BroadcastGroupSettings', () => {
-  it("shows only the active module's settings, the Broadcast menu listing the rest", () => {
+  it("shows only the active module's settings", () => {
     renderAt('broadcastticker');
 
     expect(screen.getByText(/^ticker settings/)).toBeInTheDocument();

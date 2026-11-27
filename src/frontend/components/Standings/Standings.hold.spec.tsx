@@ -7,6 +7,7 @@ import { SessionHoldProvider } from '@irdashies/domain/sessionHold/useSessionHol
 const live = vi.hoisted(() => ({
   standings: [] as unknown[],
   classStats: {} as Record<string, unknown>,
+  firstObservedLaps: [] as (number | undefined)[],
 }));
 
 vi.mock('@irdashies/context', async (importOriginal) => ({
@@ -21,7 +22,7 @@ vi.mock('@irdashies/context', async (importOriginal) => ({
   useCarIdxRollingAvgLapTime: () => [],
   usePitStopDuration: () => [],
   usePitLaneStore: () => null,
-  useFirstObservedLap: () => [],
+  useStandingsSelector: () => live.firstObservedLaps,
   useActiveSimulator: () => 'iracing',
 }));
 
@@ -58,9 +59,16 @@ vi.mock('./components/DriverClassHeader/DriverClassHeader', () => ({
   ),
 }));
 vi.mock('./components/DriverInfoRow/DriverInfoRow', () => ({
-  DriverInfoRow: ({ name }: { name: string }) => (
+  DriverInfoRow: ({
+    name,
+    currentLap,
+  }: {
+    name: string;
+    currentLap?: number;
+  }) => (
     <tr>
       <td data-testid="driver-row">{name}</td>
+      <td data-testid="stint-lap">{currentLap}</td>
     </tr>
   ),
 }));
@@ -84,12 +92,24 @@ describe('Standings after the session ends', () => {
   beforeEach(() => {
     live.standings = [['c1', [result(1, 'Driver A'), result(2, 'Driver B')]]];
     live.classStats = { c1: { shortName: 'GT3' } };
+    live.firstObservedLaps = [];
     useSessionStore.getState().resetSession();
     act(() =>
       useSessionStore.getState().setSession({
         DriverInfo: { Drivers: [{ CarIdx: 0 }] },
       } as unknown as Session)
     );
+  });
+
+  it('uses the race snapshot for stint laps with Pit Status disabled', () => {
+    live.standings = [
+      ['c1', [{ ...result(1, 'Driver A'), lastLap: 42, onTrack: true }]],
+    ];
+    live.firstObservedLaps = [undefined, 1];
+
+    render(view(true));
+
+    expect(screen.getByTestId('stint-lap')).toHaveTextContent('43');
   });
 
   it('keeps the final results when the sim closes and the data empties', () => {

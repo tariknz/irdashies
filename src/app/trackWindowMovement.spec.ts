@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BrowserWindow } from 'electron';
 import {
-  flushWindowMovementOnShutdown,
+  flushWindowMovementSaves,
   markCorrectedBounds,
   trackGantryWindowMovement,
   trackSettingsWindowMovement,
@@ -58,7 +58,7 @@ describe('trackSettingsWindowMovement', () => {
   });
 
   afterEach(() => {
-    flushWindowMovementOnShutdown();
+    flushWindowMovementSaves();
     vi.useRealTimers();
   });
 
@@ -108,7 +108,7 @@ describe('trackSettingsWindowMovement', () => {
     emit('resized');
     expect(saveSettingsWindowBounds).not.toHaveBeenCalled();
     if (event === 'close') emit('close');
-    else flushWindowMovementOnShutdown();
+    else flushWindowMovementSaves();
     expect(saveSettingsWindowBounds).toHaveBeenCalledExactlyOnceWith(chosen);
     vi.advanceTimersByTime(DEBOUNCE_MS);
     expect(saveSettingsWindowBounds).toHaveBeenCalledOnce();
@@ -120,7 +120,7 @@ describe('trackSettingsWindowMovement', () => {
     emit('resized');
     emit('closed');
     vi.advanceTimersByTime(DEBOUNCE_MS);
-    flushWindowMovementOnShutdown();
+    flushWindowMovementSaves();
     expect(saveSettingsWindowBounds).not.toHaveBeenCalled();
   });
 
@@ -187,7 +187,7 @@ describe('trackGantryWindowMovement', () => {
   });
 
   afterEach(() => {
-    flushWindowMovementOnShutdown();
+    flushWindowMovementSaves();
     vi.useRealTimers();
   });
 
@@ -254,7 +254,7 @@ describe('trackGantryWindowMovement', () => {
     emit('moved');
     expect(save).not.toHaveBeenCalled();
     if (event === 'close') emit('close');
-    else flushWindowMovementOnShutdown();
+    else flushWindowMovementSaves();
 
     expect(save).toHaveBeenCalledExactlyOnceWith({
       bounds: { ...ON_SCREEN, y: 500 },

@@ -7,6 +7,7 @@ import { createDebouncedAtomicWriter } from './debouncedAtomicWriter';
 import { reportStorageResult, storageErrorCode } from './storageStatus';
 
 const MAX_FUEL_CONTEXTS = 500;
+const MAX_LAPS_PER_CONTEXT = 10;
 
 interface FuelStorageFormat {
   laps: Record<string, FuelLapData[]>;
@@ -104,18 +105,23 @@ export class FuelDatabase {
 
   public saveLap(trackId: string | number, carName: string, lap: FuelLapData) {
     const key = this.getContextKey(trackId, carName);
-    if (!this.data.laps[key]) {
-      this.data.laps[key] = [];
-    }
+    const history = this.data.laps[key] ?? [];
+    if (
+      history.some(
+        (saved) =>
+          saved.timestamp === lap.timestamp &&
+          saved.lapNumber === lap.lapNumber &&
+          saved.sessionNum === lap.sessionNum
+      )
+    )
+      return;
 
-    // Add new lap (at the beginning for easier retrieval of 10 most recent)
-    this.data.laps[key].unshift({ ...lap, isHistorical: true });
-
-    // Prune to keep only 10 most recent
-    if (this.data.laps[key].length > 10) {
-      this.data.laps[key] = this.data.laps[key].slice(0, 10);
-    }
-
+    const saved = { ...lap, isHistorical: true };
+    const newest = [saved, ...history]
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, MAX_LAPS_PER_CONTEXT);
+    if (!newest.includes(saved)) return;
+    this.data.laps[key] = newest;
     this.save(key);
   }
 

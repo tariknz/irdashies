@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   BROADCAST_SETTINGS_PAGE,
-  broadcastItems,
+  generalItems,
+  menuHasToggle,
   toolItems,
   widgetItems,
 } from './menuItems';
 import { settingsPageKind } from './settingsPageKind';
+import { BROADCAST_MODULE_TYPES } from './broadcastModules';
 
 describe('toolItems', () => {
   it('puts every tool in the Tools section, the only place the menu lists them', () => {
@@ -21,23 +23,33 @@ describe('toolItems', () => {
   });
 });
 
-describe('broadcastItems', () => {
-  it('gives every broadcast widget a page in the Broadcast menu, opened from its one overlay row', () => {
-    const broadcastRow = widgetItems.find((item) => item.groupTypes);
-    expect(broadcastRow?.label).toBe('Broadcast');
-    expect(broadcastItems.flatMap((item) => item.widgetType ?? [])).toEqual(
-      broadcastRow?.groupTypes
-    );
-    for (const item of broadcastItems) {
-      expect(settingsPageKind(item.to), item.label).toBe('broadcast');
-      expect(item.icon, item.label).toBeDefined();
+describe('Broadcast navigation', () => {
+  it('lists each broadcast widget under Broadcast with its own switch', () => {
+    for (const type of BROADCAST_MODULE_TYPES) {
+      expect(
+        widgetItems.filter(
+          (item) => item.widgetType === type && !item.hideInMenu
+        )
+      ).toEqual([
+        expect.objectContaining({
+          to: `/settings/${type}`,
+          category: 'Broadcast',
+        }),
+      ]);
+      expect(settingsPageKind(`/settings/${type}`)).toBe('overlay');
+      expect(menuHasToggle(type, [type])).toBe(true);
     }
   });
 
-  it('ends with the Settings page, shared by every module', () => {
-    const settings = broadcastItems.at(-1);
-    expect(settings?.label).toBe('Settings');
-    expect(settings?.to).toBe(BROADCAST_SETTINGS_PAGE);
+  it('lists the shared settings page under App settings', () => {
+    const settings = generalItems.find(
+      (item) => item.to === BROADCAST_SETTINGS_PAGE
+    );
+    expect(settings?.label).toBe('Broadcast Settings');
     expect(settings?.widgetType).toBeUndefined();
+    expect(settingsPageKind(BROADCAST_SETTINGS_PAGE)).toBe('app');
+    expect(
+      widgetItems.some((item) => item.to === BROADCAST_SETTINGS_PAGE)
+    ).toBe(false);
   });
 });

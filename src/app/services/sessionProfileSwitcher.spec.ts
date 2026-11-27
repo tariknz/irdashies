@@ -84,19 +84,32 @@ const setup = (
   const harness = makeLifecycle(initialState);
   const switchProfile = vi.fn();
   let current = currentProfileId;
+  let onProfileChange: (() => void) | undefined;
   switchProfile.mockImplementation((profileId: string) => {
     current = profileId;
+    onProfileChange?.();
   });
 
   const switcher = createSessionProfileSwitcher({
     lifecycle: harness.lifecycle,
     getMap: () => map,
     getCurrentProfileId: () => current,
+    onProfileChange: (listener) => {
+      onProfileChange = listener;
+      return () => {
+        onProfileChange = undefined;
+      };
+    },
     profileExists: (profileId) => existingProfiles.includes(profileId),
     switchProfile,
   });
 
-  return { ...harness, switcher, switchProfile };
+  const setProfile = (profileId: string) => {
+    current = profileId;
+    onProfileChange?.();
+  };
+
+  return { ...harness, switcher, switchProfile, setProfile };
 };
 
 describe('sessionProfileSwitcher', () => {
@@ -257,6 +270,43 @@ describe('sessionProfileSwitcher', () => {
       vi.advanceTimersByTime(SPOTTING_DWELL_MS);
 
       expect(switchProfile).not.toHaveBeenCalled();
+    });
+
+    it('keeps the manual profile until driving resumes when it cancels the dwell', () => {
+      const { emitSessionType, emitDriving, switchProfile, setProfile } = setup(
+        {
+          race: 'race',
+          spotting: 'spotter',
+        }
+      );
+      emitSessionType('Race');
+      emitDriving(false);
+      switchProfile.mockClear();
+
+      setProfile('broadcast');
+      vi.advanceTimersByTime(SPOTTING_DWELL_MS);
+
+      expect(switchProfile).not.toHaveBeenCalled();
+      emitDriving(true);
+      expect(switchProfile).toHaveBeenCalledWith('race');
+    });
+
+    it('returns to the race profile on driving after a manual spotting override', () => {
+      const { emitSessionType, emitDriving, switchProfile, setProfile } = setup(
+        {
+          race: 'race',
+          spotting: 'spotter',
+        }
+      );
+      emitSessionType('Race');
+      emitDriving(false);
+      vi.advanceTimersByTime(SPOTTING_DWELL_MS);
+      switchProfile.mockClear();
+
+      setProfile('broadcast');
+      emitDriving(true);
+
+      expect(switchProfile).toHaveBeenCalledWith('race');
     });
 
     it('hands back to the session profile as soon as the player drives', () => {

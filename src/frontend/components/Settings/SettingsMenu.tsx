@@ -16,7 +16,6 @@ import { WIDGET_CATEGORIES, widgetDisabledMessage } from '@irdashies/types';
 import {
   generalItems,
   toolItems,
-  broadcastItems,
   BROADCAST_SETTINGS_PAGE,
   widgetItems,
   bottomItems,
@@ -29,6 +28,7 @@ import {
   isBroadcastModuleType,
 } from './broadcastModules';
 import { settingsPageKind, type SettingsPageKind } from './settingsPageKind';
+import { widgetSettingsType } from './widgetSettingsType';
 import { ToggleSwitch } from './components/ToggleSwitch';
 import { MenuSortControl } from './components/MenuSortControl';
 import { AppUpdateButton } from './components/AppUpdateButton';
@@ -40,12 +40,6 @@ import {
   type MenuSortMode,
 } from './menuSort';
 
-/** Whether the row is the current one: its page, or a layout copy's of it. */
-const isMenuItemActive = (item: MenuItem, pathname: string, exact = false) =>
-  exact
-    ? pathname === `/settings${item.path}`
-    : pathname.startsWith(`/settings${item.path}`);
-
 const MenuLink = ({
   item,
   pathname,
@@ -54,7 +48,6 @@ const MenuLink = ({
   onToggle,
   isNew,
   changed,
-  exact = false,
   disabledReason,
   onNavigate,
   revealKey,
@@ -65,7 +58,6 @@ const MenuLink = ({
   isEnabled?: boolean;
   isNew?: boolean;
   changed?: boolean;
-  exact?: boolean;
   /** Set for a widget the running sim cannot support: listed, dimmed, no switch. */
   disabledReason?: string;
   /** Present when the row controls a widget that exists in the dashboard. */
@@ -78,7 +70,7 @@ const MenuLink = ({
    */
   revealKey?: string;
 }) => {
-  const isActive = isMenuItemActive(item, pathname, exact);
+  const isActive = pathname === item.to;
   const linkRef = useRef<HTMLAnchorElement>(null);
   useEffect(() => {
     const link = linkRef.current;
@@ -172,14 +164,12 @@ const MenuLink = ({
 const NAV_LABELS: Record<SettingsPageKind, string> = {
   app: 'App settings pages',
   tool: 'Tools pages',
-  broadcast: 'Broadcast pages',
   overlay: 'Overlay settings',
 };
 
 export const SettingsMenu = ({
   appTo = '/settings/general',
   toolsTo = '/settings/profiles',
-  broadcastTo = '/settings/broadcast',
   returnTo = '/settings/relative',
   previewMode = false,
   excludedWidgetTypes,
@@ -187,7 +177,6 @@ export const SettingsMenu = ({
   appTo?: string;
   /** Where the Tools link goes: the tool page visited last. */
   toolsTo?: string;
-  broadcastTo?: string;
   returnTo?: string;
   previewMode?: boolean;
   excludedWidgetTypes?: ReadonlySet<string>;
@@ -214,8 +203,7 @@ export const SettingsMenu = ({
     previewMode && kind === 'tool' ? 'overlay' : kind;
   const appPage = pageKind === 'app';
   const toolPage = pageKind === 'tool';
-  const broadcastPage = pageKind === 'broadcast';
-  const asidePage = appPage || toolPage || broadcastPage;
+  const asidePage = appPage || toolPage;
   const overlayPath = useRef(pathname);
   const overlayScroll = useRef<HTMLDivElement>(null);
   const asideScroll = useRef<HTMLElement>(null);
@@ -229,6 +217,11 @@ export const SettingsMenu = ({
       overlayScroll.current.scrollTop = overlayScrollPosition.current;
     wasAsidePage.current = asidePage;
   }, [asidePage]);
+  const activeOverlayPath = asidePage ? overlayPath.current : pathname;
+  const activeWidgetType = widgetSettingsType(
+    currentDashboard?.widgets,
+    activeOverlayPath.slice('/settings/'.length)
+  );
   // Layout-editor copies of a widget share its menu entry: it is on while any
   // copy is, so a custom layout cannot hide behind a switched-off default.
   // Built once per render: the list asks for every row, several times over.
@@ -240,13 +233,10 @@ export const SettingsMenu = ({
   const isWidgetEnabled = (widgetType: string) => enabledTypes.has(widgetType);
 
   // The settings page toggles the widget whose id is the widget type, so the
-  // menu does the same; extra instances keep their own state. Grouped items
-  // share a page and have no single widget to switch.
+  // menu does the same; extra instances keep their own state.
   const widgetIds = currentDashboard?.widgets.map((w) => w.id) ?? [];
   const canToggle = (item: MenuItem) =>
-    !!item.widgetType &&
-    !item.groupTypes &&
-    menuHasToggle(item.widgetType, widgetIds);
+    !!item.widgetType && menuHasToggle(item.widgetType, widgetIds);
 
   // Off switches every copy off; on revives only the primary widget.
   const setWidgetEnabled = (widgetType: string, enabled: boolean) => {
@@ -265,26 +255,16 @@ export const SettingsMenu = ({
   // Switching one off leaves the page shown as it is, and so does switching
   // on the row already current (a layout copy's page shows its type's row).
   const toggleWidget =
-    (item: MenuItem, widgetType: string, exact = false) =>
-    (enabled: boolean) => {
+    (item: MenuItem, widgetType: string) => (enabled: boolean) => {
       setWidgetEnabled(widgetType, enabled);
-      if (enabled && !isMenuItemActive(item, pathname, exact))
-        navigate(item.to);
+      if (enabled && widgetType !== activeWidgetType) navigate(item.to);
     };
 
   const widgetConfig = (widgetType: string) =>
     currentDashboard?.widgets.find((w) => (w.type ?? w.id) === widgetType)
       ?.config;
-  const broadcastItemChanged = (item: MenuItem) =>
-    isBroadcastModuleType(item.widgetType)
-      ? broadcastModuleChanged(item.widgetType, widgetConfig(item.widgetType))
-      : item.to === BROADCAST_SETTINGS_PAGE &&
-        broadcastTransitionChanged(widgetConfig('broadcast'));
-
-  // A grouped item is on while any widget sharing its page is.
   const isItemEnabled = (item: MenuItem) =>
-    !!item.widgetType &&
-    (item.groupTypes ?? [item.widgetType]).some(isWidgetEnabled);
+    !!item.widgetType && isWidgetEnabled(item.widgetType);
 
   const menuItems = widgetItems.filter(
     (item) =>
@@ -320,14 +300,14 @@ export const SettingsMenu = ({
   const renderLink = (item: MenuItem) => (
     <MenuLink
       key={item.path}
-      item={
-        settingsPageKind(item.to) === 'broadcast'
-          ? { ...item, to: broadcastTo }
-          : item
-      }
-      pathname={asidePage ? overlayPath.current : pathname}
+      item={item}
+      pathname={`/settings/${activeWidgetType}`}
       revealKey={`${sortMode}:${isItemEnabled(item)}`}
       isEnabled={item.widgetType ? isItemEnabled(item) : undefined}
+      changed={
+        isBroadcastModuleType(item.widgetType) &&
+        broadcastModuleChanged(item.widgetType, widgetConfig(item.widgetType))
+      }
       disabledReason={unsupported(item) ?? undefined}
       onToggle={
         canToggle(item) && item.widgetType && !unsupported(item)
@@ -383,13 +363,26 @@ export const SettingsMenu = ({
           </h2>
           <ul className="space-y-0.5">
             {[...generalItems, ...bottomItems]
-              .filter((item) => !previewMode || item.path === '/general')
+              .filter(
+                (item) =>
+                  !previewMode ||
+                  item.path === '/general' ||
+                  item.to === BROADCAST_SETTINGS_PAGE
+              )
               .map((item) => (
                 <MenuLink
                   key={item.path}
                   item={item}
                   pathname={pathname}
                   showIcon
+                  changed={
+                    item.to === BROADCAST_SETTINGS_PAGE &&
+                    broadcastTransitionChanged(
+                      currentDashboard?.widgets.find(
+                        (w) => w.id === 'broadcast'
+                      )?.config
+                    )
+                  }
                   isNew={
                     item.path === '/release-notes' &&
                     !!releaseNotesStatus?.unreadVersion
@@ -415,36 +408,6 @@ export const SettingsMenu = ({
                 item={item}
                 pathname={pathname}
                 showIcon
-              />
-            ))}
-          </ul>
-        </section>
-      )}
-      {broadcastPage && (
-        <section
-          ref={asideScroll}
-          aria-label="Broadcast modules"
-          className="settings-menu-scroll min-h-0 flex-1 overflow-y-auto pb-3"
-        >
-          <h2 className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-            Broadcast
-          </h2>
-          <ul className="space-y-0.5">
-            {broadcastItems.map((item) => (
-              <MenuLink
-                key={item.path}
-                item={item}
-                pathname={pathname}
-                showIcon
-                exact
-                isEnabled={isItemEnabled(item)}
-                changed={broadcastItemChanged(item)}
-                disabledReason={unsupported(item) ?? undefined}
-                onToggle={
-                  canToggle(item) && item.widgetType && !unsupported(item)
-                    ? toggleWidget(item, item.widgetType, true)
-                    : undefined
-                }
               />
             ))}
           </ul>

@@ -91,6 +91,34 @@ describe('StandingsProcessor', () => {
     ]);
   });
 
+  it('records the first lap seen for each car across window changes', () => {
+    const processor = new StandingsProcessor();
+    processor.init(session);
+    processor.onFrame(frame(10));
+    processor.onFrame(frame(10.2, { CarIdxLap: { value: [4, 4] } }));
+
+    expect(processor.snapshot().firstObservedLap).toEqual([3, 3]);
+
+    processor.onLifecycle({ type: 'sessionNumChange' });
+    expect(processor.snapshot().firstObservedLap).toEqual([]);
+
+    processor.onFrame(frame(20, { CarIdxLap: { value: [12, 12] } }));
+    expect(processor.snapshot().firstObservedLap).toEqual([12, 12]);
+  });
+
+  it('leaves the first observed lap unset while a car is not in the world', () => {
+    const processor = new StandingsProcessor();
+    processor.init(session);
+    processor.onFrame(
+      frame(10, {
+        CarIdxLap: { value: [0, 5] },
+        CarIdxTrackSurface: { value: [-1, 3] },
+      })
+    );
+
+    expect(processor.snapshot().firstObservedLap).toEqual([undefined, 5]);
+  });
+
   it('projects live positions within each class for race sessions', () => {
     const processor = new StandingsProcessor();
     processor.init({

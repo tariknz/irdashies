@@ -5,8 +5,7 @@ import type { GantryWindowPlacement } from './gantryWindowPlacement';
 const DEBOUNCE_MS = 200;
 const pendingSaves = new Set<() => void>();
 
-/** Drain movement timers before the asynchronous storage shutdown flush. */
-export const flushWindowMovementOnShutdown = (): void => {
+export const flushWindowMovementSaves = (): void => {
   for (const save of pendingSaves) save();
 };
 
