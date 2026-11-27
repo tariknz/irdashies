@@ -22,14 +22,14 @@ export class JsonFileStore {
 
   constructor(
     private readonly filePath: string,
-    log: JsonFileStoreLogger = { warn: () => undefined }
+    private readonly log: JsonFileStoreLogger = { warn: () => undefined }
   ) {
     this.writer = createDebouncedAtomicWriter({
       filePath,
       serialize: () => JSON.stringify(this.data),
       onSuccess: () => undefined,
       onError: (error) =>
-        log.warn(`Failed to write ${filePath}: ${String(error)}`),
+        this.log.warn(`Failed to write ${filePath}: ${String(error)}`),
     });
     openStores.add(this);
   }
@@ -40,8 +40,11 @@ export class JsonFileStore {
         await fsp.readFile(this.filePath, 'utf8')
       );
       this.data = isRecord(parsed) ? parsed : {};
-    } catch {
+    } catch (error) {
       this.data = {};
+      if ((error as NodeJS.ErrnoException)?.code !== 'ENOENT') {
+        this.log.warn(`Failed to read ${this.filePath}: ${String(error)}`);
+      }
     }
   }
 

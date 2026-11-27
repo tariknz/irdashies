@@ -63,6 +63,12 @@ const ROAD_STEP_M = 1;
 export const roadLateral = (roadLane: number, laneWidth: number): number =>
   -roadLane * laneWidth;
 
+export const drawnRoadLateral = (
+  throughMapFrame: boolean,
+  roadLane: number,
+  laneWidth: number
+): number => (throughMapFrame ? 0 : roadLateral(roadLane, laneWidth));
+
 const drawRoad = (
   ctx: CanvasRenderingContext2D,
   style: RadarStyle,
@@ -234,7 +240,8 @@ export const drawRadar = (
   resetRimWarnings();
   resetDebugLabels();
 
-  const roadX = roadLateral(
+  const roadX = drawnRoadLateral(
+    projector.drawsThroughMapFrame,
     scene.roadLane ?? 0,
     scene.laneWidth ?? style.carWidth + 0.7
   );

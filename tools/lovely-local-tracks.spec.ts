@@ -42,6 +42,7 @@ describe('local Lovely tracks', () => {
 
   it('skips a file without a track id', async () => {
     await writeFile(path.join(directory, 'a.json'), JSON.stringify({}));
+    await writeFile(path.join(directory, 'b.json'), 'null');
 
     expect(readLocalTracks(directory)).toEqual([]);
   });

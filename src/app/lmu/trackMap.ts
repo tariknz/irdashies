@@ -388,12 +388,24 @@ export class LmuTrackMapRecorder {
   }
 }
 
+const isFinitePoint = (point: unknown): boolean => {
+  const { x, y } = (point ?? {}) as { x?: unknown; y?: unknown };
+  return (
+    typeof x === 'number' &&
+    Number.isFinite(x) &&
+    typeof y === 'number' &&
+    Number.isFinite(y)
+  );
+};
+
 const isTrackMap = (value: unknown): value is LmuTrackMap => {
   const map = value as LmuTrackMap;
   return (
     map?.orientation === LMU_MAP_ORIENTATION &&
     !!map?.active?.inside &&
-    map.active.trackPathPoints?.length >= MIN_RECORDED_POINTS &&
+    Array.isArray(map.active.trackPathPoints) &&
+    map.active.trackPathPoints.length >= MIN_RECORDED_POINTS &&
+    map.active.trackPathPoints.every(isFinitePoint) &&
     map.startFinish?.direction === 'anticlockwise'
   );
 };

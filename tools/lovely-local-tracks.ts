@@ -26,11 +26,15 @@ export const readLocalTracks = <T extends LocalLovelyTrack>(
   return fileNames
     .filter((fileName) => path.extname(fileName).toLowerCase() === '.json')
     .sort()
-    .map(
-      (fileName) =>
-        JSON.parse(fs.readFileSync(path.join(directory, fileName), 'utf8')) as T
+    .map((fileName): unknown =>
+      JSON.parse(fs.readFileSync(path.join(directory, fileName), 'utf8'))
     )
-    .filter((track) => typeof track.trackId === 'string' && track.trackId);
+    .filter(
+      (track): track is T =>
+        isRecord(track) &&
+        typeof track.trackId === 'string' &&
+        track.trackId.length > 0
+    );
 };
 
 export const mergeLocalTracks = <T extends LocalLovelyTrack>(

@@ -909,6 +909,20 @@ describe('RadarProcessor with LMU world positions', () => {
     expect(carIdxs).toEqual([2]);
   });
 
+  it('keeps a car the lap puts far away when the world puts it close', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      worldFrame(
+        { time: 1, pcts: [0.5, 0.5 + m(RADAR_MAX_RANGE_M + 40), 0.5 + m(200)] },
+        { 1: { lateral: -12, longitudinal: 19 } }
+      )
+    );
+
+    const cars = processor.snapshot().cars;
+    expect(cars.map((c) => c.carIdx)).toEqual([1]);
+    expect(cars[0].dist).toBeCloseTo(19);
+  });
+
   it('keeps the same map frame while it does not change', () => {
     const processor = createProcessor();
     const mapFrame = [1, 2, 0, 1, 1, 0];
