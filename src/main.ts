@@ -63,6 +63,7 @@ import {
   flushSettingsWindowBoundsOnShutdown,
 } from './app/storage/settingsWindowBounds';
 import { flushSimulatorUsageOnShutdown } from './app/storage/simulatorUsage';
+import { flushJsonFileStoresOnShutdown } from './app/lmu/jsonFileStore';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { getHiddenWidgets } from './app/widgetVisibility';
 import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
@@ -781,6 +782,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
       flushStorageWritesOnShutdown(),
       flushSettingsWindowBoundsOnShutdown(),
       flushSimulatorUsageOnShutdown(),
+      flushJsonFileStoresOnShutdown(),
     ]);
   },
   quit: () => app.quit(),

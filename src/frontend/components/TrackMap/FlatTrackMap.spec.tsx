@@ -22,13 +22,13 @@ vi.mock('./FlatTrackMapCanvas', () => ({
   FlatTrackMapCanvas: () => <div>Flat Track Canvas</div>,
 }));
 vi.mock('@irdashies/domain/track', () => ({
-  useTrackDrawing: vi.fn(),
+  useSessionTrackDrawing: vi.fn(),
 }));
 
 import { useTrackId } from './hooks/useTrackId';
 import { useDriverProgress } from './hooks/useDriverProgress';
 import { useDriverLivePositions } from '@irdashies/domain';
-import { useTrackDrawing } from '@irdashies/domain/track';
+import { useSessionTrackDrawing } from '@irdashies/domain/track';
 import { useFlatTrackMapSettings } from './hooks/useFlatTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
 import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
@@ -37,7 +37,7 @@ describe('FlatTrackMap', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(useTrackId).mockReturnValue(1);
-    vi.mocked(useTrackDrawing).mockReturnValue({
+    vi.mocked(useSessionTrackDrawing).mockReturnValue({
       active: { inside: '', outside: '' },
       startFinish: {},
     });

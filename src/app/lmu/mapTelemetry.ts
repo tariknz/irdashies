@@ -779,6 +779,7 @@ export function mapLmuTelemetry(
       'LmuBlindSpotRightLongitudinal',
       blindSpot?.rightLongitudinalM ?? null
     ),
+    LmuPlayerYaw: hold('LmuPlayerYaw', relativePositions?.playerYaw ?? null),
   };
   if (raw.vehSpeed) {
     t.LmuCarIdxSpeed = holdArray(

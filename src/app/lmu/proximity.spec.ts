@@ -220,8 +220,8 @@ describe('deriveLmuRelativePositions performance guards', () => {
   });
 
   it('skips cars outside the relevance radius', () => {
-    // Beyond 20 m nothing is computed, so no rotation and no atan2 is paid
-    // for a car that could never be alongside.
+    // Beyond the radius nothing is computed, so no rotation and no atan2 is
+    // paid for a car the radar could not draw.
     const buffer = createLmuRelativePositionsBuffer();
     deriveLmuRelativePositions(
       fixture([
@@ -232,6 +232,34 @@ describe('deriveLmuRelativePositions performance guards', () => {
     );
 
     expect(buffer.available[1]).toBe(false);
+  });
+
+  it('computes a car as far away as the radar can draw', () => {
+    const buffer = createLmuRelativePositionsBuffer();
+    deriveLmuRelativePositions(
+      fixture([
+        [0, 0],
+        [-3, 95],
+      ]),
+      buffer
+    );
+
+    expect(buffer.available[1]).toBe(true);
+    expect(buffer.longitudinal[1]).toBeCloseTo(-95);
+    expect(buffer.lateral[1]).toBeCloseTo(3);
+  });
+
+  it('does not let a distant car change the blind spot', () => {
+    const buffer = createLmuRelativePositionsBuffer();
+    deriveLmuRelativePositions(
+      fixture([
+        [0, 0],
+        [-3, 60],
+      ]),
+      buffer
+    );
+
+    expect(summariseLmuBlindSpot(buffer)?.state).toBe(CarLeftRight.Clear);
   });
 
   it('still computes a car just inside the radius', () => {
@@ -245,6 +273,114 @@ describe('deriveLmuRelativePositions performance guards', () => {
     );
 
     expect(buffer.available[1]).toBe(true);
+  });
+});
+
+describe('LMU opponent time alignment', () => {
+  const timed = (
+    frames: { player: number; opponent: number; opponentZ: number }[]
+  ) =>
+    frames.map(
+      ({ player, opponent, opponentZ }) =>
+        ({
+          ...fixture([
+            [0, 0],
+            [-3, opponentZ],
+          ]),
+          vehElapsedTime: new Float64Array([player, opponent]),
+        }) as LmuRawTelemetry
+    );
+
+  it('carries an older opponent sample forward to the player clock', () => {
+    const buffer = createLmuRelativePositionsBuffer();
+    const [first, second] = timed([
+      { player: 10.0, opponent: 10.0, opponentZ: 50 },
+      { player: 10.02, opponent: 10.01, opponentZ: 50.7 },
+    ]);
+    deriveLmuRelativePositions(first, buffer);
+    deriveLmuRelativePositions(second, buffer);
+
+    expect(buffer.longitudinal[1]).toBeCloseTo(-(50.7 + 0.7));
+  });
+
+  it('is unchanged when the same frame is derived twice', () => {
+    const buffer = createLmuRelativePositionsBuffer();
+    const [first, second] = timed([
+      { player: 10.0, opponent: 10.0, opponentZ: 50 },
+      { player: 10.02, opponent: 10.01, opponentZ: 50.7 },
+    ]);
+    deriveLmuRelativePositions(first, buffer);
+    deriveLmuRelativePositions(second, buffer);
+    const once = buffer.longitudinal[1];
+    deriveLmuRelativePositions(second, buffer);
+
+    expect(buffer.longitudinal[1]).toBeCloseTo(once);
+  });
+
+  it('does not count a move twice when the per-car clock stands still', () => {
+    const buffer = createLmuRelativePositionsBuffer();
+    const [first, second, third] = timed([
+      { player: 10.0, opponent: 10.0, opponentZ: 50 },
+      { player: 10.02, opponent: 10.01, opponentZ: 50.7 },
+      { player: 10.02, opponent: 10.01, opponentZ: 51.4 },
+    ]);
+    deriveLmuRelativePositions(first, buffer);
+    deriveLmuRelativePositions(second, buffer);
+    deriveLmuRelativePositions(third, buffer);
+
+    expect(buffer.longitudinal[1]).toBeCloseTo(-(51.4 + 0.7));
+  });
+
+  it('uses the raw position until two samples exist', () => {
+    const buffer = createLmuRelativePositionsBuffer();
+    const [only] = timed([{ player: 10.02, opponent: 10.01, opponentZ: 50 }]);
+    deriveLmuRelativePositions(only, buffer);
+
+    expect(buffer.longitudinal[1]).toBeCloseTo(-50);
+  });
+
+  it('does not extrapolate across a clock reset', () => {
+    const buffer = createLmuRelativePositionsBuffer();
+    const [late, reset] = timed([
+      { player: 500.0, opponent: 500.0, opponentZ: 50 },
+      { player: 1.02, opponent: 1.01, opponentZ: 80 },
+    ]);
+    deriveLmuRelativePositions(late, buffer);
+    deriveLmuRelativePositions(reset, buffer);
+
+    expect(buffer.longitudinal[1]).toBeCloseTo(-80);
+  });
+
+  it('does not extrapolate across a teleport', () => {
+    const buffer = createLmuRelativePositionsBuffer();
+    const [before, after] = timed([
+      { player: 1.02, opponent: 1.02, opponentZ: 80 },
+      { player: 1.06, opponent: 1.03, opponentZ: 100 },
+    ]);
+    deriveLmuRelativePositions(before, buffer);
+    deriveLmuRelativePositions(after, buffer);
+
+    expect(buffer.longitudinal[1]).toBeCloseTo(-100);
+  });
+
+  it('leaves opponents alone when the sim sends no per-car clock', () => {
+    const buffer = createLmuRelativePositionsBuffer();
+    deriveLmuRelativePositions(
+      fixture([
+        [0, 0],
+        [-3, 50],
+      ]),
+      buffer
+    );
+    deriveLmuRelativePositions(
+      fixture([
+        [0, 0],
+        [-3, 50.7],
+      ]),
+      buffer
+    );
+
+    expect(buffer.longitudinal[1]).toBeCloseTo(-50.7);
   });
 });
 
