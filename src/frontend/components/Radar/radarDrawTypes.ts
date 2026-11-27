@@ -155,6 +155,5 @@ export interface RadarScene {
   poleSideNotice?: 'left' | 'right' | null;
   /** Middle of the road from our car, in lanes, positive to the right. */
   roadLane?: number;
-  focusYawRad?: number | null;
   mapFrame?: readonly number[] | null;
 }

@@ -262,9 +262,6 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     world.heading = valuesOf(frame, 'LmuCarIdxRelativeHeading');
     const worldFocus =
       focus === scalarNumber(frame, 'PlayerCarIdx') && hasWorldChannels(world);
-    const focusYaw = worldFocus
-      ? scalarNumber(frame, 'LmuPlayerYaw', Number.NaN)
-      : Number.NaN;
     const mapFrame = worldFocus
       ? readMapFrame(valuesOf(frame, 'LmuRadarMapFrame'), this.latest.mapFrame)
       : null;
@@ -412,7 +409,6 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         ? poleSign(this.poleLeft) *
           ((formation.columns - 1) / 2 - formation.ownColumn)
         : 0,
-      focusYawRad: Number.isFinite(focusYaw) ? focusYaw : null,
       mapFrame,
       poleSideNotice: this.poleNoticeShown(time)
         ? this.poleLeft
@@ -576,7 +572,6 @@ const emptySnapshot = (version: number): RadarSnapshot => ({
   caution: false,
   poleSideNotice: null,
   roadLane: 0,
-  focusYawRad: null,
   mapFrame: null,
   cars: [],
   hazards: [],
@@ -604,7 +599,6 @@ const sameSnapshot = (
   previous.caution === next.caution &&
   previous.poleSideNotice === next.poleSideNotice &&
   previous.roadLane === next.roadLane &&
-  previous.focusYawRad === next.focusYawRad &&
   sameMapFrame(previous.mapFrame, next.mapFrame) &&
   previous.trackLength === next.trackLength &&
   previous.focusOnPitRoad === next.focusOnPitRoad &&

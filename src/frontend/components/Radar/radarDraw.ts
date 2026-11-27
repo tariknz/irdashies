@@ -223,7 +223,6 @@ export const drawRadar = (
     centre,
     centre,
     pixelsPerMetre,
-    scene.focusYawRad ?? null,
     scene.mapFrame ?? null
   );
 

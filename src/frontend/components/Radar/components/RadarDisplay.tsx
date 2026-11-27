@@ -46,7 +46,6 @@ export interface RadarFrame {
   poleSideNotice?: 'left' | 'right' | null;
   /** Middle of the road from our car, in lanes, positive to the right. */
   roadLane?: number;
-  focusYawRad?: number | null;
   mapFrame?: readonly number[] | null;
 }
 
@@ -301,7 +300,6 @@ export const RadarDisplay = memo(
             hazards,
             poleSideNotice: snap.poleSideNotice,
             roadLane,
-            focusYawRad: snap.focusYawRad ?? null,
             mapFrame: snap.mapFrame ?? null,
           },
           ringsLayer
