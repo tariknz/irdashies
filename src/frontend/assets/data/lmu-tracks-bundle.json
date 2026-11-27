@@ -4882,6 +4882,11 @@
         {
           "name": "Ligne Droite du Mistral",
           "start": 0.348,
+          "end": 0.497
+        },
+        {
+          "name": "Ligne Droite du Mistral",
+          "start": 0.54,
           "end": 0.641
         }
       ],

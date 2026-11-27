@@ -196,6 +196,17 @@ describe('the LMU circuits that used to be blank', () => {
     expect(byName('Virage du Pont')?.end_pct).toBe(0.959);
   });
 
+  it('names the Chicane Nord rather than the Mistral straight around it', () => {
+    const sections = sectionsFor('Paul Ricard - ELMS');
+    const at = (pct: number) =>
+      sections.find((s) => pct >= s.start_pct && pct < s.end_pct)?.name;
+
+    expect(at(0.4)).toBe('Ligne Droite du Mistral');
+    expect(at(0.505)).toBe('Chicane Nord');
+    expect(at(0.53)).toBe('Chicane Nord');
+    expect(at(0.6)).toBe('Ligne Droite du Mistral');
+  });
+
   it('names Fuji, which had nothing before', () => {
     const sections = sectionsFor('Fuji Speedway');
     const names = sections.map((s) => s.name);

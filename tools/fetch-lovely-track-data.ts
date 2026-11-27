@@ -278,17 +278,27 @@ async function main(): Promise<void> {
 
     for (const { game, output } of GAMES) {
       const outputFile = path.join(DATA_DIR, output);
+      const localTracks = readLocalTracks<LovelyTrack>(
+        path.join(LOCAL_TRACKS_DIR, game)
+      );
       // Each bundle ages on its own, so adding a game does not force the
       // others to be re-fetched.
-      if (await shouldSkipFetch(outputFile)) continue;
+      if (await shouldSkipFetch(outputFile)) {
+        const cached = JSON.parse(
+          fs.readFileSync(outputFile, 'utf8')
+        ) as TrackDataBundle;
+        const added = mergeLocalTracks(cached.tracks, localTracks);
+        if (added.length) {
+          console.log(`Added local ${game} tracks: ${added.join(', ')}`);
+          saveBundle(cached, outputFile);
+        }
+        continue;
+      }
 
       const manifest = await fetchManifest(game);
       const tracks = await fetchAllTrackData(manifest);
       const bundle = createBundle(tracks);
-      const added = mergeLocalTracks(
-        bundle.tracks,
-        readLocalTracks<LovelyTrack>(path.join(LOCAL_TRACKS_DIR, game))
-      );
+      const added = mergeLocalTracks(bundle.tracks, localTracks);
       if (added.length) {
         console.log(`Added local ${game} tracks: ${added.join(', ')}`);
       }
