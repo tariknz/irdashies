@@ -77,6 +77,10 @@ export class RadarProjector {
     return this.geometry !== null;
   }
 
+  get drawsThroughMapFrame(): boolean {
+    return this.geometry !== null && this.hasMapFrame;
+  }
+
   projectOffset(
     ahead: number,
     lateral: number,
@@ -151,3 +155,25 @@ export class RadarProjector {
     return output;
   }
 }
+
+export const advanceMapFrame = (
+  frame: readonly number[] | null | undefined,
+  aheadM: number,
+  output: number[]
+): readonly number[] | null => {
+  if (!frame || frame.length !== 6) return frame ?? null;
+  const [originX, originY, f00, f01, f10, f11] = frame;
+  const determinant = f00 * f11 - f01 * f10;
+  if (aheadM === 0 || !Number.isFinite(determinant) || determinant === 0) {
+    return frame;
+  }
+  const scale = aheadM / determinant;
+  output.length = 6;
+  output[0] = originX - f01 * scale;
+  output[1] = originY + f00 * scale;
+  output[2] = f00;
+  output[3] = f01;
+  output[4] = f10;
+  output[5] = f11;
+  return output;
+};

@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { buildTrackGeometry } from '@irdashies/domain/track';
-import { RadarProjector, type ScreenPose } from './radarProjection';
+import {
+  advanceMapFrame,
+  RadarProjector,
+  type ScreenPose,
+} from './radarProjection';
 import { projectCar, projector as shared } from './radarDrawShared';
 
 const setUp = () => {
@@ -140,5 +144,57 @@ describe('RadarProjector with a fitted map frame', () => {
     expect(projector.project(20, 0, blank())).toMatchObject(
       fallback.project(20, 0, blank())
     );
+  });
+});
+
+describe('advanceMapFrame', () => {
+  it('moves the frame origin ahead along our heading', () => {
+    const frame = [500, 0, 0, 1, 1, 0];
+    const advanced = advanceMapFrame(frame, 10, []);
+
+    expect(advanced?.[0]).toBeCloseTo(510);
+    expect(advanced?.[1]).toBeCloseTo(0);
+    expect(advanced?.slice(2)).toEqual([0, 1, 1, 0]);
+  });
+
+  it('keeps the road still relative to a car that moved with us', () => {
+    const geometry = buildTrackGeometry(
+      {
+        trackPathPoints: [
+          { x: 0, y: 0 },
+          { x: 1250, y: 0 },
+          { x: 1250, y: 1250 },
+          { x: 0, y: 1250 },
+          { x: 0, y: 0 },
+        ],
+        totalLength: 5000,
+        startFinishLength: 0,
+        direction: 'anticlockwise',
+      },
+      5000
+    );
+    const frame = [500, 0, 0, 1, 1, 0];
+    const later = new RadarProjector();
+    later.setup(
+      geometry,
+      5000,
+      0.1 + 10 / 5000,
+      100,
+      100,
+      2,
+      advanceMapFrame(frame, 10, [])
+    );
+
+    expect(later.project(10, 0, blank())).toMatchObject({
+      x: expect.closeTo(100, 1),
+      y: expect.closeTo(80, 1),
+    });
+  });
+
+  it('returns the frame unchanged when it cannot be advanced', () => {
+    const frame = [500, 0, 0, 0, 0, 0];
+
+    expect(advanceMapFrame(frame, 10, [])).toBe(frame);
+    expect(advanceMapFrame(null, 10, [])).toBeNull();
   });
 });

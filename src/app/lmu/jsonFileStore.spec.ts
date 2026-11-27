@@ -61,6 +61,21 @@ describe('JsonFileStore', () => {
     await store.close();
   });
 
+  it('warns about a file it cannot parse, but not about a missing one', async () => {
+    const log = { warn: vi.fn() };
+    const store = new JsonFileStore(file, log);
+    await store.restore();
+    expect(log.warn).not.toHaveBeenCalled();
+
+    fs.writeFileSync(file, '{not json');
+    await store.restore();
+    expect(store.entries()).toEqual([]);
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining(`Failed to read ${file}`)
+    );
+    await store.close();
+  });
+
   it('reports a write that fails instead of throwing', async () => {
     const log = { warn: vi.fn() };
     const store = new JsonFileStore(

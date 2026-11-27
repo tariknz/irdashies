@@ -411,4 +411,28 @@ describe('LMU track map', () => {
     expect(storage.load('Autódromo José Carlos Pace')).toEqual(map);
     expect(storage.load('Lusail International Circuit')).toBeNull();
   });
+
+  it('ignores a saved map whose path points are not finite', () => {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'irdashies-lmu-'));
+    temporaryDirectories.push(directory);
+    const storage = new LmuTrackMapStorage(path.join(directory, 'maps.json'));
+    const map = normalizeLmuTrackMap(
+      [
+        { x: 0, y: 0, distance: 0 },
+        { x: 100, y: 0, distance: 500 },
+        { x: 0, y: 0, distance: 1000 },
+      ],
+      1000
+    );
+    const broken = {
+      ...map,
+      active: {
+        ...map.active,
+        trackPathPoints: map.active.trackPathPoints.map(() => null),
+      },
+    } as unknown as typeof map;
+    storage.save('Broken Test Circuit', broken);
+
+    expect(storage.load('Broken Test Circuit')).toBeNull();
+  });
 });

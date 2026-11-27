@@ -64,6 +64,13 @@ export function alignOpponentPosition(
     history.latestX[carIdx] = x;
     history.latestZ[carIdx] = z;
     history.latestT[carIdx] = carTime;
+  } else {
+    const shiftX = x - history.latestX[carIdx];
+    const shiftZ = z - history.latestZ[carIdx];
+    history.previousX[carIdx] += shiftX;
+    history.previousZ[carIdx] += shiftZ;
+    history.latestX[carIdx] = x;
+    history.latestZ[carIdx] = z;
   }
 
   const age = playerTime - carTime;

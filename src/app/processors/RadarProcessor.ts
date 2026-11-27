@@ -376,9 +376,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         if (carIdx === focus || this.excluded.has(carIdx)) continue;
         const dist = dists[carIdx];
         const surface = numberAt(surfaces, carIdx);
-        if (!Number.isFinite(dist) || Math.abs(dist) > RADAR_MAX_RANGE_M) {
-          continue;
-        }
+        if (!Number.isFinite(dist)) continue;
+        if (!worldFocus && Math.abs(dist) > RADAR_MAX_RANGE_M) continue;
         const car: RadarCar = {
           carIdx,
           dist,
