@@ -11,22 +11,37 @@ export interface RadarFilterOptions {
  * off the edge instead of vanishing at its centre), and on the same side of
  * the pit wall as the focus car when `hideInPit` is set.
  */
+export const distanceFromUs = (
+  car: Pick<RadarCar, 'dist' | 'lateralM'>
+): number =>
+  car.lateralM === undefined
+    ? Math.abs(car.dist)
+    : Math.hypot(car.dist, car.lateralM);
+
+export const extrapolatedDist = (
+  car: Pick<RadarCar, 'dist' | 'relativeSpeed' | 'lateralM'>,
+  elapsedS: number
+): number =>
+  car.lateralM === undefined
+    ? car.dist + car.relativeSpeed * elapsedS
+    : car.dist;
+
 export const selectRadarCars = (
   snapshot: Pick<RadarSnapshot, 'cars' | 'focusOnPitRoad'>,
   { range, carLength, hideInPit }: RadarFilterOptions
 ): RadarCar[] =>
   snapshot.cars.filter(
     (car) =>
-      Math.abs(car.dist) <= range + carLength &&
+      distanceFromUs(car) <= range + carLength &&
       (!hideInPit || car.onPitRoad === snapshot.focusOnPitRoad)
   );
 
 /** Distance to the nearest car in metres, or Infinity when there is none. */
 export const nearestDistance = (
-  cars: readonly Pick<RadarCar, 'dist'>[]
+  cars: readonly Pick<RadarCar, 'dist' | 'lateralM'>[]
 ): number =>
   cars.reduce(
-    (nearest, car) => Math.min(nearest, Math.abs(car.dist)),
+    (nearest, car) => Math.min(nearest, distanceFromUs(car)),
     Infinity
   );
 

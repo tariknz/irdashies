@@ -16,6 +16,7 @@ import {
 } from '../radarDraw';
 import { cornerInside, DiveTracker, type DiveHint } from '../radarHints';
 import { advanceMapFrame } from '../radarProjection';
+import { extrapolatedDist } from '../radarModel';
 import type { RadarHazard } from '@irdashies/types';
 
 export interface RadarFrameCar {
@@ -209,7 +210,7 @@ export const RadarDisplay = memo(
             current.appearance.get(car.carIdx) ?? FALLBACK_APPEARANCE;
           const target = cars[index] ?? ({} as RadarDrawCar);
           target.carIdx = car.carIdx;
-          target.dist = car.dist + car.relativeSpeed * elapsed;
+          target.dist = extrapolatedDist(car, elapsed);
           target.relativeSpeed = car.relativeSpeed;
           target.world = car.lateralM !== undefined;
           target.heading = car.headingRad ?? 0;
