@@ -36,6 +36,19 @@ import {
  * Windows Run entry on every launch after the user had turned it off.
  */
 const activeDashboard = () => getDashboard(getCurrentProfileId());
+
+// The renderer draws the header and drag region on every platform.
+// The overlay exposes the native controls' safe area to the renderer,
+// including the traffic lights on the left on macOS.
+const APP_HEADER_TITLE_BAR = {
+  titleBarStyle: 'hidden',
+  titleBarOverlay: {
+    color: '#141a21',
+    symbolColor: '#cad5e2',
+    // Leave the 48px renderer header's bottom border below native controls.
+    height: 47,
+  },
+} satisfies BrowserWindowConstructorOptions;
 import { getChromiumFlags, parseCustomSwitches } from './storage/chromiumFlags';
 import {
   flushWindowMovementSaves,
@@ -1405,6 +1418,7 @@ export class OverlayManager {
     const browserWindow = new BrowserWindow({
       title: 'irDashies - Gantry',
       frame: true,
+      ...APP_HEADER_TITLE_BAR,
       ...(bounds ?? { width: 1400, height: 800 }),
       autoHideMenuBar: true,
       icon: getIconPath(),
@@ -1605,16 +1619,7 @@ export class OverlayManager {
       title: `irDashies - Settings`,
       frame: true,
       backgroundColor: '#141a21',
-      // The renderer draws the header and drag region on every platform.
-      // The overlay exposes the native controls' safe area to the renderer,
-      // including the traffic lights on the left on macOS.
-      titleBarStyle: 'hidden',
-      titleBarOverlay: {
-        color: '#141a21',
-        symbolColor: '#cad5e2',
-        // Leave the 48px renderer header's bottom border below native controls.
-        height: 47,
-      },
+      ...APP_HEADER_TITLE_BAR,
       ...defaultSettingsWindowBounds(screen.getPrimaryDisplay().workArea),
       autoHideMenuBar: true,
       acceptFirstMouse: true,

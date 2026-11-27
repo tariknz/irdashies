@@ -181,6 +181,21 @@ describe('OverlayManager Gantry window', () => {
     expect(gantryWindows()).toHaveLength(1);
   });
 
+  it('uses the app header with native window controls, like settings', () => {
+    const manager = new OverlayManager();
+    manager.syncGantryWindow(dashboard(true));
+
+    expect(gantryWindows()[0].options).toMatchObject({
+      frame: true,
+      titleBarStyle: 'hidden',
+      titleBarOverlay: {
+        color: '#141a21',
+        symbolColor: '#cad5e2',
+        height: 47,
+      },
+    });
+  });
+
   it('closes the window when the widget is switched off', () => {
     const manager = new OverlayManager();
     manager.syncGantryWindow(dashboard(true));
