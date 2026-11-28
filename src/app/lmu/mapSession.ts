@@ -19,6 +19,7 @@ import { lmuCarNumber, lmuCarNumberRaw, lmuTeamName } from './entryName';
 import { lmuDriverTires } from './tireCompound';
 import { lmuSessionUniqueId, type LmuSessionIdentity } from './sessionIdentity';
 import { lmuShiftPointRpm } from './shiftPoints';
+import { lmuNationalityFor } from './nationalityWatch';
 
 /**
  * LMU's pit and rolling-start speed limit, km/h.
@@ -508,7 +509,7 @@ export function mapLmuSession(
     // `control === 1` only: an entry whose control the sim did not report
     // stays eligible rather than silently losing its rank.
     LmuRating: mergeRating(
-      nationalities?.[d.name],
+      lmuNationalityFor(nationalities, d.name),
       d.name && !isAiEntry(d) ? ratingFor?.(d.name) : undefined
     ),
   }));
