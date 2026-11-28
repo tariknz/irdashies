@@ -17,6 +17,10 @@ export type Telemetry = {
   LmuCarIdxRelativeLateral?: TelemetryVar<number[]>;
   LmuCarIdxRelativeLongitudinal?: TelemetryVar<number[]>;
   LmuCarIdxRelativeHeading?: TelemetryVar<number[]>;
+  LmuPlayerYaw?: TelemetryVar<(number | null)[]>;
+  LmuRadarMapFrame?: TelemetryVar<number[]>;
+  LmuRadarRoadEdges?: TelemetryVar<number[]>;
+  LmuCarIdxOffTrack?: TelemetryVar<number[]>;
   LmuCarIdxSpeed?: TelemetryVar<number[]>;
   /**
    * Compound index per wheel, for every car: four entries per slot at

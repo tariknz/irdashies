@@ -1,7 +1,5 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import type { LmuTrackMap } from '@irdashies/types';
-import bundledTrackMaps from './lmu-track-maps.json';
+import { JsonFileStore, type JsonFileStoreLogger } from './jsonFileStore';
 
 const WIDTH = 1920;
 const HEIGHT = 1080;
@@ -12,6 +10,7 @@ const MAX_COVERAGE_GAP_FRACTION = 0.05;
 const LAP_TIME_TOLERANCE_SECONDS = 0.05;
 const LAP_TIME_WAIT_SECONDS = 5;
 const SCORING_SYNC_TOLERANCE_SECONDS = 0.05;
+const LMU_MAP_ORIENTATION = 'lmu-north-v2';
 
 interface RecordedPoint {
   x: number;
@@ -44,13 +43,6 @@ export function lmuGroundPosition(
   const z = position[2];
   return finite(x) && finite(z) ? { x, y: -z } : null;
 }
-
-// Canvas y grows downward, so a counter-clockwise turn on screen is (x, y) -> (y, -x).
-export const rotateLmuMapPointCounterClockwise = <
-  T extends { x: number; y: number },
->(
-  point: T
-): T => ({ ...point, x: point.y, y: -point.x });
 
 function interpolatePoint(
   points: readonly RecordedPoint[],
@@ -85,17 +77,30 @@ function interpolatePoint(
   };
 }
 
+export interface LmuMapTransform {
+  scale: number;
+  minX: number;
+  minY: number;
+  offsetX: number;
+  offsetY: number;
+}
+
 export function normalizeLmuTrackMap(
   recorded: readonly RecordedPoint[],
   trackLength: number
 ): LmuTrackMap {
+  return normalizeLmuTrackMapWithTransform(recorded, trackLength).map;
+}
+
+export function normalizeLmuTrackMapWithTransform(
+  recorded: readonly RecordedPoint[],
+  trackLength: number
+): { map: LmuTrackMap; transform: LmuMapTransform } {
   const points = Array.from({ length: RESAMPLED_POINTS }, (_, index) =>
-    rotateLmuMapPointCounterClockwise(
-      interpolatePoint(
-        recorded,
-        (trackLength * index) / RESAMPLED_POINTS,
-        trackLength
-      )
+    interpolatePoint(
+      recorded,
+      (trackLength * index) / RESAMPLED_POINTS,
+      trackLength
     )
   );
   const minX = Math.min(...points.map((point) => point.x));
@@ -118,150 +123,22 @@ export function normalizeLmuTrackMap(
   const first = normalized[0];
 
   return {
-    orientation: 'lmu-ccw-v1',
-    active: {
-      inside: `${inside} Z`,
-      outside: `${inside} Z`,
-      trackPathPoints: normalized,
-      totalLength: normalized.length - 1,
+    map: {
+      orientation: LMU_MAP_ORIENTATION,
+      active: {
+        inside: `${inside} Z`,
+        outside: `${inside} Z`,
+        trackPathPoints: normalized,
+        totalLength: normalized.length - 1,
+      },
+      startFinish: {
+        line: `M${first.x},${first.y - 30} L${first.x},${first.y + 30}`,
+        point: { ...first, length: 0 },
+        direction: 'anticlockwise',
+      },
     },
-    startFinish: {
-      line: `M${first.x},${first.y - 30} L${first.x},${first.y + 30}`,
-      point: { ...first, length: 0 },
-      direction: 'anticlockwise',
-    },
+    transform: { scale, minX, minY, offsetX, offsetY },
   };
-}
-
-const normalizeTrackName = (value: string) =>
-  value
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '');
-
-const BUNDLED_LMU_ALIASES: Record<string, string> = {
-  portimao: 'Algarve International Circuit',
-  autodromointernacionaldoalgarve: 'Algarve International Circuit',
-  imola: 'Autodromo Enzo e Dino Ferrari',
-  interlagos: 'Autódromo José Carlos Pace',
-  monza: 'Autodromo Nazionale Monza',
-  barcelona: 'Circuit de Barcelona',
-  circuitdecatalunya: 'Circuit de Barcelona',
-  circuitdebarcelonacatalunya: 'Circuit de Barcelona',
-  lemans: 'Circuit de la Sarthe',
-  circuitdes24heuresdumans: 'Circuit de la Sarthe',
-  lemansnochicane: 'Circuit de la Sarthe Mulsanne',
-  circuitdelasarthemulsannenochicanes: 'Circuit de la Sarthe Mulsanne',
-  cota: 'Circuit of the Americas',
-  spa: 'Circuit de Spa-Francorchamps',
-  spafrancorchamps: 'Circuit de Spa-Francorchamps',
-  spaendurancelayout: 'Circuit de Spa-Francorchamps',
-  fuji: 'Fuji Speedway',
-  fujiclassic: 'Fuji Speedway Classic',
-  qatar: 'Lusail International Circuit',
-  lusail: 'Lusail International Circuit',
-  paulricard: 'Paul Ricard - ELMS',
-  circuitpaulricard: 'Paul Ricard - ELMS',
-  sebring: 'Sebring International Raceway',
-  silverstone: 'Silverstone Grand Prix Circuit - WEC',
-  silverstonegrandprix: 'Silverstone Grand Prix Circuit - WEC',
-  bahrain: 'Bahrain International Circuit',
-  bahraininternationalendurancecircuit: 'Bahrain Endurance Circuit',
-  bahraininternationaloutercircuit: 'Bahrain Outer Circuit',
-  bahraininternationalpaddockcircuit: 'Bahrain Paddock Circuit',
-  daytona: 'Daytona International Speedway Road Course',
-  lagunaseca: 'WeatherTech Raceway Laguna Seca',
-};
-
-export function findBundledLmuTrackMap(trackName: string): LmuTrackMap | null {
-  const normalized = normalizeTrackName(trackName);
-  if (!normalized) return null;
-  const maps = bundledTrackMaps as unknown as Record<string, LmuTrackMap>;
-  const exactTitle = Object.keys(maps).find(
-    (title) => normalizeTrackName(title) === normalized
-  );
-  const alias = BUNDLED_LMU_ALIASES[normalized];
-  const partialTitle = Object.keys(maps)
-    .filter((title) => {
-      const candidate = normalizeTrackName(title);
-      return candidate.includes(normalized) || normalized.includes(candidate);
-    })
-    .sort(
-      (a, b) => normalizeTrackName(b).length - normalizeTrackName(a).length
-    )[0];
-  return maps[exactTitle ?? alias ?? partialTitle] ?? null;
-}
-
-export function parseTinyPedalTrackMap(svg: string): LmuTrackMap | null {
-  const pointsAttribute = svg.match(
-    /<polyline\b[^>]*\bid=["']map["'][^>]*\bpoints=["']([^"']+)["']/i
-  )?.[1];
-  if (!pointsAttribute) return null;
-
-  const coordinates = pointsAttribute
-    .trim()
-    .split(/\s+/)
-    .map((pair) => pair.split(',').map(Number))
-    .filter(
-      (pair): pair is [number, number] =>
-        pair.length === 2 && pair.every(Number.isFinite)
-    );
-  if (coordinates.length < MIN_RECORDED_POINTS) return null;
-
-  let distance = 0;
-  const recorded = coordinates.map(([x, y], index) => {
-    if (index > 0) {
-      const [previousX, previousY] = coordinates[index - 1];
-      distance += Math.hypot(x - previousX, y - previousY);
-    }
-    return { x, y, distance };
-  });
-  if (distance <= 0) return null;
-
-  return normalizeLmuTrackMap(recorded, distance);
-}
-
-export function findTinyPedalTrackMap(
-  trackName: string,
-  directories: readonly string[]
-): { map: LmuTrackMap; filePath: string } | null {
-  const normalizedTrackName = normalizeTrackName(trackName);
-  for (const directory of directories) {
-    let fileNames: string[];
-    try {
-      fileNames = fs.readdirSync(directory);
-    } catch {
-      continue;
-    }
-    const fileName = fileNames.find(
-      (name) =>
-        path.extname(name).toLowerCase() === '.svg' &&
-        normalizeTrackName(path.basename(name, path.extname(name))) ===
-          normalizedTrackName
-    );
-    if (!fileName) continue;
-
-    const filePath = path.join(directory, fileName);
-    try {
-      const map = parseTinyPedalTrackMap(fs.readFileSync(filePath, 'utf8'));
-      if (map) return { map, filePath };
-    } catch {
-      continue;
-    }
-  }
-  return null;
-}
-
-export function tinyPedalTrackMapDirectories(): string[] {
-  const configured = process.env.TINYPEDAL_TRACKMAP_DIR;
-  if (process.platform !== 'win32') {
-    return configured ? [configured] : [];
-  }
-  const drives = Array.from({ length: 24 }, (_, index) =>
-    path.join(`${String.fromCharCode(67 + index)}:\\`, 'TinyPedal', 'trackmap')
-  );
-  return configured ? [configured, ...drives] : drives;
 }
 
 export class LmuTrackMapRecorder {
@@ -409,68 +286,53 @@ export class LmuTrackMapRecorder {
   }
 }
 
+const isFinitePoint = (point: unknown): boolean => {
+  const { x, y } = (point ?? {}) as { x?: unknown; y?: unknown };
+  return (
+    typeof x === 'number' &&
+    Number.isFinite(x) &&
+    typeof y === 'number' &&
+    Number.isFinite(y)
+  );
+};
+
 const isTrackMap = (value: unknown): value is LmuTrackMap => {
   const map = value as LmuTrackMap;
   return (
-    map?.orientation === 'lmu-ccw-v1' &&
+    map?.orientation === LMU_MAP_ORIENTATION &&
     !!map?.active?.inside &&
-    map.active.trackPathPoints?.length >= MIN_RECORDED_POINTS &&
+    Array.isArray(map.active.trackPathPoints) &&
+    map.active.trackPathPoints.length >= MIN_RECORDED_POINTS &&
+    map.active.trackPathPoints.every(isFinitePoint) &&
     map.startFinish?.direction === 'anticlockwise'
   );
 };
 
 export class LmuTrackMapStorage {
-  constructor(private readonly filePath: string) {}
+  private readonly store: JsonFileStore;
+
+  constructor(filePath: string, log?: JsonFileStoreLogger) {
+    this.store = new JsonFileStore(filePath, log);
+  }
+
+  restore(): Promise<void> {
+    return this.store.restore();
+  }
+
+  flush(): Promise<void> {
+    return this.store.flush();
+  }
+
+  close(): Promise<void> {
+    return this.store.close();
+  }
 
   load(trackName: string): LmuTrackMap | null {
-    try {
-      const data = JSON.parse(fs.readFileSync(this.filePath, 'utf8')) as Record<
-        string,
-        unknown
-      >;
-      return isTrackMap(data[trackName]) ? data[trackName] : null;
-    } catch {
-      return null;
-    }
+    const map = this.store.get(trackName);
+    return isTrackMap(map) ? map : null;
   }
 
   save(trackName: string, map: LmuTrackMap): void {
-    let data: Record<string, LmuTrackMap>;
-    try {
-      const parsed: unknown = JSON.parse(
-        fs.readFileSync(this.filePath, 'utf8')
-      );
-      data =
-        parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
-          ? (parsed as Record<string, LmuTrackMap>)
-          : {};
-    } catch {
-      data = {};
-    }
-    data[trackName] = map;
-    const temporaryPath = `${this.filePath}.${process.pid}.tmp`;
-    fs.writeFileSync(temporaryPath, JSON.stringify(data));
-    fs.renameSync(temporaryPath, this.filePath);
+    this.store.set(trackName, map);
   }
-}
-
-export function loadLmuTrackMap(
-  trackName: string,
-  storage: LmuTrackMapStorage,
-  tinyPedalDirectories: readonly string[]
-): {
-  map: LmuTrackMap;
-  source: 'storage' | 'bundled' | 'tinyPedal';
-  filePath?: string;
-} | null {
-  const stored = storage.load(trackName);
-  if (stored) return { map: stored, source: 'storage' };
-
-  const bundled = findBundledLmuTrackMap(trackName);
-  if (bundled) return { map: bundled, source: 'bundled' };
-
-  const imported = findTinyPedalTrackMap(trackName, tinyPedalDirectories);
-  return imported
-    ? { map: imported.map, source: 'tinyPedal', filePath: imported.filePath }
-    : null;
 }

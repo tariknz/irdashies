@@ -198,9 +198,13 @@ export interface RadarCar {
    * Where `lane` came from: the standing-start grid or the pace line (both
    * known from the sim), the spotter calling this car alongside, a side
    * remembered after the overlap ended, a guess that two rivals level with
-   * each other must be side by side, or nothing (drawn in our lane).
+   * each other must be side by side, a measured world position, or nothing
+   * (drawn in our lane).
    */
-  laneSource: 'none' | 'grid' | 'pace' | 'spotter' | 'memory' | 'pair';
+  laneSource:
+    'none' | 'grid' | 'pace' | 'spotter' | 'memory' | 'pair' | 'world';
+  lateralM?: number;
+  headingRad?: number;
   onPitRoad: boolean;
   offTrack: boolean;
 }
@@ -262,6 +266,8 @@ export interface RadarSnapshot {
    * is half a lane over. 0 outside formations.
    */
   roadLane: number;
+  mapFrame?: readonly number[] | null;
+  roadEdges?: readonly number[] | null;
   /** Only cars within the processor's range, nearest first. */
   cars: readonly RadarCar[];
   /**

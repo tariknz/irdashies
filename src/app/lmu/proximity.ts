@@ -1,11 +1,19 @@
 import { CarLeftRight } from '@irdashies/types';
 import type { LmuRawTelemetry } from './native';
+import {
+  alignOpponentPosition,
+  createPositionHistory,
+  type AlignedPosition,
+  type PositionHistory,
+} from './positionAlignment';
 
 export interface LmuRelativePositions {
   available: boolean[];
   lateral: number[];
   longitudinal: number[];
   heading: number[];
+  playerYaw: number;
+  history: PositionHistory;
 }
 
 const VEHICLE_WIDTH = 2.2;
@@ -16,16 +24,16 @@ const MAX_LONGITUDINAL_DISTANCE = VEHICLE_LENGTH * 1.2;
 /**
  * Cars further away than this in plain world distance are not computed.
  *
- * Everything downstream is about cars alongside: the classification below
- * needs |longitudinal| under 5.52 m and |lateral| under 4.18 m, and the blind
- * spot bar shows a few metres either way. 20 m is far beyond both, so the gate
- * cannot change an answer -- it only avoids rotating and taking an atan2 for
- * a car most of a straight away.
+ * The radar draws everything inside its range, which the widget caps at
+ * 100 m, so positions are published that far out; the blind spot
+ * classification below applies its own, much tighter, thresholds and is
+ * unaffected. Beyond the radius a car is of no use to either, and skipping it
+ * avoids a rotation and an atan2 for most of the grid on a long straight.
  *
  * It is tested on the squared distance so no square root is taken either.
  */
-const RELEVANT_RADIUS_M = 20;
-const RELEVANT_RADIUS_SQ = RELEVANT_RADIUS_M * RELEVANT_RADIUS_M;
+export const LMU_RELATIVE_RADIUS_M = 120;
+const RELEVANT_RADIUS_SQ = LMU_RELATIVE_RADIUS_M * LMU_RELATIVE_RADIUS_M;
 
 /**
  * Reusable output buffers.
@@ -39,6 +47,8 @@ export const createLmuRelativePositionsBuffer = (): LmuRelativePositions => ({
   lateral: [],
   longitudinal: [],
   heading: [],
+  playerYaw: Number.NaN,
+  history: createPositionHistory(),
 });
 
 /**
@@ -62,6 +72,8 @@ export function lmuRelativePositionsAvailable(raw: LmuRawTelemetry): boolean {
   );
 }
 
+const alignedScratch: AlignedPosition = { x: 0, z: 0 };
+
 export function deriveLmuRelativePositions(
   raw: LmuRawTelemetry,
   /** Reused when given; a fresh buffer is allocated when it is not. */
@@ -83,7 +95,10 @@ export function deriveLmuRelativePositions(
   const playerZ = raw.vehPosZ[playerIdx];
   const playerYaw = Math.atan2(raw.vehOriX[playerIdx], raw.vehOriZ[playerIdx]);
   if (![playerX, playerZ, playerYaw].every(Number.isFinite)) return null;
+  out.playerYaw = playerYaw;
 
+  const playerTime = raw.vehElapsedTime?.[playerIdx] ?? raw.elapsedTime;
+  const aligned = alignedScratch;
   const sin = Math.sin(playerYaw - Math.PI);
   const cos = Math.cos(playerYaw - Math.PI);
   const length = raw.vehTelemetryAvailable.length;
@@ -102,8 +117,17 @@ export function deriveLmuRelativePositions(
       continue;
     }
 
-    const deltaX = raw.vehPosX[carIdx] - playerX;
-    const deltaZ = -(raw.vehPosZ[carIdx] - playerZ);
+    alignOpponentPosition(
+      out.history,
+      carIdx,
+      raw.vehPosX[carIdx],
+      raw.vehPosZ[carIdx],
+      raw.vehElapsedTime?.[carIdx],
+      playerTime,
+      aligned
+    );
+    const deltaX = aligned.x - playerX;
+    const deltaZ = -(aligned.z - playerZ);
     // Cheap gate before the trig. Two multiplies and an add against a squared
     // radius, rather than a rotation and an atan2 per car per frame.
     if (deltaX * deltaX + deltaZ * deltaZ > RELEVANT_RADIUS_SQ) continue;

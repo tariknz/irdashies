@@ -63,6 +63,7 @@ export interface LmuLapDistanceState {
    * agree; see `lmuCompletedLaps`.
    */
   completedOffset: number;
+  awaitingStart: boolean;
 }
 
 export const createLmuLapDistanceState = (): LmuLapDistanceState => ({
@@ -74,6 +75,7 @@ export const createLmuLapDistanceState = (): LmuLapDistanceState => ({
   lap: null,
   lastLapNumber: -1,
   completedOffset: 0,
+  awaitingStart: false,
 });
 
 export const resetLmuLapDistanceState = (state: LmuLapDistanceState): void => {
@@ -85,6 +87,7 @@ export const resetLmuLapDistanceState = (state: LmuLapDistanceState): void => {
   state.lap = null;
   state.lastLapNumber = -1;
   state.completedOffset = 0;
+  state.awaitingStart = false;
 };
 
 /**
@@ -98,6 +101,14 @@ export const resetLmuLapDistanceState = (state: LmuLapDistanceState): void => {
 export const lmuCompletedLaps = (state: LmuLapDistanceState): number | null =>
   state.lap === null ? null : state.lap + state.completedOffset;
 
+export const lmuProgressLaps = (state: LmuLapDistanceState): number | null => {
+  const completed = lmuCompletedLaps(state);
+  if (completed === null) return null;
+  const shortOfStartLine =
+    state.awaitingStart && state.lastPct >= 0.5 && state.lastPct < 1;
+  return shortOfStartLine ? completed - 1 : completed;
+};
+
 /**
  * Longest stretch that may be integrated before falling back to scoring.
  *
@@ -105,6 +116,8 @@ export const lmuCompletedLaps = (state: LmuLapDistanceState): number | null =>
  * stalled — a pause, a menu, a dropped frame — and integrating across it would
  * invent position from a stale speed.
  */
+export const LMU_PHASE_BEFORE_START_LINE = 9;
+
 const MAX_INTEGRATION_SEC = 0.5;
 
 /**
@@ -147,6 +160,7 @@ export interface LmuLapDistanceFrame {
   /** Speed in m/s, 100 Hz. Always positive: it is a velocity magnitude. */
   speedMs: number;
   trackLengthM: number;
+  beforeStartLine?: boolean;
 }
 
 /*
@@ -169,6 +183,7 @@ function anchorToScoring(
   state.lastScoringPct = frame.scoringPct;
   state.lastPct = clampPct(frame.scoringPct);
   state.heldAtLineSince = -1;
+  state.awaitingStart = false;
   state.lap = frame.lapNumber >= 0 ? frame.lapNumber : null;
   state.lastLapNumber = frame.lapNumber;
   // From this frame too, as the lap is. Left to the first mid-lap frame, an
@@ -214,6 +229,11 @@ export function estimateLmuLapDistPct(
     return anchorToScoring(state, frame);
   }
 
+  const beforeStartLine = frame.beforeStartLine === true && scoringPct === 0;
+  if (beforeStartLine && state.lastPct >= 0.5 && state.lastPct < 1) {
+    state.awaitingStart = true;
+  }
+
   const before = state.lastPct >= 1 ? state.lastPct - 1 : state.lastPct;
 
   if (scoringPct !== state.lastScoringPct) {
@@ -228,7 +248,7 @@ export function estimateLmuLapDistPct(
       if (
         scoringPct === 0 &&
         !ranOver &&
-        shortOfLineM <= LINE_GAP_MAX_PCT * trackLengthM
+        (beforeStartLine || shortOfLineM <= LINE_GAP_MAX_PCT * trackLengthM)
       ) {
         // Carried on from where the estimate is now, and from here advanced
         // a frame at a time: scoring may hold for seconds, and one speed
@@ -268,7 +288,11 @@ export function estimateLmuLapDistPct(
 
   const dt = elapsedTime - state.syncedAt;
   const held = state.heldAtLineSince >= 0;
-  if (held && elapsedTime - state.heldAtLineSince > HELD_AT_LINE_MAX_SEC) {
+  if (
+    held &&
+    !beforeStartLine &&
+    elapsedTime - state.heldAtLineSince > HELD_AT_LINE_MAX_SEC
+  ) {
     // Held at the line for longer than any gap takes to drive: take
     // scoring's 0 after all.
     state.heldAtLineSince = -1;
@@ -330,6 +354,7 @@ export function estimateLmuLapDistPct(
     (counterReset || (after >= MID_LAP_FROM && after <= MID_LAP_TO))
   ) {
     state.lap = lapNumber;
+    if (counterReset) state.awaitingStart = false;
     const completed = frame.completedLaps;
     if (
       !counterReset &&
@@ -340,11 +365,15 @@ export function estimateLmuLapDistPct(
       state.completedOffset = completed - lapNumber;
     }
   } else if (before > 0.5 && after < 0.5 && state.lap !== null) {
-    state.lap += 1;
+    if (state.awaitingStart) state.awaitingStart = false;
+    else state.lap += 1;
   } else if (state.lap === null && lapNumber >= 0) {
     state.lap = lapNumber;
   }
   state.lastLapNumber = lapNumber;
+  if (!beforeStartLine && after >= MID_LAP_FROM && after <= MID_LAP_TO) {
+    state.awaitingStart = false;
+  }
 
   return clampPct(after);
 }

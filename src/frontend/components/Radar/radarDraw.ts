@@ -7,10 +7,16 @@ import {
 import { drawPoleSideNotice } from './radarDrawNotice';
 import { overlapOf } from './radarHints';
 import { formatDistance, speedIn } from './radarStyle';
-import { warningLevel } from './radarDrawTypes';
+import { WORLD_WARNING_MAX_LATERAL_M, warningLevel } from './radarDrawTypes';
 import type { RadarScene, RadarStyle } from './radarDrawTypes';
 
-import { MIN_TEXT_PX, drawCarBody, pose, projector } from './radarDrawShared';
+import {
+  MIN_TEXT_PX,
+  drawCarBody,
+  pose,
+  projectCar,
+  projector,
+} from './radarDrawShared';
 import {
   GHOST_AHEAD_S,
   drawDiveGhost,
@@ -40,6 +46,11 @@ import {
   drawFollowOutline,
   drawFollowPointer,
 } from './radarDrawFollow';
+import {
+  createRoadEdgeTrace,
+  traceRoadEdges,
+  validRoadEdges,
+} from './radarRoadEdges';
 
 export * from './radarDrawTypes';
 export { followLineEnds } from './radarDrawFollow';
@@ -57,12 +68,96 @@ const ROAD_STEP_M = 1;
 export const roadLateral = (roadLane: number, laneWidth: number): number =>
   -roadLane * laneWidth;
 
+const roadTrace = createRoadEdgeTrace();
+
+const strokeTrace = (
+  ctx: CanvasRenderingContext2D,
+  xs: Float64Array,
+  ys: Float64Array,
+  count: number
+) => {
+  ctx.beginPath();
+  ctx.moveTo(xs[0], ys[0]);
+  for (let index = 1; index < count; index += 1) {
+    ctx.lineTo(xs[index], ys[index]);
+  }
+  ctx.stroke();
+};
+
+const drawRoadBetweenEdges = (
+  ctx: CanvasRenderingContext2D,
+  style: RadarStyle,
+  pixelsPerMetre: number,
+  lateral: number,
+  edges: readonly number[],
+  playerPct: number,
+  trackLength: number
+) => {
+  const half = style.trackWidth / 2;
+  const trace = traceRoadEdges(
+    roadTrace,
+    projector,
+    pose,
+    edges,
+    playerPct,
+    trackLength,
+    style.range * ROAD_OVERSCAN,
+    ROAD_STEP_M,
+    lateral + half,
+    lateral - half
+  );
+  const { count, leftX, leftY, rightX, rightY } = trace;
+  const opacity = style.mapOpacity / 100;
+  ctx.beginPath();
+  ctx.moveTo(leftX[0], leftY[0]);
+  for (let index = 1; index < count; index += 1) {
+    ctx.lineTo(leftX[index], leftY[index]);
+  }
+  for (let index = count - 1; index >= 0; index -= 1) {
+    ctx.lineTo(rightX[index], rightY[index]);
+  }
+  ctx.closePath();
+  ctx.fillStyle = `rgba(71, 85, 105, ${opacity})`;
+  ctx.fill();
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'butt';
+  ctx.strokeStyle = `rgba(226, 232, 240, ${opacity})`;
+  ctx.lineWidth = Math.max(1, Math.max(2, pixelsPerMetre * 0.4) / 2);
+  strokeTrace(ctx, leftX, leftY, count);
+  strokeTrace(ctx, rightX, rightY, count);
+};
+
+export const isBesideUs = (measuredLateralM: number | undefined): boolean =>
+  measuredLateralM === undefined ||
+  Math.abs(measuredLateralM) <= WORLD_WARNING_MAX_LATERAL_M;
+
+export const drawnRoadLateral = (
+  throughMapFrame: boolean,
+  roadLane: number,
+  laneWidth: number
+): number => (throughMapFrame ? 0 : roadLateral(roadLane, laneWidth));
+
 const drawRoad = (
   ctx: CanvasRenderingContext2D,
   style: RadarStyle,
   pixelsPerMetre: number,
-  lateral: number
+  lateral: number,
+  edges: readonly number[] | null | undefined,
+  playerPct: number,
+  trackLength: number
 ) => {
+  if (validRoadEdges(edges) && projector.hasTrack && trackLength > 0) {
+    drawRoadBetweenEdges(
+      ctx,
+      style,
+      pixelsPerMetre,
+      lateral,
+      edges,
+      playerPct,
+      trackLength
+    );
+    return;
+  }
   const reach = style.range * ROAD_OVERSCAN;
   ctx.beginPath();
   for (let dist = -reach; dist <= reach; dist += ROAD_STEP_M) {
@@ -216,7 +311,8 @@ export const drawRadar = (
     scene.playerPct,
     centre,
     centre,
-    pixelsPerMetre
+    pixelsPerMetre,
+    scene.mapFrame ?? null
   );
 
   ctx.clearRect(0, 0, size, size);
@@ -227,12 +323,21 @@ export const drawRadar = (
   resetRimWarnings();
   resetDebugLabels();
 
-  const roadX = roadLateral(
+  const roadX = drawnRoadLateral(
+    projector.drawsThroughMapFrame,
     scene.roadLane ?? 0,
     scene.laneWidth ?? style.carWidth + 0.7
   );
   if (style.showTrackMap) {
-    drawRoad(ctx, style, pixelsPerMetre, roadX);
+    drawRoad(
+      ctx,
+      style,
+      pixelsPerMetre,
+      roadX,
+      scene.roadEdges,
+      scene.playerPct,
+      scene.trackLength
+    );
   }
   if (style.showCrosshair) {
     drawCrosshair(ctx, centre, radius, style, pixelsPerMetre, scene.travelled);
@@ -271,7 +376,7 @@ export const drawRadar = (
     const car = scene.cars[index];
     const carLength = car.length * pixelsPerMetre;
     const carWidth = car.width * pixelsPerMetre;
-    projector.project(car.dist, car.lateral, pose);
+    projectCar(car, pose);
     const hazard = hazardOf(scene.hazards, car.carIdx);
     if (hazard?.kind === 'crash') pose.angle += CRASH_TILT;
     ctx.globalAlpha = car.offTrack ? 0.45 : 1;
@@ -307,7 +412,9 @@ export const drawRadar = (
       );
     }
 
-    if (style.showOverlap && Math.abs(car.lane) >= 0.5) {
+    const measuredLateral = car.world ? car.lateral : undefined;
+    const besideUs = isBesideUs(measuredLateral);
+    if (style.showOverlap && besideUs && Math.abs(car.lane) >= 0.5) {
       const overlap = overlapOf(car.dist, car.length, style.carLength);
       if (overlap?.onRival) {
         // We attack: measured on its side facing us.
@@ -352,9 +459,10 @@ export const drawRadar = (
       car.dist,
       car.length,
       style.carLength,
-      style.cautionDistance
+      style.cautionDistance,
+      measuredLateral
     );
-    const dive = scene.dives?.get(car.carIdx);
+    const dive = besideUs ? scene.dives?.get(car.carIdx) : undefined;
     let diveArcCar = -1;
     if (dive) {
       const carX = pose.x;
@@ -434,7 +542,7 @@ export const drawRadar = (
           away > 0 ? 'left' : 'right'
         );
       }
-      projector.project(car.dist, car.lateral, pose);
+      projectCar(car, pose);
     }
 
     if (!style.showWarnings) continue;
@@ -484,7 +592,7 @@ export const drawRadar = (
   if (follow && !followBeyondRange) {
     const car = scene.cars.find((c) => c.carIdx === follow.carIdx);
     if (car) {
-      projector.project(car.dist, car.lateral, pose);
+      projectCar(car, pose);
       drawFollowLine(ctx, centre, pose, length, car.length * pixelsPerMetre);
       drawFollowOutline(
         ctx,

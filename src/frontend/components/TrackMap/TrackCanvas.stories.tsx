@@ -1,10 +1,11 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
-import { TrackCanvas, TrackDriver } from './TrackCanvas';
+import { TrackCanvas, TrackDriver, type TrackProps } from './TrackCanvas';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { availableTrackIds } from '@irdashies/domain/track';
 import { BROKEN_TRACKS } from '@irdashies/domain/track/tracks/brokenTracks';
 import { useSessionStore, useTelemetryStore } from '@irdashies/context';
-import type { Session, Telemetry } from '@irdashies/types';
+import type { LmuTrackMap, Session, Telemetry } from '@irdashies/types';
+import lmuTrackMapStoryData from '@irdashies/domain/track/lmuTrackMapFixture.json';
 import { useTrackId } from './hooks/useTrackId';
 import {
   ChannelSnapshotDecorator,
@@ -1008,5 +1009,81 @@ export const WithPlayerIconOnPitRoad: Story = {
   args: {
     trackId: 1,
     playerCircleSize: 60,
+  },
+};
+
+const lmuStoryTrackMap = (values: readonly number[]): LmuTrackMap => {
+  const points = Array.from({ length: values.length / 2 }, (_, index) => ({
+    x: values[index * 2],
+    y: values[index * 2 + 1],
+  }));
+  const path = `${points
+    .map(({ x, y }, index) => `${index === 0 ? 'M' : 'L'}${x},${y}`)
+    .join(' ')} Z`;
+  return {
+    orientation: 'lmu-north-v2',
+    active: {
+      inside: path,
+      outside: path,
+      trackPathPoints: points,
+      totalLength: points.length - 1,
+    },
+    startFinish: {
+      line: `M${points[0].x},${points[0].y - 30} L${points[0].x},${points[0].y + 30}`,
+      point: { ...points[0], length: 0 },
+      direction: 'anticlockwise',
+    },
+  };
+};
+
+const LMU_STORY_TRACKS = Object.keys(lmuTrackMapStoryData);
+const LMU_LABEL_SIZES = [50, 100, 200, 300];
+
+export const LmuCornerLabels: StoryObj<TrackProps & { lmuTrack: string }> = {
+  args: {
+    trackId: 1,
+    drivers: sampleData.slice(0, 3),
+    lmuTrack: LMU_STORY_TRACKS[0],
+    debug: false,
+  },
+  argTypes: {
+    lmuTrack: { control: { type: 'select' }, options: LMU_STORY_TRACKS },
+  },
+  render: ({ lmuTrack, ...args }) => {
+    const [ready, setReady] = useState(false);
+    useEffect(() => {
+      const previous = useSessionStore.getState().session;
+      const values =
+        lmuTrackMapStoryData[lmuTrack as keyof typeof lmuTrackMapStoryData];
+      useSessionStore.getState().setSession({
+        WeekendInfo: { TrackID: 1, SubSessionID: 1, TrackName: lmuTrack },
+        LmuTrackMap: lmuStoryTrackMap(values),
+      } as Session);
+      setReady(true);
+      return () => useSessionStore.setState({ session: previous });
+    }, [lmuTrack]);
+    if (!ready) return <></>;
+    return (
+      <div className="grid grid-cols-2 gap-2">
+        {LMU_LABEL_SIZES.map((labelFontSize) => (
+          <div key={labelFontSize} className="bg-slate-800">
+            <p className="px-2 text-sm text-white">
+              Relative Label Size {labelFontSize}%
+            </p>
+            <div className="h-[420px]">
+              <TrackCanvas
+                {...args}
+                turnLabels={{
+                  enabled: true,
+                  labelType: 'both',
+                  highContrast: true,
+                  labelFontSize,
+                }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   },
 };

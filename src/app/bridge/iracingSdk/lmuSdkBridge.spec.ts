@@ -73,7 +73,25 @@ const mapSessionSpy = vi.hoisted(() =>
  */
 const restState = vi.hoisted(() => ({
   data: { revision: 0, cells: {}, session: {} as Record<string, unknown> },
-  poller: { setActive: vi.fn(), invalidateOnce: vi.fn(), stop: vi.fn() },
+  poller: {
+    setActive: vi.fn(),
+    invalidateOnce: vi.fn(),
+    burst: vi.fn(),
+    stop: vi.fn(),
+  },
+}));
+
+const worldTrackState = vi.hoisted(() => ({
+  map: null as unknown,
+  setTrack: vi.fn(),
+  restart: vi.fn(),
+}));
+
+const trackWidthSpies = vi.hoisted(() => ({
+  setTrack: vi.fn(),
+  update: vi.fn(),
+  flush: vi.fn(),
+  fillRoadEdges: vi.fn(() => false),
 }));
 
 /** Shared so the specs can observe how the bridge drives them. */
@@ -168,14 +186,64 @@ vi.mock('../../processors/processorRegistry', () => ({
 
 // Keeps the track-map work off the filesystem.
 vi.mock('../../lmu/trackMap', () => ({
-  loadLmuTrackMap: () => null,
-  tinyPedalTrackMapDirectories: () => [],
   LmuTrackMapRecorder: class {
     reset = recorderReset;
     update = recorderUpdate;
   },
   LmuTrackMapStorage: class {
+    load = vi.fn(() => null);
     save = vi.fn();
+    restore = vi.fn(() => Promise.resolve());
+    flush = vi.fn(() => Promise.resolve());
+    close = vi.fn(() => Promise.resolve());
+  },
+}));
+
+vi.mock('../../lmu/worldTrack', () => ({
+  LmuWorldTrackStorage: class {
+    load = vi.fn(() => null);
+    restore = vi.fn(() => Promise.resolve());
+    flush = vi.fn(() => Promise.resolve());
+    close = vi.fn(() => Promise.resolve());
+  },
+  LmuWorldTrackSource: class {
+    setTrack = worldTrackState.setTrack;
+    restart = worldTrackState.restart;
+    update = vi.fn(() => false);
+    ensureStored = vi.fn();
+    get source() {
+      return worldTrackState.map === null ? null : 'cache';
+    }
+    get map() {
+      return worldTrackState.map;
+    }
+    get fit() {
+      return worldTrackState.map === null
+        ? null
+        : { ar: 0, ai: 1, tx: 0, ty: 0, mirrored: false, rmsM: 0 };
+    }
+    get wantsLiveTrack() {
+      return worldTrackState.map === null;
+    }
+  },
+  worldTrackFitsLap: () => false,
+  parseLmuWorldTrack: () => undefined,
+}));
+
+vi.mock('../../lmu/bundledTrackGeometry', () => ({
+  defaultLmuTrackGeometry: () => ({
+    worldTrack: () => null,
+    trackWidth: () => null,
+    sectorBoundaries: () => null,
+  }),
+}));
+
+vi.mock('../../lmu/trackWidth', () => ({
+  LmuTrackWidth: class {
+    setTrack = trackWidthSpies.setTrack;
+    update = trackWidthSpies.update;
+    flush = trackWidthSpies.flush;
+    fillRoadEdges = trackWidthSpies.fillRoadEdges;
   },
 }));
 
@@ -524,6 +592,72 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
     sdkState.sessionEndEvents = 0;
     restState.data.revision = 0;
     restState.data.session = {};
+    worldTrackState.map = null;
+  });
+
+  it('asks for the world track once LMU is up, reading the body afresh', async () => {
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() =>
+      expect(restState.poller.burst).toHaveBeenCalledWith(
+        'watch-trackmap',
+        expect.objectContaining({ delayMs: 0, rereadBody: true })
+      )
+    );
+    expect(worldTrackState.setTrack).toHaveBeenCalledWith(
+      rawFrame().trackName,
+      rawFrame().lapDist
+    );
+    bridge.stop();
+  });
+
+  it('publishes the cached world track ahead of the bundled map', async () => {
+    const worldMap = { marker: 'world track' };
+    worldTrackState.map = worldMap;
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(sessionPublishCount(overlayManager)).toBe(1));
+    expect(mapSessionSpy.mock.calls.at(-1)?.[1]).toBe(worldMap);
+    expect(restState.poller.burst).not.toHaveBeenCalled();
+    bridge.stop();
+  });
+
+  it('learns the track width against the world track and saves it on stop', async () => {
+    const worldMap = { marker: 'world track' };
+    worldTrackState.map = worldMap;
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() =>
+      expect(trackWidthSpies.update).toHaveBeenCalledWith(
+        expect.objectContaining({ map: worldMap, cacheable: true })
+      )
+    );
+    expect(trackWidthSpies.setTrack).toHaveBeenCalledWith(rawFrame().trackName);
+    expect(trackWidthSpies.setTrack.mock.invocationCallOrder[0]).toBeLessThan(
+      worldTrackState.setTrack.mock.invocationCallOrder[0]
+    );
+    expect(trackWidthSpies.flush).not.toHaveBeenCalled();
+    bridge.stop();
+    expect(trackWidthSpies.flush).toHaveBeenCalledTimes(1);
+  });
+
+  it('learns the track width without caching it on a fitted bundled map', async () => {
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() =>
+      expect(trackWidthSpies.update).toHaveBeenCalledWith(
+        expect.objectContaining({ cacheable: false })
+      )
+    );
+    bridge.stop();
   });
 
   it('republishes the session when only the REST revision moved', async () => {
@@ -577,13 +711,14 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
     bridge.stop();
   });
 
-  it('restarts the track-map recording when a new session starts on the same track', async () => {
+  it('restarts the track-map recording and world track checks when a new session starts on the same track', async () => {
     const overlayManager = createOverlayManager();
     const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
     const bridge = await publishLmuSDKEvents(overlayManager);
 
     await vi.waitFor(() => expect(sessionPublishCount(overlayManager)).toBe(1));
     const resetsBefore = recorderReset.mock.calls.length;
+    const restartsBefore = worldTrackState.restart.mock.calls.length;
 
     sdkState.sessionEndEvents = 1;
 
@@ -591,6 +726,9 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
       expect(recorderReset.mock.calls.length).toBeGreaterThan(resetsBefore)
     );
     expect(recorderReset).toHaveBeenLastCalledWith(rawFrame().trackName);
+    expect(worldTrackState.restart.mock.calls.length).toBeGreaterThan(
+      restartsBefore
+    );
     bridge.stop();
   });
 

@@ -293,14 +293,12 @@ function resolveLmuFuelCapacityLtr(
  * the standings and the relative cannot disagree about who is ahead.
  */
 function buildLmuResults(raw: Raw, isRace: boolean): SessionResults[] {
-  const contenders = raw.drivers.filter(
-    (d) => isRace || (d.bestLapTime ?? 0) > 0
-  );
+  const contenders = raw.drivers.filter((d) => isRace || (d.place ?? 0) > 0);
 
   const ordered = [...contenders].sort((a, b) =>
     compareLmuOrder(
-      lmuOrderingKey(isRace, a.place, a.bestLapTime),
-      lmuOrderingKey(isRace, b.place, b.bestLapTime),
+      lmuOrderingKey(a.place),
+      lmuOrderingKey(b.place),
       a.id,
       b.id
     )

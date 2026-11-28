@@ -38,7 +38,8 @@
 import {
   createLmuLapDistanceState,
   estimateLmuLapDistPct,
-  lmuCompletedLaps,
+  LMU_PHASE_BEFORE_START_LINE,
+  lmuProgressLaps,
   type LmuLapDistanceState,
 } from './lapDistance';
 
@@ -73,6 +74,7 @@ export interface LmuOpponentLapDistanceFrame {
   elapsedTimes: ArrayLike<number> | undefined;
   /** 1 when this slot had a telemetry entry this frame. */
   telemetryAvailable: ArrayLike<number> | undefined;
+  individualPhases?: ArrayLike<number>;
   trackLengthM: number;
   /** Slot the caller fills itself; -1 to integrate every car. */
   playerCarIdx: number;
@@ -85,7 +87,7 @@ export interface LmuOpponentLapDistanceFrame {
  * exactly the behaviour before this existed.
  *
  * Each array in `lapsOut` takes, for every car refined, the completed laps
- * that go with its refined fraction (see `lmuCompletedLaps`). Lap plus
+ * that go with its refined fraction (see `lmuProgressLaps`). Lap plus
  * fraction is how progress is measured, and the fraction now wraps where the
  * estimate does rather than where the count moved.
  */
@@ -102,6 +104,7 @@ export function refineLmuOpponentLapDistPcts(
     completedLaps,
     elapsedTimes,
     telemetryAvailable,
+    individualPhases,
     trackLengthM,
     playerCarIdx,
   } = frame;
@@ -145,8 +148,10 @@ export function refineLmuOpponentLapDistPcts(
       completedLaps: completedLaps?.[carIdx],
       speedMs: speeds[carIdx],
       trackLengthM,
+      beforeStartLine:
+        individualPhases?.[carIdx] === LMU_PHASE_BEFORE_START_LINE,
     });
-    const laps = lmuCompletedLaps(carState);
+    const laps = lmuProgressLaps(carState);
     if (laps !== null) {
       for (const lapsArray of lapsOut) {
         if (carIdx < lapsArray.length) lapsArray[carIdx] = laps;
