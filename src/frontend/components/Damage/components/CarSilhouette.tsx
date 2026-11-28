@@ -23,6 +23,9 @@ export interface CarSilhouetteProps {
 }
 
 const OK_BODY = BODY_FILL.ok;
+const VIEW_WIDTH = 120;
+const VIEW_HEIGHT = 168;
+const CORNER_LABEL_REACH = 20;
 const CABIN = '#3f3f46';
 
 interface Layout {
@@ -234,6 +237,7 @@ export const CarSilhouette = ({
   const wheelGap = 3;
   const flX = leftX - L.wheelW - wheelGap;
   const frX = rightX + wheelGap;
+  const margin = Math.max(0, CORNER_LABEL_REACH - flX);
   const wheels = [
     wheelFill[0] ?? SUSP_OK_ACCENT,
     wheelFill[1] ?? SUSP_OK_ACCENT,
@@ -298,7 +302,7 @@ export const CarSilhouette = ({
 
   return (
     <svg
-      viewBox="0 0 120 168"
+      viewBox={`${-margin} 0 ${VIEW_WIDTH + margin * 2} ${VIEW_HEIGHT}`}
       className="h-full w-full"
       aria-label="Car damage"
     >

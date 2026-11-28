@@ -43,6 +43,18 @@ describe('resolveDamageBodyStyle', () => {
     ).toBe('gtMid');
   });
 
+  it('recognises a compact car path without a display name', () => {
+    expect(resolveDamageBodyStyle('bmwm4gt3', 'GT3')).toBe('gtFront');
+    expect(resolveDamageBodyStyle('mercedesamgevogt3', 'GT3')).toBe('gtFront');
+    expect(resolveDamageBodyStyle('fordmustanggt3', 'GT3')).toBe('gtFront');
+    expect(resolveDamageBodyStyle('ferrari296gt3', 'GT3')).toBe('gtMid');
+    expect(resolveDamageBodyStyle('mclaren720sgt3', 'GT3')).toBe('gtMid');
+    expect(resolveDamageBodyStyle('porsche718caymangt4', 'GT4')).toBe('gtMid');
+    expect(resolveDamageBodyStyle('porsche992rgt3', 'GT3')).toBe('gtRear');
+    expect(resolveDamageBodyStyle('porsche991rsr', 'GTE')).toBe('gtMid');
+    expect(resolveDamageBodyStyle('unknowngt3', 'GT3')).toBe('gtMid');
+  });
+
   it('recognises a GT model the same with or without its class', () => {
     expect(
       resolveDamageBodyStyle('c6r', undefined, 'Chevrolet Corvette C6.R')
@@ -63,7 +75,7 @@ describe('resolveDamageBodyStyle', () => {
       'stock'
     );
     expect(resolveDamageBodyStyle('euronascar', 'ENAS')).toBe('stock');
-    expect(resolveDamageBodyStyle('porsche992cup', 'CUP')).toBe('gtMid');
+    expect(resolveDamageBodyStyle('porsche992cup', 'CUP')).toBe('gtRear');
     expect(
       resolveDamageBodyStyle('renaultcliocup', 'CUP', 'Renault Clio Cup')
     ).toBe('hatch');

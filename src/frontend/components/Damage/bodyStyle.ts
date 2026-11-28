@@ -84,21 +84,23 @@ function resolveGtLayout(h: string): 'gtFront' | 'gtMid' | 'gtRear' {
   if (/\brsr\b|991rsr/.test(h)) return 'gtMid';
 
   if (
-    /\b(911|992|991|993|996|997|rsr)\b/.test(h) ||
-    (/\bporsche\b/.test(h) && !/\b(718|cayman|963|919|gtp|lmp)\b/.test(h))
+    /\b(911|992|991|993|996|997)\b/.test(h) ||
+    (/porsche/.test(h) && !/718|cayman|963|919|gtp|lmp/.test(h))
   ) {
     return 'gtRear';
   }
 
   if (
-    /\b(ferrari|296|488|mclaren|720|570|mp4|lamborghini|huracan|lambo|audi|r8|nsx|c8|z06|718|cayman|fordgt|ford.?gt.?2017)\b/.test(
+    /ferrari|mclaren|lamborghini|huracan|cayman|fordgt|\b(296|488|720|570|mp4|lambo|audi|r8|nsx|c8|c8r|z06|718)\b|audir8/.test(
       h
     )
   ) {
     return 'gtMid';
   }
 
-  if (/\b(bmw|m4|m8|mercedes|amg|mustang|vantage|dbr9|c6|corvette)\b/.test(h)) {
+  if (
+    /bmw|mercedes|mustang|vantage|dbr9|corvette|\b(m4|m8|amg|c6|c6r)\b/.test(h)
+  ) {
     return 'gtFront';
   }
 
