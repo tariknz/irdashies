@@ -4,7 +4,7 @@
 // share only some marques, so either can be regenerated without the other.
 
 export const LMU_SPRITES_PER_ROW = 6;
-export const LMU_SPRITES_PER_COLUMN = 4;
+export const LMU_SPRITES_PER_COLUMN = 5;
 
 export const LMU_MANUFACTURER_SPRITE_POSITIONS: Record<
   string,
@@ -22,16 +22,17 @@ export const LMU_MANUFACTURER_SPRITE_POSITIONS: Record<
   genesis: { x: 3, y: 1 },
   ginetta: { x: 4, y: 1 },
   glickenhaus: { x: 5, y: 1 },
-  isottafraschini: { x: 0, y: 2 },
-  lamborghini: { x: 1, y: 2 },
-  lexus: { x: 2, y: 2 },
-  ligier: { x: 3, y: 2 },
-  mclaren: { x: 4, y: 2 },
-  mercedesamg: { x: 5, y: 2 },
-  oreca: { x: 0, y: 3 },
-  peugeot: { x: 1, y: 3 },
-  porsche: { x: 2, y: 3 },
-  studio397: { x: 3, y: 3 },
-  toyota: { x: 4, y: 3 },
-  vanwall: { x: 5, y: 3 },
+  hertzteamjota: { x: 0, y: 2 },
+  isottafraschini: { x: 1, y: 2 },
+  lamborghini: { x: 2, y: 2 },
+  lexus: { x: 3, y: 2 },
+  ligier: { x: 4, y: 2 },
+  mclaren: { x: 5, y: 2 },
+  mercedesamg: { x: 0, y: 3 },
+  oreca: { x: 1, y: 3 },
+  peugeot: { x: 2, y: 3 },
+  porsche: { x: 3, y: 3 },
+  studio397: { x: 4, y: 3 },
+  toyota: { x: 5, y: 3 },
+  vanwall: { x: 0, y: 4 },
 };

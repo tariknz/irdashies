@@ -182,6 +182,9 @@ describe('mapLmuSession', () => {
     ['Glickenhaus 007 LMH', 'glickenhaus'],
     ['Vanwall Vandervell 680', 'vanwall'],
     ['Oreca 07 Gibson', 'oreca'],
+    ['Hyper_Cadillac Hertz Team Jota 2025', 'hertzteamjota'],
+    ['Hertz Team Jota', 'hertzteamjota'],
+    ['JOTA 2024', 'hertzteamjota'],
   ])('resolves the LMU-only model %s to %s', (model, manufacturer) => {
     // These had no logo id at all until LMU got a manufacturer sheet of its
     // own: iRacing has none of these marques, so there was no cell to point
@@ -541,6 +544,45 @@ describe('mapLmuSession driver nationality', () => {
 
     const driver = s.DriverInfo.Drivers.find((d) => d.UserName === nameOf(raw));
     expect(driver?.LmuRating?.countryCode).toBe('FR');
+  });
+
+  it('matches nationality when the teams payload differs only by case', () => {
+    const raw = fixture();
+    const name = nameOf(raw);
+    const s = mapLmuSession(raw, null, {
+      nationalities: { [name.toUpperCase()]: 'DE' },
+    });
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === name);
+    expect(driver?.LmuRating?.countryCode).toBe('DE');
+  });
+
+  it('prefers an exact name over a case-folded one', () => {
+    const raw = fixture();
+    const name = nameOf(raw);
+    const s = mapLmuSession(raw, null, {
+      nationalities: { [name.toUpperCase()]: 'DE', [name]: 'FR' },
+    });
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === name);
+    expect(driver?.LmuRating?.countryCode).toBe('FR');
+  });
+
+  it('skips the case-folded fallback when it is ambiguous', () => {
+    const raw = fixture();
+    const name = nameOf(raw);
+    expect(new Set([name, name.toUpperCase(), name.toLowerCase()]).size).toBe(
+      3
+    );
+    const s = mapLmuSession(raw, null, {
+      nationalities: {
+        [name.toUpperCase()]: 'DE',
+        [name.toLowerCase()]: 'IT',
+      },
+    });
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === name);
+    expect(driver?.LmuRating?.countryCode).toBeUndefined();
   });
 
   it('leaves drivers the teams payload does not name alone', () => {
