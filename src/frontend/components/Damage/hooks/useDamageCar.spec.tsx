@@ -35,6 +35,18 @@ describe('useDamageCar', () => {
     );
   });
 
+  it('lets the model decide over a team number in the name or path', () => {
+    mocks.driver = {
+      CarPath: 'Team_911_BMW_M4',
+      CarModel: 'BMW M4 GT3',
+      CarScreenName: 'Team #911',
+    };
+
+    expect(renderHook(() => useDamageCar()).result.current.bodyStyle).toBe(
+      'gtFront'
+    );
+  });
+
   it('still reads the screen name when there is no model', () => {
     mocks.driver = {
       CarPath: 'porsche992rgt3',
