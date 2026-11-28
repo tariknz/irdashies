@@ -52,7 +52,14 @@ export const GantryTabBar = memo(
   }: GantryTabBarProps) => {
     return (
       <div className="settings-shell @container shrink-0 bg-slate-950 text-slate-200">
-        <header className="flex min-h-12 flex-wrap items-center gap-x-4 gap-y-1 border-b border-slate-700 px-4 py-1 @min-[64rem]:grid @min-[64rem]:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+        <header
+          className="flex min-h-12 flex-wrap items-center gap-x-4 gap-y-1 border-b border-slate-700 py-1 [-webkit-app-region:drag] @min-[64rem]:grid @min-[64rem]:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
+          style={{
+            paddingLeft: 'calc(env(titlebar-area-x, 0px) + 1rem)',
+            paddingRight:
+              'calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + 1rem)',
+          }}
+        >
           <div className="flex min-w-0 items-center gap-3">
             <img src={logo} alt="" className="h-7 w-7 shrink-0" />
             <span className="shrink-0 text-lg font-semibold tracking-[-0.04em] text-white">
@@ -72,7 +79,7 @@ export const GantryTabBar = memo(
               </>
             )}
           </div>
-          <div className="ml-auto flex flex-wrap items-center justify-end justify-self-end gap-2">
+          <div className="ml-auto flex flex-wrap items-center justify-end justify-self-end gap-2 [-webkit-app-region:no-drag]">
             <span className="text-sm text-slate-400">Follow</span>
             <Tooltip
               content="Pins one driver: their standings row is highlighted, kept scrolled into view, and every other row is dimmed. Choose All drivers to clear it."
@@ -115,29 +122,29 @@ export const GantryTabBar = memo(
           aria-label="Gantry views"
           className="flex items-end gap-1 border-b border-slate-700 bg-slate-900 px-4"
         >
-          {(['standings-incidents', 'lap-graph', 'pit-stops'] as GantryView[]).map(
-            (view) => (
-              <Tooltip
-                key={view}
-                content={VIEW_TOOLTIPS[view]}
-                placement="bottom"
+          {(
+            ['standings-incidents', 'lap-graph', 'pit-stops'] as GantryView[]
+          ).map((view) => (
+            <Tooltip
+              key={view}
+              content={VIEW_TOOLTIPS[view]}
+              placement="bottom"
+            >
+              <button
+                type="button"
+                aria-pressed={activeView === view}
+                onClick={() => onViewChange(view)}
+                className={[
+                  'inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-t-md border-b-2 px-3 py-2 text-sm font-semibold transition-colors',
+                  activeView === view
+                    ? 'border-accent-400 bg-accent-400/10 text-accent-200'
+                    : 'border-transparent text-slate-400 hover:bg-slate-800 hover:text-slate-200',
+                ].join(' ')}
               >
-                <button
-                  type="button"
-                  aria-pressed={activeView === view}
-                  onClick={() => onViewChange(view)}
-                  className={[
-                    'inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-t-md border-b-2 px-3 py-2 text-sm font-semibold transition-colors',
-                    activeView === view
-                      ? 'border-accent-400 bg-accent-400/10 text-accent-200'
-                      : 'border-transparent text-slate-400 hover:bg-slate-800 hover:text-slate-200',
-                  ].join(' ')}
-                >
-                  {VIEW_LABELS[view]}
-                </button>
-              </Tooltip>
-            )
-          )}
+                {VIEW_LABELS[view]}
+              </button>
+            </Tooltip>
+          ))}
         </nav>
       </div>
     );
