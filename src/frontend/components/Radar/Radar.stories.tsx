@@ -3,12 +3,17 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   buildTrackGeometry,
   getTrackPathData,
+  pointAtProgress,
+  tangentAtProgress,
   useTrackDrawing,
+  type TrackGeometry,
 } from '@irdashies/domain/track';
+import lmuTrackMapStoryData from '@irdashies/domain/track/lmuTrackMapFixture.json';
 import {
   RadarDisplay,
   type RadarCarAppearance,
   type RadarFrame,
+  type RadarFrameCar,
 } from './components/RadarDisplay';
 import { DEMO_LABELS, demoRadarFrame } from './radarDemo';
 import type { RadarStyle } from './radarDraw';
@@ -29,6 +34,31 @@ const appearanceFor = (fill: string, label: string): RadarCarAppearance => ({
   length: 4.6,
   width: 2.0,
 });
+
+const MEASURED_LANE_M = 2.6;
+
+const measuredCar = (
+  carIdx: number,
+  dist: number,
+  lateralM: number,
+  relativeSpeed: number,
+  headingRad = 0
+): RadarFrameCar => ({
+  carIdx,
+  dist,
+  relativeSpeed,
+  lane: lateralM / MEASURED_LANE_M,
+  lateralM,
+  headingRad,
+  offTrack: false,
+});
+
+const measuredCars = (seconds: number): RadarFrameCar[] => [
+  measuredCar(1, -14 + 7 * (seconds % 4), 3.1, 7),
+  measuredCar(2, 1.2 + Math.sin(seconds), -3, 0, 0.12),
+  measuredCar(3, 18, 0.4, 0),
+  measuredCar(4, -6, -5.8, 0),
+];
 
 const useTicker = (intervalMs = 40) => {
   const [seconds, setSeconds] = useState(0);
@@ -54,6 +84,7 @@ interface StoryProps {
   followDist?: number;
   followCarIdx?: number;
   followPaceCar?: boolean;
+  measured?: boolean;
   style: RadarStyle;
 }
 
@@ -67,6 +98,7 @@ const OnTrack = ({
   followDist,
   followCarIdx = 3,
   followPaceCar = false,
+  measured = false,
   style,
 }: StoryProps) => {
   const seconds = useTicker();
@@ -81,7 +113,7 @@ const OnTrack = ({
     playerPct: (startPct + (seconds * speed) / trackLength) % 1,
     playerSpeed: speed,
     trackLength,
-    cars: demo.cars,
+    cars: measured ? measuredCars(seconds) : demo.cars,
     focusBrake: demo.focusBrake,
     follow:
       followDist === undefined
@@ -177,4 +209,95 @@ export const PacingFollowBeyondRange: Story = {
 
 export const PacingFollowPaceCar: Story = {
   args: { followDist: 25, followPaceCar: true },
+};
+
+export const MeasuredWorldPositions: Story = {
+  args: { measured: true },
+};
+
+const BARCELONA_LAP_M = 4655;
+
+const barcelonaGeometry = (() => {
+  const values = lmuTrackMapStoryData['Circuit de Barcelona'];
+  const points = Array.from({ length: values.length / 2 }, (_, index) => ({
+    x: values[index * 2],
+    y: values[index * 2 + 1],
+  }));
+  return buildTrackGeometry(
+    {
+      trackPathPoints: [...points, points[0]],
+      totalLength: points.length,
+      startFinishLength: 0,
+      direction: 'anticlockwise',
+    },
+    BARCELONA_LAP_M
+  );
+})();
+
+const lmuMapFrame = (
+  geometry: TrackGeometry,
+  pct: number,
+  leftM: number,
+  yawOffsetRad: number
+): number[] => {
+  const point = pointAtProgress(geometry, pct, { x: 0, y: 0 });
+  const tangent = tangentAtProgress(geometry, pct, { x: 0, y: 0 });
+  const units = geometry.unitsPerMeter;
+  const metresPerUnit = 1 / units;
+  const x = point.x + tangent.y * leftM * units;
+  const y = point.y - tangent.x * leftM * units;
+  const angle = Math.atan2(tangent.x, tangent.y) + yawOffsetRad - Math.PI;
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  return [
+    x,
+    y,
+    c * metresPerUnit,
+    -s * metresPerUnit,
+    -s * metresPerUnit,
+    -c * metresPerUnit,
+  ];
+};
+
+/** An LMU car through Barcelona's T1-T3, a little off the line and angled. */
+const LmuWorldTrack = ({ style }: Pick<StoryProps, 'style'>) => {
+  const seconds = useTicker();
+  const playerPct = (0.17 + (seconds * 30) / BARCELONA_LAP_M) % 1;
+  const appearance = useMemo(
+    () =>
+      new Map(
+        Object.entries(DEMO_LABELS).map(([carIdx, label]) => [
+          Number(carIdx),
+          appearanceFor('#f59e0b', label),
+        ])
+      ),
+    []
+  );
+  const frame: RadarFrame = {
+    playerPct,
+    playerSpeed: 30,
+    trackLength: BARCELONA_LAP_M,
+    cars: measuredCars(seconds),
+    mapFrame: barcelonaGeometry
+      ? lmuMapFrame(
+          barcelonaGeometry,
+          playerPct,
+          2.5 * Math.sin(seconds * 0.6),
+          0.12 * Math.sin(seconds * 0.8)
+        )
+      : null,
+  };
+  return (
+    <RadarDisplay
+      frame={frame}
+      appearance={appearance}
+      geometry={barcelonaGeometry}
+      style={style}
+      dive={DIVE}
+    />
+  );
+};
+
+export const LmuWorldTrackRoad: Story = {
+  render: ({ style }) => <LmuWorldTrack style={style} />,
 };

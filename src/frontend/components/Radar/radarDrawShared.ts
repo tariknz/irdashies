@@ -1,10 +1,19 @@
 import { RadarProjector, type ScreenPose } from './radarProjection';
+import type { RadarDrawCar } from './radarDrawTypes';
 
 /** Smallest ring label and pointer text, whatever the label setting. */
 export const MIN_TEXT_PX = 8;
 
 export const projector = new RadarProjector();
 export const pose: ScreenPose = { x: 0, y: 0, angle: 0 };
+
+export const projectCar = (
+  car: Pick<RadarDrawCar, 'dist' | 'lateral' | 'world' | 'heading'>,
+  output: ScreenPose
+): ScreenPose =>
+  car.world
+    ? projector.projectOffset(car.dist, car.lateral, car.heading ?? 0, output)
+    : projector.project(car.dist, car.lateral, output);
 
 export const drawCarBody = (
   ctx: CanvasRenderingContext2D,

@@ -34,6 +34,13 @@ import {
 import { mapLmuTelemetry } from '../../lmu/mapTelemetry';
 import { lmuRelativePositionsAvailable } from '../../lmu/proximity';
 import {
+  LmuMapRegistration,
+  MAP_REGISTRATION_MAX_ATTEMPTS,
+  MAP_REGISTRATION_RETRY_S,
+  radarMapFrame,
+  type MapRegistrationStatus,
+} from '../../lmu/mapRegistration';
+import {
   createLmuLapDistanceState,
   resetLmuLapDistanceState,
 } from '../../lmu/lapDistance';
@@ -45,7 +52,7 @@ import { lmuRestOrigin } from '../../lmu/rest/constants';
 import { createLmuRestTransport } from '../../lmu/rest/httpJson';
 import { createLmuRestPoller } from '../../lmu/rest/poller';
 import { createLmuRestData } from '../../lmu/rest/state';
-import { LMU_TEAMS_TASK_ID } from '../../lmu/rest/tasks';
+import { LMU_TEAMS_TASK_ID, LMU_TRACKMAP_TASK_ID } from '../../lmu/rest/tasks';
 import { createLmuTapeRestTransport } from '../../lmu/rest/tapeTransport';
 import { createLmuLiveStandings } from '../../lmu/liveStandings/client';
 import { lmuLivePenaltyChannels } from '../../lmu/liveStandings/penalties';
@@ -55,9 +62,14 @@ import {
   loadLmuTrackMap,
   LmuTrackMapRecorder,
   LmuTrackMapStorage,
-  tinyPedalTrackMapDirectories,
 } from '../../lmu/trackMap';
 import { LmuSectorBoundaryLearner } from '../../lmu/sectorBoundaries';
+import {
+  LmuWorldTrackSource,
+  LmuWorldTrackStorage,
+  worldTrackFitsLap,
+} from '../../lmu/worldTrack';
+import { LmuSampleGate } from '../../lmu/sampleGate';
 import { createRaceosClient, type RaceosClient } from '../../lmu/raceos/client';
 import { raceosUsername } from '../../lmu/raceos/parse';
 import { createLmuTapeRatingClient } from '../../lmu/raceos/tapeRatings';
@@ -203,6 +215,9 @@ const gridUsernames = (raw: {
  * maps both into iRacing-shaped telemetry and session data, and publishes
  * them to the overlays. Resolves to the bridge the app drives, as for iRacing.
  */
+const NO_MAP_FRAME: { value: number[] } = { value: [] };
+const TRACKMAP_BURST_RETRY_MS = 120_000;
+
 export async function publishLmuSDKEvents(
   overlayManager: OverlayManager,
   lifecycle?: SessionLifecycle,
@@ -214,10 +229,34 @@ export async function publishLmuSDKEvents(
   const { NativeLmu } = await import('../../lmu/native');
   const sdk = new NativeLmu();
   const mapRecorder = new LmuTrackMapRecorder();
+  const mapRegistration = new LmuMapRegistration();
+  let lastMapRegistrationStatus: MapRegistrationStatus = 'collecting';
   const sectorBoundaries = new LmuSectorBoundaryLearner();
+  const worldTrackLogger = {
+    info: (message: string) => logger.info(message),
+    warn: (message: string) => logger.warn(message),
+  };
   const mapStorage = new LmuTrackMapStorage(
-    path.join(app.getPath('userData'), 'lmu-track-maps.json')
+    path.join(app.getPath('userData'), 'lmu-track-maps.json'),
+    worldTrackLogger
   );
+  const worldTrackStorage = new LmuWorldTrackStorage(
+    path.join(app.getPath('userData'), 'lmu-world-tracks.json'),
+    worldTrackLogger
+  );
+  await Promise.all([mapStorage.restore(), worldTrackStorage.restore()]);
+  const sampleGate = new LmuSampleGate();
+  const worldTracks = new LmuWorldTrackSource(
+    worldTrackStorage,
+    worldTrackLogger,
+    () => sampleGate.describe()
+  );
+  const radarFrame: { value: number[] } = { value: [] };
+  let latestLapDistM = 0;
+  let lastTrackMapBurstAt = Number.NEGATIVE_INFINITY;
+  let trackMapBurstRereads = false;
+  let lastScoringET = Number.NaN;
+  let lastSessionNumber: number | undefined;
 
   // Properties LMU serves over its local REST API. The poller runs on its own
   // timers; this loop only ever reads the object it fills, synchronously. See
@@ -344,6 +383,7 @@ export async function publishLmuSDKEvents(
   const nationalityWatch = createLmuNationalityWatch();
   let activeTrackName = '';
   let trackMap: LmuTrackMap | null = null;
+  let publishedTrackMap: LmuTrackMap | null = null;
   let lastBlindSpotDataIssue: string | null | undefined;
   // Lifts the player's lap fraction from LMU's 5 Hz scoring block to the poll
   // rate. Held across frames, and reset only at the two real discontinuities
@@ -535,25 +575,17 @@ export async function publishLmuSDKEvents(
 
       if (raw.trackName !== activeTrackName) {
         activeTrackName = raw.trackName;
-        const loadedMap = loadLmuTrackMap(
-          activeTrackName,
-          mapStorage,
-          tinyPedalTrackMapDirectories()
-        );
+        worldTracks.setTrack(activeTrackName);
+        sampleGate.reset();
+        lastScoringET = Number.NaN;
+        lastSessionNumber = undefined;
+        restData.worldTrack = undefined;
+        lastTrackMapBurstAt = Number.NEGATIVE_INFINITY;
+        trackMapBurstRereads = true;
+        const loadedMap = worldTracks.map
+          ? { map: worldTracks.map, source: 'world track cache' }
+          : loadLmuTrackMap(activeTrackName, mapStorage);
         trackMap = loadedMap?.map ?? null;
-        if (loadedMap?.source === 'tinyPedal') {
-          try {
-            mapStorage.save(activeTrackName, loadedMap.map);
-            logger.info(
-              `[lmuSdkBridge] Imported track map for ${activeTrackName} from ${loadedMap.filePath}`
-            );
-          } catch (error) {
-            logger.error(
-              '[lmuSdkBridge] Failed to save imported track map',
-              error
-            );
-          }
-        }
         mapRecorder.reset(activeTrackName);
         sectorBoundaries.reset(activeTrackName);
         // Session settings and the forecast are fetched once per activation,
@@ -565,7 +597,7 @@ export async function publishLmuSDKEvents(
         resetLmuOpponentLapDistanceState(opponentLapDistanceState);
         lastSessionSignature = null;
         logger.info(
-          `[lmuSdkBridge] Track ${activeTrackName}; map ${trackMap ? 'loaded' : 'not found; recording starts at the next finish-line crossing'}`
+          `[lmuSdkBridge] Track ${activeTrackName}; map ${loadedMap ? `loaded (${loadedMap.source})` : 'not found; recording starts at the next finish-line crossing'}`
         );
       }
 
@@ -721,6 +753,7 @@ export async function publishLmuSDKEvents(
           // does and cannot be shown to have changed.
           perfMetrics.markStart('mapSession');
           const mapStartedAt = performance.now();
+          publishedTrackMap = trackMap;
           session = mapLmuSession(
             rawSession,
             trackMap,
@@ -843,6 +876,114 @@ export async function publishLmuSDKEvents(
           `[lmuSdkBridge] Learned sector boundaries for ${activeTrackName}: S2 ${s2?.toFixed(4)}, S3 ${s3?.toFixed(4)}`
         );
       }
+      latestLapDistM = raw.lapDist;
+      perfMetrics.markStart('lmuWorldTrack');
+      const sessionRestarted =
+        sessionChange !== null ||
+        (lastSessionNumber !== undefined &&
+          raw.session !== lastSessionNumber) ||
+        raw.currentET < lastScoringET - 1;
+      lastSessionNumber = raw.session;
+      lastScoringET = raw.currentET;
+      if (sessionRestarted) {
+        mapRegistration.restart();
+        worldTracks.restart();
+        sampleGate.reset();
+      }
+      sampleGate.update({
+        time: pollStartedAt / 1000,
+        lapDistM: raw.lapDist,
+        live:
+          telemetry.LmuDataStale?.value[0] !== true &&
+          telemetry.LmuNotInSession?.value[0] !== true,
+        pcts: telemetry.CarIdxLapDistPct?.value ?? [],
+        scoringPcts: raw.vehLapDistPct,
+        speeds: raw.vehSpeed,
+      });
+      if (
+        worldTracks.update({
+          restTrack: restData.worldTrack,
+          time: pollStartedAt / 1000,
+          lapDistM: raw.lapDist,
+          posX: raw.vehPosX,
+          posZ: raw.vehPosZ,
+          available: raw.vehTelemetryAvailable,
+          pcts: telemetry.CarIdxLapDistPct?.value ?? [],
+          inPits: raw.vehInPits,
+          speeds: raw.vehSpeed,
+          valid: sampleGate.valid,
+        })
+      ) {
+        trackMap = worldTracks.map;
+        lastSessionSignature = null;
+      }
+      if (
+        worldTracks.wantsLiveTrack &&
+        pollStartedAt - lastTrackMapBurstAt >= TRACKMAP_BURST_RETRY_MS
+      ) {
+        lastTrackMapBurstAt = pollStartedAt;
+        restPoller.burst(LMU_TRACKMAP_TASK_ID, {
+          delayMs: 0,
+          rereadBody: trackMapBurstRereads,
+          isComplete: () =>
+            worldTrackFitsLap(restData.worldTrack, latestLapDistM),
+        });
+        trackMapBurstRereads = false;
+      }
+      perfMetrics.markEnd('lmuWorldTrack');
+      perfMetrics.markStart('lmuMapRegistration');
+      const worldFit = worldTracks.fit;
+      const mapFit =
+        worldFit ??
+        mapRegistration.update({
+          map: trackMap,
+          time: pollStartedAt / 1000,
+          trackLengthM: raw.lapDist,
+          posX: raw.vehPosX,
+          posZ: raw.vehPosZ,
+          available: raw.vehTelemetryAvailable,
+          pcts: telemetry.CarIdxLapDistPct?.value ?? [],
+          inPits: raw.vehInPits,
+          speeds: raw.vehSpeed,
+          valid: sampleGate.valid,
+        });
+      if (!worldFit && mapRegistration.status !== lastMapRegistrationStatus) {
+        lastMapRegistrationStatus = mapRegistration.status;
+        const attempt = mapRegistration.fit ?? mapRegistration.lastAttempt;
+        const skipped = sampleGate.describe();
+        const detail = attempt
+          ? `rms ${attempt.rmsM.toFixed(2)} m, ${attempt.metresPerUnit.toFixed(3)} m per map unit${attempt.mirrored ? ', mirrored' : ''}, ${Math.round((attempt.inlierShare ?? 1) * 100)}% of samples kept, ${attempt.samples} samples`
+          : 'no fit';
+        if (mapRegistration.status === 'accepted') {
+          logger.info(
+            `[lmuSdkBridge] Track map registered for ${activeTrackName}: ${detail}`
+          );
+        } else if (mapRegistration.status === 'rejected') {
+          const message = `[lmuSdkBridge] Track map does not match world positions for ${activeTrackName} (attempt ${mapRegistration.attempt} of ${MAP_REGISTRATION_MAX_ATTEMPTS}): ${detail}${skipped ? `; ${skipped}` : ''}`;
+          if (mapRegistration.finallyRejected) logger.warn(message);
+          else
+            logger.info(
+              `${message}; trying again in ${MAP_REGISTRATION_RETRY_S} s`
+            );
+        }
+      }
+      const radarPlayerIdx = raw.playerHasVehicle ? raw.playerVehicleIdx : -1;
+      const radarPlayerYaw = telemetry.LmuPlayerYaw?.value[0];
+      const mapFrame =
+        mapFit &&
+        trackMap === publishedTrackMap &&
+        radarPlayerIdx >= 0 &&
+        typeof radarPlayerYaw === 'number'
+          ? radarMapFrame(
+              mapFit,
+              raw.vehPosX[radarPlayerIdx],
+              raw.vehPosZ[radarPlayerIdx],
+              radarPlayerYaw,
+              radarFrame.value
+            )
+          : null;
+      telemetry.LmuRadarMapFrame = mapFrame ? radarFrame : NO_MAP_FRAME;
+      perfMetrics.markEnd('lmuMapRegistration');
       processorHost?.onFrame(telemetry);
 
       if (
@@ -978,6 +1119,7 @@ export async function publishLmuSDKEvents(
       leaveLifecycle();
       unsubscribeOverlayReady?.();
       restPoller.stop();
+      void Promise.all([mapStorage.close(), worldTrackStorage.close()]);
       ratingClient.reset();
       // Cache writes are debounced behind an unref'd timer, so a rating
       // resolved in the last second before a quit is only on disk if it is

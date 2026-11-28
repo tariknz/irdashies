@@ -10,6 +10,11 @@ import fs from 'fs';
 import path from 'path';
 import https from 'https';
 import { getFreshBundleAgeMs } from './lovely-bundle-cache';
+import {
+  hasTrackRecords,
+  mergeLocalTracks,
+  readLocalTracks,
+} from './lovely-local-tracks';
 
 interface TrackManifestEntry {
   trackName: string;
@@ -63,6 +68,11 @@ interface TrackDataBundle {
 const GITHUB_RAW_BASE =
   'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-track-data/main/data';
 const DATA_DIR = path.join(process.cwd(), 'src', 'frontend', 'assets', 'data');
+const LOCAL_TRACKS_DIR = path.join(
+  process.cwd(),
+  'tools',
+  'lovely-track-local'
+);
 
 /**
  * The games to bundle, and where each one lands.
@@ -263,6 +273,18 @@ function saveBundle(bundle: TrackDataBundle, outputFile: string): void {
   console.log(`   File size: ${fileSizeKb} KB`);
 }
 
+function readCachedBundle(outputFile: string): TrackDataBundle | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(fs.readFileSync(outputFile, 'utf8'));
+  } catch {
+    parsed = null;
+  }
+  if (hasTrackRecords(parsed)) return parsed as unknown as TrackDataBundle;
+  console.log('Cached bundle has no track records; fetching fresh data...\n');
+  return null;
+}
+
 /**
  * Main function
  */
@@ -272,13 +294,30 @@ async function main(): Promise<void> {
 
     for (const { game, output } of GAMES) {
       const outputFile = path.join(DATA_DIR, output);
+      const localTracks = readLocalTracks<LovelyTrack>(
+        path.join(LOCAL_TRACKS_DIR, game)
+      );
       // Each bundle ages on its own, so adding a game does not force the
       // others to be re-fetched.
-      if (await shouldSkipFetch(outputFile)) continue;
+      const cached = (await shouldSkipFetch(outputFile))
+        ? readCachedBundle(outputFile)
+        : null;
+      if (cached) {
+        const added = mergeLocalTracks(cached.tracks, localTracks);
+        if (added.length) {
+          console.log(`Added local ${game} tracks: ${added.join(', ')}`);
+          saveBundle(cached, outputFile);
+        }
+        continue;
+      }
 
       const manifest = await fetchManifest(game);
       const tracks = await fetchAllTrackData(manifest);
       const bundle = createBundle(tracks);
+      const added = mergeLocalTracks(bundle.tracks, localTracks);
+      if (added.length) {
+        console.log(`Added local ${game} tracks: ${added.join(', ')}`);
+      }
       saveBundle(bundle, outputFile);
     }
 
