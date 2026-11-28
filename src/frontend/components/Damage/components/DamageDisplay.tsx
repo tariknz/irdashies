@@ -44,7 +44,19 @@ export interface DamageDisplayProps {
   showCornerBadges?: boolean;
   showCornerPct?: boolean;
   bodyStyle?: DamageBodyStyle;
+  warningIcons?: readonly WarningIcon[];
 }
+
+export type WarningIcon = 'oil' | 'fuel' | 'engine' | 'temp';
+
+export const ALL_WARNING_ICONS: readonly WarningIcon[] = [
+  'oil',
+  'fuel',
+  'engine',
+  'temp',
+];
+
+export const LMU_WARNING_ICONS: readonly WarningIcon[] = ['temp'];
 
 const DESIGN_WIDTH = 170;
 const DESIGN_HEIGHT = 240;
@@ -104,7 +116,13 @@ function IntegrityRow({
 export const engineWarningText = (name: string, active: boolean): string =>
   active ? `${name} warning active` : name;
 
-function StatusIcons({ warnings }: { warnings: number }) {
+function StatusIcons({
+  warnings,
+  shown,
+}: {
+  warnings: number;
+  shown: readonly WarningIcon[];
+}) {
   const oil =
     !!(warnings & EngineWarnings.OilPressureWarning) ||
     !!(warnings & EngineWarnings.OilTempWarning);
@@ -126,26 +144,28 @@ function StatusIcons({ warnings }: { warnings: number }) {
 
   return (
     <div className="flex shrink-0 flex-col gap-1 self-center">
-      {items.map(({ key, Icon, active, name }) => (
-        <div
-          key={key}
-          role="img"
-          title={engineWarningText(name, active)}
-          aria-label={engineWarningText(name, active)}
-          className={[
-            'flex h-5 w-5 items-center justify-center rounded-sm border',
-            active
-              ? 'border-amber-400 bg-slate-900 text-amber-300'
-              : 'border-slate-700 bg-slate-900/80 text-slate-600',
-          ].join(' ')}
-        >
-          <Icon
-            size={12}
-            weight={active ? 'fill' : 'regular'}
-            aria-hidden="true"
-          />
-        </div>
-      ))}
+      {items
+        .filter(({ key }) => shown.includes(key))
+        .map(({ key, Icon, active, name }) => (
+          <div
+            key={key}
+            role="img"
+            title={engineWarningText(name, active)}
+            aria-label={engineWarningText(name, active)}
+            className={[
+              'flex h-5 w-5 items-center justify-center rounded-sm border',
+              active
+                ? 'border-amber-400 bg-slate-900 text-amber-300'
+                : 'border-slate-700 bg-slate-900/80 text-slate-600',
+            ].join(' ')}
+          >
+            <Icon
+              size={12}
+              weight={active ? 'fill' : 'regular'}
+              aria-hidden="true"
+            />
+          </div>
+        ))}
     </div>
   );
 }
@@ -172,6 +192,7 @@ export const DamageDisplay = ({
   showCornerBadges = true,
   showCornerPct = false,
   bodyStyle = 'gtMid',
+  warningIcons = ALL_WARNING_ICONS,
 }: DamageDisplayProps) => {
   const frameRef = useRef<HTMLDivElement>(null);
   const frame = useElementSize(frameRef);
@@ -298,7 +319,12 @@ export const DamageDisplay = ({
               labels={labels}
             />
           </div>
-          <StatusIcons warnings={data.engineWarnings ?? 0} />
+          {warningIcons.length > 0 && (
+            <StatusIcons
+              warnings={data.engineWarnings ?? 0}
+              shown={warningIcons}
+            />
+          )}
         </div>
 
         {showCornerBadges && (

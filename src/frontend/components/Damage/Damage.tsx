@@ -1,11 +1,12 @@
 import {
+  useActiveSimulator,
   useDashboard,
   useDemoFrame,
   useSessionVisibility,
   trackStateSelectors,
   useTrackStateSelector,
 } from '@irdashies/context';
-import { DamageDisplay } from './components/DamageDisplay';
+import { DamageDisplay, LMU_WARNING_ICONS } from './components/DamageDisplay';
 import { useDamage } from './hooks/useDamage';
 import { useDamageCar } from './hooks/useDamageCar';
 import { useDamageSettings } from './hooks/useDamageSettings';
@@ -13,6 +14,7 @@ import { getDemoDamage, hasCarDamage } from './logic';
 
 export const Damage = () => {
   const { isDemoMode } = useDashboard();
+  const simulator = useActiveSimulator();
   const settings = useDamageSettings();
   const live = useDamage();
   const car = useDamageCar();
@@ -37,6 +39,9 @@ export const Damage = () => {
       showCornerBadges={settings.showCornerBadges}
       showCornerPct={settings.showCornerPct}
       bodyStyle={isDemoMode ? 'gtMid' : car.bodyStyle}
+      warningIcons={
+        !isDemoMode && simulator === 'lmu' ? LMU_WARNING_ICONS : undefined
+      }
     />
   );
 };

@@ -6,6 +6,7 @@ import {
   DamageDisplay,
   damageZoom,
   engineWarningText,
+  LMU_WARNING_ICONS,
 } from './DamageDisplay';
 import { EngineWarnings } from '@irdashies/types';
 import { SUSP_FILL } from '../logic';
@@ -163,6 +164,44 @@ describe('DamageDisplay', () => {
 
     expect(screen.getByText('LF')).toBeTruthy();
     expect(screen.queryByText('LF 92%')).toBeNull();
+  });
+});
+
+describe('DamageDisplay warning icons', () => {
+  it('shows all four by default', () => {
+    render(
+      <DamageDisplay
+        data={UNDAMAGED}
+        opacity={80}
+        showIntegrity
+        showStats={false}
+      />
+    );
+
+    expect(
+      screen.getAllByRole('img', {
+        name: /^(Oil|Fuel pressure|Engine|Water temp)$/,
+      })
+    ).toHaveLength(4);
+  });
+
+  it('shows only the ones the sim can light', () => {
+    render(
+      <DamageDisplay
+        data={{ ...UNDAMAGED, engineWarnings: EngineWarnings.WaterTempWarning }}
+        opacity={80}
+        showIntegrity
+        showStats={false}
+        warningIcons={LMU_WARNING_ICONS}
+      />
+    );
+
+    expect(
+      screen.getByRole('img', { name: 'Water temp warning active' })
+    ).toBeTruthy();
+    expect(screen.queryByRole('img', { name: 'Oil' })).toBeNull();
+    expect(screen.queryByRole('img', { name: 'Fuel pressure' })).toBeNull();
+    expect(screen.queryByRole('img', { name: 'Engine' })).toBeNull();
   });
 });
 

@@ -124,6 +124,22 @@ describe('mapLmuTelemetry', () => {
     );
   });
 
+  it('sets WaterTempWarning while LMU reports the engine overheating', () => {
+    const hot = mapLmuTelemetry({
+      ...fixture(),
+      speedLimiter: 1,
+      overheating: true,
+    });
+    const cool = mapLmuTelemetry({ ...fixture(), overheating: false });
+
+    expect(hot.EngineWarnings.value[0]).toBe(
+      EngineWarnings.PitSpeedLimiter | EngineWarnings.WaterTempWarning
+    );
+    expect(cool.EngineWarnings.value[0] & EngineWarnings.WaterTempWarning).toBe(
+      0
+    );
+  });
+
   it('clears PitSpeedLimiter when the limiter is off', () => {
     const t = mapLmuTelemetry({
       ...fixture(),

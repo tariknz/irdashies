@@ -136,6 +136,7 @@ export interface LmuRawTelemetry {
   engineRPM?: number;
   engineWaterTemp?: number;
   engineOilTemp?: number;
+  overheating?: boolean;
   clutchRPM?: number;
   unfilteredThrottle?: number;
   unfilteredBrake?: number;
