@@ -54,7 +54,7 @@ export const lmuNationalityFor = (
   name: string
 ): string | undefined => {
   if (!codes) return undefined;
-  if (codes[name] !== undefined) return codes[name];
+  if (Object.hasOwn(codes, name)) return codes[name];
   const folded = name.toLowerCase();
   const matches = Object.entries(codes).filter(
     ([key]) => key.toLowerCase() === folded

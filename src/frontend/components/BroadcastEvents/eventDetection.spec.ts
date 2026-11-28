@@ -173,7 +173,7 @@ describe('carEvents', () => {
     expect(kinds).toEqual([[], ['meatball'], ['disqualified'], []]);
   });
 
-  it('does not report a widened DNF as a disqualification', () => {
+  it('does not report a DNF finish as a disqualification', () => {
     const { kinds } = run([
       [{}],
       [{ dnf: true, finishState: 'DNF' }],

@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createLmuNationalityWatch } from './nationalityWatch';
+import {
+  createLmuNationalityWatch,
+  lmuNationalityFor,
+} from './nationalityWatch';
 
 const ONLINE = 2;
 const AI = 1;
@@ -101,5 +104,22 @@ describe('createLmuNationalityWatch', () => {
     const watch = createLmuNationalityWatch();
     watch.observe(grid([]));
     expect(watch.complete({})).toBe(false);
+  });
+});
+
+describe('lmuNationalityFor', () => {
+  it('prefers the exact spelling over a case-only match', () => {
+    expect(lmuNationalityFor({ Ana: 'PT', ana: 'BR' }, 'ana')).toBe('BR');
+  });
+
+  it('finds a unique case-only match', () => {
+    expect(lmuNationalityFor({ 'ANA SILVA': 'PT' }, 'Ana Silva')).toBe('PT');
+  });
+
+  it('does not take a name inherited from Object as an exact match', () => {
+    const codes = Object.fromEntries([['CONSTRUCTOR', 'DE']]);
+
+    expect(lmuNationalityFor(codes, 'constructor')).toBe('DE');
+    expect(lmuNationalityFor({}, 'toString')).toBeUndefined();
   });
 });
