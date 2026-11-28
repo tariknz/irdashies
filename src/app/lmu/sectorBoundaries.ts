@@ -20,7 +20,8 @@ export class LmuSectorBoundaryLearner {
 
   constructor(
     private readonly bundled: (
-      trackName: string
+      trackName: string,
+      lapDistM?: number
     ) => readonly number[] | null = () => null,
     private readonly learnBundled = false
   ) {}
@@ -29,9 +30,9 @@ export class LmuSectorBoundaryLearner {
     return !this.idle;
   }
 
-  reset(trackName: string): void {
+  reset(trackName: string, lapDistM?: number): void {
     this.trackName = trackName;
-    const bundled = trackName ? this.bundled(trackName) : null;
+    const bundled = trackName ? this.bundled(trackName, lapDistM) : null;
     this.idle = bundled !== null && !this.learnBundled;
     this.published = this.idle
       ? bundled

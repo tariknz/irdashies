@@ -6,8 +6,12 @@ import { deriveLmuRelativePositions } from './proximity';
 import { normalizeLmuTrackMapWithTransform } from './trackMap';
 import { fitFromMapTransform } from './worldTrack';
 import {
+  BUNDLE_CHECK_STRETCH_SAMPLES,
+  BUNDLE_CHECK_STRETCHES,
   bundleBinsFor,
   bundledTrackWidthFromStored,
+  createReferenceSide,
+  judgeReference,
   LmuDrawnLine,
   LmuTrackWidth,
   LmuTrackWidthProfile,
@@ -1352,6 +1356,49 @@ describe('LmuTrackWidth', () => {
       );
       drive(width, 180, true, { map, fit }, 20);
       expectEdgesNearTruth(learnedFrom(width), 0.4);
+    });
+  });
+});
+
+describe('judgeReference', () => {
+  const sideWith = (fill: (stretch: number) => number[]) => {
+    const side = createReferenceSide();
+    for (let stretch = 0; stretch < BUNDLE_CHECK_STRETCHES; stretch += 1) {
+      const diffs = fill(stretch);
+      diffs.forEach((diff, index) => {
+        side.diffs[stretch * BUNDLE_CHECK_STRETCH_SAMPLES + index] = diff;
+      });
+      side.counts[stretch] = diffs.length;
+    }
+    return side;
+  };
+  const agreeing = () => sideWith(() => [0.2, 0.3, 0.4]);
+
+  it('confirms when both edges cover the lap and agree', () => {
+    expect(judgeReference([agreeing(), agreeing()])?.agrees).toBe(true);
+  });
+
+  it('waits while one edge covers too little of the lap', () => {
+    const short = sideWith((stretch) => (stretch < 10 ? [0.2, 0.3, 0.4] : []));
+    expect(judgeReference([agreeing(), short])).toBeNull();
+  });
+
+  it('does not confirm while a covered stretch disagrees, even before it is full', () => {
+    const offInOne = sideWith((stretch) =>
+      stretch === 7 ? [3, 3, 3, 3] : [0.2, 0.3, 0.4]
+    );
+    expect(judgeReference([agreeing(), offInOne])).toBeNull();
+  });
+
+  it('drops the bundle once a full stretch disagrees', () => {
+    const offInOne = sideWith((stretch) =>
+      stretch === 7
+        ? Array.from({ length: BUNDLE_CHECK_STRETCH_SAMPLES }, () => 3)
+        : [0.2, 0.3, 0.4]
+    );
+    expect(judgeReference([agreeing(), offInOne])).toMatchObject({
+      agrees: false,
+      medianM: 3,
     });
   });
 });

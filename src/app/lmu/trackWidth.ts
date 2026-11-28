@@ -12,24 +12,24 @@ export const TRACK_WIDTH_STORE_VERSION = 2;
 export const TRACK_WIDTH_BUNDLE_BIN_M = 4;
 export const BUNDLE_CHECK_SAMPLES = 200;
 export const BUNDLE_CHECK_MAX_MEDIAN_M = 1.5;
-const BUNDLE_CHECK_STRETCHES = 20;
-const BUNDLE_CHECK_STRETCH_SAMPLES =
+export const BUNDLE_CHECK_STRETCHES = 20;
+export const BUNDLE_CHECK_STRETCH_SAMPLES =
   BUNDLE_CHECK_SAMPLES / BUNDLE_CHECK_STRETCHES;
 const BUNDLE_CHECK_STRETCH_MIN_SAMPLES = 3;
 const BUNDLE_CHECK_COVERED_STRETCHES = 16;
 
-interface ReferenceVerdict {
+export interface ReferenceVerdict {
   agrees: boolean;
   samples: number;
   medianM: number;
 }
 
-interface ReferenceSide {
+export interface ReferenceSide {
   diffs: Float64Array;
   counts: Int32Array;
 }
 
-const createReferenceSide = (): ReferenceSide => ({
+export const createReferenceSide = (): ReferenceSide => ({
   diffs: new Float64Array(BUNDLE_CHECK_SAMPLES),
   counts: new Int32Array(BUNDLE_CHECK_STRETCHES),
 });
@@ -50,6 +50,43 @@ const medianOfSide = (side: ReferenceSide): number => {
 const medianOf = (values: Float64Array, count: number): number => {
   const sorted = values.slice(0, count).sort();
   return sorted[Math.floor(count / 2)];
+};
+
+export const judgeReference = (
+  sides: readonly ReferenceSide[]
+): ReferenceVerdict | null => {
+  let worst = 0;
+  let samples = 0;
+  let covered = true;
+  let coveredAgree = true;
+  for (const side of sides) {
+    let coveredStretches = 0;
+    for (let stretch = 0; stretch < BUNDLE_CHECK_STRETCHES; stretch += 1) {
+      const count = side.counts[stretch];
+      samples += count;
+      if (count < BUNDLE_CHECK_STRETCH_MIN_SAMPLES) continue;
+      coveredStretches += 1;
+      const medianM = medianOf(
+        side.diffs.subarray(
+          stretch * BUNDLE_CHECK_STRETCH_SAMPLES,
+          (stretch + 1) * BUNDLE_CHECK_STRETCH_SAMPLES
+        ),
+        count
+      );
+      if (medianM <= BUNDLE_CHECK_MAX_MEDIAN_M) continue;
+      if (count >= BUNDLE_CHECK_STRETCH_SAMPLES) {
+        return { agrees: false, samples: count, medianM };
+      }
+      coveredAgree = false;
+    }
+    if (coveredStretches < BUNDLE_CHECK_COVERED_STRETCHES) covered = false;
+    worst = Math.max(worst, medianOfSide(side));
+  }
+  if (!covered || !coveredAgree) return null;
+  if (worst > BUNDLE_CHECK_MAX_MEDIAN_M) {
+    return { agrees: false, samples, medianM: worst };
+  }
+  return { agrees: true, samples, medianM: worst };
 };
 
 const MIN_SIDE_LATERAL_M = 0.5;
@@ -659,35 +696,7 @@ export class LmuTrackWidthProfile {
 
   referenceCheck(): ReferenceVerdict | null {
     if (!this.referenceLeft) return null;
-    let worst = 0;
-    let samples = 0;
-    let covered = true;
-    for (const side of this.referenceSides) {
-      let coveredStretches = 0;
-      for (let stretch = 0; stretch < BUNDLE_CHECK_STRETCHES; stretch += 1) {
-        const count = side.counts[stretch];
-        samples += count;
-        if (count >= BUNDLE_CHECK_STRETCH_MIN_SAMPLES) coveredStretches += 1;
-        if (count < BUNDLE_CHECK_STRETCH_SAMPLES) continue;
-        const medianM = medianOf(
-          side.diffs.subarray(
-            stretch * BUNDLE_CHECK_STRETCH_SAMPLES,
-            (stretch + 1) * BUNDLE_CHECK_STRETCH_SAMPLES
-          ),
-          count
-        );
-        if (medianM > BUNDLE_CHECK_MAX_MEDIAN_M) {
-          return { agrees: false, samples: count, medianM };
-        }
-      }
-      if (coveredStretches < BUNDLE_CHECK_COVERED_STRETCHES) covered = false;
-      worst = Math.max(worst, medianOfSide(side));
-    }
-    if (!covered) return null;
-    if (worst > BUNDLE_CHECK_MAX_MEDIAN_M) {
-      return { agrees: false, samples, medianM: worst };
-    }
-    return { agrees: true, samples, medianM: worst };
+    return judgeReference(this.referenceSides);
   }
 
   private recordReference(

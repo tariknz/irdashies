@@ -238,7 +238,8 @@ export async function publishLmuSDKEvents(
     );
   }
   const sectorBoundaries = new LmuSectorBoundaryLearner(
-    (trackName) => bundledGeometry.sectorBoundaries(trackName),
+    (trackName, lapDistM) =>
+      bundledGeometry.sectorBoundaries(trackName, lapDistM),
     learnBundledTracks
   );
   const worldTrackLogger = {
@@ -408,6 +409,7 @@ export async function publishLmuSDKEvents(
    */
   const nationalityWatch = createLmuNationalityWatch();
   let activeTrackName = '';
+  let activeLapDistM: number | undefined;
   let trackMap: LmuTrackMap | null = null;
   let publishedTrackMap: LmuTrackMap | null = null;
   let lastBlindSpotDataIssue: string | null | undefined;
@@ -571,7 +573,7 @@ export async function publishLmuSDKEvents(
           lastSessionSignature = null;
           resetLmuLapDistanceState(lapDistanceState);
           resetLmuOpponentLapDistanceState(opponentLapDistanceState);
-          sectorBoundaries.reset(activeTrackName);
+          sectorBoundaries.reset(activeTrackName, activeLapDistM);
           rosterGate.reset();
           sessionIdentity.reset();
           dataFreeze.reset();
@@ -625,7 +627,8 @@ export async function publishLmuSDKEvents(
             : null;
         trackMap = loadedMap?.map ?? null;
         mapRecorder.reset(activeTrackName);
-        sectorBoundaries.reset(activeTrackName);
+        activeLapDistM = raw.lapDist;
+        sectorBoundaries.reset(activeTrackName, activeLapDistM);
         // Session settings and the forecast are fetched once per activation,
         // and a new track means a new session.
         restPoller.invalidateOnce();

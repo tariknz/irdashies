@@ -213,6 +213,24 @@ describe('LmuBundledTrackGeometry', () => {
     expect(geometry.has('Test  Oval')).toBe(true);
   });
 
+  it('gives bundled sectors only for a lap the bundled layout fits', () => {
+    const geometry = new LmuBundledTrackGeometry({
+      version: TRACK_GEOMETRY_BUNDLE_VERSION,
+      tracks: { 'Test Oval': entry },
+      sectors: { 'Test Oval': [0.3, 0.6], 'Shape Unknown': [0.4, 0.7] },
+    });
+
+    expect(geometry.sectorBoundaries('Test Oval', LAP)).toEqual([0.3, 0.6]);
+    expect(geometry.sectorBoundaries('Test Oval', LAP * 1.03)).toEqual([
+      0.3, 0.6,
+    ]);
+    expect(geometry.sectorBoundaries('Test Oval', LAP * 1.2)).toBeNull();
+    expect(geometry.sectorBoundaries('Test Oval')).toEqual([0.3, 0.6]);
+    expect(geometry.sectorBoundaries('Shape Unknown', 5000)).toEqual([
+      0.4, 0.7,
+    ]);
+  });
+
   it('skips an entry that does not parse, and a bundle of another version', () => {
     const broken = { ...entry, width: { ...entry.width, left: [1, 2] } };
     expect(parseTrackGeometryEntry(broken)).toBeNull();

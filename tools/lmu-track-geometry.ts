@@ -428,6 +428,15 @@ export function serializeTrackGeometry(
   return `{"version":${bundle.version},"tracks":${tracks},\n"sectors":${sectors}}\n`;
 }
 
+export const unusableExistingBundle = (existing: unknown): string | null => {
+  if (existing === undefined) return null;
+  if (!isObject(existing)) return 'is not a track geometry bundle';
+  if (existing.version !== TRACK_GEOMETRY_BUNDLE_VERSION) {
+    return `has version ${String(existing.version)}, which this exporter cannot read (it writes version ${TRACK_GEOMETRY_BUNDLE_VERSION})`;
+  }
+  return null;
+};
+
 const existingSectors = (existing: unknown): Record<string, number[]> => {
   if (
     !isObject(existing) ||

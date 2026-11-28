@@ -182,8 +182,23 @@ export class LmuBundledTrackGeometry
     return this.sectors.size;
   }
 
-  sectorBoundaries(trackName: string): readonly number[] | null {
-    return byName(this.sectors, trackName) ?? null;
+  sectorBoundaries(
+    trackName: string,
+    lapDistM?: number
+  ): readonly number[] | null {
+    const sectors = byName(this.sectors, trackName);
+    if (!sectors) return null;
+    const entry = byName(this.tracks, trackName);
+    if (
+      entry &&
+      lapDistM !== undefined &&
+      lapDistM > 0 &&
+      !lapDistMatches(entry.lapDistM, lapDistM) &&
+      !lapDistWithinStretch(entry.lapDistM, lapDistM)
+    ) {
+      return null;
+    }
+    return sectors;
   }
 
   has(trackName: string): boolean {

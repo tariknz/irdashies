@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   exportLmuTrackGeometry,
+  unusableExistingBundle,
   type GeometryInput,
   type SectorLogInput,
 } from './lmu-track-geometry';
@@ -85,6 +86,13 @@ const existing = fs.existsSync(outputPath) ? readJson(outputPath) : undefined;
 if (fs.existsSync(outputPath) && existing === undefined) {
   console.error(
     `${outputPath} exists but could not be read; fix or remove it before exporting`
+  );
+  process.exit(1);
+}
+const existingProblem = unusableExistingBundle(existing);
+if (existingProblem) {
+  console.error(
+    `${outputPath} ${existingProblem}; left untouched, nothing exported`
   );
   process.exit(1);
 }

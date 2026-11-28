@@ -12,6 +12,7 @@ import {
 import {
   exportLmuTrackGeometry,
   sectorBoundariesFromLogs,
+  unusableExistingBundle,
 } from './lmu-track-geometry';
 
 const options = { createdAt: '2026-11-22', irdashiesVersion: '3.0.0' };
@@ -361,5 +362,21 @@ describe('exportLmuTrackGeometry', () => {
     const result = exportLmuTrackGeometry([], undefined, options);
 
     expect(result.text).toBe('{"version":1,"tracks":{}}\n');
+  });
+});
+
+describe('unusableExistingBundle', () => {
+  it('accepts no bundle yet, or one of the version it writes', () => {
+    const { bundle } = exportLmuTrackGeometry([], undefined, options);
+    expect(unusableExistingBundle(undefined)).toBeNull();
+    expect(unusableExistingBundle(bundle)).toBeNull();
+  });
+
+  it('refuses a bundle of another version, or a file that is not one', () => {
+    expect(unusableExistingBundle({ version: 2, tracks: {} })).toMatch(
+      /version 2/
+    );
+    expect(unusableExistingBundle([])).not.toBeNull();
+    expect(unusableExistingBundle('text')).not.toBeNull();
   });
 });
