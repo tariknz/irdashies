@@ -22,6 +22,7 @@ export default defineWidgetManifest({
     showIntegrity: true,
     showStats: false,
     showTyreWear: true,
+    showCornerBadges: true,
     showCornerPct: false,
     sessionVisibility: {
       race: true,
@@ -57,6 +58,12 @@ export default defineWidgetManifest({
       label: 'Show Tyre Wear',
       description:
         'Colour each wheel by its remaining tread. A puncture or a lost wheel still shows when off.',
+    },
+    showCornerBadges: {
+      type: 'boolean',
+      label: 'Show Corner Badges',
+      description:
+        'Show the LF, RF, LR and RR badges under the car, coloured by each wheel and its suspension.',
     },
     showCornerPct: {
       type: 'boolean',

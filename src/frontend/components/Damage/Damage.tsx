@@ -34,6 +34,7 @@ export const Damage = () => {
       showIntegrity={settings.showIntegrity}
       showStats={settings.showStats}
       showTyreWear={settings.showTyreWear}
+      showCornerBadges={settings.showCornerBadges}
       showCornerPct={settings.showCornerPct}
       bodyStyle={isDemoMode ? 'gtMid' : car.bodyStyle}
     />

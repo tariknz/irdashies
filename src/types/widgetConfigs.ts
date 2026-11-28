@@ -1546,6 +1546,7 @@ export interface DamageConfig {
   showIntegrity: boolean;
   showStats: boolean;
   showTyreWear: boolean;
+  showCornerBadges: boolean;
   showCornerPct: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }

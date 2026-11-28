@@ -84,6 +84,11 @@ describe('per-simulator widget support', () => {
     expect(isWidgetDisabledForSim(config, 'standings', 'iracing')).toBe(false);
   });
 
+  it('keeps Damage for LMU only, as iRacing reports no panel damage', () => {
+    expect(isWidgetDisabledForSim(config, 'damage', 'iracing')).toBe(true);
+    expect(isWidgetDisabledForSim(config, 'damage', 'lmu')).toBe(false);
+  });
+
   it('hides everything under LMU that is not on its supported list', () => {
     expect(config.disabledWidgets.lmu).toEqual([...LMU_DISABLED_WIDGETS]);
     LMU_SUPPORTED_WIDGETS.forEach((id) => {

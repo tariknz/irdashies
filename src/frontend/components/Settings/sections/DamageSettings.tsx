@@ -82,7 +82,12 @@ export const DamageSettings = () => {
                 <SettingProp path="showIntegrity" />
                 <SettingProp path="showStats" />
                 <SettingProp path="showTyreWear" />
-                <SettingProp path="showCornerPct" />
+                <SettingProp path="showCornerBadges" />
+                {settings.config.showCornerBadges && (
+                  <div className="pl-8 mt-2">
+                    <SettingProp path="showCornerPct" />
+                  </div>
+                )}
               </SettingsSection>
             )}
 

@@ -19,6 +19,7 @@ const renderDisplay = (
     showStats?: boolean;
     showIntegrity?: boolean;
     showTyreWear?: boolean;
+    showCornerBadges?: boolean;
     showCornerPct?: boolean;
   } = {}
 ) =>
@@ -29,6 +30,7 @@ const renderDisplay = (
       showIntegrity={options.showIntegrity ?? true}
       showStats={options.showStats ?? false}
       showTyreWear={options.showTyreWear}
+      showCornerBadges={options.showCornerBadges}
       showCornerPct={options.showCornerPct}
     />
   );
@@ -93,6 +95,17 @@ describe('DamageDisplay', () => {
 
     expect(screen.getByText('LF 92%')).toBeTruthy();
     expect(screen.getByText('RR 75%')).toBeTruthy();
+  });
+
+  it('hides the corner badges, and their tread, when turned off', () => {
+    renderDisplay(
+      { ...UNDAMAGED, tyreWear: [0.92, 0.88, 0.5, 0.75] },
+      { showCornerBadges: false, showCornerPct: true }
+    );
+
+    expect(screen.queryByText('LF')).toBeNull();
+    expect(screen.queryByText('LF 92%')).toBeNull();
+    expect(screen.queryByText('RR')).toBeNull();
   });
 
   it('keeps the corner badges to their names by default', () => {

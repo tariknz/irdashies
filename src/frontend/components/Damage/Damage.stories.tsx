@@ -152,6 +152,19 @@ export const WithoutTyreWear: Story = {
   decorators: box(),
 };
 
+export const WithoutCornerBadges: Story = {
+  args: {
+    data: DEMO_DAMAGE,
+    opacity: 80,
+    showIntegrity: true,
+    showStats: false,
+    showCornerBadges: false,
+    showCornerPct: true,
+    bodyStyle: 'gtMid',
+  },
+  decorators: box(),
+};
+
 export const ScaledUpFrame: Story = {
   args: {
     data: DEMO_DAMAGE,

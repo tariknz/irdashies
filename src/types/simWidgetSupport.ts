@@ -106,6 +106,7 @@ export const LMU_DISABLED_WIDGETS: readonly string[] = [
 export const IRACING_DISABLED_WIDGETS: readonly string[] = [
   'brakepressure',
   'cruiseodometer',
+  'damage',
   'frictioncircle',
   'steeringmeter',
   'stinthistory',
@@ -141,7 +142,7 @@ export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
  * it did, which costs a user their hand edits once per change and is why the
  * number is bumped only for a real one.
  */
-export const SIM_WIDGET_SUPPORT_VERSION = 16;
+export const SIM_WIDGET_SUPPORT_VERSION = 17;
 
 /**
  * Whether a widget is unavailable under the running sim.

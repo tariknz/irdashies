@@ -41,6 +41,7 @@ export interface DamageDisplayProps {
   showIntegrity: boolean;
   showStats: boolean;
   showTyreWear?: boolean;
+  showCornerBadges?: boolean;
   showCornerPct?: boolean;
   bodyStyle?: DamageBodyStyle;
 }
@@ -159,6 +160,7 @@ export const DamageDisplay = ({
   showIntegrity,
   showStats,
   showTyreWear = true,
+  showCornerBadges = true,
   showCornerPct = false,
   bodyStyle = 'gtMid',
 }: DamageDisplayProps) => {
@@ -291,34 +293,36 @@ export const DamageDisplay = ({
           <StatusIcons warnings={data.engineWarnings ?? 0} />
         </div>
 
-        <div className="grid shrink-0 grid-cols-2 gap-1">
-          {CORNER_LABELS.map((label, index) => {
-            const badgeFill =
-              hasSusp || data.wheelDetached[index]
-                ? suspFill[index]
-                : wheelFill[index];
-            const style = cornerStyle(badgeFill);
-            const hole = punctured[index];
-            return (
-              <div
-                key={label}
-                className={[
-                  'rounded-sm px-1 py-0.5 text-center text-[10px] font-bold tracking-wide',
-                  style.className,
-                  hole ? 'outline outline-1 outline-red-500' : '',
-                ].join(' ')}
-                style={{ backgroundColor: style.backgroundColor }}
-              >
-                {cornerBadgeText(
-                  label,
-                  data.tyreWear[index],
-                  !!data.wheelDetached[index],
-                  showCornerPct
-                )}
-              </div>
-            );
-          })}
-        </div>
+        {showCornerBadges && (
+          <div className="grid shrink-0 grid-cols-2 gap-1">
+            {CORNER_LABELS.map((label, index) => {
+              const badgeFill =
+                hasSusp || data.wheelDetached[index]
+                  ? suspFill[index]
+                  : wheelFill[index];
+              const style = cornerStyle(badgeFill);
+              const hole = punctured[index];
+              return (
+                <div
+                  key={label}
+                  className={[
+                    'rounded-sm px-1 py-0.5 text-center text-[10px] font-bold tracking-wide',
+                    style.className,
+                    hole ? 'outline outline-1 outline-red-500' : '',
+                  ].join(' ')}
+                  style={{ backgroundColor: style.backgroundColor }}
+                >
+                  {cornerBadgeText(
+                    label,
+                    data.tyreWear[index],
+                    !!data.wheelDetached[index],
+                    showCornerPct
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {showStats && (
           <div className="flex shrink-0 flex-col gap-0.5">
