@@ -212,3 +212,73 @@ describe('refineLmuOpponentLapDistPcts', () => {
     expect(out[1]).toBeCloseTo(0.01, 5);
   });
 });
+
+describe('refineLmuOpponentLapDistPcts at the race start', () => {
+  it('keeps a car short of the line moving while its phase says it has not started', () => {
+    const state = createLmuOpponentLapDistanceState();
+    const out = [0.9, 0.8];
+    refineLmuOpponentLapDistPcts(
+      state,
+      out,
+      frame({ scoringPcts: [0.9, 0.8], elapsedTimes: [10, 10] })
+    );
+    out[0] = 0;
+    out[1] = 0;
+    refineLmuOpponentLapDistPcts(
+      state,
+      out,
+      frame({
+        scoringPcts: [0, 0],
+        elapsedTimes: [10.2, 10.2],
+        individualPhases: [9, 5],
+      })
+    );
+
+    expect(out[0]).toBeGreaterThan(0.9);
+    expect(out[1]).toBeCloseTo(0, 3);
+  });
+
+  it('writes a car still short of the start line a lap lower until it crosses', () => {
+    const state = createLmuOpponentLapDistanceState();
+    const out = [0.95, 0.5];
+    const laps = [0, 0];
+    refineLmuOpponentLapDistPcts(
+      state,
+      out,
+      frame({
+        scoringPcts: [0.95, 0.5],
+        lapNumbers: [0, 0],
+        completedLaps: [0, 0],
+        elapsedTimes: [10, 10],
+      }),
+      [laps]
+    );
+    refineLmuOpponentLapDistPcts(
+      state,
+      out,
+      frame({
+        scoringPcts: [0, 0.5],
+        lapNumbers: [0, 0],
+        completedLaps: [0, 0],
+        elapsedTimes: [10.2, 10.2],
+        individualPhases: [9, 5],
+      }),
+      [laps]
+    );
+    expect(laps[0]).toBe(-1);
+
+    refineLmuOpponentLapDistPcts(
+      state,
+      out,
+      frame({
+        scoringPcts: [0.003, 0.5],
+        lapNumbers: [0, 0],
+        completedLaps: [0, 0],
+        elapsedTimes: [12, 12],
+        individualPhases: [5, 5],
+      }),
+      [laps]
+    );
+    expect(laps[0]).toBe(0);
+  });
+});

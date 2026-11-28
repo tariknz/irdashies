@@ -121,6 +121,53 @@ const sameMapFrame = (
   return true;
 };
 
+const ROAD_EDGES_HEADER = 3;
+
+const isRoadEdges = (
+  values: readonly unknown[]
+): values is readonly number[] => {
+  if (values.length < ROAD_EDGES_HEADER) return false;
+  const [start, step, count] = values;
+  if (
+    typeof start !== 'number' ||
+    typeof step !== 'number' ||
+    typeof count !== 'number' ||
+    !Number.isFinite(start) ||
+    !(step > 0) ||
+    !Number.isInteger(count) ||
+    count < 2 ||
+    values.length !== ROAD_EDGES_HEADER + count * 2
+  ) {
+    return false;
+  }
+  for (const value of values) {
+    if (typeof value !== 'number') return false;
+  }
+  return true;
+};
+
+const readRoadEdges = (
+  values: readonly unknown[],
+  previous: readonly number[] | null | undefined
+): readonly number[] | null => {
+  if (!isRoadEdges(values)) return null;
+  return previous && sameRoadEdges(previous, values)
+    ? previous
+    : values.slice();
+};
+
+const sameRoadEdges = (
+  a: readonly number[] | null | undefined,
+  b: readonly number[] | null | undefined
+): boolean => {
+  if (!a || !b) return !a && !b;
+  if (a.length !== b.length) return false;
+  for (let index = 0; index < a.length; index += 1) {
+    if (!Object.is(a[index], b[index])) return false;
+  }
+  return true;
+};
+
 const scalarNumber = (frame: Telemetry, key: string, fallback = -1): number =>
   numberAt(valuesOf(frame, key), 0, fallback);
 
@@ -266,6 +313,13 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     const mapFrame = worldFocus
       ? readMapFrame(valuesOf(frame, 'LmuRadarMapFrame'), this.latest.mapFrame)
       : null;
+    const roadEdges = mapFrame
+      ? readRoadEdges(
+          valuesOf(frame, 'LmuRadarRoadEdges'),
+          this.latest.roadEdges
+        )
+      : null;
+    const lmuOffTrack = valuesOf(frame, 'LmuCarIdxOffTrack');
 
     const cars: RadarCar[] = [];
     let formation: Formation | null = null;
@@ -332,7 +386,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
           lane: 0,
           laneSource: 'none',
           onPitRoad: onPitRoad[carIdx] === true,
-          offTrack: surface === TrackLocation.OffTrack,
+          offTrack:
+            surface === TrackLocation.OffTrack || lmuOffTrack[carIdx] === 1,
         };
         if (worldFocus) {
           applyWorldOffset(car, world, carIdx);
@@ -410,6 +465,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
           ((formation.columns - 1) / 2 - formation.ownColumn)
         : 0,
       mapFrame,
+      roadEdges,
       poleSideNotice: this.poleNoticeShown(time)
         ? this.poleLeft
           ? 'left'
@@ -573,6 +629,7 @@ const emptySnapshot = (version: number): RadarSnapshot => ({
   poleSideNotice: null,
   roadLane: 0,
   mapFrame: null,
+  roadEdges: null,
   cars: [],
   hazards: [],
   version,
@@ -600,6 +657,7 @@ const sameSnapshot = (
   previous.poleSideNotice === next.poleSideNotice &&
   previous.roadLane === next.roadLane &&
   sameMapFrame(previous.mapFrame, next.mapFrame) &&
+  sameRoadEdges(previous.roadEdges, next.roadEdges) &&
   previous.trackLength === next.trackLength &&
   previous.focusOnPitRoad === next.focusOnPitRoad &&
   previous.focusInPitBox === next.focusInPitBox &&

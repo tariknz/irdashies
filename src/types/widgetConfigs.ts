@@ -642,7 +642,7 @@ export interface RadarConfig {
   showCarNumbers: boolean;
   /** Draw the road under the cars. */
   showTrackMap: boolean;
-  /** Drawn road width in metres; the drawings carry no width. */
+  /** Drawn road width in metres wherever the real road edges are not known. */
   trackWidth: number;
   /** Road opacity, 0-100. */
   mapOpacity: number;

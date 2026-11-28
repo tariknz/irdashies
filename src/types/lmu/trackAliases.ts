@@ -11,11 +11,7 @@
  * of normalising would reach from LMU's -- nothing turns "Circuit de la
  * Sarthe" into "lemans full". The entries that the LMU dataset also covers are
  * kept rather than pruned, because they cost nothing (the LMU lookup is tried
- * first) and because the map generator reads this same table.
- *
- * The same table feeds tools/generate-lmu-track-maps.ts, which borrows these
- * names for the turn labels on its track maps. It lives here so the two cannot
- * disagree about which circuit is which.
+ * first).
  *
  * A layout in neither place -- Long Beach, as of writing -- shows no corner
  * names. That is the honest answer, and the near-miss matching that used to

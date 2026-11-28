@@ -259,8 +259,27 @@ const lmuMapFrame = (
   ];
 };
 
+const EDGE_STEP_PCT = 0.0005;
+const EDGE_SAMPLES = 120;
+
+const barcelonaRoadEdges = (playerPct: number): number[] => {
+  const start = playerPct - 0.02;
+  const left: number[] = [];
+  const right: number[] = [];
+  for (let index = 0; index < EDGE_SAMPLES; index++) {
+    const pct = start + index * EDGE_STEP_PCT;
+    const unknown = index >= 50 && index < 56;
+    left.push(unknown ? Number.NaN : 6 + 2 * Math.sin(pct * 400));
+    right.push(unknown ? Number.NaN : -5 - 1.5 * Math.cos(pct * 300));
+  }
+  return [(start + 1) % 1, EDGE_STEP_PCT, EDGE_SAMPLES, ...left, ...right];
+};
+
 /** An LMU car through Barcelona's T1-T3, a little off the line and angled. */
-const LmuWorldTrack = ({ style }: Pick<StoryProps, 'style'>) => {
+const LmuWorldTrack = ({
+  style,
+  roadEdges = false,
+}: Pick<StoryProps, 'style'> & { roadEdges?: boolean }) => {
   const seconds = useTicker();
   const playerPct = (0.17 + (seconds * 30) / BARCELONA_LAP_M) % 1;
   const appearance = useMemo(
@@ -286,6 +305,7 @@ const LmuWorldTrack = ({ style }: Pick<StoryProps, 'style'>) => {
           0.12 * Math.sin(seconds * 0.8)
         )
       : null,
+    roadEdges: roadEdges ? barcelonaRoadEdges(playerPct) : null,
   };
   return (
     <RadarDisplay
@@ -300,4 +320,8 @@ const LmuWorldTrack = ({ style }: Pick<StoryProps, 'style'>) => {
 
 export const LmuWorldTrackRoad: Story = {
   render: ({ style }) => <LmuWorldTrack style={style} />,
+};
+
+export const LmuWorldTrackRoadEdges: Story = {
+  render: ({ style }) => <LmuWorldTrack style={style} roadEdges />,
 };
