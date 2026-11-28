@@ -50,6 +50,7 @@ const EMPTY_SNAPSHOT: RadarSnapshot = {
   poleSideNotice: null,
   roadLane: 0,
   mapFrame: null,
+  roadEdges: null,
   cars: [],
   hazards: [],
   version: 0,
@@ -173,6 +174,7 @@ export const Radar = () => {
         poleSideNotice: snapshot.poleSideNotice,
         roadLane: snapshot.roadLane,
         mapFrame: snapshot.mapFrame ?? null,
+        roadEdges: snapshot.roadEdges ?? null,
       },
     [demoFrame, snapshot, cars]
   );

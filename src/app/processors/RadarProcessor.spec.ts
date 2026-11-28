@@ -938,7 +938,7 @@ describe('RadarProcessor with LMU world positions', () => {
     expect(cars[0].dist).toBeCloseTo(19);
   });
 
-  it('keeps the same map frame while it does not change', () => {
+  it('keeps the same map frame and road edges while they do not change', () => {
     const processor = createProcessor();
     const mapFrame = [1, 2, 0, 1, 1, 0];
     const withMap = (time: number, longitudinal: number) =>
@@ -948,6 +948,7 @@ describe('RadarProcessor with LMU world positions', () => {
           { 1: { lateral: 0, longitudinal } }
         ),
         LmuRadarMapFrame: { value: mapFrame },
+        LmuRadarRoadEdges: { value: [0, 2, 2, -5, 5, -5, 5] },
       }) as unknown as Telemetry;
     processor.onFrame(withMap(1, 60));
     const first = processor.snapshot();
@@ -957,6 +958,7 @@ describe('RadarProcessor with LMU world positions', () => {
     expect(second.version).toBeGreaterThan(first.version);
     expect(second.mapFrame).toEqual(mapFrame);
     expect(second.mapFrame).toBe(first.mapFrame);
+    expect(second.roadEdges).toBe(first.roadEdges);
     expect(second.mapFrame).not.toBe(mapFrame);
   });
 
@@ -993,6 +995,90 @@ describe('RadarProcessor with LMU world positions', () => {
       LmuRadarMapFrame: { value: [10, 20, 1, 0, 0, -1] },
     } as unknown as Telemetry);
     expect(spectating.snapshot().mapFrame).toBeNull();
+  });
+
+  const EDGES = [0.49, 0.001, 3, 4, Number.NaN, 4.2, -5, Number.NaN, -5.1];
+
+  it('passes the road edges through with the map frame', () => {
+    const processor = createProcessor();
+    processor.onFrame({
+      ...worldFrame(
+        { time: 1, pcts: [0.5, 0.5 + m(10)] },
+        { 1: { lateral: 0, longitudinal: 10 } }
+      ),
+      LmuRadarMapFrame: { value: [10, 20, 1, 0, 0, -1] },
+      LmuRadarRoadEdges: { value: EDGES },
+    } as unknown as Telemetry);
+
+    expect(processor.snapshot().roadEdges).toEqual(EDGES);
+  });
+
+  it('passes no road edges without a map frame, when malformed or not ours', () => {
+    const withoutFrame = createProcessor();
+    withoutFrame.onFrame({
+      ...worldFrame(
+        { time: 1, pcts: [0.5, 0.5 + m(10)] },
+        { 1: { lateral: 0, longitudinal: 10 } }
+      ),
+      LmuRadarRoadEdges: { value: EDGES },
+    } as unknown as Telemetry);
+    expect(withoutFrame.snapshot().roadEdges).toBeNull();
+
+    const malformed = createProcessor();
+    malformed.onFrame({
+      ...worldFrame(
+        { time: 1, pcts: [0.5, 0.5 + m(10)] },
+        { 1: { lateral: 0, longitudinal: 10 } }
+      ),
+      LmuRadarMapFrame: { value: [10, 20, 1, 0, 0, -1] },
+      LmuRadarRoadEdges: { value: EDGES.slice(0, 7) },
+    } as unknown as Telemetry);
+    expect(malformed.snapshot().roadEdges).toBeNull();
+
+    const spectating = createProcessor();
+    spectating.onFrame({
+      ...worldFrame(
+        { time: 1, pcts: [0.5, 0.5 + m(10)], camCarIdx: 1 },
+        { 1: { lateral: 0, longitudinal: 10 } }
+      ),
+      LmuRadarMapFrame: { value: [10, 20, 1, 0, 0, -1] },
+      LmuRadarRoadEdges: { value: EDGES },
+    } as unknown as Telemetry);
+    expect(spectating.snapshot().roadEdges).toBeNull();
+  });
+
+  it('marks an LMU car off track when the sim puts it past the edge', () => {
+    const processor = createProcessor();
+    processor.onFrame({
+      ...frame({ time: 1, pcts: [0.5, 0.5 + m(10), 0.5 - m(10)] }),
+      LmuCarIdxOffTrack: { value: [0, 1, 0] },
+    } as unknown as Telemetry);
+
+    const byIdx = (carIdx: number) =>
+      processor.snapshot().cars.find((car) => car.carIdx === carIdx);
+    expect(byIdx(1)?.offTrack).toBe(true);
+    expect(byIdx(2)?.offTrack).toBe(false);
+  });
+
+  it('keeps the off-track state from the track surface without the LMU flag', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      frame({
+        time: 1,
+        pcts: [0.5, 0.5 + m(10), 0.5 - m(10)],
+        surfaces: [
+          TrackLocation.OnTrack,
+          TrackLocation.OffTrack,
+          TrackLocation.OnTrack,
+        ],
+      })
+    );
+
+    const byIdx = (carIdx: number) =>
+      processor.snapshot().cars.find((car) => car.carIdx === carIdx);
+    expect(byIdx(1)?.offTrack).toBe(true);
+    expect(byIdx(2)?.offTrack).toBe(false);
+    expect(processor.snapshot().roadEdges).toBeNull();
   });
 
   it('uses the world only for the car the world is measured from', () => {

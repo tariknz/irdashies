@@ -13,6 +13,7 @@ import {
   LmuWorldTrackAlignment,
   LmuWorldTrackSource,
   LmuWorldTrackStorage,
+  lapDistMatches,
   parseLmuWorldTrack,
   WORLD_TRACK_MAX_ATTEMPTS,
   worldTrackFitsLap,
@@ -424,7 +425,12 @@ describe('LmuWorldTrackSource', () => {
   });
 
   it('tries again after a rejection, then falls back', () => {
-    const source = new LmuWorldTrackSource(storage, log, () => 'skipped 3');
+    const source = new LmuWorldTrackSource(
+      storage,
+      log,
+      null,
+      () => 'skipped 3'
+    );
     source.setTrack('Algarve International Circuit');
 
     expect(drive(source, mirrored(track), ALGARVE_LAP_DISTANCE_M, 20)).toBe(
@@ -451,7 +457,7 @@ describe('LmuWorldTrackSource', () => {
       )
     );
     expect(storage.load('Algarve International Circuit')).toBeNull();
-  }, 30_000);
+  });
 
   it('accepts the live track on a retry once the samples are clean', () => {
     const source = new LmuWorldTrackSource(storage, log);
@@ -540,6 +546,169 @@ describe('LmuWorldTrackSource', () => {
     expect(source.fit).toBeNull();
     expect(source.wantsLiveTrack).toBe(true);
   });
+
+  const bundleOf = (offsetM: number, lapDistM = ALGARVE_LAP_DISTANCE_M) => ({
+    worldTrack: vi.fn((trackName: string, live: number) =>
+      trackName === 'Algarve International Circuit' &&
+      lapDistMatches(lapDistM, live)
+        ? { track: algarve(), offsetM, lapDistM }
+        : null
+    ),
+  });
+
+  it('falls back to the bundled track when nothing is cached', () => {
+    const bundle = bundleOf(OFFSET_M);
+    const source = new LmuWorldTrackSource(storage, log, bundle);
+    source.setTrack('Algarve International Circuit', ALGARVE_LAP_DISTANCE_M);
+
+    expect(source.source).toBe('bundle');
+    expect(source.map?.active.trackPathPoints).toHaveLength(512);
+    expect(source.fit?.rmsM).toBe(0);
+    expect(bundle.worldTrack).toHaveBeenCalledWith(
+      'Algarve International Circuit',
+      ALGARVE_LAP_DISTANCE_M
+    );
+  });
+
+  it('prefers the bundled track over a cached copy that differs from it', () => {
+    storage.save(
+      'Algarve International Circuit',
+      algarve(),
+      OFFSET_M + 20,
+      ALGARVE_LAP_DISTANCE_M
+    );
+    storage.saveTrackWidth('Algarve International Circuit', { bins: 2 });
+    const source = new LmuWorldTrackSource(storage, log, bundleOf(OFFSET_M));
+    source.setTrack('Algarve International Circuit', ALGARVE_LAP_DISTANCE_M);
+
+    expect(source.source).toBe('bundle');
+    expect(source.storedMatchesActive).toBe(false);
+    expect(log.info).toHaveBeenCalledWith(
+      '[lmuWorldTrack] Cached world track for Algarve International Circuit differs from the bundled one; using the bundled one'
+    );
+
+    source.ensureStored();
+    expect(source.storedMatchesActive).toBe(true);
+    expect(storage.load('Algarve International Circuit')?.offsetM).toBeCloseTo(
+      OFFSET_M,
+      1
+    );
+    expect(
+      storage.loadTrackWidth('Algarve International Circuit')
+    ).toBeUndefined();
+  });
+
+  it('takes a cached copy equal to the bundle as already stored, width and all', () => {
+    storage.save(
+      'Algarve International Circuit',
+      algarve(),
+      OFFSET_M,
+      ALGARVE_LAP_DISTANCE_M
+    );
+    storage.saveTrackWidth('Algarve International Circuit', { bins: 2 });
+    const source = new LmuWorldTrackSource(storage, log, bundleOf(OFFSET_M));
+    source.setTrack('Algarve International Circuit', ALGARVE_LAP_DISTANCE_M);
+
+    expect(source.source).toBe('bundle');
+    expect(source.storedMatchesActive).toBe(true);
+    source.ensureStored();
+    expect(storage.loadTrackWidth('Algarve International Circuit')).toEqual({
+      bins: 2,
+    });
+  });
+
+  it('stretches the bundled track onto a lap a few metres off', () => {
+    const bundle = {
+      worldTrack: vi.fn(() => ({
+        track: algarve(),
+        offsetM: OFFSET_M,
+        lapDistM: ALGARVE_LAP_DISTANCE_M,
+      })),
+    };
+    const lapDistM = ALGARVE_LAP_DISTANCE_M + 10;
+    const source = new LmuWorldTrackSource(storage, log, bundle);
+    source.setTrack('Algarve International Circuit', lapDistM);
+
+    expect(source.source).toBe('bundle');
+    expect(source.map).not.toBeNull();
+    expect(log.info).toHaveBeenCalledWith(
+      expect.stringContaining('stretching it to the live lap')
+    );
+    source.ensureStored();
+    expect(storage.load('Algarve International Circuit')?.lapDistM).toBe(
+      lapDistM
+    );
+  });
+
+  it('says whether the stored entry is the track in use', () => {
+    const source = new LmuWorldTrackSource(storage, log);
+    source.setTrack('Algarve International Circuit');
+    expect(source.storedMatchesActive).toBe(false);
+
+    drive(source, track);
+    expect(source.source).toBe('live');
+    expect(source.storedMatchesActive).toBe(true);
+
+    const next = new LmuWorldTrackSource(storage, log);
+    next.setTrack('Algarve International Circuit');
+    expect(next.source).toBe('cache');
+    expect(next.storedMatchesActive).toBe(true);
+  });
+
+  it('prefers the live track over the bundled one when they differ', () => {
+    const source = new LmuWorldTrackSource(storage, log, bundleOf(OFFSET_M));
+    source.setTrack('Algarve International Circuit', ALGARVE_LAP_DISTANCE_M);
+    const shifted = worldTrackFrom(
+      track.racing.map((point) => ({ x: point.x + 3, y: point.y })),
+      track.pitLane
+    );
+
+    expect(drive(source, shifted)).toBe(true);
+    expect(source.source).toBe('live');
+  });
+
+  it('keeps the bundled track when the live one matches, and stores it', () => {
+    const source = new LmuWorldTrackSource(storage, log, bundleOf(OFFSET_M));
+    source.setTrack('Algarve International Circuit', ALGARVE_LAP_DISTANCE_M);
+
+    expect(drive(source, algarve())).toBe(false);
+    expect(source.source).toBe('bundle');
+    expect(source.wantsLiveTrack).toBe(false);
+    expect(log.info).toHaveBeenLastCalledWith(
+      '[lmuWorldTrack] World track for Algarve International Circuit matches the bundled one'
+    );
+    expect(storage.load('Algarve International Circuit')?.offsetM).toBeCloseTo(
+      OFFSET_M,
+      1
+    );
+  });
+
+  it('stores the bundled track only when asked', () => {
+    const source = new LmuWorldTrackSource(storage, log, bundleOf(OFFSET_M));
+    source.setTrack('Algarve International Circuit', ALGARVE_LAP_DISTANCE_M);
+    expect(storage.load('Algarve International Circuit')).toBeNull();
+
+    source.ensureStored();
+    expect(storage.load('Algarve International Circuit')).not.toBeNull();
+  });
+
+  it('ignores a cached or bundled track made for another lap length', () => {
+    storage.save(
+      'Algarve International Circuit',
+      algarve(),
+      OFFSET_M,
+      ALGARVE_LAP_DISTANCE_M
+    );
+    const bundle = bundleOf(OFFSET_M);
+    const source = new LmuWorldTrackSource(storage, log, bundle);
+    source.setTrack(
+      'Algarve International Circuit',
+      ALGARVE_LAP_DISTANCE_M + 10
+    );
+
+    expect(source.map).toBeNull();
+    expect(source.source).toBeNull();
+  });
 });
 
 describe('LmuWorldTrackStorage', () => {
@@ -566,12 +735,37 @@ describe('LmuWorldTrackStorage', () => {
     const storage = new LmuWorldTrackStorage(file);
     const name = 'Algarve International Circuit';
     storage.save(name, algarve(), OFFSET_M, ALGARVE_LAP_DISTANCE_M);
+    storage.saveTrackWidth(name, { bins: 2 });
     expect(fs.existsSync(file)).toBe(false);
 
     await storage.flush();
     const next = new LmuWorldTrackStorage(file);
     await next.restore();
     expect(next.load(name)?.offsetM).toBeCloseTo(OFFSET_M, 1);
+    expect(next.loadTrackWidth(name)).toEqual({ bins: 2 });
+    fs.rmSync(directory, { recursive: true, force: true });
+  });
+
+  it('keeps a track width beside its track until the track is saved again', () => {
+    const directory = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'lmu-world-track-')
+    );
+    const storage = new LmuWorldTrackStorage(
+      path.join(directory, 'tracks.json')
+    );
+    const name = 'Algarve International Circuit';
+    const width = { bins: 2, sign: 1 };
+
+    expect(storage.saveTrackWidth(name, width)).toBe(false);
+    expect(storage.loadTrackWidth(name)).toBeUndefined();
+
+    storage.save(name, algarve(), OFFSET_M, ALGARVE_LAP_DISTANCE_M);
+    expect(storage.saveTrackWidth(name, width)).toBe(true);
+    expect(storage.loadTrackWidth(name)).toEqual(width);
+    expect(storage.load(name)?.offsetM).toBeCloseTo(OFFSET_M, 1);
+
+    storage.save(name, algarve(), OFFSET_M + 5, ALGARVE_LAP_DISTANCE_M);
+    expect(storage.loadTrackWidth(name)).toBeUndefined();
     fs.rmSync(directory, { recursive: true, force: true });
   });
 });
