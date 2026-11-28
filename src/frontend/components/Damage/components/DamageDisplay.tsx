@@ -4,7 +4,10 @@ import {
   GasPumpIcon,
   ThermometerSimpleIcon,
 } from '@phosphor-icons/react';
+import { useRef } from 'react';
 import { EngineWarnings } from '@irdashies/types';
+import { useElementSize } from '@irdashies/context';
+import { useWidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import type { DamageBodyStyle } from '../bodyStyle';
 import type { DamageSnapshot } from '../logic';
 import {
@@ -37,8 +40,36 @@ export interface DamageDisplayProps {
   opacity: number;
   showIntegrity: boolean;
   showStats: boolean;
+  showTyreWear?: boolean;
+  showCornerPct?: boolean;
   bodyStyle?: DamageBodyStyle;
 }
+
+const DESIGN_WIDTH = 170;
+const DESIGN_HEIGHT = 240;
+const DESIGN_HEIGHT_WITH_STATS = 330;
+
+export const damageZoom = (
+  frame: { width: number; height: number },
+  designHeight: number,
+  widgetScale: number
+): number => {
+  if (!(frame.width > 0) || !(frame.height > 0)) return widgetScale;
+  return (
+    Math.min(frame.width / DESIGN_WIDTH, frame.height / designHeight) *
+    widgetScale
+  );
+};
+
+export const cornerBadgeText = (
+  label: string,
+  tyreWear: number | undefined,
+  detached: boolean,
+  showPct: boolean
+): string =>
+  showPct && !detached && tyreWear !== undefined && Number.isFinite(tyreWear)
+    ? `${label} ${Math.round(Math.max(0, Math.min(1, tyreWear)) * 100)}%`
+    : label;
 
 function IntegrityRow({
   label,
@@ -116,7 +147,7 @@ function cornerStyle(fill: string): {
   if (fill === SUSP_FILL.ok) {
     return { backgroundColor: CORNER_OK_BG, className: 'text-teal-300' };
   }
-  if (fill === SUSP_FILL.detached) {
+  if (fill === SUSP_FILL.detached || fill === BODY_FILL.ok) {
     return { backgroundColor: fill, className: 'text-slate-200' };
   }
   return { backgroundColor: fill, className: 'text-slate-950' };
@@ -127,8 +158,15 @@ export const DamageDisplay = ({
   opacity,
   showIntegrity,
   showStats,
+  showTyreWear = true,
+  showCornerPct = false,
   bodyStyle = 'gtMid',
 }: DamageDisplayProps) => {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const frame = useElementSize(frameRef);
+  const widgetScale = useWidgetScale();
+  const designHeight = showStats ? DESIGN_HEIGHT_WITH_STATS : DESIGN_HEIGHT;
+  const zoom = damageZoom(frame, designHeight, widgetScale);
   const repairNeeded = data.repairNeeded || (data.repairTime ?? 0) > 0;
   const optRepairNeeded = data.optRepairNeeded || (data.optRepairTime ?? 0) > 0;
   const hasDents = data.dentSeverity.length === 8;
@@ -166,6 +204,12 @@ export const DamageDisplay = ({
 
   const wheelFill = [0, 1, 2, 3].map((index) => {
     if (data.wheelDetached[index]) return SUSP_FILL.detached;
+    if (
+      !showTyreWear &&
+      !isPunctured(data.tyreWear[index], data.tyrePressure?.[index])
+    ) {
+      return BODY_FILL.ok;
+    }
     return SUSP_FILL[tyreWearTier(data.tyreWear[index])];
   });
 
@@ -217,98 +261,113 @@ export const DamageDisplay = ({
 
   return (
     <div
-      className="flex h-full w-full flex-col gap-1.5 overflow-hidden rounded-md p-2 text-slate-100 bg-slate-800/(--bg-opacity)"
+      ref={frameRef}
+      className="flex h-full w-full items-center justify-center overflow-hidden rounded-md bg-slate-800/(--bg-opacity)"
       style={{ ['--bg-opacity' as string]: `${opacity}%` }}
     >
-      <div className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-amber-300">
-        Vehicle Damage
-      </div>
-
-      <div className="flex min-h-0 flex-1 gap-1.5 overflow-hidden">
-        <div className="relative min-h-0 min-w-0 flex-1">
-          <CarSilhouette
-            style={bodyStyle}
-            bodyStroke={bodyStroke}
-            wingFill={wingFill}
-            wheelFill={wheelFill}
-            suspFill={suspFill}
-            labels={labels}
-          />
+      <div
+        className="flex shrink-0 flex-col gap-1.5 p-2 text-slate-100"
+        style={{
+          width: DESIGN_WIDTH,
+          height: designHeight,
+          transform: zoom === 1 ? undefined : `scale(${zoom})`,
+        }}
+      >
+        <div className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-amber-300">
+          Vehicle Damage
         </div>
-        <StatusIcons warnings={data.engineWarnings ?? 0} />
-      </div>
 
-      <div className="grid shrink-0 grid-cols-2 gap-1">
-        {CORNER_LABELS.map((label, index) => {
-          const badgeFill =
-            hasSusp || data.wheelDetached[index]
-              ? suspFill[index]
-              : wheelFill[index];
-          const style = cornerStyle(badgeFill);
-          const hole = punctured[index];
-          return (
-            <div
-              key={label}
-              className={[
-                'rounded-sm px-1 py-0.5 text-center text-[10px] font-bold tracking-wide',
-                style.className,
-                hole ? 'outline outline-1 outline-red-500' : '',
-              ].join(' ')}
-              style={{ backgroundColor: style.backgroundColor }}
-            >
-              {label}
-            </div>
-          );
-        })}
-      </div>
-
-      {showStats && (
-        <div className="flex shrink-0 flex-col gap-0.5">
-          <IntegrityRow
-            label="Aero"
-            value={aeroIntegrity(data.aeroDamage)}
-            warnAt={0.5}
-          />
-          <IntegrityRow
-            label="Body"
-            value={bodyIntegrity(hasDents ? dents : [])}
-            warnAt={0.5}
-          />
-          <IntegrityRow
-            label="Susp"
-            value={suspensionIntegrity(
-              data.suspensionDamage,
-              data.wheelDetached
-            )}
-            warnAt={0.7}
-          />
-          <IntegrityRow
-            label="Tyre"
-            value={tyreIntegrity(
-              data.tyreWear,
-              [0, 1, 2, 3].map(
-                (index) => !!data.wheelDetached[index] || punctured[index]
-              )
-            )}
-            warnAt={0.2}
-          />
-          {data.repairTime !== undefined && data.repairTime > 0 && (
-            <div className="mt-0.5 text-center font-mono text-[10px] text-slate-400">
-              Repair {data.repairTime.toFixed(1)}s
-            </div>
-          )}
-          {data.optRepairTime !== undefined && data.optRepairTime > 0 && (
-            <div className="text-center font-mono text-[10px] text-slate-500">
-              Opt {data.optRepairTime.toFixed(1)}s
-            </div>
-          )}
-          {!hasDents && (repairNeeded || optRepairNeeded) && (
-            <div className="text-center text-[10px] text-amber-400">
-              {repairNeeded ? 'Repair needed' : 'Optional repair'}
-            </div>
-          )}
+        <div className="flex min-h-0 flex-1 gap-1.5 overflow-hidden">
+          <div className="relative min-h-0 min-w-0 flex-1">
+            <CarSilhouette
+              style={bodyStyle}
+              bodyStroke={bodyStroke}
+              wingFill={wingFill}
+              wheelFill={wheelFill}
+              suspFill={suspFill}
+              labels={labels}
+            />
+          </div>
+          <StatusIcons warnings={data.engineWarnings ?? 0} />
         </div>
-      )}
+
+        <div className="grid shrink-0 grid-cols-2 gap-1">
+          {CORNER_LABELS.map((label, index) => {
+            const badgeFill =
+              hasSusp || data.wheelDetached[index]
+                ? suspFill[index]
+                : wheelFill[index];
+            const style = cornerStyle(badgeFill);
+            const hole = punctured[index];
+            return (
+              <div
+                key={label}
+                className={[
+                  'rounded-sm px-1 py-0.5 text-center text-[10px] font-bold tracking-wide',
+                  style.className,
+                  hole ? 'outline outline-1 outline-red-500' : '',
+                ].join(' ')}
+                style={{ backgroundColor: style.backgroundColor }}
+              >
+                {cornerBadgeText(
+                  label,
+                  data.tyreWear[index],
+                  !!data.wheelDetached[index],
+                  showCornerPct
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {showStats && (
+          <div className="flex shrink-0 flex-col gap-0.5">
+            <IntegrityRow
+              label="Aero"
+              value={aeroIntegrity(data.aeroDamage)}
+              warnAt={0.5}
+            />
+            <IntegrityRow
+              label="Body"
+              value={bodyIntegrity(hasDents ? dents : [])}
+              warnAt={0.5}
+            />
+            <IntegrityRow
+              label="Susp"
+              value={suspensionIntegrity(
+                data.suspensionDamage,
+                data.wheelDetached
+              )}
+              warnAt={0.7}
+            />
+            <IntegrityRow
+              label="Tyre"
+              value={tyreIntegrity(
+                data.tyreWear,
+                [0, 1, 2, 3].map(
+                  (index) => !!data.wheelDetached[index] || punctured[index]
+                )
+              )}
+              warnAt={0.2}
+            />
+            {data.repairTime !== undefined && data.repairTime > 0 && (
+              <div className="mt-0.5 text-center font-mono text-[10px] text-slate-400">
+                Repair {data.repairTime.toFixed(1)}s
+              </div>
+            )}
+            {data.optRepairTime !== undefined && data.optRepairTime > 0 && (
+              <div className="text-center font-mono text-[10px] text-slate-500">
+                Opt {data.optRepairTime.toFixed(1)}s
+              </div>
+            )}
+            {!hasDents && (repairNeeded || optRepairNeeded) && (
+              <div className="text-center text-[10px] text-amber-400">
+                {repairNeeded ? 'Repair needed' : 'Optional repair'}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

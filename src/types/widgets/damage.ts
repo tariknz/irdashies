@@ -21,6 +21,8 @@ export default defineWidgetManifest({
     showOnlyWhenDamaged: false,
     showIntegrity: true,
     showStats: false,
+    showTyreWear: true,
+    showCornerPct: false,
     sessionVisibility: {
       race: true,
       loneQualify: true,
@@ -49,6 +51,18 @@ export default defineWidgetManifest({
       label: 'Show Integrity Bars',
       description:
         'Show aero, body, suspension and tyre integrity bars and repair times under the silhouette.',
+    },
+    showTyreWear: {
+      type: 'boolean',
+      label: 'Show Tyre Wear',
+      description:
+        'Colour each wheel by its remaining tread. A puncture or a lost wheel still shows when off.',
+    },
+    showCornerPct: {
+      type: 'boolean',
+      label: 'Show Tyre % In Corner Badges',
+      description:
+        'Show the remaining tread next to LF, RF, LR and RR, when the sim reports it.',
     },
     showOnlyWhenOnTrack: {
       type: 'boolean',

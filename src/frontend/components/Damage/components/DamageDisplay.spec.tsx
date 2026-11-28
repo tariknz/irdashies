@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { UNDAMAGED, type DamageSnapshot } from '../logic';
-import { DamageDisplay } from './DamageDisplay';
+import { cornerBadgeText, DamageDisplay, damageZoom } from './DamageDisplay';
 
 const iracingRepair: DamageSnapshot = {
   ...UNDAMAGED,
@@ -15,7 +15,12 @@ const iracingRepair: DamageSnapshot = {
 
 const renderDisplay = (
   data: DamageSnapshot,
-  options: { showStats?: boolean; showIntegrity?: boolean } = {}
+  options: {
+    showStats?: boolean;
+    showIntegrity?: boolean;
+    showTyreWear?: boolean;
+    showCornerPct?: boolean;
+  } = {}
 ) =>
   render(
     <DamageDisplay
@@ -23,8 +28,21 @@ const renderDisplay = (
       opacity={80}
       showIntegrity={options.showIntegrity ?? true}
       showStats={options.showStats ?? false}
+      showTyreWear={options.showTyreWear}
+      showCornerPct={options.showCornerPct}
     />
   );
+
+beforeAll(() => {
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = vi.fn();
+    }
+  );
+});
 
 describe('DamageDisplay', () => {
   it('shows the integrity bars and repair times when asked', () => {
@@ -65,5 +83,47 @@ describe('DamageDisplay', () => {
 
     expect(screen.queryByText('0%')).toBeNull();
     expect(screen.getAllByText(/^\d+%$/).length).toBeGreaterThan(0);
+  });
+
+  it('shows the remaining tread in the corner badges when asked', () => {
+    renderDisplay(
+      { ...UNDAMAGED, tyreWear: [0.92, 0.88, 0.5, 0.75] },
+      { showCornerPct: true }
+    );
+
+    expect(screen.getByText('LF 92%')).toBeTruthy();
+    expect(screen.getByText('RR 75%')).toBeTruthy();
+  });
+
+  it('keeps the corner badges to their names by default', () => {
+    renderDisplay({ ...UNDAMAGED, tyreWear: [0.92, 0.88, 0.5, 0.75] });
+
+    expect(screen.getByText('LF')).toBeTruthy();
+    expect(screen.queryByText('LF 92%')).toBeNull();
+  });
+});
+
+describe('cornerBadgeText', () => {
+  it('adds the tread only when asked and known, and not for a lost wheel', () => {
+    expect(cornerBadgeText('LF', 0.92, false, true)).toBe('LF 92%');
+    expect(cornerBadgeText('LF', 0.92, false, false)).toBe('LF');
+    expect(cornerBadgeText('LF', undefined, false, true)).toBe('LF');
+    expect(cornerBadgeText('LF', 0.92, true, true)).toBe('LF');
+  });
+});
+
+describe('damageZoom', () => {
+  it('fits the whole widget to its frame, so resizing scales everything', () => {
+    expect(damageZoom({ width: 170, height: 240 }, 240, 1)).toBe(1);
+    expect(damageZoom({ width: 340, height: 480 }, 240, 1)).toBe(2);
+    expect(damageZoom({ width: 340, height: 240 }, 240, 1)).toBe(1);
+  });
+
+  it('applies the widget scale on top', () => {
+    expect(damageZoom({ width: 170, height: 240 }, 240, 1.5)).toBe(1.5);
+  });
+
+  it('uses the widget scale alone before the frame is measured', () => {
+    expect(damageZoom({ width: 0, height: 0 }, 240, 0.8)).toBe(0.8);
   });
 });

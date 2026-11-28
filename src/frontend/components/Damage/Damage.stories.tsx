@@ -126,3 +126,40 @@ export const WithIntegrityBars: Story = {
   },
   decorators: box(170, 320),
 };
+
+export const TyrePercentInBadges: Story = {
+  args: {
+    data: DEMO_DAMAGE,
+    opacity: 80,
+    showIntegrity: true,
+    showStats: false,
+    showTyreWear: true,
+    showCornerPct: true,
+    bodyStyle: 'gtMid',
+  },
+  decorators: box(),
+};
+
+export const WithoutTyreWear: Story = {
+  args: {
+    data: DEMO_DAMAGE,
+    opacity: 80,
+    showIntegrity: true,
+    showStats: false,
+    showTyreWear: false,
+    bodyStyle: 'gtMid',
+  },
+  decorators: box(),
+};
+
+export const ScaledUpFrame: Story = {
+  args: {
+    data: DEMO_DAMAGE,
+    opacity: 80,
+    showIntegrity: true,
+    showStats: false,
+    showCornerPct: true,
+    bodyStyle: 'gtMid',
+  },
+  decorators: box(255, 360),
+};

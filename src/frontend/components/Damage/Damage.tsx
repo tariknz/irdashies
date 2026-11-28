@@ -33,6 +33,8 @@ export const Damage = () => {
       opacity={settings.background.opacity}
       showIntegrity={settings.showIntegrity}
       showStats={settings.showStats}
+      showTyreWear={settings.showTyreWear}
+      showCornerPct={settings.showCornerPct}
       bodyStyle={isDemoMode ? 'gtMid' : car.bodyStyle}
     />
   );
