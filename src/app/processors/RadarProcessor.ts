@@ -34,6 +34,7 @@ import {
   applyWorldOffset,
   hasWorldChannels,
   radarDistanceOf,
+  worldRelativeSpeed,
   type RadarWorldChannels,
 } from './radarWorld';
 
@@ -390,7 +391,13 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
             surface === TrackLocation.OffTrack || lmuOffTrack[carIdx] === 1,
         };
         if (worldFocus) {
-          applyWorldOffset(car, world, carIdx);
+          if (applyWorldOffset(car, world, carIdx)) {
+            car.relativeSpeed = worldRelativeSpeed(
+              this.speeds[carIdx] ?? playerSpeed,
+              car.headingRad ?? 0,
+              playerSpeed
+            );
+          }
           if (radarDistanceOf(car) > RADAR_MAX_RANGE_M) continue;
         }
         cars.push(car);

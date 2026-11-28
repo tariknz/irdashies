@@ -113,6 +113,42 @@ describe('DiveTracker', () => {
     ).toBe('fast');
   });
 
+  it('leaves a car placed far to the side, as across a hairpin, alone', () => {
+    const tracker = new DiveTracker();
+    const hints = tracker.update(
+      [car({ dist: -5, relativeSpeed: 12, world: true, lateral: -15 })],
+      ctx({ brake: 0.8 })
+    );
+
+    expect(hints.size).toBe(0);
+  });
+
+  it('still warns of a car placed close enough to come alongside', () => {
+    const hint = new DiveTracker()
+      .update(
+        [car({ dist: -10, world: true, lateral: 3, lane: 1.2 })],
+        ctx({ brake: 0.8 })
+      )
+      .get(1);
+
+    expect(hint?.level).toBe('dive');
+  });
+
+  it('drops a held dive once the car is placed out of reach', () => {
+    const tracker = new DiveTracker();
+    tracker.update(
+      [car({ dist: -10, world: true, lateral: 3 })],
+      ctx({ brake: 0.8 })
+    );
+
+    const hints = tracker.update(
+      [car({ dist: -9.9, world: true, lateral: 15 })],
+      ctx({ time: 0.1 })
+    );
+
+    expect(hints.size).toBe(0);
+  });
+
   it('is quiet when suppressed or when we are barely moving', () => {
     const tracker = new DiveTracker();
     expect(tracker.update([car()], ctx({ suppressed: true })).size).toBe(0);

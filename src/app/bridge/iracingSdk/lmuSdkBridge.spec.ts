@@ -28,6 +28,7 @@ const sdkState = vi.hoisted(() => ({
   trackName: 'Test Track',
   sectorFrames: [] as { sector: number; pct: number }[],
   scoringUpdates: 0,
+  playerYaw: undefined as number | undefined,
 }));
 
 /**
@@ -130,6 +131,8 @@ const rawFrame = () => {
     vehLastSector1: [0, 0],
     vehLastSector2: [0, 0],
     vehLastLapTime: [0, 0],
+    vehPosX: [0, 0],
+    vehPosZ: [0, 0],
     ...(sectorFrame
       ? {
           currentSector: sectorFrame.sector,
@@ -250,10 +253,14 @@ vi.mock('../../lmu/trackWidth', () => ({
 // Mapping is covered by its own specs; here it only has to not be the thing
 // that throws.
 vi.mock('../../lmu/mapTelemetry', () => ({
-  mapLmuTelemetry: (raw: { smoothedLapDistPct?: number }) =>
-    raw.smoothedLapDistPct === undefined
+  mapLmuTelemetry: (raw: { smoothedLapDistPct?: number }) => ({
+    ...(raw.smoothedLapDistPct === undefined
       ? {}
-      : { LapDistPct: { value: [raw.smoothedLapDistPct] } },
+      : { LapDistPct: { value: [raw.smoothedLapDistPct] } }),
+    ...(sdkState.playerYaw === undefined
+      ? {}
+      : { LmuPlayerYaw: { value: [sdkState.playerYaw] } }),
+  }),
   mapLmuCarLeftRight: () => 0,
 }));
 
@@ -593,6 +600,7 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
     restState.data.revision = 0;
     restState.data.session = {};
     worldTrackState.map = null;
+    sdkState.playerYaw = undefined;
   });
 
   it('asks for the world track once LMU is up, reading the body afresh', async () => {
@@ -624,6 +632,46 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
     expect(mapSessionSpy.mock.calls.at(-1)?.[1]).toBe(worldMap);
     expect(restState.poller.burst).not.toHaveBeenCalled();
     bridge.stop();
+  });
+
+  it('sends the session with a new map before any radar frame placed on it', async () => {
+    const firstMap = { marker: 'first world track' };
+    const nextMap = { marker: 'next world track' };
+    worldTrackState.map = firstMap;
+    sdkState.playerYaw = 0;
+    const events: string[] = [];
+    const overlayManager = createOverlayManager();
+    vi.mocked(overlayManager.publishMessage).mockImplementation((channel) => {
+      if (channel === 'sessionData') {
+        events.push(
+          mapSessionSpy.mock.calls.at(-1)?.[1] === nextMap
+            ? 'session'
+            : 'old session'
+        );
+      }
+    });
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+    bridge.onTelemetry((telemetry) => {
+      const frame = (telemetry as { LmuRadarMapFrame?: { value: number[] } })
+        .LmuRadarMapFrame;
+      if (frame?.value.length) events.push('frame');
+    });
+    await vi.waitFor(() => expect(events).toContain('frame'));
+
+    events.length = 0;
+    worldTrackState.map = nextMap;
+    sdkState.trackName = 'Next Track';
+    try {
+      await vi.waitFor(() => expect(events).toContain('frame'), {
+        timeout: 5000,
+      });
+      expect(events.indexOf('session')).toBeGreaterThanOrEqual(0);
+      expect(events.indexOf('session')).toBeLessThan(events.indexOf('frame'));
+    } finally {
+      sdkState.trackName = 'Test Track';
+      bridge.stop();
+    }
   });
 
   it('learns the track width against the world track and saves it on stop', async () => {
