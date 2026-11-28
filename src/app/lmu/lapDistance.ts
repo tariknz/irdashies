@@ -183,6 +183,7 @@ function anchorToScoring(
   state.lastScoringPct = frame.scoringPct;
   state.lastPct = clampPct(frame.scoringPct);
   state.heldAtLineSince = -1;
+  state.awaitingStart = false;
   state.lap = frame.lapNumber >= 0 ? frame.lapNumber : null;
   state.lastLapNumber = frame.lapNumber;
   // From this frame too, as the lap is. Left to the first mid-lap frame, an
@@ -229,7 +230,9 @@ export function estimateLmuLapDistPct(
   }
 
   const beforeStartLine = frame.beforeStartLine === true && scoringPct === 0;
-  if (beforeStartLine) state.awaitingStart = true;
+  if (beforeStartLine && state.lastPct >= 0.5 && state.lastPct < 1) {
+    state.awaitingStart = true;
+  }
 
   const before = state.lastPct >= 1 ? state.lastPct - 1 : state.lastPct;
 
@@ -351,6 +354,7 @@ export function estimateLmuLapDistPct(
     (counterReset || (after >= MID_LAP_FROM && after <= MID_LAP_TO))
   ) {
     state.lap = lapNumber;
+    if (counterReset) state.awaitingStart = false;
     const completed = frame.completedLaps;
     if (
       !counterReset &&

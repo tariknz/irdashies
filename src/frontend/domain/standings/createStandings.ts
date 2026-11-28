@@ -205,6 +205,15 @@ const getLastTimeState = (
  * It will calculate the delta to the leader
  * It will also determine if the driver has the fastest time
  */
+export const lapForProgress = (
+  lap: number | undefined,
+  lapDistPct: number | undefined
+): number => {
+  if (!lap) return 1;
+  if (lap < 0 && lapDistPct !== undefined && lapDistPct >= 0) return lap + 1;
+  return lap;
+};
+
 export const createDriverStandings = (
   session: {
     playerIdx?: number;
@@ -788,12 +797,14 @@ export const augmentStandingsWithGap = (
         }
 
         const classLeaderTrackPctForLaps = carIdxLapDistPct[classLeader.carIdx];
-        const driverLapNumber = !carIdxLap[driverStanding.carIdx]
-          ? 1
-          : carIdxLap[driverStanding.carIdx];
-        const classLeaderLapNumber = !carIdxLap[classLeader.carIdx]
-          ? 1
-          : carIdxLap[classLeader.carIdx];
+        const driverLapNumber = lapForProgress(
+          carIdxLap[driverStanding.carIdx],
+          carIdxLapDistPct[driverStanding.carIdx]
+        );
+        const classLeaderLapNumber = lapForProgress(
+          carIdxLap[classLeader.carIdx],
+          classLeaderTrackPctForLaps
+        );
 
         const gap = {
           value: gapValue ? Math.abs(gapValue) : undefined,
@@ -849,7 +860,7 @@ export const augmentStandingsWithPlayerGap = (
     const lap = carIdxLap[driver.carIdx];
     const pct = carIdxLapDistPct[driver.carIdx];
     return Number.isFinite(lap) &&
-      lap >= 0 &&
+      lap >= -1 &&
       Number.isFinite(pct) &&
       pct >= 0 &&
       pct <= 1
@@ -957,9 +968,10 @@ export const augmentStandingsWithInterval = (
           aheadPct >= 0 &&
           driverPct >= 0
             ? Math.floor(
-                (carIdxLap[driverAhead.carIdx] || 1) +
+                lapForProgress(carIdxLap[driverAhead.carIdx], aheadPct) +
                   aheadPct -
-                  ((carIdxLap[driverStanding.carIdx] || 1) + driverPct)
+                  (lapForProgress(carIdxLap[driverStanding.carIdx], driverPct) +
+                    driverPct)
               )
             : 0;
 

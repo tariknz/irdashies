@@ -6,6 +6,7 @@ import {
   augmentStandingsWithPositionChange,
   augmentStandingsWithGap,
   augmentStandingsWithInterval,
+  lapForProgress,
 } from './createStandings';
 import type { Standings } from './createStandings';
 import { useReferenceLapStore } from '@irdashies/context';
@@ -599,6 +600,28 @@ describe('createStandings', () => {
         'Race'
       );
       expect(result[0][1][1].gap?.value).toBeUndefined();
+    });
+
+    it('race: gives no lap gap to a car still short of the start line behind a leader who crossed', () => {
+      const grouped: [string, Standings[]][] = [
+        [
+          '1',
+          [
+            makeStanding(0, 0, true, 'Race'),
+            makeStanding(1, 0.8, true, 'Race'),
+          ],
+        ],
+      ];
+      const result = augmentStandingsWithGap(
+        grouped,
+        [0, -1],
+        [0.01, 0.97],
+        [false, false],
+        [0, 0],
+        false,
+        'Race'
+      );
+      expect(Math.abs(result[0][1][1].gap?.laps ?? NaN)).toBe(0);
     });
 
     it('race: hides gap when driver is not on track', () => {
@@ -1580,5 +1603,21 @@ describe('createDriverStandings and the LMU finish status', () => {
   it('is absent on a sim that reports none', () => {
     const rows = build({}, true);
     expect(rows.every((r) => r.finishState === undefined)).toBe(true);
+  });
+});
+
+describe('lapForProgress', () => {
+  it('counts lap 0 as 1, as before', () => {
+    expect(lapForProgress(0, 0.5)).toBe(1);
+    expect(lapForProgress(undefined, 0.5)).toBe(1);
+    expect(lapForProgress(3, 0.5)).toBe(3);
+  });
+
+  it('counts a car on track still short of the start line one below', () => {
+    expect(lapForProgress(-1, 0.97)).toBe(0);
+  });
+
+  it('leaves a car that is not on track as it is', () => {
+    expect(lapForProgress(-1, -1)).toBe(-1);
   });
 });

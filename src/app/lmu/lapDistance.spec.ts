@@ -829,6 +829,47 @@ describe('the race start, before a car first reaches the line', () => {
     expect(crossedProgress - waitingProgress).toBeLessThan(0.1);
   });
 
+  it('forgets it is waiting for the start when a scrub re-anchors it', () => {
+    const state = createLmuLapDistanceState();
+    estimateLmuLapDistPct(state, startFrame(100, 0.98, false));
+    estimateLmuLapDistPct(state, startFrame(100.2, 0, true));
+
+    estimateLmuLapDistPct(
+      state,
+      frame({
+        elapsedTime: 50,
+        scoringPct: 0.99,
+        lapNumber: 6,
+        completedLaps: 5,
+        speedMs: START_SPEED,
+      })
+    );
+    expect(lmuProgressLaps(state)).toBe(5);
+
+    estimateLmuLapDistPct(
+      state,
+      frame({
+        elapsedTime: 50.4,
+        scoringPct: 0.004,
+        lapNumber: 7,
+        completedLaps: 6,
+        speedMs: START_SPEED,
+      })
+    );
+    expect(lmuCompletedLaps(state)).toBe(6);
+  });
+
+  it('does not start waiting again once it has crossed the line', () => {
+    const state = createLmuLapDistanceState();
+    estimateLmuLapDistPct(state, startFrame(100, 0.98, false));
+    estimateLmuLapDistPct(state, startFrame(100.2, 0, true));
+    estimateLmuLapDistPct(state, startFrame(100.4, 0.004, false));
+    estimateLmuLapDistPct(state, startFrame(100.6, 0, true));
+    estimateLmuLapDistPct(state, startFrame(160, 0.95, false));
+
+    expect(lmuProgressLaps(state)).toBe(0);
+  });
+
   it('ignores the start phase while scoring still gives a position', () => {
     const state = createLmuLapDistanceState();
     estimateLmuLapDistPct(state, startFrame(100, 0.5, true));
