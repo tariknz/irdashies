@@ -543,6 +543,45 @@ describe('mapLmuSession driver nationality', () => {
     expect(driver?.LmuRating?.countryCode).toBe('FR');
   });
 
+  it('matches nationality when the teams payload differs only by case', () => {
+    const raw = fixture();
+    const name = nameOf(raw);
+    const s = mapLmuSession(raw, null, {
+      nationalities: { [name.toUpperCase()]: 'DE' },
+    });
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === name);
+    expect(driver?.LmuRating?.countryCode).toBe('DE');
+  });
+
+  it('prefers an exact name over a case-folded one', () => {
+    const raw = fixture();
+    const name = nameOf(raw);
+    const s = mapLmuSession(raw, null, {
+      nationalities: { [name.toUpperCase()]: 'DE', [name]: 'FR' },
+    });
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === name);
+    expect(driver?.LmuRating?.countryCode).toBe('FR');
+  });
+
+  it('skips the case-folded fallback when it is ambiguous', () => {
+    const raw = fixture();
+    const name = nameOf(raw);
+    expect(new Set([name, name.toUpperCase(), name.toLowerCase()]).size).toBe(
+      3
+    );
+    const s = mapLmuSession(raw, null, {
+      nationalities: {
+        [name.toUpperCase()]: 'DE',
+        [name.toLowerCase()]: 'IT',
+      },
+    });
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === name);
+    expect(driver?.LmuRating?.countryCode).toBeUndefined();
+  });
+
   it('leaves drivers the teams payload does not name alone', () => {
     const raw = fixture();
     const s = mapLmuSession(raw, null, {

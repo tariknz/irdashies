@@ -70,6 +70,7 @@ export type Telemetry = {
    * LMU_FINISH_STATUS. From scoring, so it is there for every car.
    */
   LmuCarIdxFinishStatus?: TelemetryVar<number[]>;
+  LmuCarIdxPitState?: TelemetryVar<number[]>;
   /**
    * Seconds a time penalty will add to each car's race time. 0 for a clean
    * car and for the two kinds that are served on track rather than paid in
