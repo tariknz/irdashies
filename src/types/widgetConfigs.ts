@@ -1398,6 +1398,11 @@ export type BroadcastHeaderClock =
   'session' | 'session-track' | 'session-local' | 'laps-time';
 
 /** TV-style leaderboard and focus-car card, meant for OBS capture. */
+export interface ExcludedCar {
+  carId: number;
+  name: string;
+}
+
 export interface BroadcastConfig {
   theme: BroadcastTheme;
   /**
@@ -1433,6 +1438,7 @@ export interface BroadcastConfig {
   phaseScreens: boolean;
   driverNameFormat: NameFormat;
   sessionVisibility: SessionVisibilitySettings;
+  excludedCars: ExcludedCar[];
 }
 
 export type BroadcastWidgetSettings = BaseWidgetSettings<BroadcastConfig>;

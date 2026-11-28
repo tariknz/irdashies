@@ -16,6 +16,7 @@ import {
 import { CarManufacturer } from '../shared/CarManufacturer/CarManufacturer';
 import { BroadcastEnter } from '../shared/Broadcast/BroadcastEnter';
 import { useBroadcastConfig } from '@irdashies/domain/broadcast/useBroadcastConfig';
+import { useBroadcastExcludedCarIdxs } from '@irdashies/domain/broadcast/useBroadcastExcludedCarIdxs';
 import { TICKER_MODES, tickerEntries, type TickerMode } from './tickerEntries';
 
 const MODE_LABELS: Record<TickerMode, string> = {
@@ -65,9 +66,11 @@ export const BroadcastTicker = () => {
   const settings = useBroadcastConfig('broadcastticker');
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
   const teamRacing = !!useWeekendInfoTeamRacing();
+  const excludedCarIdxs = useBroadcastExcludedCarIdxs();
   const groups = useDriverStandings(undefined, {
     showAll: true,
     livePositions: true,
+    excludedCarIdxs,
   });
   if (!isSessionVisible) return null;
   return (

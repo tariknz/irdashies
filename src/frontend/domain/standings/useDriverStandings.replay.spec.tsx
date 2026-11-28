@@ -5,7 +5,10 @@ import { getWidgetDefaultConfig } from '@irdashies/types';
 import { mountFixture } from '../../../testing/renderWithFixture';
 import type { ReplayFixture } from '../../../testing/replayFixture';
 import roadAmerica from '../../../../test-data/fixtures/multiclass-road-america.json';
-import { useDriverStandings } from './useDriverStandings';
+import {
+  useDriverStandings,
+  useDriverStandingsWithExcluded,
+} from './useDriverStandings';
 import { useDriverLivePositions } from './useDriverLivePositions';
 
 const fixture = roadAmerica as unknown as ReplayFixture;
@@ -333,5 +336,186 @@ describe('class standings over a real multiclass field', () => {
 
     const carIdxs = flatten(result.current).map((d) => d.carIdx);
     expect(carIdxs).not.toContain(paceCarIdx);
+  });
+});
+
+describe('excluded cars over a real multiclass field', () => {
+  let harness: ReturnType<typeof mountFixture>;
+  const gapConfig = () =>
+    config({ gap: { enabled: true }, interval: { enabled: true } });
+
+  beforeEach(() => {
+    harness = mountFixture(fixture);
+  });
+
+  const leaders = () => {
+    const { result } = renderHook(
+      () => useDriverStandings(gapConfig(), { showAll: true }),
+      { wrapper: harness.wrapper }
+    );
+    return result.current;
+  };
+
+  it('gives identical output with no set or an empty one', () => {
+    const { result } = renderHook(
+      () => ({
+        none: useDriverStandings(gapConfig(), { showAll: true }),
+        empty: useDriverStandings(gapConfig(), {
+          showAll: true,
+          excludedCarIdxs: new Set<number>(),
+        }),
+      }),
+      { wrapper: harness.wrapper }
+    );
+    expect(result.current.empty).toEqual(result.current.none);
+  });
+
+  it('drops the excluded car and renumbers the field behind it', () => {
+    const before = flatten(leaders());
+    const overallLeader = before.find((d) => d.position === 1);
+    expect(overallLeader).toBeTruthy();
+    const excluded = new Set([overallLeader?.carIdx ?? -1]);
+
+    const { result } = renderHook(
+      () =>
+        useDriverStandingsWithExcluded(gapConfig(), {
+          showAll: true,
+          excludedCarIdxs: excluded,
+        }),
+      { wrapper: harness.wrapper }
+    );
+
+    const after = flatten(result.current.groups);
+    expect(after.map((d) => d.carIdx)).not.toContain(overallLeader?.carIdx);
+    expect(after.length).toBe(before.length - 1);
+
+    const ranked = after
+      .map((d) => d.position)
+      .filter((p): p is number => typeof p === 'number')
+      .sort((a, b) => a - b);
+    expect(ranked).toEqual(ranked.map((_, i) => i + 1));
+
+    const leaderClass = result.current.groups.find(([classId]) =>
+      before.some(
+        (d) =>
+          d.carIdx === overallLeader?.carIdx &&
+          String(d.carClass.id) === classId
+      )
+    );
+    const classPositions = (leaderClass?.[1] ?? [])
+      .map((d) => d.classPosition)
+      .filter((p): p is number => typeof p === 'number');
+    expect(classPositions).toEqual(classPositions.map((_, i) => i + 1));
+
+    expect(result.current.excluded.map((d) => d.carIdx)).toEqual([
+      overallLeader?.carIdx,
+    ]);
+    const [safetyCar] = result.current.excluded;
+    expect(safetyCar.position).toBeUndefined();
+    expect(safetyCar.classPosition).toBeUndefined();
+    expect(safetyCar.gap).toBeUndefined();
+    expect(safetyCar.interval).toBeUndefined();
+  });
+
+  it('measures gaps to the first real competitor', () => {
+    const before = leaders();
+    const [classId, classRows] =
+      before.find(([, rows]) => rows.length > 2) ?? before[0];
+    const classLeader = classRows[0];
+    const excluded = new Set([classLeader.carIdx]);
+
+    const { result } = renderHook(
+      () =>
+        useDriverStandings(gapConfig(), {
+          showAll: true,
+          excludedCarIdxs: excluded,
+        }),
+      { wrapper: harness.wrapper }
+    );
+
+    const rows = result.current.find(([id]) => id === classId)?.[1] ?? [];
+    expect(rows[0].carIdx).toBe(classRows[1].carIdx);
+    expect(rows[0].classPosition).toBe(1);
+    expect(rows[0].gap?.value).toBeUndefined();
+    expect(classRows[1].gap?.value).toBeDefined();
+  });
+
+  it('works out places gained against a renumbered grid', () => {
+    const before = leaders();
+    const { result: withChange } = renderHook(
+      () =>
+        useDriverStandings(config({ positionChange: { enabled: true } }), {
+          showAll: true,
+        }),
+      { wrapper: harness.wrapper }
+    );
+    const changed = flatten(withChange.current);
+    const [classId, classRows] =
+      before.find(([, rows]) => rows.length > 2) ?? before[0];
+    const excluded = new Set([classRows[0].carIdx]);
+
+    const { result } = renderHook(
+      () =>
+        useDriverStandings(config({ positionChange: { enabled: true } }), {
+          showAll: true,
+          excludedCarIdxs: excluded,
+        }),
+      { wrapper: harness.wrapper }
+    );
+
+    const rows = result.current.find(([id]) => id === classId)?.[1] ?? [];
+    for (const row of rows) {
+      const original = changed.find((d) => d.carIdx === row.carIdx);
+      if (
+        row.positionChange === undefined ||
+        original?.positionChange === undefined ||
+        original.classPosition === undefined ||
+        row.classPosition === undefined
+      )
+        continue;
+      const gridBefore = original.classPosition + original.positionChange;
+      const gridAfter = row.classPosition + row.positionChange;
+      expect(gridBefore - gridAfter).toBeGreaterThanOrEqual(0);
+      expect(gridBefore - gridAfter).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('marks no row as focus when the focus car is excluded', () => {
+    const { result } = renderHook(
+      () =>
+        useDriverStandingsWithExcluded(gapConfig(), {
+          showAll: true,
+          excludedCarIdxs: new Set([harness.focusCarIdx]),
+        }),
+      { wrapper: harness.wrapper }
+    );
+    expect(flatten(result.current.groups).some((d) => d.isPlayer)).toBe(false);
+    expect(result.current.excluded[0]?.carIdx).toBe(harness.focusCarIdx);
+  });
+
+  it('re-ranks live class positions around the excluded car', () => {
+    const { result: live } = renderHook(
+      () =>
+        useDriverStandings(gapConfig(), { showAll: true, livePositions: true }),
+      { wrapper: harness.wrapper }
+    );
+    const [classId, classRows] =
+      live.current.find(([, rows]) => rows.length > 2) ?? live.current[0];
+    const excluded = new Set([classRows[1].carIdx]);
+
+    const { result } = renderHook(
+      () =>
+        useDriverStandings(gapConfig(), {
+          showAll: true,
+          livePositions: true,
+          excludedCarIdxs: excluded,
+        }),
+      { wrapper: harness.wrapper }
+    );
+    const rows = result.current.find(([id]) => id === classId)?.[1] ?? [];
+    expect(rows.map((d) => d.classPosition)).toEqual(rows.map((_, i) => i + 1));
+    expect(rows.map((d) => d.carIdx)).toEqual(
+      classRows.filter((d) => !excluded.has(d.carIdx)).map((d) => d.carIdx)
+    );
   });
 });

@@ -56,5 +56,6 @@ export default defineWidgetManifest({
       practice: true,
       offlineTesting: true,
     },
+    excludedCars: [],
   },
 });

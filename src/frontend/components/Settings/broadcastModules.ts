@@ -1,6 +1,7 @@
 import { getWidgetDefaultConfig } from '@irdashies/types';
-import type { BroadcastTransition } from '@irdashies/types';
+import type { BroadcastTransition, ExcludedCar } from '@irdashies/types';
 import { TRANSITIONS } from '@irdashies/domain/broadcast/towerPages';
+import { sanitizeExcludedCars } from '@irdashies/domain/broadcast/excludedCars';
 import { differsFromDefault } from './components/ChangedMark';
 
 export const BROADCAST_MODULE_TYPES = [
@@ -26,7 +27,10 @@ export const broadcastModuleDefaults = (
   type: BroadcastModuleType
 ): Record<string, unknown> => {
   const defaults: Record<string, unknown> = { ...getWidgetDefaultConfig(type) };
-  if (type === 'broadcast') delete defaults.pageTransition;
+  if (type === 'broadcast') {
+    delete defaults.pageTransition;
+    delete defaults.excludedCars;
+  }
   return defaults;
 };
 
@@ -53,3 +57,8 @@ export const broadcastTransition = (
 
 export const broadcastTransitionChanged = (towerConfig: unknown): boolean =>
   broadcastTransition(towerConfig) !== DEFAULT_TRANSITION;
+
+export const broadcastExcludedCars = (towerConfig: unknown): ExcludedCar[] =>
+  sanitizeExcludedCars(
+    (towerConfig as { excludedCars?: unknown } | undefined)?.excludedCars
+  );

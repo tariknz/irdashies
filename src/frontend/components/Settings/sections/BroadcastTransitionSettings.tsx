@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useDashboard } from '@irdashies/context';
 import type { BroadcastTransition } from '@irdashies/types';
 import { SettingSelectRow } from '../components/SettingSelectRow';
@@ -19,7 +20,11 @@ const TRANSITION_OPTIONS: { label: string; value: BroadcastTransition }[] = [
   { label: 'Checker', value: 'checker' },
 ];
 
-export const BroadcastTransitionSettings = () => {
+export const BroadcastTransitionSettings = ({
+  children,
+}: {
+  children?: ReactNode;
+}) => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const towerConfig = currentDashboard?.widgets.find(
     (w) => w.id === 'broadcast'
@@ -60,6 +65,7 @@ export const BroadcastTransitionSettings = () => {
           onChange={setTransition}
         />
       </div>
+      {children}
     </div>
   );
 };

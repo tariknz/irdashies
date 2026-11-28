@@ -218,6 +218,7 @@ export const createDriverStandings = (
     ownCarIdx?: number;
     drivers?: Driver[];
     qualifyingResults?: SessionResults[];
+    excludedCarIdxs?: ReadonlySet<number>;
   },
   telemetry: {
     carIdxLastLapTime?: (number | undefined)[];
@@ -462,7 +463,8 @@ export const createDriverStandings = (
       (driver) =>
         !driver.CarIsPaceCar &&
         !driver.IsSpectator &&
-        !mappedCarIdxs.has(driver.CarIdx)
+        !mappedCarIdxs.has(driver.CarIdx) &&
+        !session.excludedCarIdxs?.has(driver.CarIdx)
     )
     .sort(sortByCarNumber)
     .map((driver, index) => {

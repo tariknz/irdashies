@@ -37,7 +37,7 @@ const isEmptyRoster = (drivers: readonly unknown[] | undefined) =>
 /** Stops, the cars that made them and the team summary, for the Pit Stops tab. */
 export const usePitStopData = (): PitStopData => {
   const snapshot = usePitStopsSnapshot();
-  const { standingsByClass } = useGantrySessionData();
+  const { standingsByClass, excludedCars } = useGantrySessionData();
   const roster = useHeld(useSessionDrivers(), isEmptyRoster);
   const settings = useGantrySettings();
   const profiles = useMemo(
@@ -99,8 +99,20 @@ export const usePitStopData = (): PitStopData => {
   }
 
   return useMemo(() => {
+    const excludedCarIdxs = new Set(excludedCars.map((car) => car.carIdx));
     const rows = snapshot
-      ? buildPitStopRows(snapshot, cars, profiles, snapshot.sessionTime)
+      ? buildPitStopRows(
+          excludedCarIdxs.size > 0
+            ? {
+                stops: snapshot.stops.filter(
+                  (stop) => !excludedCarIdxs.has(stop.carIdx)
+                ),
+              }
+            : snapshot,
+          cars,
+          profiles,
+          snapshot.sessionTime
+        )
       : [];
     const playerClass =
       playerCarIdx !== null ? cars.get(playerCarIdx)?.classId : undefined;
@@ -116,5 +128,13 @@ export const usePitStopData = (): PitStopData => {
       receivedAt,
       sessionNum: snapshot?.sessionNum ?? null,
     };
-  }, [snapshot, cars, classes, playerCarIdx, profiles, receivedAt]);
+  }, [
+    snapshot,
+    excludedCars,
+    cars,
+    classes,
+    playerCarIdx,
+    profiles,
+    receivedAt,
+  ]);
 };

@@ -1,14 +1,20 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import type { LapHistorySnapshot, SessionResults } from '@irdashies/types';
-import type { IncidentSessionInfo } from '@irdashies/domain';
-import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
+import type { IncidentSessionInfo, Standings } from '@irdashies/domain';
+import {
+  useDriverStandings,
+  useDriverStandingsWithExcluded,
+} from '@irdashies/domain/standings/useDriverStandings';
 import { useQualifyingResults } from '@irdashies/domain/standings/useQualifyingGrid';
+import { competitorsOnly } from '@irdashies/domain/broadcast/excludedCars';
+import { useBroadcastExcludedCarIdxs } from '@irdashies/domain/broadcast/useBroadcastExcludedCarIdxs';
 import {
   trackStateSelectors,
   useArchivedLapHistory,
   useLapHistorySnapshot,
   useLapTimesStoreUpdater,
   useReplayContextSnapshot,
+  useSessionDrivers,
   useSessionList,
   useTrackStateSelector,
 } from '@irdashies/context';
@@ -18,6 +24,7 @@ type StandingsByClass = ReturnType<typeof useDriverStandings>;
 
 export interface GantrySessionData {
   standingsByClass: StandingsByClass;
+  excludedCars: Standings[];
   qualifyingResults: SessionResults[] | undefined;
   /** Every session in the event, for the incident feed's names and filter. */
   sessions: readonly IncidentSessionInfo[] | undefined;
@@ -30,6 +37,7 @@ export interface GantrySessionData {
 
 const EMPTY_SESSION_DATA: GantrySessionData = {
   standingsByClass: [],
+  excludedCars: [],
   qualifyingResults: undefined,
   sessions: undefined,
   history: undefined,
@@ -38,7 +46,7 @@ const EMPTY_SESSION_DATA: GantrySessionData = {
   hasArchivedHistory: false,
 };
 
-const GantrySessionDataContext =
+export const GantrySessionDataContext =
   createContext<GantrySessionData>(EMPTY_SESSION_DATA);
 
 // Gap and interval are only calculated when the settings say they are
@@ -71,9 +79,18 @@ export const GantrySessionDataProvider = ({
   children: ReactNode;
 }) => {
   useLapTimesStoreUpdater(true);
-  const standingsByClass = useHeld(
-    useDriverStandings(STANDINGS_CONFIG, { showAll: true }),
-    isEmptyStandings
+  const excludedCarIdxs = useBroadcastExcludedCarIdxs();
+  const standings = useDriverStandingsWithExcluded(STANDINGS_CONFIG, {
+    showAll: true,
+    excludedCarIdxs,
+  });
+  const standingsByClass = useHeld(standings.groups, isEmptyStandings);
+  const excludedCars = useHeld(standings.excluded, isEmptyStandings);
+  const drivers = useSessionDrivers();
+  const allQualifyingResults = useQualifyingResults();
+  const competitorQualifyingResults = useMemo(
+    () => competitorsOnly(allQualifyingResults, excludedCarIdxs, drivers),
+    [allQualifyingResults, excludedCarIdxs, drivers]
   );
 
   const liveSnapshot = useLapHistorySnapshot();
@@ -84,7 +101,7 @@ export const GantrySessionDataProvider = ({
   // Keyed by session: a feature race with no qualifying data must not inherit
   // the heat before it once the sim closes.
   const qualifyingResults = useHeld(
-    useQualifyingResults(),
+    competitorQualifyingResults,
     isEmptyResults,
     cursorSessionNum
   );
@@ -130,6 +147,7 @@ export const GantrySessionDataProvider = ({
   const value = useMemo(
     () => ({
       standingsByClass,
+      excludedCars,
       qualifyingResults,
       sessions,
       history,
@@ -139,6 +157,7 @@ export const GantrySessionDataProvider = ({
     }),
     [
       standingsByClass,
+      excludedCars,
       qualifyingResults,
       sessions,
       history,
