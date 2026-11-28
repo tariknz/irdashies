@@ -19,7 +19,9 @@ import { lmuEnergyChannel } from './fuelEnergy';
 import { lmuSessionUniqueId, type LmuSessionIdentity } from './sessionIdentity';
 import {
   estimateLmuLapDistPct,
+  LMU_PHASE_BEFORE_START_LINE,
   lmuCompletedLaps,
+  lmuProgressLaps,
   type LmuLapDistanceState,
 } from './lapDistance';
 import {
@@ -431,6 +433,8 @@ export function mapLmuTelemetry(
           completedLaps: raw.vehTotalLaps[playerIdx],
           speedMs: raw.speed ?? 0,
           trackLengthM: raw.lapDist ?? 0,
+          beforeStartLine:
+            raw.vehIndividualPhase?.[playerIdx] === LMU_PHASE_BEFORE_START_LINE,
         })
       : scoringLapDistPct;
   // The player's completed laps to go with that position, for LapCompleted
@@ -438,6 +442,10 @@ export function mapLmuTelemetry(
   const playerCompletedLaps =
     lapDistanceState && playerIdx >= 0
       ? lmuCompletedLaps(lapDistanceState)
+      : null;
+  const playerProgressLaps =
+    lapDistanceState && playerIdx >= 0
+      ? lmuProgressLaps(lapDistanceState)
       : null;
   // The estimator passes the negative "no car here" sentinel straight through;
   // clamping here keeps the published value inside the [0, 1] contract this
@@ -494,9 +502,9 @@ export function mapLmuTelemetry(
     estimatedLapDistPct >= 0
   ) {
     carIdxLapDistPct[playerIdx] = lapDistPct;
-    if (playerCompletedLaps !== null) {
+    if (playerProgressLaps !== null) {
       for (const laps of carIdxLaps) {
-        if (playerIdx < laps.length) laps[playerIdx] = playerCompletedLaps;
+        if (playerIdx < laps.length) laps[playerIdx] = playerProgressLaps;
       }
     }
   }
@@ -515,6 +523,7 @@ export function mapLmuTelemetry(
         completedLaps: raw.vehTotalLaps,
         elapsedTimes: raw.vehElapsedTime,
         telemetryAvailable: raw.vehTelemetryAvailable,
+        individualPhases: raw.vehIndividualPhase,
         trackLengthM: raw.lapDist,
         playerCarIdx: playerIdx,
       },
@@ -528,9 +537,7 @@ export function mapLmuTelemetry(
   updateLmuClassPositions(classPositionState, {
     classes: raw.vehClass,
     places: raw.vehPlaces,
-    bestLapTimes: raw.vehBestLapTime,
     lapDistPcts: raw.vehLapDistPct,
-    isRace: isLmuRaceSession(raw.session),
   });
   // Boundary note: a handful of generated Telemetry keys (e.g. SessionTime) are
   // typed with an `undefined[]` value shape although the iRacing native layer

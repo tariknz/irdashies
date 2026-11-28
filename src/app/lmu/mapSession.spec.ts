@@ -911,14 +911,14 @@ describe('mapLmuSession results positions', () => {
     return raw;
   };
 
-  it('orders a practice session by best lap time', () => {
+  it('orders a practice session by the place LMU gives', () => {
     // The standings widget builds its rows from these, not from the per-car
     // telemetry channels -- leaving them null is what left it in car-number
     // order for a whole session.
     const raw = withDrivers([
-      { bestLapTime: 95.5 },
-      { bestLapTime: 93.2 },
-      { bestLapTime: 97.1 },
+      { place: 2, bestLapTime: 95.5 },
+      { place: 1, bestLapTime: 93.2 },
+      { place: 3, bestLapTime: 97.1 },
     ]);
 
     expect(resultsOf(raw).map((r) => r.CarIdx)).toEqual([
@@ -928,33 +928,39 @@ describe('mapLmuSession results positions', () => {
     ]);
   });
 
-  it('reorders when a driver improves', () => {
-    const slow = resultsOf(
-      withDrivers([
-        { bestLapTime: 95.5 },
-        { bestLapTime: 93.2 },
-        { bestLapTime: 97.1 },
-      ])
+  it('reorders when LMU moves a driver up', () => {
+    const before = resultsOf(
+      withDrivers([{ place: 2 }, { place: 1 }, { place: 3 }])
     );
-    const improved = resultsOf(
-      withDrivers([
-        { bestLapTime: 92.0 },
-        { bestLapTime: 93.2 },
-        { bestLapTime: 97.1 },
-      ])
+    const after = resultsOf(
+      withDrivers([{ place: 1 }, { place: 2 }, { place: 3 }])
     );
 
-    expect(slow[0].CarIdx).not.toBe(improved[0].CarIdx);
-    expect(improved[0].Position).toBe(1);
+    expect(before[0].CarIdx).not.toBe(after[0].CarIdx);
+    expect(after[0].Position).toBe(1);
   });
 
-  it('leaves a driver with no time out of the results entirely', () => {
-    // createDriverStandings keeps them visible at the bottom in car-number
-    // order, which is the right place for a car that has not run.
+  it('keeps a practice driver with no time where LMU places them', () => {
+    // LMU ranks a car without a valid lap after the timed ones, on laps done
+    // and track position; the relative shows the same place.
     const raw = withDrivers([
-      { bestLapTime: 95.5 },
-      { bestLapTime: 0 },
-      { bestLapTime: 97.1 },
+      { place: 1, bestLapTime: 95.5 },
+      { place: 3, bestLapTime: 0 },
+      { place: 2, bestLapTime: 0 },
+    ]);
+
+    expect(resultsOf(raw).map((r) => r.CarIdx)).toEqual([
+      raw.drivers[0].id,
+      raw.drivers[2].id,
+      raw.drivers[1].id,
+    ]);
+  });
+
+  it('leaves out a driver LMU has not placed', () => {
+    const raw = withDrivers([
+      { place: 1, bestLapTime: 95.5 },
+      { place: 0, bestLapTime: 0 },
+      { place: 2, bestLapTime: 97.1 },
     ]);
 
     const carIdxs = resultsOf(raw).map((r) => r.CarIdx);
