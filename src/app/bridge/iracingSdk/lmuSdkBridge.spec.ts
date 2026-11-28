@@ -28,7 +28,6 @@ const sdkState = vi.hoisted(() => ({
   trackName: 'Test Track',
   sectorFrames: [] as { sector: number; pct: number }[],
   scoringUpdates: 0,
-  /** The player's yaw the mapper reports, which lets a radar frame out. */
   playerYaw: undefined as number | undefined,
 }));
 

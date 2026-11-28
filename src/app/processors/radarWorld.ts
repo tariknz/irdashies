@@ -29,7 +29,7 @@ export const worldRelativeSpeed = (
   carSpeed: number,
   headingRad: number,
   playerSpeed: number
-): number => carSpeed * Math.cos(headingRad) - playerSpeed;
+): number => Math.abs(carSpeed) * Math.cos(headingRad) - Math.abs(playerSpeed);
 
 export const worldLaneOf = (lateralM: number): number =>
   Math.max(

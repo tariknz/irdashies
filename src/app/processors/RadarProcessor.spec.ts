@@ -935,6 +935,16 @@ describe('RadarProcessor with LMU world positions', () => {
     expect(car.relativeSpeed).toBeCloseTo(10, 0);
   });
 
+  it('has a car driving the wrong way towards us move away when it faces away', () => {
+    const car = driveWorld(createProcessor(), -50, {
+      lateral: 3,
+      longitudinal: -20,
+      heading: Math.PI,
+    });
+
+    expect(car.relativeSpeed).toBeCloseTo(-90, 0);
+  });
+
   it('drops a car the world offset puts beyond the radar range', () => {
     const processor = createProcessor();
     processor.onFrame(
