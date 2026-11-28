@@ -25,6 +25,12 @@ export const radarDistanceOf = (
     ? Math.abs(car.dist)
     : Math.hypot(car.dist, car.lateralM);
 
+export const worldRelativeSpeed = (
+  carSpeed: number,
+  headingRad: number,
+  playerSpeed: number
+): number => carSpeed * Math.cos(headingRad) - playerSpeed;
+
 export const worldLaneOf = (lateralM: number): number =>
   Math.max(
     -MAX_WORLD_LANE,

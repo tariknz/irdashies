@@ -893,6 +893,48 @@ describe('RadarProcessor with LMU world positions', () => {
     expect(car?.dist).toBeCloseTo(2);
   });
 
+  const driveWorld = (
+    processor: RadarProcessor,
+    rivalSpeed: number,
+    rival: WorldCar
+  ) => {
+    for (let tick = 0; tick <= 60; tick += 1) {
+      const time = tick / 60;
+      processor.onFrame(
+        worldFrame(
+          {
+            time,
+            pcts: [0.5 + m(40 * time), 0.5 - m(90) + m(rivalSpeed * time)],
+          },
+          { 1: rival }
+        )
+      );
+    }
+    return processor.snapshot().cars[0];
+  };
+
+  it('keeps a car on the other leg of a hairpin but has it move away from us', () => {
+    const car = driveWorld(createProcessor(), 50, {
+      lateral: 15,
+      longitudinal: -5,
+      heading: Math.PI,
+    });
+
+    expect(car.dist).toBeCloseTo(-5);
+    expect(car.lateralM).toBeCloseTo(15);
+    expect(car.relativeSpeed).toBeCloseTo(-90, 0);
+  });
+
+  it('closes a world-placed car behind us at the speed it gains', () => {
+    const car = driveWorld(createProcessor(), 50, {
+      lateral: 0.5,
+      longitudinal: -12,
+      heading: 0,
+    });
+
+    expect(car.relativeSpeed).toBeCloseTo(10, 0);
+  });
+
   it('drops a car the world offset puts beyond the radar range', () => {
     const processor = createProcessor();
     processor.onFrame(
