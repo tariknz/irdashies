@@ -49,14 +49,14 @@ describe('useCarState', () => {
     ]);
   });
 
-  it('widens dnf to DNF and DQ finish states and the Disqualify flag', () => {
+  it('keeps dnf on the Disqualify flag rather than the finish state', () => {
     vi.mocked(useStandingsSnapshot).mockReturnValue(
       snapshot({
         carIdxFinishStatus: [
           LMU_FINISH_STATUS.none,
           LMU_FINISH_STATUS.dnf,
           LMU_FINISH_STATUS.dq,
-          LMU_FINISH_STATUS.none,
+          LMU_FINISH_STATUS.dq,
           LMU_FINISH_STATUS.finished,
         ],
         carIdxSessionFlags: [0, 0, 0, GlobalFlags.Disqualify, 0],
@@ -67,10 +67,17 @@ describe('useCarState', () => {
 
     expect(result.current.map((c) => c.dnf)).toEqual([
       false,
-      true,
-      true,
+      false,
+      false,
       true,
       false,
+    ]);
+    expect(result.current.map((c) => c.finishState)).toEqual([
+      undefined,
+      'DNF',
+      'DQ',
+      'DQ',
+      'FINISHED',
     ]);
   });
 });

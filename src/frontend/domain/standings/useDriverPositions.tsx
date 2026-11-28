@@ -184,30 +184,24 @@ export const useCarState = () => {
 
   return useMemo(() => {
     return (
-      carIdxTrackSurface.map((onTrack, index) => {
-        const finishState = lmuFinishStateFromCode(carIdxFinishStatus[index]);
-        return {
-          carIdx: index,
-          onTrack: onTrack > -1,
-          onPitRoad: carIdxOnPitRoad[index],
-          tireCompound: carIdxTireCompound[index],
-          wheelCompounds: wheelCompoundsFor(carIdxWheelCompounds, index),
-          trackLimitsPoints: trackLimitsFor(carIdxTrackLimitsPoints, index),
-          energyRemaining: energyFor(carIdxEnergyRemaining, index),
-          penalties: carIdxPenalties[index] ?? 0,
-          penaltyKind: lmuPenaltyKindFromCode(carIdxPenaltyKind[index]),
-          penaltySeconds: carIdxPenaltySeconds[index],
-          finishState,
-          pitRequested: lmuPitRequested(carIdxPitState[index]),
-          dnf:
-            !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Disqualify) ||
-            finishState === 'DNF' ||
-            finishState === 'DQ',
-          repair: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Repair),
-          penalty: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Black),
-          slowdown: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Furled),
-        };
-      }) ?? []
+      carIdxTrackSurface.map((onTrack, index) => ({
+        carIdx: index,
+        onTrack: onTrack > -1,
+        onPitRoad: carIdxOnPitRoad[index],
+        tireCompound: carIdxTireCompound[index],
+        wheelCompounds: wheelCompoundsFor(carIdxWheelCompounds, index),
+        trackLimitsPoints: trackLimitsFor(carIdxTrackLimitsPoints, index),
+        energyRemaining: energyFor(carIdxEnergyRemaining, index),
+        penalties: carIdxPenalties[index] ?? 0,
+        penaltyKind: lmuPenaltyKindFromCode(carIdxPenaltyKind[index]),
+        penaltySeconds: carIdxPenaltySeconds[index],
+        finishState: lmuFinishStateFromCode(carIdxFinishStatus[index]),
+        pitRequested: lmuPitRequested(carIdxPitState[index]),
+        dnf: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Disqualify),
+        repair: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Repair),
+        penalty: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Black),
+        slowdown: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Furled),
+      })) ?? []
     );
   }, [
     carIdxTrackSurface,

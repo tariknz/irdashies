@@ -63,14 +63,6 @@ export const useDriverRelatives = ({
         return false;
       }
 
-      if (
-        driver.dnf ||
-        driver.finishState === 'DNF' ||
-        driver.finishState === 'DQ'
-      ) {
-        return false;
-      }
-
       // Must be on track
       return driver.onTrack;
     },

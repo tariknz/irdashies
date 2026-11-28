@@ -297,16 +297,18 @@ describe('useDriverRelatives', () => {
     expect(result.current.some((driver) => driver.carIdx === 1)).toBe(false);
   });
 
-  it('filters out DNF and DQ cars while keeping the focus car', () => {
+  it('keeps DNF and DQ cars that are still on track', () => {
     vi.mocked(useDriverStandings).mockReturnValue([
       mockDrivers[0],
       { ...mockDrivers[1], finishState: 'DNF' },
-      { ...mockDrivers[2], finishState: 'DQ' },
+      { ...mockDrivers[2], dnf: true, finishState: 'DQ' },
     ]);
 
     const { result } = renderHook(() => useDriverRelatives({ buffer: 2 }));
 
-    expect(result.current.map((driver) => driver.carIdx)).toEqual([0]);
+    expect(
+      result.current.map((driver) => driver.carIdx).sort((a, b) => a - b)
+    ).toEqual([0, 1, 2]);
   });
 
   describe('hideDriversInPitStall', () => {
