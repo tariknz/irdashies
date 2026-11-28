@@ -476,6 +476,7 @@ Napi::Value LmuSdkNode::Read(const Napi::CallbackInfo &info)
     out.Set("engineRPM", player->mEngineRPM);
     out.Set("engineWaterTemp", player->mEngineWaterTemp);
     out.Set("engineOilTemp", player->mEngineOilTemp);
+    out.Set("overheating", player->mOverheating);
     out.Set("clutchRPM", player->mClutchRPM);
     out.Set("unfilteredThrottle", player->mUnfilteredThrottle);
     out.Set("unfilteredBrake", player->mUnfilteredBrake);

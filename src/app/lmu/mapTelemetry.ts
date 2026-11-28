@@ -1105,9 +1105,9 @@ export function mapLmuTelemetry(
   );
   t.EngineWarnings = num(
     'EngineWarnings',
-    raw.speedLimiterActive || raw.speedLimiter
+    (raw.speedLimiterActive || raw.speedLimiter
       ? EngineWarnings.PitSpeedLimiter
-      : 0
+      : 0) | (raw.overheating ? EngineWarnings.WaterTempWarning : 0)
   );
   t.ShiftGrindRPM = num('ShiftGrindRPM', raw.engineMaxRPM ?? 0);
   t.ThrottleRaw = num('ThrottleRaw', raw.unfilteredThrottle);

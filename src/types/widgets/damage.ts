@@ -21,6 +21,9 @@ export default defineWidgetManifest({
     showOnlyWhenDamaged: false,
     showIntegrity: true,
     showStats: false,
+    showTyreWear: true,
+    showCornerBadges: true,
+    showCornerPct: false,
     sessionVisibility: {
       race: true,
       loneQualify: true,
@@ -42,13 +45,31 @@ export default defineWidgetManifest({
       type: 'boolean',
       label: 'Show Damage %',
       description:
-        'Draw remaining integrity percentage on the car silhouette (aero when available, otherwise bodywork).',
+        'Show remaining integrity next to each damaged body or suspension area (hidden at 100%).',
     },
     showStats: {
       type: 'boolean',
       label: 'Show Integrity Bars',
       description:
         'Show aero, body, suspension and tyre integrity bars and repair times under the silhouette.',
+    },
+    showTyreWear: {
+      type: 'boolean',
+      label: 'Show Tyre Wear',
+      description:
+        'Colour each wheel by its remaining tread. A puncture or a lost wheel still shows when off.',
+    },
+    showCornerBadges: {
+      type: 'boolean',
+      label: 'Show Corner Badges',
+      description:
+        'Show the LF, RF, LR and RR badges under the car, coloured by each wheel and its suspension.',
+    },
+    showCornerPct: {
+      type: 'boolean',
+      label: 'Show Tyre % In Corner Badges',
+      description:
+        'Show the remaining tread next to LF, RF, LR and RR, when the sim reports it.',
     },
     showOnlyWhenOnTrack: {
       type: 'boolean',

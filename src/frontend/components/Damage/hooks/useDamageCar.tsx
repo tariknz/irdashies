@@ -13,14 +13,14 @@ export const useDamageCar = (): DamageCarInfo => {
   );
   const carData = usePlayerCarData();
 
-  const carPath = driver?.CarPath;
-  const carName = driver?.CarScreenName ?? driver?.CarScreenNameShort;
-
-  const bodyStyle = resolveDamageBodyStyle(
-    carPath,
-    carData?.carClass,
-    carName ?? carData?.carName
-  );
+  const model = driver?.CarModel?.trim();
+  const bodyStyle = model
+    ? resolveDamageBodyStyle(undefined, carData?.carClass, model)
+    : resolveDamageBodyStyle(
+        driver?.CarPath,
+        carData?.carClass,
+        driver?.CarScreenName ?? driver?.CarScreenNameShort ?? carData?.carName
+      );
 
   return { bodyStyle };
 };

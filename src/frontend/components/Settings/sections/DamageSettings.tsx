@@ -11,6 +11,9 @@ import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingProps, settingPropFor } from '../components/SettingProp';
 import { SettingsSection } from '../components/SettingSection';
+import { SettingsTabBar } from '../components/SettingsTabBar';
+import { TabButton } from '../components/TabButton';
+import { useStoredTab } from '../hooks/useStoredTab';
 
 const SETTING_ID = 'damage';
 const SettingProp = settingPropFor(SETTING_ID);
@@ -33,6 +36,10 @@ export const DamageSettings = () => {
     savedSettings && savedConfig && isConfigValid(properties, savedConfig)
       ? { enabled: savedSettings.enabled, config: savedConfig }
       : { enabled: false, config: defaultConfig };
+  const [activeTab, setActiveTab] = useStoredTab('damageTab', [
+    'display',
+    'visibility',
+  ]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -41,7 +48,7 @@ export const DamageSettings = () => {
   return (
     <BaseSettingsSection
       title="Damage"
-      description="Top-down damage silhouette matched to your car class (GT, prototype, open-wheel, hatch, stock, truck). LMU: panel dents. iRacing: repair flags and tyre wear."
+      description="Top-down chassis schematic with wheels and suspension markers. Damaged areas turn yellow/red and show remaining % when enabled. Engine warnings appear as side icons."
       settings={settings}
       widgetId={SETTING_ID}
     >
@@ -52,21 +59,49 @@ export const DamageSettings = () => {
           onChange={handleConfigChange}
         >
           <div className="space-y-4">
-            <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
-              <SettingProp path="background.opacity" />
-              <SettingProp path="showIntegrity" />
-              <SettingProp path="showStats" />
-            </SettingsSection>
+            <SettingsTabBar>
+              <TabButton
+                id="display"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Display
+              </TabButton>
+              <TabButton
+                id="visibility"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Visibility
+              </TabButton>
+            </SettingsTabBar>
 
-            <SettingsSection title="Visibility">
-              <SessionVisibility
-                sessionVisibility={settings.config.sessionVisibility}
-                handleConfigChange={handleConfigChange}
-              />
-              <SettingDivider />
-              <SettingProp path="showOnlyWhenOnTrack" />
-              <SettingProp path="showOnlyWhenDamaged" />
-            </SettingsSection>
+            {activeTab === 'display' && (
+              <SettingsSection title="Display" scaleWidgetId={SETTING_ID}>
+                <SettingProp path="background.opacity" />
+                <SettingProp path="showIntegrity" />
+                <SettingProp path="showStats" />
+                <SettingProp path="showTyreWear" />
+                <SettingProp path="showCornerBadges" />
+                {settings.config.showCornerBadges && (
+                  <div className="pl-8 mt-2">
+                    <SettingProp path="showCornerPct" />
+                  </div>
+                )}
+              </SettingsSection>
+            )}
+
+            {activeTab === 'visibility' && (
+              <SettingsSection title="Visibility">
+                <SessionVisibility
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
+                <SettingDivider />
+                <SettingProp path="showOnlyWhenOnTrack" />
+                <SettingProp path="showOnlyWhenDamaged" />
+              </SettingsSection>
+            )}
           </div>
         </SettingProps>
       )}
