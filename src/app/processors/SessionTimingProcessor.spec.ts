@@ -82,6 +82,117 @@ describe('SessionTimingProcessor', () => {
     expect(processor.snapshot().totalRaceLaps).toBe(3);
   });
 
+  it('recovers the green flag time from the race clock when joining mid-race', () => {
+    const processor = new SessionTimingProcessor(() => [0, 0]);
+    processor.init(session);
+    processor.onFrame(
+      frame({
+        SessionTime: 20890,
+        SessionTimeTotal: 21600,
+        SessionTimeRemain: 720,
+        CarIdxLap: [180, 180],
+        CarIdxPosition: [1, 2],
+      })
+    );
+
+    expect(processor.snapshot()).toMatchObject({
+      greenFlagTimestamp: 10,
+      isFixedLapRace: false,
+      timeRemaining: 720,
+    });
+  });
+
+  it('ignores an invalid race clock until a valid one arrives', () => {
+    const processor = new SessionTimingProcessor(() => [0, 0]);
+    processor.init(session);
+    processor.onFrame(
+      frame({
+        SessionTime: 100,
+        SessionTimeTotal: 604800,
+        SessionTimeRemain: 720,
+      })
+    );
+    processor.onFrame(
+      frame({
+        SessionTime: 110,
+        SessionTimeTotal: 21600,
+        SessionTimeRemain: 720,
+      })
+    );
+    expect(processor.snapshot().greenFlagTimestamp).toBe(0);
+
+    processor.onFrame(
+      frame({
+        SessionTime: 210,
+        SessionTimeTotal: 21600,
+        SessionTimeRemain: 21400,
+      })
+    );
+    expect(processor.snapshot().greenFlagTimestamp).toBe(10);
+  });
+
+  it('recovers a missed green flag and keeps it across later pauses', () => {
+    const processor = new SessionTimingProcessor();
+    processor.init(session);
+    processor.onFrame(
+      frame({ SessionTime: 10, SessionState: SessionState.Warmup })
+    );
+    processor.pause();
+    processor.onFrame(frame({ SessionTime: 312, SessionTimeRemain: 300 }));
+    expect(processor.snapshot().greenFlagTimestamp).toBe(12);
+
+    processor.pause();
+    processor.onFrame(frame({ SessionTime: 412, SessionTimeRemain: 190 }));
+    expect(processor.snapshot().greenFlagTimestamp).toBe(12);
+  });
+
+  it('uses the leader-lap fallback instead of the clock on LMU frames', () => {
+    const processor = new SessionTimingProcessor(() => [0, 0]);
+    processor.init(session);
+    processor.onFrame(
+      frame({
+        SessionTime: 1251,
+        SessionTimeTotal: 3600,
+        SessionTimeRemain: 2349.5,
+        LmuNotInSession: [false],
+      })
+    );
+    expect(processor.snapshot().greenFlagTimestamp).toBe(0);
+
+    processor.onFrame(
+      frame({
+        SessionTime: 1400,
+        SessionTimeTotal: 3600,
+        SessionTimeRemain: 2200.5,
+        CarIdxLap: [3, 3],
+        LmuNotInSession: [false],
+      })
+    );
+    expect(processor.snapshot().greenFlagTimestamp).toBe(1220);
+  });
+
+  it('keeps the lap-increase fallback while the race clock is invalid', () => {
+    const processor = new SessionTimingProcessor(() => [0, 0]);
+    processor.init(session);
+    processor.onFrame(
+      frame({
+        SessionTime: 100,
+        SessionTimeTotal: 604800,
+        SessionTimeRemain: 720,
+      })
+    );
+    processor.onFrame(
+      frame({
+        SessionTime: 400,
+        SessionTimeTotal: 604800,
+        SessionTimeRemain: 720,
+        CarIdxLap: [3, 3],
+      })
+    );
+
+    expect(processor.snapshot().greenFlagTimestamp).toBe(220);
+  });
+
   it('resets on session changes and ignores replay scrubbing', () => {
     const processor = new SessionTimingProcessor();
     processor.init(session);

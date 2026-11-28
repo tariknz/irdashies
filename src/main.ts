@@ -63,6 +63,7 @@ import {
   flushSettingsWindowBoundsOnShutdown,
 } from './app/storage/settingsWindowBounds';
 import { flushSimulatorUsageOnShutdown } from './app/storage/simulatorUsage';
+import { flushJsonFileStoresOnShutdown } from './app/lmu/jsonFileStore';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { getHiddenWidgets } from './app/widgetVisibility';
 import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
@@ -107,7 +108,10 @@ import type { ArchiveIndex } from './app/processors/ReplayContextProcessor';
 import { flushRadarPoleSideOverrides } from './app/storage/radarPoleSideOverrides';
 import { createKnownLocalUserIdStore } from './app/storage/knownLocalUserIds';
 import { setupLapHistoryBridge } from './app/bridge/lapHistoryBridge';
-import { onDashboardUpdated } from './app/storage/dashboardEvents';
+import {
+  onBeforeProfileChange,
+  onDashboardUpdated,
+} from './app/storage/dashboardEvents';
 import { setupStreamChat } from './app/streamChat/setupStreamChat';
 import { loadSimWidgetSupport } from './app/storage/simWidgetSupport';
 import type { DashboardLayout, Session, Telemetry } from '@irdashies/types';
@@ -128,7 +132,7 @@ import { setupRendererDataSubscriptions } from './app/bridge/rendererDataSubscri
 import { PerfHeapProfiler } from './app/perfHeapProfiler';
 import { createBeforeQuitHandler } from './app/shutdownCoordinator';
 import { monitorDevParent } from './app/devParentMonitor';
-import { flushWindowMovementOnShutdown } from './app/trackWindowMovement';
+import { flushWindowMovementSaves } from './app/trackWindowMovement';
 
 const safeErrorDetails = (error: unknown) => {
   const code =
@@ -685,6 +689,7 @@ void app.whenReady().then(async () => {
   }
 
   setupTaskbar(overlayManager, keybindingManager);
+  onBeforeProfileChange(flushWindowMovementSaves);
   await publishDashboardUpdates(
     overlayManager,
     analytics,
@@ -714,6 +719,7 @@ void app.whenReady().then(async () => {
     lifecycle: getSessionLifecycle(),
     getMap: getSessionProfileMap,
     getCurrentProfileId,
+    onProfileChange: onDashboardUpdated,
     profileExists: (profileId) => getProfile(profileId) !== null,
     switchProfile: (profileId) => setCurrentProfile(profileId),
   });
@@ -743,7 +749,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
   prepareToQuit: () => overlayManager.markQuitting(),
   shutdown: async () => {
     appUpdates?.stop();
-    flushWindowMovementOnShutdown();
+    flushWindowMovementSaves();
     keybindingManager?.stopGamepad();
     disconnectLifecycleChannel?.();
     sessionProfileSwitcher?.dispose();
@@ -776,6 +782,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
       flushStorageWritesOnShutdown(),
       flushSettingsWindowBoundsOnShutdown(),
       flushSimulatorUsageOnShutdown(),
+      flushJsonFileStoresOnShutdown(),
     ]);
   },
   quit: () => app.quit(),

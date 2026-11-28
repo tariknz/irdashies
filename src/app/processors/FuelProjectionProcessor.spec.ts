@@ -98,6 +98,43 @@ describe('FuelProjectionProcessor', () => {
     }
   });
 
+  it('keeps completed fuel laps and skips the partial lap after a pause', () => {
+    const lapCompleted = vi.fn();
+    const processor = new FuelProjectionProcessor({
+      persistence: { lapCompleted, saveLap: vi.fn() },
+    });
+    const feed = (lap: number, time: number, distance: number, fuel: number) =>
+      processor.onFrame(
+        frame({
+          Lap: lap,
+          SessionTime: time,
+          LapDistPct: distance,
+          FuelLevel: fuel,
+          SessionFlags: 4,
+        })
+      );
+    feed(1, 10, 0.01, 40);
+    feed(2, 110, 0.01, 37);
+    feed(2, 200, 0.95, 34.2);
+
+    processor.pause();
+    feed(5, 420, 0.11, 27.7);
+    feed(6, 510, 0.01, 25);
+    expect(
+      processor.snapshot().completedLaps.map((lap) => lap.lapNumber)
+    ).toEqual([1]);
+    expect(processor.snapshot().lastLapUsage).toBe(3);
+
+    feed(7, 610, 0.01, 22);
+    expect(processor.snapshot().completedLaps[0]).toMatchObject({
+      lapNumber: 6,
+      fuelUsed: 3,
+      lapTime: 100,
+      isValidForCalc: true,
+    });
+    expect(lapCompleted).toHaveBeenCalledTimes(2);
+  });
+
   it('resets volatile state on disconnect', () => {
     const processor = new FuelProjectionProcessor();
     processor.onFrame(

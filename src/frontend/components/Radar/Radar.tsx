@@ -12,7 +12,7 @@ import {
 import {
   buildTrackGeometry,
   getTrackPathData,
-  useTrackDrawing,
+  useSessionTrackDrawing,
 } from '@irdashies/domain/track';
 import type { RadarSnapshot } from '@irdashies/types';
 import { colorNumToHex } from '@irdashies/utils/colors';
@@ -49,6 +49,8 @@ const EMPTY_SNAPSHOT: RadarSnapshot = {
   caution: false,
   poleSideNotice: null,
   roadLane: 0,
+  mapFrame: null,
+  roadEdges: null,
   cars: [],
   hazards: [],
   version: 0,
@@ -90,7 +92,9 @@ export const Radar = () => {
   const displayUnits = useSessionBarSelector(sessionBarSelectors.displayUnits);
   const metric = isDemoMode || displayUnits !== 0;
 
-  const trackDrawing = useTrackDrawing(sessionVisible ? trackId : undefined);
+  const trackDrawing = useSessionTrackDrawing(
+    sessionVisible ? trackId : undefined
+  );
   const geometry = useMemo(() => {
     const path = getTrackPathData(trackId, trackDrawing);
     return path && trackLength > 0
@@ -169,6 +173,8 @@ export const Radar = () => {
         hazards: snapshot.focusOnPitRoad ? [] : snapshot.hazards,
         poleSideNotice: snapshot.poleSideNotice,
         roadLane: snapshot.roadLane,
+        mapFrame: snapshot.mapFrame ?? null,
+        roadEdges: snapshot.roadEdges ?? null,
       },
     [demoFrame, snapshot, cars]
   );

@@ -16,10 +16,27 @@ export class LmuSectorBoundaryLearner {
   private lastSector: number | null = null;
   private lastPct: number | null = null;
   private steadyFrames = 0;
+  private idle = false;
 
-  reset(trackName: string): void {
+  constructor(
+    private readonly bundled: (
+      trackName: string,
+      lapDistM?: number
+    ) => readonly number[] | null = () => null,
+    private readonly learnBundled = false
+  ) {}
+
+  get learning(): boolean {
+    return !this.idle;
+  }
+
+  reset(trackName: string, lapDistM?: number): void {
     this.trackName = trackName;
-    this.published = this.learnedByTrack.get(trackName) ?? null;
+    const bundled = trackName ? this.bundled(trackName, lapDistM) : null;
+    this.idle = bundled !== null && !this.learnBundled;
+    this.published = this.idle
+      ? bundled
+      : (this.learnedByTrack.get(trackName) ?? bundled);
     this.lastCrossing.fill(null);
     this.confirmed.fill(null);
     this.lastSector = null;
@@ -28,6 +45,7 @@ export class LmuSectorBoundaryLearner {
   }
 
   update(rawSector: number | undefined, lapPct: number | undefined): boolean {
+    if (this.idle) return false;
     if (
       rawSector === undefined ||
       lapPct === undefined ||

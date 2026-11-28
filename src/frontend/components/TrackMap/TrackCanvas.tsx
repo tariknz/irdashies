@@ -2,7 +2,10 @@ import { useCanvasCleanup } from '@irdashies/domain/canvas/useCanvasCleanup';
 import { useWidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Driver } from '@irdashies/types';
-import { useTrackDrawing, type TrackDrawing } from '@irdashies/domain/track';
+import {
+  useSessionTrackDrawing,
+  type TrackDrawing,
+} from '@irdashies/domain/track';
 export type { TrackDrawing } from '@irdashies/domain/track';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
 import { validateImageDataUrl } from '@irdashies/utils/imageDataUrl';
@@ -93,7 +96,19 @@ const DEFAULT_TURN_LABELS: TurnLabels = {
 
 /** Mount canvas effects only once the requested drawing is available. */
 export const TrackCanvas = (props: TrackProps) => {
-  const drawing = useTrackDrawing(props.trackId);
+  const turnLabels = props.turnLabels ?? DEFAULT_TURN_LABELS;
+  const drawnTrackWidth = props.isMinimalTrack
+    ? (props.trackLineWidth ?? 20)
+    : Math.max(props.trackLineWidth ?? 20, props.trackOutlineWidth ?? 40);
+  const drawing = useSessionTrackDrawing(
+    props.trackId,
+    turnLabels.enabled
+      ? {
+          fontScale: turnLabels.labelFontSize / 100,
+          trackWidth: drawnTrackWidth,
+        }
+      : undefined
+  );
   return drawing ? (
     <LoadedTrackCanvas key={props.trackId} {...props} trackDrawing={drawing} />
   ) : null;

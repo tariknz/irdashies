@@ -11,6 +11,7 @@ export interface TelemetryProcessor<Snapshot, Channel extends string = string> {
   onFrame(frame: Telemetry): void;
   onLifecycle(event: SessionLifecycleEvent): void;
   snapshot(): Snapshot;
+  pause?(): void;
   /** The host is dropping this instance: release anything shared. */
   dispose?(): void;
 }

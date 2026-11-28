@@ -15,6 +15,8 @@ import {
   type RadarStyle,
 } from '../radarDraw';
 import { cornerInside, DiveTracker, type DiveHint } from '../radarHints';
+import { advanceMapFrame } from '../radarProjection';
+import { extrapolatedDist } from '../radarModel';
 import type { RadarHazard } from '@irdashies/types';
 
 export interface RadarFrameCar {
@@ -22,6 +24,8 @@ export interface RadarFrameCar {
   dist: number;
   relativeSpeed: number;
   lane: number;
+  lateralM?: number;
+  headingRad?: number;
   offTrack: boolean;
   onPitRoad?: boolean;
 }
@@ -44,6 +48,8 @@ export interface RadarFrame {
   poleSideNotice?: 'left' | 'right' | null;
   /** Middle of the road from our car, in lanes, positive to the right. */
   roadLane?: number;
+  mapFrame?: readonly number[] | null;
+  roadEdges?: readonly number[] | null;
 }
 
 export interface RadarDiveOptions {
@@ -178,6 +184,7 @@ export const RadarDisplay = memo(
       // The road eases to its lane instead of jumping when a formation ends.
       let roadLane = latest.current.frame.roadLane ?? 0;
       let lastPaint = performance.now();
+      const advancedMapFrame: number[] = [];
       let frameMs: number | undefined;
       const drawFrame = () => {
         const started = performance.now();
@@ -204,9 +211,12 @@ export const RadarDisplay = memo(
             current.appearance.get(car.carIdx) ?? FALLBACK_APPEARANCE;
           const target = cars[index] ?? ({} as RadarDrawCar);
           target.carIdx = car.carIdx;
-          target.dist = car.dist + car.relativeSpeed * elapsed;
+          target.dist = extrapolatedDist(car, elapsed);
           target.relativeSpeed = car.relativeSpeed;
-          target.lateral = -car.lane * laneWidth;
+          target.world = car.lateralM !== undefined;
+          target.heading = car.headingRad ?? 0;
+          target.lateral =
+            car.lateralM !== undefined ? -car.lateralM : -car.lane * laneWidth;
           target.lane = car.lane;
           target.offTrack = car.offTrack;
           target.fill = looks.fill;
@@ -294,6 +304,12 @@ export const RadarDisplay = memo(
             hazards,
             poleSideNotice: snap.poleSideNotice,
             roadLane,
+            mapFrame: advanceMapFrame(
+              snap.mapFrame,
+              snap.playerSpeed * elapsed,
+              advancedMapFrame
+            ),
+            roadEdges: snap.roadEdges ?? null,
           },
           ringsLayer
         );

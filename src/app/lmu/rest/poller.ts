@@ -100,7 +100,11 @@ export interface LmuRestPoller {
    */
   burst: (
     taskId: string,
-    options: { delayMs: number; isComplete: () => boolean }
+    options: {
+      delayMs: number;
+      isComplete: () => boolean;
+      rereadBody?: boolean;
+    }
   ) => void;
   stop: () => void;
 }
@@ -533,6 +537,7 @@ export function createLmuRestPoller({
     /** Re-runs the one-shot tasks, for a track or session change. */
     invalidateOnce: () => {
       if (stopped) return;
+      generation += 1;
       tasks.forEach((task) => {
         if (task.mode !== 'once') return;
         const state = stateOf(task);
@@ -543,10 +548,11 @@ export function createLmuRestPoller({
     },
 
     /** Starts a burst or starts it over; see LmuRestPoller.burst. */
-    burst: (taskId, { delayMs, isComplete }) => {
+    burst: (taskId, { delayMs, isComplete, rereadBody }) => {
       const task = tasks.find((candidate) => candidate.id === taskId);
       if (stopped || !active || !task || task.mode !== 'burst') return;
       const startsAt = Date.now() + delayMs;
+      if (rereadBody) stateOf(task).hash = undefined;
       stateOf(task).burst = {
         isComplete,
         startsAt,

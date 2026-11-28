@@ -34,7 +34,7 @@ describe('BroadcastTransitionSettings', () => {
     render(<BroadcastTransitionSettings />);
 
     expect(
-      screen.getByRole('heading', { level: 2, name: 'Settings' })
+      screen.getByRole('heading', { level: 2, name: 'Broadcast Settings' })
     ).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Transition' })).toHaveValue(
       'random'

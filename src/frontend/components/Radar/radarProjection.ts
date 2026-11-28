@@ -31,6 +31,13 @@ export class RadarProjector {
   private readonly forward: TrackPathPoint = { x: 0, y: -1 };
   private readonly point: TrackPathPoint = { x: 0, y: 0 };
   private readonly tangent: TrackPathPoint = { x: 0, y: -1 };
+  private hasMapFrame = false;
+  private frameOriginX = 0;
+  private frameOriginY = 0;
+  private frame00 = 0;
+  private frame01 = 0;
+  private frame10 = 0;
+  private frame11 = 0;
 
   setup(
     geometry: TrackGeometry | null,
@@ -38,7 +45,8 @@ export class RadarProjector {
     playerPct: number,
     centreX: number,
     centreY: number,
-    pixelsPerMetre: number
+    pixelsPerMetre: number,
+    mapFrame: readonly number[] | null = null
   ): void {
     this.geometry = trackLength > 0 ? geometry : null;
     this.trackLength = trackLength;
@@ -46,6 +54,19 @@ export class RadarProjector {
     this.centreX = centreX;
     this.centreY = centreY;
     this.pixelsPerMetre = pixelsPerMetre;
+    this.hasMapFrame =
+      this.geometry !== null &&
+      mapFrame !== null &&
+      mapFrame.length === 6 &&
+      mapFrame.every(Number.isFinite);
+    if (this.hasMapFrame && mapFrame) {
+      this.frameOriginX = mapFrame[0];
+      this.frameOriginY = mapFrame[1];
+      this.frame00 = mapFrame[2];
+      this.frame01 = mapFrame[3];
+      this.frame10 = mapFrame[4];
+      this.frame11 = mapFrame[5];
+    }
     if (this.geometry) {
       pointAtProgress(this.geometry, playerPct, this.origin);
       tangentAtProgress(this.geometry, playerPct, this.forward);
@@ -54,6 +75,22 @@ export class RadarProjector {
 
   get hasTrack(): boolean {
     return this.geometry !== null;
+  }
+
+  get drawsThroughMapFrame(): boolean {
+    return this.geometry !== null && this.hasMapFrame;
+  }
+
+  projectOffset(
+    ahead: number,
+    lateral: number,
+    headingRad: number,
+    output: ScreenPose
+  ): ScreenPose {
+    output.x = this.centreX - lateral * this.pixelsPerMetre;
+    output.y = this.centreY - ahead * this.pixelsPerMetre;
+    output.angle = -Math.PI / 2 - headingRad;
+    return output;
   }
 
   /**
@@ -73,6 +110,9 @@ export class RadarProjector {
     const units = geometry.unitsPerMeter;
     pointAtProgress(geometry, pct, this.point);
     tangentAtProgress(geometry, pct, this.tangent);
+    if (this.hasMapFrame) {
+      return this.projectThroughMapFrame(lateral, output);
+    }
     // Left of travel in y-down drawing coordinates.
     const worldX = this.point.x + this.tangent.y * lateral * units;
     const worldY = this.point.y - this.tangent.x * lateral * units;
@@ -91,4 +131,49 @@ export class RadarProjector {
     output.angle = Math.atan2(-headingAhead, -headingLeft);
     return output;
   }
+
+  private projectThroughMapFrame(
+    lateral: number,
+    output: ScreenPose
+  ): ScreenPose {
+    const relX = this.point.x - this.frameOriginX;
+    const relY = this.point.y - this.frameOriginY;
+    let right = this.frame00 * relX + this.frame01 * relY;
+    let ahead = this.frame10 * relX + this.frame11 * relY;
+    const travelRight =
+      this.frame00 * this.tangent.x + this.frame01 * this.tangent.y;
+    const travelAhead =
+      this.frame10 * this.tangent.x + this.frame11 * this.tangent.y;
+    const travelLength = Math.hypot(travelRight, travelAhead);
+    const unitRight = travelLength > 0 ? travelRight / travelLength : 0;
+    const unitAhead = travelLength > 0 ? travelAhead / travelLength : 1;
+    right -= unitAhead * lateral;
+    ahead += unitRight * lateral;
+    output.x = this.centreX + right * this.pixelsPerMetre;
+    output.y = this.centreY - ahead * this.pixelsPerMetre;
+    output.angle = Math.atan2(-unitAhead, unitRight);
+    return output;
+  }
 }
+
+export const advanceMapFrame = (
+  frame: readonly number[] | null | undefined,
+  aheadM: number,
+  output: number[]
+): readonly number[] | null => {
+  if (!frame || frame.length !== 6) return frame ?? null;
+  const [originX, originY, f00, f01, f10, f11] = frame;
+  const determinant = f00 * f11 - f01 * f10;
+  if (aheadM === 0 || !Number.isFinite(determinant) || determinant === 0) {
+    return frame;
+  }
+  const scale = aheadM / determinant;
+  output.length = 6;
+  output[0] = originX - f01 * scale;
+  output[1] = originY + f00 * scale;
+  output[2] = f00;
+  output[3] = f01;
+  output[4] = f10;
+  output[5] = f11;
+  return output;
+};

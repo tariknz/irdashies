@@ -17,8 +17,7 @@ import {
 
 /**
  * The broadcast modules stay separate widgets, so each keeps its own place in
- * Edit Layout and its own /widget URL. Each has a page of its own in the
- * Broadcast menu; the pages share a live preview.
+ * Edit Layout, its own /widget URL, and its own settings page.
  */
 const MODULE_SECTIONS: Record<
   BroadcastModuleType,
@@ -121,7 +120,7 @@ export const BroadcastGroupSettings = ({
 
 /**
  * The settings page for all five broadcast widgets. One component type for
- * every module, so moving between them in the Broadcast menu updates `active`
+ * every module, so moving between them in the widget menu updates `active`
  * instead of remounting the page (which reset the detected component-server
  * port and its OBS URL).
  */

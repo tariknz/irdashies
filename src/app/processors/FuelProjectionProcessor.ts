@@ -230,6 +230,10 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
     return this.latest;
   }
 
+  pause(): void {
+    this.engine.discardPartialLap();
+  }
+
   validationSnapshot(): {
     commands: readonly FuelEngineCommand[];
     state: ReturnType<FuelProjectionEngine['snapshot']>;

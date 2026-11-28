@@ -1,6 +1,5 @@
 import type { WidgetLayout } from '../dashboardLayout';
 import type { WidgetConfigMap } from '../widgetConfigs';
-import type { WidgetId } from '../widgetId';
 import type { PropertySpecsOf } from './properties';
 
 /** Display order of categories in the overlay settings menu. */
@@ -12,8 +11,9 @@ export const WIDGET_CATEGORIES = [
   'Fuel',
   'Spotter & Safety',
   'Session & Weather',
-  'Broadcast & Streaming',
-  'Driver Health',
+  'Pitwall',
+  'Broadcast',
+  'Streaming',
 ] as const;
 
 export type WidgetCategory = (typeof WIDGET_CATEGORIES)[number];
@@ -38,8 +38,6 @@ export interface WidgetManifest<
    * label and a place in widget lists such as Key Bindings.
    */
   hideInMenu?: boolean;
-  /** Widgets that share this item's settings page; it shows On while any of them is. */
-  groupTypes?: WidgetId[];
   enabled: boolean;
   alwaysEnabled?: boolean;
   /**

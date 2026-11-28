@@ -3,6 +3,17 @@ import { DashboardLayout } from '@irdashies/types';
 
 const dashboardEvents = new EventEmitter();
 
+export const onBeforeProfileChange = (listener: () => void) => {
+  dashboardEvents.on('beforeProfileChange', listener);
+  return () => {
+    dashboardEvents.removeListener('beforeProfileChange', listener);
+  };
+};
+
+export const emitBeforeProfileChange = () => {
+  dashboardEvents.emit('beforeProfileChange');
+};
+
 export const onDashboardUpdated = (
   listener: (dashboard: DashboardLayout, saveId?: string) => void
 ) => {

@@ -22,6 +22,13 @@ describe('warningLevel', () => {
     expect(warningLevel(4.5, 5.2, 4.0, 7)).toBe('alongside');
     expect(warningLevel(4.7, 5.2, 4.0, 7)).toBe('close');
   });
+
+  it('warns of a measured car only while it is beside us, not across the track', () => {
+    expect(warningLevel(1, 4.6, 4.6, 7, -3)).toBe('alongside');
+    expect(warningLevel(8, 4.6, 4.6, 7, 6)).toBe('close');
+    expect(warningLevel(1, 4.6, 4.6, 7, 12)).toBe('none');
+    expect(warningLevel(1, 4.6, 4.6, 7, -200)).toBe('none');
+  });
 });
 
 describe('followLineEnds', () => {

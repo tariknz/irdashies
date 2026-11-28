@@ -4718,6 +4718,192 @@
           ]
         }
       ]
+    },
+    "paul ricard - elms": {
+      "name": "Circuit Paul Ricard",
+      "trackId": "paul ricard - elms",
+      "country": "FR",
+      "year": 2024,
+      "length": 5807,
+      "pitentry": 0.933,
+      "pitexit": 0.046,
+      "turn": [
+        {
+          "number": 1,
+          "name": "S de la Verrerie",
+          "direction": 1,
+          "scale": 3,
+          "start": 0.093,
+          "marker": 0.111,
+          "end": 0.12
+        },
+        {
+          "number": 2,
+          "name": "S de la Verrerie",
+          "direction": 0,
+          "scale": 3,
+          "start": 0.12,
+          "marker": 0.129,
+          "end": 0.143
+        },
+        {
+          "number": 3,
+          "name": "Virage de l'Hôtel",
+          "direction": 0,
+          "scale": 2,
+          "start": 0.207,
+          "marker": 0.228,
+          "end": 0.232
+        },
+        {
+          "number": 4,
+          "name": "Virage de l'Hôtel",
+          "direction": 1,
+          "scale": 2,
+          "start": 0.233,
+          "marker": 0.246,
+          "end": 0.252
+        },
+        {
+          "number": 5,
+          "name": "Virage du Camp",
+          "direction": 1,
+          "scale": 3,
+          "start": 0.253,
+          "marker": 0.264,
+          "end": 0.269
+        },
+        {
+          "number": 6,
+          "name": "Virage de la Sainte-Baume",
+          "direction": 1,
+          "scale": 3,
+          "start": 0.271,
+          "marker": 0.286,
+          "end": 0.313
+        },
+        {
+          "number": 7,
+          "name": "Mistral",
+          "direction": 0,
+          "scale": 5,
+          "start": 0.318,
+          "marker": 0.328,
+          "end": 0.35
+        },
+        {
+          "number": 8,
+          "name": "Chicane Nord",
+          "direction": 0,
+          "scale": 2,
+          "start": 0.497,
+          "marker": 0.508,
+          "end": 0.514
+        },
+        {
+          "number": 9,
+          "name": "Chicane Nord",
+          "direction": 1,
+          "scale": 2,
+          "start": 0.516,
+          "marker": 0.524,
+          "end": 0.54
+        },
+        {
+          "number": 10,
+          "name": "Courbe de Signes",
+          "direction": 1,
+          "scale": 5,
+          "start": 0.641,
+          "marker": 0.666,
+          "end": 0.705
+        },
+        {
+          "number": 11,
+          "name": "Double Droite du Beausset",
+          "direction": 1,
+          "scale": 4,
+          "start": 0.717,
+          "marker": 0.732,
+          "end": 0.745
+        },
+        {
+          "number": 11,
+          "name": "Double Droite du Beausset",
+          "direction": 1,
+          "scale": 4,
+          "start": 0.75,
+          "marker": 0.774,
+          "end": 0.795
+        },
+        {
+          "number": 12,
+          "name": "Virage de Bendor",
+          "direction": 0,
+          "scale": 2,
+          "start": 0.803,
+          "marker": 0.831,
+          "end": 0.851
+        },
+        {
+          "number": 13,
+          "name": "Courbe du Garlaban",
+          "direction": 1,
+          "scale": 3,
+          "start": 0.853,
+          "marker": 0.878,
+          "end": 0.893
+        },
+        {
+          "number": 14,
+          "name": "Virage du Lac",
+          "direction": 0,
+          "scale": 2,
+          "start": 0.895,
+          "marker": 0.909,
+          "end": 0.932
+        },
+        {
+          "number": 15,
+          "name": "Virage du Pont",
+          "direction": 1,
+          "scale": 2,
+          "start": 0.933,
+          "marker": 0.942,
+          "end": 0.959
+        }
+      ],
+      "straight": [
+        {
+          "name": "Ligne Droite des Stands",
+          "start": 0.959,
+          "end": 0.086
+        },
+        {
+          "name": "Ligne Droite du Mistral",
+          "start": 0.348,
+          "end": 0.497
+        },
+        {
+          "name": "Ligne Droite du Mistral",
+          "start": 0.54,
+          "end": 0.641
+        }
+      ],
+      "sector": [
+        {
+          "name": "1",
+          "marker": 0.275
+        },
+        {
+          "name": "2",
+          "marker": 0.605
+        },
+        {
+          "name": "3",
+          "marker": 1
+        }
+      ]
     }
   }
 }

@@ -94,7 +94,7 @@ vi.mock('./storage/chromiumFlags', () => ({
   parseCustomSwitches: vi.fn(() => []),
 }));
 vi.mock('./trackWindowMovement', () => ({
-  flushWindowMovementOnShutdown: vi.fn(),
+  flushWindowMovementSaves: vi.fn(),
   markCorrectedBounds: vi.fn(),
   trackSettingsWindowMovement: vi.fn(),
   trackGantryWindowMovement: vi.fn(),
@@ -117,7 +117,7 @@ vi.mock('./logger', () => ({
 const { OverlayManager } = await import('./overlayManager');
 const { hardenWindow } = await import('./hardenWindow');
 const {
-  flushWindowMovementOnShutdown,
+  flushWindowMovementSaves,
   markCorrectedBounds,
   trackGantryWindowMovement,
 } = await import('./trackWindowMovement');
@@ -702,9 +702,9 @@ describe('OverlayManager Gantry window placement', () => {
 
     manager.quitApp();
 
-    expect(flushWindowMovementOnShutdown).toHaveBeenCalledOnce();
+    expect(flushWindowMovementSaves).toHaveBeenCalledOnce();
     expect(
-      vi.mocked(flushWindowMovementOnShutdown).mock.invocationCallOrder[0]
+      vi.mocked(flushWindowMovementSaves).mock.invocationCallOrder[0]
     ).toBeLessThan(window.destroy.mock.invocationCallOrder[0]);
   });
 

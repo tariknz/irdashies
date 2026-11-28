@@ -217,4 +217,70 @@ describe('LmuSectorBoundaryLearner', () => {
 
     expect(instance.boundaries()).toBeNull();
   });
+
+  it('starts from the bundled boundaries of a track it has not learned', () => {
+    const bundled = (trackName: string) =>
+      trackName === 'WeatherTech Raceway Laguna Seca' ? [0.3904, 0.7925] : null;
+    const instance = new LmuSectorBoundaryLearner(bundled);
+    instance.reset('WeatherTech Raceway Laguna Seca');
+    expect(instance.boundaries()).toEqual([0.3904, 0.7925]);
+
+    instance.reset('Fuji Speedway');
+    expect(instance.boundaries()).toBeNull();
+  });
+
+  it('learns a bundled track whose live lap the bundle does not fit', () => {
+    const bundled = (trackName: string, lapDistM?: number) =>
+      trackName === 'Circuit de Barcelona' && lapDistM === 4655
+        ? [0.3, 0.6]
+        : null;
+    const instance = new LmuSectorBoundaryLearner(bundled);
+
+    instance.reset('Circuit de Barcelona', 4655);
+    expect(instance.learning).toBe(false);
+    expect(instance.boundaries()).toEqual([0.3, 0.6]);
+
+    instance.reset('Circuit de Barcelona', 5000);
+    expect(instance.learning).toBe(true);
+    expect(instance.boundaries()).toBeNull();
+  });
+
+  it('stays on the bundled boundaries of a bundled track and learns nothing', () => {
+    const bundled = (trackName: string) =>
+      trackName === 'WeatherTech Raceway Laguna Seca' ? [0.3, 0.6] : null;
+    const instance = new LmuSectorBoundaryLearner(bundled);
+    instance.reset('WeatherTech Raceway Laguna Seca');
+    const changed = [...lap(instance), ...lap(instance), ...lap(instance)];
+
+    expect(instance.learning).toBe(false);
+    expect(changed.some(Boolean)).toBe(false);
+    expect(instance.boundaries()).toEqual([0.3, 0.6]);
+
+    instance.reset('Fuji Speedway');
+    expect(instance.learning).toBe(true);
+    expect([...lap(instance), ...lap(instance)].filter(Boolean)).toHaveLength(
+      1
+    );
+  });
+
+  it('replaces the bundled boundaries with ones it learns when told to learn bundled tracks', () => {
+    const instance = new LmuSectorBoundaryLearner(() => [0.3, 0.6], true);
+    instance.reset('WeatherTech Raceway Laguna Seca');
+    const changed = [...lap(instance), ...lap(instance)];
+
+    expect(changed.filter(Boolean)).toHaveLength(1);
+    expect(instance.boundaries()?.[0]).toBeCloseTo(0.389, 3);
+
+    instance.reset('Fuji Speedway');
+    instance.reset('WeatherTech Raceway Laguna Seca');
+    expect(instance.boundaries()?.[0]).toBeCloseTo(0.389, 3);
+  });
+
+  it('does not report bundled boundaries it confirms as a change', () => {
+    const instance = new LmuSectorBoundaryLearner(() => [0.389, 0.791], true);
+    instance.reset('WeatherTech Raceway Laguna Seca');
+    const changed = [...lap(instance), ...lap(instance)];
+
+    expect(changed.some(Boolean)).toBe(false);
+  });
 });

@@ -134,17 +134,17 @@ describe('preview settings panel', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
     await screen.findByRole('heading', { name: 'broadcastticker' });
     expect(
-      screen.getByRole('main', { name: 'Broadcast settings page' })
+      screen.getByRole('main', { name: 'Overlay settings page' })
     ).toBeInTheDocument();
 
     await userEvent.click(
       screen.getByRole('button', { name: 'Close settings' })
     );
-    rerender(<PreviewSettingsButton defaultWidget="relative" />);
+    rerender(<PreviewSettingsButton defaultWidget="broadcast-settings" />);
     await userEvent.click(screen.getByRole('button', { name: 'Configure' }));
-    await screen.findByRole('heading', { name: 'relative' });
+    await screen.findByRole('heading', { name: 'broadcast-settings' });
     expect(
-      screen.getByRole('main', { name: 'Overlay settings page' })
+      screen.getByRole('main', { name: 'App settings page' })
     ).toBeInTheDocument();
   });
 

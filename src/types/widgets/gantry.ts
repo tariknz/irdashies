@@ -5,7 +5,7 @@ import { defineWidgetManifest } from './types';
 export default defineWidgetManifest({
   id: 'gantry',
   name: 'The Gantry',
-  category: 'Broadcast & Streaming',
+  category: 'Pitwall',
   menuLabel: 'Gantry',
   enabled: false,
   usesLapHistory: true,

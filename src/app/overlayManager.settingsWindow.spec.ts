@@ -121,7 +121,7 @@ vi.mock('./logger', () => ({
 const { OverlayManager } = await import('./overlayManager');
 const { createSettingsWindowBoundsStore } =
   await import('./storage/settingsWindowBounds');
-const { flushWindowMovementOnShutdown } = await import('./trackWindowMovement');
+const { flushWindowMovementSaves } = await import('./trackWindowMovement');
 const { readData } = await import('./storage/storage');
 const { app } = await import('electron');
 let directory: string;
@@ -138,7 +138,7 @@ beforeEach(async () => {
   state.store = createSettingsWindowBoundsStore(directory);
 });
 afterEach(async () => {
-  flushWindowMovementOnShutdown();
+  flushWindowMovementSaves();
   await state.store?.flush();
   await fsp.rm(directory, { recursive: true, force: true });
 });
@@ -179,7 +179,7 @@ describe('settings BrowserWindow construction and persistence', () => {
     const custom = { x: 230, y: 90, width: 1800, height: 1100 };
     first.rectangle = custom;
     first.emit('resized');
-    flushWindowMovementOnShutdown();
+    flushWindowMovementSaves();
     await currentStore().flush();
     state.store = createSettingsWindowBoundsStore(directory);
     await state.store.load();
@@ -304,7 +304,7 @@ describe('settings BrowserWindow construction and persistence', () => {
     windows[0].emit('ready-to-show');
     windows[0].emit('moved');
     windows[0].emit('resized');
-    flushWindowMovementOnShutdown();
+    flushWindowMovementSaves();
     expect(currentStore().get()).toEqual(saved);
   });
 

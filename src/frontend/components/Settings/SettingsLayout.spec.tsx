@@ -611,29 +611,50 @@ describe('SettingsLayout navigation', () => {
     const shownPage = () =>
       within(screen.getByRole('main')).getByRole('heading', { level: 2 });
 
-    it('leaves the Broadcast menu for the overlay page open before it, and comes back to the module left last', () => {
+    it('groups Pitwall, Broadcast, and Streaming in order and opens broadcast widgets directly', () => {
       renderLayout('/settings/standings');
-      fireEvent.click(screen.getByRole('link', { name: 'Broadcast' }));
-      expect(shownPage()).toHaveTextContent('broadcast');
+      const menu = within(
+        screen.getByRole('navigation', { name: 'Overlay settings' })
+      );
       expect(
-        screen.getByRole('main', { name: 'Broadcast settings page' })
+        menu
+          .getAllByRole('heading', {
+            level: 3,
+            name: /^(Pitwall|Broadcast|Streaming)$/,
+          })
+          .map((heading) => heading.textContent)
+      ).toEqual(['Pitwall', 'Broadcast', 'Streaming']);
+      expect(
+        within(menu.getByRole('region', { name: 'Pitwall' })).getByRole(
+          'link',
+          { name: 'Gantry' }
+        )
+      ).toBeInTheDocument();
+      const streaming = within(menu.getByRole('region', { name: 'Streaming' }));
+      expect(
+        streaming.getByRole('link', { name: 'Garage Cover' })
+      ).toBeInTheDocument();
+      expect(
+        streaming.getByRole('link', { name: 'Heart Rate' })
+      ).toBeInTheDocument();
+      expect(
+        streaming.getByRole('link', { name: 'Stream Chat' })
       ).toBeInTheDocument();
 
-      fireEvent.click(screen.getByRole('link', { name: 'Ticker' }));
-      expect(shownPage()).toHaveTextContent('broadcastticker');
+      const broadcast = within(menu.getByRole('region', { name: 'Broadcast' }));
+      fireEvent.click(broadcast.getByRole('link', { name: 'Broadcast Tower' }));
+      expect(shownPage()).toHaveTextContent('broadcast');
       expect(
-        screen.getByRole('link', { name: 'Back to overlays' })
-      ).toHaveAttribute('href', '/settings/standings');
+        screen.getByRole('main', { name: 'Overlay settings page' })
+      ).toBeInTheDocument();
 
-      fireEvent.click(screen.getByRole('link', { name: 'Back to overlays' }));
-      expect(shownPage()).toHaveTextContent('standings');
-      expect(screen.getByRole('link', { name: 'Broadcast' })).toHaveAttribute(
-        'href',
-        '/settings/broadcastticker'
+      fireEvent.click(
+        broadcast.getByRole('link', { name: 'Broadcast Ticker' })
       );
+      expect(shownPage()).toHaveTextContent('broadcastticker');
     });
 
-    it('leaves a broadcast page reopened at start for Relative', () => {
+    it('reopens the last broadcast widget at start', () => {
       localStorage.setItem(
         'settingsLastWidgetPage',
         '/settings/broadcastticker'
@@ -641,16 +662,23 @@ describe('SettingsLayout navigation', () => {
       renderLayout('/settings');
       expect(shownPage()).toHaveTextContent('broadcastticker');
       expect(
-        screen.getByRole('link', { name: 'Back to overlays' })
-      ).toHaveAttribute('href', '/settings/relative');
+        screen.getByRole('link', { name: 'Broadcast Ticker' })
+      ).toHaveAttribute('aria-current', 'page');
     });
 
-    it('returns to the broadcast page from App settings', () => {
+    it('returns to the broadcast widget from the shared Broadcast Settings page', () => {
       renderLayout('/settings/broadcastticker');
       fireEvent.click(screen.getByRole('link', { name: 'Go to App settings' }));
+      fireEvent.click(screen.getByRole('link', { name: 'Broadcast Settings' }));
+      expect(shownPage()).toHaveTextContent('broadcast-settings');
+      expect(
+        screen.getByRole('main', { name: 'App settings page' })
+      ).toBeInTheDocument();
       expect(
         screen.getByRole('link', { name: 'Back to overlays' })
       ).toHaveAttribute('href', '/settings/broadcastticker');
+      fireEvent.click(screen.getByRole('link', { name: 'Back to overlays' }));
+      expect(shownPage()).toHaveTextContent('broadcastticker');
     });
   });
 

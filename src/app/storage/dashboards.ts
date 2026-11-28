@@ -3,7 +3,11 @@ import type {
   DashboardWidget,
   DashboardProfile,
 } from '@irdashies/types';
-import { emitDashboardUpdated, emitDashboardsSaved } from './dashboardEvents';
+import {
+  emitBeforeProfileChange,
+  emitDashboardUpdated,
+  emitDashboardsSaved,
+} from './dashboardEvents';
 import {
   defaultDashboard,
   deepMergeConfig,
@@ -961,6 +965,10 @@ export const setCurrentProfile = (profileId: string, silent = false): void => {
   const profile = getProfile(profileId);
   if (!profile) {
     throw new Error(`Profile ${profileId} not found`);
+  }
+  const previousProfileId = readData<string>(CURRENT_PROFILE_KEY);
+  if (previousProfileId && previousProfileId !== profileId) {
+    emitBeforeProfileChange();
   }
 
   // Fill in what the stored dashboard predates (e.g. it was imported or saved

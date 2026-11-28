@@ -7,6 +7,18 @@ import type {
 } from './dashboardLayout';
 import type { SessionProfileMap } from './sessionProfiles';
 
+export interface ProfileTransition {
+  hidden: boolean;
+  name: string;
+  showBanner?: boolean;
+}
+
+export interface ProfileSwitchBridge {
+  onTransition: (
+    callback: (transition: ProfileTransition) => void
+  ) => () => void;
+}
+
 export interface SaveDashboardOptions {
   forceReload?: boolean;
   /** Skip window refresh - used for layout-only changes in container mode */

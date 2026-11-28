@@ -1,4 +1,5 @@
 import { Fragment, useMemo } from 'react';
+import { shallow } from 'zustand/shallow';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { SessionBar } from './components/SessionBar/SessionBar';
@@ -24,7 +25,8 @@ import {
   useCarIdxRollingAvgLapTime,
   usePitStopDuration,
   usePitLaneStore,
-  useFirstObservedLap,
+  standingsSelectors,
+  useStandingsSelector,
   useActiveSimulator,
 } from '@irdashies/context';
 import {
@@ -134,6 +136,7 @@ export const getOrderedColumns = (
 };
 
 const isEmptyList = (value: readonly unknown[]) => value.length === 0;
+const EMPTY_OBSERVED_LAPS: readonly (number | undefined)[] = [];
 const isEmptyRecord = (value: object | undefined) =>
   !value || Object.keys(value).length === 0;
 const isEmptyMap = (value: ReadonlyMap<unknown, unknown>) => value.size === 0;
@@ -212,7 +215,12 @@ export const Standings = () => {
   );
 
   const pitStopDurations = useHeld(usePitStopDuration(), isEmptyList);
-  const firstObservedLaps = useHeld(useFirstObservedLap(), isEmptyList);
+  const firstObservedLaps = useHeld(
+    useStandingsSelector(standingsSelectors.firstObservedLap, {
+      equality: shallow,
+    }) ?? EMPTY_OBSERVED_LAPS,
+    isEmptyList
+  );
   const pitExitPct = useHeld(
     usePitLaneStore((s) => s.pitExitPct),
     isUnset

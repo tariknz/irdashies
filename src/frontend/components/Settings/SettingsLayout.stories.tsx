@@ -495,7 +495,6 @@ export const WeatherRoute: Story = {
   },
 };
 
-/** The Broadcast menu, with the Tower's Look tab. */
 export const BroadcastTowerRoute: Story = {
   args: {
     initialPath: '/settings/broadcast',

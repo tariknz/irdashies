@@ -7,15 +7,11 @@
  * `mQualification`: entry order, fixed for the whole session. That is why the
  * column tracked car number and never moved.
  *
- * The ranking follows the convention iRacing sets, so either sim produces the
- * same meaning:
- *
- * - A race ranks on the sim's own overall position, which already accounts for
- *   laps completed and sector order.
- * - Practice and qualifying rank on best lap time, because position in those
- *   sessions is a timesheet, not a running order. A car with no time yet sorts
- *   last rather than first, which a plain ascending sort on 0 or -1 would get
- *   backwards.
+ * Every session ranks on the sim's own overall position, so the relative and
+ * the standings show what LMU's own screens show. In a race that accounts for
+ * laps completed and sector order. In practice and qualifying LMU puts cars
+ * with a valid best lap first, by that time, and every car without one after
+ * them, by laps completed and then by how far round the lap it is.
  *
  * Output is 1-based, matching the `CarIdxClassPosition` telemetry channel it
  * fills. Note that is the opposite of `ClassPosition` in session results,
@@ -24,26 +20,16 @@
  */
 
 /**
- * How far down the order a car sits, lower being ahead.
- *
- * A race is already ordered by the sim, so its own place stands. Anything else
- * is a timesheet, where best lap decides it and a car yet to set a time
- * belongs at the bottom rather than the top -- which a plain ascending sort on
- * 0 or -1 gets backwards.
+ * How far down the order a car sits, lower being ahead: LMU's own place, with
+ * a car the sim has not placed at the bottom.
  *
  * Exported because two places need this same answer: the per-car telemetry
  * channels here, and the session results the standings widget orders on. Two
  * orderings drifting apart would have the two widgets disagreeing about who is
  * ahead.
  */
-export const lmuOrderingKey = (
-  isRace: boolean,
-  place: number | undefined,
-  bestLapTime: number | undefined
-): number => {
-  const value = isRace ? (place ?? 0) : (bestLapTime ?? 0);
-  return value > 0 ? value : Number.POSITIVE_INFINITY;
-};
+export const lmuOrderingKey = (place: number | undefined): number =>
+  (place ?? 0) > 0 ? (place as number) : Number.POSITIVE_INFINITY;
 
 /**
  * Compares two ordering keys, falling back to a stable tiebreak.
@@ -99,10 +85,8 @@ export const resetLmuClassPositionState = (
 export interface LmuClassPositionFrame {
   /** Class id per car. */
   classes: ArrayLike<number> | undefined;
-  /** Overall position per car, used for a race. */
+  /** LMU's overall position per car. Non-positive is unplaced. */
   places: ArrayLike<number> | undefined;
-  /** Best lap time per car in seconds, used otherwise. Non-positive is none. */
-  bestLapTimes: ArrayLike<number> | undefined;
   /**
    * Lap fraction per car. Negative marks an empty slot -- the addon
    * sentinel-fills with -1 -- which is the same discriminator the rest of the
@@ -110,11 +94,7 @@ export interface LmuClassPositionFrame {
    * 0 is a car sitting exactly on the start line.
    */
   lapDistPcts: ArrayLike<number> | undefined;
-  isRace: boolean;
 }
-
-/** Lap times to whole milliseconds, so float noise cannot look like a change. */
-const MS = 1000;
 
 /**
  * The ordering inputs, mixed into one integer.
@@ -125,13 +105,11 @@ const MS = 1000;
  * cheap pass to decide whether anything it depends on actually moved.
  */
 const fingerprintOf = (frame: LmuClassPositionFrame, count: number): number => {
-  const { classes, places, bestLapTimes, lapDistPcts, isRace } = frame;
-  let hash = (isRace ? 0x9e37 : 0x85eb) ^ count;
+  const { classes, places, lapDistPcts } = frame;
+  let hash = 0x9e37 ^ count;
   for (let carIdx = 0; carIdx < count; carIdx += 1) {
     if ((lapDistPcts?.[carIdx] ?? -1) < 0) continue;
-    const key = isRace
-      ? (places?.[carIdx] ?? 0)
-      : Math.round((bestLapTimes?.[carIdx] ?? 0) * MS);
+    const key = places?.[carIdx] ?? 0;
     // The slot, not just its contents. Skipping empty slots without hashing
     // the index made two frames identical whenever occupancy moved but the
     // sequence of (key, class) pairs did not -- a car with no time leaving
@@ -155,7 +133,7 @@ export function updateLmuClassPositions(
   state: LmuClassPositionState,
   frame: LmuClassPositionFrame
 ): number[] {
-  const { classes, places, bestLapTimes, lapDistPcts, isRace } = frame;
+  const { classes, places, lapDistPcts } = frame;
   const count = classes?.length ?? 0;
   if (count === 0 || !classes) {
     state.positions.length = 0;
@@ -182,8 +160,7 @@ export function updateLmuClassPositions(
     order.push(carIdx);
   }
 
-  const keyOf = (carIdx: number): number =>
-    lmuOrderingKey(isRace, places?.[carIdx], bestLapTimes?.[carIdx]);
+  const keyOf = (carIdx: number): number => lmuOrderingKey(places?.[carIdx]);
 
   // Slot order is the tiebreak here, so the column does not reshuffle between
   // frames while nobody has set a time.

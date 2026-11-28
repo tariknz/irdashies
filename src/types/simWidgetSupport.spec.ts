@@ -77,7 +77,9 @@ describe('per-simulator widget support', () => {
     ]);
     IRACING_DISABLED_WIDGETS.forEach((id) => {
       expect(isWidgetDisabledForSim(config, id, 'iracing')).toBe(true);
-      expect(isWidgetDisabledForSim(config, id, 'lmu')).toBe(false);
+      expect(isWidgetDisabledForSim(config, id, 'lmu')).toBe(
+        LMU_DISABLED_WIDGETS.includes(id)
+      );
     });
     expect(isWidgetDisabledForSim(config, 'standings', 'iracing')).toBe(false);
   });

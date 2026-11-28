@@ -38,5 +38,6 @@ export const Advanced: Story = { decorators: atLevel(1) };
 export const Dev: Story = { decorators: atLevel(2) };
 /** The rim arcs of every module in one place. */
 export const Arcs: Story = { decorators: atLevel(1, 'arcs') };
+export const Look: Story = { decorators: atLevel(1, 'look') };
 export const Hazards: Story = { decorators: atLevel(0, 'hazards') };
 export const CloseCars: Story = { decorators: atLevel(0, 'warnings') };

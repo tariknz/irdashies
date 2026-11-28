@@ -33,8 +33,10 @@ vi.mock('../logger', () => ({
 }));
 
 const mockEmitDashboardUpdated = vi.hoisted(() => vi.fn());
+const mockEmitBeforeProfileChange = vi.hoisted(() => vi.fn());
 
 vi.mock('./dashboardEvents', () => ({
+  emitBeforeProfileChange: mockEmitBeforeProfileChange,
   emitDashboardUpdated: mockEmitDashboardUpdated,
   emitDashboardsSaved: vi.fn(),
 }));
@@ -44,6 +46,7 @@ describe('dashboards', () => {
     mockReadData.mockReset();
     mockWriteData.mockReset();
     mockEmitDashboardUpdated.mockReset();
+    mockEmitBeforeProfileChange.mockReset();
     mockLoggerWarn.mockReset();
     // Setup intelligent mock for readData that handles different keys
     mockReadData.mockImplementation((key: string) => {
@@ -690,6 +693,13 @@ describe('dashboards', () => {
         background: { ...(defaults.background as object), opacity: 40 },
       });
       expect(mockWriteData).toHaveBeenCalledWith('currentProfile', 'race');
+      expect(mockEmitBeforeProfileChange).toHaveBeenCalledExactlyOnceWith();
+      const switchWrite = mockWriteData.mock.calls.findIndex(
+        ([key]) => key === 'currentProfile'
+      );
+      expect(
+        mockEmitBeforeProfileChange.mock.invocationCallOrder[0]
+      ).toBeLessThan(mockWriteData.mock.invocationCallOrder[switchWrite]);
     });
   });
 
