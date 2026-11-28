@@ -136,6 +136,7 @@ export function startRendererPerfMetrics(): void {
       radarFrameMs: measured('radarFrame'),
       standingsFinalTimingMs: measured('standingsFinalTiming'),
       standingsPlayerGapsMs: measured('standingsPlayerGaps'),
+      standingsIntervalsMs: measured('standingsIntervals'),
       lapTraceFrameMs: measured('lapTraceFrame'),
       lapTraceBrakeCueMs: measured('lapTraceBrakeCue'),
       widgetDragMs: measured('widgetDrag'),

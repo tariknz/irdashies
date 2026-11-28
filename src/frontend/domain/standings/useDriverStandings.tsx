@@ -243,13 +243,15 @@ export const useDriverStandings = (
               )
             : iratingAugmentedGroupedByClass;
 
-        // Intervals always use class-leader gaps, regardless of displayed reference.
         const intervalAugmentedGroupedByClass = intervalEnabled
-          ? augmentStandingsWithInterval(
-              gapAugmentedGroupedByClass,
-              carIdxLap,
-              carIdxLapDistPct,
-              intervalDisplayMode === 'laps'
+          ? perfMetrics.measure('standingsIntervals', () =>
+              augmentStandingsWithInterval(
+                gapAugmentedGroupedByClass,
+                carIdxLap,
+                carIdxLapDistPct,
+                intervalDisplayMode === 'laps',
+                useLivePositionStandings ? carIdxOnPitRoad : undefined
+              )
             )
           : gapAugmentedGroupedByClass;
 

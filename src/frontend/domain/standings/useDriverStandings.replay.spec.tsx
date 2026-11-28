@@ -20,6 +20,106 @@ const config = (
 const flatten = <T,>(grouped: [string, T[]][]): T[] =>
   grouped.flatMap(([, drivers]) => drivers);
 
+it.each([
+  {
+    pct: 0.53,
+    livePositions: true,
+    displayMode: 'time' as const,
+    expected: 97,
+  },
+  {
+    pct: 0.53,
+    livePositions: true,
+    displayMode: 'laps' as const,
+    expected: 97,
+  },
+  {
+    pct: 0.49,
+    livePositions: true,
+    displayMode: 'time' as const,
+    expected: 101,
+  },
+  {
+    pct: 0.49,
+    livePositions: true,
+    displayMode: 'laps' as const,
+    expected: { value: undefined, laps: -1 },
+  },
+  {
+    pct: 0.49,
+    livePositions: false,
+    displayMode: 'time' as const,
+    expected: 97,
+  },
+])(
+  'assembles the P10/P11 interval with P11 at $pct, display $displayMode and live positions $livePositions',
+  ({ pct, livePositions, displayMode, expected }) => {
+    const drivers = Array.from({ length: 11 }, (_, i) => ({
+      CarIdx: i,
+      UserName: `Driver ${i}`,
+      CarNumber: `${i + 1}`,
+      CarClassID: 1,
+      CarClassShortName: 'GT3',
+      CarClassEstLapTime: 100,
+    }));
+    const pcts = drivers.map((_, i) => (i === 10 ? pct : 0.8 - i / 30));
+    const laps = drivers.map((_, i) => (i === 10 ? 9 : 10));
+    const capture: ReplayFixture = {
+      ...fixture,
+      driverInfo: { DriverCarIdx: '9', PaceCarIdx: '-1' },
+      drivers,
+      sessions: [
+        {
+          SessionNum: 0,
+          SessionType: 'Race',
+          ResultsPositions: drivers.map((_, i) => ({
+            CarIdx: i,
+            Position: i + 1,
+            ClassPosition: i,
+            LapsComplete: laps[i] - 1,
+            FastestTime: 100,
+            LastTime: 100,
+          })),
+        },
+      ],
+      frames: [
+        {
+          SessionTime: 1000,
+          SessionNum: 0,
+          SessionState: 4,
+          CamCarIdx: 9,
+          CarIdxLap: laps,
+          CarIdxLapCompleted: laps.map((lap) => lap - 1),
+          CarIdxLapDistPct: pcts,
+          CarIdxEstTime: pcts.map((pct) => pct * 100),
+          CarIdxF2Time: drivers.map((_, i) => (i === 10 ? 127 : (i * 30) / 9)),
+          CarIdxClass: drivers.map(() => 1),
+          CarIdxTrackSurface: drivers.map(() => 3),
+          CarIdxOnPitRoad: drivers.map(() => false),
+        },
+      ],
+    };
+    const harness = mountFixture(capture);
+    const { result } = renderHook(
+      () =>
+        useDriverStandings(
+          config({
+            gap: { enabled: false },
+            interval: { enabled: true, displayMode },
+          }),
+          { showAll: true, livePositions }
+        ),
+      { wrapper: harness.wrapper }
+    );
+    const rows = flatten(result.current);
+    expect(rows.find((driver) => driver.carIdx === 9)?.classPosition).toBe(10);
+    expect(rows.find((driver) => driver.carIdx === 10)?.classPosition).toBe(11);
+    const interval = rows.find((driver) => driver.carIdx === 10)?.interval;
+    if (typeof expected === 'number') expect(interval).toBeCloseTo(expected, 3);
+    else expect(interval).toEqual(expected);
+  }
+);
+
 /**
  * The standings assembly behind the Standings widget and Gantry. It groups by
  * class, slices the field down to what a widget shows, and augments with gap,
@@ -229,7 +329,7 @@ describe('class standings over a real multiclass field', () => {
     expect(player.some((d) => (d.gap?.value ?? 0) > 0)).toBe(true);
   });
 
-  it('records player gap work through the existing performance bridge', () => {
+  it('records player gaps and intervals through the performance bridge', () => {
     const previous = window.rendererPerfBridge;
     const recordMeasure = vi.fn();
     window.rendererPerfBridge = { recordMeasure };
@@ -237,13 +337,20 @@ describe('class standings over a real multiclass field', () => {
       renderHook(
         () =>
           useDriverStandings(
-            config({ gap: { enabled: true, reference: 'player' } }),
-            { showAll: true }
+            config({
+              gap: { enabled: true, reference: 'player' },
+              interval: { enabled: true },
+            }),
+            { showAll: true, livePositions: true }
           ),
         { wrapper: harness.wrapper }
       );
       expect(recordMeasure).toHaveBeenCalledWith(
         'standingsPlayerGaps',
+        expect.any(Number)
+      );
+      expect(recordMeasure).toHaveBeenCalledWith(
+        'standingsIntervals',
         expect.any(Number)
       );
     } finally {
