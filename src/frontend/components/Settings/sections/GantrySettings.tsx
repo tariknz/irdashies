@@ -179,7 +179,7 @@ const cameraGroupOptions = (
     ...new Set([DEFAULT_INCIDENT_CAMERA_GROUP, selected, ...names]),
   ]
     .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b, 'en'));
+    .sort((a, b) => a.localeCompare(b));
   return unique.map((name) => ({ label: name, value: name }));
 };
 
