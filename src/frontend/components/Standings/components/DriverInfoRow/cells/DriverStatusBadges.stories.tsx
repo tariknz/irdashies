@@ -34,6 +34,10 @@ export const DidNotFinish: Story = {
   args: { finishState: 'DNF' },
 };
 
+export const PitRequested: Story = {
+  args: { pitRequested: true },
+};
+
 /** LMU's mFinishStatus 3, written out like a penalty. */
 export const Disqualified: Story = {
   args: { finishState: 'DQ' },

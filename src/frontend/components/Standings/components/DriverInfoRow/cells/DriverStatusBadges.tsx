@@ -101,6 +101,7 @@ interface DriverStatusBadgesProps {
   out?: boolean;
   lap?: number;
   pit?: boolean;
+  pitRequested?: boolean;
   lastPit?: boolean;
   lastPitLap?: number;
   pitStopDuration?: number | null;
@@ -123,6 +124,7 @@ export const DriverStatusBadges = memo(
     tow,
     out,
     pit,
+    pitRequested,
     lap,
     lastPit,
     lastPitLap,
@@ -140,6 +142,7 @@ export const DriverStatusBadges = memo(
       finishState === 'DNF' || finishState === 'DQ'
         ? finishState
         : penaltyKind && lmuPenaltyBadgeText(penaltyKind, penaltySeconds);
+    const showPitRequest = !!pitRequested && !pit;
     const hasStatus =
       finishState ||
       penaltyKind ||
@@ -150,6 +153,7 @@ export const DriverStatusBadges = memo(
       tow ||
       out ||
       pit ||
+      showPitRequest ||
       lastPit;
 
     if (!hasStatus) {
@@ -253,6 +257,16 @@ export const DriverStatusBadges = memo(
             animate
           >
             PIT
+          </StatusBadge>
+        )}
+        {showPitRequest && (
+          <StatusBadge
+            textColor="text-black"
+            borderColorClass="border-transparent"
+            additionalClasses="inline-block min-w-6 font-bold bg-[#22AA00]"
+            animate
+          >
+            REQ
           </StatusBadge>
         )}
         {lastPit && !out && (

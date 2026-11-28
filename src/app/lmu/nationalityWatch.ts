@@ -49,6 +49,19 @@ export interface LmuNationalityWatch {
   reset(): void;
 }
 
+export const lmuNationalityFor = (
+  codes: Readonly<Record<string, string>> | undefined,
+  name: string
+): string | undefined => {
+  if (!codes) return undefined;
+  if (Object.hasOwn(codes, name)) return codes[name];
+  const folded = name.toLowerCase();
+  const matches = Object.entries(codes).filter(
+    ([key]) => key.toLowerCase() === folded
+  );
+  return matches.length === 1 ? matches[0][1] : undefined;
+};
+
 export const createLmuNationalityWatch = (): LmuNationalityWatch => {
   let names: string[] = [];
 
@@ -84,7 +97,8 @@ export const createLmuNationalityWatch = (): LmuNationalityWatch => {
     /** Whether every driver on the last online grid has a flag. */
     complete(codes) {
       return (
-        names.length > 0 && names.every((name) => codes?.[name] !== undefined)
+        names.length > 0 &&
+        names.every((name) => lmuNationalityFor(codes, name) !== undefined)
       );
     },
 
