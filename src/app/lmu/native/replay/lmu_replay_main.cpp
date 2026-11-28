@@ -222,6 +222,7 @@ const char* kRestPaths[] = {
     // too, so they are recorded as well; see restFailureBody. A tape without
     // it falls back to shared memory.
     "/rest/sessions/GetGameState",
+    "/rest/watch/trackmap",
 };
 
 /** The one path whose errors are answers, and whose body moves every poll. */

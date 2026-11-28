@@ -30,6 +30,12 @@ import {
   type PoleSituation,
 } from '@irdashies/types';
 import { wrapDelta } from './radarMath';
+import {
+  applyWorldOffset,
+  hasWorldChannels,
+  radarDistanceOf,
+  type RadarWorldChannels,
+} from './radarWorld';
 
 /**
  * Metres either side of the focus car that still reach the renderer. The
@@ -69,9 +75,11 @@ const POLE_NOTICE_S = 3;
  */
 const SMOOTHING_STEP_S = 1 / RADAR_TICK_HZ;
 
+const NO_VALUES: readonly unknown[] = Object.freeze([]);
+
 const valuesOf = (frame: Telemetry, key: string): readonly unknown[] =>
   (frame as unknown as Record<string, { value?: unknown[] } | undefined>)[key]
-    ?.value ?? [];
+    ?.value ?? NO_VALUES;
 
 const numberAt = (
   values: readonly unknown[],
@@ -80,6 +88,37 @@ const numberAt = (
 ): number => {
   const value = values[index];
   return typeof value === 'number' ? value : fallback;
+};
+
+const MAP_FRAME_LENGTH = 6;
+
+const isMapFrame = (
+  values: readonly unknown[]
+): values is readonly number[] => {
+  if (values.length !== MAP_FRAME_LENGTH) return false;
+  for (const value of values) {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return false;
+  }
+  return true;
+};
+
+const readMapFrame = (
+  values: readonly unknown[],
+  previous: readonly number[] | null | undefined
+): readonly number[] | null => {
+  if (!isMapFrame(values)) return null;
+  return previous && sameMapFrame(previous, values) ? previous : values.slice();
+};
+
+const sameMapFrame = (
+  a: readonly number[] | null | undefined,
+  b: readonly number[] | null | undefined
+): boolean => {
+  if (!a || !b) return !a && !b;
+  for (let index = 0; index < MAP_FRAME_LENGTH; index += 1) {
+    if (a[index] !== b[index]) return false;
+  }
+  return true;
 };
 
 const scalarNumber = (frame: Telemetry, key: string, fallback = -1): number =>
@@ -112,6 +151,12 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
   /** The cars on the focus car's side of the pit wall, reused every tick. */
   private readonly sameSide: RadarCar[] = [];
   private readonly distances: number[] = [];
+  private readonly world: RadarWorldChannels = {
+    available: [],
+    lateral: [],
+    longitudinal: [],
+    heading: [],
+  };
   private previousPcts: number[] = [];
   private speeds: number[] = [];
   private previousTime = -1;
@@ -211,6 +256,16 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     const onPitRoad = valuesOf(frame, 'CarIdxOnPitRoad');
     const surfaces = valuesOf(frame, 'CarIdxTrackSurface');
     const isOnTrack = valuesOf(frame, 'IsOnTrack')[0] === true;
+    const { world } = this;
+    world.available = valuesOf(frame, 'LmuCarIdxRelativeAvailable');
+    world.lateral = valuesOf(frame, 'LmuCarIdxRelativeLateral');
+    world.longitudinal = valuesOf(frame, 'LmuCarIdxRelativeLongitudinal');
+    world.heading = valuesOf(frame, 'LmuCarIdxRelativeHeading');
+    const worldFocus =
+      focus === scalarNumber(frame, 'PlayerCarIdx') && hasWorldChannels(world);
+    const mapFrame = worldFocus
+      ? readMapFrame(valuesOf(frame, 'LmuRadarMapFrame'), this.latest.mapFrame)
+      : null;
 
     const cars: RadarCar[] = [];
     let formation: Formation | null = null;
@@ -268,10 +323,9 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         if (carIdx === focus || this.excluded.has(carIdx)) continue;
         const dist = dists[carIdx];
         const surface = numberAt(surfaces, carIdx);
-        if (!Number.isFinite(dist) || Math.abs(dist) > RADAR_MAX_RANGE_M) {
-          continue;
-        }
-        cars.push({
+        if (!Number.isFinite(dist)) continue;
+        if (!worldFocus && Math.abs(dist) > RADAR_MAX_RANGE_M) continue;
+        const car: RadarCar = {
           carIdx,
           dist,
           relativeSpeed: (this.speeds[carIdx] ?? playerSpeed) - playerSpeed,
@@ -279,7 +333,12 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
           laneSource: 'none',
           onPitRoad: onPitRoad[carIdx] === true,
           offTrack: surface === TrackLocation.OffTrack,
-        });
+        };
+        if (worldFocus) {
+          applyWorldOffset(car, world, carIdx);
+          if (radarDistanceOf(car) > RADAR_MAX_RANGE_M) continue;
+        }
+        cars.push(car);
       }
       cars.sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist));
       // Cars across the pit wall are beside the track, not in a lane of it.
@@ -287,7 +346,9 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       const sameSide = this.sameSide;
       sameSide.length = 0;
       for (const car of cars) {
-        if (car.onPitRoad === focusOnPit) sameSide.push(car);
+        if (car.laneSource !== 'world' && car.onPitRoad === focusOnPit) {
+          sameSide.push(car);
+        }
       }
       const spotterSpeaks = this.assignLanes(
         frame,
@@ -295,8 +356,14 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         focus,
         isOnTrack,
         sameSide,
-        formation
+        formation,
+        worldFocus
       );
+      for (const car of cars) {
+        if (car.laneSource === 'world') {
+          this.lanes.remember(time, car.carIdx, car.lane);
+        }
+      }
       // Without the spotter nobody says a car is not alongside: cars side by
       // side on a replay or a camera car must not be pulled apart.
       if (spotterSpeaks) separateInLaneCars(sameSide);
@@ -342,6 +409,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         ? poleSign(this.poleLeft) *
           ((formation.columns - 1) / 2 - formation.ownColumn)
         : 0,
+      mapFrame,
       poleSideNotice: this.poleNoticeShown(time)
         ? this.poleLeft
           ? 'left'
@@ -389,14 +457,15 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     focus: number,
     isOnTrack: boolean,
     cars: RadarCar[],
-    formation: Formation | null
+    formation: Formation | null,
+    worldFocus: boolean
   ): boolean {
     if (focus !== this.laneFocus) {
       this.lanes.reset();
       this.laneFocus = focus;
     }
     const spotter =
-      isOnTrack && focus === scalarNumber(frame, 'PlayerCarIdx')
+      !worldFocus && isOnTrack && focus === scalarNumber(frame, 'PlayerCarIdx')
         ? scalarNumber(frame, 'CarLeftRight', CarLeftRight.Off)
         : null;
     const lanes = this.lanes.update(time, cars, spotter, formation);
@@ -503,6 +572,7 @@ const emptySnapshot = (version: number): RadarSnapshot => ({
   caution: false,
   poleSideNotice: null,
   roadLane: 0,
+  mapFrame: null,
   cars: [],
   hazards: [],
   version,
@@ -529,6 +599,7 @@ const sameSnapshot = (
   previous.caution === next.caution &&
   previous.poleSideNotice === next.poleSideNotice &&
   previous.roadLane === next.roadLane &&
+  sameMapFrame(previous.mapFrame, next.mapFrame) &&
   previous.trackLength === next.trackLength &&
   previous.focusOnPitRoad === next.focusOnPitRoad &&
   previous.focusInPitBox === next.focusInPitBox &&

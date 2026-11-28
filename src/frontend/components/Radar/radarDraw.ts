@@ -7,10 +7,16 @@ import {
 import { drawPoleSideNotice } from './radarDrawNotice';
 import { overlapOf } from './radarHints';
 import { formatDistance, speedIn } from './radarStyle';
-import { warningLevel } from './radarDrawTypes';
+import { WORLD_WARNING_MAX_LATERAL_M, warningLevel } from './radarDrawTypes';
 import type { RadarScene, RadarStyle } from './radarDrawTypes';
 
-import { MIN_TEXT_PX, drawCarBody, pose, projector } from './radarDrawShared';
+import {
+  MIN_TEXT_PX,
+  drawCarBody,
+  pose,
+  projectCar,
+  projector,
+} from './radarDrawShared';
 import {
   GHOST_AHEAD_S,
   drawDiveGhost,
@@ -56,6 +62,12 @@ const ROAD_STEP_M = 1;
  */
 export const roadLateral = (roadLane: number, laneWidth: number): number =>
   -roadLane * laneWidth;
+
+export const drawnRoadLateral = (
+  throughMapFrame: boolean,
+  roadLane: number,
+  laneWidth: number
+): number => (throughMapFrame ? 0 : roadLateral(roadLane, laneWidth));
 
 const drawRoad = (
   ctx: CanvasRenderingContext2D,
@@ -216,7 +228,8 @@ export const drawRadar = (
     scene.playerPct,
     centre,
     centre,
-    pixelsPerMetre
+    pixelsPerMetre,
+    scene.mapFrame ?? null
   );
 
   ctx.clearRect(0, 0, size, size);
@@ -227,7 +240,8 @@ export const drawRadar = (
   resetRimWarnings();
   resetDebugLabels();
 
-  const roadX = roadLateral(
+  const roadX = drawnRoadLateral(
+    projector.drawsThroughMapFrame,
     scene.roadLane ?? 0,
     scene.laneWidth ?? style.carWidth + 0.7
   );
@@ -271,7 +285,7 @@ export const drawRadar = (
     const car = scene.cars[index];
     const carLength = car.length * pixelsPerMetre;
     const carWidth = car.width * pixelsPerMetre;
-    projector.project(car.dist, car.lateral, pose);
+    projectCar(car, pose);
     const hazard = hazardOf(scene.hazards, car.carIdx);
     if (hazard?.kind === 'crash') pose.angle += CRASH_TILT;
     ctx.globalAlpha = car.offTrack ? 0.45 : 1;
@@ -307,7 +321,11 @@ export const drawRadar = (
       );
     }
 
-    if (style.showOverlap && Math.abs(car.lane) >= 0.5) {
+    const measuredLateral = car.world ? car.lateral : undefined;
+    const besideUs =
+      measuredLateral === undefined ||
+      Math.abs(measuredLateral) <= WORLD_WARNING_MAX_LATERAL_M;
+    if (style.showOverlap && besideUs && Math.abs(car.lane) >= 0.5) {
       const overlap = overlapOf(car.dist, car.length, style.carLength);
       if (overlap?.onRival) {
         // We attack: measured on its side facing us.
@@ -352,7 +370,8 @@ export const drawRadar = (
       car.dist,
       car.length,
       style.carLength,
-      style.cautionDistance
+      style.cautionDistance,
+      measuredLateral
     );
     const dive = scene.dives?.get(car.carIdx);
     let diveArcCar = -1;
@@ -434,7 +453,7 @@ export const drawRadar = (
           away > 0 ? 'left' : 'right'
         );
       }
-      projector.project(car.dist, car.lateral, pose);
+      projectCar(car, pose);
     }
 
     if (!style.showWarnings) continue;
@@ -484,7 +503,7 @@ export const drawRadar = (
   if (follow && !followBeyondRange) {
     const car = scene.cars.find((c) => c.carIdx === follow.carIdx);
     if (car) {
-      projector.project(car.dist, car.lateral, pose);
+      projectCar(car, pose);
       drawFollowLine(ctx, centre, pose, length, car.length * pixelsPerMetre);
       drawFollowOutline(
         ctx,

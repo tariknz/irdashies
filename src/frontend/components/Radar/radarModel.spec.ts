@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { RadarCar } from '@irdashies/types';
 import {
+  extrapolatedDist,
   nearestDistance,
   nextAutoHideVisible,
   selectRadarCars,
@@ -55,6 +56,45 @@ describe('nearestDistance', () => {
   it('ignores direction and is Infinity for an empty radar', () => {
     expect(nearestDistance([car(1, 12), car(2, -7)])).toBe(7);
     expect(nearestDistance([])).toBe(Infinity);
+  });
+
+  it('measures a world car by how far it really is, sideways included', () => {
+    expect(nearestDistance([{ ...car(1, 0), lateralM: 50 }, car(2, 30)])).toBe(
+      30
+    );
+    expect(nearestDistance([{ ...car(1, 3), lateralM: -4 }])).toBe(5);
+  });
+});
+
+describe('selecting world cars', () => {
+  it('leaves out a measured car far to the side, whatever its distance ahead', () => {
+    const cars = [
+      { ...car(1, 0), lateralM: 50 },
+      { ...car(2, 19), lateralM: -12 },
+    ];
+
+    expect(
+      selectRadarCars({ cars, focusOnPitRoad: false }, options).map(
+        (c) => c.carIdx
+      )
+    ).toEqual([2]);
+  });
+});
+
+describe('extrapolatedDist', () => {
+  it('moves a lap-distance car by its closing speed', () => {
+    expect(extrapolatedDist({ ...car(1, 10), relativeSpeed: 5 }, 0.04)).toBe(
+      10.2
+    );
+  });
+
+  it('holds a measured car where it was measured until the next snapshot', () => {
+    expect(
+      extrapolatedDist({ ...car(1, 10), relativeSpeed: 0, lateralM: 2 }, 0.04)
+    ).toBe(10);
+    expect(
+      extrapolatedDist({ ...car(1, 10), relativeSpeed: 5, lateralM: 2 }, 0.04)
+    ).toBe(10);
   });
 });
 
