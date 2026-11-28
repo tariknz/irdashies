@@ -52,6 +52,15 @@ export const LMU_MANUFACTURERS: readonly LmuManufacturer[] = [
   },
   { id: 10003, pattern: /\bbmw\b/i, manufacturer: 'bmw', name: 'BMW' },
   {
+    // Before Cadillac: LMU's Hypercar entry is "Hyper_Cadillac Hertz Team
+    // Jota …", and the manufacturer filter treats Hertz Team JOTA as its own
+    // marque rather than the Cadillac chassis badge.
+    id: 10026,
+    pattern: /\bhertz(?:\s+team)?\s*jota\b|\bjota\b/i,
+    manufacturer: 'hertzteamjota',
+    name: 'Hertz Team JOTA',
+  },
+  {
     id: 10004,
     pattern: /\bcadillac\b/i,
     manufacturer: 'cadillac',

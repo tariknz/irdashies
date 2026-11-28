@@ -412,6 +412,7 @@ export async function publishLmuSDKEvents(
   let activeLapDistM: number | undefined;
   let trackMap: LmuTrackMap | null = null;
   let publishedTrackMap: LmuTrackMap | null = null;
+  let sentTrackMap: LmuTrackMap | null = null;
   let lastBlindSpotDataIssue: string | null | undefined;
   // Lifts the player's lap fraction from LMU's 5 Hz scoring block to the poll
   // rate. Held across frames, and reset only at the two real discontinuities
@@ -567,6 +568,7 @@ export async function publishLmuSDKEvents(
           );
           publishRunningState(false);
           latestSession = null;
+          sentTrackMap = null;
           overlayManager.clearLatestSessionData?.();
           leaveLifecycle();
           wasRunning = false;
@@ -1012,7 +1014,7 @@ export async function publishLmuSDKEvents(
       const radarPlayerYaw = telemetry.LmuPlayerYaw?.value[0];
       const mapFrame =
         mapFit &&
-        trackMap === publishedTrackMap &&
+        trackMap === sentTrackMap &&
         radarPlayerIdx >= 0 &&
         typeof radarPlayerYaw === 'number'
           ? radarMapFrame(
@@ -1083,6 +1085,7 @@ export async function publishLmuSDKEvents(
         lifecycle?._onSession(session);
         processorHost?.onSession(session);
         overlayManager.publishMessage('sessionData', session);
+        sentTrackMap = publishedTrackMap;
         const publishMs = performance.now() - publishStartedAt;
         perfMetrics.markEnd('publishSession');
 
@@ -1151,6 +1154,7 @@ export async function publishLmuSDKEvents(
     // a dead source is still feeding them.
     if (lastRunningState) {
       latestSession = null;
+      sentTrackMap = null;
       overlayManager.clearLatestSessionData?.();
       leaveLifecycle();
     }
@@ -1204,6 +1208,7 @@ export async function publishLmuSDKEvents(
       // Dropped too, so nothing can replay this bridge's last session after it
       // has gone.
       latestSession = null;
+      sentTrackMap = null;
       overlayManager.clearLatestSessionData?.();
       sdk.stop();
       telemetryCallbacks.clear();

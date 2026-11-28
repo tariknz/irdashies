@@ -4,6 +4,7 @@ import {
   type TrackPathPoint,
 } from '@irdashies/domain/track';
 import type { RadarOverlapThreshold } from '@irdashies/types';
+import { WORLD_WARNING_MAX_LATERAL_M } from './radarDrawTypes';
 
 /** Share of a car's length, from its rear, where each mark sits. */
 export const OVERLAP_MARKS: Readonly<Record<RadarOverlapThreshold, number>> = {
@@ -73,6 +74,8 @@ export interface DiveInput {
   relativeSpeed: number;
   lane: number;
   length: number;
+  world?: boolean;
+  lateral?: number;
 }
 
 export interface DiveContext {
@@ -100,6 +103,10 @@ export interface DiveHint {
   /** Lane sign of the side it is diving to, 0 if unknown. */
   side: number;
 }
+
+const outOfWarningReach = (car: DiveInput): boolean =>
+  car.world === true &&
+  Math.abs(car.lateral ?? 0) > WORLD_WARNING_MAX_LATERAL_M;
 
 /** Brake pedal above this counts as braking for a corner. */
 const BRAKING = 0.3;
@@ -140,7 +147,7 @@ export class DiveTracker {
       seen.add(car.carIdx);
       const gap = -car.dist - (car.length + ctx.playerLength) / 2;
       // Only cars still behind us; once alongside the usual warning takes over.
-      if (car.dist >= 0 || gap <= 0) {
+      if (car.dist >= 0 || gap <= 0 || outOfWarningReach(car)) {
         this.held.delete(car.carIdx);
         continue;
       }

@@ -727,6 +727,11 @@ export function mapLmuTelemetry(
       raw.vehFinishStatus,
       copyNumbers
     ),
+    LmuCarIdxPitState: holdArray(
+      'LmuCarIdxPitState',
+      raw.vehPitState,
+      copyNumbers
+    ),
     LmuCarIdxEnergyRemaining: holdArray(
       'LmuCarIdxEnergyRemaining',
       lmuEnergyChannel(

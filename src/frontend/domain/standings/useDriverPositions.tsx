@@ -23,6 +23,7 @@ import { GlobalFlags, SessionState } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import {
   lmuFinishStateFromCode,
+  lmuPitRequested,
   lmuPenaltyBadge,
   lmuPenaltyKindFromCode,
 } from '@irdashies/types';
@@ -178,6 +179,7 @@ export const useCarState = () => {
   const carIdxPenaltyKind = snapshot?.carIdxPenaltyKind ?? EMPTY_NUMBERS;
   const carIdxPenaltySeconds = snapshot?.carIdxPenaltySeconds ?? EMPTY_NUMBERS;
   const carIdxFinishStatus = snapshot?.carIdxFinishStatus ?? EMPTY_NUMBERS;
+  const carIdxPitState = snapshot?.carIdxPitState ?? EMPTY_NUMBERS;
   const carIdxSessionFlags = snapshot?.carIdxSessionFlags ?? EMPTY_NUMBERS;
 
   return useMemo(() => {
@@ -194,6 +196,7 @@ export const useCarState = () => {
         penaltyKind: lmuPenaltyKindFromCode(carIdxPenaltyKind[index]),
         penaltySeconds: carIdxPenaltySeconds[index],
         finishState: lmuFinishStateFromCode(carIdxFinishStatus[index]),
+        pitRequested: lmuPitRequested(carIdxPitState[index]),
         dnf: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Disqualify),
         repair: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Repair),
         penalty: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Black),
@@ -211,6 +214,7 @@ export const useCarState = () => {
     carIdxPenaltyKind,
     carIdxPenaltySeconds,
     carIdxFinishStatus,
+    carIdxPitState,
     carIdxSessionFlags,
   ]);
 };
@@ -392,6 +396,7 @@ export const useDriverStandings = () => {
             carTrackSurface: driverPos.carTrackSurface,
             currentSessionType: sessionType,
             dnf: carState?.dnf ?? false,
+            pitRequested: carState?.pitRequested ?? false,
             repair: carState?.repair ?? false,
             penalty: carState?.penalty ?? false,
             slowdown: carState?.slowdown ?? false,
