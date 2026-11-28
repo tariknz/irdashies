@@ -32,7 +32,7 @@ export const StintPlanSettings = () => {
   return (
     <BaseSettingsSection
       title="Stint Plan"
-      description="Where your car stands against the race plan: stint, box lap, fuel target, who drives next and how far off the plan you are. Needs a race plan from Settings, Race Plan."
+      description="Where your car stands against the race plan: stint, box lap, fuel target, who drives next and how far off the plan you are. Needs a race plan from Tools, Race Plan."
       settings={settings}
       widgetId={SETTING_ID}
     >

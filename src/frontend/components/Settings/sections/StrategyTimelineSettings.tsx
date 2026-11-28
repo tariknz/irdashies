@@ -32,7 +32,7 @@ export const StrategyTimelineSettings = () => {
   return (
     <BaseSettingsSection
       title="Strategy Timeline"
-      description="The team's view of the race plan: who drives when, projected against the race so far, with clashes against driver availability. It can also be docked in the Gantry. Needs a race plan from Settings, Race Plan."
+      description="The team's view of the race plan: who drives when, projected against the race so far, with clashes against driver availability. It can also be docked in the Gantry. Needs a race plan from Tools, Race Plan."
       settings={settings}
       widgetId={SETTING_ID}
     >
