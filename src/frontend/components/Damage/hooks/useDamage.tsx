@@ -1,16 +1,20 @@
 import { useMemo } from 'react';
 import {
   useCarConditionSnapshot,
-  useDriverControlsSnapshot,
+  useTrackStateSelector,
 } from '@irdashies/context';
+import type { TrackStateSnapshot } from '@irdashies/types';
 import type { DamageSnapshot } from '../logic';
+
+const selectEngineWarnings = (snapshot: TrackStateSnapshot) =>
+  snapshot.engineWarnings;
 
 const positive = (value: number | undefined) =>
   value !== undefined && value > 0 ? value : undefined;
 
 export const useDamage = (): DamageSnapshot => {
   const car = useCarConditionSnapshot();
-  const controls = useDriverControlsSnapshot();
+  const engineWarnings = useTrackStateSelector(selectEngineWarnings);
   return useMemo(
     () => ({
       dentSeverity: car?.dentSeverity ? [...car.dentSeverity] : [],
@@ -30,8 +34,8 @@ export const useDamage = (): DamageSnapshot => {
       repairNeeded: car?.repairNeeded === true,
       optRepairNeeded: car?.optRepairNeeded === true,
       bodyDetached: car?.bodyDetached === true,
-      engineWarnings: controls?.engineWarnings ?? 0,
+      engineWarnings: engineWarnings ?? 0,
     }),
-    [car, controls?.engineWarnings]
+    [car, engineWarnings]
   );
 };

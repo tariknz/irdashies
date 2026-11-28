@@ -55,10 +55,10 @@ export const damageZoom = (
   designHeight: number,
   widgetScale: number
 ): number => {
-  if (!(frame.width > 0) || !(frame.height > 0)) return widgetScale;
+  const shrink = Math.min(widgetScale, 1);
+  if (!(frame.width > 0) || !(frame.height > 0)) return shrink;
   return (
-    Math.min(frame.width / DESIGN_WIDTH, frame.height / designHeight) *
-    widgetScale
+    Math.min(frame.width / DESIGN_WIDTH, frame.height / designHeight) * shrink
   );
 };
 
@@ -101,6 +101,9 @@ function IntegrityRow({
   );
 }
 
+export const engineWarningText = (name: string, active: boolean): string =>
+  active ? `${name} warning active` : name;
+
 function StatusIcons({ warnings }: { warnings: number }) {
   const oil =
     !!(warnings & EngineWarnings.OilPressureWarning) ||
@@ -110,23 +113,25 @@ function StatusIcons({ warnings }: { warnings: number }) {
   const engine = !!(warnings & EngineWarnings.EngineStalled);
 
   const items = [
-    { key: 'oil', Icon: DropIcon, active: oil, title: 'Oil' },
-    { key: 'fuel', Icon: GasPumpIcon, active: fuel, title: 'Fuel pressure' },
-    { key: 'engine', Icon: EngineIcon, active: engine, title: 'Engine' },
+    { key: 'oil', Icon: DropIcon, active: oil, name: 'Oil' },
+    { key: 'fuel', Icon: GasPumpIcon, active: fuel, name: 'Fuel pressure' },
+    { key: 'engine', Icon: EngineIcon, active: engine, name: 'Engine' },
     {
       key: 'temp',
       Icon: ThermometerSimpleIcon,
       active: water,
-      title: 'Water temp',
+      name: 'Water temp',
     },
   ] as const;
 
   return (
     <div className="flex shrink-0 flex-col gap-1 self-center">
-      {items.map(({ key, Icon, active, title }) => (
+      {items.map(({ key, Icon, active, name }) => (
         <div
           key={key}
-          title={title}
+          role="img"
+          title={engineWarningText(name, active)}
+          aria-label={engineWarningText(name, active)}
           className={[
             'flex h-5 w-5 items-center justify-center rounded-sm border',
             active
@@ -134,7 +139,11 @@ function StatusIcons({ warnings }: { warnings: number }) {
               : 'border-slate-700 bg-slate-900/80 text-slate-600',
           ].join(' ')}
         >
-          <Icon size={12} weight={active ? 'fill' : 'regular'} />
+          <Icon
+            size={12}
+            weight={active ? 'fill' : 'regular'}
+            aria-hidden="true"
+          />
         </div>
       ))}
     </div>
@@ -206,12 +215,10 @@ export const DamageDisplay = ({
 
   const wheelFill = [0, 1, 2, 3].map((index) => {
     if (data.wheelDetached[index]) return SUSP_FILL.detached;
-    if (
-      !showTyreWear &&
-      !isPunctured(data.tyreWear[index], data.tyrePressure?.[index])
-    ) {
-      return BODY_FILL.ok;
+    if (isPunctured(data.tyreWear[index], data.tyrePressure?.[index])) {
+      return SUSP_FILL.detached;
     }
+    if (!showTyreWear) return BODY_FILL.ok;
     return SUSP_FILL[tyreWearTier(data.tyreWear[index])];
   });
 
@@ -233,6 +240,7 @@ export const DamageDisplay = ({
 
   const labels: DamageAreaLabels = {};
   if (showIntegrity) {
+    labels.centre = formatDamagedPct(aeroIntegrity(data.aeroDamage));
     if (hasDents) {
       labels.front = formatDamagedPct(
         panelsIntegrity([dents[0], dents[1], dents[2]])

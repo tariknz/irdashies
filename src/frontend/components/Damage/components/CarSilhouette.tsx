@@ -6,6 +6,7 @@ export interface DamageAreaLabels {
   rear?: string | null;
   left?: string | null;
   right?: string | null;
+  centre?: string | null;
   fl?: string | null;
   fr?: string | null;
   rl?: string | null;
@@ -14,7 +15,6 @@ export interface DamageAreaLabels {
 
 export interface CarSilhouetteProps {
   style: DamageBodyStyle;
-  /** Front, right, rear, left chassis strokes */
   bodyStroke: [string, string, string, string];
   wingFill: string;
   wheelFill: string[];
@@ -45,14 +45,76 @@ interface Layout {
   wingExtra: number;
 }
 
+const HATCH_LAYOUT: Layout = {
+  midX: 60,
+  noseY: 16,
+  noseW: 36,
+  hoodY: 32,
+  cabinY: 42,
+  cabinH: 46,
+  cabinInset: 7,
+  rearDeckY: 92,
+  tailY: 112,
+  bodyW: 50,
+  wheelW: 10,
+  wheelH: 18,
+  frontWheelY: 34,
+  rearWheelY: 94,
+  wingY: 118,
+  wingH: 4,
+  wingExtra: 2,
+};
+
+const STOCK_LAYOUT: Layout = {
+  midX: 60,
+  noseY: 8,
+  noseW: 34,
+  hoodY: 40,
+  cabinY: 52,
+  cabinH: 38,
+  cabinInset: 9,
+  rearDeckY: 94,
+  tailY: 126,
+  bodyW: 56,
+  wheelW: 10,
+  wheelH: 20,
+  frontWheelY: 34,
+  rearWheelY: 104,
+  wingY: 132,
+  wingH: 5,
+  wingExtra: 2,
+};
+
+const TRUCK_LAYOUT: Layout = {
+  midX: 60,
+  noseY: 10,
+  noseW: 48,
+  hoodY: 30,
+  cabinY: 38,
+  cabinH: 30,
+  cabinInset: 7,
+  rearDeckY: 72,
+  tailY: 128,
+  bodyW: 60,
+  wheelW: 11,
+  wheelH: 21,
+  frontWheelY: 30,
+  rearWheelY: 102,
+  wingY: 132,
+  wingH: 4,
+  wingExtra: -4,
+};
+
 function layoutFor(style: DamageBodyStyle): Layout {
+  if (style === 'hatch') return HATCH_LAYOUT;
+  if (style === 'stock') return STOCK_LAYOUT;
+  if (style === 'truck') return TRUCK_LAYOUT;
   const open = style === 'openwheel';
   const proto = style === 'prototype';
-  const wide = style === 'truck' || style === 'stock';
   const frontHeavy = style === 'gtFront';
   const rearHeavy = style === 'gtRear';
 
-  const bodyW = open ? 42 : proto ? 50 : wide ? 58 : 50;
+  const bodyW = open ? 42 : 50;
   const noseW = open ? 18 : proto ? 28 : frontHeavy ? 36 : 30;
   const cabinInset = open ? 10 : 8;
 
@@ -73,7 +135,7 @@ function layoutFor(style: DamageBodyStyle): Layout {
     rearWheelY: open ? 100 : rearHeavy ? 108 : 106,
     wingY: open ? 128 : 136,
     wingH: open ? 9 : 7,
-    wingExtra: open ? 22 : wide ? 16 : 14,
+    wingExtra: open ? 22 : 14,
   };
 }
 
@@ -188,7 +250,6 @@ export const CarSilhouette = ({
   const wingW = L.bodyW + L.wingExtra;
   const wingX = mid - wingW / 2;
 
-  // Tapered nose → shoulders → sides → rear hips → tail
   const frontPath = [
     `M ${mid - noseHalf} ${L.noseY + 4}`,
     `Q ${mid} ${L.noseY - 2} ${mid + noseHalf} ${L.noseY + 4}`,
@@ -397,6 +458,7 @@ export const CarSilhouette = ({
       </g>
 
       <Pct x={mid} y={L.noseY - 4} label={labels.front} />
+      <Pct x={mid} y={(L.cabinY + cabinB) / 2} label={labels.centre} />
       <Pct x={mid} y={L.wingY + L.wingH + 10} label={labels.rear} />
       <Pct
         x={leftX - 12}

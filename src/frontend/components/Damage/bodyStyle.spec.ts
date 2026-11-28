@@ -37,6 +37,21 @@ describe('resolveDamageBodyStyle', () => {
     ).toBe('gtRear');
     expect(
       resolveDamageBodyStyle('porsche991rsr', 'GTE', 'Porsche 991RSR')
+    ).toBe('gtMid');
+    expect(
+      resolveDamageBodyStyle(undefined, 'LMGTE', 'Porsche 911 RSR-19')
+    ).toBe('gtMid');
+  });
+
+  it('recognises a GT model the same with or without its class', () => {
+    expect(
+      resolveDamageBodyStyle('c6r', undefined, 'Chevrolet Corvette C6.R')
+    ).toBe('gtFront');
+    expect(
+      resolveDamageBodyStyle('c6r', 'GT1', 'Chevrolet Corvette C6.R')
+    ).toBe('gtFront');
+    expect(
+      resolveDamageBodyStyle('porsche992rgt3', undefined, 'Porsche 992R GT3')
     ).toBe('gtRear');
   });
 

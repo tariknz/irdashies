@@ -81,7 +81,8 @@ function haystack(
 }
 
 function resolveGtLayout(h: string): 'gtFront' | 'gtMid' | 'gtRear' {
-  // 911 family — rear engine (exclude mid-engine Cayman / prototypes).
+  if (/\brsr\b|991rsr/.test(h)) return 'gtMid';
+
   if (
     /\b(911|992|991|993|996|997|rsr)\b/.test(h) ||
     (/\bporsche\b/.test(h) && !/\b(718|cayman|963|919|gtp|lmp)\b/.test(h))
@@ -89,7 +90,6 @@ function resolveGtLayout(h: string): 'gtFront' | 'gtMid' | 'gtRear' {
     return 'gtRear';
   }
 
-  // Mid-engine GT / GTE.
   if (
     /\b(ferrari|296|488|mclaren|720|570|mp4|lamborghini|huracan|lambo|audi|r8|nsx|c8|z06|718|cayman|fordgt|ford.?gt.?2017)\b/.test(
       h
@@ -98,7 +98,6 @@ function resolveGtLayout(h: string): 'gtFront' | 'gtMid' | 'gtRear' {
     return 'gtMid';
   }
 
-  // Front-engine GT.
   if (/\b(bmw|m4|m8|mercedes|amg|mustang|vantage|dbr9|c6|corvette)\b/.test(h)) {
     return 'gtFront';
   }
@@ -106,10 +105,6 @@ function resolveGtLayout(h: string): 'gtFront' | 'gtMid' | 'gtRear' {
   return 'gtMid';
 }
 
-/**
- * Pick a top-down silhouette family from session / lovely-car-data class.
- * GT is split into front / mid / rear engine layouts.
- */
 export function resolveDamageBodyStyle(
   carPath?: string,
   carClass?: string,
@@ -150,12 +145,5 @@ export function resolveDamageBodyStyle(
   if (/\b(mx.?5|miata|gr86|clio|tcr|tour.?2|m2|caterham|gr.?86)\b/.test(h)) {
     return 'hatch';
   }
-  if (
-    /\b(gt3|gt4|gte|gt1|911|296|lambo|mclaren|ferrari|porsche|bmw|mustang)\b/.test(
-      h
-    )
-  ) {
-    return resolveGtLayout(h);
-  }
-  return 'gtMid';
+  return resolveGtLayout(h);
 }

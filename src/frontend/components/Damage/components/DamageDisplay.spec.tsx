@@ -1,7 +1,14 @@
 import { render, screen } from '@testing-library/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { UNDAMAGED, type DamageSnapshot } from '../logic';
-import { cornerBadgeText, DamageDisplay, damageZoom } from './DamageDisplay';
+import {
+  cornerBadgeText,
+  DamageDisplay,
+  damageZoom,
+  engineWarningText,
+} from './DamageDisplay';
+import { EngineWarnings } from '@irdashies/types';
+import { SUSP_FILL } from '../logic';
 
 const iracingRepair: DamageSnapshot = {
   ...UNDAMAGED,
@@ -54,7 +61,7 @@ describe('DamageDisplay', () => {
     );
 
     expect(screen.getByText('Aero')).toBeTruthy();
-    expect(screen.getByText('70%')).toBeTruthy();
+    expect(screen.getAllByText('70%')).toHaveLength(2);
     expect(screen.getByText('Body')).toBeTruthy();
     expect(screen.getByText('Susp')).toBeTruthy();
     expect(screen.getByText('Tyre')).toBeTruthy();
@@ -84,7 +91,50 @@ describe('DamageDisplay', () => {
     renderDisplay({ ...UNDAMAGED, dentSeverity: [0, 2, 0, 0, 0, 0, 0, 0] });
 
     expect(screen.queryByText('0%')).toBeNull();
-    expect(screen.getAllByText(/^\d+%$/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('67%')).toHaveLength(2);
+  });
+
+  it('marks a wheel that lost its pressure as flat, even with tread left', () => {
+    const { container } = renderDisplay(
+      {
+        ...UNDAMAGED,
+        tyreWear: [0.92, 0.92, 0.92, 0.92],
+        tyrePressure: [0, 180, 180, 180],
+      },
+      { showTyreWear: false }
+    );
+
+    const fills = Array.from(container.querySelectorAll('rect')).map((rect) =>
+      rect.getAttribute('fill')
+    );
+    expect(fills.filter((fill) => fill === SUSP_FILL.detached)).toHaveLength(1);
+  });
+
+  it('shows the aero integrity on the car when damage % is on', () => {
+    renderDisplay({ ...UNDAMAGED, aeroDamage: 0.3 }, { showStats: false });
+
+    expect(screen.getByText('70%')).toBeTruthy();
+  });
+
+  it('keeps the aero label off when damage % is off', () => {
+    renderDisplay(
+      { ...UNDAMAGED, aeroDamage: 0.3 },
+      { showStats: false, showIntegrity: false }
+    );
+
+    expect(screen.queryByText('70%')).toBeNull();
+  });
+
+  it('names an active engine warning for assistive tech', () => {
+    renderDisplay({
+      ...UNDAMAGED,
+      engineWarnings: EngineWarnings.FuelPressureWarning,
+    });
+
+    expect(
+      screen.getByRole('img', { name: 'Fuel pressure warning active' })
+    ).toBeTruthy();
+    expect(screen.getByRole('img', { name: 'Oil' })).toBeTruthy();
   });
 
   it('shows the remaining tread in the corner badges when asked', () => {
@@ -116,6 +166,13 @@ describe('DamageDisplay', () => {
   });
 });
 
+describe('engineWarningText', () => {
+  it('says when a warning is active', () => {
+    expect(engineWarningText('Oil', true)).toBe('Oil warning active');
+    expect(engineWarningText('Oil', false)).toBe('Oil');
+  });
+});
+
 describe('cornerBadgeText', () => {
   it('adds the tread only when asked and known, and not for a lost wheel', () => {
     expect(cornerBadgeText('LF', 0.92, false, true)).toBe('LF 92%');
@@ -132,11 +189,20 @@ describe('damageZoom', () => {
     expect(damageZoom({ width: 340, height: 240 }, 240, 1)).toBe(1);
   });
 
-  it('applies the widget scale on top', () => {
-    expect(damageZoom({ width: 170, height: 240 }, 240, 1.5)).toBe(1.5);
+  it('shrinks the whole widget below 100% scale', () => {
+    expect(damageZoom({ width: 170 / 0.8, height: 240 / 0.8 }, 240, 0.8)).toBe(
+      1
+    );
   });
 
-  it('uses the widget scale alone before the frame is measured', () => {
+  it('stops at the frame above 100% scale, so nothing is cut off', () => {
+    const zoom = damageZoom({ width: 170 / 1.5, height: 240 / 1.5 }, 240, 1.5);
+
+    expect(zoom * 1.5).toBeCloseTo(1);
+  });
+
+  it('uses the widget scale, capped at 100%, before the frame is measured', () => {
     expect(damageZoom({ width: 0, height: 0 }, 240, 0.8)).toBe(0.8);
+    expect(damageZoom({ width: 0, height: 0 }, 240, 1.5)).toBe(1);
   });
 });
